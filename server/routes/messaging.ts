@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { messagingService } from "../services/messaging-service";
 import { isAuthenticated } from "../temp-auth";
+import { logger } from "../middleware/logger";
 
 const router = Router();
 

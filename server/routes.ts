@@ -21,7 +21,7 @@ import realTimeMessagesRoutes from "./routes/real-time-messages";
 import chatRoutes from "./routes/chat";
 // import { generalRateLimit, strictRateLimit, uploadRateLimit, clearRateLimit } from "./middleware/rateLimiter";
 import { sanitizeMiddleware } from "./middleware/sanitizer";
-import { requestLogger, errorLogger, logger } from "./middleware/logger";
+import { requestLogger, errorLogger, logger, asyncHandler } from "./middleware/logger";
 import {
   insertProjectSchema,
   insertProjectTaskSchema,
@@ -445,15 +445,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/users",
     isAuthenticated,
     requirePermission("view_users"),
-    async (req, res) => {
-      try {
-        const users = await storage.getAllUsers();
-        res.json(users);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        res.status(500).json({ message: "Failed to fetch users" });
-      }
-    },
+    asyncHandler(async (req, res) => {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    }),
   );
 
   app.patch(
@@ -507,15 +502,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Projects
-  app.get("/api/projects", async (req, res) => {
-    try {
-      const projects = await storage.getAllProjects();
-      res.json(projects);
-    } catch (error) {
-      logger.error("Failed to fetch projects", error);
-      res.status(500).json({ message: "Failed to fetch projects" });
-    }
-  });
+  app.get("/api/projects", asyncHandler(async (req, res) => {
+    const projects = await storage.getAllProjects();
+    res.json(projects);
+  }));
 
   app.post(
     "/api/projects",
@@ -1252,30 +1242,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sandwich Collections
-  app.get("/api/sandwich-collections", async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50;
-      const offset = (page - 1) * limit;
+  app.get("/api/sandwich-collections", asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = (page - 1) * limit;
 
-      const result = await storage.getSandwichCollections(limit, offset);
-      const totalCount = await storage.getSandwichCollectionsCount();
+    const result = await storage.getSandwichCollections(limit, offset);
+    const totalCount = await storage.getSandwichCollectionsCount();
 
-      res.json({
-        collections: result,
-        pagination: {
-          page,
-          limit,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / limit),
-          hasNext: page < Math.ceil(totalCount / limit),
-          hasPrev: page > 1,
-        },
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch sandwich collections" });
-    }
-  });
+    res.json({
+      collections: result,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page < Math.ceil(totalCount / limit),
+        hasPrev: page > 1,
+      },
+    });
+  }));
 
   app.post(
     "/api/sandwich-collections",
@@ -2325,7 +2311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         logger.error("Failed to upload meeting minutes", error);
         res.status(500).json({
           message: "Failed to upload meeting minutes",
-          error: error.message,
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
@@ -2376,7 +2362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           logger.error("File access failed", {
             filePath,
             storedPath: minutes.filePath,
-            error: error.message,
+            error: error instanceof Error ? error.message : "Unknown error",
           });
           return res.status(404).json({ message: "File not found on disk" });
         }
@@ -2969,7 +2955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error submitting driver agreement:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
@@ -3257,23 +3243,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get collections by host name
-  app.get("/api/collections-by-host/:hostName", async (req, res) => {
-    try {
-      const hostName = decodeURIComponent(req.params.hostName);
-      const collections = await storage.getAllSandwichCollections();
+  app.get("/api/collections-by-host/:hostName", asyncHandler(async (req, res) => {
+    const hostName = decodeURIComponent(req.params.hostName);
+    const collections = await storage.getAllSandwichCollections();
 
-      // Filter collections by host name (case insensitive)
-      const hostCollections = collections.filter(
-        (collection) =>
-          collection.hostName.toLowerCase() === hostName.toLowerCase(),
-      );
+    // Filter collections by host name (case insensitive)
+    const hostCollections = collections.filter(
+      (collection) =>
+        collection.hostName.toLowerCase() === hostName.toLowerCase(),
+    );
 
-      res.json(hostCollections);
-    } catch (error) {
-      logger.error("Failed to fetch collections by host", error);
-      res.status(500).json({ message: "Failed to fetch collections by host" });
-    }
-  });
+    res.json(hostCollections);
+  }));
 
   // Recipients
   app.get("/api/recipients", async (req, res) => {
@@ -4441,7 +4422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         res.json(history);
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
       }
     },
   );
@@ -7110,6 +7091,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Make broadcast functions available globally for use in other routes
   (global as any).broadcastNewMessage = broadcastNewMessage;
   (global as any).broadcastTaskAssignment = broadcastTaskAssignment;
+
+  // Add error handling middleware at the end to catch any unhandled errors
+  app.use(errorLogger);
 
   return httpServer;
 }

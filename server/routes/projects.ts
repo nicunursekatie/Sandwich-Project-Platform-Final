@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import { storage } from "../storage-wrapper";
 import { sanitizeMiddleware } from "../middleware/sanitizer";
+import { logger } from "../middleware/logger";
 import { insertProjectSchema, insertProjectTaskSchema, insertProjectCommentSchema } from "@shared/schema";
 
 // Configure multer for file uploads
