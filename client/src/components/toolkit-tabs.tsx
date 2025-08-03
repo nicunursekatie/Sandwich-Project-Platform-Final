@@ -3,13 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, FileText, Eye, ExternalLink, Shield, Tag, Sandwich } from "lucide-react";
+import { Download, FileText, Eye, ExternalLink, Shield, Tag, Sandwich, Calculator } from "lucide-react";
 import { DocumentPreview } from "./document-preview";
 
 interface ToolkitDocument {
   name: string;
   path: string;
-  type: 'pdf' | 'xlsx' | 'docx' | 'txt' | 'other';
+  type: 'pdf' | 'xlsx' | 'docx' | 'txt' | 'link' | 'other';
   category: string;
   description?: string;
 }
@@ -97,6 +97,13 @@ const sandwichMakingDocuments: ToolkitDocument[] = [
     type: "pdf",
     category: "Sandwich Making",
     description: "Comprehensive inventory tracking system for sandwich collections"
+  },
+  {
+    name: "Inventory Calculator",
+    path: "https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html",
+    type: "link",
+    category: "Sandwich Making",
+    description: "Interactive tool for calculating sandwich inventory and planning quantities for collections"
   }
 ];
 
@@ -110,6 +117,8 @@ const getFileIcon = (type: string) => {
       return <FileText className="h-5 w-5 text-blue-500" />;
     case 'txt':
       return <FileText className="h-5 w-5 text-gray-500" />;
+    case 'link':
+      return <Calculator className="h-5 w-5 text-blue-600" />;
     default:
       return <FileText className="h-5 w-5 text-gray-500" />;
   }
@@ -164,35 +173,51 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
         
         {/* Button Layout - Always stack on mobile, side by side on larger screens */}
         <div className="flex flex-col gap-2 mt-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPreview(doc)}
-            className="w-full text-xs sm:text-sm h-8 sm:h-9"
-          >
-            <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            Preview
-          </Button>
-          <div className="flex gap-2">
+          {doc.type === 'link' ? (
+            // For external links, show only the "Open Tool" button
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDownload(doc.path, doc.name)}
-              className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
-            >
-              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Download</span>
-              <span className="sm:hidden">DL</span>
-            </Button>
-            <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={() => window.open(doc.path, '_blank')}
-              className="px-2 sm:px-3 h-8 sm:h-9"
+              className="w-full text-xs sm:text-sm h-8 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Calculator className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              Open Tool
             </Button>
-          </div>
+          ) : (
+            // For documents, show preview and download options
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPreview(doc)}
+                className="w-full text-xs sm:text-sm h-8 sm:h-9"
+              >
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Preview
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(doc.path, doc.name)}
+                  className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
+                >
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Download</span>
+                  <span className="sm:hidden">DL</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(doc.path, '_blank')}
+                  className="px-2 sm:px-3 h-8 sm:h-9"
+                >
+                  <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </Card>
