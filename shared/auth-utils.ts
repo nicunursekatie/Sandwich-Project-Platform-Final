@@ -64,6 +64,7 @@ export const PERMISSIONS = {
   CREATE_COLLECTIONS: "create_collections", // Create new collections + automatically edit/delete own collections
   EDIT_ALL_COLLECTIONS: "edit_all_collections", // Edit any collection regardless of ownership
   DELETE_ALL_COLLECTIONS: "delete_all_collections", // Delete any collection regardless of ownership
+  USE_COLLECTION_WALKTHROUGH: "use_collection_walkthrough", // Access to simplified walkthrough form
 
   // Simplified work log permissions - CREATE automatically includes edit/delete own
   CREATE_WORK_LOGS: "create_work_logs", // Create new work logs + automatically edit/delete own work logs
@@ -170,6 +171,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.GENERAL_CHAT,
         PERMISSIONS.HOST_CHAT,
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
+        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.SEND_KUDOS,
@@ -207,6 +209,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.GENERAL_CHAT,
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
+        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.SEND_KUDOS,
@@ -222,6 +225,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.GENERAL_CHAT,
         PERMISSIONS.RECIPIENT_CHAT,
+        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections (recipients who help with collections)
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.RECEIVE_KUDOS, // Recipients can receive kudos but not send them by default
         PERMISSIONS.VIEW_KUDOS
