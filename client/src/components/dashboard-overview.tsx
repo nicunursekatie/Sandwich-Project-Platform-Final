@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, TrendingUp, Calendar, Award, Download, ExternalLink, Sandwich, Eye, BarChart3, Target, Activity, Users, Zap, Clock, Building2, Layers } from "lucide-react";
+import { FileText, TrendingUp, Calendar, Award, Download, ExternalLink, Sandwich, Eye, BarChart3, Target, Activity, Users, Zap, Clock, Building2, Layers, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -286,7 +286,15 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mx-4 mt-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mx-4 mt-8">
+          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all" onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}>
+            <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <Calculator className="w-5 h-5 text-white" />
+            </div>
+            <h4 className="font-semibold text-[#236383]">Inventory Calculator</h4>
+            <p className="text-sm text-gray-600">Plan quantities</p>
+          </button>
+
           <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all" onClick={() => onSectionChange?.('collections')}>
             <div className="w-10 h-10 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <BarChart3 className="w-5 h-5 text-white" />

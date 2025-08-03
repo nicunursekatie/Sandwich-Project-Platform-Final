@@ -1,4 +1,4 @@
-import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy } from "lucide-react";
+import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator } from "lucide-react";
 import { useLocation } from "wouter";
 import sandwichLogo from "@assets/LOGOS/TSP_transparent.png";
 import squareSandwichLogo from "@assets/LOGOS/sandwich logo.png";
@@ -118,6 +118,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     // Core section
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "collections", label: "Collections", icon: Sandwich },
+    { id: "inventory-calculator", label: "Inventory Calculator", icon: Calculator },
     { id: "messages", label: "Messages", icon: MessageCircle },
     
     // Data section (filtered by permissions)
@@ -164,6 +165,11 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <DashboardOverview onSectionChange={setActiveSection} />;
       case "collections":
         return <SandwichCollectionLog />;
+      case "inventory-calculator":
+        // Open the inventory calculator in a new tab and return to dashboard
+        window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank');
+        setActiveSection("dashboard");
+        return <DashboardOverview onSectionChange={setActiveSection} />;
       case "projects":
         console.log("Rendering ProjectsClean component");
         return <ProjectsClean />;
