@@ -121,14 +121,14 @@ export function DocumentPreview({ documentPath, documentName, documentType, onCl
 
  return (
  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
- <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-5xl h-5/6 flex flex-col ml-0 lg:ml-64 mr-4">
+ <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-5/6 flex flex-col ml-0 lg:ml-64 mr-4">
  {/* Header */}
- <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+ <div className="flex items-center justify-between p-4 border-b border-gray-200"
  <div className="flex items-center space-x-3">
- <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+ <h2 className="text-lg font-semibold text-gray-900 truncate">
  {documentName}
  </h2>
- <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full">
+ <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
  {documentType?.toUpperCase() || 'FILE'}
  </span>
  </div>
@@ -148,10 +148,10 @@ export function DocumentPreview({ documentPath, documentName, documentType, onCl
  {/* Preview Content */}
  <div className="flex-1 relative">
  {isLoading && (
- <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+ <div className="absolute inset-0 flex items-center justify-center bg-gray-50"
  <div className="text-center">
  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
- <p className="text-gray-600 dark:text-gray-400">Loading preview...</p>
+ <p className="text-gray-600 preview...</p>"
  </div>
  </div>
  )}
@@ -159,9 +159,9 @@ export function DocumentPreview({ documentPath, documentName, documentType, onCl
  </div>
 
  {/* Footer */}
- <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+ <div className="p-4 border-t border-gray-200 bg-gray-50"
  <div className="flex justify-between items-center">
- <p className="text-sm text-gray-600 dark:text-gray-400">
+ <p className="text-sm text-gray-600"
  Use the buttons above to download or open in a new tab
  </p>
  <Button onClick={onClose} variant="outline">

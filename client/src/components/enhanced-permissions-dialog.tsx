@@ -986,7 +986,7 @@ export default function EnhancedPermissionsDialog({
               Dangerous Permission Warning
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base">
-              You are about to grant a permission with <span className="font-semibold text-red-600">system-breaking potential</span>.
+              You are about to grant a permission with <span className="font-semibold text-red-600">ystem-breaking potential</span>.
               <br/><br/>
               {pendingDangerousPermission === 'SYSTEM_ADMINISTRATOR' ? (
                 <span className="font-medium">This grants complete system access. Are you sure?</span>

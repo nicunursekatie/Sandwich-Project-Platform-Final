@@ -51,7 +51,7 @@ export function CollectionFilters({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm">
@@ -141,7 +141,7 @@ export function CollectionFilters({
         </Button>
       )}
 
-      <div className="text-sm text-gray-600 dark:text-gray-400">
+      <div className="text-sm text-gray-600"
         Showing {filteredCollections} of {totalCollections} collections
       </div>
     </div>

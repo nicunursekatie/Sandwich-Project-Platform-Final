@@ -106,11 +106,11 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "approved": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "rejected": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      case "postponed": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "pending": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+      case "approved": return "bg-green-100 text-green-800
+      case "rejected": return "bg-red-100 text-red-800
+      case "postponed": return "bg-orange-100 text-orange-800
+      case "pending": return "bg-yellow-100 text-yellow-800
+      default: return "bg-gray-100 text-gray-800
     }
   };
 
@@ -128,8 +128,8 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
@@ -142,7 +142,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
     <div className="space-y-6">
       {/* Navigation Header - only show when not embedded */}
       {!isEmbedded && (
-      <div className="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-3 pb-4 border-b border-gray-200"
         <Button 
           variant="outline" 
           size="sm"
@@ -155,7 +155,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <span>Meetings</span>
           <span>•</span>
-          <span className="text-gray-900 dark:text-white font-medium">Agenda</span>
+          <span className="text-gray-900 font-medium">Agenda</span>
         </div>
       </div>
       )}
@@ -163,12 +163,12 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-            <ListTodo className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl">
+            <ListTodo className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 />"
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Meeting Agenda</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Plan and organize meeting topics and discussions</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 Agenda</h1>"
+            <p className="text-sm sm:text-base text-gray-600 and organize meeting topics and discussions</p>"
           </div>
         </div>
         <Button onClick={() => setIsCreating(true)} className="self-start h-10 text-sm">
@@ -186,7 +186,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
                   <ListTodo className="w-8 h-8 text-blue-500" />
                   <div>
                     <p className="text-2xl font-bold">{agendaItems.length}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
+                    <p className="text-sm text-gray-600 Items</p>"
                   </div>
                 </div>
               </CardContent>
@@ -197,7 +197,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
                   <CheckCircle2 className="w-8 h-8 text-green-500" />
                   <div>
                     <p className="text-2xl font-bold">{approvedItems}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Approved</p>
+                    <p className="text-sm text-gray-600"
                   </div>
                 </div>
               </CardContent>
@@ -208,7 +208,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
                   <Clock className="w-8 h-8 text-yellow-500" />
                   <div>
                     <p className="text-2xl font-bold">{pendingItems}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Pending Review</p>
+                    <p className="text-sm text-gray-600 Review</p>"
                   </div>
                 </div>
               </CardContent>
@@ -267,9 +267,9 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
           {/* Agenda Items */}
           <div className="space-y-4">
             {agendaItems.map((item: AgendaItem, index: number) => (
-              <Card key={item.id} className={item.status === "approved" ? "border-green-200 bg-green-50 dark:bg-green-900/10" : 
-                                            item.status === "rejected" ? "border-red-200 bg-red-50 dark:bg-red-900/10" :
-                                            item.status === "postponed" ? "border-orange-200 bg-orange-50 dark:bg-orange-900/10" : ""}>
+              <Card key={item.id} className={item.status === "approved" ? "border-green-200 bg-green-50 : 
+                                            item.status === "rejected" ? "border-red-200 bg-red-50 :
+                                            item.status === "postponed" ? "border-orange-200 bg-orange-50 : ""}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
@@ -283,11 +283,11 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
                             {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                           </Badge>
                         </div>
-                        <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">
+                        <h3 className="font-semibold text-lg text-gray-900 mb-2">
                           {item.title}
                         </h3>
                         {item.description && (
-                          <p className="text-gray-600 dark:text-gray-400 mb-3">{item.description}</p>
+                          <p className="text-gray-600 mb-3">{item.description}</p>
                         )}
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <span>Submitted by: {item.submittedBy}</span>
@@ -365,8 +365,8 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
             <Card>
               <CardContent className="text-center py-12">
                 <ListTodo className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No agenda items yet</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Create your first agenda item to start planning your meeting</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No agenda items yet</h3>
+                <p className="text-gray-600 mb-4">Create your first agenda item to start planning your meeting</p>
                 <Button onClick={() => setIsCreating(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Item

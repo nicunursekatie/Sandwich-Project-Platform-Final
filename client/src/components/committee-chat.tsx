@@ -202,13 +202,13 @@ export default function CommitteeChat() {
             <div
               key={committee.id}
               onClick={() => setSelectedCommittee(committee)}
-              className="p-6 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+              className="p-6 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
             >
               <div className="flex items-center mb-3">
                 <Users className="w-8 h-8 text-blue-500 mr-3" />
                 <div>
                   <h3 className="font-semibold">{committee.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{committee.description}</p>
+                  <p className="text-sm text-gray-600">{committee.description}</p>
                 </div>
               </div>
             </div>
@@ -219,7 +219,7 @@ export default function CommitteeChat() {
   }
 
   return (
-    <div className="flex flex-col h-[600px] bg-white dark:bg-gray-900 border rounded-lg">
+    <div className="flex flex-col h-[600px] bg-white border rounded-lg">
       {/* Header */}
       <div className="border-b p-4 flex items-center">
         <Button
@@ -279,7 +279,7 @@ export default function CommitteeChat() {
                       </Button>
                     )}
                   </div>
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                  <div className="bg-gray-100 rounded-lg p-3">
                     <p className="text-sm">{message.content}</p>
                   </div>
                   {/* Message actions */}

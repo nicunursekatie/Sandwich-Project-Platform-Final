@@ -736,11 +736,11 @@ export default function StreamMessagesPage() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-4 p-6 border-b">
-        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-          <MessageCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
+          <MessageCircle className="w-5 h-5 text-blue-600 />"
         </div>
         <div>
-          <h1 className="text-2xl font-main-heading text-primary dark:text-secondary">Direct Messages</h1>
+          <h1 className="text-2xl font-main-heading text-primary Messages</h1>"
           <p className="font-body text-muted-foreground">Email-style messaging - all database users auto-synced</p>
         </div>
         <div className="flex items-center gap-2 ml-auto">
@@ -753,7 +753,7 @@ export default function StreamMessagesPage() {
       {/* Gmail-style Email Interface */}
       <div className="flex h-full">
         {/* Email folders sidebar */}
-        <div className="w-64 border-r bg-gray-50 dark:bg-gray-900/50 p-4">
+        <div className="w-64 border-r bg-gray-50 p-4">
           <Dialog open={showCompose} onOpenChange={setShowCompose}>
             <DialogTrigger asChild>
               <Button className="w-full mb-4">
@@ -800,7 +800,7 @@ export default function StreamMessagesPage() {
                   
                   {/* Autocomplete dropdown */}
                   {showSuggestions && filteredUsers.length > 0 && (
-                    <div className="absolute z-50 bg-white dark:bg-gray-800 border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto w-full">
+                    <div className="absolute z-50 bg-white border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto w-full">
                       {filteredUsers.map(user => (
                         <div
                           key={user.id}
@@ -868,7 +868,7 @@ export default function StreamMessagesPage() {
             <div 
               className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer text-sm font-medium ${
                 activeFolder === 'inbox' 
-                  ? 'bg-blue-50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300'
+                  ? 'bg-blue-50 text-blue-700
                   : 'hover:bg-gray-100 text-gray-600'
               }`}
               onClick={() => setActiveFolder('inbox')}
@@ -879,7 +879,7 @@ export default function StreamMessagesPage() {
             <div 
               className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer text-sm ${
                 activeFolder === 'sent' 
-                  ? 'bg-blue-50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300 font-medium'
+                  ? 'bg-blue-50 text-blue-700 font-medium'
                   : 'hover:bg-gray-100 text-gray-600'
               }`}
               onClick={() => setActiveFolder('sent')}
@@ -890,7 +890,7 @@ export default function StreamMessagesPage() {
             <div 
               className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer text-sm ${
                 activeFolder === 'conversations' 
-                  ? 'bg-blue-50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300 font-medium'
+                  ? 'bg-blue-50 text-blue-700 font-medium'
                   : 'hover:bg-gray-100 text-gray-600'
               }`}
               onClick={() => setActiveFolder('conversations')}
@@ -1041,13 +1041,13 @@ export default function StreamMessagesPage() {
                       {/* Only show user availability when compose dialog is open */}
                       {showCompose && availableUsers.length > 0 && (
                         <div className="mt-4 text-center">
-                          <p className="text-sm text-green-600 dark:text-green-400 font-medium">✅ {availableUsers.length} users available</p>
+                          <p className="text-sm text-green-600 font-medium">✅ {availableUsers.length} users available</p>
                         </div>
                       )}
                       
                       {showCompose && availableUsers.length === 0 && (
                         <div className="mt-4 text-center">
-                          <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">⏳ Loading users...</p>
+                          <p className="text-sm text-yellow-600 font-medium">⏳ Loading users...</p>
                         </div>
                       )}
                     </div>

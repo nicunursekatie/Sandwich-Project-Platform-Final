@@ -188,11 +188,11 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return (
           <div className="space-y-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+                <FileText className="w-6 h-6 text-blue-600 />"
               </div>
               <div>
-                <h1 className="text-2xl font-main-heading text-primary dark:text-secondary">Group Toolkit</h1>
+                <h1 className="text-2xl font-main-heading text-primary Toolkit</h1>"
                 <p className="font-body text-muted-foreground">Essential training documents and resources</p>
               </div>
             </div>
@@ -244,25 +244,25 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
               ].map((doc, index) => (
                 <div
                   key={index}
-                  className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
-                      <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                      <FileText className="w-8 h-8 text-blue-600 />"
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{doc.title}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900"
                         <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                          doc.category === 'Safety' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-                          doc.category === 'Training' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-                          doc.category === 'Resources' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-                          'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300'
+                          doc.category === 'Safety' ? 'bg-red-100 text-red-800 :
+                          doc.category === 'Training' ? 'bg-blue-100 text-blue-800 :
+                          doc.category === 'Resources' ? 'bg-green-100 text-green-800 :
+                          'bg-orange-100 text-orange-800
                         }`}>
                           {doc.category}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{doc.description}</p>
+                  <p className="text-sm text-gray-600 mb-4">{doc.description}</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -271,14 +271,14 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
                         link.download = doc.title;
                         link.click();
                       }}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                     >
                       <FileText className="w-4 h-4" />
                       Download
                     </button>
                     <button
                       onClick={() => window.open(doc.path, '_blank')}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       View
                     </button>
@@ -300,7 +300,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return (
           <div className="p-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-main-heading text-primary dark:text-secondary">Analytics Dashboard</h1>
+              <h1 className="text-2xl font-main-heading text-primary Dashboard</h1>"
               <p className="font-body text-muted-foreground">Data insights and impact visualization</p>
             </div>
             <Tabs defaultValue="data" className="w-full">
@@ -336,8 +336,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
                 <MessageCircle className="w-6 h-6" style={{color: 'var(--tsp-teal)'}} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Committee Communications</h1>
-                <p className="text-gray-600 dark:text-gray-300">Internal committee discussions and collaboration</p>
+                <h1 className="text-2xl font-bold text-gray-900 Communications</h1>"
+                <p className="text-gray-600 committee discussions and collaboration</p>"
               </div>
             </div>
             <CommitteeChat />

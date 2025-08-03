@@ -33,10 +33,10 @@ const characterEmojis = {
 };
 
 const toneStyles = {
-  encouraging: 'border-l-4 border-l-green-400 bg-green-50 dark:bg-green-900/20',
-  informative: 'border-l-4 border-l-blue-400 bg-blue-50 dark:bg-blue-900/20',
-  supportive: 'border-l-4 border-l-purple-400 bg-purple-50 dark:bg-purple-900/20',
-  celebratory: 'border-l-4 border-l-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
+  encouraging: 'border-l-4 border-l-green-400 bg-green-50
+  informative: 'border-l-4 border-l-blue-400 bg-blue-50
+  supportive: 'border-l-4 border-l-purple-400 bg-purple-50
+  celebratory: 'border-l-4 border-l-yellow-400 bg-yellow-50
 };
 
 const getCharacterMessage = (content: HelpContent) => {
@@ -154,10 +154,10 @@ export function HelpBubble({ content, trigger = 'click', className = '', onDismi
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl">{characterInfo.emoji}</span>
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    <h4 className="font-semibold text-gray-900 text-sm">
                       {content.title}
                     </h4>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                    <span className="text-xs text-gray-500 capitalize">
                       {content.character || 'guide'}
                     </span>
                   </div>
@@ -174,7 +174,7 @@ export function HelpBubble({ content, trigger = 'click', className = '', onDismi
 
               {/* Message */}
               <div className="mb-4">
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                <p className="text-sm text-gray-700 leading-relaxed">
                   {characterInfo.fullMessage}
                 </p>
               </div>

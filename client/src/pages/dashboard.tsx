@@ -187,8 +187,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
                 <Trophy className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Your Kudos</h1>
-                <p className="text-gray-600 dark:text-gray-300">Recognition received for your great work</p>
+                <h1 className="text-2xl font-bold text-gray-900">Your Kudos</h1>
+                <p className="text-gray-600">Recognition received for your great work</p>
               </div>
             </div>
             <KudosInbox />
@@ -215,7 +215,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return (
           <div className="p-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-main-heading text-primary dark:text-secondary">Analytics Dashboard</h1>
+              <h1 className="text-2xl font-main-heading text-primary">Analytics Dashboard</h1>
               <p className="font-body text-muted-foreground">Data insights and impact visualization</p>
             </div>
             <Tabs defaultValue="data" className="w-full">
@@ -251,8 +251,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
                 <MessageCircle className="w-6 h-6" style={{color: 'var(--tsp-teal)'}} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Committee Communications</h1>
-                <p className="text-gray-600 dark:text-gray-300">Internal committee discussions and collaboration</p>
+                <h1 className="text-2xl font-bold text-gray-900">Committee Communications</h1>
+                <p className="text-gray-600">Internal committee discussions and collaboration</p>
               </div>
             </div>
             <CommitteeChat />

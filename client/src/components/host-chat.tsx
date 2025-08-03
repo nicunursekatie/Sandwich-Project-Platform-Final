@@ -215,7 +215,7 @@ export default function HostChat() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b bg-white dark:bg-gray-900">
+      <div className="p-4 border-b bg-white"
         <div className="flex items-center space-x-3">
           <Button
             variant="ghost"
@@ -279,7 +279,7 @@ export default function HostChat() {
                       </Button>
                     )}
                   </div>
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                  <div className="bg-gray-100 rounded-lg p-3">
                     <p className="text-sm">{message.content}</p>
                   </div>
                   {/* Message actions */}
@@ -295,7 +295,7 @@ export default function HostChat() {
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t bg-white dark:bg-gray-900 space-y-3">
+      <div className="p-4 border-t bg-white space-y-3">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-gray-600">Posting as:</span>
           <span className="text-sm font-semibold text-gray-800">{getUserName()}</span>

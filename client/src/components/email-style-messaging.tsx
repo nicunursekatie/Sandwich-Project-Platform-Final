@@ -225,7 +225,7 @@ export default function EmailStyleMessaging() {
     setComposeData({
       to: message.from.email,
       subject: message.subject.startsWith('Re:') ? message.subject : `Re: ${message.subject}`,
-      content: `\n\n--- Original Message ---\nFrom: ${message.from.name} <${message.from.email}>\nDate: ${formatDate(message.timestamp)}\nSubject: ${message.subject}\n\n${message.content}`
+      content: `\n\n--- Original Message ---\nFrom: ${message.from.name} <${message.from.email}>nDate: ${formatDate(message.timestamp)}\nSubject: ${message.subject}\n\n${message.content}`
     });
     setIsComposing(true);
   };
@@ -237,7 +237,7 @@ export default function EmailStyleMessaging() {
     setComposeData({
       to: allRecipients.join(', '),
       subject: message.subject.startsWith('Re:') ? message.subject : `Re: ${message.subject}`,
-      content: `\n\n--- Original Message ---\nFrom: ${message.from.name} <${message.from.email}>\nDate: ${formatDate(message.timestamp)}\nSubject: ${message.subject}\n\n${message.content}`
+      content: `\n\n--- Original Message ---\nFrom: ${message.from.name} <${message.from.email}>nDate: ${formatDate(message.timestamp)}\nSubject: ${message.subject}\n\n${message.content}`
     });
     setIsComposing(true);
   };
@@ -247,7 +247,7 @@ export default function EmailStyleMessaging() {
     setComposeData({
       to: "",
       subject: message.subject.startsWith('Fwd:') ? message.subject : `Fwd: ${message.subject}`,
-      content: `\n\n--- Forwarded Message ---\nFrom: ${message.from.name} <${message.from.email}>\nDate: ${formatDate(message.timestamp)}\nSubject: ${message.subject}\n\n${message.content}`
+      content: `\n\n--- Forwarded Message ---\nFrom: ${message.from.name} <${message.from.email}>nDate: ${formatDate(message.timestamp)}\nSubject: ${message.subject}\n\n${message.content}`
     });
     setIsComposing(true);
   };

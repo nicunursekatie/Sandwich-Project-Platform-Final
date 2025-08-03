@@ -221,11 +221,11 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
   };
 
   return (
-    <div className="w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
+    <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Chat Channels</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Real-time team communication</p>
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900">Channels</h2>
+        <p className="text-sm text-gray-500">Team communication</p>
       </div>
 
       {/* Channel List */}
@@ -240,9 +240,9 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
               className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
                 isSelected 
                   ? isCorteTeam 
-                    ? "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-700" 
-                    : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
-                  : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                    ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200"
+                    : "bg-blue-50 border-blue-200"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
               }`}
               onClick={() => handleChannelClick(channel.id)}
             >
@@ -252,18 +252,18 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
                     <div className={`${
                       isSelected 
                         ? isCorteTeam 
-                          ? "text-amber-600 dark:text-amber-400" 
-                          : "text-blue-600 dark:text-blue-400"
-                        : "text-gray-500 dark:text-gray-400"
+                          ? "text-amber-600"
+                          : "text-blue-600"
+                        : "text-gray-500"
                     }`}>
                       {channel.icon}
                     </div>
                     <span className={`font-medium ${
                       isSelected 
                         ? isCorteTeam
-                          ? "text-amber-900 dark:text-amber-100"
-                          : "text-blue-900 dark:text-blue-100"
-                        : "text-gray-900 dark:text-gray-100"
+                          ? "text-amber-900"
+                          : "text-blue-900"
+                        : "text-gray-900"
                     }`}>
                       {channel.name}
                     </span>
@@ -278,23 +278,23 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
                 {/* Last Message Preview */}
                 {channel.lastMessage ? (
                   <div className="space-y-1">
-                    <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                    <div className="text-xs text-gray-600 truncate">
                       <span className="font-medium">{channel.lastMessage.userName}:</span>{" "}
                       {channel.lastMessage.content}
                     </div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500">
+                    <div className="text-xs text-gray-400">
                       {formatLastActivity(channel.lastMessage)}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-400 dark:text-gray-500">
+                  <div className="text-xs text-gray-400">
                     No messages yet • Click to start the conversation
                   </div>
                 )}
 
                 {/* Active Users Indicator */}
                 {channel.activeUsers.length > 0 && (
-                  <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center mt-2 text-xs text-gray-500">
                     <Users className="h-3 w-3 mr-1" />
                     {channel.activeUsers.length} active
                   </div>
@@ -306,7 +306,7 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+      <div className="p-3 border-t border-gray-200 text-xs text-gray-500">
         Connected as {user?.firstName || user?.email || "User"}
       </div>
     </div>

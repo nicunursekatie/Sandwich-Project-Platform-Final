@@ -113,7 +113,7 @@ export function ImportExportDialog({ onImport, onExport, isImporting, collection
               <DialogTitle>Import Collection Data</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-gray-600"
                 Upload a CSV file with collection data. The file should have columns for:
                 Date, Host Name, Individual Sandwiches, and Group Collections.
               </div>
@@ -125,7 +125,7 @@ export function ImportExportDialog({ onImport, onExport, isImporting, collection
                 </div>
               )}
               
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -149,14 +149,14 @@ export function ImportExportDialog({ onImport, onExport, isImporting, collection
                 </label>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
-                    <div className="font-medium text-blue-800 dark:text-blue-200 mb-1">
+                    <div className="font-medium text-blue-800 mb-1">
                       CSV Format Requirements
                     </div>
-                    <ul className="text-blue-700 dark:text-blue-300 space-y-1">
+                    <ul className="text-blue-700 space-y-1">
                       <li>• First row should contain headers</li>
                       <li>• Date format: YYYY-MM-DD</li>
                       <li>• Individual sandwiches: number</li>

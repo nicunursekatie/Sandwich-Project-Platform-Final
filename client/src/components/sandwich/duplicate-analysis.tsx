@@ -61,21 +61,21 @@ export function DuplicateAnalysisDialog({
         <div className="space-y-6">
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold">{analysis.totalCollections}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Collections</div>
+              <div className="text-sm text-gray-600">Collections</div>
             </div>
-            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
               <div className="text-2xl font-bold text-orange-600">{analysis.duplicateGroups}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Duplicate Groups</div>
+              <div className="text-sm text-gray-600">Groups</div>
             </div>
-            <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <div className="text-center p-4 bg-red-50 rounded-lg">
               <div className="text-2xl font-bold text-red-600">{analysis.totalDuplicateEntries}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Duplicates</div>
+              <div className="text-sm text-gray-600">Duplicates</div>
             </div>
-            <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">{analysis.suspiciousPatterns}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Suspicious Patterns</div>
+              <div className="text-sm text-gray-600">Patterns</div>
             </div>
           </div>
 
@@ -116,12 +116,12 @@ export function DuplicateAnalysisDialog({
                   
                   <div className="space-y-2">
                     {/* Keep this one */}
-                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded border-l-4 border-green-500">
+                    <div className="p-3 bg-green-50 rounded border-l-4 border-green-500">
                       <div className="flex justify-between items-center">
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        <Badge className="bg-green-100 text-green-800"
                           KEEP
                         </Badge>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                        <div className="text-sm text-gray-600"
                           {group.keepNewest.collectionDate} - {group.keepNewest.hostName}
                         </div>
                       </div>
@@ -133,10 +133,10 @@ export function DuplicateAnalysisDialog({
                     
                     {/* Delete these */}
                     {group.toDelete.map((item, itemIndex) => (
-                      <div key={itemIndex} className="p-3 bg-red-50 dark:bg-red-900/20 rounded border-l-4 border-red-500">
+                      <div key={itemIndex} className="p-3 bg-red-50 rounded border-l-4 border-red-500">
                         <div className="flex justify-between items-center">
                           <Badge variant="destructive">DELETE</Badge>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                          <div className="text-sm text-gray-600"
                             {item.collectionDate} - {item.hostName}
                           </div>
                         </div>
@@ -156,17 +156,17 @@ export function DuplicateAnalysisDialog({
           {analysis.suspiciousEntries.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Suspicious Patterns</h3>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <div className="text-sm text-gray-600 mb-2">
                 These entries have unusual patterns that may indicate data quality issues:
               </div>
               <div className="space-y-2">
                 {analysis.suspiciousEntries.map((entry, index) => (
-                  <div key={index} className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border-l-4 border-yellow-500">
+                  <div key={index} className="p-3 bg-yellow-50 rounded border-l-4 border-yellow-500">
                     <div className="flex justify-between items-center">
-                      <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                      <Badge className="bg-yellow-100 text-yellow-800"
                         REVIEW
                       </Badge>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="text-sm text-gray-600"
                         {entry.collectionDate} - {entry.hostName}
                       </div>
                     </div>

@@ -30,13 +30,13 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
   const getStatusColor = () => {
     switch (project.status) {
       case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+        return "bg-green-100 text-green-800
       case "in-progress":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-blue-100 text-blue-800
       case "on-hold":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+        return "bg-yellow-100 text-yellow-800
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+        return "bg-gray-100 text-gray-800
     }
   };
 
@@ -79,7 +79,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
       
       <CardContent className="pt-0">
         {project.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+          <p className="text-sm text-gray-600 mb-4 line-clamp-3">
             {project.description}
           </p>
         )}
@@ -93,21 +93,21 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           )}
           
           {project.assigneeName && (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-gray-600"
               <Users className="h-4 w-4" />
               <span>{project.assigneeName}</span>
             </div>
           )}
           
           {project.dueDate && (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-gray-600"
               <Calendar className="h-4 w-4" />
               <span>{new Date(project.dueDate).toLocaleDateString()}</span>
             </div>
           )}
           
           {project.estimatedHours && (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-gray-600"
               <Clock className="h-4 w-4" />
               <span>{project.estimatedHours}h estimated</span>
               {project.actualHours && (
@@ -119,7 +119,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
         
         {/* Show kudos button for completed projects if assignee is not current user and has valid ID */}
         {project.status === "completed" && project.assigneeName && project.assigneeId && user && (
-          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-4 pt-3 border-t border-gray-200"
             <SendKudosButton
               recipientId={project.assigneeId.toString()}
               recipientName={project.assigneeName}
@@ -135,7 +135,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
         
         {/* Show warning for legacy projects without proper assignee IDs */}
         {project.status === "completed" && project.assigneeName && !project.assigneeId && (
-          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-4 pt-3 border-t border-gray-200"
             <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">
               ⚠️ Legacy project: Cannot send kudos to {project.assigneeName} (no user ID)
             </div>

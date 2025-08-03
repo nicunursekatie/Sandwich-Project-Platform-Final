@@ -55,13 +55,13 @@ const getFileIcon = (type: string) => {
 const getCategoryColor = (category: string) => {
   switch (category) {
     case 'Legal Foundation':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+      return 'bg-purple-100 text-purple-800
     case 'Legal Reference':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      return 'bg-blue-100 text-blue-800
     case 'Tax Status':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      return 'bg-green-100 text-green-800
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+      return 'bg-gray-100 text-gray-800
   }
 };
 
@@ -95,10 +95,10 @@ export function GovernanceDocuments() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Governance Documents
         </h1>
-        <p className="text-gray-600 dark:text-gray-300">
+        <p className="text-gray-600"
           Essential legal and governance documents for The Sandwich Project
         </p>
       </div>
@@ -173,7 +173,7 @@ export function GovernanceDocuments() {
 
       {filteredDocuments.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-gray-500"
             No documents found in the selected category.
           </p>
         </div>

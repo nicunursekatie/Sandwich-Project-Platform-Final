@@ -118,13 +118,13 @@ const getFileIcon = (type: string) => {
 const getCategoryColor = (category: string) => {
   switch (category) {
     case 'Safety Guidelines':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      return 'bg-red-100 text-red-800';
     case 'Labels':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      return 'bg-blue-100 text-blue-800';
     case 'Sandwich Making':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      return 'bg-green-100 text-green-800'
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+      return 'bg-gray-100 text-gray-800'
   }
 };
 
@@ -146,7 +146,7 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
           {getFileIcon(doc.type)}
         </div>
         <div className="flex-1 min-w-0">
-          <CardTitle className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+          <CardTitle className="text-sm sm:text-base font-semibold text-gray-900 leading-tight">
             {doc.name}
           </CardTitle>
           <Badge variant="secondary" className={`mt-2 text-xs ${getCategoryColor(doc.category)}`}>
@@ -157,7 +157,7 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
       
       <div className="flex-1 flex flex-col">
         {doc.description && (
-          <CardDescription className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+          <CardDescription className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
             {doc.description}
           </CardDescription>
         )}
@@ -209,7 +209,7 @@ export function ToolkitTabs() {
           <div className="flex items-start space-x-3">
             {getFileIcon(previewDocument.type)}
             <div className="min-w-0 flex-1">
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 leading-tight">
                 {previewDocument.name}
               </h2>
               <Badge variant="secondary" className={`mt-2 text-xs ${getCategoryColor(previewDocument.category)}`}>
@@ -263,10 +263,10 @@ export function ToolkitTabs() {
           <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 font-roboto leading-tight">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 font-roboto leading-tight">
             Toolkit & Resources
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 leading-tight mt-1">
+          <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-tight mt-1">
             Essential documents, guidelines, and resources for volunteers and hosts
           </p>
         </div>

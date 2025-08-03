@@ -120,11 +120,11 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "scheduled": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "in_progress": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "completed": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-      case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+      case "scheduled": return "bg-blue-100 text-blue-800
+      case "in_progress": return "bg-green-100 text-green-800
+      case "completed": return "bg-gray-100 text-gray-800
+      case "cancelled": return "bg-red-100 text-red-800
+      default: return "bg-gray-100 text-gray-800
     }
   };
 
@@ -153,8 +153,8 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
@@ -164,7 +164,7 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
     <div className="space-y-6">
       {/* Navigation Header - only show when not embedded */}
       {!isEmbedded && (
-      <div className="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-3 pb-4 border-b border-gray-200"
         <Button 
           variant="outline" 
           size="sm"
@@ -177,7 +177,7 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <span>Meetings</span>
           <span>•</span>
-          <span className="text-gray-900 dark:text-white font-medium">Calendar</span>
+          <span className="text-gray-900 font-medium">Calendar</span>
         </div>
       </div>
       )}
@@ -185,12 +185,12 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-            <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+            <Calendar className="w-6 h-6 text-blue-600 />"
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Meeting Calendar</h1>
-            <p className="text-gray-600 dark:text-gray-400">Schedule and manage team meetings and events</p>
+            <h1 className="text-xl font-bold text-gray-900 Calendar</h1>"
+            <p className="text-gray-600 and manage team meetings and events</p>"
           </div>
         </div>
         <Button onClick={() => setIsCreating(true)} className="self-start">
@@ -207,7 +207,7 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
                   <Calendar className="w-8 h-8 text-blue-500" />
                   <div>
                     <p className="text-2xl font-bold">{upcomingMeetings.length}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Upcoming</p>
+                    <p className="text-sm text-gray-600"
                   </div>
                 </div>
               </CardContent>
@@ -218,7 +218,7 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
                   <Clock className="w-8 h-8 text-green-500" />
                   <div>
                     <p className="text-2xl font-bold">{pastMeetings.length}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+                    <p className="text-sm text-gray-600"
                   </div>
                 </div>
               </CardContent>
@@ -229,7 +229,7 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
                   <Users className="w-8 h-8 text-purple-500" />
                   <div>
                     <p className="text-2xl font-bold">{meetings.length}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Meetings</p>
+                    <p className="text-sm text-gray-600 Meetings</p>"
                   </div>
                 </div>
               </CardContent>
@@ -324,7 +324,7 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
                               {meeting.status.replace("_", " ")}
                             </Badge>
                           </div>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                             <span className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
                               {formatMeetingDate(meeting.meetingDate)}
@@ -343,10 +343,10 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
                             )}
                           </div>
                           {meeting.description && (
-                            <p className="text-gray-600 dark:text-gray-400 mb-2">{meeting.description}</p>
+                            <p className="text-gray-600 mb-2">{meeting.description}</p>
                           )}
                           {meeting.meetingLink && (
-                            <p className="text-sm text-blue-600 dark:text-blue-400">
+                            <p className="text-sm text-blue-600"
                               Meeting Link: <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">{meeting.meetingLink}</a>
                             </p>
                           )}
@@ -383,7 +383,7 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
                               {meeting.status.replace("_", " ")}
                             </Badge>
                           </div>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600"
                             <span className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
                               {formatMeetingDate(meeting.meetingDate)}
@@ -414,8 +414,8 @@ export default function MeetingCalendar({ isEmbedded = false }: MeetingCalendarP
             <Card>
               <CardContent className="text-center py-12">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2">No meetings scheduled</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Start by scheduling your first team meeting</p>
+                <h3 className="text-base font-medium text-gray-900 mb-2">No meetings scheduled</h3>
+                <p className="text-gray-600 mb-4">Start by scheduling your first team meeting</p>
                 <Button onClick={() => setIsCreating(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Schedule First Meeting

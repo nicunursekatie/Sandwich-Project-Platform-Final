@@ -40,7 +40,7 @@ export function Filters({
   const hasActiveFilters = searchTerm || hostFilter !== "all" || dateFilter || sortBy !== "date-desc";
 
   return (
-    <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
@@ -99,10 +99,10 @@ export function Filters({
         </div>
       </div>
       
-      <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+      <div className="flex justify-between items-center text-sm text-gray-600"
         <span>Showing {collections.length} collections</span>
         {hasActiveFilters && (
-          <span className="text-blue-600 dark:text-blue-400">
+          <span className="text-blue-600"
             Filters active
           </span>
         )}
