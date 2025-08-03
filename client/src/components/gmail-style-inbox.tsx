@@ -120,6 +120,7 @@ export default function GmailStyleInbox() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMessageListCollapsed, setIsMessageListCollapsed] = useState(false);
   const [screenSize, setScreenSize] = useState('desktop');
+  const [showOldKudos, setShowOldKudos] = useState(false);
 
   // Responsive behavior with comprehensive breakpoint strategy
   useEffect(() => {
@@ -193,48 +194,41 @@ export default function GmailStyleInbox() {
     enabled: activeFolder === "drafts",
   });
 
-  // Fetch kudos
+  // Fetch kudos with proper permission check
   const { data: kudos = [], refetch: refetchKudos } = useQuery({
-    queryKey: ["/api/messaging/kudos"],
+    queryKey: ["/api/emails/kudos"],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', '/api/messaging/kudos');
+        const response = await apiRequest('GET', '/api/emails/kudos');
         return response || [];
       } catch (error) {
         console.error('Error fetching kudos:', error);
         return [];
       }
     },
+    enabled: !!user && hasPermission(user, PERMISSIONS.VIEW_KUDOS),
   });
 
-  // Mark kudos as read mutation
-  const markKudosReadMutation = useMutation({
-    mutationFn: async (kudosIds: number[]) => {
-      return await apiRequest('POST', '/api/messaging/kudos/mark-read', { kudosIds });
+  // Mark individual kudos as read mutation
+  const markKudosAsReadMutation = useMutation({
+    mutationFn: async (messageId: number) => {
+      return apiRequest("POST", `/api/emails/${messageId}/read`);
     },
     onSuccess: () => {
       refetchKudos();
+      queryClient.invalidateQueries({ queryKey: ["/api/emails/kudos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails/unread-count"] });
       queryClient.invalidateQueries({ queryKey: ['/api/message-notifications/unread-counts'] });
-    }
+    },
+    onError: (error) => {
+      console.error('Failed to mark kudos as read:', error);
+    },
   });
 
-  // Mark all visible kudos as read when the kudos section is viewed
-  useEffect(() => {
-    if (activeFolder === "inbox" && kudos && kudos.length > 0) {
-      const unreadKudosIds = kudos
-        .filter((kudo: any) => !kudo.isRead)
-        .map((kudo: any) => kudo.id);
-      
-      if (unreadKudosIds.length > 0) {
-        // Mark as read after a short delay to allow user to see them
-        const timer = setTimeout(() => {
-          markKudosReadMutation.mutate(unreadKudosIds);
-        }, 2000);
-        
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [activeFolder, kudos]);
+  const markKudosAsRead = (messageId: number) => {
+    markKudosAsReadMutation.mutate(messageId);
+  };
 
   // Auto-save draft mutation
   const saveDraftMutation = useMutation({
@@ -747,59 +741,134 @@ export default function GmailStyleInbox() {
             )}
           </div>
 
-          {/* Kudos Section - Only show in inbox and when there are kudos and user has permission */}
-          {activeFolder === "inbox" && kudos && kudos.length > 0 && hasPermission(user, PERMISSIONS.VIEW_KUDOS) && (
-            <div className="border-b bg-gradient-to-r from-yellow-50 to-orange-50 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Trophy className="h-5 w-5 text-yellow-600" />
-                <h3 className="text-lg font-bold text-yellow-800">🎉 You've Received Kudos!</h3>
-                <Badge className="bg-yellow-500 text-white">{kudos.length}</Badge>
-              </div>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {kudos.slice(0, 3).map((kudo: any) => (
-                  <div 
-                    key={kudo.id} 
-                    onClick={() => {
-                      // Create a message object that matches the expected format
-                      const kudosMessage = {
-                        id: kudo.id,
-                        sender: kudo.sender,
-                        senderName: kudo.senderName,
-                        subject: `Kudos ${kudo.projectTitle ? `for ${kudo.projectTitle}` : ''}`,
-                        content: kudo.message || kudo.content,
-                        createdAt: kudo.createdAt,
-                        isRead: kudo.isRead,
-                        recipients: [],
-                        isKudos: true, // Flag to identify this as a kudos message
-                        contextType: kudo.contextType,
-                        projectTitle: kudo.projectTitle,
-                        entityName: kudo.entityName
-                      };
-                      setSelectedMessage(kudosMessage);
-                      setActiveFolder("inbox");
-                    }}
-                    className="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm border border-yellow-200 cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 transition-colors"
-                  >
-                    <Heart className="h-4 w-4 text-red-500 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        <span className="text-yellow-700 font-bold">{kudo.senderName}</span> sent you kudos
-                        {kudo.projectTitle && <span className="text-gray-600"> for "{kudo.projectTitle}"</span>}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">{kudo.message}</p>
-                    </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
-                      {formatDistanceToNow(new Date(kudo.createdAt), { addSuffix: true })}
-                    </span>
+          {/* Kudos Section - Only show in inbox when user has permission */}
+          {activeFolder === "inbox" && hasPermission(user, PERMISSIONS.VIEW_KUDOS) && (
+            <>
+              {/* Unread Kudos Section */}
+              {kudos && kudos.filter((k: any) => !k.isRead).length > 0 && (
+                <div className="border-b bg-gradient-to-r from-yellow-50 to-orange-50 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Trophy className="h-5 w-5 text-yellow-600" />
+                    <h3 className="text-lg font-bold text-yellow-800">🎉 New Kudos!</h3>
+                    <Badge className="bg-yellow-500 text-white">
+                      {kudos.filter((k: any) => !k.isRead).length}
+                    </Badge>
                   </div>
-                ))}
-              </div>
-              {kudos.length > 3 && (
-                <p className="text-xs text-yellow-700 mt-2 font-medium">
-                  + {kudos.length - 3} more kudos received
-                </p>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {kudos.filter((k: any) => !k.isRead).slice(0, 3).map((kudo: any) => (
+                      <div 
+                        key={kudo.id} 
+                        onClick={() => {
+                          // Mark as read when clicked
+                          markKudosAsRead(kudo.id);
+                          
+                          // Create a message object that matches the expected format
+                          const kudosMessage = {
+                            id: kudo.id,
+                            sender: kudo.sender,
+                            senderName: kudo.senderName,
+                            subject: `Kudos ${kudo.projectTitle ? `for ${kudo.projectTitle}` : ''}`,
+                            content: kudo.message || kudo.content,
+                            createdAt: kudo.createdAt,
+                            isRead: true, // Mark as read immediately
+                            recipients: [],
+                            isKudos: true,
+                            contextType: kudo.contextType,
+                            projectTitle: kudo.projectTitle,
+                            entityName: kudo.entityName
+                          };
+                          setSelectedMessage(kudosMessage);
+                          setActiveFolder("inbox");
+                        }}
+                        className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm border-2 border-yellow-300 cursor-pointer hover:bg-yellow-50 hover:border-yellow-400 transition-colors animate-pulse"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Heart className="h-5 w-5 text-red-500 flex-shrink-0" />
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse flex-shrink-0"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">
+                            <span className="text-yellow-700 font-bold">{kudo.senderName}</span> sent you kudos
+                            {kudo.projectTitle && <span className="text-gray-600"> for "{kudo.projectTitle}"</span>}
+                          </p>
+                          <p className="text-xs text-gray-700 truncate font-medium">{kudo.message}</p>
+                        </div>
+                        <span className="text-xs text-yellow-600 flex-shrink-0 font-medium">
+                          {formatDistanceToNow(new Date(kudo.createdAt), { addSuffix: true })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {kudos.filter((k: any) => !k.isRead).length > 3 && (
+                    <p className="text-xs text-yellow-700 mt-2 font-medium">
+                      + {kudos.filter((k: any) => !k.isRead).length - 3} more new kudos
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
+
+              {/* Old Kudos Section - Collapsible */}
+              {kudos && kudos.filter((k: any) => k.isRead).length > 0 && (
+                <div className="border-b bg-gray-50 p-4">
+                  <button
+                    onClick={() => setShowOldKudos(!showOldKudos)}
+                    className="flex items-center gap-2 w-full text-left hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                  >
+                    <Trophy className="h-4 w-4 text-gray-500" />
+                    <h4 className="text-sm font-medium text-gray-700">Old Kudos</h4>
+                    <Badge variant="outline" className="text-xs text-gray-500 border-gray-300">
+                      {kudos.filter((k: any) => k.isRead).length}
+                    </Badge>
+                    <ChevronRight className={`h-4 w-4 text-gray-500 ml-auto transition-transform ${showOldKudos ? 'rotate-90' : ''}`} />
+                  </button>
+                  
+                  {showOldKudos && (
+                    <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
+                      {kudos.filter((k: any) => k.isRead).slice(0, 5).map((kudo: any) => (
+                        <div 
+                          key={kudo.id} 
+                          onClick={() => {
+                            const kudosMessage = {
+                              id: kudo.id,
+                              sender: kudo.sender,
+                              senderName: kudo.senderName,
+                              subject: `Kudos ${kudo.projectTitle ? `for ${kudo.projectTitle}` : ''}`,
+                              content: kudo.message || kudo.content,
+                              createdAt: kudo.createdAt,
+                              isRead: kudo.isRead,
+                              recipients: [],
+                              isKudos: true,
+                              contextType: kudo.contextType,
+                              projectTitle: kudo.projectTitle,
+                              entityName: kudo.entityName
+                            };
+                            setSelectedMessage(kudosMessage);
+                            setActiveFolder("inbox");
+                          }}
+                          className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          <Heart className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-600 truncate">
+                              <span className="font-medium">{kudo.senderName}</span>
+                              {kudo.projectTitle && <span className="text-gray-500"> • {kudo.projectTitle}</span>}
+                            </p>
+                          </div>
+                          <span className="text-xs text-gray-400 flex-shrink-0">
+                            {formatDistanceToNow(new Date(kudo.createdAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                      ))}
+                      {kudos.filter((k: any) => k.isRead).length > 5 && (
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                          + {kudos.filter((k: any) => k.isRead).length - 5} more
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           {/* Message List */}

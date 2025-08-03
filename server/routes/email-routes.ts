@@ -181,4 +181,71 @@ router.get('/search', isAuthenticated, async (req: any, res) => {
   }
 });
 
+// Get kudos for current user - integrates with messaging system
+router.get('/kudos', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    console.log(`[Email API] Getting kudos for user: ${user.email}`);
+
+    // Import here to avoid circular dependency
+    const { messagingService } = require('../services/messaging-service');
+    const kudos = await messagingService.getReceivedKudos(user.id);
+
+    // Format kudos for Gmail interface
+    const formattedKudos = kudos.map((kudo: any) => ({
+      id: kudo.id,
+      sender: kudo.sender,
+      senderName: kudo.senderName,
+      message: kudo.message,
+      content: kudo.message,
+      projectTitle: kudo.projectTitle,
+      entityName: kudo.entityName,
+      contextType: kudo.contextType,
+      contextId: kudo.contextId,
+      createdAt: kudo.createdAt,
+      sentAt: kudo.sentAt,
+      isRead: kudo.isRead,
+      readAt: kudo.readAt
+    }));
+
+    console.log(`[Email API] Found ${formattedKudos.length} kudos`);
+    res.json(formattedKudos);
+  } catch (error) {
+    console.error('[Email API] Error fetching kudos:', error);
+    res.status(500).json({ message: 'Failed to fetch kudos' });
+  }
+});
+
+// Mark message as read - works for both emails and kudos
+router.post('/:messageId/read', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const messageId = parseInt(req.params.messageId);
+    if (isNaN(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
+    console.log(`[Email API] Marking message ${messageId} as read for user: ${user.email}`);
+
+    // Import here to avoid circular dependency
+    const { messagingService } = require('../services/messaging-service');
+    
+    // Mark the message as read in messageRecipients
+    await messagingService.markMessageRead(user.id, messageId);
+
+    res.json({ success: true, message: 'Message marked as read' });
+  } catch (error) {
+    console.error('[Email API] Error marking message as read:', error);
+    res.status(500).json({ message: 'Failed to mark message as read' });
+  }
+});
+
 export default router;
