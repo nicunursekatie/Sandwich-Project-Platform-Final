@@ -163,7 +163,26 @@ router.get("/kudos/check", async (req, res) => {
 });
 
 /**
- * Get received kudos for current user
+ * Get received kudos for current user (main endpoint for inbox)
+ */
+router.get("/kudos", async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const kudosMessages = await messagingService.getReceivedKudos(user.id);
+
+    res.status(200).json(kudosMessages);
+  } catch (error) {
+    console.error("Error fetching received kudos:", error);
+    res.status(500).json({ error: "Failed to fetch kudos", details: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * Get received kudos for current user (legacy endpoint)
  */
 router.get("/kudos/received", async (req, res) => {
   try {
@@ -178,6 +197,35 @@ router.get("/kudos/received", async (req, res) => {
   } catch (error) {
     console.error("Error fetching received kudos:", error);
     res.status(500).json({ error: "Failed to fetch kudos", details: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * Mark kudos as read
+ */
+router.post("/kudos/mark-read", async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const { kudosIds } = req.body;
+    
+    if (!Array.isArray(kudosIds) || kudosIds.length === 0) {
+      return res.status(400).json({ error: "Invalid kudos IDs" });
+    }
+
+    // Mark kudos messages as read in the messageRecipients table
+    const result = await messagingService.markKudosAsRead(user.id, kudosIds);
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Marked ${result.count || kudosIds.length} kudos as read` 
+    });
+  } catch (error) {
+    console.error("Error marking kudos as read:", error);
+    res.status(500).json({ error: "Failed to mark kudos as read" });
   }
 });
 
