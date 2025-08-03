@@ -85,7 +85,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
           
           // Count unread messages in this channel
           const unreadCount = await db
-            .select({ count: sql<number>`COUNT(*)` })
+            .select({ count: sql<number>`COUNT(*)::int` })
             .from(chatMessages)
             .leftJoin(
               chatMessageReads, 
@@ -104,7 +104,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
               )
             );
           
-          const count = unreadCount[0]?.count || 0;
+          const count = parseInt(String(unreadCount[0]?.count || 0));
           unreadCounts[key as keyof typeof unreadCounts] = count;
         }
 
@@ -114,7 +114,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
         // Only count messages where user is recipient, never where user is sender
         try {
           const directMessageCount = await db
-            .select({ count: sql<number>`COUNT(*)` })
+            .select({ count: sql<number>`COUNT(*)::int` })
             .from(messageRecipients)
             .innerJoin(messages, eq(messages.id, messageRecipients.messageId))
             .where(
@@ -132,7 +132,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
               )
             );
 
-          unreadCounts.direct = directMessageCount[0]?.count || 0;
+          unreadCounts.direct = parseInt(String(directMessageCount[0]?.count || 0));
           unreadCounts.groups = 0; // Groups functionality not implemented yet
         } catch (directMsgError) {
           console.error('Error getting direct message counts:', directMsgError);
@@ -143,7 +143,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
         // Get unread kudos count
         try {
           const kudosCount = await db
-            .select({ count: sql<number>`COUNT(*)` })
+            .select({ count: sql<number>`COUNT(*)::int` })
             .from(kudosTracking)
             .innerJoin(messages, eq(kudosTracking.messageId, messages.id))
             .where(
@@ -154,7 +154,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
               )
             );
 
-          unreadCounts.kudos = kudosCount[0]?.count || 0;
+          unreadCounts.kudos = parseInt(String(kudosCount[0]?.count || 0));
         } catch (kudosError) {
           console.error('Error getting kudos counts:', kudosError);
           unreadCounts.kudos = 0;
