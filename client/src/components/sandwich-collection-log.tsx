@@ -1051,11 +1051,11 @@ export default function SandwichCollectionLog() {
       collectionDate: newCollectionData.collectionDate,
       hostName: newCollectionGroupOnlyMode ? "Groups - Unassigned" : newCollectionData.hostName,
       individualSandwiches: newCollectionGroupOnlyMode ? 0 : parseInt(newCollectionData.individualSandwiches) || 0,
-      // New schema: separate group columns instead of JSON
-      group1Name: validGroupCollections[0]?.groupName.trim() || null,
-      group1Count: validGroupCollections[0]?.sandwichCount || null,
-      group2Name: validGroupCollections[1]?.groupName.trim() || null,
-      group2Count: validGroupCollections[1]?.sandwichCount || null,
+      // New schema: separate group columns (snake_case to match database)
+      group1_name: validGroupCollections[0]?.groupName.trim() || null,
+      group1_count: validGroupCollections[0]?.sandwichCount || null,
+      group2_name: validGroupCollections[1]?.groupName.trim() || null,
+      group2_count: validGroupCollections[1]?.sandwichCount || null,
     };
 
     createMutation.mutate(submissionData);
