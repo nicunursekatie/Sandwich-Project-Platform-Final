@@ -681,14 +681,14 @@ export class MessagingService {
         return { count: 0 };
       }
 
-      const messageIds = kudosEntries.map(entry => entry.messageId);
+      const messageIds = kudosEntries.map(entry => entry.messageId).filter(id => id !== null) as number[];
 
       // Mark the corresponding message recipients as read
       const result = await db
         .update(messageRecipients)
         .set({ 
           read: true, 
-          readAt: new Date().toISOString() 
+          readAt: sql`NOW()` 
         })
         .where(
           and(
@@ -720,7 +720,7 @@ export class MessagingService {
         })
         .from(kudosTracking)
         .where(eq(kudosTracking.recipientId, userId))
-        .orderBy(desc(kudosTracking.createdAt));
+        .orderBy(desc(kudosTracking.sentAt));
 
       // Get the actual messages with sender information and read status
       const kudosMessages = await Promise.all(
@@ -744,7 +744,7 @@ export class MessagingService {
                 eq(messages.id, messageRecipients.messageId),
                 eq(messageRecipients.recipientId, userId)
               ))
-              .where(eq(messages.id, entry.messageId))
+              .where(eq(messages.id, entry.messageId!))
               .limit(1);
 
             if (!messageResult) return null;
