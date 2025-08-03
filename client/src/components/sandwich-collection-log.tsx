@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import BulkDataManager from "@/components/bulk-data-manager";
-import SandwichCollectionForm from "@/components/sandwich-collection-form";
+import CollectionFormSelector from "@/components/collection-form-selector";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -1289,11 +1289,12 @@ export default function SandwichCollectionLog() {
       {/* Embedded Submit Collection Form - Full width */}
       {showSubmitForm && (
         <div className="mb-4">
-          <SandwichCollectionForm 
+          <CollectionFormSelector 
             onSuccess={() => {
               setShowSubmitForm(false);
               queryClient.invalidateQueries({ queryKey: ["/api/sandwich-collections"] });
-            }} 
+            }}
+            onCancel={() => setShowSubmitForm(false)}
           />
         </div>
       )}

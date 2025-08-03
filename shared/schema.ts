@@ -404,9 +404,9 @@ export const weeklyReports = pgTable("weekly_reports", {
 
 export const sandwichCollections = pgTable("sandwich_collections", {
   id: serial("id").primaryKey(),
-  collectionDate: text("collection_date").notNull(),
+  collectionDate: text("collection_date").notNull(), // The date sandwiches were actually collected
   hostName: text("host_name").notNull(),
-  individualSandwiches: integer("individual_sandwiches").notNull(),
+  individualSandwiches: integer("individual_sandwiches").notNull().default(0),
   // Group collection columns (Phase 5: JSON column removed)
   group1Name: text("group1_name"), // Name of first group (nullable)
   group1Count: integer("group1_count"), // Count for first group (nullable)
@@ -414,7 +414,9 @@ export const sandwichCollections = pgTable("sandwich_collections", {
   group2Count: integer("group2_count"), // Count for second group (nullable)
   createdBy: text("created_by"), // User ID who created this entry
   createdByName: text("created_by_name"), // Display name of creator
-  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(), // When form was submitted
+  // Add field to track if this was submitted via walkthrough
+  submissionMethod: text("submission_method").default("standard"), // 'standard' or 'walkthrough'
 });
 
 export const meetingMinutes = pgTable("meeting_minutes", {

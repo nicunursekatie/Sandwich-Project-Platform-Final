@@ -102,6 +102,7 @@ export default function CompactCollectionForm({
       collectionDate: date,
       hostName: location,
       individualSandwiches: individualCount,
+      submissionMethod: "standard", // Track that this was submitted via standard form
     };
 
     // Convert groupCollections array to individual group fields (max 2 groups)
@@ -136,14 +137,14 @@ export default function CompactCollectionForm({
           <div>
             <div className="flex items-center gap-1 mb-1">
               <label className="text-base md:text-sm font-medium text-[#236383]">
-                Date
+                Collection Date
               </label>
               <Tooltip>
                 <TooltipTrigger>
                   <HelpCircle className="h-5 w-5 md:h-4 md:w-4 text-gray-400" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Enter the Wednesday on which you collected the sandwiches</p>
+                  <p className="text-sm">Enter the date you actually collected the sandwiches, not today's date. We track when you submit the form separately.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
