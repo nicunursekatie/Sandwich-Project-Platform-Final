@@ -334,18 +334,49 @@ export default function ProjectsClean() {
         </div>
 
         {/* Kudos Button for Completed Projects */}
-        {project.status === 'completed' && project.assigneeName && (
+        {project.status === 'completed' && (
           <div className="mt-3 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-            <SendKudosButton
-              recipientId={project.assigneeId?.toString() || ''}
-              recipientName={project.assigneeName}
-              contextType="project"
-              contextId={project.id.toString()}
-              contextTitle={project.title}
-              className="w-full"
-              size="sm"
-              variant="outline"
-            />
+            <div className="flex flex-wrap gap-2">
+              {/* Handle new format with assigneeIds array */}
+              {(project as any).assigneeIds && (project as any).assigneeIds.length > 0 && (project as any).assigneeIds.map((assigneeId: string, index: number) => {
+                const assigneeName = (project as any).assigneeNames && (project as any).assigneeNames[index] 
+                  ? (project as any).assigneeNames[index] 
+                  : `Team Member ${index + 1}`;
+                
+                return (
+                  <SendKudosButton
+                    key={`${project.id}-${assigneeId}`}
+                    recipientId={assigneeId}
+                    recipientName={assigneeName}
+                    contextType="project"
+                    contextId={project.id.toString()}
+                    contextTitle={project.title}
+                    size="sm"
+                    variant="outline"
+                  />
+                );
+              })}
+              
+              {/* Handle legacy format with single assignee */}
+              {(!((project as any).assigneeIds) || (project as any).assigneeIds.length === 0) && project.assigneeId && project.assigneeName && (
+                <SendKudosButton
+                  recipientId={project.assigneeId.toString()}
+                  recipientName={project.assigneeName}
+                  contextType="project"
+                  contextId={project.id.toString()}
+                  contextTitle={project.title} 
+                  size="sm"
+                  variant="outline"
+                />
+              )}
+              
+              {/* Show warning for legacy assignments without proper user IDs */}
+              {(!((project as any).assigneeIds) || (project as any).assigneeIds.length === 0) && !project.assigneeId && project.assigneeName && (
+                <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">
+                  ⚠️ Legacy assignment: {project.assigneeName}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
