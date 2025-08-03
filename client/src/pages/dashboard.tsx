@@ -300,12 +300,12 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
   return (
     <HelpProvider>
-      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen flex flex-col overflow-x-hidden">
+      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
       {/* Announcement Banner */}
       <AnnouncementBanner />
       
       {/* Top Header */}
-      <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-3 flex items-center relative z-50">
+      <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px]">
         <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
           {/* Mobile menu button - positioned first for easy access */}
           <button
@@ -416,7 +416,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         </div>
       </div>
 
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative pt-[60px] md:pt-0">
         {/* Mobile overlay */}
         {isMobileMenuOpen && (
           <div 
