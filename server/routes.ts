@@ -1139,6 +1139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Invalidate cache when new collection is created
         QueryOptimizer.invalidateCache("sandwich-collections");
+        QueryOptimizer.invalidateCache("sandwich-collections-stats");
 
         res.status(201).json(collection);
       } catch (error) {
