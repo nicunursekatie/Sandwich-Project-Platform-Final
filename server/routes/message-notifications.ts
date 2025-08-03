@@ -1,6 +1,6 @@
 import { Request, Response, Express } from "express";
 import { eq, sql, and, gt, or, isNull } from "drizzle-orm";
-import { messages, messageRecipients, conversations, conversationParticipants, chatMessages, chatMessageReads } from "../../shared/schema";
+import { messages, messageRecipients, conversations, conversationParticipants, chatMessages, chatMessageReads, kudosTracking, users } from "../../shared/schema";
 import { db } from "../db";
 import { isAuthenticated } from "../temp-auth";
 
@@ -62,6 +62,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
         core_team: 0,
         direct: 0,
         groups: 0,
+        kudos: 0,
         total: 0
       };
 
@@ -139,11 +140,31 @@ const getUnreadCounts = async (req: Request, res: Response) => {
           unreadCounts.groups = 0;
         }
 
+        // Get unread kudos count
+        try {
+          const kudosCount = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(kudosTracking)
+            .innerJoin(messages, eq(kudosTracking.messageId, messages.id))
+            .where(
+              and(
+                eq(kudosTracking.recipientId, userId),
+                eq(messages.read, false),
+                isNull(messages.deletedAt)
+              )
+            );
+
+          unreadCounts.kudos = kudosCount[0]?.count || 0;
+        } catch (kudosError) {
+          console.error('Error getting kudos counts:', kudosError);
+          unreadCounts.kudos = 0;
+        }
+
         // Calculate total
         unreadCounts.total = unreadCounts.general + unreadCounts.committee + 
                            unreadCounts.hosts + unreadCounts.drivers + 
                            unreadCounts.recipients + unreadCounts.core_team + 
-                           unreadCounts.direct + unreadCounts.groups;
+                           unreadCounts.direct + unreadCounts.groups + unreadCounts.kudos;
 
       } catch (dbError) {
         console.error('Database query error in unread counts:', dbError);

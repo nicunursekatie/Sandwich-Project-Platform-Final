@@ -36,18 +36,19 @@ export default function SendKudosButton({
     mutationFn: async () => {
       const kudosMessage = generateKudosMessage(recipientName, contextType, contextTitle);
       
-      return await apiRequest('POST', '/api/messages', {
+      return await apiRequest('POST', '/api/messaging/kudos', {
         recipientId,
-        subject: `Kudos for ${contextTitle}!`,
-        content: kudosMessage,
         contextType,
         contextId,
-        contextTitle
+        entityName: contextTitle,
+        content: kudosMessage
       });
     },
     onSuccess: () => {
       setHasSentKudos(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messaging/kudos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messaging/kudos/received"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/message-notifications/unread-counts"] });
       toast({
         description: `Kudos sent to ${recipientName}!`,
         duration: 3000
