@@ -1044,20 +1044,18 @@ export default function SandwichCollectionLog() {
       }
     }
 
-    // Format group collections as JSON to match the schema
+    // Format group collections to match the new schema (separate columns)
     const validGroupCollections = newGroupCollections.filter(group => group.sandwichCount > 0);
-    const formattedGroupCollections = validGroupCollections.length > 0 
-      ? JSON.stringify(validGroupCollections.map(g => ({ 
-          name: g.groupName.trim() || "Unnamed Group", 
-          count: g.sandwichCount 
-        })))
-      : '[]';
-
+    
     const submissionData = {
       collectionDate: newCollectionData.collectionDate,
       hostName: newCollectionGroupOnlyMode ? "Groups - Unassigned" : newCollectionData.hostName,
       individualSandwiches: newCollectionGroupOnlyMode ? 0 : parseInt(newCollectionData.individualSandwiches) || 0,
-      groupCollections: formattedGroupCollections
+      // New schema: separate group columns instead of JSON
+      group1Name: validGroupCollections[0]?.groupName.trim() || null,
+      group1Count: validGroupCollections[0]?.sandwichCount || null,
+      group2Name: validGroupCollections[1]?.groupName.trim() || null,
+      group2Count: validGroupCollections[1]?.sandwichCount || null,
     };
 
     createMutation.mutate(submissionData);
