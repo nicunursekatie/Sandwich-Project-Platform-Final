@@ -388,7 +388,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
             
             <div className="space-y-4 border-t pt-4">
               <Input
-                placeholder="Group name (optional)"
+                placeholder="e.g., The Weber School"
                 value={currentGroupName}
                 onChange={(e) => setCurrentGroupName(e.target.value)}
               />
