@@ -29,7 +29,7 @@ interface MeetingAgendaProps {
 
 export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps) {
   const { user } = useAuth();
-  const canModifyAgenda = user?.role !== 'committee_member';
+  const canModifyAgenda = (user as any)?.role !== 'committee_member';
   const [, setLocation] = useLocation();
   
   const [isCreating, setIsCreating] = useState(false);
@@ -37,7 +37,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    submittedBy: user?.firstName || "User"
+    submittedBy: (user as any)?.firstName || "User"
   });
   const { toast } = useToast();
 
@@ -61,7 +61,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agenda-items"] });
       setIsCreating(false);
-      setFormData({ title: "", description: "", submittedBy: user?.firstName || "User" });
+      setFormData({ title: "", description: "", submittedBy: (user as any)?.firstName || "User" });
       toast({ title: "Agenda item created successfully" });
     },
   });
@@ -184,7 +184,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
             <div className="flex items-center gap-3">
               <ListTodo className="w-8 h-8 text-blue-500" />
               <div>
-                <p className="text-2xl font-bold">{agendaItems.length}</p>
+                <p className="text-2xl font-bold">{(agendaItems as AgendaItem[]).length}</p>
                 <p className="text-sm text-gray-600">Total Items</p>
               </div>
             </div>
@@ -363,7 +363,7 @@ export default function MeetingAgenda({ isEmbedded = false }: MeetingAgendaProps
         ))}
       </div>
 
-      {agendaItems.length === 0 && !isCreating && (
+      {(agendaItems as AgendaItem[]).length === 0 && !isCreating && (
         <Card>
           <CardContent className="text-center py-12">
             <ListTodo className="w-12 h-12 text-gray-400 mx-auto mb-4" />
