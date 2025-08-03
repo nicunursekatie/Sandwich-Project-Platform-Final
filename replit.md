@@ -8,6 +8,8 @@ This is a full-stack sandwich collection management application designed for The
 - **UI Component Transparency**: Resolved widespread black element issues in Select, Input, Button, Checkbox, and Textarea components by removing problematic CSS variable dependencies.
 - **Message Composer**: Fixed user dropdown population in message composer after UI component fixes.
 - **Collapsible Navigation**: Implemented collapsible sidebar that shrinks to icon-only view while remaining visually present and easily expandable. Includes smooth transitions and tooltip support for collapsed state.
+- **Project Management UX**: Enhanced project edit dialogs with comprehensive forms, improved email display for assignees, repositioned completion checkbox to left of project title with clear visual states (empty checkbox for incomplete, filled checkmark for completed), and changed "Custom assignment" to "External volunteer" for better clarity.
+- **Google Analytics Integration**: Implemented comprehensive tracking with both HTML and dynamic script loading, configured with measurement ID G-9M4XDZGN68, excludes development accounts from analytics data.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
