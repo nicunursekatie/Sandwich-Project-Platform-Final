@@ -4,12 +4,14 @@
 This is a full-stack sandwich collection management application designed for The Sandwich Project, a nonprofit organization. It facilitates tracking sandwich donations and distributions, offering comprehensive data management, analytics, and operational tools for volunteers, hosts, recipients, and collection activities. The vision is to streamline operations, enhance data visibility, and support the organization's growth and impact in addressing food insecurity.
 
 ## Recent Critical Fixes (August 2025)
+- **Kudos System Integration**: Fixed critical kudos visibility issues by integrating kudos directly into Gmail-style inbox with prominent yellow/orange highlight section at top. Resolved empty recipient ID validation errors in SendKudosButton for both project cards and task completion. Added proper read tracking with messageRecipients table integration and automatic mark-as-read functionality.
 - **Email Read Status Bug**: Fixed critical issue where senders viewing sent messages incorrectly marked emails as read for recipients. Now only recipients can change read status.
 - **UI Component Transparency**: Resolved widespread black element issues in Select, Input, Button, Checkbox, and Textarea components by removing problematic CSS variable dependencies.
 - **Message Composer**: Fixed user dropdown population in message composer after UI component fixes.
 - **Collapsible Navigation**: Implemented collapsible sidebar that shrinks to icon-only view while remaining visually present and easily expandable. Includes smooth transitions and tooltip support for collapsed state.
 - **Project Management UX**: Enhanced project edit dialogs with comprehensive forms, improved email display for assignees, repositioned completion checkbox to left of project title with clear visual states (empty checkbox for incomplete, filled checkmark for completed), and changed "Custom assignment" to "External volunteer" for better clarity.
 - **Google Analytics Integration**: Implemented comprehensive tracking with both HTML and dynamic script loading, configured with measurement ID G-9M4XDZGN68, excludes development accounts from analytics data.
+- **Phone Directory Dark Mode**: Fixed all hardcoded inline styles with proper Tailwind dark mode classes for better contrast and readability.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
