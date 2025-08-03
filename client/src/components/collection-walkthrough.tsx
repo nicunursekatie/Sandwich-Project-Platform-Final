@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ArrowRight, ArrowLeft, Check, Calendar, Users, User, AlertCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Calendar, Users, User, AlertCircle, MapPin } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -476,39 +476,79 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
               <p className="text-sm sm:text-base text-gray-600">Please review your collection details</p>
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
-              <div className="flex justify-between items-start">
-                <span className="font-medium text-sm sm:text-base">Collection Date:</span>
-                <span className="text-sm sm:text-base text-right">{new Date(actualCollectionDate + "T12:00:00").toLocaleDateString()}</span>
+            <div className="space-y-4">
+              {/* Collection Date Section */}
+              <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-[#236383]" />
+                  <span className="font-semibold text-[#236383] text-sm sm:text-base">Collection Date</span>
+                </div>
+                <div className="text-base sm:text-lg font-medium text-gray-900">
+                  {new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </div>
               </div>
-              <div className="flex justify-between items-start">
-                <span className="font-medium text-sm sm:text-base">Location:</span>
-                <span className="text-sm sm:text-base text-right truncate max-w-[60%]">{hostName}</span>
+
+              {/* Location Section */}
+              <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-4 h-4 text-[#236383]" />
+                  <span className="font-semibold text-[#236383] text-sm sm:text-base">Location</span>
+                </div>
+                <div className="text-base sm:text-lg font-medium text-gray-900">{hostName}</div>
               </div>
-              <div className="flex justify-between items-start">
-                <span className="font-medium text-sm sm:text-base">Individual/Family:</span>
-                <span className="text-sm sm:text-base">{individualCount || 0} sandwiches</span>
+
+              {/* Individual/Family Section */}
+              <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="w-4 h-4 text-[#236383]" />
+                  <span className="font-semibold text-[#236383] text-sm sm:text-base">Individual & Family</span>
+                </div>
+                <div className="text-base sm:text-lg font-medium text-gray-900">
+                  {individualCount || 0} sandwiches
+                </div>
               </div>
+
+              {/* Groups Section */}
               {groups.length > 0 && (
-                <div>
-                  <span className="font-medium text-sm sm:text-base">Groups:</span>
-                  <div className="mt-2 space-y-1">
+                <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-4 h-4 text-[#236383]" />
+                    <span className="font-semibold text-[#236383] text-sm sm:text-base">Groups</span>
+                  </div>
+                  <div className="space-y-2">
                     {groups.map((group, index) => (
-                      <div key={index} className="flex justify-between pl-2 sm:pl-4 items-start">
-                        <span className="text-sm sm:text-base truncate max-w-[60%]">{group.name || "Unnamed Group"}:</span>
-                        <span className="text-sm sm:text-base">{group.count} sandwiches</span>
+                      <div key={index} className="bg-gray-50 rounded-md p-2 sm:p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-sm sm:text-base text-gray-900 truncate max-w-[60%]">
+                            {group.name || "Unnamed Group"}
+                          </span>
+                          <span className="text-sm sm:text-base font-semibold text-[#236383]">
+                            {group.count} sandwiches
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              <div className="flex justify-between text-base sm:text-lg font-semibold pt-2 border-t">
-                <span>Total Sandwiches:</span>
-                <span>{getTotalSandwiches()}</span>
-              </div>
-              <div className="flex justify-between text-xs sm:text-sm text-gray-600">
-                <span>Form Submitted:</span>
-                <span>Today, {new Date().toLocaleDateString()}</span>
+
+              {/* Total Section */}
+              <div className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white rounded-lg p-4 shadow-md">
+                <div className="flex items-center gap-2 mb-2">
+                  <Check className="w-5 h-5" />
+                  <span className="font-semibold text-base sm:text-lg">Total Collection</span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-bold">
+                  {getTotalSandwiches()} sandwiches
+                </div>
+                <div className="text-sm opacity-90 mt-1">
+                  Form submitted: Today, {new Date().toLocaleDateString()}
+                </div>
               </div>
             </div>
           </div>
