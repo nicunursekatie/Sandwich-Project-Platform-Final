@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ArrowRight, ArrowLeft, Check, Calendar, Users, User } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Calendar, Users, User, AlertCircle } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -163,7 +163,11 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
       case 2: return hostName;
       case 3: return individualCount !== null;
       case 4: return hasGroups !== null;
-      case 5: return true; // Group entry is optional
+      case 5: {
+        // Check if there are unsaved group entries
+        const hasUnsavedGroupEntry = (currentGroupName.trim() !== "" || (currentGroupCount !== null && currentGroupCount > 0));
+        return !hasUnsavedGroupEntry; // Can only proceed if there are no unsaved entries
+      }
       default: return false;
     }
   };
@@ -409,6 +413,19 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
               >
                 Add Group
               </Button>
+              
+              {/* Show warning if there are unsaved entries */}
+              {(currentGroupName.trim() !== "" || (currentGroupCount !== null && currentGroupCount > 0)) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-amber-800">
+                      <p className="font-medium">Please add your group before continuing</p>
+                      <p className="text-xs mt-1">Click "Add Group" to save this entry, or clear the fields to skip.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
