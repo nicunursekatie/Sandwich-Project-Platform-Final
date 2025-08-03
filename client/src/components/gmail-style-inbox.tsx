@@ -561,7 +561,7 @@ export default function GmailStyleInbox() {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-white relative">
+    <div className="flex h-[calc(100vh-120px)] bg-white relative min-w-0 max-w-full overflow-hidden">
       {/* Mobile/Tablet Overlay for Sidebar - when sidebar is open as overlay */}
       {!isSidebarCollapsed && (screenSize === 'mobile' || screenSize === 'small-tablet') && (
         <div 
@@ -573,7 +573,7 @@ export default function GmailStyleInbox() {
       {/* Sidebar - Folders (Inbox, Drafts, etc.) */}
       <div className={`
         ${isSidebarCollapsed ? 'hidden' : 'flex'} 
-        ${screenSize === 'large-tablet' ? 'w-48' : 'w-64'} 
+        ${screenSize === 'large-tablet' ? 'w-48' : screenSize === 'desktop' ? 'w-56' : 'w-64'} 
         border-r bg-white flex-col flex-shrink-0
         transition-all duration-300 ease-in-out
         ${(screenSize === 'mobile' || screenSize === 'small-tablet') && !isSidebarCollapsed ? 'fixed left-0 top-0 h-full w-64 z-50' : 'relative'}
@@ -637,15 +637,16 @@ export default function GmailStyleInbox() {
         </ScrollArea>
       </div>
 
-      {/* Message List */}
-      <div className="flex-1 flex bg-white min-w-0">
+      {/* Main Content Area - Message List + Details + Kudos */}
+      <div className="flex-1 flex bg-white min-w-0 overflow-hidden">
+        {/* Message List Panel */}
         <div className={`
           ${isMessageListCollapsed ? 'hidden' : 'flex'} 
-          ${selectedMessage && screenSize === 'desktop' ? 'w-2/5' : ''}
-          ${selectedMessage && screenSize === 'large-tablet' ? 'w-1/2' : ''}
+          ${selectedMessage && screenSize === 'desktop' ? 'w-1/3 min-w-[300px] max-w-[400px]' : ''}
+          ${selectedMessage && screenSize === 'large-tablet' ? 'w-2/5 min-w-[260px]' : ''}
           ${selectedMessage && (screenSize === 'small-tablet' || screenSize === 'mobile') ? 'flex-1' : ''}
           ${!selectedMessage ? 'flex-1' : ''}
-          border-r flex-col bg-white min-w-0
+          border-r flex-col bg-white min-w-0 overflow-hidden
           transition-all duration-300 ease-in-out
         `}>
           {/* Toolbar */}
@@ -744,17 +745,17 @@ export default function GmailStyleInbox() {
           {/* Kudos Section - Only show in inbox when user has permission */}
           {activeFolder === "inbox" && hasPermission(user, PERMISSIONS.VIEW_KUDOS) && (
             <>
-              {/* Unread Kudos Section */}
+              {/* Unread Kudos Section - Improved Responsiveness */}
               {kudos && kudos.filter((k: any) => !k.isRead).length > 0 && (
-                <div className="border-b bg-gradient-to-r from-yellow-50 to-orange-50 p-4">
+                <div className="border-b bg-gradient-to-r from-yellow-50 to-orange-50 p-3 lg:p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Trophy className="h-5 w-5 text-yellow-600" />
-                    <h3 className="text-lg font-bold text-yellow-800">🎉 New Kudos!</h3>
-                    <Badge className="bg-yellow-500 text-white">
+                    <Trophy className="h-4 w-4 lg:h-5 lg:w-5 text-yellow-600 flex-shrink-0" />
+                    <h3 className="text-base lg:text-lg font-bold text-yellow-800">🎉 New Kudos!</h3>
+                    <Badge className="bg-yellow-500 text-white text-xs">
                       {kudos.filter((k: any) => !k.isRead).length}
                     </Badge>
                   </div>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                  <div className="space-y-2 max-h-32 lg:max-h-40 overflow-y-auto">
                     {kudos.filter((k: any) => !k.isRead).slice(0, 3).map((kudo: any) => (
                       <div 
                         key={kudo.id} 
@@ -782,18 +783,18 @@ export default function GmailStyleInbox() {
                         }}
                         className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm border-2 border-yellow-300 cursor-pointer hover:bg-yellow-50 hover:border-yellow-400 transition-colors animate-pulse"
                       >
-                        <div className="flex items-center gap-2">
-                          <Heart className="h-5 w-5 text-red-500 flex-shrink-0" />
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse flex-shrink-0"></div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Heart className="h-4 w-4 lg:h-5 lg:w-5 text-red-500" />
+                          <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-yellow-500 rounded-full animate-pulse"></div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">
+                          <p className="text-xs lg:text-sm font-bold text-gray-900 truncate">
                             <span className="text-yellow-700 font-bold">{kudo.senderName}</span> sent you kudos
                             {kudo.projectTitle && <span className="text-gray-600"> for "{kudo.projectTitle}"</span>}
                           </p>
                           <p className="text-xs text-gray-700 truncate font-medium">{kudo.message}</p>
                         </div>
-                        <span className="text-xs text-yellow-600 flex-shrink-0 font-medium">
+                        <span className="text-xs text-yellow-600 flex-shrink-0 font-medium hidden sm:block">
                           {formatDistanceToNow(new Date(kudo.createdAt), { addSuffix: true })}
                         </span>
                       </div>
@@ -951,13 +952,13 @@ export default function GmailStyleInbox() {
           </ScrollArea>
         </div>
 
-        {/* Message Detail */}
+        {/* Message Detail Panel */}
         <div className={`
-          ${selectedMessage ? 'flex-1' : ''} 
+          ${selectedMessage ? 'flex-1 min-w-0 max-w-none' : ''} 
           ${!selectedMessage && screenSize === 'desktop' ? 'flex flex-1' : ''}
           ${!selectedMessage && screenSize !== 'desktop' ? 'hidden' : ''}
           ${selectedMessage ? 'flex' : ''}
-          flex-col bg-white
+          flex-col bg-white overflow-hidden
         `}>
           {selectedMessage ? (
             <>
