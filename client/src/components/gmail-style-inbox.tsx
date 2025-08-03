@@ -756,7 +756,29 @@ export default function GmailStyleInbox() {
               </div>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {kudos.slice(0, 3).map((kudo: any) => (
-                  <div key={kudo.id} className="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm border border-yellow-200">
+                  <div 
+                    key={kudo.id} 
+                    onClick={() => {
+                      // Create a message object that matches the expected format
+                      const kudosMessage = {
+                        id: kudo.id,
+                        sender: kudo.sender,
+                        senderName: kudo.senderName,
+                        subject: `Kudos ${kudo.projectTitle ? `for ${kudo.projectTitle}` : ''}`,
+                        content: kudo.message || kudo.content,
+                        createdAt: kudo.createdAt,
+                        isRead: kudo.isRead,
+                        recipients: [],
+                        isKudos: true, // Flag to identify this as a kudos message
+                        contextType: kudo.contextType,
+                        projectTitle: kudo.projectTitle,
+                        entityName: kudo.entityName
+                      };
+                      setSelectedMessage(kudosMessage);
+                      setActiveFolder("inbox");
+                    }}
+                    className="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm border border-yellow-200 cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 transition-colors"
+                  >
                     <Heart className="h-4 w-4 text-red-500 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
@@ -893,15 +915,25 @@ export default function GmailStyleInbox() {
                       ← Back
                     </Button>
                     <h3 className="text-lg font-semibold">
-                      {selectedMessage.content.length > 40 
-                        ? `${selectedMessage.content.substring(0, 40)}...`
-                        : selectedMessage.content}
+                      {(selectedMessage as any).isKudos ? (
+                        <span className="flex items-center gap-2">
+                          <Trophy className="h-5 w-5 text-yellow-600" />
+                          {selectedMessage.subject || 'Kudos Message'}
+                        </span>
+                      ) : (
+                        selectedMessage.content.length > 40 
+                          ? `${selectedMessage.content.substring(0, 40)}...`
+                          : selectedMessage.content
+                      )}
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setShowReply(true)}>
-                      <Reply className="h-4 w-4" />
-                    </Button>
+                    {/* Hide Reply button for Kudos messages */}
+                    {!(selectedMessage as any).isKudos && (
+                      <Button variant="ghost" size="sm" onClick={() => setShowReply(true)}>
+                        <Reply className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -965,7 +997,37 @@ export default function GmailStyleInbox() {
               {/* Message Content */}
               <div className={`p-4 ${selectedMessage.content.length > 500 ? 'flex-1 overflow-y-auto' : 'flex-shrink-0'}`}>
                 <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap">{selectedMessage.content}</div>
+                  {/* Special formatting for Kudos messages */}
+                  {(selectedMessage as any).isKudos ? (
+                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 mb-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="bg-yellow-100 p-2 rounded-full">
+                          <Trophy className="h-6 w-6 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-yellow-800">Kudos Received!</h3>
+                          <p className="text-sm text-yellow-700">
+                            From {selectedMessage.senderName}
+                            {(selectedMessage as any).projectTitle && (
+                              <span className="ml-1">for "{(selectedMessage as any).projectTitle}"</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-yellow-300 rounded-lg p-4">
+                        <div className="text-lg text-gray-800 font-medium leading-relaxed">
+                          {selectedMessage.content}
+                        </div>
+                      </div>
+                      {(selectedMessage as any).contextType && (
+                        <div className="mt-4 text-xs text-yellow-600">
+                          <span className="font-medium">Context:</span> {(selectedMessage as any).contextType === 'project' ? 'Project' : 'Task'} - {(selectedMessage as any).entityName || (selectedMessage as any).projectTitle}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{selectedMessage.content}</div>
+                  )}
                 </div>
               </div>
 
@@ -974,8 +1036,8 @@ export default function GmailStyleInbox() {
                 <div className="flex-1 min-h-0"></div>
               )}
 
-              {/* Reply Section */}
-              {showReply && (
+              {/* Reply Section - Hidden for Kudos messages */}
+              {showReply && !(selectedMessage as any).isKudos && (
                 <div className="border-t p-4 flex-shrink-0">
                   <div className="space-y-3">
                     <Label>Reply to {selectedMessage.senderName}</Label>
