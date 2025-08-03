@@ -339,9 +339,18 @@ export default function ProjectsClean() {
             <div className="flex flex-wrap gap-2">
               {/* Handle new format with assigneeIds array */}
               {(project as any).assigneeIds && (project as any).assigneeIds.length > 0 && (project as any).assigneeIds.map((assigneeId: string, index: number) => {
-                const assigneeName = (project as any).assigneeNames && (project as any).assigneeNames[index] 
-                  ? (project as any).assigneeNames[index] 
-                  : `Team Member ${index + 1}`;
+                // Parse assigneeNames string to array if it's a comma-separated string
+                let assigneeName = `Team Member ${index + 1}`;
+                if ((project as any).assigneeNames) {
+                  if (typeof (project as any).assigneeNames === 'string') {
+                    // Split comma-separated string and get the name at the current index
+                    const nameArray = (project as any).assigneeNames.split(',').map((name: string) => name.trim());
+                    assigneeName = nameArray[index] || `Team Member ${index + 1}`;
+                  } else if (Array.isArray((project as any).assigneeNames)) {
+                    // Handle array format
+                    assigneeName = (project as any).assigneeNames[index] || `Team Member ${index + 1}`;
+                  }
+                }
                 
                 return (
                   <SendKudosButton
