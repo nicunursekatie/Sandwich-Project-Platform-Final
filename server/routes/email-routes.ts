@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { emailService } from '../services/email-service';
 import { isAuthenticated } from '../temp-auth';
+import { db } from '../db';
+import { kudosTracking } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 
@@ -105,7 +108,31 @@ router.patch('/:id', isAuthenticated, async (req: any, res) => {
 
     console.log(`[Email API] Updating email ${emailId} status:`, updates);
 
-    const success = await emailService.updateEmailStatus(emailId, user.id, updates);
+    // Check if this is a kudo ID instead of an email ID
+    const kudoCheck = await db
+      .select({ messageId: kudosTracking.messageId, recipientId: kudosTracking.recipientId })
+      .from(kudosTracking)
+      .where(eq(kudosTracking.id, emailId))
+      .limit(1);
+
+    let actualEmailId = emailId;
+    
+    if (kudoCheck.length > 0) {
+      // This is a kudo ID, get the actual message ID  
+      actualEmailId = kudoCheck[0].messageId;
+      console.log(`[Email API] Kudo ${emailId} corresponds to message ${actualEmailId}`);
+      
+      // Verify user is the recipient of this kudo
+      if (kudoCheck[0].recipientId !== user.id) {
+        return res.status(403).json({ message: 'Not authorized to update this kudo' });
+      }
+    }
+
+    if (!actualEmailId) {
+      return res.status(404).json({ message: 'No corresponding message found for this kudo' });
+    }
+
+    const success = await emailService.updateEmailStatus(actualEmailId, user.id, updates);
 
     if (!success) {
       return res.status(404).json({ message: 'Email not found or access denied' });
@@ -235,11 +262,39 @@ router.post('/:messageId/read', isAuthenticated, async (req: any, res) => {
 
     console.log(`[Email API] Marking message ${messageId} as read for user: ${user.email}`);
 
-    // Import here to avoid circular dependency
-    const { messagingService } = require('../services/messaging-service');
+    // First check if this is a kudo ID instead of a message ID
+    const kudoCheck = await db
+      .select({ messageId: kudosTracking.messageId, recipientId: kudosTracking.recipientId })
+      .from(kudosTracking)
+      .where(eq(kudosTracking.id, messageId))
+      .limit(1);
+
+    let actualMessageId = messageId;
+    
+    if (kudoCheck.length > 0) {
+      // This is a kudo ID, get the actual message ID
+      actualMessageId = kudoCheck[0].messageId;
+      console.log(`[Email API] Kudo ${messageId} corresponds to message ${actualMessageId}`);
+      
+      // Verify user is the recipient of this kudo
+      if (kudoCheck[0].recipientId !== user.id) {
+        return res.status(403).json({ message: 'Not authorized to mark this kudo as read' });
+      }
+    }
+
+    if (!actualMessageId) {
+      return res.status(404).json({ message: 'No corresponding message found for this kudo' });
+    }
+
+    // Import messaging service dynamically to avoid circular dependency
+    const { messagingService } = await import('../services/messaging-service');
     
     // Mark the message as read in messageRecipients
-    await messagingService.markMessageRead(user.id, messageId);
+    const success = await messagingService.markMessageRead(user.id, actualMessageId);
+    
+    if (!success) {
+      return res.status(404).json({ message: 'Message not found or already read' });
+    }
 
     res.json({ success: true, message: 'Message marked as read' });
   } catch (error) {
