@@ -1072,11 +1072,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             groupTotal += collectionGroupTotal;
           });
 
+          // Add 100,000 sandwiches to account for missing historical logs
+          const MISSING_LOGS_ADJUSTMENT = 100000;
+          
           return {
             totalEntries: collections.length,
             individualSandwiches: individualTotal,
 
-            completeTotalSandwiches: individualTotal + groupTotal,
+            completeTotalSandwiches: individualTotal + groupTotal + MISSING_LOGS_ADJUSTMENT,
           };
         },
         60000, // Cache for 1 minute since this data doesn't change frequently
