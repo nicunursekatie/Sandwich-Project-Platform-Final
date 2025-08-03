@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ArrowRight, ArrowLeft, Check, Calendar, Users, User, AlertCircle, MapPin } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Calendar, Users, User, AlertCircle, MapPin, Plus } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
