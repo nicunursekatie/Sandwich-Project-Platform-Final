@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calculator, Plus, HelpCircle } from "lucide-react";
+import { Calculator, Plus, HelpCircle, AlertCircle } from "lucide-react";
 import sandwichLogo from "@assets/LOGOS/sandwich logo.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -94,6 +94,16 @@ export default function CompactCollectionForm({
   const handleSubmit = () => {
     if (!location) {
       toast({ title: "Please select a location", variant: "destructive" });
+      return;
+    }
+
+    // Check for unsaved group entries
+    if (newGroupName.trim() !== "" || newGroupCount > 0) {
+      toast({ 
+        title: "Unsaved group entry", 
+        description: "Please click 'Add This Group' to save your group entry before submitting, or clear the fields if you don't want to add this group.",
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -228,32 +238,16 @@ export default function CompactCollectionForm({
 
         {/* Group collections - redesigned with better flow */}
         <div className="bg-gray-50 rounded p-3">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1">
-              <label className="text-base md:text-sm font-medium text-[#236383]">
-                Group Collections
-              </label>
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="h-5 w-5 md:h-4 md:w-4 text-gray-400" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>If any groups brought sandwiches to your location this week, do not include their # in your individual sandwiches count. Instead log them here, enter the name of each group and the # of sandwiches they brought.</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+          <div className="flex items-center gap-1 mb-3">
+            <label className="text-base md:text-sm font-medium text-[#236383]">
+              Group Collections
+            </label>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={addGroup}
-                  size="sm"
-                  className="h-5 w-5 p-0 bg-[#47B3CB] hover:bg-[#236383] rounded-md shadow-sm"
-                >
-                  <Plus className="h-2 w-2" />
-                </Button>
+              <TooltipTrigger>
+                <HelpCircle className="h-5 w-5 md:h-4 md:w-4 text-gray-400" />
               </TooltipTrigger>
               <TooltipContent>
-                <p>Click to add the group you entered above</p>
+                <p>If any groups brought sandwiches to your location this week, do not include their # in your individual sandwiches count. Instead log them here, enter the name of each group and the # of sandwiches they brought.</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -276,6 +270,27 @@ export default function CompactCollectionForm({
               }}
               className="h-12 md:h-10 text-lg md:text-base"
             />
+            <Button
+              onClick={addGroup}
+              disabled={!newGroupName || newGroupCount <= 0}
+              className="w-full h-12 md:h-10 text-lg md:text-base bg-[#47B3CB] hover:bg-[#236383]"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add This Group
+            </Button>
+            
+            {/* Show warning if there are unsaved entries */}
+            {(newGroupName.trim() !== "" || newGroupCount > 0) && (!newGroupName || newGroupCount <= 0) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium">Group information incomplete</p>
+                    <p className="text-xs mt-1">Please enter both group name and sandwich count before adding.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Group list - card style with proper hierarchy */}
