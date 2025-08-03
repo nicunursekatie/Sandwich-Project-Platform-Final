@@ -43,6 +43,7 @@ import {
   Users,
   Settings,
   ChevronRight,
+  Award,
 } from "lucide-react";
 
 interface User {
@@ -115,6 +116,18 @@ const PERMISSION_CATEGORIES = [
       { key: PERMISSIONS.DRIVER_CHAT, label: "Driver Chat", description: "Access to driver chat room" },
       { key: PERMISSIONS.RECIPIENT_CHAT, label: "Recipient Chat", description: "Access to recipient chat room" },
       { key: "core_team_chat", label: "Core Team Chat", description: "Access to core team chat room" },
+    ],
+  },
+  {
+    id: "recognition",
+    label: "Recognition & Kudos",
+    icon: Award,
+    description: "Permissions for the kudos recognition system",
+    permissions: [
+      { key: PERMISSIONS.SEND_KUDOS, label: "Send Kudos", description: "Send recognition kudos to other users" },
+      { key: PERMISSIONS.RECEIVE_KUDOS, label: "Receive Kudos", description: "Receive recognition kudos from other users" },
+      { key: PERMISSIONS.VIEW_KUDOS, label: "View Kudos", description: "View kudos messages in inbox" },
+      { key: PERMISSIONS.MANAGE_ALL_KUDOS, label: "Manage All Kudos", description: "Administrative control over all kudos (view, delete)" },
     ],
   },
   {
