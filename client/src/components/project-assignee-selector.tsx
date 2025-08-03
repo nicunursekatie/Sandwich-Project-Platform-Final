@@ -27,7 +27,6 @@ interface User {
 interface SelectedUser {
   id: string;
   name: string;
-  email?: string;
   isSystemUser: boolean;
 }
 
@@ -51,52 +50,24 @@ export function ProjectAssigneeSelector({
   // Initialize from existing value - handle both single names and comma-separated
   useEffect(() => {
     if (value && users.length > 0) {
-      console.log('ProjectAssigneeSelector - Initializing with value:', value);
-      console.log('ProjectAssigneeSelector - Available users:', users.map(u => ({ id: u.id, name: `${u.firstName || ''} ${u.lastName || ''}`.trim(), email: u.email, firstName: u.firstName, lastName: u.lastName })));
-      
       const names = value.split(',').map(name => name.trim()).filter(name => name.length > 0);
       const allUsers: SelectedUser[] = [];
       
       names.forEach(name => {
         const matchedUser = users.find(user => {
           const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-          const firstNameOnly = user.firstName?.trim() || '';
-          const lastNameOnly = user.lastName?.trim() || '';
-          // Try multiple matching strategies
-          return fullName === name || 
-                 user.email === name || 
-                 firstNameOnly === name ||
-                 lastNameOnly === name ||
-                 (firstNameOnly && name.includes(firstNameOnly)) ||
-                 (lastNameOnly && name.includes(lastNameOnly));
+          return fullName === name || user.email === name;
         });
         
         if (matchedUser) {
           const fullName = `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim() || matchedUser.email;
-          console.log('ProjectAssigneeSelector - Found matching user:', { name: fullName, email: matchedUser.email });
-          allUsers.push({ id: matchedUser.id, name: fullName, email: matchedUser.email, isSystemUser: true });
+          allUsers.push({ id: matchedUser.id, name: fullName, isSystemUser: true });
         } else {
-          // Try one more aggressive search for partial matches
-          const partialMatch = users.find(user => {
-            const userFullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-            const nameWords = name.toLowerCase().split(' ');
-            const userWords = userFullName.toLowerCase().split(' ');
-            return nameWords.some(word => userWords.some(userWord => userWord.includes(word) && word.length > 2));
-          });
-          
-          if (partialMatch) {
-            const fullName = `${partialMatch.firstName || ''} ${partialMatch.lastName || ''}`.trim() || partialMatch.email;
-            console.log('ProjectAssigneeSelector - Found partial match:', { name: fullName, email: partialMatch.email });
-            allUsers.push({ id: partialMatch.id, name: fullName, email: partialMatch.email, isSystemUser: true });
-          } else {
-            // Add as custom name
-            console.log('ProjectAssigneeSelector - Adding custom name:', name);
-            allUsers.push({ id: `custom_${Date.now()}_${Math.random()}`, name, isSystemUser: false });
-          }
+          // Add as custom name
+          allUsers.push({ id: `custom_${Date.now()}_${Math.random()}`, name, isSystemUser: false });
         }
       });
       
-      console.log('ProjectAssigneeSelector - Final selected users:', allUsers);
       setSelectedUsers(allUsers);
     }
   }, [users, value]);
@@ -114,7 +85,7 @@ export function ProjectAssigneeSelector({
     // Check if already selected
     if (selectedUsers.some(u => u.id === user.id)) return;
 
-    const updatedUsers = [...selectedUsers, { id: user.id, name: fullName, email: user.email, isSystemUser: true }];
+    const updatedUsers = [...selectedUsers, { id: user.id, name: fullName, isSystemUser: true }];
     setSelectedUsers(updatedUsers);
     
     // Update parent
@@ -174,11 +145,13 @@ export function ProjectAssigneeSelector({
                 .filter(user => !selectedUsers.some(selected => selected.id === user.id && selected.isSystemUser))
                 .map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
                       <span className="font-medium">
                         {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
                       </span>
-                      <span className="text-xs text-gray-500">{user.email}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {user.role || 'User'}
+                      </Badge>
                     </div>
                   </SelectItem>
                 ))}
@@ -222,18 +195,12 @@ export function ProjectAssigneeSelector({
                 <Badge 
                   key={user.id} 
                   variant={user.isSystemUser ? "default" : "outline"} 
-                  className="flex items-center gap-1 px-3 py-2 bg-white border border-gray-200"
+                  className="flex items-center gap-1 px-3 py-1"
                 >
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium text-gray-900">{user.name}</span>
-                    {user.email ? (
-                      <span className="text-xs text-gray-600 font-normal">{user.email}</span>
-                    ) : user.isSystemUser ? (
-                      <span className="text-xs text-orange-500 font-normal">Email lookup needed</span>
-                    ) : (
-                      <span className="text-xs text-blue-500 font-normal">Custom assignment</span>
-                    )}
-                  </div>
+                  <span>{user.name}</span>
+                  {user.isSystemUser && (
+                    <span className="text-xs opacity-75">(User)</span>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
