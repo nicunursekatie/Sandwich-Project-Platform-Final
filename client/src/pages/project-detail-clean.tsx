@@ -125,23 +125,29 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
           const assigneeId = (project as any).assigneeIds[i];
           const assigneeName = (project as any).assigneeNames?.[i] || `User ${assigneeId}`;
           
-          // Don't send kudos to yourself
-          if (assigneeId !== user.id) {
+          // Only add if assigneeId is valid and not the current user
+          if (assigneeId && assigneeId.trim() && assigneeId !== user.id) {
             assigneesToNotify.push({ id: assigneeId, name: assigneeName });
           }
         }
       } 
       // Handle single assignee from legacy assigneeId field
-      else if (project.assigneeId && project.assigneeName && user?.id !== project.assigneeId) {
+      else if (project.assigneeId && project.assigneeId.trim() && project.assigneeName && user?.id !== project.assigneeId) {
         assigneesToNotify.push({ 
           id: project.assigneeId, 
           name: project.assigneeName
         });
       }
 
-      // Send kudos to each assignee
+      // Send kudos to each assignee (with validation)
       for (const assignee of assigneesToNotify) {
         try {
+          // Validate assignee data before sending
+          if (!assignee.id || !assignee.id.trim()) {
+            console.warn(`Skipping kudos for ${assignee.name}: empty recipient ID`);
+            continue;
+          }
+
           await apiRequest("POST", "/api/messaging/kudos", {
             recipientId: assignee.id,
             recipientName: assignee.name,
