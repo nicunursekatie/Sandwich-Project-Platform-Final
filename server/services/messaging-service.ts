@@ -720,7 +720,7 @@ export class MessagingService {
         })
         .from(kudosTracking)
         .where(eq(kudosTracking.recipientId, userId))
-        .orderBy(desc(kudosTracking.sentAt));
+        .orderBy(desc(kudosTracking.createdAt));
 
       // Get the actual messages with sender information and read status
       const kudosMessages = await Promise.all(
