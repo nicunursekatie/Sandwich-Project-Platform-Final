@@ -25,9 +25,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   const [hostName, setHostName] = useState("");
   const [individualCount, setIndividualCount] = useState<number | null>(null);
   const [hasGroups, setHasGroups] = useState<boolean | null>(null);
-  const [groups, setGroups] = useState<GroupCollection[]>([]);
-  const [currentGroupName, setCurrentGroupName] = useState("");
-  const [currentGroupCount, setCurrentGroupCount] = useState<number | null>(null);
+  const [groupInputs, setGroupInputs] = useState<GroupCollection[]>([{ name: "", count: 0 }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const walkthroughRef = useRef<HTMLDivElement>(null);
 
@@ -118,19 +116,20 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
     initializeDate();
   }
 
-  const addGroup = () => {
-    if (currentGroupName.trim() || (currentGroupCount !== null && currentGroupCount > 0)) {
-      setGroups([...groups, { 
-        name: currentGroupName.trim() || "", 
-        count: currentGroupCount || 0 
-      }]);
-      setCurrentGroupName("");
-      setCurrentGroupCount(null);
+  const addGroupRow = () => {
+    setGroupInputs([...groupInputs, { name: "", count: 0 }]);
+  };
+
+  const removeGroupRow = (index: number) => {
+    if (groupInputs.length > 1) {
+      setGroupInputs(groupInputs.filter((_, i) => i !== index));
     }
   };
 
-  const removeGroup = (index: number) => {
-    setGroups(groups.filter((_, i) => i !== index));
+  const updateGroupInput = (index: number, field: 'name' | 'count', value: string | number) => {
+    const updated = [...groupInputs];
+    updated[index] = { ...updated[index], [field]: value };
+    setGroupInputs(updated);
   };
 
   const handleSubmit = async () => {
@@ -144,14 +143,15 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
       // submittedAt is automatically set by the database
     };
 
-    // Add group data if any groups exist
-    if (groups.length > 0) {
-      submissionData.group1Name = groups[0].name;
-      submissionData.group1Count = groups[0].count;
+    // Add group data from input rows that have meaningful data
+    const validGroups = groupInputs.filter(group => group.name.trim() || group.count > 0);
+    if (validGroups.length > 0) {
+      submissionData.group1Name = validGroups[0].name.trim() || "";
+      submissionData.group1Count = validGroups[0].count || 0;
       
-      if (groups.length > 1) {
-        submissionData.group2Name = groups[1].name;
-        submissionData.group2Count = groups[1].count;
+      if (validGroups.length > 1) {
+        submissionData.group2Name = validGroups[1].name.trim() || "";
+        submissionData.group2Count = validGroups[1].count || 0;
       }
     }
 
@@ -164,18 +164,17 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
       case 2: return hostName;
       case 3: return individualCount !== null;
       case 4: return hasGroups !== null;
-      case 5: {
-        // Check if there are unsaved group entries
-        const hasUnsavedGroupEntry = (currentGroupName.trim() !== "" || (currentGroupCount !== null && currentGroupCount > 0));
-        return !hasUnsavedGroupEntry; // Can only proceed if there are no unsaved entries
-      }
+      case 5:
+        // Group details step - allow if user has meaningful group data or wants to skip
+        return true;
       default: return false;
     }
   };
 
   const getTotalSandwiches = () => {
     const individual = individualCount || 0;
-    const groupTotal = groups.reduce((sum, group) => sum + group.count, 0);
+    const validGroups = groupInputs.filter(group => group.name.trim() || group.count > 0);
+    const groupTotal = validGroups.reduce((sum, group) => sum + group.count, 0);
     return individual + groupTotal;
   };
 
@@ -405,64 +404,51 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
               <p className="text-xs sm:text-sm text-gray-500">(Group names are optional, but counts help us track impact)</p>
             </div>
             
-            {groups.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-gray-900">Added Groups:</h4>
-                {groups.map((group, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 sm:p-3 rounded-lg">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm sm:text-base truncate">{group.name || "Unnamed Group"}</div>
-                      <div className="text-xs sm:text-sm text-gray-600">({group.count} sandwiches)</div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeGroup(index)}
-                      className="text-red-600 hover:text-red-800 ml-2 flex-shrink-0 text-xs sm:text-sm p-1 sm:p-2"
-                    >
-                      Remove
-                    </Button>
+            <div className="space-y-3 sm:space-y-4">
+              {groupInputs.map((group, index) => (
+                <div key={index} className="border rounded-lg p-3 sm:p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">
+                      Group {index + 1}
+                    </h4>
+                    {groupInputs.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeGroupRow(index)}
+                        className="text-red-600 hover:text-red-800 text-xs sm:text-sm p-1"
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="space-y-3 sm:space-y-4 border-t pt-4">
-              <Input
-                placeholder="e.g., The Weber School"
-                value={currentGroupName}
-                onChange={(e) => setCurrentGroupName(e.target.value)}
-                className="h-10 sm:h-auto text-sm sm:text-base"
-              />
-              <Input
-                type="number"
-                min="0"
-                placeholder="Number of sandwiches"
-                value={currentGroupCount !== null ? currentGroupCount : ""}
-                onChange={(e) => setCurrentGroupCount(e.target.value ? parseInt(e.target.value) : null)}
-                className="h-10 sm:h-auto text-sm sm:text-base"
-              />
-              <Button
-                onClick={addGroup}
-                disabled={!currentGroupName.trim() && (currentGroupCount === null || currentGroupCount === 0)}
-                className="w-full h-10 sm:h-auto text-sm sm:text-base touch-manipulation"
-                variant="outline"
-              >
-                Add Group
-              </Button>
-              
-              {/* Show warning if there are unsaved entries */}
-              {(currentGroupName.trim() !== "" || (currentGroupCount !== null && currentGroupCount > 0)) && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-amber-800">
-                      <p className="font-medium">Please add your group before continuing</p>
-                      <p className="text-xs mt-1">Click "Add Group" to save this entry, or clear the fields to skip.</p>
-                    </div>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="e.g., The Weber School"
+                      value={group.name}
+                      onChange={(e) => updateGroupInput(index, 'name', e.target.value)}
+                      className="h-10 sm:h-auto text-sm sm:text-base"
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Number of sandwiches"
+                      value={group.count || ""}
+                      onChange={(e) => updateGroupInput(index, 'count', parseInt(e.target.value) || 0)}
+                      className="h-10 sm:h-auto text-sm sm:text-base"
+                    />
                   </div>
                 </div>
-              )}
+              ))}
+              
+              <Button
+                onClick={addGroupRow}
+                className="w-full h-10 sm:h-auto text-sm sm:text-base touch-manipulation border-dashed"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Another Group
+              </Button>
             </div>
           </div>
         );
@@ -514,28 +500,31 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
               </div>
 
               {/* Groups Section */}
-              {groups.length > 0 && (
-                <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="w-4 h-4 text-[#236383]" />
-                    <span className="font-semibold text-[#236383] text-sm sm:text-base">Groups</span>
-                  </div>
-                  <div className="space-y-2">
-                    {groups.map((group, index) => (
-                      <div key={index} className="bg-gray-50 rounded-md p-2 sm:p-3">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-sm sm:text-base text-gray-900 truncate max-w-[60%]">
-                            {group.name || "Unnamed Group"}
-                          </span>
-                          <span className="text-sm sm:text-base font-semibold text-[#236383]">
-                            {group.count} sandwiches
-                          </span>
+              {(() => {
+                const validGroups = groupInputs.filter(group => group.name.trim() || group.count > 0);
+                return validGroups.length > 0 && (
+                  <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Users className="w-4 h-4 text-[#236383]" />
+                      <span className="font-semibold text-[#236383] text-sm sm:text-base">Groups</span>
+                    </div>
+                    <div className="space-y-2">
+                      {validGroups.map((group, index) => (
+                        <div key={index} className="bg-gray-50 rounded-md p-2 sm:p-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-sm sm:text-base text-gray-900 truncate max-w-[60%]">
+                              {group.name.trim() || "Unnamed Group"}
+                            </span>
+                            <span className="text-sm sm:text-base font-semibold text-[#236383]">
+                              {group.count} sandwiches
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Total Section */}
               <div className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white rounded-lg p-4 shadow-md">
