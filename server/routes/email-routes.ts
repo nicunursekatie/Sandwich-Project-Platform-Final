@@ -192,7 +192,7 @@ router.get('/kudos', isAuthenticated, async (req: any, res) => {
     console.log(`[Email API] Getting kudos for user: ${user.email}`);
 
     // Import here to avoid circular dependency
-    const { messagingService } = require('../services/messaging-service');
+    const { messagingService } = await import('../services/messaging-service');
     const kudos = await messagingService.getReceivedKudos(user.id);
 
     // Format kudos for Gmail interface
