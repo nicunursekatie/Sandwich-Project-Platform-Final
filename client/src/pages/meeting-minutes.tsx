@@ -644,7 +644,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  variant="outline" 
  size="sm"
  onClick={() => handleDownloadFile(viewingMinutes.id, viewingMinutes.fileName!)}
- className="ml-4">
+ className="ml-4"
  >
  <Download className="w-4 h-4 mr-2" />
  Download File
