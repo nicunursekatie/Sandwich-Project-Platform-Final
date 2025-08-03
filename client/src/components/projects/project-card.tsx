@@ -117,11 +117,11 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           )}
         </div>
         
-        {/* Show kudos button for completed projects if assignee is not current user */}
-        {project.status === "completed" && project.assigneeName && user && (
+        {/* Show kudos button for completed projects if assignee is not current user and has valid ID */}
+        {project.status === "completed" && project.assigneeName && project.assigneeId && user && (
           <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
             <SendKudosButton
-              recipientId={project.assigneeId?.toString() || `user_${project.assigneeName.toLowerCase().replace(/\s+/g, '_')}`}
+              recipientId={project.assigneeId.toString()}
               recipientName={project.assigneeName}
               contextType="project"
               contextId={project.id.toString()}
@@ -130,6 +130,15 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
               variant="outline"
               className="text-purple-600 hover:text-purple-700 border-purple-200 hover:bg-purple-50"
             />
+          </div>
+        )}
+        
+        {/* Show warning for legacy projects without proper assignee IDs */}
+        {project.status === "completed" && project.assigneeName && !project.assigneeId && (
+          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">
+              ⚠️ Legacy project: Cannot send kudos to {project.assigneeName} (no user ID)
+            </div>
           </div>
         )}
       </CardContent>
