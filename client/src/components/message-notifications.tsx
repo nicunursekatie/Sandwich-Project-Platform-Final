@@ -221,16 +221,28 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
   };
 
   const navigateToChat = (chatType: string) => {
-    // Route different chat types to appropriate destinations
+    // Simplified navigation - all notifications go to appropriate sections
     if (chatType === 'direct' || chatType === 'groups') {
-      // Direct messages and groups go to inbox
-      window.location.href = '/messages';
+      // Direct messages and groups go to messages
+      if ((window as any).dashboardSetActiveSection) {
+        (window as any).dashboardSetActiveSection('messages');
+      } else {
+        window.location.href = '/dashboard?section=messages';
+      }
     } else if (chatType === 'kudos') {
-      // Kudos go to a dedicated kudos view in the dashboard
-      window.location.href = '/dashboard?section=kudos';
+      // Kudos go to inbox where they can be viewed
+      if ((window as any).dashboardSetActiveSection) {
+        (window as any).dashboardSetActiveSection('gmail-inbox');
+      } else {
+        window.location.href = '/dashboard?section=gmail-inbox';
+      }
     } else {
       // Other chat types go to chat system
-      window.location.href = '/dashboard?section=chat';
+      if ((window as any).dashboardSetActiveSection) {
+        (window as any).dashboardSetActiveSection('chat');
+      } else {
+        window.location.href = '/dashboard?section=chat';
+      }
     }
   };
 
@@ -239,14 +251,12 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-5 w-5" />
-          {/* Debug indicator - green dot shows component is mounted */}
-          <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-400 rounded-full" title="Notifications Active"></div>
+        <Button variant="ghost" size="sm" className="relative p-2 rounded-lg transition-colors hover:bg-teal-50">
+          <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
           {totalUnread > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-xs font-medium bg-red-500 hover:bg-red-600"
             >
               {totalUnread > 99 ? '99+' : totalUnread}
             </Badge>
@@ -254,16 +264,16 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="font-semibold">
+      <DropdownMenuContent align="end" className="w-72 sm:w-80 max-h-96 overflow-y-auto">
+        <DropdownMenuLabel className="font-semibold text-sm">
           <div className="flex items-center justify-between">
-            <span>Message Notifications</span>
+            <span>Notifications</span>
             {totalUnread > 0 && (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={handleMarkAllRead}
-                className="text-xs h-6 px-2"
+                className="text-xs h-6 px-2 hover:bg-gray-100"
               >
                 Mark all read
               </Button>
@@ -273,27 +283,29 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
         <DropdownMenuSeparator />
 
         {totalUnread === 0 ? (
-          <DropdownMenuItem className="text-muted-foreground">
-            No unread messages
+          <DropdownMenuItem className="text-muted-foreground text-sm py-4 text-center">
+            All caught up! No new notifications.
           </DropdownMenuItem>
         ) : (
-          Object.entries(finalUnreadCounts)
-            .filter(([key, count]) => key !== 'total' && count > 0)
-            .map(([committee, count]) => (
-              <DropdownMenuItem 
-                key={committee}
-                className="flex items-center justify-between cursor-pointer"
-                onClick={() => navigateToChat(committee)}
-              >
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  <span>{getChatDisplayName(committee)}</span>
-                </div>
-                <Badge variant="secondary" className="ml-2">
-                  {count}
-                </Badge>
-              </DropdownMenuItem>
-            ))
+          <div className="space-y-1">
+            {Object.entries(finalUnreadCounts)
+              .filter(([key, count]) => key !== 'total' && count > 0)
+              .map(([committee, count]) => (
+                <DropdownMenuItem 
+                  key={committee}
+                  className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-3 rounded-md"
+                  onClick={() => navigateToChat(committee)}
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-medium">{getChatDisplayName(committee)}</span>
+                  </div>
+                  <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800">
+                    {count}
+                  </Badge>
+                </DropdownMenuItem>
+              ))}
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
