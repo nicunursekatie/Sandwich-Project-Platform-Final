@@ -662,6 +662,49 @@ export class MessagingService {
   }
 
   /**
+   * Mark kudos messages as read
+   */
+  async markKudosAsRead(userId: string, kudosIds: number[]): Promise<{ count: number }> {
+    try {
+      // Get the message IDs from kudos tracking
+      const kudosEntries = await db
+        .select({ messageId: kudosTracking.messageId })
+        .from(kudosTracking)
+        .where(
+          and(
+            eq(kudosTracking.recipientId, userId),
+            sql`${kudosTracking.messageId} IN (${sql.join(kudosIds.map(id => sql`${id}`), sql`, `)})`
+          )
+        );
+
+      if (kudosEntries.length === 0) {
+        return { count: 0 };
+      }
+
+      const messageIds = kudosEntries.map(entry => entry.messageId);
+
+      // Mark the corresponding message recipients as read
+      const result = await db
+        .update(messageRecipients)
+        .set({ 
+          read: true, 
+          readAt: new Date().toISOString() 
+        })
+        .where(
+          and(
+            eq(messageRecipients.recipientId, userId),
+            sql`${messageRecipients.messageId} IN (${sql.join(messageIds.map(id => sql`${id}`), sql`, `)})`
+          )
+        );
+
+      return { count: messageIds.length };
+    } catch (error) {
+      console.error("Failed to mark kudos as read:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get received kudos messages for a user
    */
   async getReceivedKudos(userId: string): Promise<any[]> {
@@ -679,7 +722,7 @@ export class MessagingService {
         .where(eq(kudosTracking.recipientId, userId))
         .orderBy(desc(kudosTracking.createdAt));
 
-      // Get the actual messages with sender information
+      // Get the actual messages with sender information and read status
       const kudosMessages = await Promise.all(
         kudosEntries.map(async (entry) => {
           try {
@@ -693,9 +736,14 @@ export class MessagingService {
                   sql<string>`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.displayName}, ${users.email})`.as(
                     "senderName",
                   ),
+                isRead: messageRecipients.read,
               })
               .from(messages)
               .leftJoin(users, eq(messages.senderId, users.id))
+              .leftJoin(messageRecipients, and(
+                eq(messages.id, messageRecipients.messageId),
+                eq(messageRecipients.recipientId, userId)
+              ))
               .where(eq(messages.id, entry.messageId))
               .limit(1);
 
@@ -735,8 +783,10 @@ export class MessagingService {
               contextType: entry.contextType,
               contextId: entry.contextId,
               entityName,
+              projectTitle: entityName, // Add projectTitle alias for display
+              message: messageResult.content, // Add message alias for display
               createdAt: messageResult.createdAt,
-              read: false, // For now, all kudos are considered unread until we implement read tracking
+              isRead: messageResult.isRead || false,
             };
           } catch (error) {
             console.error(

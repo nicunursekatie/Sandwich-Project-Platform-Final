@@ -33,7 +33,9 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Trophy,
+  Heart
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -189,6 +191,49 @@ export default function GmailStyleInbox() {
     queryKey: ["/api/drafts"],
     enabled: activeFolder === "drafts",
   });
+
+  // Fetch kudos
+  const { data: kudos = [], refetch: refetchKudos } = useQuery({
+    queryKey: ["/api/messaging/kudos"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/messaging/kudos');
+        return response || [];
+      } catch (error) {
+        console.error('Error fetching kudos:', error);
+        return [];
+      }
+    },
+  });
+
+  // Mark kudos as read mutation
+  const markKudosReadMutation = useMutation({
+    mutationFn: async (kudosIds: number[]) => {
+      return await apiRequest('POST', '/api/messaging/kudos/mark-read', { kudosIds });
+    },
+    onSuccess: () => {
+      refetchKudos();
+      queryClient.invalidateQueries({ queryKey: ['/api/message-notifications/unread-counts'] });
+    }
+  });
+
+  // Mark all visible kudos as read when the kudos section is viewed
+  useEffect(() => {
+    if (activeFolder === "inbox" && kudos && kudos.length > 0) {
+      const unreadKudosIds = kudos
+        .filter((kudo: any) => !kudo.isRead)
+        .map((kudo: any) => kudo.id);
+      
+      if (unreadKudosIds.length > 0) {
+        // Mark as read after a short delay to allow user to see them
+        const timer = setTimeout(() => {
+          markKudosReadMutation.mutate(unreadKudosIds);
+        }, 2000);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activeFolder, kudos]);
 
   // Auto-save draft mutation
   const saveDraftMutation = useMutation({
@@ -700,6 +745,39 @@ export default function GmailStyleInbox() {
               </div>
             )}
           </div>
+
+          {/* Kudos Section - Only show in inbox and when there are kudos */}
+          {activeFolder === "inbox" && kudos && kudos.length > 0 && (
+            <div className="border-b bg-gradient-to-r from-yellow-50 to-orange-50 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="h-5 w-5 text-yellow-600" />
+                <h3 className="text-lg font-bold text-yellow-800">🎉 You've Received Kudos!</h3>
+                <Badge className="bg-yellow-500 text-white">{kudos.length}</Badge>
+              </div>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {kudos.slice(0, 3).map((kudo: any) => (
+                  <div key={kudo.id} className="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm border border-yellow-200">
+                    <Heart className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        <span className="text-yellow-700 font-bold">{kudo.senderName}</span> sent you kudos
+                        {kudo.projectTitle && <span className="text-gray-600"> for "{kudo.projectTitle}"</span>}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{kudo.message}</p>
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0">
+                      {formatDistanceToNow(new Date(kudo.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {kudos.length > 3 && (
+                <p className="text-xs text-yellow-700 mt-2 font-medium">
+                  + {kudos.length - 3} more kudos received
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Message List */}
           <ScrollArea className="flex-1">
