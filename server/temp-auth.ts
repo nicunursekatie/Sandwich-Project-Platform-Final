@@ -570,22 +570,29 @@ export function setupTempAuth(app: Express) {
   // Legacy temp login endpoint (for backwards compatibility)
   app.post("/api/temp-login", async (req: any, res) => {
     try {
-      // Create or get a test admin user
-      const testUser = {
-        id: "test-admin-user",
-        email: "admin@example.com",
-        firstName: "Test",
-        lastName: "Admin",
-        profileImageUrl: null,
-        role: "admin",
-        permissions: ["view_phone_directory", "edit_data", "delete_data", "general_chat", "committee_chat", "host_chat", "driver_chat", "recipient_chat", "manage_users"],
-        isActive: true,
+      // Get Katie's actual user data for testing
+      const katieUser = await storage.getUserByEmail("katielong2316@gmail.com");
+      if (!katieUser) {
+        return res.status(404).json({ error: "Test user not found" });
+      }
+
+      // Create session user object with Katie's real data
+      const sessionUser = {
+        id: katieUser.id,
+        email: katieUser.email,
+        firstName: katieUser.firstName,
+        lastName: katieUser.lastName,
+        profileImageUrl: katieUser.profileImageUrl,
+        role: katieUser.role,
+        permissions: katieUser.permissions,
+        isActive: katieUser.isActive
       };
 
       // Store user in session
-      req.session.user = testUser;
+      req.session.user = sessionUser;
+      req.user = sessionUser;
 
-      res.json({ success: true, user: testUser });
+      res.json({ success: true, user: sessionUser });
     } catch (error) {
       console.error("Temp login error:", error);
       res.status(500).json({ error: "Login failed" });
