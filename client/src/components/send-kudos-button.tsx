@@ -161,7 +161,7 @@ export default function SendKudosButton({
       ) : (
         <>
           {getRandomIcon()}
-          Send Kudos
+          Send Kudos to {recipientName}
         </>
       )}
     </Button>
