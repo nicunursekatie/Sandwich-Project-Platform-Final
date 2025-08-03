@@ -247,7 +247,7 @@ export function GroupConversation({ groupId, groupName, groupDescription, onBack
   return (
     <div className="flex flex-col h-full">
       {/* Group header */}
-      <div className="p-4 border-b bg-white dark:bg-gray-800">
+      <div className="p-4 border-b bg-white"
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={onBack}>
@@ -270,17 +270,17 @@ export function GroupConversation({ groupId, groupName, groupDescription, onBack
               
               {/* Member List */}
               {groupMembers.length > 0 && (
-                <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Members:</div>
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xs font-medium text-gray-600 mb-2">Members:</div>
                   <div className="flex flex-wrap gap-2">
                     {groupMembers.map((member) => (
-                      <div key={member.userId} className="flex items-center gap-1.5 bg-white dark:bg-gray-600 px-2 py-1 rounded-md text-xs">
+                      <div key={member.userId} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md text-xs">
                         <Avatar className="h-4 w-4">
                           <AvatarFallback className="text-xs">
                             {member.firstName?.[0] || member.email?.[0] || '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-gray-700 dark:text-gray-200">
+                        <span className="text-gray-700"
                           {member.firstName && member.lastName 
                             ? `${member.firstName} ${member.lastName}`
                             : member.firstName || member.email?.split('@')[0] || 'Member'
@@ -387,17 +387,17 @@ export function GroupConversation({ groupId, groupName, groupDescription, onBack
                       <div>
                         {/* Reply indicator */}
                         {(message as any).replyToMessageId && (
-                          <div className="mb-2 p-2 bg-gray-50 dark:bg-gray-600 border-l-2 border-blue-400 rounded text-xs">
-                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400 mb-1">
+                          <div className="mb-2 p-2 bg-gray-50 border-l-2 border-blue-400 rounded text-xs">
+                            <div className="flex items-center gap-1 text-gray-600 mb-1">
                               <Reply className="h-3 w-3" />
                               <span>Replying to {(message as any).replyToSender}</span>
                             </div>
-                            <div className="text-gray-700 dark:text-gray-300 italic truncate">
+                            <div className="text-gray-700 italic truncate">
                               "{(message as any).replyToContent}"
                             </div>
                           </div>
                         )}
-                        <p className="text-sm bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-sm bg-gray-100 rounded-lg p-2">
                           {message.content}
                         </p>
                       </div>
@@ -411,12 +411,12 @@ export function GroupConversation({ groupId, groupName, groupDescription, onBack
       </ScrollArea>
 
       {/* Message input */}
-      <div className="p-4 border-t bg-white dark:bg-gray-800">
+      <div className="p-4 border-t bg-white"
         {/* Reply preview */}
         {replyingToMessage && (
-          <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-3 border-blue-400 rounded">
+          <div className="mb-3 p-3 bg-blue-50 border-l-3 border-blue-400 rounded">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-sm font-medium">
+              <div className="flex items-center gap-1 text-blue-600 text-sm font-medium">
                 <Reply className="h-4 w-4" />
                 <span>Replying to {replyingToMessage.sender || getUserDisplayName(replyingToMessage.userId)}</span>
               </div>
@@ -429,7 +429,7 @@ export function GroupConversation({ groupId, groupName, groupDescription, onBack
                 <X className="h-3 w-3" />
               </Button>
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-300 italic bg-white dark:bg-gray-700 p-2 rounded">
+            <div className="text-sm text-gray-600 italic bg-white p-2 rounded">
               "{replyingToMessage.content}"
             </div>
           </div>

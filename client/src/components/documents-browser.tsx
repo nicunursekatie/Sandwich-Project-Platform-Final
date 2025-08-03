@@ -83,17 +83,17 @@ const getFileIcon = (type: string) => {
 const getCategoryColor = (category: string) => {
   switch (category) {
     case 'Training':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      return 'bg-blue-100 text-blue-800
     case 'Legal':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+      return 'bg-purple-100 text-purple-800
     case 'Resources':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      return 'bg-green-100 text-green-800
     case 'Operations':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+      return 'bg-orange-100 text-orange-800
     case 'Safety':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      return 'bg-red-100 text-red-800
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+      return 'bg-gray-100 text-gray-800
   }
 };
 

@@ -10,7 +10,7 @@ import { DocumentPreviewModal } from "@/components/document-preview-modal";
 import CompactCollectionForm from "@/components/compact-collection-form";
 import { AnimatedCounter } from "@/components/modern-dashboard/animated-counter";
 
-import { DarkModeToggle } from "@/components/modern-dashboard/dark-mode-toggle";
+// Dark mode toggle removed per user request
 import { SandwichStackIcon, GrowthTrendIcon, CommunityIcon, TargetIcon, SparkleIcon, NetworkIcon } from "@/components/modern-dashboard/custom-svg-icons";
 import tspLogo from "@assets/sandwich_project_transparent_1753668698851.png";
 import sandwichLogo from "@assets/LOGOS/sandwich logo.png";
@@ -112,7 +112,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
     <div className="min-h-screen bg-white relative">
       {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 z-50">
-        <DarkModeToggle />
+        {/* Dark mode toggle removed */}
       </div>
 
       <div className="space-y-8 pb-8">

@@ -48,9 +48,9 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
 
  if (error) {
  return (
- <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+ <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
  <FileText className="h-12 w-12 text-red-400 mb-4" />
- <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+ <p className="text-red-600 mb-4">{error}</p>
  <div className="flex gap-2">
  <Button onClick={downloadFile} variant="outline" size="sm">
  <Download className="h-4 w-4 mr-2" />
@@ -66,13 +66,13 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  }
 
  return (
- <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm ${className}`}>
+ <div className={`bg-white rounded-lg shadow-sm ${className}`}>
  {/* Document Controls */}
- <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+ <div className="flex items-center justify-between p-4 border-b border-gray-200"
  <div className="flex items-center gap-2">
- <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
- <span className="font-medium text-gray-900 dark:text-gray-100">{fileName}</span>
- <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">{fileType}</span>
+ <FileText className="h-5 w-5 text-blue-600 />"
+ <span className="font-medium text-gray-900"
+ <span className="text-sm text-gray-500 uppercase">{fileType}</span>
  </div>
  
  <div className="flex gap-2">
@@ -90,10 +90,10 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  {/* Document Viewer */}
  <div className="relative" style={{ height: '600px' }}>
  {isLoading && (
- <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+ <div className="absolute inset-0 flex items-center justify-center bg-gray-50"
  <div className="flex flex-col items-center">
  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
- <p className="text-gray-600 dark:text-gray-400">Loading document...</p>
+ <p className="text-gray-600 document...</p>"
  </div>
  </div>
  )}
@@ -109,14 +109,14 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  ) : fileType === 'docx' || fileType === 'doc' ? (
  // For DOCX files, we'll use Office Online viewer if available, otherwise show download prompt
  <div className="flex flex-col items-center justify-center h-full p-8">
- <FileText className="h-16 w-16 text-blue-600 dark:text-blue-400 mb-4" />
- <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+ <FileText className="h-16 w-16 text-blue-600 mb-4" />
+ <h3 className="text-lg font-semibold text-gray-900 mb-2">
  Word Document
  </h3>
- <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+ <p className="text-gray-600 text-center mb-6">
  Click the buttons above to download or open this document in a new tab for viewing.
  </p>
- <div className="text-sm text-gray-500 dark:text-gray-400">
+ <div className="text-sm text-gray-500"
  File: {fileName}
  </div>
  </div>
@@ -124,13 +124,13 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  // Generic file viewer
  <div className="flex flex-col items-center justify-center h-full p-8">
  <FileText className="h-16 w-16 text-gray-400 mb-4" />
- <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+ <h3 className="text-lg font-semibold text-gray-900 mb-2">
  Document Available
  </h3>
- <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+ <p className="text-gray-600 text-center mb-6">
  Use the buttons above to download or open this document.
  </p>
- <div className="text-sm text-gray-500 dark:text-gray-400">
+ <div className="text-sm text-gray-500"
  File: {fileName} ({fileType?.toUpperCase()})
  </div>
  </div>

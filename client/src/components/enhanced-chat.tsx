@@ -279,7 +279,7 @@ export default function EnhancedChat() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-200px)] bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden relative z-10">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-200px)] bg-white rounded-lg shadow-lg overflow-hidden relative z-10">
       {/* Sidebar with live previews - Mobile responsive */}
       <div className="md:block">
         <LiveChatHub 
@@ -320,17 +320,17 @@ export default function EnhancedChat() {
         </div>
 
         {/* Messages Area - Mobile responsive */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-2 sm:space-y-4 bg-gray-50 dark:bg-gray-800 min-h-0">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-2 sm:space-y-4 bg-gray-50 min-h-0">
           {!isJoined ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center text-gray-500 dark:text-gray-400">
+              <div className="text-center text-gray-500">
                 <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#236383] mx-auto mb-3 sm:mb-4"></div>
                 <p className="text-sm sm:text-base">Joining {channelInfo?.name}...</p>
               </div>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex items-center justify-center h-full px-4">
-              <div className="text-center text-gray-500 dark:text-gray-400">
+              <div className="text-center text-gray-500">
                 <div className="text-2xl sm:text-4xl mb-3 sm:mb-4">{channelInfo?.icon}</div>
                 <h4 className="text-base sm:text-lg font-medium mb-2">Welcome to {channelInfo?.name}!</h4>
                 <p className="text-sm sm:text-base">This is the beginning of your conversation.</p>
@@ -353,7 +353,7 @@ export default function EnhancedChat() {
         </div>
 
         {/* Message Input - Mobile responsive */}
-        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="p-3 sm:p-4 border-t border-gray-200 bg-white">
           <div className="flex space-x-2">
             <Input
               value={newMessage}

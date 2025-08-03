@@ -157,22 +157,22 @@ function PhoneDirectoryFixed() {
       {/* Header */}
       <div className="flex flex-col space-y-6">
         <div>
-          <h1 className="text-4xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">Phone Directory</h1>
+          <h1 className="text-4xl font-bold text-primary font-['Roboto',sans-serif]">Phone Directory</h1>
           <p className="text-lg mt-2 text-muted-foreground font-['Roboto',sans-serif]">
             Contact information for team members and organizations
           </p>
         </div>
 
         {/* Search */}
-        <Card className="border-2 border-border dark:border-gray-700">
+        <Card className="border-2 border-border">
           <CardContent className="pt-6">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground"/>
               <Input
                 placeholder="Search contacts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-base border-2 border-primary dark:border-secondary focus:ring-2 font-['Roboto',sans-serif] bg-background dark:bg-gray-800 text-foreground dark:text-white"
+                className="pl-12 h-12 text-base border-2 border-primary focus:ring-2 font-['Roboto',sans-serif] bg-background text-foreground"
               />
             </div>
           </CardContent>
@@ -181,7 +181,7 @@ function PhoneDirectoryFixed() {
 
       {/* Directory Tabs - Permission-based visibility */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full h-14 p-1 rounded-lg bg-muted dark:bg-gray-800 ${
+        <TabsList className={`grid w-full h-14 p-1 rounded-lg bg-muted ${
           availableTabs.length === 1 ? 'grid-cols-1' :
           availableTabs.length === 2 ? 'grid-cols-2' :
           availableTabs.length === 3 ? 'grid-cols-3' :
@@ -200,9 +200,8 @@ function PhoneDirectoryFixed() {
               <TabsTrigger 
                 key={tab.id}
                 value={tab.id} 
-                className="flex items-center gap-2 h-12 text-base font-medium rounded-md transition-all duration-200 data-[state=active]:shadow-sm font-['Roboto',sans-serif] text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:bg-secondary dark:data-[state=active]:text-secondary-foreground"
-              >
-                <Icon className="w-5 h-5" />
+                className="flex items-center gap-2 h-12 text-base font-medium rounded-md transition-all duration-200 data-[state=active]:shadow-sm font-['Roboto',sans-serif] text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Icon className="w-5 h-5"/>
                 {tab.label} ({count})
               </TabsTrigger>
             );
@@ -210,10 +209,10 @@ function PhoneDirectoryFixed() {
         </TabsList>
 
         <TabsContent value="contacts" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
-            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
-                <Phone className="w-6 h-6 text-primary dark:text-secondary" />
+          <Card className="border-2 shadow-sm border-border">
+            <CardHeader className="pb-4 bg-muted">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                <Phone className="w-6 h-6 text-primary" />
                 General Contacts
               </CardTitle>
               <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
@@ -228,8 +227,8 @@ function PhoneDirectoryFixed() {
               ) : (
                 <div className="space-y-4">
                   {filteredContacts.map((contact) => (
-                    <div key={contact.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border dark:border-gray-700 bg-card dark:bg-gray-800">
-                      <h3 className="font-bold text-lg mb-2 text-primary dark:text-secondary font-['Roboto',sans-serif]">{contact.name}</h3>
+                    <div key={contact.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
+                      <h3 className="font-bold text-lg mb-2 text-primary font-['Roboto',sans-serif]">{contact.name}</h3>
                       <p className="text-base mb-1 text-muted-foreground font-['Roboto',sans-serif]">{contact.phone}</p>
                       {contact.email && <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>{contact.email}</p>}
                     </div>
@@ -241,10 +240,10 @@ function PhoneDirectoryFixed() {
         </TabsContent>
 
         {canViewHosts && <TabsContent value="hosts" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
-            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
-                <Users className="w-6 h-6 text-primary dark:text-secondary" />
+          <Card className="border-2 shadow-sm border-border">
+            <CardHeader className="pb-4 bg-muted">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                <Users className="w-6 h-6 text-primary" />
                 Host Directory
               </CardTitle>
               <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
@@ -259,8 +258,8 @@ function PhoneDirectoryFixed() {
               ) : (
                 <div className="space-y-6">
                   {filteredHosts.map((host) => (
-                    <div key={host.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border dark:border-gray-700 bg-card dark:bg-gray-800">
-                      <h3 className="font-bold text-lg mb-3 text-primary dark:text-secondary font-['Roboto',sans-serif]">{host.name}</h3>
+                    <div key={host.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
+                      <h3 className="font-bold text-lg mb-3 text-primary font-['Roboto',sans-serif]">{host.name}</h3>
                       {host.address && (
                         <p className="text-base mb-4 text-muted-foreground font-['Roboto',sans-serif]">
                           <span className="font-medium">Address:</span> {host.address}
@@ -268,10 +267,10 @@ function PhoneDirectoryFixed() {
                       )}
                       {host.contacts && host.contacts.length > 0 && (
                         <div className="space-y-3">
-                          <h4 className="font-semibold text-base text-primary dark:text-secondary font-['Roboto',sans-serif]">Contacts:</h4>
+                          <h4 className="font-semibold text-base text-primary font-['Roboto',sans-serif]">Contacts:</h4>
                           {host.contacts.map((contact, idx) => (
-                            <div key={idx} className="ml-4 p-3 rounded-md bg-muted/50 dark:bg-gray-700">
-                              <div className="font-semibold text-base mb-1 text-primary dark:text-secondary font-['Roboto',sans-serif]">{contact.name}</div>
+                            <div key={idx} className="ml-4 p-3 rounded-md bg-muted/50">
+                              <div className="font-semibold text-base mb-1 text-primary font-['Roboto',sans-serif]">{contact.name}</div>
                               <div className="space-y-1">
                                 <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                                   <span className="font-medium">Phone:</span> {contact.phone}
@@ -303,10 +302,10 @@ function PhoneDirectoryFixed() {
         </TabsContent>}
 
         {canViewRecipients && <TabsContent value="recipients" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
-            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
-                <User className="w-6 h-6 text-primary dark:text-secondary" />
+          <Card className="border-2 shadow-sm border-border">
+            <CardHeader className="pb-4 bg-muted">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                <User className="w-6 h-6 text-primary" />
                 Recipient Directory
               </CardTitle>
               <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
@@ -321,8 +320,8 @@ function PhoneDirectoryFixed() {
               ) : (
                 <div className="space-y-4">
                   {filteredRecipients.map((recipient) => (
-                    <div key={recipient.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border dark:border-gray-700 bg-card dark:bg-gray-800">
-                      <h3 className="font-bold text-lg mb-2 text-primary dark:text-secondary font-['Roboto',sans-serif]">{recipient.name}</h3>
+                    <div key={recipient.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
+                      <h3 className="font-bold text-lg mb-2 text-primary font-['Roboto',sans-serif]">{recipient.name}</h3>
                       <div className="space-y-1">
                         <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                           <span className="font-medium">Phone:</span> {recipient.phone}
@@ -352,10 +351,10 @@ function PhoneDirectoryFixed() {
         </TabsContent>}
 
         {canViewDrivers && <TabsContent value="drivers" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
-            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
-                <User className="w-6 h-6 text-primary dark:text-secondary" />
+          <Card className="border-2 shadow-sm border-border">
+            <CardHeader className="pb-4 bg-muted">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                <User className="w-6 h-6 text-primary" />
                 Driver Directory
               </CardTitle>
               <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">

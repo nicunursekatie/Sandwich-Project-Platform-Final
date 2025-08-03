@@ -534,7 +534,7 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
               {scheduledReports.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
                     No Scheduled Reports
                   </h3>
                   <p className="text-gray-500">
@@ -594,7 +594,7 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
               {recentReports.length === 0 ? (
                 <div className="text-center py-8">
                   <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
                     No Report History
                   </h3>
                   <p className="text-gray-500">

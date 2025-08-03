@@ -409,7 +409,7 @@ export default function DirectMessaging() {
       ) : (
         <>
           {/* User Selection Sidebar */}
-          <div className="w-full md:w-1/3 md:border-r bg-gray-50 dark:bg-gray-900 flex flex-col md:min-h-0">
+          <div className="w-full md:w-1/3 md:border-r bg-gray-50 flex flex-col md:min-h-0">
             <div className="p-3 md:p-4 border-b border-slate-200">
               <h2 className="font-sub-heading text-lg mb-3">Direct Messages</h2>
               <div className="relative">

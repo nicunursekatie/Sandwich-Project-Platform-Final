@@ -520,7 +520,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
   return (
     <div className="h-full max-h-screen flex flex-col lg:flex-row">
       {/* Groups sidebar */}
-      <div className="w-full lg:w-1/3 lg:border-r bg-gray-50 dark:bg-gray-900 flex flex-col lg:min-h-0">
+      <div className="w-full lg:w-1/3 lg:border-r bg-gray-50 flex flex-col lg:min-h-0">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold">Message Groups</h3>
@@ -624,7 +624,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
               groups.map((group) => (
                 <Card
                   key={group.id}
-                  className={`cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                  className={`cursor-pointer transition-colors hover:bg-gray-100 ${
                     selectedGroup?.id === group.id ? 'ring-2 ring-blue-500' : ''
                   }`}
                   onClick={() => setSelectedGroup(group)}
@@ -669,7 +669,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
         {selectedGroup ? (
           <>
             {/* Group header */}
-            <div className="p-4 border-b bg-white dark:bg-gray-800">
+            <div className="p-4 border-b bg-white"
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold flex items-center gap-2">
@@ -898,7 +898,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                               </div>
                             </div>
                           ) : (
-                            <p className="text-sm bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                            <p className="text-sm bg-gray-100 rounded-lg p-2">
                               {message.content}
                             </p>
                           )}
@@ -911,7 +911,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
             </ScrollArea>
 
             {/* Message input */}
-            <div className="p-4 border-t bg-white dark:bg-gray-800">
+            <div className="p-4 border-t bg-white"
               <div className="flex gap-2">
                 <Input
                   value={newMessage}

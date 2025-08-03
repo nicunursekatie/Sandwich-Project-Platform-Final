@@ -14,12 +14,12 @@ export default function UnifiedMeetings() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-          <ClipboardList className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+          <ClipboardList className="w-6 h-6 text-blue-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Meetings</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage meeting minutes, agendas, and calendar</p>
+          <h1 className="text-2xl font-bold text-gray-900">Meetings</h1>
+          <p className="text-gray-600">Meeting minutes, agendas, and calendar</p>
         </div>
       </div>
 

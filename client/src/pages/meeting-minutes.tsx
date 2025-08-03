@@ -394,8 +394,8 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  return (
  <div className="space-y-6">
  <div className="animate-pulse space-y-4">
- <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
- <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+ <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+ <div className="h-32 bg-gray-200 rounded"></div>
  </div>
  </div>
  );
@@ -657,13 +657,13 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
 
  {/* Document Content */}
  <div>
- <h4 className="font-semibold text-base mb-4 text-gray-900 dark:text-gray-100">Meeting Minutes Document</h4>
+ <h4 className="font-semibold text-base mb-4 text-gray-900">Minutes Document</h4>
  {isGoogleDocsLink ? (
- <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+ <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
  {/* Header with download */}
- <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+ <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50"
  <div className="flex items-center gap-2">
- <Link className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+ <Link className="w-5 h-5 text-blue-600 />"
  <span className="font-medium">Google Docs Document</span>
  </div>
  <Button variant="outline" size="sm" asChild>
@@ -683,11 +683,11 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  </div>
  </div>
  ) : viewingMinutes.fileName ? (
- <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+ <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
  {/* Header with download */}
- <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+ <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50"
  <div className="flex items-center gap-2">
- <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+ <FileText className="w-5 h-5 text-blue-600 />"
  <span className="font-medium">{viewingMinutes.fileName}</span>
  <span className="text-sm text-gray-500 uppercase">
  {viewingMinutes.fileName.split('.').pop()}
@@ -713,10 +713,10 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  ) : (
  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
  <FileText className="w-16 h-16 text-gray-400 mb-4" />
- <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">
+ <h3 className="text-base font-medium text-gray-900 mb-2">
  {viewingMinutes.fileName}
  </h3>
- <p className="text-gray-600 dark:text-gray-400 mb-4">
+ <p className="text-gray-600 mb-4">
  Click the download button above to view this document.
  </p>
  <Button 
@@ -731,9 +731,9 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  </div>
  </div>
  ) : (
- <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
- <div className="prose max-w-none dark:prose-invert">
- <div className="whitespace-pre-wrap text-gray-900 dark:text-gray-100 leading-relaxed">
+ <div className="bg-white border border-gray-200 rounded-lg p-6">
+ <div className="prose max-w-none"
+ <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
  {viewingMinutes.summary}
  </div>
  </div>
@@ -856,7 +856,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  <div className="space-y-6">
  {/* Navigation Header - only show when not embedded */}
  {!isEmbedded && (
- <div className="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+ <div className="flex items-center gap-3 pb-4 border-b border-gray-200"
  <Button 
  variant="outline" 
  size="sm"
@@ -869,7 +869,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  <div className="flex items-center gap-2 text-sm text-gray-500">
  <span>Meetings</span>
  <span>•</span>
- <span className="text-gray-900 dark:text-white font-medium">Minutes</span>
+ <span className="text-gray-900 font-medium">Minutes</span>
  </div>
  </div>
  )}
@@ -877,8 +877,8 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
  <div>
- <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Meeting Minutes</h1>
- <p className="text-gray-600 dark:text-gray-400">Upload and view minutes for scheduled meetings</p>
+ <h1 className="text-lg font-semibold text-gray-900 Minutes</h1>"
+ <p className="text-gray-600 and view minutes for scheduled meetings</p>"
  </div>
  <Button onClick={() => setIsCreatingMeeting(true)} className="flex items-center gap-2">
  <Plus className="w-4 h-4" />
@@ -911,12 +911,12 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  </Badge>
  </CardDescription>
  {meeting.description && (
- <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+ <p className="text-sm text-gray-600 mt-2">
  {meeting.description}
  </p>
  )}
  {meeting.location && (
- <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+ <p className="text-sm text-gray-500 mt-1">
  Location: {meeting.location}
  </p>
  )}
@@ -969,8 +969,8 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  <Card>
  <CardContent className="text-center py-12">
  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
- <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2">No meetings scheduled</h3>
- <p className="text-gray-600 dark:text-gray-400">Check back later for scheduled meetings</p>
+ <h3 className="text-base font-medium text-gray-900 mb-2">No meetings scheduled</h3>
+ <p className="text-gray-600 back later for scheduled meetings</p>"
  </CardContent>
  </Card>
  )}

@@ -496,30 +496,7 @@ body {
   --brand-burgundy-alt: 342 100% 28%; /* Alternative burgundy */
 }
 
-.dark {
-  --background: 24 5% 10%; /* Dark background */
-  --foreground: 0 0% 95%; /* Light text */
-  --muted: 24 5% 20%; /* Dark muted */
-  --muted-foreground: 0 0% 70%; /* Light muted text */
-  --popover: 24 5% 15%; /* Dark popover */
-  --popover-foreground: 0 0% 95%; /* Light popover text */
-  --card: 24 5% 15%; /* Dark card */
-  --card-foreground: 0 0% 95%; /* Light card text */
-  --border: 24 5% 25%; /* Dark border */
-  --input: 24 5% 20%; /* Dark input */
-  
-  /* Brand colors remain consistent in dark mode */
-  --primary: 197 100% 50%; /* Brighter teal for dark mode */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 27 92% 70%; /* Brighter orange for dark mode */
-  --secondary-foreground: 24 5% 10%;
-  --accent: 342 63% 50%; /* Brighter burgundy for dark mode */
-  --accent-foreground: 0 0% 100%;
-  
-  --destructive: 0 70% 50%;
-  --destructive-foreground: 0 0% 100%;
-  --ring: 197 100% 50%;
-}
+/* Dark mode completely removed per user request */
 
 @layer base {
   * {

@@ -174,7 +174,7 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b bg-gray-50 dark:bg-gray-800">
+            <tr className="border-b bg-gray-50"
               <th className="text-left p-3 font-medium">Date</th>
               <th className="text-left p-3 font-medium">Host</th>
               <th className="text-left p-3 font-medium">Individual</th>
@@ -191,7 +191,7 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
               const total = calculateTotal(collection);
               
               return (
-                <tr key={collection.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr key={collection.id} className="border-b hover:bg-gray-50"
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
@@ -229,19 +229,19 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                   </td>
                   
                   <td className="p-3">
-                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <Badge className="bg-blue-100 text-blue-800"
                       {total}
                     </Badge>
                   </td>
                   
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+                  <td className="p-3 text-sm text-gray-600"
                     <div className="flex items-center gap-2">
                       <User className="h-3 w-3 text-gray-400" />
                       <span>{(collection as any).createdByName || 'Unknown User'}</span>
                     </div>
                   </td>
                   
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+                  <td className="p-3 text-sm text-gray-600"
                     {new Date(collection.submittedAt).toLocaleDateString()}
                   </td>
                   

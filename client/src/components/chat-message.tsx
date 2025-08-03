@@ -61,17 +61,17 @@ export default function ChatMessageComponent({ message, onEdit, onDelete }: Chat
   };
 
   return (
-    <div className="flex gap-3 py-2 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
+    <div className="flex gap-3 py-2 px-4 hover:bg-gray-50 group">
       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold ${getAvatarColor(message.userId)}`}>
         {getUserInitials(message.userName)}
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="font-semibold text-sm text-gray-900 dark:text-white">
+          <span className="font-semibold text-sm text-gray-900">
             {message.userName}
           </span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-gray-500">
             {formatDistanceToNow(message.timestamp, { addSuffix: true })}
             {message.edited && <span className="ml-1 text-gray-400">(edited)</span>}
           </span>
@@ -103,7 +103,7 @@ export default function ChatMessageComponent({ message, onEdit, onDelete }: Chat
             </div>
           </div>
         ) : (
-          <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+          <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
             {message.content}
           </div>
         )}
@@ -127,7 +127,7 @@ export default function ChatMessageComponent({ message, onEdit, onDelete }: Chat
               {canDelete && (
                 <DropdownMenuItem
                   onClick={() => onDelete(message.id)}
-                  className="text-red-600 dark:text-red-400"
+                  className="text-red-600"
                 >
                   <Trash2 className="w-3 h-3 mr-2" />
                   Delete message
