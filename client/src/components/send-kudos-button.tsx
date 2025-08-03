@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { Heart, Star, Trophy, Sparkles, Target } from "lucide-react";
 
 interface SendKudosButtonProps {
@@ -46,6 +47,11 @@ export default function SendKudosButton({
 
   // Don't render if trying to send kudos to yourself
   if (user?.id === recipientId) {
+    return null;
+  }
+
+  // Don't render if user doesn't have permission to send kudos
+  if (!hasPermission(user, PERMISSIONS.SEND_KUDOS)) {
     return null;
   }
 

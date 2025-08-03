@@ -90,6 +90,12 @@ export const PERMISSIONS = {
   RECIPIENT_CHAT: "recipient_chat",
   CORE_TEAM_CHAT: "core_team_chat",
 
+  // Kudos system permissions
+  SEND_KUDOS: "send_kudos", // Can send kudos to other users
+  RECEIVE_KUDOS: "receive_kudos", // Can receive kudos from other users  
+  VIEW_KUDOS: "view_kudos", // Can view kudos in inbox
+  MANAGE_ALL_KUDOS: "manage_all_kudos", // Admin ability to manage all kudos (view, delete)
+
   // Legacy support for existing components (backwards compatibility)
   VIEW_PHONE_DIRECTORY: "access_directory",
   VIEW_HOSTS: "access_hosts",
@@ -145,6 +151,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.COMMITTEE_CHAT,
         PERMISSIONS.EXPORT_DATA,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions + edit/delete own
+        PERMISSIONS.SEND_KUDOS,
+        PERMISSIONS.RECEIVE_KUDOS,
+        PERMISSIONS.VIEW_KUDOS
       ];
 
     case USER_ROLES.HOST:
@@ -163,6 +172,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.SEND_KUDOS,
+        PERMISSIONS.RECEIVE_KUDOS,
+        PERMISSIONS.VIEW_KUDOS
       ];
 
     case USER_ROLES.DRIVER:
@@ -179,6 +191,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.GENERAL_CHAT,
         PERMISSIONS.DRIVER_CHAT,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.SEND_KUDOS,
+        PERMISSIONS.RECEIVE_KUDOS,
+        PERMISSIONS.VIEW_KUDOS
       ];
 
     case USER_ROLES.VOLUNTEER:
@@ -194,6 +209,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.SEND_KUDOS,
+        PERMISSIONS.RECEIVE_KUDOS,
+        PERMISSIONS.VIEW_KUDOS
       ];
 
     case USER_ROLES.RECIPIENT:
@@ -205,6 +223,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.GENERAL_CHAT,
         PERMISSIONS.RECIPIENT_CHAT,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.RECEIVE_KUDOS, // Recipients can receive kudos but not send them by default
+        PERMISSIONS.VIEW_KUDOS
       ];
 
     case USER_ROLES.VIEWER:
@@ -218,6 +238,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.ACCESS_SANDWICH_DATA,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.VIEW_KUDOS // Viewers can only view kudos, not send or receive
       ];
 
     case USER_ROLES.WORK_LOGGER:
