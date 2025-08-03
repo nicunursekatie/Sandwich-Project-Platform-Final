@@ -98,7 +98,41 @@ export class DatabaseStorage implements IStorage {
 
   // Projects
   async getAllProjects(): Promise<Project[]> {
-    return await db.select().from(projects).orderBy(desc(projects.createdAt));
+    const projectsFromDb = await db.select().from(projects).orderBy(desc(projects.createdAt));
+    
+    // Populate missing assignee names
+    const projectsWithNames = await Promise.all(
+      projectsFromDb.map(async (project) => {
+        // If assigneeIds exist but assigneeNames is missing or empty, populate them
+        if (project.assigneeIds && project.assigneeIds.length > 0 && (!project.assigneeNames || !project.assigneeNames.trim())) {
+          const names = [];
+          for (const assigneeId of project.assigneeIds) {
+            if (assigneeId && assigneeId.trim()) {
+              const user = await this.getUser(assigneeId);
+              if (user) {
+                names.push(user.displayName || user.firstName || user.email || 'Unknown User');
+              } else {
+                names.push('Unknown User');
+              }
+            }
+          }
+          
+          // Update the database with the resolved names
+          if (names.length > 0) {
+            const assigneeNames = names.join(', ');
+            await db.update(projects)
+              .set({ assigneeNames })
+              .where(eq(projects.id, project.id));
+            
+            return { ...project, assigneeNames };
+          }
+        }
+        
+        return project;
+      })
+    );
+    
+    return projectsWithNames;
   }
 
   async getProject(id: number): Promise<Project | undefined> {
