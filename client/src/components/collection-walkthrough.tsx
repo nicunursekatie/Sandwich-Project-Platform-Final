@@ -21,6 +21,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   const [currentStep, setCurrentStep] = useState(1);
   const [collectionDate, setCollectionDate] = useState("");
   const [actualCollectionDate, setActualCollectionDate] = useState(""); // The Thursday closest to their input
+  const [useExactDate, setUseExactDate] = useState(false); // Allow override of Thursday calculation
   const [hostName, setHostName] = useState("");
   const [individualCount, setIndividualCount] = useState<number | null>(null);
   const [hasGroups, setHasGroups] = useState<boolean | null>(null);
@@ -39,24 +40,33 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   // Filter to only show active hosts
   const hosts = allHosts.filter((host: any) => host.status === 'active');
 
-  // Function to find the closest Thursday to a given date
-  const findClosestThursday = (inputDate: string): string => {
+  // Function to find the most recent Thursday that has already passed
+  const findMostRecentThursday = (inputDate: string): string => {
     if (!inputDate) return "";
     
     const date = new Date(inputDate + "T12:00:00"); // Add time to avoid timezone issues
+    const today = new Date();
     const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 4 = Thursday, 6 = Saturday
     
     let daysToThursday;
-    if (day <= 4) {
-      // If it's Sunday-Thursday, go to the Thursday of that week
-      daysToThursday = 4 - day;
+    if (day === 4) {
+      // If it's Thursday, use that Thursday (unless it's in the future)
+      daysToThursday = 0;
+    } else if (day < 4) {
+      // If it's Sunday-Wednesday, go to the previous Thursday
+      daysToThursday = day - 4; // This will be negative
     } else {
-      // If it's Friday-Saturday, go to the next Thursday
-      daysToThursday = 4 + (7 - day);
+      // If it's Friday-Saturday, go to the Thursday of that week (which already passed)
+      daysToThursday = day - 4; // This will be positive (1-2 days ago)
     }
     
     const thursday = new Date(date);
-    thursday.setDate(date.getDate() + daysToThursday);
+    thursday.setDate(date.getDate() - Math.abs(daysToThursday));
+    
+    // If the calculated Thursday is in the future, go back one more week
+    if (thursday > today) {
+      thursday.setDate(thursday.getDate() - 7);
+    }
     
     return thursday.toISOString().split('T')[0];
   };
@@ -86,9 +96,26 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
 
   const handleDateInput = (date: string) => {
     setCollectionDate(date);
-    const thursday = findClosestThursday(date);
+    if (useExactDate) {
+      setActualCollectionDate(date);
+    } else {
+      const thursday = findMostRecentThursday(date);
+      setActualCollectionDate(thursday);
+    }
+  };
+
+  // Initialize with today's date on component mount
+  const initializeDate = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setCollectionDate(today);
+    const thursday = findMostRecentThursday(today);
     setActualCollectionDate(thursday);
   };
+
+  // Initialize date on first render
+  if (!collectionDate) {
+    initializeDate();
+  }
 
   const addGroup = () => {
     if (currentGroupName.trim() || (currentGroupCount !== null && currentGroupCount > 0)) {
@@ -187,16 +214,47 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
               {actualCollectionDate && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    <strong>Collection will be logged for:</strong> Thursday, {new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    <strong>Collection will be logged for:</strong> {useExactDate ? 
+                      new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      }) :
+                      `Thursday, ${new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}`
+                    }
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    We automatically assign collections to the Thursday of that week for consistent reporting.
-                  </p>
+                  {!useExactDate && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      We automatically assign collections to the Thursday of that week for consistent reporting.
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-blue-200">
+                    <input
+                      type="checkbox"
+                      id="useExactDate"
+                      checked={useExactDate}
+                      onChange={(e) => {
+                        setUseExactDate(e.target.checked);
+                        if (e.target.checked) {
+                          setActualCollectionDate(collectionDate);
+                        } else {
+                          const thursday = findMostRecentThursday(collectionDate);
+                          setActualCollectionDate(thursday);
+                        }
+                      }}
+                      className="rounded border-blue-300 text-blue-600"
+                    />
+                    <label htmlFor="useExactDate" className="text-xs text-blue-700 cursor-pointer">
+                      Use exact date (for entering old records)
+                    </label>
+                  </div>
                 </div>
               )}
             </div>
