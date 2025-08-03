@@ -55,6 +55,9 @@ import {
   CheckSquare,
   Square,
   Minus,
+  Trophy,
+  Heart,
+  Send,
 } from "lucide-react";
 
 interface User {
@@ -312,6 +315,38 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
+    id: "kudos_system",
+    label: "Kudos & Recognition",
+    description: "Controls access to the kudos system for recognizing achievements and contributions",
+    type: "kudos",
+    permissions: [
+      {
+        key: PERMISSIONS.SEND_KUDOS,
+        label: "Send Kudos",
+        icon: Send,
+        description: "Can send kudos messages to recognize other users' work",
+      },
+      {
+        key: PERMISSIONS.RECEIVE_KUDOS,
+        label: "Receive Kudos",
+        icon: Heart,
+        description: "Can receive kudos messages from other users",
+      },
+      {
+        key: PERMISSIONS.VIEW_KUDOS,
+        label: "View Kudos",
+        icon: Trophy,
+        description: "Can view kudos messages in the inbox",
+      },
+      {
+        key: PERMISSIONS.MANAGE_ALL_KUDOS,
+        label: "Manage All Kudos",
+        icon: Shield,
+        description: "Admin ability to manage all kudos (view, delete)",
+      },
+    ],
+  },
+  {
     id: "navigation_control",
     label: "Navigation Control",
     description: "Which tabs and features appear in user's interface",
@@ -443,6 +478,8 @@ function getCardColorForType(type: string) {
       return "border-red-200 bg-red-50/50";
     case "operations":
       return "border-indigo-200 bg-indigo-50/50";
+    case "kudos":
+      return "border-yellow-200 bg-yellow-50/50";
     default:
       return "border-gray-200 bg-gray-50/50";
   }
@@ -462,6 +499,8 @@ function getIconForType(type: string) {
       return <Shield className="h-4 w-4 text-red-600" />;
     case "operations":
       return <Settings className="h-4 w-4 text-indigo-600" />;
+    case "kudos":
+      return <Trophy className="h-4 w-4 text-yellow-600" />;
     default:
       return <Settings className="h-4 w-4 text-gray-600" />;
   }

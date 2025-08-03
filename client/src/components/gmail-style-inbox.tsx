@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { formatDistanceToNow } from "date-fns";
 import { 
   Inbox as InboxIcon,
@@ -746,8 +747,8 @@ export default function GmailStyleInbox() {
             )}
           </div>
 
-          {/* Kudos Section - Only show in inbox and when there are kudos */}
-          {activeFolder === "inbox" && kudos && kudos.length > 0 && (
+          {/* Kudos Section - Only show in inbox and when there are kudos and user has permission */}
+          {activeFolder === "inbox" && kudos && kudos.length > 0 && hasPermission(user, PERMISSIONS.VIEW_KUDOS) && (
             <div className="border-b bg-gradient-to-r from-yellow-50 to-orange-50 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Trophy className="h-5 w-5 text-yellow-600" />
