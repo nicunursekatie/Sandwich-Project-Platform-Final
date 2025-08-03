@@ -1,0 +1,93 @@
+Complete Permissions Structure for Sandwich Platform
+1. Collections & Data
+📊 Collections
+  ☐ Submit collections (auto-includes edit/delete own)
+  ☐ Manage ALL collections (edit/delete anyone's)
+  ☐ Collection walkthrough (simplified form)
+2. Communication
+💬 Team Chat Access
+  ☐ General chat (can edit/delete own messages)
+  ☐ Core team chat (can edit/delete own messages)
+  ☐ Host chat (can edit/delete own messages)
+  ☐ Recipient chat (can edit/delete own messages)
+  ☐ Driver chat (can edit/delete own messages)
+  ☐ Moderate ALL chat messages
+
+✉️ Direct Messaging
+  ☐ Send direct messages (no edit/delete after sending)
+  ☐ Delete ALL messages (admin only)
+3. Projects & Tasks
+📁 Projects
+  ☐ Create projects (auto-includes edit/delete own)
+  ☐ Manage ALL projects
+4. Work Tracking
+⏱️ Work Logs
+  ☐ Submit work logs (auto-includes view/edit/delete own)
+  ☐ View ALL work logs (read-only)
+5. Directory Access
+📋 View Directories
+  ☐ Host directory
+  ☐ Recipient directory
+  ☐ Driver directory
+
+✏️ Manage Directories
+  ☐ Edit host info
+  ☐ Edit recipient info
+  ☐ Edit driver info
+6. Platform Tools
+🛠️ Tools & Features
+  ☐ Analytics access
+  ☐ Reports access
+  ☐ Suggestions (auto-includes submit/edit/delete own)
+  ☐ Manage ALL suggestions
+  ☐ Announcements access
+7. Administration
+👥 User Management
+  ☐ View all users
+  ☐ Basic user support (password resets, view permissions)
+  ☐ Full user management (create/edit accounts, set permissions)
+
+⚙️ System Admin
+  ☐ System administrator (FULL platform access - dangerous)
+
+UI Implementation Instructions:
+
+Group permissions by category with collapsible sections (like shown above)
+Use clear icons for each category
+Add descriptive help text under each permission explaining what it includes
+Color-code danger levels:
+
+🟢 Green: Basic permissions (view, submit own)
+🟡 Yellow: Elevated permissions (manage others' content)
+🔴 Red: Admin permissions (system-breaking potential)
+
+
+Auto-bundling logic:
+
+When "Submit collections" is checked → automatically enable edit/delete own
+When any chat is enabled → automatically enable edit/delete own messages in that chat
+Make the bundled permissions visible but greyed out so users understand what's included
+
+
+Special rules to enforce:
+
+Work logs: Users can only ever see their own EXCEPT those with "View ALL work logs"
+Direct messages: NO edit/delete after sending for anyone except full deletion by admin
+System Admin: Add a warning modal "This grants complete system access. Are you sure?"
+
+
+Add permission presets dropdown:
+
+Basic Volunteer (collections + general chat)
+Host Team Member
+Recipient Team Member
+Driver Team Member
+Core Team Member
+Team Lead
+Administrator
+
+
+Search/filter functionality to quickly find specific permissions
+Show permission count next to each user (e.g., "Sarah (12 permissions)")
+Audit log for permission changes (who changed what, when)
+RetryClaude can make mistakes. Please double-check responses.
