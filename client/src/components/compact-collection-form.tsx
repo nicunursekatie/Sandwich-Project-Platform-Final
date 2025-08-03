@@ -97,8 +97,8 @@ export default function CompactCollectionForm({
       return;
     }
 
-    // Check for unsaved group entries
-    if (newGroupName.trim() !== "" || newGroupCount > 0) {
+    // Check for unsaved group entries - only warn if both fields have meaningful data
+    if (newGroupName.trim() !== "" && newGroupCount > 0) {
       toast({ 
         title: "Unsaved group entry", 
         description: "Please click 'Add This Group' to save your group entry before submitting, or clear the fields if you don't want to add this group.",
@@ -270,14 +270,28 @@ export default function CompactCollectionForm({
               }}
               className="h-12 md:h-10 text-lg md:text-base"
             />
-            <Button
-              onClick={addGroup}
-              disabled={!newGroupName || newGroupCount <= 0}
-              className="w-full h-12 md:h-10 text-lg md:text-base bg-[#47B3CB] hover:bg-[#236383]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add This Group
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={addGroup}
+                disabled={!newGroupName || newGroupCount <= 0}
+                className="flex-1 h-12 md:h-10 text-lg md:text-base bg-[#47B3CB] hover:bg-[#236383]"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add This Group
+              </Button>
+              {(newGroupName.trim() !== "" || newGroupCount > 0) && (
+                <Button
+                  onClick={() => {
+                    setNewGroupName("");
+                    setNewGroupCount(0);
+                  }}
+                  variant="outline"
+                  className="h-12 md:h-10 px-3 md:px-2"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
             
             {/* Show warning if there are unsaved entries */}
             {(newGroupName.trim() !== "" || newGroupCount > 0) && (!newGroupName || newGroupCount <= 0) && (
