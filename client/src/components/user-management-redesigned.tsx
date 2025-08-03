@@ -68,7 +68,7 @@ interface User {
 
 const ROLE_COLORS = {
   [USER_ROLES.SUPER_ADMIN]: "bg-red-100 text-red-800 border-red-200",
-  [USER_ROLES.ADMIN]: "bg-orange-100 text-orange-800 border-orange-200",
+  [USER_ROLES.ADMIN]: "bg-[#236383] text-white border-[#236383]",
   [USER_ROLES.COMMITTEE_MEMBER]: "bg-blue-100 text-blue-800 border-blue-200",
   [USER_ROLES.HOST]: "bg-green-100 text-green-800 border-green-200",
   [USER_ROLES.VOLUNTEER]: "bg-purple-100 text-purple-800 border-purple-200",
