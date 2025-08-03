@@ -17,7 +17,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Users, Shield, Settings, Key, Award, Megaphone, Trash2, Bug, Activity } from "lucide-react";
 import AnnouncementManager from "@/components/announcement-manager";
 import AuthDebug from "@/components/auth-debug";
-import { SimplePermissionsDialog } from "@/components/simple-permissions-dialog";
+import EnhancedPermissionsDialog from "@/components/enhanced-permissions-dialog";
 import ShoutoutSystem from "@/components/shoutout-system";
 import EnhancedUserAnalytics from "@/components/enhanced-user-analytics";
 
@@ -452,8 +452,8 @@ export default function UserManagement() {
         }}
       />
       
-      {/* User Permissions Dialog */}
-      <SimplePermissionsDialog
+      {/* Enhanced User Permissions Dialog */}
+      <EnhancedPermissionsDialog
         user={selectedUser}
         open={!!selectedUser}
         onOpenChange={(open) => {
