@@ -32,9 +32,47 @@ export default function SendKudosButton({
   const { toast } = useToast();
   const [hasSentKudos, setHasSentKudos] = useState(false);
 
+  // Don't render if recipientId is empty or invalid
+  if (!recipientId || !recipientId.trim()) {
+    console.warn('SendKudosButton: Not rendering due to empty recipientId', {
+      recipientId,
+      recipientName,
+      contextType,
+      contextId,
+      contextTitle
+    });
+    return null;
+  }
+
+  // Don't render if trying to send kudos to yourself
+  if (user?.id === recipientId) {
+    return null;
+  }
+
   const sendKudosMutation = useMutation({
     mutationFn: async () => {
       const kudosMessage = generateKudosMessage(recipientName, contextType, contextTitle);
+      
+      // Debug logging
+      console.log('SendKudosButton mutation data:', {
+        recipientId,
+        recipientName,
+        contextType,
+        contextId,
+        entityName: contextTitle,
+        content: kudosMessage
+      });
+
+      if (!recipientId || !recipientId.trim()) {
+        console.error('SendKudosButton: Empty recipientId detected', {
+          recipientId,
+          recipientName,
+          contextType,
+          contextId,
+          contextTitle
+        });
+        throw new Error(`Cannot send kudos: recipient ID is empty`);
+      }
       
       return await apiRequest('POST', '/api/messaging/kudos', {
         recipientId,
