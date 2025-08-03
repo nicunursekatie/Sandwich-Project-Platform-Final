@@ -106,12 +106,12 @@ export default function CompactCollectionForm({
 
     // Convert groupCollections array to individual group fields (max 2 groups)
     if (groupCollections.length > 0) {
-      submissionData.group1Name = groupCollections[0].name;
-      submissionData.group1Count = groupCollections[0].count;
+      submissionData.group1_name = groupCollections[0].name;
+      submissionData.group1_count = groupCollections[0].count;
       
       if (groupCollections.length > 1) {
-        submissionData.group2Name = groupCollections[1].name;
-        submissionData.group2Count = groupCollections[1].count;
+        submissionData.group2_name = groupCollections[1].name;
+        submissionData.group2_count = groupCollections[1].count;
       }
     }
 
