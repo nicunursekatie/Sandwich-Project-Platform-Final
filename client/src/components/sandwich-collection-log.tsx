@@ -550,7 +550,16 @@ export default function SandwichCollectionLog() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('POST', '/api/sandwich-collections', data);
+      console.log("=== CLIENT MUTATION DEBUG ===");
+      console.log("Submitting data:", JSON.stringify(data, null, 2));
+      try {
+        const result = await apiRequest('POST', '/api/sandwich-collections', data);
+        console.log("API call successful, result:", result);
+        return result;
+      } catch (error) {
+        console.error("API call failed:", error);
+        throw error;
+      }
     },
     onSuccess: (response, variables) => {
       const totalSandwiches = (variables.individualSandwiches || 0) + 
