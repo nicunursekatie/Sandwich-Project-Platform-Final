@@ -376,7 +376,7 @@ export default function UserManagementRedesigned() {
                             </div>
                             <span className="font-medium">{getRoleDisplayName(role)}</span>
                           </div>
-                          <Badge variant="secondary">{count}</Badge>
+                          <Badge variant="outline" className="bg-[#236383] text-white border-[#236383]">{count}</Badge>
                         </div>
                       );
                     })}
