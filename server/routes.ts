@@ -1123,7 +1123,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requirePermission("create_collections"),
     async (req, res) => {
       try {
+        console.log("=== POST /api/sandwich-collections DEBUG ===");
+        console.log("Raw request body:", JSON.stringify(req.body, null, 2));
+        
         const collectionData = insertSandwichCollectionSchema.parse(req.body);
+        console.log("Parsed collection data:", JSON.stringify(collectionData, null, 2));
         
         // Add user attribution to the collection
         const user = req.user || req.session?.user;
@@ -1135,7 +1139,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : user?.email || 'Unknown User'
         };
         
+        console.log("Enriched collection data to save:", JSON.stringify(enrichedCollectionData, null, 2));
+        
         const collection = await storage.createSandwichCollection(enrichedCollectionData);
+        console.log("Created collection result:", JSON.stringify(collection, null, 2));
 
         // Invalidate cache when new collection is created
         QueryOptimizer.invalidateCache("sandwich-collections");
