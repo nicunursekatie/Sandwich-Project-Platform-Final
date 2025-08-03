@@ -261,7 +261,7 @@ export default function CompactCollectionForm({
           {/* Add group form - stacked layout */}
           <div className="space-y-2 mb-3">
             <Input
-              placeholder="e.g. 'Smith Family'"
+              placeholder="e.g. 'The Weber School'"
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               className="h-12 md:h-10 text-lg md:text-base"
