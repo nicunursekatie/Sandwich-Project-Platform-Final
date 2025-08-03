@@ -45,13 +45,18 @@ export default function SendKudosButton({
     return null;
   }
 
-  // Don't render if trying to send kudos to yourself
-  if (user?.id === recipientId) {
+  // Don't render if no user or trying to send kudos to yourself
+  if (!user || (user as any)?.id === recipientId) {
     return null;
   }
 
   // Don't render if user doesn't have permission to send kudos
   if (!hasPermission(user, PERMISSIONS.SEND_KUDOS)) {
+    console.warn('SendKudosButton: User lacks SEND_KUDOS permission', {
+      user: user ? { id: (user as any).id, email: (user as any).email } : null,
+      hasPermission: hasPermission(user, PERMISSIONS.SEND_KUDOS),
+      SEND_KUDOS: PERMISSIONS.SEND_KUDOS
+    });
     return null;
   }
 
