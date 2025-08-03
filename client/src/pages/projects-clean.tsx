@@ -343,9 +343,27 @@ export default function ProjectsClean() {
                 let assigneeName = `Team Member ${index + 1}`;
                 if ((project as any).assigneeNames) {
                   if (typeof (project as any).assigneeNames === 'string') {
-                    // Split comma-separated string and get the name at the current index
-                    const nameArray = (project as any).assigneeNames.split(',').map((name: string) => name.trim());
-                    assigneeName = nameArray[index] || `Team Member ${index + 1}`;
+                    const assigneeNamesStr = (project as any).assigneeNames.trim();
+                    
+                    // If the string contains commas, split by comma
+                    if (assigneeNamesStr.includes(',')) {
+                      const nameArray = assigneeNamesStr.split(',').map((name: string) => name.trim());
+                      assigneeName = nameArray[index] || `Team Member ${index + 1}`;
+                    }
+                    // If no commas but multiple assignees, it might be a single name for all
+                    else if ((project as any).assigneeIds.length === 1) {
+                      // Single assignee with single name
+                      assigneeName = assigneeNamesStr;
+                    }
+                    else {
+                      // Multiple assignees but only one name - this is the problematic case
+                      // Don't split the name by characters, use the full name for the first assignee
+                      if (index === 0) {
+                        assigneeName = assigneeNamesStr;
+                      } else {
+                        assigneeName = `Team Member ${index + 1}`;
+                      }
+                    }
                   } else if (Array.isArray((project as any).assigneeNames)) {
                     // Handle array format
                     assigneeName = (project as any).assigneeNames[index] || `Team Member ${index + 1}`;
