@@ -644,7 +644,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  variant="outline" 
  size="sm"
  onClick={() => handleDownloadFile(viewingMinutes.id, viewingMinutes.fileName!)}
- className="ml-4"
+ className="ml-4">
  >
  <Download className="w-4 h-4 mr-2" />
  Download File
@@ -661,9 +661,9 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  {isGoogleDocsLink ? (
  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
  {/* Header with download */}
- <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50"
+ <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
  <div className="flex items-center gap-2">
- <Link className="w-5 h-5 text-blue-600 />"
+ <Link className="w-5 h-5 text-blue-600" />
  <span className="font-medium">Google Docs Document</span>
  </div>
  <Button variant="outline" size="sm" asChild>
@@ -677,7 +677,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  <div style={{ height: '600px' }}>
  <iframe
                  src={(() => { try { const docUrl = viewingMinutes.summary.split("Google Docs link:")[1]?.trim(); if (!docUrl) return "about:blank"; const docIdMatch = docUrl.match(/\/d\/([a-zA-Z0-9-_]+)/); const docId = docIdMatch?.[1]; return docId ? `https://docs.google.com/document/d/${docId}/preview` : "about:blank"; } catch { return "about:blank"; } })()}
- className="w-full h-full border-0"
+ className="w-full h-full border-0">
  title="Google Docs Preview"
  />
  </div>
@@ -685,9 +685,9 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  ) : viewingMinutes.fileName ? (
  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
  {/* Header with download */}
- <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50"
+ <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
  <div className="flex items-center gap-2">
- <FileText className="w-5 h-5 text-blue-600 />"
+ <FileText className="w-5 h-5 text-blue-600" />
  <span className="font-medium">{viewingMinutes.fileName}</span>
  <span className="text-sm text-gray-500 uppercase">
  {viewingMinutes.fileName.split('.').pop()}
@@ -707,7 +707,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  {viewingMinutes.fileName.toLowerCase().endsWith('.pdf') ? (
  <iframe
  src={`/api/meeting-minutes/${viewingMinutes.id}/file`}
- className="w-full h-full border-0"
+ className="w-full h-full border-0">
  title={viewingMinutes.fileName}
  />
  ) : (
@@ -721,7 +721,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  </p>
  <Button 
  onClick={() => handleDownloadFile(viewingMinutes.id, viewingMinutes.fileName!)}
- className="inline-flex items-center"
+ className="inline-flex items-center">
  >
  <Download className="w-4 h-4 mr-2" />
  Download Document
@@ -732,7 +732,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  </div>
  ) : (
  <div className="bg-white border border-gray-200 rounded-lg p-6">
- <div className="prose max-w-none"
+ <div className="prose max-w-none">
  <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
  {viewingMinutes.summary}
  </div>
@@ -780,7 +780,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  value="file"
  checked={uploadType ==="file"}
  onChange={(e) => setUploadType(e.target.value as"file" |"google_docs")}
- className="mr-2"
+ className="mr-2">
  />
  Upload File
  </label>
@@ -790,7 +790,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  value="google_docs"
  checked={uploadType ==="google_docs"}
  onChange={(e) => setUploadType(e.target.value as"file" |"google_docs")}
- className="mr-2"
+ className="mr-2">
  />
  Google Docs Link
  </label>
@@ -856,12 +856,12 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  <div className="space-y-6">
  {/* Navigation Header - only show when not embedded */}
  {!isEmbedded && (
- <div className="flex items-center gap-3 pb-4 border-b border-gray-200"
+ <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
  <Button 
  variant="outline" 
  size="sm"
  onClick={() => (window as any).dashboardSetActiveSection?.("meetings")}
- className="flex items-center gap-2"
+ className="flex items-center gap-2">
  >
  <ArrowLeft className="w-4 h-4" />
  Back to Meetings Hub
@@ -877,8 +877,8 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
  <div>
- <h1 className="text-lg font-semibold text-gray-900 Minutes</h1>"
- <p className="text-gray-600 and view minutes for scheduled meetings</p>"
+ <h1 className="text-lg font-semibold text-gray-900 Minutes</h1>">
+ <p className="text-gray-600 and view minutes for scheduled meetings</p>">
  </div>
  <Button onClick={() => setIsCreatingMeeting(true)} className="flex items-center gap-2">
  <Plus className="w-4 h-4" />
@@ -953,7 +953,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  variant="outline" 
  size="sm"
  onClick={() => handleDeleteMeeting(meeting.id)}
- className="text-red-600 hover:text-red-700"
+ className="text-red-600 hover:text-red-700">
  >
  <Trash2 className="w-4 h-4" />
  </Button>
@@ -970,7 +970,7 @@ export default function MeetingMinutes({ isEmbedded = false }: MeetingMinutesPro
  <CardContent className="text-center py-12">
  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
  <h3 className="text-base font-medium text-gray-900 mb-2">No meetings scheduled</h3>
- <p className="text-gray-600 back later for scheduled meetings</p>"
+ <p className="text-gray-600 back later for scheduled meetings</p>">
  </CardContent>
  </Card>
  )}
