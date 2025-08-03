@@ -36,13 +36,18 @@ function Router() {
     console.error('[App] Authentication error:', error);
     // For non-401 errors, show error state
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md p-6 bg-white rounded-lg shadow-lg text-center">
-          <h2 className="text-xl font-semibold text-red-600 mb-2">Authentication Error</h2>
-          <p className="text-gray-600 mb-4">There was a problem verifying your account.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <div className="max-w-md p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 text-center backdrop-blur-sm">
+          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">Authentication Error</h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">There was a problem verifying your account. Please try logging in again.</p>
           <button 
             onClick={() => window.location.href = "/api/login"}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="w-full px-6 py-3 bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
           >
             Try Again
           </button>
@@ -65,13 +70,19 @@ function Router() {
         </Route>
         <Route path="/stream-messages">
           {() => (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-              <div className="max-w-md p-6 bg-white rounded-lg shadow-lg text-center">
-                <h2 className="text-xl font-semibold text-blue-600 mb-2">Authentication Required</h2>
-                <p className="text-gray-600 mb-4">Please log in to access the messaging system.</p>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+              <div className="max-w-md p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 text-center backdrop-blur-sm">
+                <div className="w-12 h-12 bg-[#236383]/10 dark:bg-[#236383]/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-6 h-6 text-[#236383]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6V5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v1" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">Authentication Required</h2>
+                <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">Please log in to access the messaging system and continue your work.</p>
                 <button 
                   onClick={() => window.location.href = "/api/login"}
-                  className="px-6 py-2 bg-[#236383] text-white rounded hover:bg-[#1a4d61] transition-colors"
+                  className="w-full px-6 py-3 bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
                 >
                   Login to Continue
                 </button>

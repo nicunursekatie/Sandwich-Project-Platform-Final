@@ -1,0 +1,128 @@
+Dashboard activeSection changed to: collections
+sandwich-collection-log.tsx:144 Setting debounced filters: {hostName: '', collectionDateFrom: '', collectionDateTo: '', createdAtFrom: '', createdAtTo: ''}
+collection-walkthrough.tsx:449 Uncaught ReferenceError: Plus is not defined
+    at renderStep (collection-walkthrough.tsx:449:18)
+    at CollectionWalkthrough (collection-walkthrough.tsx:574:10)
+    at renderWithHooks (chunk-276SZO74.js?v=a597a69e:11548:26)
+    at updateFunctionComponent (chunk-276SZO74.js?v=a597a69e:14582:28)
+    at beginWork (chunk-276SZO74.js?v=a597a69e:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-276SZO74.js?v=a597a69e:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-276SZO74.js?v=a597a69e:3699:24)
+    at invokeGuardedCallback (chunk-276SZO74.js?v=a597a69e:3733:39)
+    at beginWork$1 (chunk-276SZO74.js?v=a597a69e:19765:15)
+    at performUnitOfWork (chunk-276SZO74.js?v=a597a69e:19198:20)
+renderStep @ collection-walkthrough.tsx:449
+CollectionWalkthrough @ collection-walkthrough.tsx:574
+renderWithHooks @ chunk-276SZO74.js?v=a597a69e:11548
+updateFunctionComponent @ chunk-276SZO74.js?v=a597a69e:14582
+beginWork @ chunk-276SZO74.js?v=a597a69e:15924
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+beginWork$1 @ chunk-276SZO74.js?v=a597a69e:19765
+performUnitOfWork @ chunk-276SZO74.js?v=a597a69e:19198
+workLoopSync @ chunk-276SZO74.js?v=a597a69e:19137
+renderRootSync @ chunk-276SZO74.js?v=a597a69e:19116
+performConcurrentWorkOnRoot @ chunk-276SZO74.js?v=a597a69e:18678
+workLoop @ chunk-276SZO74.js?v=a597a69e:197
+flushWork @ chunk-276SZO74.js?v=a597a69e:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=a597a69e:384
+collection-walkthrough.tsx:449 Uncaught ReferenceError: Plus is not defined
+    at renderStep (collection-walkthrough.tsx:449:18)
+    at CollectionWalkthrough (collection-walkthrough.tsx:574:10)
+    at renderWithHooks (chunk-276SZO74.js?v=a597a69e:11548:26)
+    at updateFunctionComponent (chunk-276SZO74.js?v=a597a69e:14582:28)
+    at beginWork (chunk-276SZO74.js?v=a597a69e:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-276SZO74.js?v=a597a69e:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-276SZO74.js?v=a597a69e:3699:24)
+    at invokeGuardedCallback (chunk-276SZO74.js?v=a597a69e:3733:39)
+    at beginWork$1 (chunk-276SZO74.js?v=a597a69e:19765:15)
+    at performUnitOfWork (chunk-276SZO74.js?v=a597a69e:19198:20)
+renderStep @ collection-walkthrough.tsx:449
+CollectionWalkthrough @ collection-walkthrough.tsx:574
+renderWithHooks @ chunk-276SZO74.js?v=a597a69e:11548
+updateFunctionComponent @ chunk-276SZO74.js?v=a597a69e:14582
+beginWork @ chunk-276SZO74.js?v=a597a69e:15924
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+beginWork$1 @ chunk-276SZO74.js?v=a597a69e:19765
+performUnitOfWork @ chunk-276SZO74.js?v=a597a69e:19198
+workLoopSync @ chunk-276SZO74.js?v=a597a69e:19137
+renderRootSync @ chunk-276SZO74.js?v=a597a69e:19116
+recoverFromConcurrentError @ chunk-276SZO74.js?v=a597a69e:18736
+performConcurrentWorkOnRoot @ chunk-276SZO74.js?v=a597a69e:18684
+workLoop @ chunk-276SZO74.js?v=a597a69e:197
+flushWork @ chunk-276SZO74.js?v=a597a69e:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=a597a69e:384
+hook.js:608 The above error occurred in the <CollectionWalkthrough> component:
+
+    at CollectionWalkthrough (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/collection-walkthrough.tsx:26:49)
+    at CollectionFormSelector (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/collection-form-selector.tsx:27:50)
+    at div
+    at div
+    at SandwichCollectionLog (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-collection-log.tsx:37:21)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at HelpProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/help-system/HelpProvider.tsx:29:32)
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx:63:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a597a69e:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a597a69e:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=iU0kV9zuBh5KkWNs1InPQ:35:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-3RXG37ZK.js?v=a597a69e:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=a597a69e:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=a597a69e:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=iU0kV9zuBh5KkWNs1InPQ:303:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+logCapturedError @ chunk-276SZO74.js?v=a597a69e:14032
+callback @ chunk-276SZO74.js?v=a597a69e:14078
+callCallback @ chunk-276SZO74.js?v=a597a69e:11248
+commitUpdateQueue @ chunk-276SZO74.js?v=a597a69e:11265
+commitLayoutEffectOnFiber @ chunk-276SZO74.js?v=a597a69e:17075
+commitLayoutMountEffects_complete @ chunk-276SZO74.js?v=a597a69e:17980
+commitLayoutEffects_begin @ chunk-276SZO74.js?v=a597a69e:17969
+commitLayoutEffects @ chunk-276SZO74.js?v=a597a69e:17920
+commitRootImpl @ chunk-276SZO74.js?v=a597a69e:19353
+commitRoot @ chunk-276SZO74.js?v=a597a69e:19277
+finishConcurrentRender @ chunk-276SZO74.js?v=a597a69e:18760
+performConcurrentWorkOnRoot @ chunk-276SZO74.js?v=a597a69e:18718
+workLoop @ chunk-276SZO74.js?v=a597a69e:197
+flushWork @ chunk-276SZO74.js?v=a597a69e:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=a597a69e:384
+error-boundary.tsx:28 Error caught by boundary: ReferenceError: Plus is not defined
+    at renderStep (collection-walkthrough.tsx:449:18)
+    at CollectionWalkthrough (collection-walkthrough.tsx:574:10)
+    at renderWithHooks (chunk-276SZO74.js?v=a597a69e:11548:26)
+    at updateFunctionComponent (chunk-276SZO74.js?v=a597a69e:14582:28)
+    at beginWork (chunk-276SZO74.js?v=a597a69e:15924:22)
+    at beginWork$1 (chunk-276SZO74.js?v=a597a69e:19753:22)
+    at performUnitOfWork (chunk-276SZO74.js?v=a597a69e:19198:20)
+    at workLoopSync (chunk-276SZO74.js?v=a597a69e:19137:13)
+    at renderRootSync (chunk-276SZO74.js?v=a597a69e:19116:15)
+    at recoverFromConcurrentError (chunk-276SZO74.js?v=a597a69e:18736:28) {componentStack: '\n    at CollectionWalkthrough (https://bb1d30f8-d8…v:5000/src/App.tsx?v=iU0kV9zuBh5KkWNs1InPQ:303:3)'} Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:121:3)
+overrideMethod @ hook.js:608
+componentDidCatch @ error-boundary.tsx:28
+callback @ chunk-276SZO74.js?v=a597a69e:14084
+callCallback @ chunk-276SZO74.js?v=a597a69e:11248
+commitUpdateQueue @ chunk-276SZO74.js?v=a597a69e:11265
+commitLayoutEffectOnFiber @ chunk-276SZO74.js?v=a597a69e:17075
+commitLayoutMountEffects_complete @ chunk-276SZO74.js?v=a597a69e:17980
+commitLayoutEffects_begin @ chunk-276SZO74.js?v=a597a69e:17969
+commitLayoutEffects @ chunk-276SZO74.js?v=a597a69e:17920
+commitRootImpl @ chunk-276SZO74.js?v=a597a69e:19353
+commitRoot @ chunk-276SZO74.js?v=a597a69e:19277
+finishConcurrentRender @ chunk-276SZO74.js?v=a597a69e:18760
+performConcurrentWorkOnRoot @ chunk-276SZO74.js?v=a597a69e:18718
+workLoop @ chunk-276SZO74.js?v=a597a69e:197
+flushWork @ chunk-276SZO74.js?v=a597a69e:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=a597a69e:384
+message-notifications.tsx:137 WebSocket connection closed: 1000 Component unmounting

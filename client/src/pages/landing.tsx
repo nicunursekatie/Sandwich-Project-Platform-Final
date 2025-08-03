@@ -47,7 +47,7 @@ export default function Landing() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-100 p-4">
       <div className="max-w-6xl mx-auto space-y-12 py-8">
         {/* Hero Section */}
         <div className="text-center space-y-6">
@@ -63,9 +63,18 @@ export default function Landing() {
             sandwiches to fight food insecurity. Connecting volunteers, hosts, and nonprofit partners 
             to make a lasting impact one sandwich at a time.
           </p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={handleLogin} size="lg" className="btn-tsp-primary">
-              Enter Platform
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button 
+              onClick={handleLogin} 
+              size="lg" 
+              className="bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#236383]/30 group"
+            >
+              <span className="flex items-center gap-2">
+                Enter Platform
+                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
             </Button>
             <Button 
               variant="outline" 
@@ -74,6 +83,7 @@ export default function Landing() {
                 console.log('Toolkit button clicked, current state:', showToolkit);
                 setShowToolkit(!showToolkit);
               }}
+              className="border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
             >
               {showToolkit ? 'Hide' : 'View'} Group Toolkit
             </Button>
@@ -83,44 +93,42 @@ export default function Landing() {
         {/* Real-time Statistics - Hidden when toolkit is shown */}
         {!showToolkit && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className="text-center bg-white/80 backdrop-blur"
+            <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
               <CardHeader>
-              <img 
-                src={tspTransparent} 
-                alt="TSP Logo" 
-                className="h-12 w-12 mx-auto mb-4 object-contain"
-              />
-              <CardTitle className="text-2xl font-bold">{totalSandwiches.toLocaleString()}</CardTitle>
-              <CardDescription className="font-semibold">Sandwiches Delivered</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 shared with community members</p>"
-            </CardContent>
-          </Card>
+                <img 
+                  src={tspTransparent} 
+                  alt="TSP Logo" 
+                  className="h-12 w-12 mx-auto mb-4 object-contain"
+                />
+                <CardTitle className="text-2xl font-bold">{totalSandwiches.toLocaleString()}</CardTitle>
+                <CardDescription className="font-semibold">Sandwiches Delivered</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600">shared with community members</p>
+              </CardContent>
+            </Card>
 
-          <Card className="text-center bg-white/80 backdrop-blur"
-            <CardHeader>
-              <Calendar className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <CardTitle className="text-2xl font-bold">{weeklyAverage.toLocaleString()}</CardTitle>
-              <CardDescription className="font-semibold">Weekly Average</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 collected each week</p>"
-            </CardContent>
-          </Card>
+            <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
+              <CardHeader>
+                <Calendar className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <CardTitle className="text-2xl font-bold">{weeklyAverage.toLocaleString()}</CardTitle>
+                <CardDescription className="font-semibold">Weekly Average</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600">collected each week</p>
+              </CardContent>
+            </Card>
 
-          <Card className="text-center bg-white/80 backdrop-blur"
-            <CardHeader>
-              <TrendingUp className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-              <CardTitle className="text-2xl font-bold">{recordWeek.toLocaleString()}</CardTitle>
-              <CardDescription className="font-semibold">Record Week</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 weekly sandwich collection</p>"
-            </CardContent>
-          </Card>
-
-
+            <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
+              <CardHeader>
+                <TrendingUp className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+                <CardTitle className="text-2xl font-bold">{recordWeek.toLocaleString()}</CardTitle>
+                <CardDescription className="font-semibold">Record Week</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600">weekly sandwich collection</p>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -128,7 +136,7 @@ export default function Landing() {
         {showToolkit && (
           <Card className="bg-blue-50 border-2 border-blue-500">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl text-blue-600"
+              <CardTitle className="text-3xl text-blue-600">
                 🛠️ Group Toolkit
               </CardTitle>
               <CardDescription className="text-lg">
@@ -151,12 +159,12 @@ export default function Landing() {
         )}
 
         {/* Efficiency Metrics Section */}
-        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200"
+        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-green-800"
+            <CardTitle className="text-2xl font-bold text-green-800">
               Proven Impact Efficiency
             </CardTitle>
-            <CardDescription className="text-lg text-green-700"
+            <CardDescription className="text-lg text-green-700">
               Data-backed claims with measurable results
             </CardDescription>
           </CardHeader>
@@ -164,24 +172,24 @@ export default function Landing() {
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center p-4 bg-white/60 rounded-lg">
                 <div className="text-2xl font-bold text-purple-600">449K</div>
-                <div className="text-sm font-medium text-gray-700 Year Output</div>"
+                <div className="text-sm font-medium text-gray-700">Year Output</div>
                 <div className="text-xs text-gray-600 mt-1">2024 verified weekly totals</div>
               </div>
               <div className="text-center p-4 bg-white/60 rounded-lg">
                 <div className="text-2xl font-bold text-red-600">47+</div>
-                <div className="text-sm font-medium text-gray-700 Radius</div>"
+                <div className="text-sm font-medium text-gray-700">Mile Radius</div>
                 <div className="text-xs text-gray-600 mt-1">verified geographic coverage</div>
               </div>
               <div className="text-center p-4 bg-white/60 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">1,800+</div>
-                <div className="text-sm font-medium text-gray-700"
+                <div className="text-sm font-medium text-gray-700">Weekly Data Points</div>
                 <div className="text-xs text-gray-600 mt-1">weekly data points tracked</div>
               </div>
             </div>
             <div className="mt-6 text-center">
               <div className="inline-flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full">
                 <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-gray-700"
+                <span className="text-sm font-medium text-gray-700">
                   Crisis Response: +100% surge capacity proven during Hurricane week
                 </span>
               </div>
@@ -193,30 +201,36 @@ export default function Landing() {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-3 gap-6">
-          <Card className="text-center">
+          <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
             <CardHeader>
-              <Users className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-              <CardTitle>Team Management</CardTitle>
+              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors duration-300">
+                <Users className="h-8 w-8 text-blue-600" />
+              </div>
+              <CardTitle className="group-hover:text-blue-600 transition-colors duration-300">Team Management</CardTitle>
               <CardDescription>
                 Manage hosts, volunteers, and drivers with comprehensive contact and role management
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
             <CardHeader>
-              <Calendar className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <CardTitle>Project Coordination</CardTitle>
+              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors duration-300">
+                <Calendar className="h-8 w-8 text-green-600" />
+              </div>
+              <CardTitle className="group-hover:text-green-600 transition-colors duration-300">Project Coordination</CardTitle>
               <CardDescription>
                 Track sandwich collections, coordinate meetings, and manage project workflows
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
             <CardHeader>
-              <MessageSquare className="h-12 w-12 text-purple-500 mx-auto mb-4" />
-              <CardTitle>Communication Hub</CardTitle>
+              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors duration-300">
+                <MessageSquare className="h-8 w-8 text-purple-600" />
+              </div>
+              <CardTitle className="group-hover:text-purple-600 transition-colors duration-300">Communication Hub</CardTitle>
               <CardDescription>
                 Real-time messaging, committee discussions, and comprehensive reporting tools
               </CardDescription>
@@ -233,7 +247,7 @@ export default function Landing() {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-2">
-            <p className="text-sm text-gray-600"
+            <p className="text-sm text-gray-600">
               Contact us to learn about volunteer opportunities
             </p>
             <p className="text-sm font-medium">

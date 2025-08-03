@@ -1,0 +1,215 @@
+Dashboard activeSection changed to: gmail-inbox
+gmail-style-inbox.tsx:186 Fetched 6 emails from inbox folder
+queryClient.ts:17  POST https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/122/read 500 (Internal Server Error)
+apiRequest @ queryClient.ts:17
+mutationFn @ gmail-style-inbox.tsx:215
+fn @ @tanstack_react-query.js?v=a597a69e:1236
+run @ @tanstack_react-query.js?v=a597a69e:513
+start @ @tanstack_react-query.js?v=a597a69e:555
+execute @ @tanstack_react-query.js?v=a597a69e:1272
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+markKudosAsRead @ gmail-style-inbox.tsx:230
+onClick @ gmail-style-inbox.tsx:763
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449
+gmail-style-inbox.tsx:225 Failed to mark kudos as read: Error: 500: {"message":"Failed to mark message as read"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:24:3)
+overrideMethod @ hook.js:608
+onError @ gmail-style-inbox.tsx:225
+execute @ @tanstack_react-query.js?v=a597a69e:1301
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+markKudosAsRead @ gmail-style-inbox.tsx:230
+onClick @ gmail-style-inbox.tsx:763
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449
+queryClient.ts:17  POST https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/122/read 500 (Internal Server Error)
+apiRequest @ queryClient.ts:17
+mutationFn @ gmail-style-inbox.tsx:215
+fn @ @tanstack_react-query.js?v=a597a69e:1236
+run @ @tanstack_react-query.js?v=a597a69e:513
+start @ @tanstack_react-query.js?v=a597a69e:555
+execute @ @tanstack_react-query.js?v=a597a69e:1272
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+markKudosAsRead @ gmail-style-inbox.tsx:230
+onClick @ gmail-style-inbox.tsx:763
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449
+gmail-style-inbox.tsx:225 Failed to mark kudos as read: Error: 500: {"message":"Failed to mark message as read"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:24:3)
+overrideMethod @ hook.js:608
+onError @ gmail-style-inbox.tsx:225
+execute @ @tanstack_react-query.js?v=a597a69e:1301
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+markKudosAsRead @ gmail-style-inbox.tsx:230
+onClick @ gmail-style-inbox.tsx:763
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449
+queryClient.ts:17  POST https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/122/read 500 (Internal Server Error)
+apiRequest @ queryClient.ts:17
+mutationFn @ gmail-style-inbox.tsx:215
+fn @ @tanstack_react-query.js?v=a597a69e:1236
+run @ @tanstack_react-query.js?v=a597a69e:513
+start @ @tanstack_react-query.js?v=a597a69e:555
+execute @ @tanstack_react-query.js?v=a597a69e:1272
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+markKudosAsRead @ gmail-style-inbox.tsx:230
+onClick @ gmail-style-inbox.tsx:763
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449
+gmail-style-inbox.tsx:225 Failed to mark kudos as read: Error: 500: {"message":"Failed to mark message as read"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:24:3)
+overrideMethod @ hook.js:608
+onError @ gmail-style-inbox.tsx:225
+execute @ @tanstack_react-query.js?v=a597a69e:1301
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+markKudosAsRead @ gmail-style-inbox.tsx:230
+onClick @ gmail-style-inbox.tsx:763
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449
+queryClient.ts:17  PATCH https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/122 404 (Not Found)
+apiRequest @ queryClient.ts:17
+(anonymous) @ gmail-style-inbox.tsx:356
+mutationFn @ gmail-style-inbox.tsx:355
+fn @ @tanstack_react-query.js?v=a597a69e:1236
+run @ @tanstack_react-query.js?v=a597a69e:513
+start @ @tanstack_react-query.js?v=a597a69e:555
+execute @ @tanstack_react-query.js?v=a597a69e:1272
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+onClick @ gmail-style-inbox.tsx:1021
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449
+gmail-style-inbox.tsx:368 Archive error: Error: 404: {"message":"Email not found or access denied"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:24:3)
+    at async Promise.all (:5000/index 0)
+    at async Object.mutationFn (gmail-style-inbox.tsx:358:14)
+overrideMethod @ hook.js:608
+onError @ gmail-style-inbox.tsx:368
+execute @ @tanstack_react-query.js?v=a597a69e:1301
+await in execute
+mutate @ @tanstack_react-query.js?v=a597a69e:2691
+(anonymous) @ @tanstack_react-query.js?v=a597a69e:3414
+onClick @ gmail-style-inbox.tsx:1021
+callCallback2 @ chunk-276SZO74.js?v=a597a69e:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=a597a69e:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=a597a69e:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=a597a69e:3736
+executeDispatch @ chunk-276SZO74.js?v=a597a69e:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=a597a69e:7034
+processDispatchQueue @ chunk-276SZO74.js?v=a597a69e:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=a597a69e:7051
+(anonymous) @ chunk-276SZO74.js?v=a597a69e:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=a597a69e:18913
+batchedUpdates @ chunk-276SZO74.js?v=a597a69e:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=a597a69e:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=a597a69e:5478
+dispatchEvent @ chunk-276SZO74.js?v=a597a69e:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=a597a69e:5449

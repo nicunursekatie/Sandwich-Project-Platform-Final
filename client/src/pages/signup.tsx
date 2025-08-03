@@ -122,18 +122,27 @@ export default function SignupPage() {
   if (currentStep === 4) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
           <CardContent className="p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Aboard!</h2>
-            <p className="text-gray-600 mb-6">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome Aboard!</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">
               Your registration has been submitted successfully. We'll review your application and contact you soon with next steps.
             </p>
             <div className="space-y-3">
-              <Button asChild className="w-full">
+              <Button 
+                asChild 
+                className="w-full bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
+              >
                 <Link href="/">Return to Home</Link>
               </Button>
-              <Button variant="outline" asChild className="w-full">
+              <Button 
+                variant="outline" 
+                asChild 
+                className="w-full border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
+              >
                 <Link href="/login">Sign In</Link>
               </Button>
             </div>
@@ -144,8 +153,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-green-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-gray-900">Join The Sandwich Project</CardTitle>
           <CardDescription className="text-lg">
