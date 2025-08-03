@@ -139,16 +139,16 @@ export default function EnhancedUserAnalytics() {
 
   const getSectionColor = (section: string) => {
     const colors: Record<string, string> = {
-      'Dashboard': 'bg-blue-100 text-blue-800
-      'Collections': 'bg-green-100 text-green-800
-      'Communication': 'bg-purple-100 text-purple-800
-      'Directory': 'bg-orange-100 text-orange-800
-      'Projects': 'bg-teal-100 text-teal-800
-      'Analytics': 'bg-yellow-100 text-yellow-800
-      'Admin': 'bg-red-100 text-red-800
-      'Meetings': 'bg-indigo-100 text-indigo-800
+      'Dashboard': 'bg-blue-100 text-blue-800',
+      'Collections': 'bg-green-100 text-green-800',
+      'Communication': 'bg-purple-100 text-purple-800',
+      'Directory': 'bg-orange-100 text-orange-800',
+      'Projects': 'bg-teal-100 text-teal-800',
+      'Analytics': 'bg-yellow-100 text-yellow-800',
+      'Admin': 'bg-red-100 text-red-800',
+      'Meetings': 'bg-indigo-100 text-indigo-800'
     };
-    return colors[section] || 'bg-gray-100 text-gray-800
+    return colors[section] || 'bg-gray-100 text-gray-800';
   };
 
   const getActionIcon = (action: string) => {

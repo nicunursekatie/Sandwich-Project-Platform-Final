@@ -133,7 +133,7 @@ export function MessageComposer({
             {isLoadingUsers ? (
               <div className="text-sm text-gray-500 mt-1">Loading users...</div>
             ) : (
-              <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3 bg-white"
+              <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3 bg-white">
                 {users.length === 0 ? (
                   <div className="text-sm text-gray-500">No users available</div>
                 ) : (
@@ -151,7 +151,7 @@ export function MessageComposer({
                         }}
                       />
                       <label htmlFor={user.id} className="text-sm cursor-pointer text-gray-900 font-medium flex-1">
-                        <span className="text-gray-900"
+                        <span className="text-gray-900">
                           {user.firstName && user.lastName 
                             ? `${user.firstName} ${user.lastName}` 
                             : user.email}
