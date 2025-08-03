@@ -157,26 +157,22 @@ function PhoneDirectoryFixed() {
       {/* Header */}
       <div className="flex flex-col space-y-6">
         <div>
-          <h1 className="text-4xl font-bold" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>Phone Directory</h1>
-          <p className="text-lg mt-2" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+          <h1 className="text-4xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">Phone Directory</h1>
+          <p className="text-lg mt-2 text-muted-foreground font-['Roboto',sans-serif]">
             Contact information for team members and organizations
           </p>
         </div>
 
         {/* Search */}
-        <Card className="border-2" style={{ borderColor: '#e6f3f7' }}>
+        <Card className="border-2 border-border dark:border-gray-700">
           <CardContent className="pt-6">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#646464' }} />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 placeholder="Search contacts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-base border-2 focus:ring-2"
-                style={{ 
-                  borderColor: '#236383', 
-                  fontFamily: 'Roboto, sans-serif'
-                }}
+                className="pl-12 h-12 text-base border-2 border-primary dark:border-secondary focus:ring-2 font-['Roboto',sans-serif] bg-background dark:bg-gray-800 text-foreground dark:text-white"
               />
             </div>
           </CardContent>
@@ -185,12 +181,12 @@ function PhoneDirectoryFixed() {
 
       {/* Directory Tabs - Permission-based visibility */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full h-14 p-1 rounded-lg ${
+        <TabsList className={`grid w-full h-14 p-1 rounded-lg bg-muted dark:bg-gray-800 ${
           availableTabs.length === 1 ? 'grid-cols-1' :
           availableTabs.length === 2 ? 'grid-cols-2' :
           availableTabs.length === 3 ? 'grid-cols-3' :
           'grid-cols-4'
-        }`} style={{ backgroundColor: '#e6f3f7' }}>
+        }`}>
           {availableTabs.map(tab => {
             const Icon = tab.icon;
             let count = 0;
@@ -204,15 +200,7 @@ function PhoneDirectoryFixed() {
               <TabsTrigger 
                 key={tab.id}
                 value={tab.id} 
-                className="flex items-center gap-2 h-12 text-base font-medium rounded-md transition-all duration-200 data-[state=active]:shadow-sm"
-                style={{ 
-                  fontFamily: 'Roboto, sans-serif',
-                  color: '#646464'
-                }}
-                data-active-style={{ 
-                  backgroundColor: '#236383', 
-                  color: 'white' 
-                }}
+                className="flex items-center gap-2 h-12 text-base font-medium rounded-md transition-all duration-200 data-[state=active]:shadow-sm font-['Roboto',sans-serif] text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:bg-secondary dark:data-[state=active]:text-secondary-foreground"
               >
                 <Icon className="w-5 h-5" />
                 {tab.label} ({count})
@@ -222,27 +210,27 @@ function PhoneDirectoryFixed() {
         </TabsList>
 
         <TabsContent value="contacts" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm" style={{ borderColor: '#e6f3f7' }}>
-            <CardHeader className="pb-4" style={{ backgroundColor: '#e6f3f7' }}>
-              <CardTitle className="flex items-center gap-3 text-xl font-bold" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>
-                <Phone className="w-6 h-6" style={{ color: '#236383' }} />
+          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
+            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
+                <Phone className="w-6 h-6 text-primary dark:text-secondary" />
                 General Contacts
               </CardTitle>
-              <CardDescription className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                 Contact information for general contacts and volunteers
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredContacts.length === 0 ? (
-                <div className="text-center py-12 text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                <div className="text-center py-12 text-base text-muted-foreground font-['Roboto',sans-serif]">
                   {searchTerm ? 'No contacts found matching your search.' : 'No contacts found.'}
                 </div>
               ) : (
                 <div className="space-y-4">
                   {filteredContacts.map((contact) => (
-                    <div key={contact.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200" style={{ borderColor: '#e6f3f7' }}>
-                      <h3 className="font-bold text-lg mb-2" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>{contact.name}</h3>
-                      <p className="text-base mb-1" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>{contact.phone}</p>
+                    <div key={contact.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border dark:border-gray-700 bg-card dark:bg-gray-800">
+                      <h3 className="font-bold text-lg mb-2 text-primary dark:text-secondary font-['Roboto',sans-serif]">{contact.name}</h3>
+                      <p className="text-base mb-1 text-muted-foreground font-['Roboto',sans-serif]">{contact.phone}</p>
                       {contact.email && <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>{contact.email}</p>}
                     </div>
                   ))}
@@ -253,48 +241,48 @@ function PhoneDirectoryFixed() {
         </TabsContent>
 
         {canViewHosts && <TabsContent value="hosts" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm" style={{ borderColor: '#e6f3f7' }}>
-            <CardHeader className="pb-4" style={{ backgroundColor: '#e6f3f7' }}>
-              <CardTitle className="flex items-center gap-3 text-xl font-bold" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>
-                <Users className="w-6 h-6" style={{ color: '#236383' }} />
+          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
+            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
+                <Users className="w-6 h-6 text-primary dark:text-secondary" />
                 Host Directory
               </CardTitle>
-              <CardDescription className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                 Contact information for sandwich collection hosts
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredHosts.length === 0 ? (
-                <div className="text-center py-12 text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                <div className="text-center py-12 text-base text-muted-foreground font-['Roboto',sans-serif]">
                   {searchTerm ? 'No hosts found matching your search.' : 'No hosts found.'}
                 </div>
               ) : (
                 <div className="space-y-6">
                   {filteredHosts.map((host) => (
-                    <div key={host.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200" style={{ borderColor: '#e6f3f7' }}>
-                      <h3 className="font-bold text-lg mb-3" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>{host.name}</h3>
+                    <div key={host.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border dark:border-gray-700 bg-card dark:bg-gray-800">
+                      <h3 className="font-bold text-lg mb-3 text-primary dark:text-secondary font-['Roboto',sans-serif]">{host.name}</h3>
                       {host.address && (
-                        <p className="text-base mb-4" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                        <p className="text-base mb-4 text-muted-foreground font-['Roboto',sans-serif]">
                           <span className="font-medium">Address:</span> {host.address}
                         </p>
                       )}
                       {host.contacts && host.contacts.length > 0 && (
                         <div className="space-y-3">
-                          <h4 className="font-semibold text-base" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>Contacts:</h4>
+                          <h4 className="font-semibold text-base text-primary dark:text-secondary font-['Roboto',sans-serif]">Contacts:</h4>
                           {host.contacts.map((contact, idx) => (
-                            <div key={idx} className="ml-4 p-3 rounded-md" style={{ backgroundColor: '#f8fbfc' }}>
-                              <div className="font-semibold text-base mb-1" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>{contact.name}</div>
+                            <div key={idx} className="ml-4 p-3 rounded-md bg-muted/50 dark:bg-gray-700">
+                              <div className="font-semibold text-base mb-1 text-primary dark:text-secondary font-['Roboto',sans-serif]">{contact.name}</div>
                               <div className="space-y-1">
-                                <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                                <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                                   <span className="font-medium">Phone:</span> {contact.phone}
                                 </p>
                                 {contact.email && (
-                                  <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                                  <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                                     <span className="font-medium">Email:</span> {contact.email}
                                   </p>
                                 )}
                                 {contact.role && (
-                                  <p className="text-base italic" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                                  <p className="text-base italic text-muted-foreground font-['Roboto',sans-serif]">
                                     <span className="font-medium">Role:</span> {contact.role}
                                   </p>
                                 )}
@@ -304,7 +292,7 @@ function PhoneDirectoryFixed() {
                         </div>
                       )}
                       {(!host.contacts || host.contacts.length === 0) && (
-                        <p className="text-base italic" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>No contact information available</p>
+                        <p className="text-base italic text-muted-foreground font-['Roboto',sans-serif]">No contact information available</p>
                       )}
                     </div>
                   ))}
@@ -315,42 +303,42 @@ function PhoneDirectoryFixed() {
         </TabsContent>}
 
         {canViewRecipients && <TabsContent value="recipients" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm" style={{ borderColor: '#e6f3f7' }}>
-            <CardHeader className="pb-4" style={{ backgroundColor: '#e6f3f7' }}>
-              <CardTitle className="flex items-center gap-3 text-xl font-bold" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>
-                <User className="w-6 h-6" style={{ color: '#236383' }} />
+          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
+            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
+                <User className="w-6 h-6 text-primary dark:text-secondary" />
                 Recipient Directory
               </CardTitle>
-              <CardDescription className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                 Contact information for sandwich delivery recipients
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredRecipients.length === 0 ? (
-                <div className="text-center py-12 text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                <div className="text-center py-12 text-base text-muted-foreground font-['Roboto',sans-serif]">
                   {searchTerm ? 'No recipients found matching your search.' : 'No recipients found.'}
                 </div>
               ) : (
                 <div className="space-y-4">
                   {filteredRecipients.map((recipient) => (
-                    <div key={recipient.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200" style={{ borderColor: '#e6f3f7' }}>
-                      <h3 className="font-bold text-lg mb-2" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>{recipient.name}</h3>
+                    <div key={recipient.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border dark:border-gray-700 bg-card dark:bg-gray-800">
+                      <h3 className="font-bold text-lg mb-2 text-primary dark:text-secondary font-['Roboto',sans-serif]">{recipient.name}</h3>
                       <div className="space-y-1">
-                        <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                        <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                           <span className="font-medium">Phone:</span> {recipient.phone}
                         </p>
                         {recipient.email && (
-                          <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                             <span className="font-medium">Email:</span> {recipient.email}
                           </p>
                         )}
                         {recipient.address && (
-                          <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                             <span className="font-medium">Address:</span> {recipient.address}
                           </p>
                         )}
                         {recipient.contactName && (
-                          <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                             <span className="font-medium">Contact:</span> {recipient.contactName}
                           </p>
                         )}
@@ -364,13 +352,13 @@ function PhoneDirectoryFixed() {
         </TabsContent>}
 
         {canViewDrivers && <TabsContent value="drivers" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm" style={{ borderColor: '#e6f3f7' }}>
-            <CardHeader className="pb-4" style={{ backgroundColor: '#e6f3f7' }}>
-              <CardTitle className="flex items-center gap-3 text-xl font-bold" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>
-                <User className="w-6 h-6" style={{ color: '#236383' }} />
+          <Card className="border-2 shadow-sm border-border dark:border-gray-700">
+            <CardHeader className="pb-4 bg-muted dark:bg-gray-800">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary dark:text-secondary font-['Roboto',sans-serif]">
+                <User className="w-6 h-6 text-primary dark:text-secondary" />
                 Driver Directory
               </CardTitle>
-              <CardDescription className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
                 Contact information for delivery drivers
               </CardDescription>
             </CardHeader>
