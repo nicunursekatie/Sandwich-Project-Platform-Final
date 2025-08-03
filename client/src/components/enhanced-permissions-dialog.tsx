@@ -7,7 +7,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -74,6 +85,10 @@ import {
   CheckCircle,
   Star,
   HelpCircle,
+  Trash2,
+  PlusCircle,
+  Search,
+  AlertTriangle,
 } from "lucide-react";
 
 interface User {
@@ -92,89 +107,369 @@ interface EnhancedPermissionsDialogProps {
   onSave: (userId: string, role: string, permissions: string[]) => void;
 }
 
-// Enhanced permission organization with visual grouping
+// Complete permissions structure as specified
 const PERMISSION_CATEGORIES = [
   {
-    id: "access",
-    label: "Platform Access",
-    description: "Basic access to different sections of the platform",
-    icon: Globe,
+    id: "collections_data",
+    label: "📊 Collections & Data",
+    description: "Collection data entry and management",
+    icon: BarChart3,
     color: "bg-blue-50 border-blue-200",
     iconColor: "text-blue-600",
     permissions: [
-      { key: PERMISSIONS.ACCESS_DIRECTORY, label: "Directory", icon: Users, description: "View contact directory" },
-      { key: PERMISSIONS.ACCESS_HOSTS, label: "Hosts", icon: Building, description: "View host information" },
-      { key: PERMISSIONS.ACCESS_RECIPIENTS, label: "Recipients", icon: UserCheck, description: "View recipient information" },
-      { key: PERMISSIONS.ACCESS_DRIVERS, label: "Drivers", icon: Truck, description: "View driver information" },
-      { key: PERMISSIONS.ACCESS_COLLECTIONS, label: "Collections", icon: Database, description: "View sandwich collections" },
-      { key: PERMISSIONS.ACCESS_CHAT, label: "Team Chat", icon: MessageCircle, description: "Access team chat system" },
-      { key: PERMISSIONS.ACCESS_MESSAGES, label: "Messaging", icon: Mail, description: "Access messaging system" },
-      { key: PERMISSIONS.ACCESS_TOOLKIT, label: "Toolkit", icon: Wrench, description: "Access resource toolkit" },
+      { 
+        key: PERMISSIONS.CREATE_COLLECTIONS, 
+        label: "Submit collections", 
+        description: "Auto-includes edit/delete own collections",
+        icon: Database,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_COLLECTIONS', 'DELETE_OWN_COLLECTIONS']
+      },
+      { 
+        key: PERMISSIONS.EDIT_ALL_COLLECTIONS, 
+        label: "Manage ALL collections", 
+        description: "Edit/delete anyone's collection entries",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.USE_COLLECTION_WALKTHROUGH, 
+        label: "Collection walkthrough", 
+        description: "Access to simplified step-by-step form",
+        icon: FormInput,
+        dangerLevel: "safe"
+      },
     ]
   },
   {
-    id: "operations",
-    label: "Operations & Management",
-    description: "Access to operational tools and management features",
-    icon: Settings,
+    id: "communication",
+    label: "💬 Communication",
+    description: "Team chat and direct messaging",
+    icon: MessageCircle,
     color: "bg-green-50 border-green-200",
     iconColor: "text-green-600",
     permissions: [
-      { key: PERMISSIONS.ACCESS_MEETINGS, label: "Meetings", icon: Calendar, description: "Access meeting management" },
-      { key: PERMISSIONS.ACCESS_ANALYTICS, label: "Analytics", icon: TrendingUp, description: "View analytics and insights" },
-      { key: PERMISSIONS.ACCESS_REPORTS, label: "Reports", icon: FileText, description: "Generate and view reports" },
-      { key: PERMISSIONS.ACCESS_PROJECTS, label: "Projects", icon: FolderOpen, description: "Access project management" },
-      { key: PERMISSIONS.ACCESS_SUGGESTIONS, label: "Suggestions", icon: Lightbulb, description: "Access suggestion portal" },
-      { key: PERMISSIONS.ACCESS_WORK_LOGS, label: "Work Logs", icon: Clock, description: "Access work time tracking" },
-      { key: PERMISSIONS.ACCESS_GOVERNANCE, label: "Governance", icon: Shield, description: "Access governance documents" },
+      { 
+        key: 'GENERAL_CHAT', 
+        label: "General chat", 
+        description: "Can edit/delete own messages",
+        icon: MessageCircle,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_CHAT_MESSAGES', 'DELETE_OWN_CHAT_MESSAGES']
+      },
+      { 
+        key: 'CORE_TEAM_CHAT', 
+        label: "Core team chat", 
+        description: "Can edit/delete own messages",
+        icon: Users,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_CHAT_MESSAGES', 'DELETE_OWN_CHAT_MESSAGES']
+      },
+      { 
+        key: 'HOST_CHAT', 
+        label: "Host chat", 
+        description: "Can edit/delete own messages",
+        icon: Building,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_CHAT_MESSAGES', 'DELETE_OWN_CHAT_MESSAGES']
+      },
+      { 
+        key: 'RECIPIENT_CHAT', 
+        label: "Recipient chat", 
+        description: "Can edit/delete own messages",
+        icon: UserCheck,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_CHAT_MESSAGES', 'DELETE_OWN_CHAT_MESSAGES']
+      },
+      { 
+        key: 'DRIVER_CHAT', 
+        label: "Driver chat", 
+        description: "Can edit/delete own messages",
+        icon: Truck,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_CHAT_MESSAGES', 'DELETE_OWN_CHAT_MESSAGES']
+      },
+      { 
+        key: 'MODERATE_ALL_CHAT', 
+        label: "Moderate ALL chat messages", 
+        description: "Delete and moderate any chat message",
+        icon: Shield,
+        dangerLevel: "dangerous"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_MESSAGES, 
+        label: "Send direct messages", 
+        description: "No edit/delete after sending",
+        icon: Mail,
+        dangerLevel: "safe"
+      },
+      { 
+        key: 'DELETE_ALL_MESSAGES', 
+        label: "Delete ALL messages", 
+        description: "Admin only - permanent message deletion",
+        icon: Trash2,
+        dangerLevel: "dangerous"
+      },
     ]
   },
   {
-    id: "data_entry",
-    label: "Data Entry & Creation",
-    description: "Ability to create and submit new content",
-    icon: Edit,
+    id: "projects_tasks",
+    label: "📁 Projects & Tasks",
+    description: "Project and task management",
+    icon: FolderOpen,
     color: "bg-purple-50 border-purple-200",
     iconColor: "text-purple-600",
     permissions: [
-      { key: PERMISSIONS.CREATE_COLLECTIONS, label: "Create Collections", icon: Database, description: "Submit sandwich collection data" },
-      { key: PERMISSIONS.USE_COLLECTION_WALKTHROUGH, label: "Collection Walkthrough", icon: FormInput, description: "Use simplified collection entry form" },
-      { key: PERMISSIONS.CREATE_PROJECTS, label: "Create Projects", icon: FolderOpen, description: "Create new projects" },
-      { key: PERMISSIONS.CREATE_SUGGESTIONS, label: "Submit Suggestions", icon: Lightbulb, description: "Submit suggestions and feedback" },
-      { key: PERMISSIONS.CREATE_WORK_LOGS, label: "Log Work Hours", icon: Clock, description: "Track and log work time" },
+      { 
+        key: PERMISSIONS.CREATE_PROJECTS, 
+        label: "Create projects", 
+        description: "Auto-includes edit/delete own projects",
+        icon: PlusCircle,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_PROJECTS', 'DELETE_OWN_PROJECTS']
+      },
+      { 
+        key: 'MANAGE_ALL_PROJECTS', 
+        label: "Manage ALL projects", 
+        description: "Edit/delete any project",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
     ]
   },
   {
-    id: "management",
-    label: "Content Management",
-    description: "Manage and moderate content created by others",
-    icon: Shield,
+    id: "work_tracking",
+    label: "⏱️ Work Tracking",
+    description: "Time and work log management",
+    icon: Clock,
+    color: "bg-indigo-50 border-indigo-200",
+    iconColor: "text-indigo-600",
+    permissions: [
+      { 
+        key: PERMISSIONS.CREATE_WORK_LOGS, 
+        label: "Submit work logs", 
+        description: "Auto-includes view/edit/delete own logs",
+        icon: Clock,
+        dangerLevel: "safe",
+        autoBundles: ['VIEW_OWN_WORK_LOGS', 'EDIT_OWN_WORK_LOGS', 'DELETE_OWN_WORK_LOGS']
+      },
+      { 
+        key: PERMISSIONS.VIEW_ALL_WORK_LOGS, 
+        label: "View ALL work logs", 
+        description: "Read-only access to everyone's work logs",
+        icon: Eye,
+        dangerLevel: "elevated"
+      },
+    ]
+  },
+  {
+    id: "directory_access",
+    label: "📋 Directory Access",
+    description: "Contact directory management",
+    icon: Users,
+    color: "bg-teal-50 border-teal-200",
+    iconColor: "text-teal-600",
+    permissions: [
+      { 
+        key: PERMISSIONS.ACCESS_HOSTS, 
+        label: "Host directory", 
+        description: "View host contact information",
+        icon: Building,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_RECIPIENTS, 
+        label: "Recipient directory", 
+        description: "View recipient contact information",
+        icon: UserCheck,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_DRIVERS, 
+        label: "Driver directory", 
+        description: "View driver contact information",
+        icon: Truck,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_HOSTS, 
+        label: "Edit host info", 
+        description: "Modify host details and status",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_RECIPIENTS, 
+        label: "Edit recipient info", 
+        description: "Modify recipient details and status",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_DRIVERS, 
+        label: "Edit driver info", 
+        description: "Modify driver details and status",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+    ]
+  },
+  {
+    id: "platform_tools",
+    label: "🛠️ Platform Tools",
+    description: "Analytics and platform features",
+    icon: Settings,
     color: "bg-orange-50 border-orange-200",
     iconColor: "text-orange-600",
     permissions: [
-      { key: PERMISSIONS.MANAGE_HOSTS, label: "Manage Hosts", icon: Building, description: "Edit host information" },
-      { key: PERMISSIONS.MANAGE_RECIPIENTS, label: "Manage Recipients", icon: UserCheck, description: "Edit recipient information" },
-      { key: PERMISSIONS.MANAGE_DRIVERS, label: "Manage Drivers", icon: Truck, description: "Edit driver information" },
-      { key: PERMISSIONS.MANAGE_MEETINGS, label: "Manage Meetings", icon: Calendar, description: "Schedule and manage meetings" },
-      { key: PERMISSIONS.MANAGE_SUGGESTIONS, label: "Manage Suggestions", icon: Lightbulb, description: "Review and respond to suggestions" },
-      { key: PERMISSIONS.EDIT_ALL_COLLECTIONS, label: "Edit All Collections", icon: Database, description: "Edit any collection record" },
-      { key: PERMISSIONS.DELETE_ALL_COLLECTIONS, label: "Delete Collections", icon: Database, description: "Delete collection records" },
+      { 
+        key: PERMISSIONS.ACCESS_ANALYTICS, 
+        label: "Analytics access", 
+        description: "View reports and data analytics",
+        icon: BarChart3,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_REPORTS, 
+        label: "Reports access", 
+        description: "Generate and download reports",
+        icon: FileText,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.CREATE_SUGGESTIONS, 
+        label: "Suggestions", 
+        description: "Auto-includes submit/edit/delete own",
+        icon: Lightbulb,
+        dangerLevel: "safe",
+        autoBundles: ['EDIT_OWN_SUGGESTIONS', 'DELETE_OWN_SUGGESTIONS']
+      },
+      { 
+        key: PERMISSIONS.MANAGE_SUGGESTIONS, 
+        label: "Manage ALL suggestions", 
+        description: "Review and respond to all suggestions",
+        icon: Settings,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_ANNOUNCEMENTS, 
+        label: "Announcements access", 
+        description: "Create and manage announcements",
+        icon: Send,
+        dangerLevel: "elevated"
+      },
     ]
   },
   {
-    id: "admin",
-    label: "Administration",
-    description: "Full administrative privileges and system control",
-    icon: Lock,
+    id: "administration",
+    label: "👥 Administration",
+    description: "User and system administration",
+    icon: Shield,
     color: "bg-red-50 border-red-200",
     iconColor: "text-red-600",
     permissions: [
-      { key: PERMISSIONS.ADMIN_ACCESS, label: "Admin Panel", icon: Settings, description: "Access admin control panel" },
-      { key: PERMISSIONS.MANAGE_USERS, label: "Manage Users", icon: Users, description: "Manage user accounts and permissions" },
-      { key: PERMISSIONS.MANAGE_ANNOUNCEMENTS, label: "Announcements", icon: Send, description: "Create and manage announcements" },
-      { key: PERMISSIONS.VIEW_ALL_WORK_LOGS, label: "View All Work Logs", icon: Eye, description: "View everyone's work logs" },
-      { key: PERMISSIONS.EDIT_ALL_WORK_LOGS, label: "Edit All Work Logs", icon: Edit, description: "Edit any work log entry" },
-      { key: PERMISSIONS.DELETE_ALL_WORK_LOGS, label: "Delete Work Logs", icon: Shield, description: "Delete work log entries" },
+      { 
+        key: 'VIEW_ALL_USERS', 
+        label: "View all users", 
+        description: "See user list and basic information",
+        icon: Eye,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: 'BASIC_USER_SUPPORT', 
+        label: "Basic user support", 
+        description: "Password resets, view permissions",
+        icon: HelpCircle,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_USERS, 
+        label: "Full user management", 
+        description: "Create/edit accounts, set permissions",
+        icon: Users,
+        dangerLevel: "dangerous"
+      },
+      { 
+        key: 'SYSTEM_ADMINISTRATOR', 
+        label: "System administrator", 
+        description: "FULL platform access - dangerous",
+        icon: Shield,
+        dangerLevel: "dangerous"
+      },
+    ]
+  }
+];
+
+// Permission presets as specified
+const PERMISSION_PRESETS = [
+  {
+    id: 'basic_volunteer',
+    label: 'Basic Volunteer',
+    description: 'Collections + general chat',
+    permissions: [PERMISSIONS.CREATE_COLLECTIONS, 'GENERAL_CHAT']
+  },
+  {
+    id: 'host_team_member',
+    label: 'Host Team Member',
+    description: 'Host operations and communications',
+    permissions: [PERMISSIONS.CREATE_COLLECTIONS, PERMISSIONS.ACCESS_HOSTS, 'HOST_CHAT', 'GENERAL_CHAT', PERMISSIONS.USE_COLLECTION_WALKTHROUGH]
+  },
+  {
+    id: 'recipient_team_member',
+    label: 'Recipient Team Member',
+    description: 'Recipient operations and communications',
+    permissions: [PERMISSIONS.ACCESS_RECIPIENTS, 'RECIPIENT_CHAT', 'GENERAL_CHAT']
+  },
+  {
+    id: 'driver_team_member',
+    label: 'Driver Team Member',
+    description: 'Driver operations and communications',
+    permissions: [PERMISSIONS.ACCESS_DRIVERS, 'DRIVER_CHAT', 'GENERAL_CHAT']
+  },
+  {
+    id: 'core_team_member',
+    label: 'Core Team Member',
+    description: 'Core team access and enhanced permissions',
+    permissions: [
+      PERMISSIONS.CREATE_COLLECTIONS, 
+      PERMISSIONS.CREATE_PROJECTS, 
+      PERMISSIONS.ACCESS_ANALYTICS,
+      'CORE_TEAM_CHAT', 
+      'GENERAL_CHAT',
+      PERMISSIONS.ACCESS_HOSTS,
+      PERMISSIONS.ACCESS_RECIPIENTS,
+      PERMISSIONS.ACCESS_DRIVERS
+    ]
+  },
+  {
+    id: 'team_lead',
+    label: 'Team Lead',
+    description: 'Leadership with elevated permissions',
+    permissions: [
+      PERMISSIONS.CREATE_COLLECTIONS,
+      PERMISSIONS.EDIT_ALL_COLLECTIONS,
+      PERMISSIONS.CREATE_PROJECTS,
+      'MANAGE_ALL_PROJECTS',
+      PERMISSIONS.ACCESS_ANALYTICS,
+      PERMISSIONS.ACCESS_REPORTS,
+      PERMISSIONS.MANAGE_HOSTS,
+      PERMISSIONS.MANAGE_RECIPIENTS,
+      PERMISSIONS.MANAGE_DRIVERS,
+      'CORE_TEAM_CHAT',
+      'GENERAL_CHAT'
+    ]
+  },
+  {
+    id: 'administrator',
+    label: 'Administrator',
+    description: 'Full administrative access',
+    permissions: [
+      PERMISSIONS.MANAGE_USERS,
+      'VIEW_ALL_USERS',
+      'BASIC_USER_SUPPORT',
+      PERMISSIONS.MANAGE_ANNOUNCEMENTS,
+      PERMISSIONS.MANAGE_SUGGESTIONS,
+      'MODERATE_ALL_CHAT'
     ]
   }
 ];
@@ -256,6 +551,9 @@ export default function EnhancedPermissionsDialog({
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>("role");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDangerWarning, setShowDangerWarning] = useState(false);
+  const [pendingDangerousPermission, setPendingDangerousPermission] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && open) {
@@ -271,6 +569,17 @@ export default function EnhancedPermissionsDialog({
   };
 
   const handlePermissionChange = (permission: string, checked: boolean) => {
+    // Check if this is a dangerous permission that requires confirmation
+    const isDangerous = PERMISSION_CATEGORIES.some(category => 
+      category.permissions?.some(p => p.key === permission && p.dangerLevel === 'dangerous')
+    );
+    
+    if (checked && isDangerous) {
+      setPendingDangerousPermission(permission);
+      setShowDangerWarning(true);
+      return;
+    }
+    
     if (checked) {
       setSelectedPermissions([...selectedPermissions, permission]);
     } else {
@@ -279,6 +588,31 @@ export default function EnhancedPermissionsDialog({
       );
     }
   };
+
+  const handleDangerousPermissionConfirm = () => {
+    if (pendingDangerousPermission) {
+      setSelectedPermissions([...selectedPermissions, pendingDangerousPermission]);
+      setPendingDangerousPermission(null);
+    }
+    setShowDangerWarning(false);
+  };
+
+  const handlePresetSelect = (presetId: string) => {
+    const preset = PERMISSION_PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      setSelectedPermissions(preset.permissions);
+    }
+  };
+
+  // Filter permissions based on search query
+  const filteredCategories = PERMISSION_CATEGORIES.map(category => ({
+    ...category,
+    permissions: category.permissions?.filter(permission =>
+      !searchQuery || 
+      permission.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      permission.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })).filter(category => !searchQuery || category.permissions?.length > 0);
 
   const handleSave = () => {
     if (user) {
@@ -444,6 +778,43 @@ export default function EnhancedPermissionsDialog({
           </TabsContent>
 
           <TabsContent value="permissions" className="flex-1">
+            <div className="space-y-4 mb-4">
+              {/* Permission Presets and Search */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Quick Permission Presets</Label>
+                  <Select onValueChange={handlePresetSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a preset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PERMISSION_PRESETS.map((preset) => (
+                        <SelectItem key={preset.id} value={preset.id}>
+                          <div className="flex flex-col text-left">
+                            <span className="font-medium">{preset.label}</span>
+                            <span className="text-xs text-gray-500">{preset.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Search Permissions</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search permissions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <ScrollArea className="h-[500px]">
               <div className="space-y-6 p-1">
                 <div className="flex items-center justify-between">
@@ -451,7 +822,8 @@ export default function EnhancedPermissionsDialog({
                     <h3 className="text-lg font-semibold text-gray-900">Individual Permissions</h3>
                     <p className="text-sm text-gray-600">
                       Fine-tune access by selecting specific permissions. 
-                      {selectedPermissions.length} permissions currently selected.
+                      <span className="font-medium"> {selectedPermissions.length} permissions selected</span>
+                      {searchQuery && <span className="ml-2">• Filtered by "{searchQuery}"</span>}
                     </p>
                   </div>
                   {selectedRole && (
@@ -467,7 +839,7 @@ export default function EnhancedPermissionsDialog({
                 </div>
 
                 <div className="space-y-6">
-                  {PERMISSION_CATEGORIES.map((category) => {
+                  {filteredCategories.map((category) => {
                     const CategoryIcon = category.icon;
                     const status = getCategoryStatus(category);
                     
@@ -501,18 +873,50 @@ export default function EnhancedPermissionsDialog({
                         </CardHeader>
                         <CardContent>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {category.permissions.map((permission) => {
+                            {category.permissions?.map((permission) => {
                               const PermissionIcon = permission.icon;
                               const isChecked = isPermissionChecked(permission.key);
+                              
+                              // Danger level color coding
+                              const getDangerLevelColors = (dangerLevel: string) => {
+                                switch (dangerLevel) {
+                                  case 'safe':
+                                    return {
+                                      border: 'border-green-200',
+                                      bg: isChecked ? 'bg-green-50' : 'bg-white/40',
+                                      icon: 'text-green-600',
+                                      indicator: '🟢'
+                                    };
+                                  case 'elevated':
+                                    return {
+                                      border: 'border-yellow-200',
+                                      bg: isChecked ? 'bg-yellow-50' : 'bg-white/40',
+                                      icon: 'text-yellow-600',
+                                      indicator: '🟡'
+                                    };
+                                  case 'dangerous':
+                                    return {
+                                      border: 'border-red-200',
+                                      bg: isChecked ? 'bg-red-50' : 'bg-white/40',
+                                      icon: 'text-red-600',
+                                      indicator: '🔴'
+                                    };
+                                  default:
+                                    return {
+                                      border: 'border-gray-200',
+                                      bg: isChecked ? 'bg-gray-50' : 'bg-white/40',
+                                      icon: 'text-gray-600',
+                                      indicator: '⚪'
+                                    };
+                                }
+                              };
+                              
+                              const colors = getDangerLevelColors(permission.dangerLevel || 'safe');
                               
                               return (
                                 <div
                                   key={permission.key}
-                                  className={`flex items-start gap-3 p-3 rounded-lg transition-all cursor-pointer ${
-                                    isChecked 
-                                      ? 'bg-white/90 shadow-sm border border-white/50' 
-                                      : 'bg-white/40 hover:bg-white/60'
-                                  }`}
+                                  className={`flex items-start gap-3 p-3 rounded-lg transition-all cursor-pointer border ${colors.border} ${colors.bg} hover:bg-white/60`}
                                   onClick={() => handlePermissionChange(permission.key, !isChecked)}
                                 >
                                   <Checkbox
@@ -522,7 +926,8 @@ export default function EnhancedPermissionsDialog({
                                   />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                      <PermissionIcon className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                                      <span className="text-sm">{colors.indicator}</span>
+                                      <PermissionIcon className={`h-4 w-4 ${colors.icon} flex-shrink-0`} />
                                       <span className="font-medium text-gray-900 text-sm">
                                         {permission.label}
                                       </span>
@@ -530,6 +935,11 @@ export default function EnhancedPermissionsDialog({
                                     <p className="text-xs text-gray-600 leading-relaxed">
                                       {permission.description}
                                     </p>
+                                    {permission.autoBundles && isChecked && (
+                                      <div className="mt-2 text-xs text-gray-500">
+                                        <span className="font-medium">Auto-includes:</span> {permission.autoBundles.join(', ')}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -566,6 +976,45 @@ export default function EnhancedPermissionsDialog({
           </div>
         </DialogFooter>
       </DialogContent>
+      
+      {/* Dangerous Permission Warning Modal */}
+      <AlertDialog open={showDangerWarning} onOpenChange={setShowDangerWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Dangerous Permission Warning
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              You are about to grant a permission with <span className="font-semibold text-red-600">system-breaking potential</span>.
+              <br/><br/>
+              {pendingDangerousPermission === 'SYSTEM_ADMINISTRATOR' ? (
+                <span className="font-medium">This grants complete system access. Are you sure?</span>
+              ) : (
+                <span>This permission allows significant control over platform data and user actions.</span>
+              )}
+              <br/><br/>
+              <span className="text-sm text-gray-600">
+                Please confirm that this user should have this level of access.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setPendingDangerousPermission(null);
+              setShowDangerWarning(false);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDangerousPermissionConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Yes, Grant Permission
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
