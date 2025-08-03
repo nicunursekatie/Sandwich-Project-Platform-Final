@@ -23,6 +23,7 @@ interface UnreadCounts {
   core_team: number;
   direct: number;
   groups: number;
+  kudos: number;
   total: number;
 }
 
@@ -190,7 +191,7 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
 
   const finalUnreadCounts = unreadCounts || {
     general: 0, committee: 0, hosts: 0, drivers: 0, recipients: 0,
-    core_team: 0, direct: 0, groups: 0, total: 0
+    core_team: 0, direct: 0, groups: 0, kudos: 0, total: 0
   };
 
   const totalUnread = finalUnreadCounts.total || 0;
@@ -213,7 +214,8 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
       recipients: 'Recipient Chat',
       core_team: 'Core Team',
       direct: 'Direct Messages',
-      groups: 'Group Messages'
+      groups: 'Group Messages',
+      kudos: 'Kudos Received'
     };
     return names[committee as keyof typeof names] || committee;
   };
@@ -223,6 +225,9 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
     if (chatType === 'direct' || chatType === 'groups') {
       // Direct messages and groups go to inbox
       window.location.href = '/messages';
+    } else if (chatType === 'kudos') {
+      // Kudos go to a dedicated kudos view in the dashboard
+      window.location.href = '/dashboard?section=kudos';
     } else {
       // Other chat types go to chat system
       window.location.href = '/dashboard?section=chat';

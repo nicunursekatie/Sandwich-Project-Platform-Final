@@ -1,4 +1,4 @@
-import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle } from "lucide-react";
+import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy } from "lucide-react";
 import { useLocation } from "wouter";
 import sandwichLogo from "@assets/LOGOS/TSP_transparent.png";
 import squareSandwichLogo from "@assets/LOGOS/sandwich logo.png";
@@ -53,6 +53,7 @@ import { HelpProvider } from "@/components/help-system/HelpProvider";
 import { HelpToggle } from "@/components/help-system/HelpToggle";
 import { HelpBubble } from "@/components/help-system/HelpBubble";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
+import { KudosInbox } from "@/components/kudos-inbox";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -178,6 +179,21 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <StreamMessagesPage />;
       case "chat":
         return <EnhancedChat />;
+      case "kudos":
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-yellow-100">
+                <Trophy className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Your Kudos</h1>
+                <p className="text-gray-600 dark:text-gray-300">Recognition received for your great work</p>
+              </div>
+            </div>
+            <KudosInbox />
+          </div>
+        );
       case "profile":
         return <UserProfile />;
       case "meetings":
