@@ -135,7 +135,7 @@ export default function UserManagementRedesigned() {
   // User management mutations
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, role, permissions }: { userId: string; role: string; permissions: string[] }) => {
-      return apiRequest(`/api/users/${userId}`, "PATCH", { role, permissions });
+      return apiRequest("PATCH", `/api/users/${userId}`, { role, permissions });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -157,7 +157,7 @@ export default function UserManagementRedesigned() {
 
   const toggleUserStatusMutation = useMutation({
     mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
-      return apiRequest(`/api/users/${userId}/status`, "PATCH", { isActive });
+      return apiRequest("PATCH", `/api/users/${userId}/status`, { isActive });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -177,7 +177,7 @@ export default function UserManagementRedesigned() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest(`/api/users/${userId}`, "DELETE");
+      return apiRequest("DELETE", `/api/users/${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
