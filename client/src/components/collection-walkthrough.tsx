@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -29,6 +29,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   const [currentGroupName, setCurrentGroupName] = useState("");
   const [currentGroupCount, setCurrentGroupCount] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const walkthroughRef = useRef<HTMLDivElement>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -195,6 +196,24 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
       setCurrentStep(currentStep - 1);
     }
   };
+
+  // Scroll management for mobile
+  useEffect(() => {
+    const scrollToWalkthrough = () => {
+      if (walkthroughRef.current && window.innerWidth <= 768) {
+        // Small delay to let content render first
+        setTimeout(() => {
+          walkthroughRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          });
+        }, 100);
+      }
+    };
+
+    scrollToWalkthrough();
+  }, [currentStep]);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -483,7 +502,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   };
 
   return (
-    <Card className="max-w-2xl mx-auto m-2 sm:m-4">
+    <Card ref={walkthroughRef} className="max-w-2xl mx-auto m-2 sm:m-4">
       <CardHeader className="text-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white p-3 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <Badge variant="secondary" className="bg-white/20 text-white text-xs sm:text-sm">
