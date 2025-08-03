@@ -303,7 +303,13 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                       ? "bg-[#236383] hover:bg-[#1a4d66]" 
                       : "hover:bg-gray-50"
                   }`}
-                  onClick={() => setHostName(host.name)}
+                  onClick={() => {
+                    setHostName(host.name);
+                    // Auto-advance when host is selected
+                    setTimeout(() => {
+                      setCurrentStep(3);
+                    }, 300);
+                  }}
                 >
                   <div className="text-left">
                     <div className="font-medium text-sm sm:text-base">{host.name}</div>
@@ -358,7 +364,13 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                     ? "bg-[#236383] hover:bg-[#1a4d66]" 
                     : "hover:bg-gray-50"
                 }`}
-                onClick={() => setHasGroups(true)}
+                onClick={() => {
+                  setHasGroups(true);
+                  // Auto-advance when Yes is selected
+                  setTimeout(() => {
+                    setCurrentStep(5);
+                  }, 300);
+                }}
               >
                 Yes
               </Button>
@@ -369,7 +381,13 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                     ? "bg-[#236383] hover:bg-[#1a4d66]" 
                     : "hover:bg-gray-50"
                 }`}
-                onClick={() => setHasGroups(false)}
+                onClick={() => {
+                  setHasGroups(false);
+                  // Auto-advance when No is selected - skip to summary since no groups to add
+                  setTimeout(() => {
+                    setCurrentStep(6);
+                  }, 300);
+                }}
               >
                 No
               </Button>
