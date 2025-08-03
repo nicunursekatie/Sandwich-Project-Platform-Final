@@ -27,7 +27,7 @@ import ImpactDashboard from "@/pages/impact-dashboard";
 import DataManagement from "@/pages/data-management";
 import PerformanceDashboard from "@/pages/performance-dashboard";
 import ReportingDashboard from "@/pages/reporting-dashboard";
-import UserManagement from "@/components/user-management";
+import UserManagementRedesigned from "@/components/user-management-redesigned";
 import UserProfile from "@/components/user-profile";
 import { useState } from "react";
 import * as React from "react";
@@ -259,7 +259,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
           </div>
         );
       case "user-management":
-        return <UserManagement />;
+        return <UserManagementRedesigned />;
       case "development":
         return <Development />;
       case "admin":
