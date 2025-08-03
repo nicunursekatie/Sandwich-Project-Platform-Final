@@ -1126,6 +1126,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("=== POST /api/sandwich-collections DEBUG ===");
         console.log("Raw request body:", JSON.stringify(req.body, null, 2));
         
+        // Test what the schema actually expects
+        console.log("Testing schema validation...");
+        try {
+          const testData = {
+            collectionDate: "2023-11-28",
+            hostName: "Test",
+            individualSandwiches: 0,
+            group1_name: "Test Group",
+            group1_count: 5,
+            group2_name: null,
+            group2_count: null
+          };
+          const testResult = insertSandwichCollectionSchema.parse(testData);
+          console.log("Schema accepts test data:", JSON.stringify(testResult, null, 2));
+        } catch (schemaError) {
+          console.error("Schema validation test failed:", schemaError);
+        }
+        
         const collectionData = insertSandwichCollectionSchema.parse(req.body);
         console.log("Parsed collection data:", JSON.stringify(collectionData, null, 2));
         
