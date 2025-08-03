@@ -198,9 +198,9 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Calendar className="w-12 h-12 mx-auto text-[#236383]" />
-              <h3 className="text-xl font-semibold text-gray-900">When did you collect the sandwiches?</h3>
-              <p className="text-gray-600">Enter the date you actually collected the sandwiches (not today's date)</p>
+              <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">When did you collect the sandwiches?</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">Enter the date you actually collected the sandwiches (not today's date)</p>
             </div>
             
             <div className="space-y-4">
@@ -208,7 +208,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                 type="date"
                 value={collectionDate}
                 onChange={(e) => handleDateInput(e.target.value)}
-                className="text-center text-lg"
+                className="text-center text-base sm:text-lg h-12 sm:h-auto"
               />
               
               {actualCollectionDate && (
@@ -265,9 +265,9 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Users className="w-12 h-12 mx-auto text-[#236383]" />
-              <h3 className="text-xl font-semibold text-gray-900">Where did you collect?</h3>
-              <p className="text-gray-600">Select your host location</p>
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Where did you collect?</h3>
+              <p className="text-sm sm:text-base text-gray-600">Select your host location</p>
             </div>
             
             <div className="space-y-3">
@@ -275,7 +275,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                 <Button
                   key={host.id}
                   variant={hostName === host.name ? "default" : "outline"}
-                  className={`w-full justify-start h-auto p-4 ${
+                  className={`w-full justify-start h-auto p-3 sm:p-4 touch-manipulation ${
                     hostName === host.name 
                       ? "bg-[#236383] hover:bg-[#1a4d66]" 
                       : "hover:bg-gray-50"
@@ -283,9 +283,9 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                   onClick={() => setHostName(host.name)}
                 >
                   <div className="text-left">
-                    <div className="font-medium">{host.name}</div>
+                    <div className="font-medium text-sm sm:text-base">{host.name}</div>
                     {host.contactInfo && (
-                      <div className="text-sm opacity-70">{host.contactInfo}</div>
+                      <div className="text-xs sm:text-sm opacity-70">{host.contactInfo}</div>
                     )}
                   </div>
                 </Button>
@@ -298,10 +298,10 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <User className="w-12 h-12 mx-auto text-[#236383]" />
-              <h3 className="text-xl font-semibold text-gray-900">Individual & Family Sandwiches</h3>
-              <p className="text-gray-600">How many sandwiches did you collect from individuals or families?</p>
-              <p className="text-sm text-gray-500">(Enter 0 if none)</p>
+              <User className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Individual & Family Sandwiches</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">How many sandwiches did you collect from individuals or families?</p>
+              <p className="text-xs sm:text-sm text-gray-500">(Enter 0 if none)</p>
             </div>
             
             <div className="space-y-4">
@@ -311,7 +311,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                 placeholder="0"
                 value={individualCount !== null ? individualCount : ""}
                 onChange={(e) => setIndividualCount(e.target.value ? parseInt(e.target.value) : null)}
-                className="text-center text-2xl font-semibold h-16"
+                className="text-center text-xl sm:text-2xl font-semibold h-12 sm:h-16"
               />
             </div>
           </div>
@@ -321,16 +321,16 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Users className="w-12 h-12 mx-auto text-[#236383]" />
-              <h3 className="text-xl font-semibold text-gray-900">Group Collections</h3>
-              <p className="text-gray-600">Did you have any groups collect sandwiches at your location this week?</p>
-              <p className="text-sm text-gray-500">(Groups like schools, churches, businesses, etc.)</p>
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Group Collections</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">Did you have any groups collect sandwiches at your location this week?</p>
+              <p className="text-xs sm:text-sm text-gray-500">(Groups like schools, churches, businesses, etc.)</p>
             </div>
             
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 variant={hasGroups === true ? "default" : "outline"}
-                className={`flex-1 h-16 text-lg ${
+                className={`flex-1 h-12 sm:h-16 text-base sm:text-lg touch-manipulation ${
                   hasGroups === true 
                     ? "bg-[#236383] hover:bg-[#1a4d66]" 
                     : "hover:bg-gray-50"
@@ -341,7 +341,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
               </Button>
               <Button
                 variant={hasGroups === false ? "default" : "outline"}
-                className={`flex-1 h-16 text-lg ${
+                className={`flex-1 h-12 sm:h-16 text-base sm:text-lg touch-manipulation ${
                   hasGroups === false 
                     ? "bg-[#236383] hover:bg-[#1a4d66]" 
                     : "hover:bg-gray-50"
@@ -358,26 +358,26 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Users className="w-12 h-12 mx-auto text-[#236383]" />
-              <h3 className="text-xl font-semibold text-gray-900">Group Details</h3>
-              <p className="text-gray-600">Enter the groups that collected sandwiches</p>
-              <p className="text-sm text-gray-500">(Group names are optional, but counts help us track impact)</p>
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Group Details</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">Enter the groups that collected sandwiches</p>
+              <p className="text-xs sm:text-sm text-gray-500">(Group names are optional, but counts help us track impact)</p>
             </div>
             
             {groups.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-medium text-gray-900">Added Groups:</h4>
                 {groups.map((group, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                    <div>
-                      <span className="font-medium">{group.name || "Unnamed Group"}</span>
-                      <span className="text-gray-600 ml-2">({group.count} sandwiches)</span>
+                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 sm:p-3 rounded-lg">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm sm:text-base truncate">{group.name || "Unnamed Group"}</div>
+                      <div className="text-xs sm:text-sm text-gray-600">({group.count} sandwiches)</div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removeGroup(index)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 hover:text-red-800 ml-2 flex-shrink-0 text-xs sm:text-sm p-1 sm:p-2"
                     >
                       Remove
                     </Button>
@@ -386,11 +386,12 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
               </div>
             )}
             
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-3 sm:space-y-4 border-t pt-4">
               <Input
                 placeholder="e.g., The Weber School"
                 value={currentGroupName}
                 onChange={(e) => setCurrentGroupName(e.target.value)}
+                className="h-10 sm:h-auto text-sm sm:text-base"
               />
               <Input
                 type="number"
@@ -398,11 +399,12 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                 placeholder="Number of sandwiches"
                 value={currentGroupCount !== null ? currentGroupCount : ""}
                 onChange={(e) => setCurrentGroupCount(e.target.value ? parseInt(e.target.value) : null)}
+                className="h-10 sm:h-auto text-sm sm:text-base"
               />
               <Button
                 onClick={addGroup}
                 disabled={!currentGroupName.trim() && (currentGroupCount === null || currentGroupCount === 0)}
-                className="w-full"
+                className="w-full h-10 sm:h-auto text-sm sm:text-base touch-manipulation"
                 variant="outline"
               >
                 Add Group
@@ -415,42 +417,42 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Check className="w-12 h-12 mx-auto text-green-600" />
-              <h3 className="text-xl font-semibold text-gray-900">Ready to Submit</h3>
-              <p className="text-gray-600">Please review your collection details</p>
+              <Check className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-green-600" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Ready to Submit</h3>
+              <p className="text-sm sm:text-base text-gray-600">Please review your collection details</p>
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-              <div className="flex justify-between">
-                <span className="font-medium">Collection Date:</span>
-                <span>{new Date(actualCollectionDate + "T12:00:00").toLocaleDateString()}</span>
+            <div className="bg-gray-50 rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
+              <div className="flex justify-between items-start">
+                <span className="font-medium text-sm sm:text-base">Collection Date:</span>
+                <span className="text-sm sm:text-base text-right">{new Date(actualCollectionDate + "T12:00:00").toLocaleDateString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Location:</span>
-                <span>{hostName}</span>
+              <div className="flex justify-between items-start">
+                <span className="font-medium text-sm sm:text-base">Location:</span>
+                <span className="text-sm sm:text-base text-right truncate max-w-[60%]">{hostName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Individual/Family:</span>
-                <span>{individualCount || 0} sandwiches</span>
+              <div className="flex justify-between items-start">
+                <span className="font-medium text-sm sm:text-base">Individual/Family:</span>
+                <span className="text-sm sm:text-base">{individualCount || 0} sandwiches</span>
               </div>
               {groups.length > 0 && (
                 <div>
-                  <span className="font-medium">Groups:</span>
+                  <span className="font-medium text-sm sm:text-base">Groups:</span>
                   <div className="mt-2 space-y-1">
                     {groups.map((group, index) => (
-                      <div key={index} className="flex justify-between pl-4">
-                        <span>{group.name || "Unnamed Group"}:</span>
-                        <span>{group.count} sandwiches</span>
+                      <div key={index} className="flex justify-between pl-2 sm:pl-4 items-start">
+                        <span className="text-sm sm:text-base truncate max-w-[60%]">{group.name || "Unnamed Group"}:</span>
+                        <span className="text-sm sm:text-base">{group.count} sandwiches</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              <div className="flex justify-between text-lg font-semibold pt-2 border-t">
+              <div className="flex justify-between text-base sm:text-lg font-semibold pt-2 border-t">
                 <span>Total Sandwiches:</span>
                 <span>{getTotalSandwiches()}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-xs sm:text-sm text-gray-600">
                 <span>Form Submitted:</span>
                 <span>Today, {new Date().toLocaleDateString()}</span>
               </div>
@@ -464,54 +466,60 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader className="text-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
-        <div className="flex items-center justify-between">
-          <Badge variant="secondary" className="bg-white/20 text-white">
+    <Card className="max-w-2xl mx-auto m-2 sm:m-4">
+      <CardHeader className="text-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white p-3 sm:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <Badge variant="secondary" className="bg-white/20 text-white text-xs sm:text-sm">
             Step {currentStep} of 6
           </Badge>
-          <CardTitle className="flex-1">Sandwich Collection Walkthrough</CardTitle>
+          <CardTitle className="flex-1 text-sm sm:text-lg font-medium sm:font-semibold">
+            <span className="hidden sm:inline">Sandwich Collection Walkthrough</span>
+            <span className="sm:hidden">Collection Walkthrough</span>
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={onCancel}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 text-xs sm:text-sm p-1 sm:p-2"
           >
             Cancel
           </Button>
         </div>
       </CardHeader>
       
-      <CardContent className="p-8">
+      <CardContent className="p-4 sm:p-8">
         {renderStep()}
         
-        <div className="flex justify-between mt-8 pt-6 border-t">
+        <div className="flex justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t gap-3">
           <Button
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 1}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 h-10 sm:h-auto text-sm sm:text-base px-3 sm:px-4 touch-manipulation"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            <span className="hidden sm:inline">Back</span>
+            <span className="sm:hidden">←</span>
           </Button>
           
           {currentStep < 6 ? (
             <Button
               onClick={nextStep}
               disabled={!canProceed()}
-              className="flex items-center gap-2 bg-[#236383] hover:bg-[#1a4d66]"
+              className="flex items-center gap-2 bg-[#236383] hover:bg-[#1a4d66] h-10 sm:h-auto text-sm sm:text-base px-3 sm:px-4 touch-manipulation"
             >
-              Next
+              <span className="hidden sm:inline">Next</span>
+              <span className="sm:hidden">→</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
           ) : (
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 h-10 sm:h-auto text-sm sm:text-base px-3 sm:px-4 touch-manipulation"
             >
-              {isSubmitting ? "Submitting..." : "Submit Collection"}
+              <span className="hidden sm:inline">{isSubmitting ? "Submitting..." : "Submit Collection"}</span>
+              <span className="sm:hidden">{isSubmitting ? "Submitting..." : "Submit"}</span>
               <Check className="w-4 h-4" />
             </Button>
           )}
