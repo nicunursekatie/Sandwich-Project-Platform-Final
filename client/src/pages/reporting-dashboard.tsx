@@ -51,7 +51,7 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
       start: format(subMonths(new Date(), 1), 'yyyy-MM-dd'),
       end: format(new Date(), 'yyyy-MM-dd')
     },
-    format: 'csv',
+    format: 'pdf',
     includeCharts: true,
     groupBy: 'month'
   });
