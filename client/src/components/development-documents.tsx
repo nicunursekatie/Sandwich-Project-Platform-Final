@@ -110,31 +110,35 @@ export function DevelopmentDocuments() {
         ))}
       </div>
 
-      {/* Document Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Document Grid - Optimized for tablet responsiveness */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {filteredDocs.map((doc, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
+          <Card key={index} className="hover:shadow-md transition-shadow h-full flex flex-col">
+            <CardHeader className="pb-3 flex-shrink-0">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {getFileIcon(doc.type)}
-                  <CardTitle className="text-base leading-tight">{doc.name}</CardTitle>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="flex-shrink-0">
+                    {getFileIcon(doc.type)}
+                  </div>
+                  <CardTitle className="text-base md:text-lg leading-tight line-clamp-2">{doc.name}</CardTitle>
                 </div>
-                <Badge className={getCategoryColor(doc.category)} variant="secondary">
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge className={`text-xs ${getCategoryColor(doc.category)}`} variant="secondary">
                   {doc.category}
                 </Badge>
               </div>
               {doc.description && (
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm md:text-base mt-2 leading-relaxed line-clamp-3">
                   {doc.description}
                 </CardDescription>
               )}
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex gap-2">
+            <CardContent className="pt-0 flex-1 flex flex-col">
+              <div className="flex flex-col sm:flex-row gap-2 mt-auto">
                 <Button 
                   onClick={() => handlePreview(doc)}
-                  className="flex-1"
+                  className="flex-1 text-sm h-9"
                   variant="outline"
                   size="sm"
                 >
@@ -143,22 +147,13 @@ export function DevelopmentDocuments() {
                 </Button>
                 <Button 
                   onClick={() => handleDownload(doc.path, doc.name)}
-                  className="flex-1"
+                  className="flex-1 text-sm h-9"
                   size="sm"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download
                 </Button>
               </div>
-              <Button 
-                onClick={() => handleOpenInNewTab(doc.path)}
-                className="w-full mt-2"
-                variant="ghost"
-                size="sm"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Open in New Tab
-              </Button>
             </CardContent>
           </Card>
         ))}
