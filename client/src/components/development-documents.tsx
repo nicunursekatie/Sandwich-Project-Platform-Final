@@ -126,10 +126,10 @@ export function DevelopmentDocuments() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="text-sm font-medium px-3 py-1 bg-purple-100 text-purple-800">
+                <Badge className="text-xs font-medium px-2 py-0.5 bg-purple-100 text-purple-800">
                   {doc.category}
                 </Badge>
-                <Badge variant="outline" className="text-sm font-medium px-3 py-1">
+                <Badge variant="outline" className="text-xs font-medium px-2 py-0.5">
                   {doc.type.toUpperCase()}
                 </Badge>
               </div>
@@ -140,24 +140,24 @@ export function DevelopmentDocuments() {
                   {doc.description}
                 </CardDescription>
               )}
-              {/* Action buttons - optimized for tablet with larger touch targets */}
-              <div className="flex flex-col gap-3 mt-auto">
+              {/* Action buttons - fixed to stay within card bounds */}
+              <div className="flex flex-col gap-2 mt-auto">
                 <Button
-                  size="default"
+                  size="sm"
                   variant="outline"
                   onClick={() => handlePreview(doc)}
-                  className="w-full h-11 text-base font-medium"
+                  className="w-full h-9 text-sm font-medium"
                 >
-                  <Eye className="h-5 w-5 mr-2" />
+                  <Eye className="h-4 w-4 mr-2" />
                   Preview
                 </Button>
                 <Button
-                  size="default"
+                  size="sm"
                   variant="default"
                   onClick={() => handleDownload(doc.path, doc.name)}
-                  className="w-full h-11 text-base font-medium"
+                  className="w-full h-9 text-sm font-medium"
                 >
-                  <Download className="h-5 w-5 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   Download
                 </Button>
               </div>
