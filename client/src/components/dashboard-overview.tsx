@@ -245,45 +245,45 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           </div>
         </div>
 
-        {/* Operational Capacity - Brand Colors with Opacity Backgrounds */}
+        {/* Operational Capacity - Clean Design with Brand Color Accents */}
         <div className="mx-4 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-            <h2 className="text-lg font-semibold text-[#236383] mb-6">Operational Capacity</h2>
+            <h2 className="text-lg font-semibold text-[#646464] mb-6">Operational Capacity</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Peak Week - Burgundy background */}
-              <div className="bg-[#A31C41]/10 rounded-lg p-4 text-center border border-[#A31C41]/20 hover:bg-[#A31C41]/15 transition-colors">
+              {/* Peak Week - Burgundy accent */}
+              <div className="bg-white rounded-lg p-4 text-center border border-[#A31C41] border-l-4 border-l-[#A31C41] hover:shadow-md transition-shadow">
                 <div className="text-2xl font-bold text-[#A31C41] mb-1">
                   {organizationalStats.peakWeekRecord}
                 </div>
-                <div className="text-sm text-[#236383] font-medium">Peak Week</div>
-                <div className="text-xs text-gray-600 mt-1">Nov 15, 2023</div>
+                <div className="text-sm text-[#646464] font-medium">Peak Week</div>
+                <div className="text-xs text-[#646464] mt-1">Nov 15, 2023</div>
               </div>
               
-              {/* Annual Target - Orange background */}
-              <div className="bg-[#FBAD3F]/10 rounded-lg p-4 text-center border border-[#FBAD3F]/20 hover:bg-[#FBAD3F]/15 transition-colors">
+              {/* Annual Target - Orange accent */}
+              <div className="bg-white rounded-lg p-4 text-center border border-[#FBAD3F] border-l-4 border-l-[#FBAD3F] hover:shadow-md transition-shadow">
                 <div className="text-2xl font-bold text-[#FBAD3F] mb-1">
                   {organizationalStats.currentAnnualCapacity}
                 </div>
-                <div className="text-sm text-[#236383] font-medium">Annual Target</div>
-                <div className="text-xs text-gray-600 mt-1">Current year</div>
+                <div className="text-sm text-[#646464] font-medium">Annual Target</div>
+                <div className="text-xs text-[#646464] mt-1">Current year</div>
               </div>
               
-              {/* Weekly Baseline - Light Blue background */}
-              <div className="bg-[#47B3CB]/10 rounded-lg p-4 text-center border border-[#47B3CB]/20 hover:bg-[#47B3CB]/15 transition-colors">
+              {/* Weekly Baseline - Light Blue accent */}
+              <div className="bg-white rounded-lg p-4 text-center border border-[#47B3CB] border-l-4 border-l-[#47B3CB] hover:shadow-md transition-shadow">
                 <div className="text-2xl font-bold text-[#47B3CB] mb-1">
                   {organizationalStats.weeklyBaseline}
                 </div>
-                <div className="text-sm text-[#236383] font-medium">Weekly Baseline</div>
-                <div className="text-xs text-gray-600 mt-1">Regular ops</div>
+                <div className="text-sm text-[#646464] font-medium">Weekly Baseline</div>
+                <div className="text-xs text-[#646464] mt-1">Regular ops</div>
               </div>
               
-              {/* Surge Capacity - Dark Teal background */}
-              <div className="bg-[#007E8C]/10 rounded-lg p-4 text-center border border-[#007E8C]/20 hover:bg-[#007E8C]/15 transition-colors">
+              {/* Surge Capacity - Dark Teal accent */}
+              <div className="bg-white rounded-lg p-4 text-center border border-[#007E8C] border-l-4 border-l-[#007E8C] hover:shadow-md transition-shadow">
                 <div className="text-2xl font-bold text-[#007E8C] mb-1">
                   {organizationalStats.surgingCapacity}
                 </div>
-                <div className="text-sm text-[#236383] font-medium">Surge Capacity</div>
-                <div className="text-xs text-gray-600 mt-1">Peak mobilization</div>
+                <div className="text-sm text-[#646464] font-medium">Surge Capacity</div>
+                <div className="text-xs text-[#646464] mt-1">Peak mobilization</div>
               </div>
             </div>
           </div>
