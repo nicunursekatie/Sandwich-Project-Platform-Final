@@ -77,8 +77,7 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
   // Generate report mutation
   const generateReport = useMutation({
     mutationFn: async (config: ReportConfig) => {
-      const response = await apiRequest('POST', '/api/reports/generate', config);
-      return await response.json();
+      return await apiRequest('POST', '/api/reports/generate', config);
     },
     onSuccess: (data) => {
       toast({
@@ -86,14 +85,25 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
         description: "Your report has been generated successfully.",
       });
       
-      // Trigger download
-      const downloadUrl = `/api/reports/download/${data.id}`;
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `${data.metadata.title}-${format(new Date(), 'yyyy-MM-dd')}.${reportConfig.format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Trigger download if data is valid
+      if (data && data.id && data.metadata) {
+        try {
+          const downloadUrl = `/api/reports/download/${data.id}`;
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = `${data.metadata.title}-${format(new Date(), 'yyyy-MM-dd')}.${reportConfig.format}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (error) {
+          console.error('Download error:', error);
+          toast({
+            title: "Download Failed",
+            description: "Report generated but download failed. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
     },
     onError: (error) => {
       toast({
@@ -107,11 +117,10 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
   // Schedule report mutation
   const scheduleReport = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/reports/schedule', {
+      return await apiRequest('POST', '/api/reports/schedule', {
         config: reportConfig,
         schedule: scheduleConfig
       });
-      return await response.json();
     },
     onSuccess: () => {
       toast({
