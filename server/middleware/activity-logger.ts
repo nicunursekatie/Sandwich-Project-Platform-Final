@@ -25,7 +25,13 @@ const routeToSectionAndFeature: Record<string, { section: string; feature: strin
   '/api/reports': { section: 'Reports', feature: 'Report Generation' },
   '/api/work-logs': { section: 'Work Log', feature: 'Time Tracking' },
   '/api/announcements': { section: 'Admin', feature: 'Announcements' },
-  '/api/users': { section: 'Admin', feature: 'User Management' }
+  '/api/users': { section: 'Admin', feature: 'User Management' },
+  '/api/meeting-minutes': { section: 'Meetings', feature: 'Meeting Minutes' },
+  '/api/meeting-minutes/': { section: 'Meetings', feature: 'Meeting Documents' },
+  '/api/emails': { section: 'Communication', feature: 'Email System' },
+  '/api/enhanced-user-activity': { section: 'Analytics', feature: 'User Analytics' },
+  '/track': { section: 'Collections', feature: 'Collection Tracking' },
+  '/kudos': { section: 'Communication', feature: 'Kudos System' }
 };
 
 // Map HTTP methods to readable actions with context
@@ -117,10 +123,10 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
                   section = pathParts[0].charAt(0).toUpperCase() + pathParts[0].slice(1).replace('-', ' ');
                   feature = pathParts.length > 1 
                     ? pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1).replace('-', ' ')
-                    : 'General Activity';
+                    : section + ' Activity';
                 } else {
                   section = 'Platform';
-                  feature = 'General Navigation';
+                  feature = 'Platform Navigation';
                 }
               }
             }

@@ -90,21 +90,32 @@ export default function AnnouncementBanner() {
     if (type === 'position') {
       return `${baseStyles} bg-green-50 border-green-500 text-green-900`;
     }
-    return `${baseStyles} bg-slate-50 border-slate-500 text-slate-900`;
+    if (type === 'alert') {
+      return `${baseStyles} bg-yellow-50 border-yellow-500 text-yellow-900`;
+    }
+    return `${baseStyles} bg-blue-50 border-blue-500 text-blue-900`;
   };
 
   return (
-    <div className={`w-full px-4 py-3 ${getBannerStyles(currentAnnouncement.priority, currentAnnouncement.type)}`}>
-      <div className="max-w-7xl mx-auto flex items-start justify-between gap-4">
+    <div className={`w-full px-4 py-4 ${getBannerStyles(currentAnnouncement.priority, currentAnnouncement.type)} border-b-2 shadow-md relative overflow-hidden`}>
+      {/* Subtle animation for emphasis */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse opacity-30"></div>
+      
+      <div className="max-w-7xl mx-auto flex items-start justify-between gap-4 relative z-10">
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="flex-shrink-0 mt-0.5">
+          <div className="flex-shrink-0 mt-0.5 p-1 rounded-full bg-white/20">
             {getIcon(currentAnnouncement.type)}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm mb-1">
-              {currentAnnouncement.title}
-            </h3>
-            <p className="text-sm leading-relaxed">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-base">
+                {currentAnnouncement.title}
+              </h3>
+              <span className="text-xs px-2 py-1 bg-white/30 rounded-full font-semibold uppercase tracking-wide">
+                {currentAnnouncement.priority}
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed font-medium">
               {currentAnnouncement.message}
             </p>
             {currentAnnouncement.link && (
@@ -112,7 +123,7 @@ export default function AnnouncementBanner() {
                 href={currentAnnouncement.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block mt-2 text-sm font-medium underline hover:no-underline"
+                className="inline-block mt-2 text-sm font-bold underline hover:no-underline bg-white/20 px-2 py-1 rounded"
               >
                 {currentAnnouncement.linkText || 'Learn More'}
               </a>
@@ -123,9 +134,9 @@ export default function AnnouncementBanner() {
           variant="ghost"
           size="sm"
           onClick={() => dismissBanner(currentAnnouncement.id)}
-          className="flex-shrink-0 h-6 w-6 p-0 hover:bg-black/10"
+          className="flex-shrink-0 h-8 w-8 p-0 hover:bg-white/20 rounded-full border-2 border-white/30"
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4 font-bold" />
         </Button>
       </div>
     </div>
