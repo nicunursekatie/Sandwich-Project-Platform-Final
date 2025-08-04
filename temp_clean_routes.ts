@@ -4154,19 +4154,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Analytics Dashboard Routes  
+  // Analytics Dashboard Routes
   app.get("/api/dashboard/stats", async (req, res) => {
-    try {
-      const stats = await storage.getCollectionStats();
-      res.json(stats);
-    } catch (error) {
-      console.error("Failed to fetch dashboard stats:", error);
-      res.status(500).json({ error: "Failed to fetch dashboard stats" });
-    }
-  });
-
-  // Schedule report
-  app.post("/api/reports/schedule", async (req, res) => {
+            }
     try {
       const { config, schedule } = req.body;
       const scheduledReport = await ReportGenerator.scheduleReport(
@@ -7886,4 +7876,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   (global as any).broadcastTaskAssignment = broadcastTaskAssignment;
 
   return httpServer;
-}

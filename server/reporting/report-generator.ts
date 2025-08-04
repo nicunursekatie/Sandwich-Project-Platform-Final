@@ -44,19 +44,36 @@ export interface ReportData {
 }
 
 export class ReportGenerator {
-  static async generateReport(config: ReportConfig): Promise<ReportData> {
-    const startDate = new Date(config.dateRange.start);
-    const endDate = new Date(config.dateRange.end);
+  static async generateReport(config: any): Promise<ReportData> {
+    // Handle different input formats
+    let dateFrom: string, dateTo: string, reportFormat: string, type: string;
+    
+    if (config.dateRange) {
+      // Old format
+      dateFrom = config.dateRange.start;
+      dateTo = config.dateRange.end;
+      reportFormat = config.format || 'json';
+      type = config.type || 'collections';
+    } else {
+      // New format from frontend
+      dateFrom = config.dateFrom || '2024-01-01';
+      dateTo = config.dateTo || '2025-12-31';
+      reportFormat = config.format || 'json';
+      type = 'collections';
+    }
+    
+    const startDate = new Date(dateFrom);
+    const endDate = new Date(dateTo);
 
     let data: any[] = [];
     let totalSandwiches = 0;
     let totalHosts = 0;
     let activeProjects = 0;
 
-    switch (config.type) {
+    switch (type) {
       case 'collections':
         data = await this.getCollectionsData(startDate, endDate, config.filters);
-        totalSandwiches = data.reduce((sum, item) => sum + (item.individualSandwiches || 0), 0);
+        totalSandwiches = data.reduce((sum: number, item: any) => sum + (item.individualSandwiches || 0), 0);
         break;
 
       case 'hosts':
@@ -66,7 +83,7 @@ export class ReportGenerator {
 
       case 'impact':
         data = await this.getImpactData(startDate, endDate);
-        totalSandwiches = data.reduce((sum, item) => sum + (item.totalSandwiches || 0), 0);
+        totalSandwiches = data.reduce((sum: number, item: any) => sum + (item.totalSandwiches || 0), 0);
         break;
 
       case 'comprehensive':
@@ -75,16 +92,16 @@ export class ReportGenerator {
           this.getHostsData(config.filters),
           this.getProjectsData(config.filters)
         ]);
-        data = { collections, hosts, projects };
-        totalSandwiches = collections.reduce((sum, item) => sum + (item.individualSandwiches || 0), 0);
+        data = [...collections]; // Use collections as main data for PDF generation
+        totalSandwiches = collections.reduce((sum: number, item: any) => sum + (item.individualSandwiches || 0), 0);
         totalHosts = hosts.length;
-        activeProjects = projects.filter(p => p.status === 'active').length;
+        activeProjects = projects.filter((p: any) => p.status === 'active').length;
         break;
     }
 
     const topPerformers = await this.getTopPerformers(startDate, endDate);
     
-    const charts = config.includeCharts ? await this.generateCharts(config, data) : undefined;
+    const charts = config.includeCharts ? await this.generateCharts({...config, type}, data) : undefined;
 
     return {
       metadata: {
@@ -92,7 +109,7 @@ export class ReportGenerator {
         generatedAt: new Date().toISOString(),
         dateRange: `${format(startDate, 'MMM dd, yyyy')} - ${format(endDate, 'MMM dd, yyyy')}`,
         totalRecords: Array.isArray(data) ? data.length : Object.values(data).flat().length,
-        format: config.format
+        format: reportFormat
       },
       summary: {
         totalSandwiches,
@@ -107,7 +124,7 @@ export class ReportGenerator {
 
   private static async getCollectionsData(startDate: Date, endDate: Date, filters?: any) {
     try {
-      const collections = await storage.getSandwichCollections();
+      const collections = await storage.getAllSandwichCollections();
       return collections
         .filter(c => {
           const collectionDate = new Date(c.collectionDate);
@@ -138,15 +155,15 @@ export class ReportGenerator {
 
   private static async getHostsData(filters?: any) {
     try {
-      const hosts = await storage.getHosts();
+      const hosts = await storage.getAllHosts();
       return hosts
-        .filter(h => {
+        .filter((h: any) => {
           if (filters?.status?.length) {
             return filters.status.includes(h.status);
           }
           return true;
         })
-        .map(h => ({
+        .map((h: any) => ({
           id: h.id,
           name: h.name,
           address: h.address,
@@ -162,9 +179,9 @@ export class ReportGenerator {
 
   private static async getProjectsData(filters?: any) {
     try {
-      const projects = await storage.getProjects();
+      const projects = await storage.getAllProjects();
       return projects
-        .filter(p => {
+        .filter((p: any) => {
           if (filters?.projectIds?.length) {
             return filters.projectIds.includes(p.id);
           }
@@ -173,7 +190,7 @@ export class ReportGenerator {
           }
           return true;
         })
-        .map(p => ({
+        .map((p: any) => ({
           id: p.id,
           title: p.title,
           status: p.status,
@@ -234,7 +251,7 @@ export class ReportGenerator {
       }, {} as Record<string, number>);
 
       return Object.entries(hostPerformance)
-        .sort(([, a], [, b]) => b - a)
+        .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 5)
         .map(([name, value]) => ({
           name,
@@ -277,7 +294,7 @@ export class ReportGenerator {
         type: 'bar' as const,
         title: 'Top Performing Hosts',
         data: Object.entries(hostData)
-          .sort(([, a], [, b]) => b - a)
+          .sort(([, a], [, b]) => (b as number) - (a as number))
           .slice(0, 10)
           .map(([host, total]) => ({
             label: host,
@@ -289,7 +306,7 @@ export class ReportGenerator {
     return charts;
   }
 
-  private static getReportTitle(config: ReportConfig): string {
+  private static getReportTitle(config: any): string {
     const typeNames = {
       collections: 'Sandwich Collections Report',
       hosts: 'Host Performance Report',
@@ -297,7 +314,7 @@ export class ReportGenerator {
       comprehensive: 'Comprehensive Operations Report'
     };
 
-    return typeNames[config.type] || 'Custom Report';
+    return typeNames[config.type] || 'Sandwich Collections Report';
   }
 
   static async scheduleReport(config: ReportConfig, schedule: {
