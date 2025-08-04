@@ -1,0 +1,87 @@
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=wMKtFb0qO_nm' failed: 
+setupWebSocket @ client:536
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=wMKtFb0qO_nm' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+ Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+ Current URL location: /
+ Dashboard activeSection changed to: dashboard
+ WebSocket connected successfully
+ WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+(anonymous) @ :5000/src/hooks/useMessaging.ts:165
+hook.js:608 Messaging WebSocket error: Event
+overrideMethod @ hook.js:608
+ Messaging WebSocket disconnected
+hook.js:608 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+ Navigation click: analytics
+ Dashboard setActiveSection called with: analytics
+ Current URL location: /dashboard
+ Dashboard activeSection changed to: analytics
+ WebSocket connection closed: 1006 
+ WebSocket connected successfully
+ Navigation click: reports
+ Dashboard setActiveSection called with: reports
+ Dashboard activeSection changed to: reports
+:5000/@fs/home/runne….js?v=a597a69e:2295 Uncaught RangeError: Invalid time value
+    at format (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/date-fns.js?v=a597a69e:2295:11)
+    at renderReportingContent (:5000/src/pages/reporting-dashboard.tsx:875:21)
+    at ReportingDashboard (:5000/src/pages/reporting-dashboard.tsx:1344:12)
+    at renderWithHooks (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:11548:26)
+    at updateFunctionComponent (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:14582:28)
+    at beginWork (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:15924:22)
+    at HTMLUnknownElement.callCallback2 (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:3674:22)
+    at Object.invokeGuardedCallbackDev (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:3699:24)
+    at invokeGuardedCallback (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:3733:39)
+    at beginWork$1 (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:19765:15)
+:5000/@fs/home/runne….js?v=a597a69e:2295 Uncaught RangeError: Invalid time value
+    at format (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/date-fns.js?v=a597a69e:2295:11)
+    at renderReportingContent (:5000/src/pages/reporting-dashboard.tsx:875:21)
+    at ReportingDashboard (:5000/src/pages/reporting-dashboard.tsx:1344:12)
+    at renderWithHooks (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:11548:26)
+    at updateFunctionComponent (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:14582:28)
+    at beginWork (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:15924:22)
+    at HTMLUnknownElement.callCallback2 (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:3674:22)
+    at Object.invokeGuardedCallbackDev (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:3699:24)
+    at invokeGuardedCallback (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:3733:39)
+    at beginWork$1 (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:19765:15)
+hook.js:608 The above error occurred in the <ReportingDashboard> component:
+
+    at ReportingDashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/reporting-dashboard.tsx:34:46)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at HelpProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/help-system/HelpProvider.tsx:29:32)
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx:63:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a597a69e:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a597a69e:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=GXN-dH0nXlcYu8OIWAqsI:35:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-3RXG37ZK.js?v=a597a69e:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=a597a69e:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=a597a69e:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=GXN-dH0nXlcYu8OIWAqsI:336:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: RangeError: Invalid time value
+    at format (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/date-fns.js?v=a597a69e:2295:11)
+    at renderReportingContent (:5000/src/pages/reporting-dashboard.tsx:875:21)
+    at ReportingDashboard (:5000/src/pages/reporting-dashboard.tsx:1344:12)
+    at renderWithHooks (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:11548:26)
+    at updateFunctionComponent (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:14582:28)
+    at beginWork (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:15924:22)
+    at beginWork$1 (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:19753:22)
+    at performUnitOfWork (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:19198:20)
+    at workLoopSync (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:19137:13)
+    at renderRootSync (:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-276SZO74.js?v=a597a69e:19116:15) Object Error Component Stack
+    at ErrorBoundary (:5000/src/components/error-boundary.tsx:10:5)
+    at App (App.tsx:132:3)
+overrideMethod @ hook.js:608
+ WebSocket connection closed: 1000 Component unmounting
