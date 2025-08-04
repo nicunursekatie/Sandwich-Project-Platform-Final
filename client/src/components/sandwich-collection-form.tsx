@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useActivityTracker } from "@/hooks/useActivityTracker";
 
 interface Group {
   id: string;
@@ -37,6 +38,12 @@ export default function SandwichCollectionForm({
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { trackView, trackClick, trackFormSubmit, trackActivity } = useActivityTracker();
+
+  // Track form view on component mount
+  useEffect(() => {
+    trackView('Sandwich Collection Form', 'Collections', 'Data Entry', 'User opened standard collection form');
+  }, [trackView]);
 
   // Fetch active hosts
   const { data: hosts = [] } = useQuery<Host[]>({
@@ -83,6 +90,21 @@ export default function SandwichCollectionForm({
       const totalSandwiches = (parseInt(individualCount) || 0) + 
         groups.reduce((sum, group) => sum + (group.count || 0), 0);
       
+      // Track successful submission
+      trackFormSubmit('Collection Form', 'Collections', 'Data Entry', true);
+      trackActivity({
+        action: 'Submit Success',
+        section: 'Collections',
+        feature: 'Data Entry',
+        details: `Successfully submitted collection for ${location || customLocation} (${totalSandwiches} sandwiches)`,
+        metadata: {
+          hostName: location || customLocation,
+          totalSandwiches,
+          individualSandwiches: parseInt(individualCount) || 0,
+          groupSandwiches: groups.length
+        }
+      });
+      
       // Show clear success message with details
       toast({
         title: "Collection Submitted Successfully! 🥪",
@@ -108,6 +130,19 @@ export default function SandwichCollectionForm({
       if (onSuccess) onSuccess();
     },
     onError: (error) => {
+      // Track failed submission
+      trackFormSubmit('Collection Form', 'Collections', 'Data Entry', false);
+      trackActivity({
+        action: 'Submit Failed',
+        section: 'Collections',
+        feature: 'Data Entry',
+        details: `Failed to submit collection for ${location || customLocation}`,
+        metadata: {
+          hostName: location || customLocation,
+          error: String(error)
+        }
+      });
+      
       // Show clear error message
       toast({
         title: "Submission Failed",
@@ -125,6 +160,15 @@ export default function SandwichCollectionForm({
     if (value !== "other") {
       setCustomLocation("");
     }
+    
+    // Track location selection
+    trackActivity({
+      action: 'Select',
+      section: 'Collections',
+      feature: 'Data Entry',
+      details: `Selected location: ${value === "other" ? "Custom Location" : value}`,
+      metadata: { location: value, isCustom: value === "other" }
+    });
   };
 
   // Calculate total
@@ -140,6 +184,9 @@ export default function SandwichCollectionForm({
   // Add group
   const addGroup = () => {
     setGroups([...groups, { id: Date.now().toString(), name: "", count: 0 }]);
+    
+    // Track group addition
+    trackClick('Add Group', 'Collections', 'Data Entry', `Added group ${groups.length + 1}`);
   };
 
   // Remove group
@@ -177,13 +224,48 @@ export default function SandwichCollectionForm({
   const handleSubmit = async () => {
     let finalLocation = location;
 
+    // Track submission attempt
+    const totalSandwiches = (parseInt(individualCount) || 0) + groups.reduce((sum, group) => sum + (group.count || 0), 0);
+    trackActivity({
+      action: 'Submit Attempt',
+      section: 'Collections',
+      feature: 'Data Entry',
+      details: `Attempting to submit collection for ${finalLocation || 'unknown location'}`,
+      metadata: {
+        date,
+        location: finalLocation,
+        individualCount: parseInt(individualCount) || 0,
+        groupCount: groups.length,
+        totalSandwiches,
+        hasCustomLocation: location === "other"
+      }
+    });
+
     // If "other" is selected, create new host and use custom location
     if (location === "other" && customLocation.trim()) {
       try {
         await createHostMutation.mutateAsync(customLocation.trim());
         finalLocation = customLocation.trim();
+        
+        // Track new host creation
+        trackActivity({
+          action: 'Create',
+          section: 'Collections',
+          feature: 'Host Management',
+          details: `Created new host: ${finalLocation}`,
+          metadata: { hostName: finalLocation }
+        });
       } catch (error) {
         console.error("Failed to create new host:", error);
+        
+        // Track failed host creation
+        trackActivity({
+          action: 'Create Failed',
+          section: 'Collections',
+          feature: 'Host Management',
+          details: `Failed to create new host: ${customLocation.trim()}`,
+          metadata: { hostName: customLocation.trim(), error: String(error) }
+        });
         return;
       }
     }
