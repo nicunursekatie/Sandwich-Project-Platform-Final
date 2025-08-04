@@ -4257,19 +4257,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
             yPosition += 30;
           }
 
-          // Add a comprehensive data table if we have space
-          if (
-            Array.isArray(reportData.data) &&
-            reportData.data.length > 0 &&
-            yPosition < 600
-          ) {
-            if (yPosition > 650) {
+          // Add weekly/monthly trend analysis if we have data spanning multiple periods
+          if (Array.isArray(reportData.data) && reportData.data.length > 5) {
+            if (yPosition > 600) {
               doc.addPage();
               yPosition = 50;
             }
 
             doc.fontSize(14).font("Helvetica-Bold");
-            doc.text("Collection Summary Table", 50, yPosition);
+            doc.text("Trend Analysis", 50, yPosition);
+            yPosition += 25;
+
+            // Group data by month
+            const monthlyData = {};
+            reportData.data.forEach(record => {
+              try {
+                const date = new Date(record.collectionDate || record.date);
+                if (!isNaN(date.getTime())) {
+                  const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                  if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = { total: 0, count: 0 };
+                  }
+                  
+                  const individual = record.individualSandwiches || 0;
+                  const groupTotal = (() => {
+                    try {
+                      const groupData = JSON.parse(record.groupCollections || "[]");
+                      return Array.isArray(groupData) 
+                        ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
+                        : 0;
+                    } catch {
+                      return 0;
+                    }
+                  })();
+                  
+                  monthlyData[monthKey].total += individual + groupTotal;
+                  monthlyData[monthKey].count += 1;
+                }
+              } catch (e) {
+                // Skip invalid dates
+              }
+            });
+
+            doc.fontSize(10).font("Helvetica");
+            const sortedMonths = Object.keys(monthlyData).sort();
+            sortedMonths.slice(-6).forEach(month => { // Show last 6 months
+              const data = monthlyData[month];
+              const avg = Math.round(data.total / data.count);
+              doc.text(`${month}: ${data.total.toLocaleString()} sandwiches across ${data.count} collections (avg: ${avg}/collection)`, 50, yPosition);
+              yPosition += 15;
+            });
+            yPosition += 20;
+          }
+
+          // Add actionable insights section
+          if (Array.isArray(reportData.data) && reportData.data.length > 10) {
+            if (yPosition > 600) {
+              doc.addPage();
+              yPosition = 50;
+            }
+
+            doc.fontSize(14).font("Helvetica-Bold");
+            doc.text("Key Insights & Recommendations", 50, yPosition);
+            yPosition += 25;
+
+            doc.fontSize(10).font("Helvetica");
+
+            // Find best performing locations
+            const hostPerformance = {};
+            reportData.data.forEach(record => {
+              const host = record.hostName || "Unknown";
+              if (!hostPerformance[host]) hostPerformance[host] = { total: 0, count: 0 };
+              
+              const individual = record.individualSandwiches || 0;
+              const groupTotal = (() => {
+                try {
+                  const groupData = JSON.parse(record.groupCollections || "[]");
+                  return Array.isArray(groupData) 
+                    ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
+                    : 0;
+                } catch {
+                  return 0;
+                }
+              })();
+              
+              hostPerformance[host].total += individual + groupTotal;
+              hostPerformance[host].count += 1;
+            });
+
+            const sortedHosts = Object.entries(hostPerformance)
+              .map(([name, data]) => ({ name, ...data, avg: Math.round(data.total / data.count) }))
+              .sort((a, b) => b.avg - a.avg);
+
+            doc.text("• Top performing location by average: " + 
+              (sortedHosts[0]?.name || "N/A") + 
+              ` (${sortedHosts[0]?.avg || 0} sandwiches per collection)`, 50, yPosition);
+            yPosition += 15;
+
+            if (sortedHosts.length > 1) {
+              doc.text("• Locations with growth potential: " + 
+                sortedHosts.slice(-2).map(h => `${h.name} (${h.avg} avg)`).join(", "), 50, yPosition);
+              yPosition += 15;
+            }
+
+            // Zero collection analysis
+            const zeroCollections = reportData.data.filter(record => {
+              const individual = record.individualSandwiches || 0;
+              const groupTotal = (() => {
+                try {
+                  const groupData = JSON.parse(record.groupCollections || "[]");
+                  return Array.isArray(groupData) 
+                    ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
+                    : 0;
+                } catch {
+                  return 0;
+                }
+              })();
+              return (individual + groupTotal) === 0;
+            }).length;
+
+            if (zeroCollections > 0) {
+              doc.text(`• ${zeroCollections} collections recorded zero sandwiches - consider follow-up`, 50, yPosition);
+              yPosition += 15;
+            }
+
+            yPosition += 10;
+          }
+
+          // Add a sample data table if we have space and haven't already added one
+          if (Array.isArray(reportData.data) && reportData.data.length > 0 && yPosition < 650) {
+            if (yPosition > 600) {
+              doc.addPage();
+              yPosition = 50;
+            }
+
+            doc.fontSize(14).font("Helvetica-Bold");
+            doc.text("Sample Collection Data", 50, yPosition);
             yPosition += 25;
 
             // Table headers
@@ -4351,6 +4474,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
+          // Add final page break if needed for footer
+          if (yPosition > 700) {
+            doc.addPage();
+          }
+
           // Footer
           const pages = doc.bufferedPageRange();
           for (let i = 0; i < pages.count; i++) {
@@ -4368,7 +4496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
           }
 
-          // Finalize the PDF
+          // Finalize the PDF properly
           doc.end();
         } catch (error) {
           console.error("PDF generation error:", error);
