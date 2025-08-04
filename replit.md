@@ -27,6 +27,8 @@ UI Design: Button labels and interface text must be extremely clear about their 
 
 ## Recent Critical Fixes (August 2025 - Continued)
 - **Core Team User Classification**: COMPLETED - Added new "Core Team" user role with comprehensive permissions including: create collections, access general/core team/host chat, direct messages, full directory editing (hosts/recipients/drivers), analytics, reports, suggestions management, and complete kudos system access. This role provides elevated permissions between regular volunteers and committee members, designed for trusted team members who need broader operational access.
+- **Weekly Impact Report System**: COMPLETED - Implemented sophisticated weekly impact report generation system with comprehensive analysis capabilities. Features include: executive summary with key metrics, comparative metrics table, location performance analysis with status categorization (high performers, needs attention, steady contributors), trends and insights analysis, next week preparation data, and success celebration sections. Reports can be generated for any week and downloaded as PDFs. Integrated as fourth tab in reporting dashboard.
+- **Mobile/Tablet Responsive Design Improvements**: COMPLETED - Enhanced mobile and tablet responsive design across weekly impact reports and reporting dashboard. Improvements include: responsive grid layouts that adapt from 1 column on mobile to 4 columns on desktop, flexible button layouts that stack vertically on small screens, improved typography scaling, touch-friendly tab navigation, optimized table scrolling with minimum widths, and better card layouts with appropriate padding for different screen sizes.
 
 ## System Architecture
 
