@@ -38,7 +38,7 @@ import {
   Bug,
   Eye,
   EyeOff,
-
+  Trophy,
   Building
 } from "lucide-react";
 import {
@@ -70,6 +70,7 @@ const ROLE_COLORS = {
   [USER_ROLES.SUPER_ADMIN]: "bg-red-100 text-red-800 border-red-200",
   [USER_ROLES.ADMIN]: "bg-[#236383] text-white border-[#236383]",
   [USER_ROLES.COMMITTEE_MEMBER]: "bg-blue-100 text-blue-800 border-blue-200",
+  [USER_ROLES.CORE_TEAM]: "bg-orange-100 text-orange-800 border-orange-200",
   [USER_ROLES.HOST]: "bg-green-100 text-green-800 border-green-200",
   [USER_ROLES.VOLUNTEER]: "bg-purple-100 text-purple-800 border-purple-200",
   [USER_ROLES.RECIPIENT]: "bg-teal-100 text-teal-800 border-teal-200",
@@ -82,6 +83,7 @@ const ROLE_ICONS = {
   [USER_ROLES.SUPER_ADMIN]: Crown,
   [USER_ROLES.ADMIN]: Shield,
   [USER_ROLES.COMMITTEE_MEMBER]: Users,
+  [USER_ROLES.CORE_TEAM]: Trophy,
   [USER_ROLES.HOST]: Building,
   [USER_ROLES.VOLUNTEER]: Award,
   [USER_ROLES.RECIPIENT]: UserCheck,
@@ -144,7 +146,7 @@ export default function UserManagementRedesigned() {
         title: "User Updated",
         description: "User permissions have been successfully updated.",
       });
-      triggerCelebration("User permissions updated!", "🎉");
+      triggerCelebration("User permissions updated!");
     },
     onError: (error: any) => {
       toast({
