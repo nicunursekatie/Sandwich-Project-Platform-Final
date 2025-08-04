@@ -162,106 +162,121 @@ export default function AnalyticsDashboard() {
         </TabsList>
 
         <TabsContent value="highlights" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card className="border-primary shadow-md">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-primary">
-                    <Award className="w-6 h-6" />
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    <Star className="w-3 h-3 mr-1" />
-                    Highlight
-                  </Badge>
+          {/* Compact Impact Metrics */}
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-5">
+              <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <Award className="h-5 w-5 text-[#236383]" />
+                  <span className="text-xs text-green-600 font-medium">
+                    ↗️ 2M Goal
+                  </span>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Total Impact</h3>
-                <div className="text-3xl font-bold text-primary mb-2">
+                <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">
                   {analyticsData.totalSandwiches.toLocaleString()}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Sandwiches collected across all locations
+                <p className="text-xs text-gray-600">Total Impact</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {Math.round((analyticsData.totalSandwiches / 2000000) * 100)}% to 2M goal
                 </p>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="border-primary shadow-md">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-primary">
-                    <TrendingUp className="w-6 h-6" />
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    <Star className="w-3 h-3 mr-1" />
-                    Highlight
-                  </Badge>
+              <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <TrendingUp className="h-5 w-5 text-[#236383]" />
+                  <span className="text-xs text-blue-600 font-medium">
+                    Weekly Avg
+                  </span>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Weekly Average</h3>
-                <div className="text-3xl font-bold text-primary mb-2">
+                <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">
                   {analyticsData.avgWeekly.toLocaleString()}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Average sandwiches per week
+                <p className="text-xs text-gray-600">Per Week</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {analyticsData.avgWeekly > 5000 ? '↑' : '↓'} vs last month
                 </p>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="border-primary shadow-md">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-primary">
-                    <Crown className="w-6 h-6" />
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    <Star className="w-3 h-3 mr-1" />
-                    Highlight
-                  </Badge>
+              <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <Crown className="h-5 w-5 text-[#236383]" />
+                  <span className="text-xs text-orange-600 font-medium">
+                    Record
+                  </span>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Record Week</h3>
-                <div className="text-3xl font-bold text-primary mb-2">
+                <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">
                   {analyticsData.recordWeek ? analyticsData.recordWeek.total.toLocaleString() : '0'}
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-gray-600">Best Week</p>
+                <p className="text-xs text-gray-500 mt-1">
                   {analyticsData.recordWeek 
-                    ? `Outstanding performance on ${new Date(analyticsData.recordWeek.date).toLocaleDateString()}`
-                    : 'No record data'
-                  }
+                    ? new Date(analyticsData.recordWeek.date).toLocaleDateString()
+                    : 'No data'}
                 </p>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-primary">
-                    <Target className="w-6 h-6" />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Network Strength</h3>
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {analyticsData.activeLocations}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Active collection locations in our network
-                </p>
-              </CardContent>
-            </Card>
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <Target className="h-5 w-5 text-[#236383]" />
+                <span className="text-xs text-teal-600 font-medium">
+                  Network
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">
+                {analyticsData.activeLocations}
+              </div>
+              <p className="text-xs text-gray-600">Active Hosts</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Network growing
+              </p>
+            </div>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-primary">
-                    <Award className="w-6 h-6" />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Total Collections</h3>
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {analyticsData.totalCollections.toLocaleString()}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Individual collection events completed
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <Award className="h-5 w-5 text-[#236383]" />
+                <span className="text-xs text-indigo-600 font-medium">
+                  Events
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">
+                {analyticsData.totalCollections.toLocaleString()}
+              </div>
+              <p className="text-xs text-gray-600">Total Collections</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Event completions
+              </p>
+            </div>
+
+          </div>
+
+          {/* Actionable Community Insights */}
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 p-4 sm:p-6 rounded-lg border border-orange-200 dark:border-orange-800 mt-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+              <Target className="h-4 w-4 text-orange-600" />
+              Community Growth Opportunities
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Host Expansion</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {analyticsData.activeLocations} active locations
                 </p>
-              </CardContent>
-            </Card>
+                <p className="text-xs text-green-600 font-medium mt-1">→ Target +5 new hosts this month</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Capacity Building</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Weekly avg: {analyticsData.avgWeekly.toLocaleString()}
+                </p>
+                <p className="text-xs text-blue-600 font-medium mt-1">→ Support volunteer recruitment</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Milestone Push</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {(2000000 - analyticsData.totalSandwiches).toLocaleString()} to 2M goal
+                </p>
+                <p className="text-xs text-purple-600 font-medium mt-1">→ Special campaign needed</p>
+              </div>
+            </div>
           </div>
         </TabsContent>
 
