@@ -4140,17 +4140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (Array.isArray(reportData.data) && reportData.data.length > 0) {
             const totalSandwiches = reportData.data.reduce((sum, record) => {
               const individual = record.individualSandwiches || 0;
-              // Calculate group total from JSON data
-              const group = (() => {
-                try {
-                  const groupData = JSON.parse(record.groupCollections || "[]");
-                  return Array.isArray(groupData) 
-                    ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
-                    : 0;
-                } catch {
-                  return 0;
-                }
-              })();
+              const group = (record.group1Count || 0) + (record.group2Count || 0);
               return sum + individual + group;
             }, 0);
             const avgPerCollection = Math.round(
@@ -4222,17 +4212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               const individual = record.individualSandwiches || 0;
-              // Calculate group total from JSON data
-              const group = (() => {
-                try {
-                  const groupData = JSON.parse(record.groupCollections || "[]");
-                  return Array.isArray(groupData) 
-                    ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
-                    : 0;
-                } catch {
-                  return 0;
-                }
-              })();
+              const group = (record.group1Count || 0) + (record.group2Count || 0);
               const total = individual + group;
 
               let recordText = `${index + 1}. ${date} | ${record.hostName || "Group Collection"} | `;
@@ -4280,16 +4260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                   
                   const individual = record.individualSandwiches || 0;
-                  const groupTotal = (() => {
-                    try {
-                      const groupData = JSON.parse(record.groupCollections || "[]");
-                      return Array.isArray(groupData) 
-                        ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
-                        : 0;
-                    } catch {
-                      return 0;
-                    }
-                  })();
+                  const groupTotal = (record.group1Count || 0) + (record.group2Count || 0);
                   
                   monthlyData[monthKey].total += individual + groupTotal;
                   monthlyData[monthKey].count += 1;
@@ -4330,16 +4301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (!hostPerformance[host]) hostPerformance[host] = { total: 0, count: 0 };
               
               const individual = record.individualSandwiches || 0;
-              const groupTotal = (() => {
-                try {
-                  const groupData = JSON.parse(record.groupCollections || "[]");
-                  return Array.isArray(groupData) 
-                    ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
-                    : 0;
-                } catch {
-                  return 0;
-                }
-              })();
+              const groupTotal = (record.group1Count || 0) + (record.group2Count || 0);
               
               hostPerformance[host].total += individual + groupTotal;
               hostPerformance[host].count += 1;
@@ -4363,16 +4325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Zero collection analysis
             const zeroCollections = reportData.data.filter(record => {
               const individual = record.individualSandwiches || 0;
-              const groupTotal = (() => {
-                try {
-                  const groupData = JSON.parse(record.groupCollections || "[]");
-                  return Array.isArray(groupData) 
-                    ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
-                    : 0;
-                } catch {
-                  return 0;
-                }
-              })();
+              const groupTotal = (record.group1Count || 0) + (record.group2Count || 0);
               return (individual + groupTotal) === 0;
             }).length;
 
@@ -4447,17 +4400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               const individual = record.individualSandwiches || 0;
-              // Calculate group total from JSON data
-              const group = (() => {
-                try {
-                  const groupData = JSON.parse(record.groupCollections || "[]");
-                  return Array.isArray(groupData) 
-                    ? groupData.reduce((sum, g) => sum + (g.sandwichCount || 0), 0)
-                    : 0;
-                } catch {
-                  return 0;
-                }
-              })();
+              const group = (record.group1Count || 0) + (record.group2Count || 0);
               const total = individual + group;
               const hostName = (
                 record.hostName || "Group Collection"
