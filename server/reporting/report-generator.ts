@@ -25,6 +25,15 @@ export interface ReportData {
     totalRecords: number;
     format: string;
   };
+  summary: {
+    totalSandwiches: number;
+    totalHosts: number;
+    activeProjects: number;
+    topPerformers: Array<{
+      name: string;
+      value: number;
+    }>;
+  };
   communityImpact: {
     totalSandwichesProvided: number;
     recipientOrganizationsServed: number;
@@ -172,7 +181,7 @@ export class ReportGenerator {
         break;
     }
 
-    totalSandwiches = collections.reduce((sum: number, item: any) => sum + (item.individualSandwiches || 0) + (item.group1Count || 0) + (item.group2Count || 0), 0);
+    totalSandwiches = collections.reduce((sum: number, item: any) => sum + (item.individualSandwiches || 0) + (item.groupSandwiches || 0), 0);
     totalHosts = hosts.length;
     activeProjects = projects.filter((p: any) => p.status === 'active').length;
 
@@ -185,6 +194,14 @@ export class ReportGenerator {
     
     const charts = config.includeCharts ? await this.generateCommunityCharts({...config, type}, data, collections, hosts) : undefined;
 
+    // Create summary object for PDF generation
+    const summary = {
+      totalSandwiches: totalSandwiches,
+      totalHosts: totalHosts,
+      activeProjects: activeProjects,
+      topPerformers: await this.getTopPerformers(startDate, endDate)
+    };
+
     return {
       metadata: {
         title: this.getReportTitle(config),
@@ -193,6 +210,7 @@ export class ReportGenerator {
         totalRecords: Array.isArray(data) ? data.length : Object.values(data).flat().length,
         format: reportFormat
       },
+      summary,
       communityImpact,
       collectiveAchievements,
       operationalHealth,
@@ -223,9 +241,10 @@ export class ReportGenerator {
         .map(c => ({
           id: c.id,
           date: c.collectionDate,
-          hostName: c.hostName,
-          individualSandwiches: c.individualSandwiches,
-          // groupCollections data not needed for reporting
+          hostName: c.hostName || 'N/A',
+          individualSandwiches: c.individualSandwiches || 0,
+          groupSandwiches: (c.groupCollections || []).reduce((sum: number, gc: any) => sum + (gc.count || 0), 0),
+          totalSandwiches: (c.individualSandwiches || 0) + (c.groupCollections || []).reduce((sum: number, gc: any) => sum + (gc.count || 0), 0),
           submittedAt: c.submittedAt
         }));
     } catch (error) {
@@ -301,7 +320,7 @@ export class ReportGenerator {
             uniqueHosts: new Set()
           };
         }
-        acc[month].totalSandwiches += collection.individualSandwiches;
+        acc[month].totalSandwiches += collection.totalSandwiches;
         acc[month].totalCollections += 1;
         acc[month].uniqueHosts.add(collection.hostName);
         return acc;
@@ -327,7 +346,7 @@ export class ReportGenerator {
         if (!acc[hostName]) {
           acc[hostName] = 0;
         }
-        acc[hostName] += collection.individualSandwiches;
+        acc[hostName] += collection.totalSandwiches;
         return acc;
       }, {} as Record<string, number>);
 
@@ -357,7 +376,7 @@ export class ReportGenerator {
       if (isNaN(date.getTime())) return acc; // Skip invalid dates
       
       const month = format(date, 'MMM yyyy');
-      const totalSandwiches = (item.individualSandwiches || 0) + (item.group1Count || 0) + (item.group2Count || 0);
+      const totalSandwiches = (item.individualSandwiches || 0) + (item.groupSandwiches || 0);
       acc[month] = (acc[month] || 0) + totalSandwiches;
       return acc;
     }, {} as Record<string, number>);
