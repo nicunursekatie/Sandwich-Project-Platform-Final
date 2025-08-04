@@ -561,7 +561,7 @@ export default function GmailStyleInbox() {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-40px)] bg-white relative min-w-0 max-w-full overflow-hidden">
+    <div className="flex h-full bg-white relative min-w-0 max-w-full overflow-hidden">
       {/* Mobile/Tablet Overlay for Sidebar - when sidebar is open as overlay */}
       {!isSidebarCollapsed && (screenSize === 'mobile' || screenSize === 'small-tablet') && (
         <div 
