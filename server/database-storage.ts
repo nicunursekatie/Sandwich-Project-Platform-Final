@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageLikes, userActivityLogs,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -1919,17 +1919,44 @@ export class DatabaseStorage implements IStorage {
 
   async markChannelMessagesAsRead(userId: string, channel: string): Promise<void> {
     // Insert read records for all messages in this channel that the user hasn't read yet
-    const { chatMessageReads } = await import("@shared/schema");
-    await db.execute(sql`
-      INSERT INTO chat_message_reads (message_id, user_id, channel, read_at, created_at)
-      SELECT cm.id, ${userId}, cm.channel, NOW(), NOW()
-      FROM chat_messages cm
-      WHERE cm.channel = ${channel}
-        AND NOT EXISTS (
-          SELECT 1 FROM chat_message_reads cmr 
-          WHERE cmr.message_id = cm.id AND cmr.user_id = ${userId}
+    const { chatMessageReads, chatMessages } = await import("@shared/schema");
+    
+    try {
+      // Get all unread messages for this user in this channel
+      const unreadMessages = await db
+        .select({ id: chatMessages.id })
+        .from(chatMessages)
+        .leftJoin(
+          chatMessageReads,
+          and(
+            eq(chatMessageReads.messageId, chatMessages.id),
+            eq(chatMessageReads.userId, userId)
+          )
         )
-    `);
+        .where(
+          and(
+            eq(chatMessages.channel, channel),
+            isNull(chatMessageReads.messageId) // Not yet read
+          )
+        );
+
+      // Insert read records for each unread message
+      if (unreadMessages.length > 0) {
+        const readRecords = unreadMessages.map(msg => ({
+          messageId: msg.id,
+          userId: userId,
+          channel: channel,
+          readAt: new Date(),
+          createdAt: new Date()
+        }));
+
+        await db.insert(chatMessageReads).values(readRecords).onConflictDoNothing();
+        console.log(`Marked ${unreadMessages.length} messages as read in ${channel} for user ${userId}`);
+      }
+    } catch (error) {
+      console.error('Error marking channel messages as read:', error);
+      throw error;
+    }
   }
 
   // Shoutout methods
