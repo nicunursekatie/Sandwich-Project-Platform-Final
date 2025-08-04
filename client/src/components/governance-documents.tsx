@@ -118,21 +118,23 @@ export function GovernanceDocuments() {
         ))}
       </div>
 
-      {/* Documents Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Documents Grid - Optimized for tablet responsiveness */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {filteredDocuments.map((document, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
-            <CardHeader className="pb-3">
+          <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
+            <CardHeader className="pb-3 flex-shrink-0">
               <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2">
-                  {getFileIcon(document.type)}
-                  <CardTitle className="text-lg font-semibold line-clamp-2">
+                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                  <div className="flex-shrink-0">
+                    {getFileIcon(document.type)}
+                  </div>
+                  <CardTitle className="text-base md:text-lg font-semibold line-clamp-2 leading-tight">
                     {document.name}
                   </CardTitle>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Badge className={getCategoryColor(document.category)}>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <Badge className={`text-xs ${getCategoryColor(document.category)}`}>
                   {document.category}
                 </Badge>
                 <Badge variant="outline" className="text-xs">
@@ -140,30 +142,31 @@ export function GovernanceDocuments() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-0 flex-1 flex flex-col">
               {document.description && (
-                <CardDescription className="mb-4 line-clamp-3">
+                <CardDescription className="mb-4 flex-1 text-sm leading-relaxed line-clamp-3 md:line-clamp-4">
                   {document.description}
                 </CardDescription>
               )}
-              <div className="flex space-x-2">
+              {/* Action buttons - better spacing for tablet */}
+              <div className="flex flex-col sm:flex-row gap-2 mt-auto">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => handlePreview(document)}
-                  className="flex-1"
+                  className="flex-1 text-sm h-9"
                 >
-                  <Eye className="h-4 w-4 mr-1" />
+                  <Eye className="h-4 w-4 mr-2" />
                   Preview
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleExternalOpen(document)}
-                  className="flex-1"
+                  onClick={() => handleDownload(document)}
+                  className="flex-1 text-sm h-9"
                 >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Open
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
                 </Button>
               </div>
             </CardContent>

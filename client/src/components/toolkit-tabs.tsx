@@ -143,13 +143,13 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200 h-full flex flex-col p-3 sm:p-4 md:p-6">
+    <Card className="hover:shadow-md transition-shadow duration-200 h-full flex flex-col p-3 sm:p-4 md:p-5">
       <div className="flex items-start space-x-2 sm:space-x-3 mb-3">
         <div className="shrink-0">
           {getFileIcon(doc.type)}
         </div>
         <div className="flex-1 min-w-0">
-          <CardTitle className="text-sm sm:text-base font-semibold text-gray-900 leading-tight">
+          <CardTitle className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 leading-tight line-clamp-2">
             {doc.name}
           </CardTitle>
           <Badge variant="secondary" className={`mt-1 sm:mt-2 text-xs ${getCategoryColor(doc.category)}`}>
@@ -160,22 +160,22 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
       
       <div className="flex-1 flex flex-col">
         {doc.description && (
-          <CardDescription className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 leading-relaxed line-clamp-3 sm:line-clamp-none">
+          <CardDescription className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4 leading-relaxed line-clamp-3 md:line-clamp-4">
             {doc.description}
           </CardDescription>
         )}
         
-        {/* Button Layout - Always stack on mobile, side by side on larger screens */}
-        <div className="flex flex-col gap-1.5 sm:gap-2 mt-auto">
+        {/* Button Layout - Better tablet responsive spacing */}
+        <div className="flex flex-col sm:flex-row gap-2 mt-auto">
           {doc.type === 'link' ? (
             // For external links, show only the "Open Tool" button
             <Button
               variant="default"
               size="sm"
               onClick={() => window.open(doc.path, '_blank')}
-              className="w-full text-xs sm:text-sm h-8 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <Calculator className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <Calculator className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
               Open Tool
             </Button>
           ) : (
@@ -185,31 +185,20 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
                 variant="outline"
                 size="sm"
                 onClick={() => onPreview(doc)}
-                className="w-full text-xs sm:text-sm h-8 sm:h-9"
+                className="flex-1 text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
               >
-                <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
                 Preview
               </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownload(doc.path, doc.name)}
-                  className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
-                >
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Download</span>
-                  <span className="sm:hidden">DL</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(doc.path, '_blank')}
-                  className="px-2 sm:px-3 h-8 sm:h-9"
-                >
-                  <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownload(doc.path, doc.name)}
+                className="flex-1 text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
+              >
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                Download
+              </Button>
             </>
           )}
         </div>
@@ -310,7 +299,7 @@ export function ToolkitTabs() {
         </TabsList>
 
         <TabsContent value="safety" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
             {safetyDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
@@ -322,7 +311,7 @@ export function ToolkitTabs() {
         </TabsContent>
 
         <TabsContent value="labels" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
             {labelDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
@@ -334,7 +323,7 @@ export function ToolkitTabs() {
         </TabsContent>
 
         <TabsContent value="sandwich-making" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
             {sandwichMakingDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
