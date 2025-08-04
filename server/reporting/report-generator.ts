@@ -221,7 +221,7 @@ export class ReportGenerator {
           date: c.collectionDate,
           hostName: c.hostName,
           individualSandwiches: c.individualSandwiches,
-          groupCollections: c.groupCollections,
+          // groupCollections data not needed for reporting
           submittedAt: c.submittedAt
         }));
     } catch (error) {
@@ -430,7 +430,7 @@ export class ReportGenerator {
       'comprehensive': 'Community Impact & Support Report'
     };
 
-    return typeNames[config.type] || 'Community Impact Report';
+    return typeNames[config.type as keyof typeof typeNames] || 'Community Impact Report';
   }
 
   // Community Impact Overview Section
