@@ -326,19 +326,30 @@ export default function EnhancedUserAnalytics() {
         <TabsContent value="overview" className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">User Activity Summary</h3>
+              <h3 className="text-lg font-semibold">
+                {selectedUser === 'all' ? 'User Activity Summary' : 'Individual User Analysis'}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Overview of all users and their platform engagement
+                {selectedUser === 'all' 
+                  ? 'Overview of all users and their platform engagement'
+                  : `Detailed analysis for ${detailedActivities?.find(u => u.userId === selectedUser)?.firstName} ${detailedActivities?.find(u => u.userId === selectedUser)?.lastName || detailedActivities?.find(u => u.userId === selectedUser)?.email}`
+                }
               </p>
             </div>
             <Badge variant="outline">
-              {detailedActivities?.length || 0} total users
+              {selectedUser === 'all' 
+                ? `${detailedActivities?.length || 0} total users`
+                : 'Individual User'
+              }
             </Badge>
           </div>
 
           <ScrollArea className="h-[700px]">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {detailedActivities?.map((user) => (
+              {(selectedUser === 'all' 
+                ? detailedActivities 
+                : detailedActivities?.filter(user => user.userId === selectedUser)
+              )?.map((user) => (
                 <Card key={user.userId} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3">
@@ -428,6 +439,84 @@ export default function EnhancedUserAnalytics() {
               ))}
             </div>
           </ScrollArea>
+
+          {/* Individual User Detailed Stats - Only show when specific user is selected */}
+          {selectedUser !== 'all' && userStats && (
+            <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                    Activity Breakdown
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Total Actions</span>
+                      <span className="font-bold">{userStats.totalActions}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Features Used</span>
+                      <span className="font-bold">{userStats.featureUsage?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Sections Visited</span>
+                      <span className="font-bold">{userStats.sectionBreakdown?.length || 0}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-green-600" />
+                    Top Activities
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {userStats.topActions?.slice(0, 3).map((action, idx) => (
+                      <div key={idx} className="flex justify-between">
+                        <span className="text-sm">{action.action}</span>
+                        <Badge variant="outline">{action.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-purple-600" />
+                    Usage Patterns
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {userStats.sectionBreakdown?.slice(0, 3).map((section, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>{section.section}</span>
+                          <span>{section.actions} actions</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1">
+                          <div 
+                            className="bg-purple-600 h-1 rounded-full" 
+                            style={{ 
+                              width: `${userStats.totalActions ? (section.actions / userStats.totalActions) * 100 : 0}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">
