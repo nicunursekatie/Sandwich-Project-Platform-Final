@@ -4166,6 +4166,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Schedule report
+            doc.text("Trend Analysis", 50, yPosition);
+            yPosition += 25;
+
+            // Group data by month
+            const monthlyData = {};
+            reportData.data.forEach(record => {
+              try {
+                const date = new Date(record.collectionDate || record.date);
+                if (!isNaN(date.getTime())) {
+                  const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                  if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = { total: 0, count: 0 };
+                  }
+                  
+                  const individual = record.individualSandwiches || 0;
+                  const groupTotal = (record.group1Count || 0) + (record.group2Count || 0);
+                  
+                  monthlyData[monthKey].total += individual + groupTotal;
+                  monthlyData[monthKey].count += 1;
+                }
+              } catch (e) {
+                // Skip invalid dates
+              }
+            });
+
+            doc.fontSize(10).font("Helvetica");
+            const sortedMonths = Object.keys(monthlyData).sort();
+            sortedMonths.slice(-6).forEach(month => { // Show last 6 months
+              const data = monthlyData[month];
+              const avg = Math.round(data.total / data.count);
+              doc.text(`${month}: ${data.total.toLocaleString()} sandwiches across ${data.count} collections (avg: ${avg}/collection)`, 50, yPosition);
+              yPosition += 15;
+            });
+            yPosition += 20;
+          }
+
+          // Add actionable insights section
+          if (Array.isArray(reportData.data) && reportData.data.length > 10) {
+            if (yPosition > 600) {
+              doc.addPage();
+              yPosition = 50;
+            }
+
+            doc.fontSize(14).font("Helvetica-Bold");
+            doc.text("Key Insights & Recommendations", 50, yPosition);
+            yPosition += 25;
+
+            doc.fontSize(10).font("Helvetica");
+
+            // Find best performing locations
+            const hostPerformance = {};
+            reportData.data.forEach(record => {
+              const host = record.hostName || "Unknown";
+              if (!hostPerformance[host]) hostPerformance[host] = { total: 0, count: 0 };
+              
+              const individual = record.individualSandwiches || 0;
+              const groupTotal = (record.group1Count || 0) + (record.group2Count || 0);
+              
+              hostPerformance[host].total += individual + groupTotal;
+              hostPerformance[host].count += 1;
+            });
+
+            const sortedHosts = Object.entries(hostPerformance)
+              .map(([name, data]) => ({ name, ...data, avg: Math.round(data.total / data.count) }))
+              .sort((a, b) => b.avg - a.avg);
+
+            doc.text("• Top performing location by average: " + 
+              (sortedHosts[0]?.name || "N/A") + 
+              ` (${sortedHosts[0]?.avg || 0} sandwiches per collection)`, 50, yPosition);
+            yPosition += 15;
+
+            if (sortedHosts.length > 1) {
+              doc.text("• Locations with growth potential: " + 
+                sortedHosts.slice(-2).map(h => `${h.name} (${h.avg} avg)`).join(", "), 50, yPosition);
+              yPosition += 15;
+            }
+
+            // Zero collection analysis
+            const zeroCollections = reportData.data.filter(record => {
+              const individual = record.individualSandwiches || 0;
+              const groupTotal = (record.group1Count || 0) + (record.group2Count || 0);
+              return (individual + groupTotal) === 0;
+            }).length;
+
+            if (zeroCollections > 0) {
+              doc.text(`• ${zeroCollections} collections recorded zero sandwiches - consider follow-up`, 50, yPosition);
+              yPosition += 15;
+            }
+
+            yPosition += 10;
+          }
+
+          // Add a sample data table if we have space and haven't already added one
+          if (Array.isArray(reportData.data) && reportData.data.length > 0 && yPosition < 650) {
+            if (yPosition > 600) {
+              doc.addPage();
+              yPosition = 50;
+            }
+
+            doc.fontSize(14).font("Helvetica-Bold");
+            doc.text("Sample Collection Data", 50, yPosition);
+            yPosition += 25;
+
+            // Table headers
+            doc.fontSize(9).font("Helvetica-Bold");
+            doc.text("Date", 50, yPosition);
+            doc.text("Host/Group", 120, yPosition);
+            doc.text("Individual", 280, yPosition);
+            doc.text("Group", 340, yPosition);
+            doc.text("Total", 400, yPosition);
+            doc.text("Notes", 450, yPosition);
+            yPosition += 15;
+
+            // Line under headers
+            doc.moveTo(50, yPosition).lineTo(550, yPosition).stroke();
+            yPosition += 10;
+
+            // Table data (first 15 records for space)
+            doc.fontSize(8).font("Helvetica");
+            const tableData = reportData.data.slice(0, 15);
+
+            tableData.forEach((record, index) => {
+              if (yPosition > 720) {
+                doc.addPage();
+                yPosition = 50;
+
+                // Reprint headers on new page
+                doc.fontSize(9).font("Helvetica-Bold");
+                doc.text("Date", 50, yPosition);
+                doc.text("Host/Group", 120, yPosition);
+                doc.text("Individual", 280, yPosition);
+                doc.text("Group", 340, yPosition);
+                doc.text("Total", 400, yPosition);
+                doc.text("Notes", 450, yPosition);
+                yPosition += 15;
+                doc.moveTo(50, yPosition).lineTo(550, yPosition).stroke();
+                yPosition += 10;
+                doc.fontSize(8).font("Helvetica");
+              }
+
+              // Handle date conversion properly
+              let date = "Invalid Date";
+              try {
+                if (record.collectionDate || record.date) {
+                  const dateStr = record.collectionDate || record.date;
+                  const parsedDate = new Date(dateStr);
+                  if (!isNaN(parsedDate.getTime())) {
+                    date = parsedDate.toLocaleDateString();
+                  }
+                }
+              } catch (e) {
+                console.warn("Date parsing error for record:", record);
+              }
+
+              const individual = record.individualSandwiches || 0;
+              const group = (record.group1Count || 0) + (record.group2Count || 0);
+              const total = individual + group;
+              const hostName = (
+                record.hostName || "Group Collection"
+              ).substring(0, 20);
+              const notes = (record.notes || "").substring(0, 15);
+
+              doc.text(date, 50, yPosition);
+              doc.text(hostName, 120, yPosition);
+              doc.text(individual.toString(), 290, yPosition);
+              doc.text(group.toString(), 350, yPosition);
+              doc.text(total.toString(), 410, yPosition);
+              doc.text(notes, 450, yPosition);
+              yPosition += 12;
+            });
+          }
+
+          // Add final page break if needed for footer
+          if (yPosition > 700) {
+            doc.addPage();
+          }
+
+          // Footer
+          const pages = doc.bufferedPageRange();
+          for (let i = pages.start; i < pages.start + pages.count; i++) {
+            doc.switchToPage(i);
+            doc.fontSize(8).font("Helvetica");
+            doc.text(
+              `Page ${i - pages.start + 1} of ${pages.count}`,
+              50,
+              doc.page.height - 30,
+            );
+            doc.text(
+              "The Sandwich Project - Report",
+              doc.page.width - 200,
+              doc.page.height - 30,
+            );
+          }
+
+          // Finalize the PDF properly
+          doc.end();
+        } catch (error) {
+          console.error("PDF generation error:", error);
+          // Fallback to enhanced CSV if PDF fails
+          res.setHeader("Content-Type", "text/csv");
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="report-${reportId}.csv"`,
+          );
+
+          let csvContent = `# THE SANDWICH PROJECT - ${reportData.metadata.title}\n`;
+          csvContent += `# Generated: ${new Date(reportData.metadata.generatedAt).toLocaleString()}\n`;
+          csvContent += `# Date Range: ${reportData.metadata.dateRange}\n`;
+          csvContent += `# Total Records: ${reportData.metadata.totalRecords}\n\n`;
+
+          if (Array.isArray(reportData.data) && reportData.data.length > 0) {
+            const headers = Object.keys(reportData.data[0]);
+            csvContent += headers.join(",") + "\n";
+            reportData.data.forEach((row) => {
+              const values = headers.map((h) => `"${row[h] || ""}"`);
+              csvContent += values.join(",") + "\n";
+            });
+          }
+
+          res.send(csvContent);
+        }
+      } else {
+        res.setHeader("Content-Type", "application/json");
+        res.json(reportData);
+      }
+    } catch (error) {
+      console.error("Report download failed:", error);
+      res.status(500).json({ error: "Failed to download report" });
+    }
+  });
+
+  // Schedule report
   app.post("/api/reports/schedule", async (req, res) => {
     try {
       const { config, schedule } = req.body;
