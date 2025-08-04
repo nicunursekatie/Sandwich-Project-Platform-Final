@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Trophy, CheckCircle, Clock } from "lucide-react";
@@ -21,13 +22,46 @@ interface KudosMessage {
 export function KudosInbox() {
   const { user } = useAuth();
 
-  const { data: kudosMessages = [], isLoading } = useQuery({
+  const { data: kudosMessages = [], isLoading, refetch } = useQuery<KudosMessage[]>({
     queryKey: ['/api/messaging/kudos/received'],
-    enabled: !!user?.id,
+    enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds for new kudos
   });
 
-  const unreadCount = kudosMessages.filter((k: KudosMessage) => !k.read).length;
+  // Mutation to mark kudos as read
+  const markKudosAsReadMutation = useMutation({
+    mutationFn: async (kudosIds: number[]) => {
+      return apiRequest('POST', '/api/messaging/kudos/mark-read', { kudosIds });
+    },
+    onSuccess: () => {
+      // Invalidate and refetch kudos to update read status
+      queryClient.invalidateQueries({ queryKey: ['/api/messaging/kudos/received'] });
+      // Also invalidate notification counts to update the bell icon
+      queryClient.invalidateQueries({ queryKey: ['/api/message-notifications/unread-counts'] });
+      refetch();
+    },
+    onError: (error) => {
+      console.error('Failed to mark kudos as read:', error);
+    }
+  });
+
+  // Auto-mark unread kudos as read when component is viewed
+  useEffect(() => {
+    if (!user || !kudosMessages || kudosMessages.length === 0) return;
+
+    const unreadKudos = kudosMessages.filter((k) => !k.read);
+    if (unreadKudos.length === 0) return;
+
+    // Mark as read after a short delay to ensure user is actually viewing
+    const timeoutId = setTimeout(() => {
+      const unreadIds = unreadKudos.map((k) => k.id);
+      markKudosAsReadMutation.mutate(unreadIds);
+    }, 1500); // 1.5 second delay
+
+    return () => clearTimeout(timeoutId);
+  }, [kudosMessages, user, markKudosAsReadMutation]);
+
+  const unreadCount = kudosMessages.filter((k) => !k.read).length;
 
   if (isLoading) {
     return (
@@ -68,7 +102,7 @@ export function KudosInbox() {
 
       {/* Kudos list */}
       <div className="space-y-3">
-        {kudosMessages.map((kudos: KudosMessage) => (
+        {kudosMessages.map((kudos) => (
           <Card 
             key={kudos.id} 
             className={`transition-all duration-200 ${
