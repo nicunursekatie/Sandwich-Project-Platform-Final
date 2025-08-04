@@ -134,56 +134,55 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Documents Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Documents Grid - Better tablet responsiveness with wider cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
           {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className="h-full hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    <CardTitle className="text-lg leading-tight">
+            <Card key={doc.id} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200">
+              <CardHeader className="pb-4 flex-shrink-0">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3 min-w-0 flex-1">
+                    <div className="flex-shrink-0">
+                      <FileText className="h-5 w-5 text-red-500" />
+                    </div>
+                    <CardTitle className="text-lg md:text-xl font-semibold text-gray-900 leading-tight">
                       {doc.name}
                     </CardTitle>
                   </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="text-sm font-medium px-3 py-1 bg-purple-100 text-purple-800">
+                    {doc.category}
+                  </Badge>
+                  <Badge variant="outline" className="text-sm font-medium px-3 py-1">
+                    {doc.type.toUpperCase()}
+                  </Badge>
                   {getImportanceBadge(doc.importance)}
                 </div>
-                <CardDescription className="text-sm text-gray-600 mt-2">
+              </CardHeader>
+              <CardContent className="pt-0 flex-1 flex flex-col">
+                <CardDescription className="mb-6 flex-1 text-base leading-relaxed text-gray-600">
                   {doc.description}
                 </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Badge variant="outline" className="text-xs">
-                      {doc.category}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs uppercase">
-                      {doc.type}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePreview(doc)}
-                      className="flex-1 text-sm"
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Preview
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownload(doc)}
-                      className="flex-1 text-sm"
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      Download
-                    </Button>
-                  </div>
+                {/* Action buttons - optimized for tablet with larger touch targets */}
+                <div className="flex flex-col gap-3 mt-auto">
+                  <Button
+                    size="default"
+                    variant="outline"
+                    onClick={() => handlePreview(doc)}
+                    className="w-full h-11 text-base font-medium"
+                  >
+                    <Eye className="h-5 w-5 mr-2" />
+                    Preview
+                  </Button>
+                  <Button
+                    size="default"
+                    variant="default"
+                    onClick={() => handleDownload(doc)}
+                    className="w-full h-11 text-base font-medium"
+                  >
+                    <Download className="h-5 w-5 mr-2" />
+                    Download
+                  </Button>
                 </div>
               </CardContent>
             </Card>
