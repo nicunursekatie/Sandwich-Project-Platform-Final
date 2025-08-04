@@ -325,15 +325,15 @@ export default function AnalyticsDashboard() {
                 <div className="flex items-center justify-between mb-3">
                   <Award className="h-6 w-6 text-[#236383]" />
                   <span className="text-sm text-green-600 font-medium">
-                    ↗️ 2M Goal
+                    ↗️ 500K Goal
                   </span>
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-[#236383] mb-2">
-                  {analyticsData.totalSandwiches.toLocaleString()}
+                  {(analyticsData.totalSandwiches / 1000000).toFixed(2)}M
                 </div>
                 <p className="text-sm text-gray-600 font-medium">Total Impact</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  {Math.round((analyticsData.totalSandwiches / 2000000) * 100)}% to 2M goal
+                  2025 Goal: {((analyticsData.totalSandwiches % 1000000) / 10000).toFixed(0)}K of 500K
                 </p>
               </div>
 
@@ -608,8 +608,8 @@ export default function AnalyticsDashboard() {
                   const isRecent = index < 4; // Highlight recent 4 weeks
                   
                   return (
-                    <div key={week.date} className={`flex items-center gap-3 p-2 rounded ${isRecent ? 'bg-blue-50' : ''}`}>
-                      <div className="w-16 text-sm font-medium text-gray-600">
+                    <div key={week.date} className={`flex items-center gap-3 p-2 rounded ${isRecent ? 'bg-[#47B3CB]/10' : ''}`}>
+                      <div className="w-16 text-sm font-medium text-[#646464]">
                         {weekLabel}
                       </div>
                       
@@ -619,12 +619,12 @@ export default function AnalyticsDashboard() {
                           <div
                             className={`
                               h-8 rounded flex items-center justify-center text-xs font-bold text-white min-w-16
-                              ${week.total >= 35000 ? 'bg-purple-600' :  // Exceptional
-                                week.total >= 25000 ? 'bg-green-600' :   // Strong
-                                week.total >= 15000 ? 'bg-blue-600' :    // Good  
-                                week.total >= 8000 ? 'bg-yellow-600' :   // Average
-                                week.isHoliday ? 'bg-gray-400' :         // Holiday
-                                'bg-orange-600'}                         // Low
+                              ${week.total >= 35000 ? 'bg-[#A31C41]' :   // Exceptional (burgundy)
+                                week.total >= 25000 ? 'bg-[#007E8C]' :   // Strong (dark teal)
+                                week.total >= 15000 ? 'bg-[#47B3CB]' :   // Good (light blue)
+                                week.total >= 8000 ? 'bg-[#FBAD3F]' :    // Average (orange)
+                                week.isHoliday ? 'bg-[#646464]' :        // Holiday (gray)
+                                'bg-[#236383]'}                          // Low (dark blue)
                             `}
                             style={{
                               width: `${Math.min((week.total / 40000) * 100, 100)}%`,
@@ -640,13 +640,13 @@ export default function AnalyticsDashboard() {
                             {week.seasonType === 'summer' && !week.isHoliday && <span className="text-orange-500">☀️</span>}
                             {week.seasonType === 'holiday' && !week.isHoliday && <span className="text-green-600">🎄</span>}
                             {week.seasonType === 'backToSchool' && <span className="text-blue-600">📚</span>}
-                            {week.total >= 35000 && <span className="text-purple-600">⭐</span>}
+                            {week.total >= 35000 && <span className="text-[#A31C41]">⭐</span>}
                           </div>
                         </div>
                       </div>
                       
                       {/* Collections count */}
-                      <div className="text-xs text-gray-500 w-12">
+                      <div className="text-xs text-[#646464] w-12">
                         {week.collections} sites
                       </div>
                     </div>
@@ -657,23 +657,23 @@ export default function AnalyticsDashboard() {
               {/* Legend */}
               <div className="flex flex-wrap items-center gap-4 pt-4 border-t text-xs">
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-purple-600 rounded"></div>
+                  <div className="w-3 h-3 bg-[#A31C41] rounded"></div>
                   <span>35K+ Exceptional</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-green-600 rounded"></div>
+                  <div className="w-3 h-3 bg-[#007E8C] rounded"></div>
                   <span>25K+ Strong</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                  <div className="w-3 h-3 bg-[#47B3CB] rounded"></div>
                   <span>15K+ Good</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-yellow-600 rounded"></div>
+                  <div className="w-3 h-3 bg-[#FBAD3F] rounded"></div>
                   <span>8K+ Average</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-orange-600 rounded"></div>
+                  <div className="w-3 h-3 bg-[#236383] rounded"></div>
                   <span>&lt;8K Low</span>
                 </div>
                 <div className="flex items-center gap-1">
