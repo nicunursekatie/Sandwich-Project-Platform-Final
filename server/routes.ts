@@ -3996,7 +3996,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate report
   app.post("/api/reports/generate", async (req, res) => {
     try {
+      console.log("Report generation request body:", JSON.stringify(req.body, null, 2));
       const reportData = await ReportGenerator.generateReport(req.body);
+      console.log("Generated report metadata:", JSON.stringify(reportData.metadata, null, 2));
 
       // Store report for download (in production, this would use cloud storage)
       const reportId = Date.now().toString();
@@ -4125,24 +4127,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // End the PDF properly
           doc.end();
         } catch (error) {
-          console.error("PDF generation failed:", error);
-          // Fall back to CSV format
-          res.setHeader("Content-Type", "text/csv");
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename="report-${reportId}.csv"`,
-          );
-          if (Array.isArray(reportData.data)) {
-            const csvHeader = Object.keys(reportData.data[0] || {}).join(",");
-            const csvRows = reportData.data.map((row) =>
-              Object.values(row)
-                .map((val) => `"${val}"`)
-                .join(","),
-            );
-            res.send([csvHeader, ...csvRows].join("\n"));
-          } else {
-            res.send("No data available");
-          }
+          console.error("PDF generation failed with error:", error);
+          console.error("Error stack:", error.stack);
+          console.error("Error name:", error.name);
+          console.error("Error message:", error.message);
+          
+          // Don't fall back to CSV - instead send error and let frontend handle it
+          return res.status(500).json({ error: "PDF generation failed", details: error.message });
         }
       } else {
         res.setHeader("Content-Type", "application/json");

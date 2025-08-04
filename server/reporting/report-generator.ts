@@ -115,19 +115,23 @@ export class ReportGenerator {
     // Handle different input formats
     let dateFrom: string, dateTo: string, reportFormat: string, type: string;
     
+    console.log("ReportGenerator received config:", JSON.stringify(config, null, 2));
+    
     if (config.dateRange) {
       // Old format
       dateFrom = config.dateRange.start;
       dateTo = config.dateRange.end;
-      reportFormat = config.format || 'json';
+      reportFormat = config.format || 'pdf';
       type = config.type || 'collections';
     } else {
       // New format from frontend
       dateFrom = config.dateFrom || '2024-01-01';
       dateTo = config.dateTo || '2025-12-31';
-      reportFormat = config.format || 'json';
+      reportFormat = config.format || 'pdf';
       type = 'collections';
     }
+    
+    console.log("Final reportFormat determined:", reportFormat);
     
     const startDate = new Date(dateFrom);
     const endDate = new Date(dateTo);
