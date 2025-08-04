@@ -29,6 +29,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
 interface WeeklyReportData {
+  id?: string;
   report_date: string;
   collection_week: {
     start: string;
@@ -52,20 +53,33 @@ interface WeeklyReportData {
     avg_per_location: { this_week: number; last_week: number; change: number; four_week_avg: number };
     group_collections: { this_week: number; last_week: number; change: number; four_week_avg: number };
   };
-  locations: Array<{
-    name: string;
-    individual: number;
-    group: number;
-    total: number;
-    trend: 'up' | 'down' | 'stable';
-    status: 'high_performer' | 'needs_attention' | 'steady_contributor';
-    issues?: string[];
-  }>;
+  location_performance: {
+    high_performers: Array<{
+      name: string;
+      individual: number;
+      group: number;
+      total: number;
+      trend: 'up' | 'down' | 'stable';
+    }>;
+    needs_attention: Array<{
+      name: string;
+      individual: number;
+      group: number;
+      total: number;
+      issues: string[];
+    }>;
+    steady_contributors: Array<{
+      name: string;
+      individual: number;
+      group: number;
+      total: number;
+    }>;
+  };
   trends_insights: {
     patterns: string[];
     seasonal_impacts: string[];
     special_events: string[];
-    month_over_month_chart_data: Array<{ month: string; total: number }>;
+    month_over_month_chart: Array<{ month: string; total: number }>;
   };
   next_week_prep: {
     host_confirmations: {
@@ -74,11 +88,13 @@ interface WeeklyReportData {
       percentage: number;
     };
     pending_actions: string[];
-    known_events: string[];
-    weather_forecast: string;
-    volunteer_status: string;
+    collection_day_prep: {
+      weather_forecast: string;
+      special_considerations: string[];
+      volunteer_status: string;
+    };
   };
-  success_celebration: {
+  celebrating_success: {
     milestones: string[];
     volunteer_spotlight?: {
       name: string;
@@ -101,7 +117,12 @@ export default function WeeklyImpactReport() {
   // Generate weekly impact report
   const generateReportMutation = useMutation({
     mutationFn: async (weekEnding: string) => {
-      return apiRequest("POST", "/api/reports/weekly-impact", { weekEndingDate: weekEnding });
+      return apiRequest("POST", "/api/reports/generate", { 
+        type: 'weekly',
+        reportType: 'weekly',
+        targetDate: weekEnding,
+        format: 'pdf'
+      });
     },
     onSuccess: (data) => {
       setReportData(data.data);
@@ -121,8 +142,8 @@ export default function WeeklyImpactReport() {
 
   // Download PDF
   const downloadPdfMutation = useMutation({
-    mutationFn: async (weekEnding: string) => {
-      const response = await fetch(`/api/reports/weekly-impact/download/${weekEnding}`);
+    mutationFn: async (reportId: string) => {
+      const response = await fetch(`/api/reports/download/${reportId}`);
       if (!response.ok) throw new Error('Failed to download PDF');
       const blob = await response.blob();
       
@@ -130,7 +151,7 @@ export default function WeeklyImpactReport() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `weekly-impact-report-${weekEnding}.pdf`;
+      a.download = `weekly-impact-report-${weekEndingDate}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -156,8 +177,8 @@ export default function WeeklyImpactReport() {
   };
 
   const handleDownloadPdf = () => {
-    if (reportData) {
-      downloadPdfMutation.mutate(weekEndingDate);
+    if (reportData && reportData.id) {
+      downloadPdfMutation.mutate(reportData.id);
     }
   };
 
@@ -396,7 +417,7 @@ export default function WeeklyImpactReport() {
             <TabsContent value="locations" className="space-y-4">
               <div className="grid gap-4">
                 {/* High Performers */}
-                {reportData.locations.filter(l => l.status === 'high_performer').length > 0 && (
+                {reportData.location_performance.high_performers.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-green-700">
@@ -406,7 +427,7 @@ export default function WeeklyImpactReport() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid gap-3">
-                        {reportData.locations.filter(l => l.status === 'high_performer').map((location, index) => (
+                        {reportData.location_performance.high_performers.map((location, index) => (
                           <div key={index} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
                             <div className="flex items-center gap-3">
                               <MapPin className="h-4 w-4 text-green-600" />
@@ -427,7 +448,7 @@ export default function WeeklyImpactReport() {
                 )}
 
                 {/* Needs Attention */}
-                {reportData.locations.filter(l => l.status === 'needs_attention').length > 0 && (
+                {reportData.location_performance.needs_attention.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-red-700">
@@ -437,7 +458,7 @@ export default function WeeklyImpactReport() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid gap-3">
-                        {reportData.locations.filter(l => l.status === 'needs_attention').map((location, index) => (
+                        {reportData.location_performance.needs_attention.map((location, index) => (
                           <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
@@ -464,29 +485,28 @@ export default function WeeklyImpactReport() {
                 )}
 
                 {/* Steady Contributors */}
-                {reportData.locations.filter(l => l.status === 'steady_contributor').length > 0 && (
+                {reportData.location_performance.steady_contributors.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-[#47B3CB] text-lg">
                         <CheckCircle className="h-5 w-5" />
-                        <span className="text-sm md:text-lg">Steady Contributors ({reportData.locations.filter(l => l.status === 'steady_contributor').length} locations)</span>
+                        <span className="text-sm md:text-lg">Steady Contributors ({reportData.location_performance.steady_contributors.length} locations)</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {reportData.locations.filter(l => l.status === 'steady_contributor').slice(0, 12).map((location, index) => (
+                        {reportData.location_performance.steady_contributors.slice(0, 12).map((location, index) => (
                           <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded border">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               <MapPin className="h-3 w-3 text-[#47B3CB] flex-shrink-0" />
                               <span className="text-sm font-medium truncate">{location.name}</span>
-                              {getTrendIcon(location.trend)}
                             </div>
                             <span className="text-sm font-semibold text-[#47B3CB] ml-2">{formatNumber(location.total)}</span>
                           </div>
                         ))}
-                        {reportData.locations.filter(l => l.status === 'steady_contributor').length > 12 && (
+                        {reportData.location_performance.steady_contributors.length > 12 && (
                           <div className="col-span-full text-center text-gray-500 text-sm">
-                            ... and {reportData.locations.filter(l => l.status === 'steady_contributor').length - 12} more locations
+                            ... and {reportData.location_performance.steady_contributors.length - 12} more locations
                           </div>
                         )}
                       </div>
@@ -596,7 +616,7 @@ export default function WeeklyImpactReport() {
                       <CardTitle className="text-lg md:text-xl">Weather Forecast</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm md:text-base">{reportData.next_week_prep.weather_forecast}</p>
+                      <p className="text-sm md:text-base">{reportData.next_week_prep.collection_day_prep.weather_forecast}</p>
                     </CardContent>
                   </Card>
 
@@ -605,22 +625,22 @@ export default function WeeklyImpactReport() {
                       <CardTitle className="text-lg md:text-xl">Volunteer Status</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm md:text-base">{reportData.next_week_prep.volunteer_status}</p>
+                      <p className="text-sm md:text-base">{reportData.next_week_prep.collection_day_prep.volunteer_status}</p>
                     </CardContent>
                   </Card>
                 </div>
 
-                {reportData.next_week_prep.known_events.length > 0 && (
+                {reportData.next_week_prep.collection_day_prep.special_considerations.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Known Events</CardTitle>
+                      <CardTitle>Special Considerations</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {reportData.next_week_prep.known_events.map((event, index) => (
+                        {reportData.next_week_prep.collection_day_prep.special_considerations.map((consideration, index) => (
                           <li key={index} className="flex items-start gap-2">
                             <Calendar className="h-4 w-4 mt-0.5 text-[#47B3CB]" />
-                            <span>{event}</span>
+                            <span>{consideration}</span>
                           </li>
                         ))}
                       </ul>
@@ -633,7 +653,7 @@ export default function WeeklyImpactReport() {
             {/* Success Celebration */}
             <TabsContent value="celebration" className="space-y-4">
               <div className="grid gap-4">
-                {reportData.success_celebration.milestones.length > 0 && (
+                {reportData.celebrating_success.milestones.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-[#FBAD3F]">
@@ -643,7 +663,7 @@ export default function WeeklyImpactReport() {
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {reportData.success_celebration.milestones.map((milestone, index) => (
+                        {reportData.celebrating_success.milestones.map((milestone, index) => (
                           <li key={index} className="flex items-start gap-2">
                             <Star className="h-4 w-4 mt-0.5 text-[#FBAD3F]" />
                             <span className="font-medium">{milestone}</span>
@@ -654,7 +674,7 @@ export default function WeeklyImpactReport() {
                   </Card>
                 )}
 
-                {reportData.success_celebration.volunteer_spotlight && (
+                {reportData.celebrating_success.volunteer_spotlight && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-[#236383]">
@@ -665,17 +685,17 @@ export default function WeeklyImpactReport() {
                     <CardContent>
                       <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-[#236383]">
                         <div className="font-semibold text-[#236383] mb-2">
-                          {reportData.success_celebration.volunteer_spotlight.name}
+                          {reportData.celebrating_success.volunteer_spotlight.name}
                         </div>
                         <div className="text-gray-700">
-                          {reportData.success_celebration.volunteer_spotlight.contribution}
+                          {reportData.celebrating_success.volunteer_spotlight.contribution}
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 )}
 
-                {reportData.success_celebration.impact_story && (
+                {reportData.celebrating_success.impact_story && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-[#47B3CB]">
@@ -686,10 +706,10 @@ export default function WeeklyImpactReport() {
                     <CardContent>
                       <div className="p-4 bg-teal-50 rounded-lg border-l-4 border-[#47B3CB]">
                         <blockquote className="text-lg italic text-gray-700 mb-3">
-                          "{reportData.success_celebration.impact_story.quote}"
+                          "{reportData.celebrating_success.impact_story.quote}"
                         </blockquote>
                         <cite className="text-sm font-medium text-[#47B3CB]">
-                          — {reportData.success_celebration.impact_story.attribution}
+                          — {reportData.celebrating_success.impact_story.attribution}
                         </cite>
                       </div>
                     </CardContent>
