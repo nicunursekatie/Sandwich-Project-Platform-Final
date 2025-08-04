@@ -74,6 +74,7 @@ import { registerPerformanceRoutes } from "./routes/performance";
 import { SearchEngine } from "./search-engine";
 import { CacheManager } from "./performance/cache-manager";
 import { ReportGenerator } from "./reporting/report-generator";
+import { WeeklyImpactReportGenerator } from "./reporting/weekly-impact-report";
 import { EmailService } from "./notifications/email-service";
 import { VersionControl } from "./middleware/version-control";
 import { BackupManager } from "./operations/backup-manager";
@@ -4142,6 +4143,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Report download failed:", error);
       res.status(500).json({ error: "Failed to download report" });
+    }
+  });
+
+  // Weekly Impact Report Routes
+  
+  // Generate weekly impact report
+  app.post("/api/reports/weekly-impact", async (req, res) => {
+    try {
+      const { weekEndingDate = new Date().toISOString().split('T')[0] } = req.body;
+      const weeklyGenerator = new WeeklyImpactReportGenerator(storage);
+      const reportData = await weeklyGenerator.generateWeeklyReport(weekEndingDate);
+      
+      res.json({
+        metadata: {
+          title: "Weekly Impact Report",
+          generatedAt: new Date().toISOString(),
+          weekEnding: weekEndingDate,
+          format: "json"
+        },
+        data: reportData
+      });
+    } catch (error) {
+      console.error("Weekly impact report generation failed:", error);
+      res.status(500).json({ error: "Failed to generate weekly impact report" });
+    }
+  });
+
+  // Download weekly impact report as PDF
+  app.get("/api/reports/weekly-impact/download/:weekEndingDate", async (req, res) => {
+    try {
+      const { weekEndingDate } = req.params;
+      const weeklyGenerator = new WeeklyImpactReportGenerator(storage);
+      const reportData = await weeklyGenerator.generateWeeklyReport(weekEndingDate);
+      const pdfBuffer = await weeklyGenerator.generatePDFReport(reportData);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="weekly-impact-report-${weekEndingDate}.pdf"`
+      );
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Weekly impact PDF generation failed:", error);
+      res.status(500).json({ error: "Failed to generate weekly impact PDF" });
     }
   });
 

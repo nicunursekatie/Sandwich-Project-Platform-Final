@@ -14,6 +14,7 @@ import { format, subDays, subWeeks, subMonths } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import SimpleNav from "@/components/simple-nav";
+import WeeklyImpactReport from "@/components/weekly-impact-report";
 
 interface ReportConfig {
   type: 'collections' | 'hosts' | 'impact' | 'comprehensive';
@@ -225,8 +226,9 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
       </div>
 
       <Tabs defaultValue="generate" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="generate">Generate Report</TabsTrigger>
+          <TabsTrigger value="weekly">Weekly Impact</TabsTrigger>
           <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
           <TabsTrigger value="history">Report History</TabsTrigger>
         </TabsList>
@@ -550,6 +552,10 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
               )}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="weekly">
+          <WeeklyImpactReport />
         </TabsContent>
 
         <TabsContent value="scheduled">
