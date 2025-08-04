@@ -146,10 +146,12 @@ const getUnreadCounts = async (req: Request, res: Response) => {
             .select({ count: sql<number>`COUNT(*)::int` })
             .from(kudosTracking)
             .innerJoin(messages, eq(kudosTracking.messageId, messages.id))
+            .innerJoin(messageRecipients, eq(messageRecipients.messageId, messages.id))
             .where(
               and(
                 eq(kudosTracking.recipientId, userId),
-                eq(messages.read, false),
+                eq(messageRecipients.recipientId, userId),
+                eq(messageRecipients.read, false),
                 isNull(messages.deletedAt)
               )
             );
