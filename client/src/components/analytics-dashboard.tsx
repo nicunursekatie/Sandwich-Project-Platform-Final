@@ -159,56 +159,101 @@ export default function AnalyticsDashboard() {
       };
     });
 
-    // Generate weekly heatmap data from collections
-    const weeklyHeatmap = (() => {
-      if (!collections || collections.length === 0) {
-        // Generate representative heatmap for recent months
-        const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov'];
-        return months.map(month => ({
-          month,
-          weeks: [
-            { sandwiches: Math.floor(Math.random() * 4000) + 6000 }, // 6-10k range
-            { sandwiches: Math.floor(Math.random() * 4000) + 5000 }, // 5-9k range  
-            { sandwiches: Math.floor(Math.random() * 4000) + 6000 }, // 6-10k range
-            { sandwiches: Math.floor(Math.random() * 4000) + 4000 }, // 4-8k range
-            { sandwiches: Math.random() > 0.7 ? null : Math.floor(Math.random() * 3000) + 5000 } // Some null, some 5-8k
-          ]
-        }));
-      }
+    // Generate weekly performance data from actual collections only
+    const weeklyPerformance = (() => {
+      if (!collections || collections.length === 0) return [];
 
-      // Process real data into weekly format
-      const monthlyWeeks: Record<string, { weeks: Array<{ sandwiches: number | null }> }> = {};
+      // Group collections by actual collection week (Sunday to Saturday)
+      const weeklyTotals: Record<string, { 
+        total: number, 
+        date: string, 
+        collections: number,
+        isHoliday?: boolean,
+        seasonType?: string 
+      }> = {};
       
       collections.forEach(collection => {
         const date = new Date(collection.collectionDate || '');
-        const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
-        const weekOfMonth = Math.ceil(date.getDate() / 7) - 1;
+        // Get the Sunday of this week as the key
+        const sunday = new Date(date);
+        sunday.setDate(date.getDate() - date.getDay());
+        const weekKey = sunday.toISOString().split('T')[0];
         
-        if (!monthlyWeeks[monthKey]) {
-          monthlyWeeks[monthKey] = { weeks: Array(5).fill(null).map(() => ({ sandwiches: null })) };
+        if (!weeklyTotals[weekKey]) {
+          weeklyTotals[weekKey] = { 
+            total: 0, 
+            date: weekKey, 
+            collections: 0,
+            // Detect holiday weeks and seasonal patterns
+            isHoliday: isHolidayWeek(date),
+            seasonType: getSeasonType(date)
+          };
         }
         
         const sandwiches = (collection.individualSandwiches || 0) + 
           ((collection as any).group1Count || 0) + ((collection as any).group2Count || 0);
         
-        if (monthlyWeeks[monthKey].weeks[weekOfMonth]) {
-          monthlyWeeks[monthKey].weeks[weekOfMonth].sandwiches = 
-            (monthlyWeeks[monthKey].weeks[weekOfMonth].sandwiches || 0) + sandwiches;
-        }
+        weeklyTotals[weekKey].total += sandwiches;
+        weeklyTotals[weekKey].collections += 1;
       });
 
-      return Object.entries(monthlyWeeks)
-        .slice(-5)
-        .map(([month, data]) => ({ month, weeks: data.weeks }));
+      // Convert to array and sort by date (most recent first)
+      return Object.values(weeklyTotals)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 20); // Show last 20 collection weeks
     })();
 
-    // Generate insights based on heatmap patterns
-    const weeklyInsights = {
-      pattern: weeklyHeatmap.length > 2 ? 
-        "Week 3-4 typically strongest in month" : "Analyzing patterns...",
-      capacity: "Monitor Nov for peak demand periods",
-      performers: "Consistent 8K+ weeks indicate strong host engagement"
-    };
+    // Helper functions for seasonal detection
+    function isHolidayWeek(date: Date): boolean {
+      const month = date.getMonth();
+      const dateNum = date.getDate();
+      
+      // Common holiday weeks when collections might be reduced
+      return (
+        (month === 11 && dateNum >= 20) || // Late Dec (Christmas)
+        (month === 0 && dateNum <= 10) ||  // Early Jan (New Year)
+        (month === 6 && dateNum >= 1 && dateNum <= 10) || // July 4th week
+        (month === 8 && dateNum <= 10) ||  // Labor Day
+        (month === 10 && dateNum >= 20)    // Thanksgiving week
+      );
+    }
+
+    function getSeasonType(date: Date): string {
+      const month = date.getMonth();
+      if (month >= 5 && month <= 7) return 'summer';
+      if (month >= 8 && month <= 9) return 'backToSchool';
+      if (month >= 10 && month <= 11) return 'holiday';
+      return 'regular';
+    }
+
+    // Generate insights based on actual performance patterns
+    const weeklyInsights = (() => {
+      if (!weeklyPerformance.length) return { pattern: "No data", capacity: "No data", performers: "No data" };
+      
+      const regularWeeks = weeklyPerformance.filter(w => !w.isHoliday);
+      const holidayWeeks = weeklyPerformance.filter(w => w.isHoliday);
+      
+      const avgRegular = regularWeeks.length ? 
+        Math.round(regularWeeks.reduce((sum, w) => sum + w.total, 0) / regularWeeks.length) : 0;
+      
+      const avgHoliday = holidayWeeks.length ? 
+        Math.round(holidayWeeks.reduce((sum, w) => sum + w.total, 0) / holidayWeeks.length) : 0;
+      
+      const holidayImpact = avgHoliday && avgRegular ? 
+        Math.round(((avgRegular - avgHoliday) / avgRegular) * 100) : 0;
+      
+      const recentTrend = weeklyPerformance.slice(0, 4).reduce((sum, w) => sum + w.total, 0) / 4;
+      const olderAvg = weeklyPerformance.slice(4, 8).reduce((sum, w) => sum + w.total, 0) / 4;
+      const trendDirection = recentTrend > olderAvg ? 'improving' : 'declining';
+      
+      return {
+        pattern: holidayImpact > 0 ? 
+          `Holiday weeks average ${holidayImpact}% lower than regular weeks` : 
+          "Regular collection patterns maintained",
+        capacity: `Recent 4 weeks trending ${trendDirection} vs prior period`,
+        performers: `Regular weeks average ${avgRegular.toLocaleString()} sandwiches`
+      };
+    })();
 
     return {
       totalSandwiches,
@@ -219,7 +264,7 @@ export default function AnalyticsDashboard() {
       recordWeek: recordWeek ? { total: recordWeek.total, date: recordWeek.date } : null,
       trendData,
       keyEvents,
-      weeklyHeatmap,
+      weeklyPerformance,
       weeklyInsights,
       insights: {
         yearOverYear: Math.round(yearOverYear),
@@ -551,88 +596,112 @@ export default function AnalyticsDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Weekly Performance Heatmap</CardTitle>
-              <CardDescription>Spot patterns and capacity issues at a glance</CardDescription>
+              <CardTitle>Collection Week Performance</CardTitle>
+              <CardDescription>Actual collection performance patterns (holidays filtered out)</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Weekly Heatmap Grid */}
-              <div className="space-y-4">
-                {analyticsData.weeklyHeatmap && analyticsData.weeklyHeatmap.map((monthData: any, monthIndex: number) => (
-                  <div key={monthIndex} className="flex items-center gap-3">
-                    <div className="w-12 text-sm font-medium text-gray-600 text-right">
-                      {monthData.month}
-                    </div>
-                    <div className="flex gap-1 flex-1">
-                      {monthData.weeks.map((week: any, weekIndex: number) => (
-                        <div
-                          key={weekIndex}
-                          className={`
-                            flex-1 h-12 rounded-md border-2 flex flex-col items-center justify-center text-xs font-bold text-white
-                            ${week.sandwiches === null ? 'bg-gray-100 border-gray-200' :
-                              week.sandwiches >= 8000 ? 'bg-green-500 border-green-600' :
-                              week.sandwiches >= 6000 ? 'bg-yellow-500 border-yellow-600' :
-                              week.sandwiches >= 4000 ? 'bg-orange-500 border-orange-600' :
-                              'bg-red-500 border-red-600'}
-                          `}
-                          title={week.sandwiches ? `Week ${weekIndex + 1}: ${week.sandwiches.toLocaleString()} sandwiches` : 'No data'}
-                        >
-                          {week.sandwiches ? (
-                            <>
-                              <div>{week.sandwiches >= 1000 ? `${(week.sandwiches / 1000).toFixed(1)}k` : week.sandwiches}</div>
-                              <div className="text-xs opacity-80">W{weekIndex + 1}</div>
-                            </>
-                          ) : (
-                            <div className="text-gray-400">--</div>
-                          )}
+              {/* Performance Timeline */}
+              <div className="space-y-3">
+                {analyticsData.weeklyPerformance && analyticsData.weeklyPerformance.map((week: any, index: number) => {
+                  const date = new Date(week.date);
+                  const weekLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  const isRecent = index < 4; // Highlight recent 4 weeks
+                  
+                  return (
+                    <div key={week.date} className={`flex items-center gap-3 p-2 rounded ${isRecent ? 'bg-blue-50' : ''}`}>
+                      <div className="w-16 text-sm font-medium text-gray-600">
+                        {weekLabel}
+                      </div>
+                      
+                      {/* Performance bar */}
+                      <div className="flex-1 max-w-md">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`
+                              h-8 rounded flex items-center justify-center text-xs font-bold text-white min-w-16
+                              ${week.total >= 35000 ? 'bg-purple-600' :  // Exceptional
+                                week.total >= 25000 ? 'bg-green-600' :   // Strong
+                                week.total >= 15000 ? 'bg-blue-600' :    // Good  
+                                week.total >= 8000 ? 'bg-yellow-600' :   // Average
+                                week.isHoliday ? 'bg-gray-400' :         // Holiday
+                                'bg-orange-600'}                         // Low
+                            `}
+                            style={{
+                              width: `${Math.min((week.total / 40000) * 100, 100)}%`,
+                              minWidth: '64px'
+                            }}
+                          >
+                            {(week.total / 1000).toFixed(0)}k
+                          </div>
+                          
+                          {/* Context indicators */}
+                          <div className="flex items-center gap-1 text-xs">
+                            {week.isHoliday && <span className="text-gray-500">🏖️</span>}
+                            {week.seasonType === 'summer' && !week.isHoliday && <span className="text-orange-500">☀️</span>}
+                            {week.seasonType === 'holiday' && !week.isHoliday && <span className="text-green-600">🎄</span>}
+                            {week.seasonType === 'backToSchool' && <span className="text-blue-600">📚</span>}
+                            {week.total >= 35000 && <span className="text-purple-600">⭐</span>}
+                          </div>
                         </div>
-                      ))}
+                      </div>
+                      
+                      {/* Collections count */}
+                      <div className="text-xs text-gray-500 w-12">
+                        {week.collections} sites
+                      </div>
                     </div>
-                  </div>
-                ))}
-                
-                {/* Legend */}
-                <div className="flex items-center gap-6 pt-4 border-t">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded border"></div>
-                    <span className="text-xs text-gray-600">8K+ Strong</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-500 rounded border"></div>
-                    <span className="text-xs text-gray-600">6-8K Good</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-orange-500 rounded border"></div>
-                    <span className="text-xs text-gray-600">4-6K Concerning</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-500 rounded border"></div>
-                    <span className="text-xs text-gray-600">&lt;4K Critical</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gray-200 rounded border"></div>
-                    <span className="text-xs text-gray-600">No Data</span>
+                  );
+                })}
+              </div>
+              
+              {/* Legend */}
+              <div className="flex flex-wrap items-center gap-4 pt-4 border-t text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-purple-600 rounded"></div>
+                  <span>35K+ Exceptional</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-600 rounded"></div>
+                  <span>25K+ Strong</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                  <span>15K+ Good</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-600 rounded"></div>
+                  <span>8K+ Average</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-orange-600 rounded"></div>
+                  <span>&lt;8K Low</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>🏖️ Holiday</span>
+                  <span>☀️ Summer</span>
+                  <span>📚 School</span>
+                  <span>🎄 Holiday Season</span>
+                </div>
+              </div>
+
+              {/* Real Insights */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <div className="text-sm font-semibold text-blue-800">Seasonal Impact</div>
+                  <div className="text-xs text-blue-600">
+                    {analyticsData.weeklyInsights?.pattern || "Analyzing patterns..."}
                   </div>
                 </div>
-
-                {/* Quick Insights */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <div className="text-sm font-semibold text-blue-800">Pattern Alert</div>
-                    <div className="text-xs text-blue-600">
-                      {analyticsData.weeklyInsights?.pattern || "Analyzing weekly patterns..."}
-                    </div>
+                <div className="p-3 bg-orange-50 rounded-lg">
+                  <div className="text-sm font-semibold text-orange-800">Recent Trend</div>
+                  <div className="text-xs text-orange-600">
+                    {analyticsData.weeklyInsights?.capacity || "Monitoring trends..."}
                   </div>
-                  <div className="p-3 bg-orange-50 rounded-lg">
-                    <div className="text-sm font-semibold text-orange-800">Capacity Watch</div>
-                    <div className="text-xs text-orange-600">
-                      {analyticsData.weeklyInsights?.capacity || "Monitor upcoming week forecasts"}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <div className="text-sm font-semibold text-green-800">Best Performers</div>
-                    <div className="text-xs text-green-600">
-                      {analyticsData.weeklyInsights?.performers || "Track consistent contributors"}
-                    </div>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <div className="text-sm font-semibold text-green-800">Baseline Performance</div>
+                  <div className="text-xs text-green-600">
+                    {analyticsData.weeklyInsights?.performers || "Calculating averages..."}
                   </div>
                 </div>
               </div>
