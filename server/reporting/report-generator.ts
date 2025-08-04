@@ -346,7 +346,13 @@ export class ReportGenerator {
 
     // Community Impact Growth Chart
     const monthlyImpact = collections.reduce((acc, item) => {
-      const month = format(new Date(item.collectionDate), 'MMM yyyy');
+      // Skip items with invalid dates
+      if (!item.collectionDate) return acc;
+      
+      const date = new Date(item.collectionDate);
+      if (isNaN(date.getTime())) return acc; // Skip invalid dates
+      
+      const month = format(date, 'MMM yyyy');
       const totalSandwiches = (item.individualSandwiches || 0) + (item.group1Count || 0) + (item.group2Count || 0);
       acc[month] = (acc[month] || 0) + totalSandwiches;
       return acc;
@@ -495,7 +501,9 @@ export class ReportGenerator {
 
     // Calculate capacity growth
     const previousMonthCollections = collections.filter(c => {
+      if (!c.collectionDate) return false;
       const collectionDate = new Date(c.collectionDate);
+      if (isNaN(collectionDate.getTime())) return false;
       const oneMonthAgo = new Date(endDate);
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
       return collectionDate >= oneMonthAgo && collectionDate <= endDate;
