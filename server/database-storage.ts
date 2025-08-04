@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -1230,23 +1230,26 @@ export class DatabaseStorage implements IStorage {
 
   // Announcements
   async getAllAnnouncements(): Promise<any[]> {
-    // For now return empty array - announcements can be implemented later
-    return [];
+    const result = await db.select().from(announcements).orderBy(desc(announcements.createdAt));
+    return result;
   }
 
   async createAnnouncement(announcement: any): Promise<any> {
-    // Basic announcement creation - can be enhanced later
-    return announcement;
+    const [result] = await db.insert(announcements).values(announcement).returning();
+    return result;
   }
 
   async updateAnnouncement(id: number, updates: any): Promise<any | undefined> {
-    // For now return the updates - can be implemented later
-    return updates;
+    const [result] = await db.update(announcements)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(announcements.id, id))
+      .returning();
+    return result;
   }
 
   async deleteAnnouncement(id: number): Promise<boolean> {
-    // For now return true - can be implemented later
-    return true;
+    const result = await db.delete(announcements).where(eq(announcements.id, id));
+    return result.rowCount! > 0;
   }
 
   // Consolidated notification methods (removing duplicates)
