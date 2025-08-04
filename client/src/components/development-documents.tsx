@@ -110,47 +110,54 @@ export function DevelopmentDocuments() {
         ))}
       </div>
 
-      {/* Document Grid - Optimized for tablet responsiveness */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      {/* Document Grid - FIXED tablet responsiveness with wider cards like governance documents */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {filteredDocs.map((doc, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow h-full flex flex-col">
-            <CardHeader className="pb-3 flex-shrink-0">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200">
+            <CardHeader className="pb-4 flex-shrink-0">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
                   <div className="flex-shrink-0">
                     {getFileIcon(doc.type)}
                   </div>
-                  <CardTitle className="text-base md:text-lg leading-tight line-clamp-2">{doc.name}</CardTitle>
+                  <CardTitle className="text-lg md:text-xl font-semibold text-gray-900 leading-tight">
+                    {doc.name}
+                  </CardTitle>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <Badge className={`text-xs ${getCategoryColor(doc.category)}`} variant="secondary">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="text-sm font-medium px-3 py-1 bg-purple-100 text-purple-800">
                   {doc.category}
                 </Badge>
+                <Badge variant="outline" className="text-sm font-medium px-3 py-1">
+                  {doc.type.toUpperCase()}
+                </Badge>
               </div>
+            </CardHeader>
+            <CardContent className="pt-0 flex-1 flex flex-col">
               {doc.description && (
-                <CardDescription className="text-sm md:text-base mt-2 leading-relaxed line-clamp-3">
+                <CardDescription className="mb-6 flex-1 text-base leading-relaxed text-gray-600">
                   {doc.description}
                 </CardDescription>
               )}
-            </CardHeader>
-            <CardContent className="pt-0 flex-1 flex flex-col">
-              <div className="flex flex-col sm:flex-row gap-2 mt-auto">
-                <Button 
-                  onClick={() => handlePreview(doc)}
-                  className="flex-1 text-sm h-9"
+              {/* Action buttons - optimized for tablet with larger touch targets */}
+              <div className="flex flex-col gap-3 mt-auto">
+                <Button
+                  size="default"
                   variant="outline"
-                  size="sm"
+                  onClick={() => handlePreview(doc)}
+                  className="w-full h-11 text-base font-medium"
                 >
-                  <Eye className="h-4 w-4 mr-2" />
+                  <Eye className="h-5 w-5 mr-2" />
                   Preview
                 </Button>
-                <Button 
+                <Button
+                  size="default"
+                  variant="default"
                   onClick={() => handleDownload(doc.path, doc.name)}
-                  className="flex-1 text-sm h-9"
-                  size="sm"
+                  className="w-full h-11 text-base font-medium"
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-5 w-5 mr-2" />
                   Download
                 </Button>
               </div>
