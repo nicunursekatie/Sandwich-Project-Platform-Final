@@ -98,7 +98,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
     totalLifetimeSandwiches: statsData ? statsData.completeTotalSandwiches?.toLocaleString() : "Loading...",
     peakWeekRecord: "38,828",
     peakWeekDate: "November 15, 2023",
-    currentAnnualCapacity: "~450,000",
+    currentAnnualCapacity: "500,000",
     weeklyBaseline: "6,000-12,000",
     surgingCapacity: "25,000-40,000",
     operationalYears: "5",
