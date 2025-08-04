@@ -3998,6 +3998,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reports/generate", async (req, res) => {
     try {
       console.log("Report generation request body:", JSON.stringify(req.body, null, 2));
+      
+      // Check if this is a weekly report request
+      if (req.body.type === 'weekly' || req.body.reportType === 'weekly') {
+        const { WeeklyReportTemplate } = await import('./reporting/weekly-report-template');
+        const { WeeklyPDFGenerator } = await import('./reporting/weekly-pdf-generator');
+        
+        const weeklyReporter = new WeeklyReportTemplate(storage);
+        const weeklyData = await weeklyReporter.generateWeeklyReport(req.body.targetDate);
+        
+        const reportId = Date.now().toString();
+        let reportBuffer: Buffer;
+        
+        if (req.body.format === 'pdf' || !req.body.format) {
+          reportBuffer = await WeeklyPDFGenerator.generatePDF(weeklyData);
+        } else {
+          // For CSV/other formats, we'd implement different generators
+          reportBuffer = await WeeklyPDFGenerator.generatePDF(weeklyData);
+        }
+        
+        const reportData = {
+          id: reportId,
+          metadata: {
+            title: "Weekly Impact Report",
+            generatedAt: new Date().toISOString(),
+            dateRange: `${weeklyData.collection_week.start} - ${weeklyData.collection_week.end}`,
+            totalRecords: weeklyData.summary.total_sandwiches,
+            format: req.body.format || 'pdf'
+          },
+          data: weeklyData,
+          buffer: reportBuffer
+        };
+
+        // Cache the report
+        const reportsCache = CacheManager.getCache("reports", {
+          maxSize: 100,
+          ttl: 24 * 60 * 60 * 1000,
+        });
+        reportsCache.set(`report:${reportId}`, reportData);
+
+        console.log("Generated weekly report metadata:", JSON.stringify(reportData.metadata, null, 2));
+        res.json(reportData);
+        return;
+      }
+      
+      // Original report generation for other types
       const reportData = await ReportGenerator.generateReport(req.body);
       console.log("Generated report metadata:", JSON.stringify(reportData.metadata, null, 2));
 
