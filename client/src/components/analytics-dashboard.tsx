@@ -200,7 +200,7 @@ export default function AnalyticsDashboard() {
       // Convert to array and sort by date (most recent first)
       return Object.values(weeklyTotals)
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 20); // Show last 20 collection weeks
+        .slice(0, 12); // Show last 12 collection weeks for better visibility
     })();
 
     // Helper functions for seasonal detection
@@ -600,25 +600,25 @@ export default function AnalyticsDashboard() {
               <CardDescription>Actual collection performance patterns (holidays filtered out)</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Performance Timeline */}
-              <div className="space-y-3">
+              {/* Performance Timeline - Compact Layout */}
+              <div className="space-y-2">
                 {analyticsData.weeklyPerformance && analyticsData.weeklyPerformance.map((week: any, index: number) => {
                   const date = new Date(week.date);
                   const weekLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                   const isRecent = index < 4; // Highlight recent 4 weeks
                   
                   return (
-                    <div key={week.date} className={`flex items-center gap-3 p-2 rounded ${isRecent ? 'bg-[#47B3CB]/10' : ''}`}>
-                      <div className="w-16 text-sm font-medium text-[#646464]">
+                    <div key={week.date} className={`flex items-center gap-2 py-1 px-2 rounded ${isRecent ? 'bg-[#47B3CB]/10' : ''}`}>
+                      <div className="w-14 text-xs font-medium text-[#646464]">
                         {weekLabel}
                       </div>
                       
                       {/* Performance bar */}
-                      <div className="flex-1 max-w-md">
-                        <div className="flex items-center gap-2">
+                      <div className="flex-1 max-w-sm">
+                        <div className="flex items-center gap-1">
                           <div
                             className={`
-                              h-8 rounded flex items-center justify-center text-xs font-bold text-white min-w-16
+                              h-6 rounded flex items-center justify-center text-xs font-bold text-white min-w-12
                               ${week.total >= 35000 ? 'bg-[#A31C41]' :   // Exceptional (burgundy)
                                 week.total >= 25000 ? 'bg-[#007E8C]' :   // Strong (dark teal)
                                 week.total >= 15000 ? 'bg-[#47B3CB]' :   // Good (light blue)
@@ -628,14 +628,14 @@ export default function AnalyticsDashboard() {
                             `}
                             style={{
                               width: `${Math.min((week.total / 40000) * 100, 100)}%`,
-                              minWidth: '64px'
+                              minWidth: '48px'
                             }}
                           >
                             {(week.total / 1000).toFixed(0)}k
                           </div>
                           
                           {/* Context indicators */}
-                          <div className="flex items-center gap-1 text-xs">
+                          <div className="flex items-center gap-1 text-xs ml-1">
                             {week.isHoliday && <span className="text-gray-500">🏖️</span>}
                             {week.seasonType === 'summer' && !week.isHoliday && <span className="text-orange-500">☀️</span>}
                             {week.seasonType === 'holiday' && !week.isHoliday && <span className="text-green-600">🎄</span>}
@@ -646,41 +646,42 @@ export default function AnalyticsDashboard() {
                       </div>
                       
                       {/* Collections count */}
-                      <div className="text-xs text-[#646464] w-12">
-                        {week.collections} sites
+                      <div className="text-xs text-[#646464] w-8">
+                        {week.collections}
                       </div>
                     </div>
                   );
                 })}
               </div>
               
-              {/* Legend */}
-              <div className="flex flex-wrap items-center gap-4 pt-4 border-t text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-[#A31C41] rounded"></div>
-                  <span>35K+ Exceptional</span>
+              {/* Compact Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t text-xs">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-[#A31C41] rounded"></div>
+                    <span>35K+</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-[#007E8C] rounded"></div>
+                    <span>25K+</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-[#47B3CB] rounded"></div>
+                    <span>15K+</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-[#FBAD3F] rounded"></div>
+                    <span>8K+</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-[#236383] rounded"></div>
+                    <span>&lt;8K</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-[#007E8C] rounded"></div>
-                  <span>25K+ Strong</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-[#47B3CB] rounded"></div>
-                  <span>15K+ Good</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-[#FBAD3F] rounded"></div>
-                  <span>8K+ Average</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-[#236383] rounded"></div>
-                  <span>&lt;8K Low</span>
-                </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2 text-xs">
                   <span>🏖️ Holiday</span>
                   <span>☀️ Summer</span>
                   <span>📚 School</span>
-                  <span>🎄 Holiday Season</span>
                 </div>
               </div>
 
