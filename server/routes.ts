@@ -4055,8 +4055,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (format === "pdf") {
         try {
-          // Use require for PDFKit to avoid module loading issues
-          const PDFKit = require("pdfkit");
+          // Use dynamic import for PDFKit in ES modules
+          const PDFKit = (await import("pdfkit")).default;
           const doc = new PDFKit({ margin: 50 });
 
           // Set response headers for PDF
