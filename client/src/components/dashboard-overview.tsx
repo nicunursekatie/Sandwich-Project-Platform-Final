@@ -109,7 +109,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
   // Remove fake mini chart data - only use real data
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-screen bg-gray-50 relative">
       {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
@@ -117,7 +117,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
       <div className="space-y-8 pb-8">
         {/* Header */}
-        <div className="bg-white rounded-xl mx-4 mt-8 p-8 text-center shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+        <div className="bg-white rounded-xl mx-4 mt-8 p-8 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
           <div className="relative">
             <img 
               src={tspLogo} 
@@ -132,7 +132,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
         {/* Collection Call-to-Action */}
         {(hasPermission(user, PERMISSIONS.CREATE_COLLECTIONS) || hasPermission(user, PERMISSIONS.MANAGE_COLLECTIONS)) && (
-          <div className="bg-white rounded-xl mx-4 p-6 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+          <div className="bg-white rounded-xl mx-4 p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="text-center">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-[#236383] mb-2">
@@ -178,7 +178,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
         {/* Hero Impact Section */}
         <div className="mx-4 mb-12">
-          <div className="bg-white rounded-xl p-12 text-center shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+          <div className="bg-white rounded-xl p-12 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="mb-4">
               <h1 className="text-7xl md:text-8xl font-black text-[#FBAD3F] tracking-tight">
                 <AnimatedCounter value={statsData?.completeTotalSandwiches || 0} />
@@ -199,7 +199,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mx-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all">
+          <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-semibold text-[#236383] uppercase tracking-wide">
                 Individual Collections
@@ -214,7 +214,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <p className="text-sm text-gray-600">Personal contributions</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all">
+          <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-semibold text-[#236383] uppercase tracking-wide">
                 Group Collections
@@ -229,7 +229,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <p className="text-sm text-gray-600">Organization donations</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all">
+          <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-semibold text-[#236383] uppercase tracking-wide">
                 Collection Records
@@ -247,7 +247,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
         {/* Operational Metrics */}
         <div className="mx-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+          <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <h2 className="text-lg font-semibold text-[#236383] mb-6">Operational Capacity</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
@@ -287,7 +287,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mx-4 mt-8">
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all" onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}>
+          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}>
             <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <Calculator className="w-5 h-5 text-white" />
             </div>
@@ -295,7 +295,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <p className="text-sm text-gray-600">Plan quantities</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all" onClick={() => onSectionChange?.('collections')}>
+          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('collections')}>
             <div className="w-10 h-10 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
@@ -303,7 +303,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <p className="text-sm text-gray-600">View all data</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all" onClick={() => onSectionChange?.('analytics')}>
+          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('analytics')}>
             <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
@@ -311,7 +311,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <p className="text-sm text-gray-600">Deep insights</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all" onClick={() => onSectionChange?.('phone-directory')}>
+          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('phone-directory')}>
             <div className="w-10 h-10 bg-[#007E8C] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <Users className="w-5 h-5 text-white" />
             </div>
@@ -319,7 +319,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <p className="text-sm text-gray-600">Contact info</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all" onClick={() => onSectionChange?.('messages')}>
+          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('messages')}>
             <div className="w-10 h-10 bg-[#A31C41] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <Calendar className="w-5 h-5 text-white" />
             </div>
@@ -329,7 +329,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         </div>
 
         {/* Important Documents - Compact */}
-        <div className="bg-white rounded-xl mx-4 mt-8 p-6 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+        <div className="bg-white rounded-xl mx-4 mt-8 p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
