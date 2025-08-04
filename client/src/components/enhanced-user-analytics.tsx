@@ -224,69 +224,94 @@ export default function EnhancedUserAnalytics() {
         </Button>
       </div>
 
-      {/* Overview Stats Cards */}
+      {/* Overview Stats Cards - Compact design with better spacing */}
       {systemStats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">
-                  {systemStats.activeUsersLast24h || systemStats.activeUsers} active (24h)
-                </p>
-                <p className="text-xs text-green-600">
-                  {systemStats.activeUsersLast12h || 0} active (12h)
-                </p>
+        <div className="space-y-8">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+              <div className="flex items-center justify-between mb-1">
+                <Users className="h-4 w-4 text-[#236383]" />
+                <span className="text-xs text-green-600 font-medium">
+                  ↑{Math.round(((systemStats.activeUsersLast24h || systemStats.activeUsers) / systemStats.totalUsers) * 100)}%
+                </span>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Actions</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{systemStats.totalActions.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                {Math.round(systemStats.averageActionsPerUser)} avg per user
+              <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">{systemStats.totalUsers}</div>
+              <p className="text-xs text-gray-600">Total Users</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {systemStats.activeUsersLast24h || systemStats.activeUsers} active today
               </p>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Top Section</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+              <div className="flex items-center justify-between mb-1">
+                <Activity className="h-4 w-4 text-[#236383]" />
+                <span className="text-xs text-blue-600 font-medium">
+                  {Math.round(systemStats.averageActionsPerUser)}/user
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">{systemStats.totalActions.toLocaleString()}</div>
+              <p className="text-xs text-gray-600">Total Actions</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+              <div className="flex items-center justify-between mb-1">
+                <BarChart3 className="h-4 w-4 text-[#236383]" />
+                <span className="text-xs text-orange-600 font-medium">Most Used</span>
+              </div>
+              <div className="text-lg sm:text-xl font-bold text-[#236383] mb-1 truncate">
                 {systemStats.topSections?.[0]?.section || 'N/A'}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-600">Top Section</p>
+              <p className="text-xs text-gray-500 mt-1">
                 {systemStats.topSections?.[0]?.actions || 0} actions
               </p>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Top Feature</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+              <div className="flex items-center justify-between mb-1">
+                <Target className="h-4 w-4 text-[#236383]" />
+                <span className="text-xs text-purple-600 font-medium">Popular</span>
+              </div>
+              <div className="text-sm sm:text-base font-bold text-[#236383] mb-1 line-clamp-2">
                 {systemStats.topFeatures?.[0]?.feature || 'N/A'}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-600">Top Feature</p>
+              <p className="text-xs text-gray-500 mt-1">
                 {systemStats.topFeatures?.[0]?.usage || 0} uses
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
+          {/* Actionable Insights Section */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 p-4 sm:p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              Action Items
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Need Check-ins</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {systemStats.totalUsers - (systemStats.activeUsersLast24h || systemStats.activeUsers)} users haven't logged in today
+                </p>
+                <p className="text-xs text-blue-600 font-medium mt-1">→ Send engagement reminders</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Feature Adoption</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {systemStats.topSections?.[0]?.section} dominates usage
+                </p>
+                <p className="text-xs text-green-600 font-medium mt-1">→ Promote other features</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Training Opportunity</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Focus on {systemStats.topFeatures?.[0]?.feature} best practices
+                </p>
+                <p className="text-xs text-purple-600 font-medium mt-1">→ Create tutorial</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
