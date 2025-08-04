@@ -25,6 +25,9 @@ This is a full-stack sandwich collection management application designed for The
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
 
+## Recent Critical Fixes (August 2025 - Continued)
+- **Core Team User Classification**: COMPLETED - Added new "Core Team" user role with comprehensive permissions including: create collections, access general/core team/host chat, direct messages, full directory editing (hosts/recipients/drivers), analytics, reports, suggestions management, and complete kudos system access. This role provides elevated permissions between regular volunteers and committee members, designed for trusted team members who need broader operational access.
+
 ## System Architecture
 
 ### Core Technologies

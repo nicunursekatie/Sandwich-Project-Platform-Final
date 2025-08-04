@@ -2,6 +2,7 @@ export const USER_ROLES = {
   SUPER_ADMIN: "super_admin",
   ADMIN: "admin",
   COMMITTEE_MEMBER: "committee_member",
+  CORE_TEAM: "core_team",
   HOST: "host",
   DRIVER: "driver",
   VOLUNTEER: "volunteer",
@@ -177,6 +178,52 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.SEND_KUDOS,
         PERMISSIONS.RECEIVE_KUDOS,
         PERMISSIONS.VIEW_KUDOS
+      ];
+
+    case USER_ROLES.CORE_TEAM:
+      return [
+        // Directory access and editing capabilities
+        PERMISSIONS.ACCESS_DIRECTORY,
+        PERMISSIONS.ACCESS_HOSTS,
+        PERMISSIONS.ACCESS_RECIPIENTS,
+        PERMISSIONS.ACCESS_DRIVERS,
+        PERMISSIONS.MANAGE_HOSTS,
+        PERMISSIONS.MANAGE_RECIPIENTS,
+        PERMISSIONS.MANAGE_DRIVERS,
+        
+        // Collection capabilities
+        PERMISSIONS.ACCESS_COLLECTIONS,
+        PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
+        
+        // Chat and messaging permissions
+        PERMISSIONS.ACCESS_CHAT,
+        PERMISSIONS.ACCESS_MESSAGES,
+        PERMISSIONS.GENERAL_CHAT,
+        PERMISSIONS.CORE_TEAM_CHAT,
+        PERMISSIONS.HOST_CHAT,
+        PERMISSIONS.DIRECT_MESSAGES,
+        PERMISSIONS.SEND_MESSAGES,
+        
+        // Analytics and reporting
+        PERMISSIONS.ACCESS_ANALYTICS,
+        PERMISSIONS.ACCESS_REPORTS,
+        PERMISSIONS.EXPORT_DATA,
+        
+        // Projects and suggestions
+        PERMISSIONS.ACCESS_PROJECTS,
+        PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
+        PERMISSIONS.ACCESS_SUGGESTIONS,
+        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.MANAGE_SUGGESTIONS,
+        
+        // Kudos system - full access
+        PERMISSIONS.SEND_KUDOS,
+        PERMISSIONS.RECEIVE_KUDOS,
+        PERMISSIONS.VIEW_KUDOS,
+        
+        // Additional toolkit access
+        PERMISSIONS.ACCESS_TOOLKIT,
+        PERMISSIONS.ACCESS_SANDWICH_DATA
       ];
 
     case USER_ROLES.DRIVER:
@@ -501,6 +548,8 @@ export function getRoleDisplayName(role: string): string {
       return "Administrator";
     case USER_ROLES.COMMITTEE_MEMBER:
       return "Committee Member";
+    case USER_ROLES.CORE_TEAM:
+      return "Core Team";
     case USER_ROLES.HOST:
       return "Host Location";
     case USER_ROLES.DRIVER:
