@@ -103,11 +103,22 @@ export default function SendKudosButton({
         duration: 3000
       });
     },
-    onError: () => {
-      toast({
-        description: "Failed to send kudos",
-        variant: "destructive"
-      });
+    onError: (error: any) => {
+      // Check if it's a 409 error (kudos already sent)
+      if (error?.response?.status === 409 || error?.status === 409) {
+        setHasSentKudos(true);
+        const message = error?.response?.data?.message || "Kudos already sent for this item!";
+        toast({
+          description: message,
+          variant: "default"
+        });
+      } else {
+        const errorMessage = error?.response?.data?.error || error?.message || "Failed to send kudos";
+        toast({
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     }
   });
 
