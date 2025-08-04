@@ -63,13 +63,13 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
   });
 
   // Query for scheduled reports
-  const { data: scheduledReports = [], refetch: refetchScheduled } = useQuery({
+  const { data: scheduledReports = [], refetch: refetchScheduled } = useQuery<ScheduledReport[]>({
     queryKey: ['/api/reports/scheduled'],
     retry: false
   });
 
   // Query for recent reports
-  const { data: recentReports = [] } = useQuery({
+  const { data: recentReports = [] } = useQuery<any[]>({
     queryKey: ['/api/reports/recent'],
     retry: false
   });
@@ -151,6 +151,12 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
         break;
       default:
         return;
+    }
+
+    // Validate dates before formatting
+    if (isNaN(start.getTime()) || isNaN(now.getTime())) {
+      console.error('Invalid date detected in handleQuickDateRange');
+      return;
     }
 
     setReportConfig({
@@ -448,7 +454,22 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
                     <div className="flex justify-between">
                       <span className="text-sm font-medium">Period:</span>
                       <span className="text-sm text-gray-600">
-                        {format(new Date(reportConfig.dateRange.start), 'MMM dd')} - {format(new Date(reportConfig.dateRange.end), 'MMM dd, yyyy')}
+                        {(() => {
+                          try {
+                            if (!reportConfig.dateRange.start || !reportConfig.dateRange.end) {
+                              return 'Invalid date range';
+                            }
+                            const startDate = new Date(reportConfig.dateRange.start);
+                            const endDate = new Date(reportConfig.dateRange.end);
+                            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                              return 'Invalid date range';
+                            }
+                            return `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}`;
+                          } catch (error) {
+                            console.error('Date formatting error:', error);
+                            return 'Invalid date range';
+                          }
+                        })()}
                       </span>
                     </div>
                     
@@ -609,7 +630,17 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
                         <div>
                           <h4 className="font-medium">{report.title}</h4>
                           <p className="text-sm text-gray-500">
-                            Generated {format(new Date(report.generatedAt), 'MMM dd, yyyy HH:mm')}
+                            Generated {(() => {
+                              try {
+                                if (!report.generatedAt) return 'Unknown date';
+                                const date = new Date(report.generatedAt);
+                                if (isNaN(date.getTime())) return 'Invalid date';
+                                return format(date, 'MMM dd, yyyy HH:mm');
+                              } catch (error) {
+                                console.error('Date formatting error:', error);
+                                return 'Unknown date';
+                              }
+                            })()}
                           </p>
                           <div className="flex items-center gap-4 mt-2">
                             <span className="text-xs text-gray-500">
