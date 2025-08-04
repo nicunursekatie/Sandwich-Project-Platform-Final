@@ -602,6 +602,19 @@ export default function AnalyticsDashboard() {
             <CardContent>
               {/* Performance Timeline - Ultra Compact */}
               <div className="space-y-1">
+                {/* Header row */}
+                <div className="flex items-center gap-2 py-1 px-2 border-b border-gray-200">
+                  <div className="w-12 text-xs font-semibold text-[#646464]">
+                    Week
+                  </div>
+                  <div className="flex-1 text-xs font-semibold text-[#646464]">
+                    Sandwiches Collected
+                  </div>
+                  <div className="w-8 text-xs font-semibold text-[#646464] text-right">
+                    Sites
+                  </div>
+                </div>
+                
                 {analyticsData.weeklyPerformance && analyticsData.weeklyPerformance.map((week: any, index: number) => {
                   const date = new Date(week.date);
                   const weekLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -654,7 +667,7 @@ export default function AnalyticsDashboard() {
                 })}
               </div>
               
-              {/* Compact Legend with site count explanation */}
+              {/* Compact Legend */}
               <div className="space-y-2 pt-3 border-t text-xs">
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1">
@@ -677,7 +690,6 @@ export default function AnalyticsDashboard() {
                     <div className="w-3 h-3 bg-[#236383] rounded"></div>
                     <span>&lt;8K</span>
                   </div>
-                  <span className="text-[#646464] ml-4">Numbers on right = collection sites</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span>🏖️ Holiday</span>
