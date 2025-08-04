@@ -193,10 +193,10 @@ export default function WeeklyImpactReport() {
   return (
     <div className="space-y-6">
       {/* Header and Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#236383]">Weekly Impact Report</h1>
-          <p className="text-gray-600 mt-1">Comprehensive weekly collection analysis and operational insights</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#236383]">Weekly Impact Report</h1>
+          <p className="text-sm md:text-base text-gray-600 mt-1">Comprehensive weekly collection analysis and operational insights</p>
         </div>
       </div>
 
@@ -212,7 +212,7 @@ export default function WeeklyImpactReport() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
             <div className="flex-1">
               <Label htmlFor="weekEnding">Week Ending Date</Label>
               <Input
@@ -223,43 +223,45 @@ export default function WeeklyImpactReport() {
                 className="mt-1"
               />
             </div>
-            <Button
-              onClick={handleGenerateReport}
-              disabled={generateReportMutation.isPending}
-              className="bg-[#236383] hover:bg-[#1a4d66] text-white"
-            >
-              {generateReportMutation.isPending ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generate Report
-                </>
-              )}
-            </Button>
-            {reportData && (
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
-                onClick={handleDownloadPdf}
-                disabled={downloadPdfMutation.isPending}
-                variant="outline"
-                className="border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white"
+                onClick={handleGenerateReport}
+                disabled={generateReportMutation.isPending}
+                className="bg-[#236383] hover:bg-[#1a4d66] text-white w-full sm:w-auto"
               >
-                {downloadPdfMutation.isPending ? (
+                {generateReportMutation.isPending ? (
                   <>
                     <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
+                    Generating...
                   </>
                 ) : (
                   <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Report
                   </>
                 )}
               </Button>
-            )}
+              {reportData && (
+                <Button
+                  onClick={handleDownloadPdf}
+                  disabled={downloadPdfMutation.isPending}
+                  variant="outline"
+                  className="border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white w-full sm:w-auto"
+                >
+                  {downloadPdfMutation.isPending ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -276,30 +278,30 @@ export default function WeeklyImpactReport() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#236383]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl md:text-3xl font-bold text-[#236383]">
                     {formatNumber(reportData.summary.total_sandwiches)}
                   </div>
                   <div className="text-sm text-gray-600">Total Collected</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#FBAD3F]">
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <div className="text-2xl md:text-3xl font-bold text-[#FBAD3F]">
                     {reportData.summary.active_locations}/{reportData.summary.total_locations}
                   </div>
                   <div className="text-sm text-gray-600">Active Locations</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 mt-1">
                     {formatPercentage(reportData.summary.participation_rate)} participation
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className={`text-3xl font-bold ${reportData.summary.week_over_week_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className={`text-2xl md:text-3xl font-bold ${reportData.summary.week_over_week_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {reportData.summary.week_over_week_change >= 0 ? '+' : ''}{formatPercentage(reportData.summary.week_over_week_change)}
                   </div>
                   <div className="text-sm text-gray-600">Week-over-Week</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-[#47B3CB]">
+                <div className="text-center p-4 bg-teal-50 rounded-lg">
+                  <div className="text-xl md:text-2xl font-bold text-[#47B3CB]">
                     {formatNumber(reportData.summary.monthly_progress.current)}
                   </div>
                   <div className="text-sm text-gray-600">Monthly Progress</div>
@@ -317,12 +319,12 @@ export default function WeeklyImpactReport() {
 
           {/* Detailed Tabs */}
           <Tabs defaultValue="metrics" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="metrics">Key Metrics</TabsTrigger>
-              <TabsTrigger value="locations">Locations</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
-              <TabsTrigger value="preparation">Next Week</TabsTrigger>
-              <TabsTrigger value="celebration">Success</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto">
+              <TabsTrigger value="metrics" className="text-xs md:text-sm">Key Metrics</TabsTrigger>
+              <TabsTrigger value="locations" className="text-xs md:text-sm">Locations</TabsTrigger>
+              <TabsTrigger value="insights" className="text-xs md:text-sm">Insights</TabsTrigger>
+              <TabsTrigger value="preparation" className="text-xs md:text-sm">Next Week</TabsTrigger>
+              <TabsTrigger value="celebration" className="text-xs md:text-sm">Success</TabsTrigger>
             </TabsList>
 
             {/* Key Metrics Table */}
@@ -336,25 +338,25 @@ export default function WeeklyImpactReport() {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
+                    <table className="w-full border-collapse min-w-[600px]">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left p-3 font-semibold">Metric</th>
-                          <th className="text-center p-3 font-semibold">This Week</th>
-                          <th className="text-center p-3 font-semibold">Last Week</th>
-                          <th className="text-center p-3 font-semibold">Change</th>
-                          <th className="text-center p-3 font-semibold">4-Week Avg</th>
+                          <th className="text-left p-2 md:p-3 font-semibold text-sm md:text-base">Metric</th>
+                          <th className="text-center p-2 md:p-3 font-semibold text-sm md:text-base">This Week</th>
+                          <th className="text-center p-2 md:p-3 font-semibold text-sm md:text-base">Last Week</th>
+                          <th className="text-center p-2 md:p-3 font-semibold text-sm md:text-base">Change</th>
+                          <th className="text-center p-2 md:p-3 font-semibold text-sm md:text-base">4-Week Avg</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr className="border-b">
-                          <td className="p-3 font-medium">Total Sandwiches</td>
-                          <td className="text-center p-3">{formatNumber(reportData.metrics_table.total_sandwiches.this_week)}</td>
-                          <td className="text-center p-3">{formatNumber(reportData.metrics_table.total_sandwiches.last_week)}</td>
-                          <td className={`text-center p-3 font-medium ${reportData.metrics_table.total_sandwiches.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <td className="p-2 md:p-3 font-medium text-sm md:text-base">Total Sandwiches</td>
+                          <td className="text-center p-2 md:p-3 text-sm md:text-base">{formatNumber(reportData.metrics_table.total_sandwiches.this_week)}</td>
+                          <td className="text-center p-2 md:p-3 text-sm md:text-base">{formatNumber(reportData.metrics_table.total_sandwiches.last_week)}</td>
+                          <td className={`text-center p-2 md:p-3 font-medium text-sm md:text-base ${reportData.metrics_table.total_sandwiches.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {reportData.metrics_table.total_sandwiches.change >= 0 ? '+' : ''}{formatNumber(reportData.metrics_table.total_sandwiches.change)}
                           </td>
-                          <td className="text-center p-3">{formatNumber(reportData.metrics_table.total_sandwiches.four_week_avg)}</td>
+                          <td className="text-center p-2 md:p-3 text-sm md:text-base">{formatNumber(reportData.metrics_table.total_sandwiches.four_week_avg)}</td>
                         </tr>
                         <tr className="border-b">
                           <td className="p-3 font-medium">Locations Participating</td>
@@ -465,21 +467,21 @@ export default function WeeklyImpactReport() {
                 {reportData.locations.filter(l => l.status === 'steady_contributor').length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-[#47B3CB]">
+                      <CardTitle className="flex items-center gap-2 text-[#47B3CB] text-lg">
                         <CheckCircle className="h-5 w-5" />
-                        Steady Contributors ({reportData.locations.filter(l => l.status === 'steady_contributor').length} locations)
+                        <span className="text-sm md:text-lg">Steady Contributors ({reportData.locations.filter(l => l.status === 'steady_contributor').length} locations)</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {reportData.locations.filter(l => l.status === 'steady_contributor').slice(0, 12).map((location, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-3 w-3 text-[#47B3CB]" />
-                              <span className="text-sm font-medium">{location.name}</span>
+                          <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded border">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <MapPin className="h-3 w-3 text-[#47B3CB] flex-shrink-0" />
+                              <span className="text-sm font-medium truncate">{location.name}</span>
                               {getTrendIcon(location.trend)}
                             </div>
-                            <span className="text-sm font-semibold text-[#47B3CB]">{formatNumber(location.total)}</span>
+                            <span className="text-sm font-semibold text-[#47B3CB] ml-2">{formatNumber(location.total)}</span>
                           </div>
                         ))}
                         {reportData.locations.filter(l => l.status === 'steady_contributor').length > 12 && (
@@ -499,14 +501,14 @@ export default function WeeklyImpactReport() {
               <div className="grid gap-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Identified Patterns</CardTitle>
+                    <CardTitle className="text-lg md:text-xl">Identified Patterns</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {reportData.trends_insights.patterns.map((pattern, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <TrendingUp className="h-4 w-4 mt-0.5 text-[#47B3CB]" />
-                          <span>{pattern}</span>
+                        <li key={index} className="flex items-start gap-3">
+                          <TrendingUp className="h-4 w-4 mt-1 text-[#47B3CB] flex-shrink-0" />
+                          <span className="text-sm md:text-base">{pattern}</span>
                         </li>
                       ))}
                     </ul>
@@ -552,19 +554,19 @@ export default function WeeklyImpactReport() {
               <div className="grid gap-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                       <Users className="h-5 w-5 text-[#236383]" />
                       Host Confirmations
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-4">
-                      <div className="text-3xl font-bold text-[#236383]">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="text-2xl md:text-3xl font-bold text-[#236383] text-center sm:text-left">
                         {reportData.next_week_prep.host_confirmations.confirmed}/{reportData.next_week_prep.host_confirmations.total}
                       </div>
                       <div className="flex-1">
                         <Progress value={reportData.next_week_prep.host_confirmations.percentage * 100} className="h-3" />
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="text-sm text-gray-600 mt-1 text-center sm:text-left">
                           {formatPercentage(reportData.next_week_prep.host_confirmations.percentage)} confirmed
                         </div>
                       </div>
@@ -588,22 +590,22 @@ export default function WeeklyImpactReport() {
                   </CardContent>
                 </Card>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Weather Forecast</CardTitle>
+                      <CardTitle className="text-lg md:text-xl">Weather Forecast</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p>{reportData.next_week_prep.weather_forecast}</p>
+                      <p className="text-sm md:text-base">{reportData.next_week_prep.weather_forecast}</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Volunteer Status</CardTitle>
+                      <CardTitle className="text-lg md:text-xl">Volunteer Status</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p>{reportData.next_week_prep.volunteer_status}</p>
+                      <p className="text-sm md:text-base">{reportData.next_week_prep.volunteer_status}</p>
                     </CardContent>
                   </Card>
                 </div>

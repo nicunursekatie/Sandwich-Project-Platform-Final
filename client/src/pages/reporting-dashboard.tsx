@@ -226,17 +226,17 @@ export default function ReportingDashboard({ isEmbedded = false }: { isEmbedded?
       </div>
 
       <Tabs defaultValue="generate" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="generate">Generate Report</TabsTrigger>
-          <TabsTrigger value="weekly">Weekly Impact</TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
-          <TabsTrigger value="history">Report History</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+          <TabsTrigger value="generate" className="text-xs md:text-sm">Generate Report</TabsTrigger>
+          <TabsTrigger value="weekly" className="text-xs md:text-sm">Weekly Impact</TabsTrigger>
+          <TabsTrigger value="scheduled" className="text-xs md:text-sm">Scheduled Reports</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs md:text-sm">Report History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="generate">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Report Configuration */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="xl:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Report Configuration</CardTitle>
