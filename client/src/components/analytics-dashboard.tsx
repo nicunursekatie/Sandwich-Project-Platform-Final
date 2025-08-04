@@ -613,12 +613,12 @@ export default function AnalyticsDashboard() {
                         {weekLabel}
                       </div>
                       
-                      {/* Performance bar */}
-                      <div className="flex-1 max-w-xs">
+                      {/* Performance bar - Full width usage */}
+                      <div className="flex-1">
                         <div className="flex items-center gap-1">
                           <div
                             className={`
-                              h-5 rounded flex items-center justify-center text-xs font-bold text-white min-w-10
+                              h-5 rounded flex items-center justify-center text-xs font-bold text-white
                               ${week.total >= 35000 ? 'bg-[#A31C41]' :   // Exceptional (burgundy)
                                 week.total >= 25000 ? 'bg-[#007E8C]' :   // Strong (dark teal)
                                 week.total >= 15000 ? 'bg-[#47B3CB]' :   // Good (light blue)
@@ -628,7 +628,7 @@ export default function AnalyticsDashboard() {
                             `}
                             style={{
                               width: `${Math.min((week.total / 40000) * 100, 100)}%`,
-                              minWidth: '40px'
+                              minWidth: '60px'
                             }}
                           >
                             {(week.total / 1000).toFixed(0)}k
@@ -645,8 +645,8 @@ export default function AnalyticsDashboard() {
                         </div>
                       </div>
                       
-                      {/* Collections count */}
-                      <div className="text-xs text-[#646464] w-6">
+                      {/* Collections count with label */}
+                      <div className="text-xs text-[#646464] w-8 text-right">
                         {week.collections}
                       </div>
                     </div>
@@ -654,8 +654,8 @@ export default function AnalyticsDashboard() {
                 })}
               </div>
               
-              {/* Compact Legend */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t text-xs">
+              {/* Compact Legend with site count explanation */}
+              <div className="space-y-2 pt-3 border-t text-xs">
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-[#A31C41] rounded"></div>
@@ -677,6 +677,7 @@ export default function AnalyticsDashboard() {
                     <div className="w-3 h-3 bg-[#236383] rounded"></div>
                     <span>&lt;8K</span>
                   </div>
+                  <span className="text-[#646464] ml-4">Numbers on right = collection sites</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span>🏖️ Holiday</span>
