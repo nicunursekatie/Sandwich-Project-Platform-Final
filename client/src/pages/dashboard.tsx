@@ -26,7 +26,7 @@ import Analytics from "@/pages/analytics";
 import ImpactDashboard from "@/pages/impact-dashboard";
 import DataManagement from "@/pages/data-management";
 import PerformanceDashboard from "@/pages/performance-dashboard";
-import ReportingDashboard from "@/pages/reporting-dashboard";
+
 import UserManagementRedesigned from "@/components/user-management-redesigned";
 import UserProfile from "@/components/user-profile";
 import { useState } from "react";
@@ -129,7 +129,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     // Operations section
     ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3 }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_REPORTS) ? [{ id: "reports", label: "Reports", icon: FileText }] : []),
+
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ListTodo }] : []),
     
     // Communication section
@@ -205,8 +205,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "meetings":
         return <UnifiedMeetings />;
 
-      case "reports":
-        return <ReportingDashboard isEmbedded={true} />;
+
       case "toolkit":
         return <ToolkitTabs />;
       case "hosts":
