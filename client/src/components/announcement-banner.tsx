@@ -78,22 +78,23 @@ export default function AnnouncementBanner() {
   const getBannerStyles = (priority: string, type: string) => {
     const baseStyles = "border-l-4 shadow-sm";
     
+    // Use brand colors: #236383 (teal), #FBAD3F (orange), #A31C41 (burgundy)
     if (priority === 'urgent') {
-      return `${baseStyles} bg-red-50 border-red-500 text-red-900`;
+      return `${baseStyles} bg-red-50 dark:bg-red-950/20 border-[#A31C41] text-[#A31C41] dark:text-red-200`;
     }
     if (priority === 'high') {
-      return `${baseStyles} bg-orange-50 border-orange-500 text-orange-900`;
+      return `${baseStyles} bg-orange-50 dark:bg-orange-950/20 border-[#FBAD3F] text-orange-900 dark:text-orange-200`;
     }
     if (type === 'event') {
-      return `${baseStyles} bg-blue-50 border-blue-500 text-blue-900`;
+      return `${baseStyles} bg-teal-50 dark:bg-teal-950/20 border-[#236383] text-[#236383] dark:text-teal-200`;
     }
     if (type === 'position') {
-      return `${baseStyles} bg-green-50 border-green-500 text-green-900`;
+      return `${baseStyles} bg-teal-50 dark:bg-teal-950/20 border-[#007E8C] text-[#007E8C] dark:text-teal-200`;
     }
     if (type === 'alert') {
-      return `${baseStyles} bg-yellow-50 border-yellow-500 text-yellow-900`;
+      return `${baseStyles} bg-orange-50 dark:bg-orange-950/20 border-[#FBAD3F] text-orange-900 dark:text-orange-200`;
     }
-    return `${baseStyles} bg-blue-50 border-blue-500 text-blue-900`;
+    return `${baseStyles} bg-blue-50 dark:bg-blue-950/20 border-[#236383] text-[#236383] dark:text-blue-200`;
   };
 
   return (
@@ -111,9 +112,11 @@ export default function AnnouncementBanner() {
               <h3 className="font-bold text-base">
                 {currentAnnouncement.title}
               </h3>
-              <span className="text-xs px-2 py-1 bg-white/30 rounded-full font-semibold uppercase tracking-wide">
-                {currentAnnouncement.priority}
-              </span>
+              {(currentAnnouncement.priority === 'urgent' || currentAnnouncement.priority === 'high') && (
+                <span className="text-xs px-2 py-1 bg-white/30 dark:bg-white/10 rounded-full font-semibold uppercase tracking-wide">
+                  {currentAnnouncement.priority}
+                </span>
+              )}
             </div>
             <p className="text-sm leading-relaxed font-medium">
               {currentAnnouncement.message}
@@ -134,7 +137,7 @@ export default function AnnouncementBanner() {
           variant="ghost"
           size="sm"
           onClick={() => dismissBanner(currentAnnouncement.id)}
-          className="flex-shrink-0 h-8 w-8 p-0 hover:bg-white/20 rounded-full border-2 border-white/30"
+          className="flex-shrink-0 h-8 w-8 p-0 hover:bg-white/20 dark:hover:bg-white/10 rounded-full border-2 border-white/30 dark:border-white/20"
         >
           <X className="w-4 h-4 font-bold" />
         </Button>

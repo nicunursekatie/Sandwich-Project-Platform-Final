@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Award, TrendingUp, Target, Lightbulb, Star, Crown, Calendar, ChevronUp, AlertCircle, Zap, Users2, BookOpen } from "lucide-react";
 import sandwichLogo from "@assets/LOGOS/sandwich logo.png";
 import type { SandwichCollection } from "@shared/schema";
+import { DetailedActivityAnalytics } from "@/components/detailed-activity-analytics";
 
 export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('highlights');
@@ -311,11 +312,12 @@ export default function AnalyticsDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="highlights">Achievements</TabsTrigger>
           <TabsTrigger value="trends">Growth Trends</TabsTrigger>
           <TabsTrigger value="insights">Seasonal Insights</TabsTrigger>
           <TabsTrigger value="opportunities">Strategic Ideas</TabsTrigger>
+          <TabsTrigger value="activity">User Activity</TabsTrigger>
         </TabsList>
 
         <TabsContent value="highlights" className="space-y-6">
@@ -852,6 +854,10 @@ export default function AnalyticsDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-6">
+          <DetailedActivityAnalytics />
         </TabsContent>
       </Tabs>
     </div>
