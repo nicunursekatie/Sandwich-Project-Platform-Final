@@ -31,8 +31,8 @@ export default function AnalyticsDashboard() {
   const analyticsData = useMemo(() => {
     if (!collections?.length || !statsData) return null;
 
-    // Use ACCURATE database totals from stats API with 100K padding for missing logs
-    const totalSandwiches = (statsData.completeTotalSandwiches || 0) + 100000;
+    // Use ACCURATE database totals from stats API (already includes 100K padding for missing logs)
+    const totalSandwiches = statsData.completeTotalSandwiches || 0;
 
     // PHASE 5: Use ONLY migrated columns - no fallbacks, no legacy support
     const calculateGroupTotal = (collection: SandwichCollection): number => {
