@@ -200,7 +200,7 @@ export default function AnalyticsDashboard() {
       // Convert to array and sort by date (most recent first)
       return Object.values(weeklyTotals)
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 12); // Show last 12 collection weeks for better visibility
+        .slice(0, 8); // Show last 8 collection weeks for compact view
     })();
 
     // Helper functions for seasonal detection
@@ -600,25 +600,25 @@ export default function AnalyticsDashboard() {
               <CardDescription>Actual collection performance patterns (holidays filtered out)</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Performance Timeline - Compact Layout */}
-              <div className="space-y-2">
+              {/* Performance Timeline - Ultra Compact */}
+              <div className="space-y-1">
                 {analyticsData.weeklyPerformance && analyticsData.weeklyPerformance.map((week: any, index: number) => {
                   const date = new Date(week.date);
                   const weekLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                  const isRecent = index < 4; // Highlight recent 4 weeks
+                  const isRecent = index < 3; // Highlight recent 3 weeks
                   
                   return (
-                    <div key={week.date} className={`flex items-center gap-2 py-1 px-2 rounded ${isRecent ? 'bg-[#47B3CB]/10' : ''}`}>
-                      <div className="w-14 text-xs font-medium text-[#646464]">
+                    <div key={week.date} className={`flex items-center gap-2 py-0.5 px-2 rounded ${isRecent ? 'bg-[#47B3CB]/10' : ''}`}>
+                      <div className="w-12 text-xs font-medium text-[#646464]">
                         {weekLabel}
                       </div>
                       
                       {/* Performance bar */}
-                      <div className="flex-1 max-w-sm">
+                      <div className="flex-1 max-w-xs">
                         <div className="flex items-center gap-1">
                           <div
                             className={`
-                              h-6 rounded flex items-center justify-center text-xs font-bold text-white min-w-12
+                              h-5 rounded flex items-center justify-center text-xs font-bold text-white min-w-10
                               ${week.total >= 35000 ? 'bg-[#A31C41]' :   // Exceptional (burgundy)
                                 week.total >= 25000 ? 'bg-[#007E8C]' :   // Strong (dark teal)
                                 week.total >= 15000 ? 'bg-[#47B3CB]' :   // Good (light blue)
@@ -628,14 +628,14 @@ export default function AnalyticsDashboard() {
                             `}
                             style={{
                               width: `${Math.min((week.total / 40000) * 100, 100)}%`,
-                              minWidth: '48px'
+                              minWidth: '40px'
                             }}
                           >
                             {(week.total / 1000).toFixed(0)}k
                           </div>
                           
                           {/* Context indicators */}
-                          <div className="flex items-center gap-1 text-xs ml-1">
+                          <div className="flex items-center gap-0.5 text-xs ml-1">
                             {week.isHoliday && <span className="text-gray-500">🏖️</span>}
                             {week.seasonType === 'summer' && !week.isHoliday && <span className="text-orange-500">☀️</span>}
                             {week.seasonType === 'holiday' && !week.isHoliday && <span className="text-green-600">🎄</span>}
@@ -646,7 +646,7 @@ export default function AnalyticsDashboard() {
                       </div>
                       
                       {/* Collections count */}
-                      <div className="text-xs text-[#646464] w-8">
+                      <div className="text-xs text-[#646464] w-6">
                         {week.collections}
                       </div>
                     </div>
