@@ -36,13 +36,7 @@ const safetyDocuments: ToolkitDocument[] = [
     category: "Safety Guidelines",
     description: "Safety standards and procedures for hosts collecting and storing sandwiches"
   },
-  {
-    name: "Food Safety Volunteers Guide (Alternate)",
-    path: "/attached_assets/20230525-TSP-Food Safety Volunteers (1)_1753670644140.pdf",
-    type: "pdf",
-    category: "Safety Guidelines",
-    description: "Additional volunteer safety guidelines for sandwich preparation, storage, and delivery"
-  },
+
   {
     name: "Food Safety Recipients Guide",
     path: "/attached_assets/20250205-TSP-Food Safety Recipients_1753670644140.pdf",
@@ -149,8 +143,8 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200 h-full flex flex-col p-4 sm:p-6">
-      <div className="flex items-start space-x-3 mb-3">
+    <Card className="hover:shadow-md transition-shadow duration-200 h-full flex flex-col p-3 sm:p-4 md:p-6">
+      <div className="flex items-start space-x-2 sm:space-x-3 mb-3">
         <div className="shrink-0">
           {getFileIcon(doc.type)}
         </div>
@@ -158,7 +152,7 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
           <CardTitle className="text-sm sm:text-base font-semibold text-gray-900 leading-tight">
             {doc.name}
           </CardTitle>
-          <Badge variant="secondary" className={`mt-2 text-xs ${getCategoryColor(doc.category)}`}>
+          <Badge variant="secondary" className={`mt-1 sm:mt-2 text-xs ${getCategoryColor(doc.category)}`}>
             {doc.category}
           </Badge>
         </div>
@@ -166,13 +160,13 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
       
       <div className="flex-1 flex flex-col">
         {doc.description && (
-          <CardDescription className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
+          <CardDescription className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 leading-relaxed line-clamp-3 sm:line-clamp-none">
             {doc.description}
           </CardDescription>
         )}
         
         {/* Button Layout - Always stack on mobile, side by side on larger screens */}
-        <div className="flex flex-col gap-2 mt-auto">
+        <div className="flex flex-col gap-1.5 sm:gap-2 mt-auto">
           {doc.type === 'link' ? (
             // For external links, show only the "Open Tool" button
             <Button
@@ -229,20 +223,20 @@ export function ToolkitTabs() {
 
   if (previewDocument) {
     return (
-      <div className="space-y-4 p-4 sm:p-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start space-x-3">
+      <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex items-start space-x-2 sm:space-x-3">
             {getFileIcon(previewDocument.type)}
             <div className="min-w-0 flex-1">
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 leading-tight">
+              <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-gray-900 leading-tight">
                 {previewDocument.name}
               </h2>
-              <Badge variant="secondary" className={`mt-2 text-xs ${getCategoryColor(previewDocument.category)}`}>
+              <Badge variant="secondary" className={`mt-1 sm:mt-2 text-xs ${getCategoryColor(previewDocument.category)}`}>
                 {previewDocument.category}
               </Badge>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col xs:flex-row gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -255,7 +249,7 @@ export function ToolkitTabs() {
                 link.click();
                 document.body.removeChild(link);
               }}
-              className="text-xs sm:text-sm h-9"
+              className="text-xs sm:text-sm h-8 sm:h-9"
             >
               <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Download</span>
@@ -264,7 +258,7 @@ export function ToolkitTabs() {
             <Button
               variant="outline"
               onClick={() => setPreviewDocument(null)}
-              className="text-xs sm:text-sm h-9"
+              className="text-xs sm:text-sm h-8 sm:h-9"
             >
               <span className="hidden sm:inline">Back to Toolkit</span>
               <span className="sm:hidden">Back</span>
@@ -282,16 +276,16 @@ export function ToolkitTabs() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center shrink-0">
-          <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 p-3 sm:p-4 md:p-6">
+      <div className="flex items-center space-x-2 sm:space-x-3">
+        <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center shrink-0">
+          <FileText className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 font-roboto leading-tight">
+          <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 font-roboto leading-tight">
             Toolkit & Resources
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-tight mt-1">
+          <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-tight mt-0.5 sm:mt-1">
             Essential documents, guidelines, and resources for volunteers and hosts
           </p>
         </div>
@@ -299,24 +293,24 @@ export function ToolkitTabs() {
 
       <Tabs defaultValue="safety" className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-auto p-1">
-          <TabsTrigger value="safety" className="flex items-center gap-1 sm:gap-2 py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium">
+          <TabsTrigger value="safety" className="flex items-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-2 md:px-4 text-xs sm:text-sm font-medium">
             <Shield className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="hidden xs:inline sm:hidden">Safe</span>
             <span className="hidden sm:inline">Safety</span>
-            <span className="sm:hidden">Safe</span>
           </TabsTrigger>
-          <TabsTrigger value="labels" className="flex items-center gap-1 sm:gap-2 py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium">
+          <TabsTrigger value="labels" className="flex items-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-2 md:px-4 text-xs sm:text-sm font-medium">
             <Tag className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
             <span>Labels</span>
           </TabsTrigger>
-          <TabsTrigger value="sandwich-making" className="flex items-center gap-1 sm:gap-2 py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium">
+          <TabsTrigger value="sandwich-making" className="flex items-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-2 md:px-4 text-xs sm:text-sm font-medium">
             <Sandwich className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="hidden xs:inline sm:hidden">Making</span>
             <span className="hidden sm:inline">Sandwich Making</span>
-            <span className="sm:hidden">Making</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="safety" className="space-y-4 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 lg:gap-6">
+        <TabsContent value="safety" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {safetyDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
@@ -327,8 +321,8 @@ export function ToolkitTabs() {
           </div>
         </TabsContent>
 
-        <TabsContent value="labels" className="space-y-4 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 lg:gap-6">
+        <TabsContent value="labels" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {labelDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
@@ -339,8 +333,8 @@ export function ToolkitTabs() {
           </div>
         </TabsContent>
 
-        <TabsContent value="sandwich-making" className="space-y-4 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 lg:gap-6">
+        <TabsContent value="sandwich-making" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {sandwichMakingDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
