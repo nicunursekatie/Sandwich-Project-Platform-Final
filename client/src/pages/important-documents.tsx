@@ -76,7 +76,7 @@ const adminDocuments: AdminDocument[] = [
 
 const categories = ['All', 'Legal & Tax', 'Governance', 'Forms'];
 
-export default function AdminPage() {
+export default function ImportantDocuments() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [previewDocument, setPreviewDocument] = useState<AdminDocument | null>(null);
 

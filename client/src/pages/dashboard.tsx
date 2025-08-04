@@ -45,7 +45,7 @@ import MessagingSystem from "@/components/messaging-system";
 import RealTimeMessages from "@/pages/real-time-messages";
 import Governance from "@/pages/governance";
 import UnifiedMessagesPage from "@/pages/unified-messages";
-import AdminPage from "@/pages/admin";
+import ImportantDocuments from "@/pages/important-documents";
 import StreamMessagesPage from "@/pages/stream-messages-clean";
 import DirectMessages from "@/pages/direct-messages";
 import GmailStyleInbox from "@/components/gmail-style-inbox";
@@ -269,7 +269,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "development":
         return <Development />;
       case "admin":
-        return <AdminPage />;
+        return <ImportantDocuments />;
       default:
         // Handle project detail pages
         if (projectId) {
