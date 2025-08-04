@@ -4481,11 +4481,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Footer
           const pages = doc.bufferedPageRange();
-          for (let i = 0; i < pages.count; i++) {
+          for (let i = pages.start; i < pages.start + pages.count; i++) {
             doc.switchToPage(i);
             doc.fontSize(8).font("Helvetica");
             doc.text(
-              `Page ${i + 1} of ${pages.count}`,
+              `Page ${i - pages.start + 1} of ${pages.count}`,
               50,
               doc.page.height - 30,
             );

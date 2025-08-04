@@ -245,12 +245,13 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           </div>
         </div>
 
-        {/* Operational Metrics */}
+        {/* Operational Capacity - Brand Colors with Opacity Backgrounds */}
         <div className="mx-4 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <h2 className="text-lg font-semibold text-[#236383] mb-6">Operational Capacity</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Peak Week - Burgundy background */}
+              <div className="bg-[#A31C41]/10 rounded-lg p-4 text-center border border-[#A31C41]/20 hover:bg-[#A31C41]/15 transition-colors">
                 <div className="text-2xl font-bold text-[#A31C41] mb-1">
                   {organizationalStats.peakWeekRecord}
                 </div>
@@ -258,7 +259,8 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                 <div className="text-xs text-gray-600 mt-1">Nov 15, 2023</div>
               </div>
               
-              <div className="text-center">
+              {/* Annual Target - Orange background */}
+              <div className="bg-[#FBAD3F]/10 rounded-lg p-4 text-center border border-[#FBAD3F]/20 hover:bg-[#FBAD3F]/15 transition-colors">
                 <div className="text-2xl font-bold text-[#FBAD3F] mb-1">
                   {organizationalStats.currentAnnualCapacity}
                 </div>
@@ -266,7 +268,8 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                 <div className="text-xs text-gray-600 mt-1">Current year</div>
               </div>
               
-              <div className="text-center">
+              {/* Weekly Baseline - Light Blue background */}
+              <div className="bg-[#47B3CB]/10 rounded-lg p-4 text-center border border-[#47B3CB]/20 hover:bg-[#47B3CB]/15 transition-colors">
                 <div className="text-2xl font-bold text-[#47B3CB] mb-1">
                   {organizationalStats.weeklyBaseline}
                 </div>
@@ -274,7 +277,8 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                 <div className="text-xs text-gray-600 mt-1">Regular ops</div>
               </div>
               
-              <div className="text-center">
+              {/* Surge Capacity - Dark Teal background */}
+              <div className="bg-[#007E8C]/10 rounded-lg p-4 text-center border border-[#007E8C]/20 hover:bg-[#007E8C]/15 transition-colors">
                 <div className="text-2xl font-bold text-[#007E8C] mb-1">
                   {organizationalStats.surgingCapacity}
                 </div>
