@@ -332,51 +332,52 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           </button>
         </div>
 
-        {/* Important Documents - Compact */}
-        <div className="bg-white rounded-xl mx-4 mt-8 p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-white" />
+        {/* Important Documents - Tablet Optimized */}
+        <div className="bg-white rounded-xl mx-4 mt-8 p-6 md:p-8 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-[#FBAD3F] rounded-lg flex items-center justify-center">
+              <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#236383]">Important Documents</h2>
-              <p className="text-sm text-gray-600">Key organizational resources</p>
+              <h2 className="text-xl md:text-2xl font-semibold text-[#236383]">Important Documents</h2>
+              <p className="text-base text-gray-600">Key documents for The Sandwich Project, including our nonprofit paperwork and bylaws.</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {importantDocuments.map((doc, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-3 group hover:bg-gray-100 transition-colors cursor-pointer">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 bg-[#47B3CB] rounded-lg flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-white" />
+              <div key={index} className="bg-gray-50 rounded-xl p-5 md:p-6 group hover:bg-gray-100 hover:shadow-md transition-all duration-200 cursor-pointer border-2 hover:border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-[#47B3CB] rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-xs font-medium text-gray-600 bg-white px-2 py-0.5 rounded">
+                  <span className="text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-md border">
                     {doc.category}
                   </span>
                 </div>
-                <h3 className="font-semibold text-sm text-[#236383] mb-1 group-hover:text-[#FBAD3F] transition-colors line-clamp-2">
+                <h3 className="font-semibold text-base md:text-lg text-[#236383] mb-3 group-hover:text-[#FBAD3F] transition-colors leading-tight">
                   {doc.title}
                 </h3>
-                <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                   {doc.description}
                 </p>
-                <div className="flex gap-1">
+                <div className="flex flex-col gap-2">
                   <Button
-                    size="sm"
-                    className="bg-[#47B3CB] hover:bg-[#3a9bb4] text-white text-xs px-2 py-1 h-7 flex-1"
+                    size="default"
+                    className="bg-[#47B3CB] hover:bg-[#3a9bb4] text-white text-sm font-medium h-11 w-full"
                     onClick={() => openPreviewModal(doc.path, doc.title, 'pdf')}
                   >
-                    <Eye className="w-3 h-3 mr-1" />
-                    View
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview
                   </Button>
                   <Button
-                    size="sm"
+                    size="default"
                     variant="outline"
-                    className="border-gray-300 text-gray-600 hover:bg-gray-50 text-xs px-2 py-1 h-7"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium h-11 w-full"
                     onClick={() => window.open(doc.path, '_blank')}
                   >
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Download
                   </Button>
                 </div>
               </div>
