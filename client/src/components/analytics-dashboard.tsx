@@ -539,7 +539,7 @@ export default function AnalyticsDashboard() {
                     <h4 className="font-semibold text-purple-800">2M+ Achievement</h4>
                   </div>
                   <p className="text-sm text-purple-700 mb-3">
-                    Historic 2M milestone achieved! Total: {Math.round(analyticsData.totalSandwiches / 1000)}K sandwiches delivered to community.
+                    Historic 2M milestone achieved! Total: {(analyticsData.totalSandwiches / 1000000).toFixed(2)}M sandwiches delivered to community.
                   </p>
                   <button className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">
                     🎉 Share Success Story
