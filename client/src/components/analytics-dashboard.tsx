@@ -225,7 +225,7 @@ export default function AnalyticsDashboard() {
         yearOverYear: Math.round(yearOverYear),
         summerDipPercent,
         forecast,
-        nextGoal: 2000000 - totalSandwiches
+        overGoal: totalSandwiches > 2000000 ? totalSandwiches - 2000000 : 0
       }
     };
 
@@ -539,7 +539,7 @@ export default function AnalyticsDashboard() {
                     <h4 className="font-semibold text-purple-800">2M+ Achievement</h4>
                   </div>
                   <p className="text-sm text-purple-700 mb-3">
-                    Milestone surpassed! {Math.abs(Math.round(analyticsData.insights.nextGoal / 1000))}K+ over 2M goal. Celebrate this historic achievement.
+                    Historic 2M milestone achieved! Total: {Math.round(analyticsData.totalSandwiches / 1000)}K sandwiches delivered to community.
                   </p>
                   <button className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">
                     🎉 Share Success Story
