@@ -105,7 +105,8 @@ router.post("/kudos", async (req, res) => {
 
     if (alreadySent) {
       return res.status(409).json({ 
-        error: "Kudos already sent",
+        error: "Kudos already sent for this item",
+        message: "You have already sent kudos for this item",
         alreadySent: true 
       });
     }
