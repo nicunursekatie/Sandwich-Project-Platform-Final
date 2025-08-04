@@ -228,7 +228,7 @@ export default function EnhancedUserAnalytics() {
       {systemStats && (
         <div className="space-y-8">
           <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
-            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
                 <Users className="h-4 w-4 text-[#236383]" />
                 <span className="text-xs text-green-600 font-medium">
@@ -242,7 +242,7 @@ export default function EnhancedUserAnalytics() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
                 <Activity className="h-4 w-4 text-[#236383]" />
                 <span className="text-xs text-blue-600 font-medium">
@@ -253,7 +253,7 @@ export default function EnhancedUserAnalytics() {
               <p className="text-xs text-gray-600">Total Actions</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
                 <BarChart3 className="h-4 w-4 text-[#236383]" />
                 <span className="text-xs text-orange-600 font-medium">Most Used</span>
@@ -267,7 +267,7 @@ export default function EnhancedUserAnalytics() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
                 <Target className="h-4 w-4 text-[#236383]" />
                 <span className="text-xs text-purple-600 font-medium">Popular</span>
@@ -283,29 +283,29 @@ export default function EnhancedUserAnalytics() {
           </div>
 
           {/* Actionable Insights Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 p-4 sm:p-6 rounded-lg border border-blue-200 dark:border-blue-800">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50   p-4 sm:p-6 rounded-lg border border-blue-200 ">
+            <h3 className="text-base font-semibold text-gray-900  mb-3 flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-blue-600" />
               Action Items
             </h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Need Check-ins</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <div className="bg-white  p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 ">Need Check-ins</p>
+                <p className="text-xs text-gray-600  mt-1">
                   {systemStats.totalUsers - (systemStats.activeUsersLast24h || systemStats.activeUsers)} users haven't logged in today
                 </p>
                 <p className="text-xs text-blue-600 font-medium mt-1">→ Send engagement reminders</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Feature Adoption</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <div className="bg-white  p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 ">Feature Adoption</p>
+                <p className="text-xs text-gray-600  mt-1">
                   {systemStats.topSections?.[0]?.section} dominates usage
                 </p>
                 <p className="text-xs text-green-600 font-medium mt-1">→ Promote other features</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Training Opportunity</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <div className="bg-white  p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 ">Training Opportunity</p>
+                <p className="text-xs text-gray-600  mt-1">
                   Focus on {systemStats.topFeatures?.[0]?.feature} best practices
                 </p>
                 <p className="text-xs text-purple-600 font-medium mt-1">→ Create tutorial</p>

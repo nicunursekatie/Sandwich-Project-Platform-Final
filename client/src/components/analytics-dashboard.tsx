@@ -164,7 +164,7 @@ export default function AnalyticsDashboard() {
         <TabsContent value="highlights" className="space-y-6">
           {/* Compact Impact Metrics */}
           <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+              <div className="bg-white  p-4 sm:p-6 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
                 <div className="flex items-center justify-between mb-3">
                   <Award className="h-6 w-6 text-[#236383]" />
                   <span className="text-sm text-green-600 font-medium">
@@ -180,7 +180,7 @@ export default function AnalyticsDashboard() {
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+              <div className="bg-white  p-4 sm:p-6 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
                 <div className="flex items-center justify-between mb-3">
                   <TrendingUp className="h-6 w-6 text-[#236383]" />
                   <span className="text-sm text-blue-600 font-medium">
@@ -196,7 +196,7 @@ export default function AnalyticsDashboard() {
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+              <div className="bg-white  p-4 sm:p-6 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
                 <div className="flex items-center justify-between mb-2">
                   <Crown className="h-5 w-5 text-[#236383]" />
                   <span className="text-xs text-orange-600 font-medium">
@@ -214,7 +214,7 @@ export default function AnalyticsDashboard() {
                 </p>
               </div>
 
-            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
               <div className="flex items-center justify-between mb-2">
                 <Target className="h-5 w-5 text-[#236383]" />
                 <span className="text-xs text-teal-600 font-medium">
@@ -230,7 +230,7 @@ export default function AnalyticsDashboard() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:shadow-md transition-all">
               <div className="flex items-center justify-between mb-2">
                 <Award className="h-5 w-5 text-[#236383]" />
                 <span className="text-xs text-indigo-600 font-medium">
@@ -249,29 +249,29 @@ export default function AnalyticsDashboard() {
           </div>
 
           {/* Actionable Community Insights */}
-          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 p-4 sm:p-6 rounded-lg border border-orange-200 dark:border-orange-800 mt-6">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50   p-4 sm:p-6 rounded-lg border border-orange-200  mt-6">
+            <h3 className="text-base font-semibold text-gray-900  mb-4 flex items-center gap-2">
               <Target className="h-4 w-4 text-orange-600" />
               Community Growth Opportunities
             </h3>
             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Host Expansion</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <div className="bg-white  p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 ">Host Expansion</p>
+                <p className="text-xs text-gray-600  mt-1">
                   {analyticsData.activeLocations} active locations
                 </p>
                 <p className="text-xs text-green-600 font-medium mt-1">→ Target +5 new hosts this month</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Capacity Building</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <div className="bg-white  p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 ">Capacity Building</p>
+                <p className="text-xs text-gray-600  mt-1">
                   Weekly avg: {analyticsData.avgWeekly.toLocaleString()}
                 </p>
                 <p className="text-xs text-blue-600 font-medium mt-1">→ Support volunteer recruitment</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-md border">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Milestone Push</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <div className="bg-white  p-3 rounded-md border">
+                <p className="text-sm font-medium text-gray-900 ">Milestone Push</p>
+                <p className="text-xs text-gray-600  mt-1">
                   {(2000000 - analyticsData.totalSandwiches).toLocaleString()} to 2M goal
                 </p>
                 <p className="text-xs text-purple-600 font-medium mt-1">→ Special campaign needed</p>
