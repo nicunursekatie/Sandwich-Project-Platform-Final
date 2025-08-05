@@ -160,21 +160,30 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.HOST:
       return [
+        // Directory access
         PERMISSIONS.ACCESS_DIRECTORY,
+        PERMISSIONS.ACCESS_HOSTS,
+        PERMISSIONS.ACCESS_RECIPIENTS,
+        
+        // Collections capability
         PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_REPORTS,
-        PERMISSIONS.ACCESS_PROJECTS,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.ACCESS_SANDWICH_DATA,
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.HOST_CHAT,
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
         PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
-        PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
+        
+        // Chat permissions
+        PERMISSIONS.ACCESS_CHAT,
+        PERMISSIONS.ACCESS_MESSAGES,
+        PERMISSIONS.GENERAL_CHAT,
+        PERMISSIONS.HOST_CHAT,
+        PERMISSIONS.DIRECT_MESSAGES,
+        
+        // Analytics and other access
+        PERMISSIONS.ACCESS_ANALYTICS,
+        PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.ACCESS_TOOLKIT,
+        
+        // Kudos system
         PERMISSIONS.SEND_KUDOS,
         PERMISSIONS.RECEIVE_KUDOS,
         PERMISSIONS.VIEW_KUDOS
@@ -182,47 +191,38 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.CORE_TEAM:
       return [
-        // Directory access and editing capabilities
+        // All Host permissions first
         PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_HOSTS,
         PERMISSIONS.ACCESS_RECIPIENTS,
-        PERMISSIONS.ACCESS_DRIVERS,
-        PERMISSIONS.MANAGE_HOSTS,
-        PERMISSIONS.MANAGE_RECIPIENTS,
-        PERMISSIONS.MANAGE_DRIVERS,
-        
-        // Collection capabilities
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
-        
-        // Chat and messaging permissions
+        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
         PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.CORE_TEAM_CHAT,
         PERMISSIONS.HOST_CHAT,
         PERMISSIONS.DIRECT_MESSAGES,
-        PERMISSIONS.SEND_MESSAGES,
-        
-        // Analytics and reporting
         PERMISSIONS.ACCESS_ANALYTICS,
-        PERMISSIONS.ACCESS_REPORTS,
-        PERMISSIONS.EXPORT_DATA,
-        
-        // Projects and suggestions
-        PERMISSIONS.ACCESS_PROJECTS,
-        PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.MANAGE_SUGGESTIONS,
-        
-        // Kudos system - full access
+        PERMISSIONS.ACCESS_TOOLKIT,
         PERMISSIONS.SEND_KUDOS,
         PERMISSIONS.RECEIVE_KUDOS,
         PERMISSIONS.VIEW_KUDOS,
         
-        // Additional toolkit access
-        PERMISSIONS.ACCESS_TOOLKIT,
+        // Additional Core Team specific permissions
+        PERMISSIONS.ACCESS_DRIVERS,
+        PERMISSIONS.MANAGE_HOSTS,
+        PERMISSIONS.MANAGE_RECIPIENTS,
+        PERMISSIONS.MANAGE_DRIVERS,
+        PERMISSIONS.CORE_TEAM_CHAT,
+        PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
+        PERMISSIONS.ACCESS_PROJECTS,
+        PERMISSIONS.SEND_MESSAGES,
+        PERMISSIONS.ACCESS_REPORTS,
+        PERMISSIONS.EXPORT_DATA,
+        PERMISSIONS.MANAGE_SUGGESTIONS,
         PERMISSIONS.ACCESS_SANDWICH_DATA
       ];
 
