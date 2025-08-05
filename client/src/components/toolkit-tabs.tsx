@@ -143,59 +143,59 @@ function DocumentCard({ document: doc, onPreview }: { document: ToolkitDocument;
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200 h-full flex flex-col relative">
-      <CardHeader className="pb-3">
+    <Card className="hover:shadow-md transition-shadow duration-200 h-full flex flex-col relative min-h-[280px]">
+      <CardHeader className="pb-3 px-4 pt-4">
         <div className="flex items-start space-x-3">
           <div className="shrink-0">
             {getFileIcon(doc.type)}
           </div>
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2">
+            <CardTitle className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2 mb-2">
               {doc.name}
             </CardTitle>
-            <Badge variant="secondary" className={`mt-2 text-xs ${getCategoryColor(doc.category)}`}>
+            <Badge variant="secondary" className={`text-xs ${getCategoryColor(doc.category)}`}>
               {doc.category}
             </Badge>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col pt-0">
+      <CardContent className="flex-1 flex flex-col pt-0 pb-4">
         {doc.description && (
-          <CardDescription className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-3">
+          <CardDescription className="text-sm text-gray-600 mb-6 leading-relaxed line-clamp-3">
             {doc.description}
           </CardDescription>
         )}
         
-        <div className="flex flex-col gap-2 mt-auto">
+        <div className="flex flex-col gap-2 mt-auto px-2">
           {doc.type === 'link' ? (
             <Button
               variant="default"
               size="sm"
               onClick={() => window.open(doc.path, '_blank')}
-              className="w-full text-sm h-9 bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <Calculator className="h-4 w-4 mr-2" />
+              <Calculator className="h-3 w-3 mr-1" />
               Open Tool
             </Button>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onPreview(doc)}
-                className="flex-1 text-sm h-9"
+                className="flex-1 text-xs h-8 px-2"
               >
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="h-3 w-3 mr-1" />
                 Preview
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleDownload(doc.path, doc.name)}
-                className="flex-1 text-sm h-9"
+                className="flex-1 text-xs h-8 px-2"
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-3 w-3 mr-1" />
                 Download
               </Button>
             </div>
@@ -298,7 +298,7 @@ export function ToolkitTabs() {
         </TabsList>
 
         <TabsContent value="safety" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {safetyDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
@@ -310,7 +310,7 @@ export function ToolkitTabs() {
         </TabsContent>
 
         <TabsContent value="labels" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {labelDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
@@ -322,7 +322,7 @@ export function ToolkitTabs() {
         </TabsContent>
 
         <TabsContent value="sandwich-making" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {sandwichMakingDocuments.map((document, index) => (
               <DocumentCard
                 key={index}
