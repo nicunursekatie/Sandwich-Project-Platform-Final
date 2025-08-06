@@ -32,6 +32,14 @@ const sampleUsers = {
     email: "lisa@community.org",
     permissions: getDefaultPermissionsForRole(USER_ROLES.HOST)
   },
+  [USER_ROLES.CORE_TEAM]: {
+    id: "core-team-1",
+    role: USER_ROLES.CORE_TEAM,
+    firstName: "Jordan",
+    lastName: "CoreTeam",
+    email: "jordan@tsp.org",
+    permissions: getDefaultPermissionsForRole(USER_ROLES.CORE_TEAM)
+  },
   [USER_ROLES.DRIVER]: {
     id: "driver-1",
     role: USER_ROLES.DRIVER,
@@ -69,6 +77,7 @@ const sampleUsers = {
 const roleIcons = {
   [USER_ROLES.ADMIN]: Shield,
   [USER_ROLES.COMMITTEE_MEMBER]: UserCheck,
+  [USER_ROLES.CORE_TEAM]: UserCheck,
   [USER_ROLES.HOST]: Home,
   [USER_ROLES.DRIVER]: Truck,
   [USER_ROLES.VOLUNTEER]: Heart,
@@ -79,6 +88,7 @@ const roleIcons = {
 const roleColors = {
   [USER_ROLES.ADMIN]: "bg-red-100 text-red-800",
   [USER_ROLES.COMMITTEE_MEMBER]: "bg-purple-100 text-purple-800",
+  [USER_ROLES.CORE_TEAM]: "bg-purple-100 text-purple-800",
   [USER_ROLES.HOST]: "bg-blue-100 text-blue-800",
   [USER_ROLES.DRIVER]: "bg-green-100 text-green-800",
   [USER_ROLES.VOLUNTEER]: "bg-orange-100 text-orange-800",
@@ -88,7 +98,7 @@ const roleColors = {
 
 const permissionCategories = {
   "Core Access": [PERMISSIONS.VIEW_PHONE_DIRECTORY],
-  "Data Management": [PERMISSIONS.EDIT_COLLECTIONS, PERMISSIONS.DELETE_COLLECTIONS, PERMISSIONS.MANAGE_USERS],
+  "Data Management": [PERMISSIONS.EDIT_ALL_COLLECTIONS, PERMISSIONS.DELETE_ALL_COLLECTIONS, PERMISSIONS.MANAGE_USERS],
   "Communication": [PERMISSIONS.GENERAL_CHAT, PERMISSIONS.COMMITTEE_CHAT, PERMISSIONS.HOST_CHAT, PERMISSIONS.DRIVER_CHAT, PERMISSIONS.RECIPIENT_CHAT],
   "Data Viewing": [PERMISSIONS.VIEW_COLLECTIONS, PERMISSIONS.VIEW_REPORTS, PERMISSIONS.VIEW_PROJECTS],
   "Tools": [PERMISSIONS.TOOLKIT_ACCESS]
