@@ -31,7 +31,6 @@ export const PERMISSIONS = {
   // Operations section permissions
   ACCESS_MEETINGS: "access_meetings",
   ACCESS_ANALYTICS: "access_analytics",
-  ACCESS_REPORTS: "access_reports",
   ACCESS_PROJECTS: "access_projects",
   ACCESS_ROLE_DEMO: "access_role_demo",
 
@@ -76,7 +75,6 @@ export const PERMISSIONS = {
   // Data action permissions
   EXPORT_DATA: "export_data",
   IMPORT_DATA: "import_data",
-  SCHEDULE_REPORTS: "schedule_reports",
 
   // Message and communication permissions
   SEND_MESSAGES: "send_messages",
@@ -104,7 +102,6 @@ export const PERMISSIONS = {
   VIEW_RECIPIENTS: "access_recipients",
   VIEW_DRIVERS: "access_drivers",
   VIEW_COLLECTIONS: "access_collections",
-  VIEW_REPORTS: "access_reports",
   VIEW_MEETINGS: "access_meetings",
   VIEW_ANALYTICS: "access_analytics",
   VIEW_PROJECTS: "access_projects",
@@ -143,7 +140,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_TOOLKIT,
         PERMISSIONS.ACCESS_MEETINGS,
         PERMISSIONS.ACCESS_ANALYTICS,
-        PERMISSIONS.ACCESS_REPORTS,
         PERMISSIONS.ACCESS_ROLE_DEMO,
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.ACCESS_SANDWICH_DATA,
@@ -220,7 +216,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.SEND_MESSAGES,
-        PERMISSIONS.ACCESS_REPORTS,
         PERMISSIONS.EXPORT_DATA,
         PERMISSIONS.MANAGE_SUGGESTIONS,
         PERMISSIONS.ACCESS_SANDWICH_DATA
@@ -233,7 +228,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
         PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_REPORTS,
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.ACCESS_SANDWICH_DATA,
@@ -251,7 +245,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
         PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_REPORTS,
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.GENERAL_CHAT,
@@ -284,7 +277,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.ACCESS_MESSAGES,
         PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_REPORTS,
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.ACCESS_SANDWICH_DATA,
@@ -299,7 +291,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
         PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_REPORTS,
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.GENERAL_CHAT,
         "log_work",

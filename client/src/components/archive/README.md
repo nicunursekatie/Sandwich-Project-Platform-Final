@@ -10,6 +10,12 @@ This folder contains deprecated components that are no longer in use but kept fo
 - **Reason**: Enhanced UI with role presets and better permission categorization
 - **Usage**: DO NOT USE - This component is archived for reference only
 
+### reporting-dashboard-deprecated.tsx
+- **Status**: DEPRECATED (August 2025)
+- **Replaced by**: Analytics tab in main dashboard
+- **Reason**: Reports tab removed, analytics provides better consolidated insights
+- **Usage**: DO NOT USE - This component is archived for reference only
+
 The enhanced permissions dialog provides:
 - Role preset cards with visual indicators
 - Better permission organization by category
