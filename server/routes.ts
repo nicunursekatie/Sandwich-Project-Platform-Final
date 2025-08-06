@@ -481,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/users",
     isAuthenticated,
-    requirePermission("view_users"),
+    requirePermission("manage_users"),
     async (req, res) => {
       try {
         const users = await storage.getAllUsers();
