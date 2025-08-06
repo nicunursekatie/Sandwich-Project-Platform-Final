@@ -57,6 +57,8 @@ import {
   users,
 } from "@shared/schema";
 
+import { getDefaultPermissionsForRole } from "@shared/auth-utils";
+
 // Extend Request interface to include file metadata
 declare global {
   namespace Express {
@@ -523,6 +525,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error updating user status:", error);
         res.status(500).json({ message: "Failed to update user status" });
+      }
+    },
+  );
+
+  app.post(
+    "/api/users",
+    isAuthenticated,
+    requirePermission("manage_users"),
+    async (req, res) => {
+      try {
+        const { email, firstName, lastName, role } = req.body;
+        
+        // Validate required fields
+        if (!email || !firstName || !lastName) {
+          return res.status(400).json({ message: "Email, first name, and last name are required" });
+        }
+
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res.status(409).json({ message: "User with this email already exists" });
+        }
+
+        // Generate user ID and get default permissions for role
+        const userId = "user_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+        const userRole = role || "volunteer";
+        const defaultPermissions = getDefaultPermissionsForRole(userRole);
+
+        const newUser = await storage.createUser({
+          id: userId,
+          email,
+          firstName,
+          lastName,
+          role: userRole,
+          permissions: defaultPermissions,
+          isActive: true,
+          profileImageUrl: null,
+          metadata: {}
+        });
+
+        res.status(201).json(newUser);
+      } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(500).json({ message: "Failed to create user" });
       }
     },
   );
