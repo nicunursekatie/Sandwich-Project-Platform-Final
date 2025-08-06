@@ -41,6 +41,13 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState<string>("");
+  const [showAddUserDialog, setShowAddUserDialog] = useState<boolean>(false);
+  const [newUser, setNewUser] = useState({ 
+    email: "", 
+    firstName: "", 
+    lastName: "", 
+    role: "volunteer" 
+  });
 
   // Check if current user can manage users
   if (!hasPermission(currentUser, PERMISSIONS.MANAGE_USERS)) {
@@ -149,6 +156,28 @@ export default function UserManagement() {
     },
   });
 
+  const addUserMutation = useMutation({
+    mutationFn: async (userData: { email: string; firstName: string; lastName: string; role: string }) => {
+      return apiRequest("POST", "/api/users", userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "User Added",
+        description: "New user has been successfully added.",
+      });
+      setShowAddUserDialog(false);
+      setNewUser({ email: "", firstName: "", lastName: "", role: "volunteer" });
+    },
+    onError: (error) => {
+      toast({
+        title: "Add User Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
   };
@@ -172,6 +201,19 @@ export default function UserManagement() {
     if (confirmDelete) {
       deleteUserMutation.mutate(user.id);
     }
+  };
+
+  const handleAddUser = () => {
+    if (!newUser.email || !newUser.firstName || !newUser.lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addUserMutation.mutate(newUser);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -290,13 +332,97 @@ export default function UserManagement() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              User Management
-            </CardTitle>
-            <CardDescription>
-              Manage user roles and permissions for team members
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  User Management
+                </CardTitle>
+                <CardDescription>
+                  Manage user roles and permissions for team members
+                </CardDescription>
+              </div>
+              <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Users className="h-4 w-4 mr-2" />
+                    Add New User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New User</DialogTitle>
+                    <DialogDescription>
+                      Create a new user account and assign their role
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newUser.email}
+                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                        placeholder="user@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="firstName">First Name *</Label>
+                      <Input
+                        id="firstName"
+                        value={newUser.firstName}
+                        onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
+                        placeholder="John"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input
+                        id="lastName"
+                        value={newUser.lastName}
+                        onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
+                        placeholder="Doe"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="role">Role</Label>
+                      <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="volunteer">Volunteer</SelectItem>
+                          <SelectItem value="host">Host</SelectItem>
+                          <SelectItem value="driver">Driver</SelectItem>
+                          <SelectItem value="core_team">Core Team</SelectItem>
+                          <SelectItem value="committee_member">Committee Member</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowAddUserDialog(false);
+                          setNewUser({ email: "", firstName: "", lastName: "", role: "volunteer" });
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleAddUser}
+                        disabled={addUserMutation.isPending}
+                      >
+                        {addUserMutation.isPending ? "Adding..." : "Add User"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
         <CardContent>
           <Table>
