@@ -1,3 +1,12 @@
+// ⚠️ DEPRECATED - This reporting dashboard is no longer in use
+// The reports tab has been removed from the main navigation
+// Reporting functionality has been consolidated into Analytics tab
+// This file is kept for reference only - DO NOT USE
+// 
+// Migration date: August 2025
+// Reason: Reports tab removed, analytics provides better insights
+// Alternative: Use Analytics tab for data visualization and insights
+
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

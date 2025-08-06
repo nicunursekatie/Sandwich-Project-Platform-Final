@@ -28,8 +28,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Real-time Chat**: Supports distinct channels (General, Core Team, Committee, Host, Driver, Recipient), real-time message broadcasting, and edit/delete functionality.
 - **Collection Walkthrough Tool**: Provides a permissions-based data entry system with a standard form and a step-by-step walkthrough for different user needs.
 - **Kudos System**: Integrated into the Gmail-style inbox with read tracking and archiving capabilities.
-- **Reports**: Focus on community impact, offering insights into total sandwiches provided, organizations served, volunteer participation, and support opportunities. Reports are available as PDFs.
-- **Analytics**: Dashboards provide key metrics, user activity tracking, and comprehensive filtering to exclude administrative accounts from analytics data.
+- **Analytics**: Comprehensive dashboard providing community impact insights including total sandwiches provided, organizations served, volunteer participation, and support opportunities with interactive visualizations. Features key metrics, user activity tracking, and comprehensive filtering to exclude administrative accounts from analytics data.
 - **User Roles**: Includes "Core Team" role with elevated permissions for trusted operational team members.
 - **Authentication UI**: Modernized login and authentication experience with enhanced landing pages, professional styling, and consistent branding.
 
