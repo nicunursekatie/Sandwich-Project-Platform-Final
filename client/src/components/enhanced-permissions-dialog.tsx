@@ -505,11 +505,18 @@ const ROLE_PRESETS = [
     color: "text-green-600 bg-green-50 border-green-200"
   },
   {
+    role: USER_ROLES.CORE_TEAM,
+    label: "Core Team",
+    description: "Enhanced permissions for trusted operational team members",
+    icon: Star,
+    color: "text-purple-600 bg-purple-50 border-purple-200"
+  },
+  {
     role: USER_ROLES.VOLUNTEER,
     label: "Volunteer",
     description: "Basic access with collection submission capabilities",
     icon: Heart,
-    color: "text-purple-600 bg-purple-50 border-purple-200"
+    color: "text-emerald-600 bg-emerald-50 border-emerald-200"
   },
   {
     role: USER_ROLES.RECIPIENT,
