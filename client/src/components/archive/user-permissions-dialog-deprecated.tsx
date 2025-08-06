@@ -1,3 +1,11 @@
+// ⚠️ DEPRECATED - This component is no longer in use
+// The system now uses EnhancedPermissionsDialog instead
+// This file is kept for reference only - DO NOT USE
+// 
+// Migration date: August 2025
+// Replaced by: client/src/components/enhanced-permissions-dialog.tsx
+// Reason: Enhanced UI with role presets and better permission categorization
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
