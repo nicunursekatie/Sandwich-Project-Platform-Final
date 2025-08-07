@@ -231,6 +231,28 @@ export function setupTempAuth(app: Express) {
         .error.show {
           display: block;
         }
+        .success-message {
+          color: #059669;
+          font-size: 14px;
+          margin-top: 0.75rem;
+          padding: 8px 12px;
+          background: #ECFDF5;
+          border: 1px solid #A7F3D0;
+          border-radius: 6px;
+          font-weight: 500;
+          display: none;
+        }
+        .success-message.show {
+          display: block;
+        }
+        .forgot-password-link {
+          text-align: center;
+          margin-top: 1rem;
+        }
+        .back-to-login {
+          text-align: center;
+          margin-top: 1rem;
+        }
         .tab-content p {
           color: #78716C; 
           margin-bottom: 1.5rem; 
@@ -265,6 +287,9 @@ export function setupTempAuth(app: Express) {
             <button type="submit" class="btn">Login</button>
           </form>
           <div id="login-error" class="error"></div>
+          <div class="forgot-password-link">
+            <a href="#" onclick="showForgotPassword()" style="color: #236383; text-decoration: none; font-size: 0.9rem;">Forgot your password?</a>
+          </div>
         </div>
 
         <div id="register-tab" class="tab-content">
@@ -290,9 +315,29 @@ export function setupTempAuth(app: Express) {
           </form>
           <div id="register-error" class="error"></div>
         </div>
+
+        <div id="forgot-password-tab" class="tab-content">
+          <p>Enter your email to receive a password reset link</p>
+          <form id="forgot-password-form">
+            <div class="form-group">
+              <label for="forgot-email">Email:</label>
+              <input type="email" id="forgot-email" name="email" required>
+            </div>
+            <button type="submit" class="btn">Send Reset Link</button>
+          </form>
+          <div id="forgot-password-error" class="error"></div>
+          <div id="forgot-password-success" class="success-message"></div>
+          <div class="back-to-login">
+            <a href="#" onclick="showTab('login')" style="color: #236383; text-decoration: none; font-size: 0.9rem;">← Back to Login</a>
+          </div>
+        </div>
       </div>
 
       <script>
+        function showForgotPassword() {
+          showTab('forgot-password');
+        }
+
         function showTab(tabName) {
           // Hide all tabs
           document.querySelectorAll('.tab-content').forEach(tab => {
@@ -302,10 +347,14 @@ export function setupTempAuth(app: Express) {
             btn.classList.remove('active');
           });
 
-          // Clear any error messages
+          // Clear any error messages and success messages
           document.querySelectorAll('.error').forEach(error => {
             error.classList.remove('show');
             error.textContent = '';
+          });
+          document.querySelectorAll('.success-message').forEach(success => {
+            success.classList.remove('show');
+            success.textContent = '';
           });
 
           // Show selected tab
@@ -367,6 +416,48 @@ export function setupTempAuth(app: Express) {
           } catch (error) {
             const errorDiv = document.getElementById('register-error');
             errorDiv.textContent = 'Registration failed: ' + error.message;
+            errorDiv.classList.add('show');
+          }
+        });
+
+        document.getElementById('forgot-password-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+
+          try {
+            const response = await fetch('/api/forgot-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            // Clear previous messages
+            const errorDiv = document.getElementById('forgot-password-error');
+            const successDiv = document.getElementById('forgot-password-success');
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+
+            if (result.success) {
+              successDiv.textContent = result.message;
+              successDiv.classList.add('show');
+              
+              // In development, show the reset link
+              if (result.resetLink) {
+                successDiv.innerHTML = result.message + '<br><br><a href="' + result.resetLink + '" style="color: #236383; text-decoration: underline;">Click here to reset your password (Development)</a>';
+              }
+              
+              // Clear the form
+              document.getElementById('forgot-email').value = '';
+            } else {
+              errorDiv.textContent = result.message || 'Request failed';
+              errorDiv.classList.add('show');
+            }
+          } catch (error) {
+            const errorDiv = document.getElementById('forgot-password-error');
+            errorDiv.textContent = 'Request failed: ' + error.message;
             errorDiv.classList.add('show');
           }
         });

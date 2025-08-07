@@ -351,6 +351,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import and register signup routes
   const { signupRoutes } = await import("./routes/signup");
   app.use("/api", signupRoutes);
+
+  // Import and register password reset routes
+  const passwordResetRoutes = await import("./routes/password-reset");
+  app.use("/api", passwordResetRoutes.default);
   
   // Register Stream Chat routes with authentication
   const { streamRoutes } = await import("./routes/stream");
