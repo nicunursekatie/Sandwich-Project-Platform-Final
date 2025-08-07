@@ -54,6 +54,7 @@ import { HelpToggle } from "@/components/help-system/HelpToggle";
 import { HelpBubble } from "@/components/help-system/HelpBubble";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
 import { KudosInbox } from "@/components/kudos-inbox";
+import { SmartGuideDemo } from "@/components/help-system/SmartGuideDemo";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -208,6 +209,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
       case "toolkit":
         return <ToolkitTabs />;
+      case "smart-guide-demo":
+        return <SmartGuideDemo />;
       case "hosts":
         return <HostsManagement />;
       case "recipients":
