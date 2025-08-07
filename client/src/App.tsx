@@ -17,6 +17,7 @@ import { SmartGuideIntegration } from "@/components/help-system/SmartGuideIntegr
 import Dashboard from "@/pages/dashboard";
 import Landing from "@/pages/landing";
 import SignupPage from "@/pages/signup";
+import ResetPassword from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -62,6 +63,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/signup" component={SignupPage} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/login">
           {() => {
             // Redirect to the backend login page
