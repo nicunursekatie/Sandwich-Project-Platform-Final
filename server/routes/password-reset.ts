@@ -44,14 +44,18 @@ router.post("/forgot-password", async (req, res) => {
 
     // Store token
     resetTokens.set(resetToken, {
-      userId: user.id,
+      userId: user.id!,
       email: user.email,
       expires
     });
 
     // Send password reset email
     try {
-      const resetLink = `${req.protocol}://${req.get('host') || 'localhost:5000'}/reset-password?token=${resetToken}`;
+      // Use the proper Replit domain for reset links
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : `${req.protocol}://${req.get('host') || 'localhost:5000'}`;
+      const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
       
       // Use SendGrid directly for password reset emails
       if (!process.env.SENDGRID_API_KEY) {
@@ -206,12 +210,12 @@ router.post("/reset-password", async (req, res) => {
     const updatedUser = {
       ...user,
       metadata: {
-        ...user.metadata,
+        ...(user.metadata || {}),
         password: newPassword
       }
     };
 
-    await storage.updateUser(user.id, updatedUser);
+    await storage.updateUser(user.id!, updatedUser);
 
     // Remove used token
     resetTokens.delete(token);
