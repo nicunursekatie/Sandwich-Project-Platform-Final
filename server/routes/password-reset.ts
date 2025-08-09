@@ -51,16 +51,37 @@ router.post("/forgot-password", async (req, res) => {
 
     // Send password reset email
     try {
-      // Use the proper Replit domain for reset links
-      const replicatedDomain = process.env.REPLIT_DEV_DOMAIN;
+      // Use the proper domain for reset links
       let baseUrl;
       
-      if (replicatedDomain) {
-        // Remove port from domain if present and ensure HTTPS
-        const cleanDomain = replicatedDomain.replace(':5000', '');
-        baseUrl = `https://${cleanDomain}`;
-      } else {
-        baseUrl = `${req.protocol}://${req.get('host') || 'localhost:5000'}`;
+      // Check if we have a custom RESET_BASE_URL environment variable (for production)
+      if (process.env.RESET_BASE_URL) {
+        baseUrl = process.env.RESET_BASE_URL;
+      } 
+      // Check if we're in a deployed environment using REPLIT_DEPLOYMENT
+      else if (process.env.REPLIT_DEPLOYMENT) {
+        // Use the production domain from REPLIT_DOMAINS or construct the .replit.app domain
+        const domains = process.env.REPLIT_DOMAINS;
+        if (domains) {
+          baseUrl = `https://${domains.split(',')[0].trim()}`;
+        } else {
+          // Construct the standard Replit app domain
+          baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
+        }
+      }
+      // Development environment
+      else {
+        // For development, try to use a cleaner URL without port if possible
+        const host = req.get('host') || 'localhost:5000';
+        const protocol = req.protocol || 'http';
+        
+        // If we have REPLIT_DOMAINS in development, use it (cleaner for emails)
+        if (process.env.REPLIT_DOMAINS) {
+          const devDomain = process.env.REPLIT_DOMAINS.split(',')[0].trim();
+          baseUrl = `https://${devDomain}`;
+        } else {
+          baseUrl = `${protocol}://${host}`;
+        }
       }
       
       const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
