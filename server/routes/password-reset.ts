@@ -105,9 +105,13 @@ router.post("/forgot-password", async (req, res) => {
               </div>
               
               <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-                <p style="color: #888; font-size: 12px; margin: 0;">
+                <p style="color: #888; font-size: 12px; margin: 0 0 10px 0;">
                   The Sandwich Project<br>
                   Fighting food insecurity one sandwich at a time
+                </p>
+                <p style="color: #888; font-size: 11px; margin: 0;">
+                  This is a password reset email sent at your request. If you did not request this, please ignore it.<br>
+                  To unsubscribe from system notifications, please contact us at katie@thesandwichproject.org
                 </p>
               </div>
             </div>
@@ -127,6 +131,9 @@ If you didn't request this password reset, please ignore this email. Your accoun
 
 The Sandwich Project
 Fighting food insecurity one sandwich at a time
+
+This is a password reset email sent at your request. If you did not request this, please ignore it.
+To unsubscribe from system notifications, please contact us at katie@thesandwichproject.org
         `
       });
 
