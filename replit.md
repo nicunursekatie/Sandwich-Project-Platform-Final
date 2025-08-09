@@ -40,7 +40,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Email**: `@sendgrid/mail`
 - **Real-time Communication**: `socket.io`, `socket.io-client`
 - **PDF Generation**: `pdfkit`
-- **Authentication**: `connect-pg-simple` (for session storage)
+- **Authentication**: `connect-pg-simple` (for session storage), SendGrid (for password reset emails)
 - **File Uploads**: `multer`
 - **Google Integration**: Google Sheets API
 - **Analytics**: Google Analytics (G-9M4XDZGN68)

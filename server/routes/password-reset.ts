@@ -52,9 +52,17 @@ router.post("/forgot-password", async (req, res) => {
     // Send password reset email
     try {
       // Use the proper Replit domain for reset links
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : `${req.protocol}://${req.get('host') || 'localhost:5000'}`;
+      const replicatedDomain = process.env.REPLIT_DEV_DOMAIN;
+      let baseUrl;
+      
+      if (replicatedDomain) {
+        // Remove port from domain if present and ensure HTTPS
+        const cleanDomain = replicatedDomain.replace(':5000', '');
+        baseUrl = `https://${cleanDomain}`;
+      } else {
+        baseUrl = `${req.protocol}://${req.get('host') || 'localhost:5000'}`;
+      }
+      
       const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
       
       // Use SendGrid directly for password reset emails
