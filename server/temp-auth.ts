@@ -444,10 +444,8 @@ export function setupTempAuth(app: Express) {
               successDiv.textContent = result.message;
               successDiv.classList.add('show');
               
-              // In development, show the reset link
-              if (result.resetLink) {
-                successDiv.innerHTML = result.message + '<br><br><a href="' + result.resetLink + '" style="color: #236383; text-decoration: underline;">Click here to reset your password (Development)</a>';
-              }
+              // Clean success message without development links
+              successDiv.textContent = result.message;
               
               // Clear the form
               document.getElementById('forgot-email').value = '';

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage-wrapper";
 import crypto from "crypto";
+import sgMail from '@sendgrid/mail';
 
 const router = Router();
 
@@ -52,8 +53,7 @@ router.post("/forgot-password", async (req, res) => {
     try {
       const resetLink = `${req.protocol}://${req.get('host') || 'localhost:5000'}/reset-password?token=${resetToken}`;
       
-      // Use SendGrid directly for password reset emails since EmailService is template-based
-      const sgMail = require('@sendgrid/mail');
+      // Use SendGrid directly for password reset emails
       if (!process.env.SENDGRID_API_KEY) {
         throw new Error('SendGrid API key not configured');
       }
@@ -130,30 +130,24 @@ Fighting food insecurity one sandwich at a time
         `
       });
 
-      console.log(`Password reset email sent successfully to: ${email}`);
+      console.log(`✅ Password reset email sent successfully to: ${email}`);
     } catch (emailError) {
-      console.error("Failed to send password reset email:", emailError);
-      // Still log the reset link for development fallback
-      console.log(`
-=== PASSWORD RESET EMAIL FAILED - DEVELOPMENT FALLBACK ===
-Email: ${email}
-Reset Link: ${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}
-Token expires: ${new Date(expires).toLocaleString()}
-===============================
-      `);
+      console.error("❌ Failed to send password reset email:", emailError);
+      // For development, log the reset link as fallback
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`
+🔧 DEVELOPMENT FALLBACK - Email failed, but reset link available:
+📧 Email: ${email}
+🔗 Reset Link: ${req.protocol}://${req.get('host') || 'localhost:5000'}/reset-password?token=${resetToken}
+⏰ Expires: ${new Date(expires).toLocaleString()}
+        `);
+      }
     }
 
-    const response: any = { 
+    res.json({ 
       success: true, 
       message: "If an account with this email exists, you will receive a password reset link."
-    };
-    
-    // Include reset link in development for testing
-    if (process.env.NODE_ENV === 'development') {
-      response.resetLink = `${req.protocol}://${req.get('host') || 'localhost:5000'}/reset-password?token=${resetToken}`;
-    }
-    
-    res.json(response);
+    });
 
   } catch (error) {
     console.error("Forgot password error:", error);
