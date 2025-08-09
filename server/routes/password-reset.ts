@@ -62,7 +62,7 @@ router.post("/forgot-password", async (req, res) => {
       
       await sgMail.send({
         to: email,
-        from: 'noreply@thesandwichproject.org',
+        from: 'katie@thesandwichproject.org',
         subject: 'Password Reset - The Sandwich Project',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
