@@ -305,10 +305,14 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 export const CHAT_PERMISSIONS = {
   general: PERMISSIONS.GENERAL_CHAT,
   committee: PERMISSIONS.COMMITTEE_CHAT,
-  hosts: PERMISSIONS.HOST_CHAT,
-  drivers: PERMISSIONS.DRIVER_CHAT,
+  host: PERMISSIONS.HOST_CHAT,        // Fixed: singular to match frontend
+  hosts: PERMISSIONS.HOST_CHAT,       // Keep plural for backwards compatibility
+  driver: PERMISSIONS.DRIVER_CHAT,    // Fixed: singular to match frontend  
+  drivers: PERMISSIONS.DRIVER_CHAT,   // Keep plural for backwards compatibility
+  recipient: PERMISSIONS.RECIPIENT_CHAT,
   recipients: PERMISSIONS.RECIPIENT_CHAT,
   core_team: PERMISSIONS.CORE_TEAM_CHAT,
+  "core-team": PERMISSIONS.CORE_TEAM_CHAT, // Also support kebab-case from frontend
   direct: PERMISSIONS.DIRECT_MESSAGES,
   groups: PERMISSIONS.GROUP_MESSAGES,
 } as const;

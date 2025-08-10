@@ -100,6 +100,10 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
       .filter(channel => {
         if (!channel.permission) return true;
         if (!user?.permissions) return false;
+        
+        // Debug logging to troubleshoot permission issues
+        console.log(`[CHAT PERMISSIONS] Channel: ${channel.id}, Required: ${channel.permission}, User has:`, user.permissions.includes(channel.permission));
+        
         return user.permissions.includes(channel.permission);
       })
       .map(channel => ({
