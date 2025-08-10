@@ -42,10 +42,11 @@ export function useSocketChat() {
 
     const newSocket = io(socketUrl, {
       path: "/socket.io/",
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"], // Try polling first, then upgrade to websocket
       upgrade: true,
-      timeout: 20000,
-      forceNew: true
+      timeout: 30000,
+      forceNew: true,
+      autoConnect: true
     });
 
     newSocket.on("connect", () => {

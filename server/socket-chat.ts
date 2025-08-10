@@ -27,16 +27,21 @@ export function setupSocketChat(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     cors: {
       origin: "*",
-      methods: ["GET", "POST"]
+      methods: ["GET", "POST"],
+      credentials: true
     },
-    path: "/socket.io/"
+    path: "/socket.io/",
+    transports: ["websocket", "polling"],
+    allowEIO3: true
   });
+
+  console.log("✓ Socket.IO server initialized on /socket.io/");
 
   // Store active users
   const activeUsers = new Map<string, ConnectedUser>();
 
   io.on("connection", (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
+    console.log(`✅ Socket.IO client connected: ${socket.id}`);
 
     // Send available rooms to connected client
     socket.on("get-rooms", () => {
