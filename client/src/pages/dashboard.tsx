@@ -51,6 +51,7 @@ import ImportantDocuments from "@/pages/important-documents";
 import GmailStyleInbox from "@/components/gmail-style-inbox";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
 import { KudosInbox } from "@/components/kudos-inbox";
+import SocketChatHub from "@/components/socket-chat-hub";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -181,7 +182,20 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "stream-messages":
         return <RealTimeMessages />;
       case "chat":
-        return <RealTimeMessages />;
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
+                <MessageCircle className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
+                <p className="text-gray-600">Real-time communication with your team across different channels</p>
+              </div>
+            </div>
+            <SocketChatHub />
+          </div>
+        );
       case "kudos":
         return (
           <div className="space-y-6 p-6">
