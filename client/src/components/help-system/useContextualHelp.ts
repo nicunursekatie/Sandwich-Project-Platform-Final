@@ -17,7 +17,11 @@ export function useContextualHelp(id: string, options: Partial<UseContextualHelp
   };
 
   const shouldShowHelp = () => {
-    // Auto-help completely disabled - must be manually triggered
+    // Help system permanently disabled
+    const isHelpDisabled = localStorage.getItem('help-system-disabled') === 'true';
+    if (isHelpDisabled) return false;
+    
+    // All other help also disabled to prevent guides
     return false;
   };
 
