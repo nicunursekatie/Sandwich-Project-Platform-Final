@@ -623,7 +623,9 @@ export default function EnhancedPermissionsDialog({
 
   const handleSave = () => {
     if (user) {
-      onSave(user.id, selectedRole, selectedPermissions);
+      // Deduplicate permissions before saving to prevent database inconsistencies
+      const deduplicatedPermissions = [...new Set(selectedPermissions)];
+      onSave(user.id, selectedRole, deduplicatedPermissions);
       onOpenChange(false);
     }
   };
