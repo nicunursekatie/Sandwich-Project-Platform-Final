@@ -12,7 +12,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LoadingState } from "@/components/ui/loading";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { SmartGuideIntegration } from "@/components/help-system/SmartGuideIntegration";
+
 
 import Dashboard from "@/pages/dashboard";
 import Landing from "@/pages/landing";
@@ -145,10 +145,8 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <SmartGuideIntegration>
             <Toaster />
             <Router />
-          </SmartGuideIntegration>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
