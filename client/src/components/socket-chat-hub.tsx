@@ -98,7 +98,8 @@ export default function SocketChatHub() {
     });
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | undefined) => {
+    if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
@@ -195,12 +196,12 @@ export default function SocketChatHub() {
                     <div key={message.id} className="flex gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="text-xs">
-                          {getInitials(message.username)}
+                          {getInitials(message.userName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <span className="font-medium text-sm">{message.username}</span>
+                          <span className="font-medium text-sm">{message.userName}</span>
                           <span className="text-xs text-muted-foreground">
                             {formatTime(message.timestamp)}
                           </span>
