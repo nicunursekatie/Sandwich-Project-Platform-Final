@@ -50,7 +50,7 @@ import StreamMessagesPage from "@/pages/stream-messages-clean";
 import DirectMessages from "@/pages/direct-messages";
 import GmailStyleInbox from "@/components/gmail-style-inbox";
 import { HelpProvider } from "@/components/help-system/HelpProvider";
-import { HelpToggle } from "@/components/help-system/HelpToggle";
+
 import { HelpBubble } from "@/components/help-system/HelpBubble";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
 import { KudosInbox } from "@/components/kudos-inbox";
@@ -373,7 +373,6 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
             <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <MessageNotifications user={user} />
-          <HelpToggle />
           <button
             onClick={(e) => {
               e.preventDefault();
