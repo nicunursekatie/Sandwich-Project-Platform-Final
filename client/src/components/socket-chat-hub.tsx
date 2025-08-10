@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSocketChat, ChatMessage, ChatRoom } from "@/hooks/useSocketChat";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatMessageLikeButton } from "./chat-message-like-button";
+import { MentionInput, MessageWithMentions } from "@/components/mention-input";
 import { 
   MessageSquare, 
   Send, 
@@ -205,7 +206,7 @@ export default function SocketChatHub() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-700 mt-1 break-words">
-                          {message.content}
+                          <MessageWithMentions content={message.content} />
                         </p>
                         {/* Message actions */}
                         <div className="flex items-center mt-2 space-x-2">
@@ -219,24 +220,15 @@ export default function SocketChatHub() {
               </div>
             </ScrollArea>
 
-            {/* Message Input */}
+            {/* Message Input with Mentions */}
             <div className="p-4 border-t">
-              <div className="flex gap-2">
-                <Input
-                  placeholder={`Message ${rooms.find(r => r.id === currentRoom)?.name || 'room'}...`}
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={!connected}
-                />
-                <Button 
-                  onClick={handleSendMessage}
-                  disabled={!connected || !newMessage.trim()}
-                  size="sm"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+              <MentionInput
+                value={newMessage}
+                onChange={setNewMessage}
+                onSend={handleSendMessage}
+                placeholder={`Type @ to mention someone in ${rooms.find(r => r.id === currentRoom)?.name || 'room'}...`}
+                disabled={!connected}
+              />
             </div>
           </>
         ) : (

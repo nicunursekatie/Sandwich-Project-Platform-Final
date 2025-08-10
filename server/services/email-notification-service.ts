@@ -1,7 +1,7 @@
 import sgMail from '@sendgrid/mail';
-import { db } from "../storage";
+import { db } from "../db";
 import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, like, sql } from "drizzle-orm";
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -59,34 +59,21 @@ export class EmailNotificationService {
 
     try {
       // Search by display name, email, firstName, or lastName
-      const mentionedUsers = await db
-        .select({
-          id: users.id,
-          email: users.email,
-          displayName: users.displayName,
-          firstName: users.firstName,
-          lastName: users.lastName
-        })
-        .from(users)
-        .where(
-          // Check if any mention matches display name, email, first name, or last name
-          (builder) => {
-            let condition = builder.$false();
-            
-            for (const mention of mentions) {
-              const lowerMention = mention.toLowerCase();
-              condition = builder.or(
-                condition,
-                eq(builder.lower(users.displayName), lowerMention),
-                eq(builder.lower(users.email), lowerMention),
-                eq(builder.lower(users.firstName), lowerMention),
-                eq(builder.lower(users.lastName), lowerMention)
-              );
-            }
-            
-            return condition;
-          }
-        );
+      const allUsers = await db.select().from(users);
+      const mentionedUsers = allUsers.filter(user => {
+        const lowerEmail = user.email?.toLowerCase() || '';
+        const lowerDisplayName = user.displayName?.toLowerCase() || '';
+        const lowerFirstName = user.firstName?.toLowerCase() || '';
+        const lowerLastName = user.lastName?.toLowerCase() || '';
+        
+        return mentions.some(mention => {
+          const lowerMention = mention.toLowerCase();
+          return lowerEmail === lowerMention ||
+                 lowerDisplayName === lowerMention ||
+                 lowerFirstName === lowerMention ||
+                 lowerLastName === lowerMention;
+        });
+      });
 
       return mentionedUsers.filter(user => user.email); // Only return users with email addresses
     } catch (error) {

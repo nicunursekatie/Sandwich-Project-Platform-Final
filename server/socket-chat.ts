@@ -2,7 +2,7 @@ import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "http";
 import { storage } from "./storage";
 import { EmailNotificationService } from "./services/email-notification-service";
-import { db } from "./storage";
+import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
