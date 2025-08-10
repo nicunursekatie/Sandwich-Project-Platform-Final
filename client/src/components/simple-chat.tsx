@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { MentionInput, MessageWithMentions } from "@/components/mention-input";
 
 interface ChatMessage {
   id: string;
@@ -162,7 +163,9 @@ export default function SimpleChat({ channel, title, icon }: SimpleChatProps) {
                   </span>
                 </div>
                 <div className="bg-muted p-3 rounded-lg">
-                  <p className="text-sm">{msg.content}</p>
+                  <p className="text-sm">
+                    <MessageWithMentions content={msg.content} />
+                  </p>
                 </div>
               </div>
             ))
@@ -170,23 +173,15 @@ export default function SimpleChat({ channel, title, icon }: SimpleChatProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Message input */}
-        <div className="flex-shrink-0 flex gap-2">
-          <Input
+        {/* Message input with mentions */}
+        <div className="flex-shrink-0">
+          <MentionInput
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={isConnected ? "Type your message..." : "Connecting..."}
+            onChange={setMessage}
+            onSend={sendMessage}
+            placeholder={isConnected ? "Type @ to mention someone..." : "Connecting..."}
             disabled={!isConnected}
-            className="flex-1"
           />
-          <Button 
-            onClick={sendMessage} 
-            disabled={!message.trim() || !isConnected}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
         </div>
       </CardContent>
     </Card>
