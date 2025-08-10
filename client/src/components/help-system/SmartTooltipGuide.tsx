@@ -221,6 +221,8 @@ const createGuideSequences = (context: UserContext): GuideSequence[] => {
 };
 
 export function SmartTooltipGuide({ userContext, className = '', showGlobalGuide = false }: SmartTooltipGuideProps) {
+  // Help system completely disabled - return null to prevent any rendering
+  return null;
   const [isVisible, setIsVisible] = useState(false);
   const [activeSequence, setActiveSequence] = useState<GuideSequence | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -283,8 +285,8 @@ export function SmartTooltipGuide({ userContext, className = '', showGlobalGuide
 
   return (
     <div className={`smart-tooltip-guide ${className}`}>
-      {/* Guide Launcher Button */}
-      {!isVisible && (
+      {/* Guide Launcher Button - DISABLED */}
+      {false && !isVisible && (
         <Button
           variant="outline"
           size="sm"
