@@ -190,9 +190,8 @@ export function HelpBubble({ content, trigger = 'click', className = '', onDismi
                       className="text-xs"
                       onClick={() => {
                         action.action();
-                        if (action.primary) {
-                          handleDismiss();
-                        }
+                        // Dismiss the bubble for both primary and secondary actions
+                        handleDismiss();
                       }}
                     >
                       {action.label}
