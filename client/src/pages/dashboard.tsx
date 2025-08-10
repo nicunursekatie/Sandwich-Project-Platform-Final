@@ -5,7 +5,7 @@ import squareSandwichLogo from "@assets/LOGOS/sandwich logo.png";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectList from "@/components/project-list";
 import WeeklySandwichForm from "@/components/weekly-sandwich-form";
-import EnhancedChat from "@/components/enhanced-chat";
+
 import CommitteeChat from "@/components/committee-chat";
 import GoogleDriveLinks from "@/components/google-drive-links";
 import DashboardOverview from "@/components/dashboard-overview";
@@ -44,10 +44,10 @@ import InboxPage from "@/pages/inbox";
 import MessagingSystem from "@/components/messaging-system";
 import RealTimeMessages from "@/pages/real-time-messages";
 import Governance from "@/pages/governance";
-import UnifiedMessagesPage from "@/pages/unified-messages";
+
 import ImportantDocuments from "@/pages/important-documents";
-import StreamMessagesPage from "@/pages/stream-messages-clean";
-import DirectMessages from "@/pages/direct-messages";
+
+
 import GmailStyleInbox from "@/components/gmail-style-inbox";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
 import { KudosInbox } from "@/components/kudos-inbox";
@@ -173,15 +173,15 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "real-time-messages":
         return <RealTimeMessages />;
       case "messages":
-        return <DirectMessages />;
+        return <RealTimeMessages />;
       case "gmail-inbox":
         return <GmailStyleInbox />;
       case "inbox":
         return <InboxPage />;
       case "stream-messages":
-        return <StreamMessagesPage />;
+        return <RealTimeMessages />;
       case "chat":
-        return <EnhancedChat />;
+        return <RealTimeMessages />;
       case "kudos":
         return (
           <div className="space-y-6 p-6">
