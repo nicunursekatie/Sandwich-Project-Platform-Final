@@ -325,13 +325,23 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
     CHAT_PERMISSIONS[chatRoom as keyof typeof CHAT_PERMISSIONS];
   if (!requiredPermission) return false;
 
-  return user.permissions.includes(requiredPermission);
+  // Use the enhanced hasPermission function that checks case variations
+  return hasPermission(user, requiredPermission);
 }
 
 // Function to check if user has a specific permission
 export function hasPermission(user: any, permission: string): boolean {
   if (!user || !user.permissions) return false;
-  return user.permissions.includes(permission);
+  
+  // Check for exact match first
+  if (user.permissions.includes(permission)) return true;
+  
+  // Check for case variations to handle mixed case permissions
+  const lowerPermission = permission.toLowerCase();
+  const upperPermission = permission.toUpperCase();
+  
+  return user.permissions.includes(lowerPermission) || 
+         user.permissions.includes(upperPermission);
 }
 
 // Function to check if user can edit a specific collection entry
