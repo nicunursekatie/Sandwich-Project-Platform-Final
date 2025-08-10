@@ -65,7 +65,7 @@ export function HelpProvider({ children }: HelpProviderProps) {
         tone: 'encouraging',
         character: 'friend',
         position: 'bottom',
-        showOnFirstVisit: true
+        showOnFirstVisit: false  // Disabled auto-show
       }],
       ['collections-form', {
         id: 'collections-form',
@@ -138,7 +138,7 @@ export function HelpProvider({ children }: HelpProviderProps) {
         tone: 'supportive',
         character: 'friend',
         position: 'bottom',
-        showOnFirstVisit: true,
+        showOnFirstVisit: false,  // Disabled auto-show
         actions: [
           {
             label: 'Take a Quick Tour',
