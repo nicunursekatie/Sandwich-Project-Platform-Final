@@ -36,31 +36,24 @@ export function useSocketChat() {
   useEffect(() => {
     if (!user) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    let socketUrl: string;
-    
-    if (window.location.hostname.includes('.replit.dev') || window.location.hostname.includes('.replit.app')) {
-      socketUrl = `${protocol}//${window.location.hostname}`;
-    } else {
-      const port = window.location.port || '5000';
-      socketUrl = `${protocol}//${window.location.hostname}:${port}`;
-    }
+    // Use current origin for Socket.IO connection
+    const socketUrl = window.location.origin;
+    console.log("Connecting to Socket.IO at:", socketUrl);
 
     const newSocket = io(socketUrl, {
       path: "/socket.io/",
-      transports: ["websocket", "polling"]
+      transports: ["websocket", "polling"],
+      upgrade: true,
+      timeout: 20000,
+      forceNew: true
     });
 
     newSocket.on("connect", () => {
       setConnected(true);
       console.log("Socket.io connected");
       
-      // Join with user info
-      newSocket.emit("join", {
-        userId: (user as any)?.id || 'anonymous',
-        username: (user as any)?.firstName || (user as any)?.email || 'Anonymous',
-        userPermissions: (user as any)?.permissions || []
-      });
+      // Get available rooms first
+      newSocket.emit("get-rooms");
     });
 
     newSocket.on("disconnect", () => {
@@ -70,24 +63,32 @@ export function useSocketChat() {
 
     newSocket.on("rooms", ({ available }) => {
       setRooms(available);
+      console.log("Received rooms:", available);
       // Auto-select first room if none selected
       if (available.length > 0 && !currentRoom) {
         setCurrentRoom(available[0].id);
       }
     });
 
-    newSocket.on("new_message", (message: ChatMessage) => {
+    newSocket.on("new-message", (message: ChatMessage) => {
       setMessages(prev => ({
         ...prev,
         [message.room]: [...(prev[message.room] || []), message]
       }));
     });
 
-    newSocket.on("room_history", ({ room, messages: roomMessages }) => {
-      setMessages(prev => ({
-        ...prev,
-        [room]: roomMessages
-      }));
+    newSocket.on("message-history", (messages: ChatMessage[]) => {
+      if (messages.length > 0) {
+        const room = messages[0].room;
+        setMessages(prev => ({
+          ...prev,
+          [room]: messages
+        }));
+      }
+    });
+
+    newSocket.on("joined-channel", ({ channel }) => {
+      console.log(`Successfully joined channel: ${channel}`);
     });
 
     newSocket.on("user_joined", ({ userId, username, room }) => {
@@ -117,18 +118,27 @@ export function useSocketChat() {
 
   // Send message
   const sendMessage = useCallback((room: string, content: string) => {
-    if (socket && connected) {
-      socket.emit("send_message", { room, content });
+    if (socket && connected && user) {
+      socket.emit("send-message", { 
+        channel: room, 
+        content 
+      });
     }
-  }, [socket, connected]);
+  }, [socket, connected, user]);
 
   // Join room and get history
   const joinRoom = useCallback((roomId: string) => {
-    if (socket && connected) {
+    if (socket && connected && user) {
       setCurrentRoom(roomId);
-      socket.emit("get_room_history", { room: roomId });
+      const userName = (user as any)?.firstName || (user as any)?.email || 'Anonymous';
+      const userId = (user as any)?.id || 'anonymous';
+      socket.emit("join-channel", { 
+        channel: roomId, 
+        userId: userId,
+        userName: userName
+      });
     }
-  }, [socket, connected]);
+  }, [socket, connected, user]);
 
   return {
     connected,

@@ -13,6 +13,7 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
   channel: string;
+  room: string;  // Add room for client compatibility
   edited?: boolean;
 }
 
@@ -37,6 +38,19 @@ export function setupSocketChat(httpServer: HttpServer) {
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
+    // Send available rooms to connected client
+    socket.on("get-rooms", () => {
+      const availableRooms = [
+        { id: "general", name: "General Chat" },
+        { id: "core-team", name: "Core Team" },
+        { id: "committee", name: "Committee" },
+        { id: "host", name: "Host Chat" },
+        { id: "driver", name: "Driver Chat" },
+        { id: "recipient", name: "Recipient Chat" }
+      ];
+      socket.emit("rooms", { available: availableRooms });
+    });
+
     // Handle joining a channel
     socket.on("join-channel", async (data: { channel: string; userId: string; userName: string }) => {
       try {
@@ -60,7 +74,8 @@ export function setupSocketChat(httpServer: HttpServer) {
           // Convert database timestamps to proper Date objects and reverse to send oldest first
           const formattedMessages = messageHistory.map(msg => ({
             ...msg,
-            timestamp: new Date(msg.createdAt)
+            timestamp: new Date(msg.createdAt),
+            room: msg.channel  // Add room property for client compatibility
           })).reverse();
           socket.emit("message-history", formattedMessages);
           
@@ -107,7 +122,8 @@ export function setupSocketChat(httpServer: HttpServer) {
           userName: user.userName,
           content,
           timestamp: savedMessage.createdAt,
-          channel
+          channel,
+          room: channel  // Add room property for client compatibility
         };
 
         // Broadcast to all users in the channel
