@@ -99,12 +99,20 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
     const initialChannels = CHAT_CHANNELS
       .filter(channel => {
         if (!channel.permission) return true;
-        if (!user?.permissions) return false;
+        if (!user?.permissions || !Array.isArray(user.permissions)) {
+          console.log(`[CHAT PERMISSIONS] Channel: ${channel.id}, No permissions found for user`);
+          return false;
+        }
+        
+        // Check both lowercase and uppercase versions of permissions
+        const hasLowercase = user.permissions.includes(channel.permission);
+        const hasUppercase = user.permissions.includes(channel.permission.toUpperCase());
+        const hasPermission = hasLowercase || hasUppercase;
         
         // Debug logging to troubleshoot permission issues
-        console.log(`[CHAT PERMISSIONS] Channel: ${channel.id}, Required: ${channel.permission}, User has:`, user.permissions.includes(channel.permission));
+        console.log(`[CHAT PERMISSIONS] Channel: ${channel.id}, Required: ${channel.permission}, Has lowercase: ${hasLowercase}, Has uppercase: ${hasUppercase}, Access granted: ${hasPermission}`);
         
-        return user.permissions.includes(channel.permission);
+        return hasPermission;
       })
       .map(channel => ({
         ...channel,
@@ -120,8 +128,8 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
     initialChannels.forEach(channel => {
       socketInstance.emit("join-channel", {
         channel: channel.id,
-        userId: user.id,
-        userName: user.firstName || user.email || "User"
+        userId: user?.id || "unknown",
+        userName: user?.firstName || user?.email || "User"
       });
     });
 
@@ -133,7 +141,7 @@ export default function LiveChatHub({ onChannelSelect, selectedChannel }: LiveCh
           if (ch.id === channelId) {
             const formattedHistory = history.map(msg => ({
               ...msg,
-              timestamp: new Date(msg.timestamp || msg.createdAt)
+              timestamp: new Date(msg.timestamp || (msg as any).createdAt || Date.now())
             }));
             return {
               ...ch,
