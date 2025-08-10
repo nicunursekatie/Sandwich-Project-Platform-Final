@@ -1,6 +1,10 @@
 import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "http";
 import { storage } from "./storage";
+import { EmailNotificationService } from "./services/email-notification-service";
+import { db } from "./storage";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 interface ChatMessage {
   id: string;
@@ -108,6 +112,31 @@ export function setupSocketChat(httpServer: HttpServer) {
 
         // Broadcast to all users in the channel
         io.to(channel).emit("new-message", message);
+        
+        // Process mentions and send email notifications
+        try {
+          // Get sender's email for notifications
+          const senderDetails = await db
+            .select({ email: users.email })
+            .from(users)
+            .where(eq(users.id, user.id))
+            .limit(1);
+          
+          const senderEmail = senderDetails[0]?.email || 'unknown@example.com';
+          
+          // Process message for mentions and send notifications
+          await EmailNotificationService.processChatMessage(
+            content,
+            user.id,
+            user.userName,
+            senderEmail,
+            channel,
+            savedMessage.id
+          );
+        } catch (notificationError) {
+          console.error("Error processing chat mention notifications:", notificationError);
+          // Don't fail the message send if notifications fail
+        }
         
         console.log(`Message saved and sent to ${channel} by ${user.userName}: ${content}`);
       } catch (error) {
