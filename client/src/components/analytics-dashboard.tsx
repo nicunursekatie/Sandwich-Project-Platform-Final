@@ -562,7 +562,14 @@ export default function AnalyticsDashboard() {
                   <p className="text-sm text-orange-700 mb-3">
                     {analyticsData.insights.summerDipPercent}% dip detected. Target corporate groups and summer camps.
                   </p>
-                  <button className="text-xs bg-orange-600 text-white px-3 py-1 rounded hover:bg-orange-700">
+                  <button 
+                    className="text-xs bg-orange-600 text-white px-3 py-1 rounded hover:bg-orange-700 transition-colors"
+                    onClick={() => {
+                      // Navigate to projects section to create summer outreach initiative
+                      window.location.href = '/dashboard?section=projects';
+                    }}
+                    title="Create new summer outreach project to address seasonal dip"
+                  >
                     📋 Plan Summer Outreach
                   </button>
                 </div>
@@ -575,7 +582,14 @@ export default function AnalyticsDashboard() {
                   <p className="text-sm text-green-700 mb-3">
                     Historical peak month. Schedule extra volunteers and capacity.
                   </p>
-                  <button className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                  <button 
+                    className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
+                    onClick={() => {
+                      // Navigate to meetings section to schedule November planning
+                      window.location.href = '/dashboard?section=meetings';
+                    }}
+                    title="Schedule November resource planning meeting and volunteer coordination"
+                  >
                     📅 Schedule Nov Resources
                   </button>
                 </div>
@@ -588,7 +602,14 @@ export default function AnalyticsDashboard() {
                   <p className="text-sm text-purple-700 mb-3">
                     Historic 2M milestone achieved! Total: {(analyticsData.totalSandwiches / 1000000).toFixed(2)}M sandwiches delivered to community.
                   </p>
-                  <button className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">
+                  <button 
+                    className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 transition-colors"
+                    onClick={() => {
+                      // Navigate to Gmail inbox to compose celebration message
+                      window.location.href = '/dashboard?section=gmail-inbox';
+                    }}
+                    title="Share 2M+ milestone achievement with the community"
+                  >
                     🎉 Share Success Story
                   </button>
                 </div>
