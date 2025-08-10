@@ -8,6 +8,8 @@ interface HelpToggleProps {
 }
 
 export function HelpToggle({ className = '' }: HelpToggleProps) {
+  // Help system completely disabled - return null to prevent any rendering
+  return null;
   const { isHelpEnabled, toggleHelpMode } = useHelp();
 
   return (

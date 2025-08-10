@@ -49,12 +49,8 @@ import ImportantDocuments from "@/pages/important-documents";
 import StreamMessagesPage from "@/pages/stream-messages-clean";
 import DirectMessages from "@/pages/direct-messages";
 import GmailStyleInbox from "@/components/gmail-style-inbox";
-import { HelpProvider } from "@/components/help-system/HelpProvider";
-
-import { HelpBubble } from "@/components/help-system/HelpBubble";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
 import { KudosInbox } from "@/components/kudos-inbox";
-import { SmartGuideDemo } from "@/components/help-system/SmartGuideDemo";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -209,8 +205,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
       case "toolkit":
         return <ToolkitTabs />;
-      case "smart-guide-demo":
-        return <SmartGuideDemo />;
+
       case "hosts":
         return <HostsManagement />;
       case "recipients":
@@ -307,7 +302,6 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
   }
 
   return (
-    <HelpProvider>
       <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
       {/* Announcement Banner */}
       <AnnouncementBanner />
@@ -491,6 +485,5 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         </div>
       </div>
     </div>
-    </HelpProvider>
   );
 }
