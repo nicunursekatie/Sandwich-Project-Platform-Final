@@ -22,9 +22,37 @@ export function setupChatSocket(io: SocketServer) {
     console.log("User connected to chat:", socket.id);
     
     // Join a chat channel
-    socket.on("join-channel", (channel: string) => {
-      socket.join(channel);
-      console.log(`User ${socket.id} joined channel: ${channel}`);
+    socket.on("join-channel", async (data: { channel: string; userId: string }) => {
+      try {
+        const { channel, userId } = data;
+        
+        if (!userId) {
+          socket.emit("error", { message: "User ID required" });
+          return;
+        }
+        
+        // Get user from database to check permissions
+        const user = await storage.getUser(userId);
+        if (!user || !user.isActive) {
+          socket.emit("error", { message: "User not found or inactive" });
+          return;
+        }
+        
+        // Import permission checking function
+        const { hasAccessToChat } = await import("../../shared/auth-utils.js");
+        
+        // Check if user has permission to access this channel
+        if (!hasAccessToChat(user, channel)) {
+          socket.emit("error", { message: "Access denied to this chat channel" });
+          return;
+        }
+        
+        socket.join(channel);
+        console.log(`User ${userId} joined channel: ${channel}`);
+      } catch (error) {
+        console.error("Error joining channel:", error);
+        socket.emit("error", { message: "Failed to join channel" });
+      }
     });
     
     // Leave a chat channel
@@ -37,6 +65,27 @@ export function setupChatSocket(io: SocketServer) {
     socket.on("send-message", async (data: { channel: string; content: string; userId: string; userName: string }) => {
       try {
         const { channel, content, userId, userName } = data;
+        
+        if (!userId || !content?.trim()) {
+          socket.emit("error", { message: "User ID and message content required" });
+          return;
+        }
+        
+        // Get user from database to check permissions
+        const user = await storage.getUser(userId);
+        if (!user || !user.isActive) {
+          socket.emit("error", { message: "User not found or inactive" });
+          return;
+        }
+        
+        // Import permission checking function
+        const { hasAccessToChat } = await import("../../shared/auth-utils.js");
+        
+        // Check if user has permission to send messages in this channel
+        if (!hasAccessToChat(user, channel)) {
+          socket.emit("error", { message: "Access denied to this chat channel" });
+          return;
+        }
         
         // Save message to database
         const [newMessage] = await db
@@ -115,10 +164,18 @@ router.get("/chat/:channel", async (req, res) => {
   console.log("[DEBUG] Chat GET route hit for channel:", req.params.channel);
   try {
     const { channel } = req.params;
-    const userId = (req as any).user?.id;
+    const user = (req as any).user;
     
-    if (!userId) {
+    if (!user?.id) {
       return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Import permission checking function
+    const { hasAccessToChat } = await import("../../shared/auth-utils.js");
+    
+    // Check if user has permission to view messages in this channel
+    if (!hasAccessToChat(user, channel)) {
+      return res.status(403).json({ error: "Access denied to this chat channel" });
     }
 
     const messages = await db
@@ -149,6 +206,14 @@ router.post("/chat/:channel", async (req, res) => {
 
     if (!content || !content.trim()) {
       return res.status(400).json({ error: "Message content is required" });
+    }
+
+    // Import permission checking function
+    const { hasAccessToChat } = await import("../../shared/auth-utils.js");
+    
+    // Check if user has permission to send messages in this channel
+    if (!hasAccessToChat(user, channel)) {
+      return res.status(403).json({ error: "Access denied to this chat channel" });
     }
 
     const userName = user.firstName || user.email || "Unknown User";

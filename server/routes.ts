@@ -507,7 +507,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { id } = req.params;
         const { role, permissions } = req.body;
-        const updatedUser = await storage.updateUser(id, { role, permissions });
+        
+        // Deduplicate permissions to prevent database inconsistencies
+        const deduplicatedPermissions = permissions ? [...new Set(permissions)] : [];
+        
+        const updatedUser = await storage.updateUser(id, { 
+          role, 
+          permissions: deduplicatedPermissions 
+        });
         res.json(updatedUser);
       } catch (error) {
         console.error("Error updating user:", error);
