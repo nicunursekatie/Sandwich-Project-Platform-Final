@@ -6,7 +6,7 @@ import { useAuth } from "./useAuth";
 export interface ChatMessage {
   id: string;
   userId: string;
-  username: string;
+  userName: string;
   content: string;
   timestamp: Date;
   room: string;
@@ -19,7 +19,7 @@ export interface ChatRoom {
 
 export interface ChatUser {
   userId: string;
-  username: string;
+  userName: string;
   room: string;
 }
 
