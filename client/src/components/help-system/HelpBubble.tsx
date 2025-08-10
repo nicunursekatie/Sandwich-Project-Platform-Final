@@ -66,12 +66,13 @@ export function HelpBubble({ content, trigger = 'click', className = '', onDismi
   const characterInfo = getCharacterMessage(content);
 
   useEffect(() => {
-    // Auto-show completely disabled to prevent guide spam
-    // All guides must be manually triggered
-    if (content.showOnFirstVisit && !hasBeenShown) {
-      // Mark as seen immediately without showing
+    // Help system completely disabled - never show any guides
+    const isHelpDisabled = localStorage.getItem('help-system-disabled') === 'true';
+    if (isHelpDisabled || content.showOnFirstVisit) {
+      // Mark as seen and never show
       localStorage.setItem(`help-${content.id}-seen`, 'true');
       setHasBeenShown(true);
+      setIsVisible(false); // Force invisible
     }
   }, [content.id, content.showOnFirstVisit, hasBeenShown]);
 

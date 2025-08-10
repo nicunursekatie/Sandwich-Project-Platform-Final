@@ -118,7 +118,9 @@ export function ContextualTooltip({
   }, [content.id, content.dismissible]);
 
   const handleShow = () => {
-    if (disabled || isDismissed) return;
+    // Check if help system is disabled
+    const isHelpDisabled = localStorage.getItem('help-system-disabled') === 'true';
+    if (disabled || isDismissed || isHelpDisabled) return;
     setIsVisible(true);
     onShow?.();
   };

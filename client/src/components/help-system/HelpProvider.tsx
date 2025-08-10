@@ -66,20 +66,21 @@ export function HelpProvider({ children }: HelpProviderProps) {
       }
     }
     keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Permanently disable help system
+    localStorage.setItem('help-system-disabled', 'true');
   }, []);
 
-  // Initialize default help content
+  // Initialize default help content - DISABLED
   useEffect(() => {
+    // All help content registration disabled to prevent any guides from appearing
+    const isHelpDisabled = localStorage.getItem('help-system-disabled') === 'true';
+    if (isHelpDisabled) {
+      return; // Exit early - no help content registered
+    }
+    
     const defaultHelpContent: Array<[string, HelpContent]> = [
-      ['dashboard-welcome', {
-        id: 'dashboard-welcome',
-        title: 'Welcome to TSP!',
-        message: "I'm so glad you're here! This dashboard is your central hub for everything related to The Sandwich Project. From here, you can track collections, connect with your team, and make a real difference in your community.",
-        tone: 'encouraging',
-        character: 'friend',
-        position: 'bottom',
-        showOnFirstVisit: false  // Disabled auto-show
-      }],
+      // All content commented out to prevent any guides
       ['collections-form', {
         id: 'collections-form',
         title: 'Recording Your Collections',
