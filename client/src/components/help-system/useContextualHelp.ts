@@ -17,14 +17,8 @@ export function useContextualHelp(id: string, options: Partial<UseContextualHelp
   };
 
   const shouldShowHelp = () => {
-    if (!isHelpEnabled || !helpContent) return false;
-    
-    if (options.showOnce) {
-      const hasShown = localStorage.getItem(`help-${id}-shown`);
-      return !hasShown;
-    }
-    
-    return true;
+    // Auto-help completely disabled - must be manually triggered
+    return false;
   };
 
   const markAsShown = () => {

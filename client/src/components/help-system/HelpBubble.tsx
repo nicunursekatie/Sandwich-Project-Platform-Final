@@ -66,18 +66,12 @@ export function HelpBubble({ content, trigger = 'click', className = '', onDismi
   const characterInfo = getCharacterMessage(content);
 
   useEffect(() => {
-    // Auto-show on first visit if configured (now disabled by default)
+    // Auto-show completely disabled to prevent guide spam
+    // All guides must be manually triggered
     if (content.showOnFirstVisit && !hasBeenShown) {
-      const hasSeenBefore = localStorage.getItem(`help-${content.id}-seen`);
-      if (!hasSeenBefore) {
-        // Only show if explicitly enabled (prevents spam)
-        const isExplicitlyEnabled = localStorage.getItem('enable-auto-help') === 'true';
-        if (isExplicitlyEnabled) {
-          setIsVisible(true);
-          setHasBeenShown(true);
-          localStorage.setItem(`help-${content.id}-seen`, 'true');
-        }
-      }
+      // Mark as seen immediately without showing
+      localStorage.setItem(`help-${content.id}-seen`, 'true');
+      setHasBeenShown(true);
     }
   }, [content.id, content.showOnFirstVisit, hasBeenShown]);
 

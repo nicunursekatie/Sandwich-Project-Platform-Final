@@ -55,6 +55,19 @@ export function HelpProvider({ children }: HelpProviderProps) {
     return registeredHelp.get(id) || null;
   }, [registeredHelp]);
 
+  // Clear any existing guide localStorage entries on startup
+  useEffect(() => {
+    // Clear all help-related localStorage entries to prevent guide spam
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('help-') || key.startsWith('tooltip-dismissed-'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+  }, []);
+
   // Initialize default help content
   useEffect(() => {
     const defaultHelpContent: Array<[string, HelpContent]> = [
