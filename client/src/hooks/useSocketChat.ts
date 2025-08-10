@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./useAuth";
-import { getUserPermissions } from "@shared/auth-utils";
+// Remove getUserPermissions import as it doesn't exist
 
 export interface ChatMessage {
   id: string;
@@ -56,11 +56,10 @@ export function useSocketChat() {
       console.log("Socket.io connected");
       
       // Join with user info
-      const userPermissions = getUserPermissions(user);
       newSocket.emit("join", {
         userId: (user as any)?.id || 'anonymous',
         username: (user as any)?.firstName || (user as any)?.email || 'Anonymous',
-        userPermissions: userPermissions
+        userPermissions: (user as any)?.permissions || []
       });
     });
 
