@@ -57,7 +57,7 @@ import {
   users,
 } from "@shared/schema";
 
-import { getDefaultPermissionsForRole } from "@shared/auth-utils";
+import { getDefaultPermissionsForRole, hasPermission, hasAccessToChat } from "@shared/auth-utils";
 
 // Extend Request interface to include file metadata
 declare global {
@@ -3815,6 +3815,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  // Permission system validation test endpoint
+  app.get("/api/test-permissions", isAuthenticated, (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const permissionTests = [
+        { permission: 'host_chat', description: 'host_chat (lowercase)' },
+        { permission: 'HOST_CHAT', description: 'HOST_CHAT (uppercase)' },
+        { permission: 'driver_chat', description: 'driver_chat (lowercase)' },
+        { permission: 'DRIVER_CHAT', description: 'DRIVER_CHAT (uppercase)' },
+        { permission: 'core_team_chat', description: 'core_team_chat (lowercase)' },
+        { permission: 'CORE_TEAM_CHAT', description: 'CORE_TEAM_CHAT (uppercase)' },
+        { permission: 'recipient_chat', description: 'recipient_chat (lowercase)' },
+        { permission: 'RECIPIENT_CHAT', description: 'RECIPIENT_CHAT (uppercase)' },
+        { permission: 'nonexistent_permission', description: 'nonexistent_permission (should fail)' }
+      ];
+
+      const chatAccessTests = [
+        { chatRoom: 'host', description: 'host chat access' },
+        { chatRoom: 'driver', description: 'driver chat access' },
+        { chatRoom: 'core-team', description: 'core-team chat access' },
+        { chatRoom: 'recipient', description: 'recipient chat access' },
+        { chatRoom: 'general', description: 'general chat access' }
+      ];
+
+      // Run permission tests
+      const permissionResults = permissionTests.map(test => ({
+        ...test,
+        result: hasPermission(user, test.permission)
+      }));
+
+      // Run chat access tests
+      const chatResults = chatAccessTests.map(test => ({
+        ...test,
+        result: hasAccessToChat(user, test.chatRoom)
+      }));
+
+      res.json({
+        user: {
+          email: user.email,
+          role: user.role,
+          totalPermissions: user.permissions?.length || 0
+        },
+        permissionTests: permissionResults,
+        chatAccessTests: chatResults
+      });
+      
+    } catch (error: any) {
+      console.error('Permission test error:', error);
+      res.status(500).json({
+        error: 'Permission test failed',
+        message: error.message
+      });
+    }
+  });
 
   // Collection statistics for bulk data manager
   app.get("/api/collection-stats", async (req, res) => {
