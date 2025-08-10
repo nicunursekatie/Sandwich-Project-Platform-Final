@@ -142,12 +142,24 @@ export function HelpProvider({ children }: HelpProviderProps) {
         actions: [
           {
             label: 'Take a Quick Tour',
-            action: () => console.log('Starting tour'),
+            action: () => {
+              console.log('Starting tour');
+              // Mark onboarding as complete when starting tour
+              localStorage.setItem('onboarding-complete', 'true');
+              localStorage.setItem('help-first-time-user-seen', 'true');
+            },
             primary: true
           },
           {
             label: 'I\'ll Explore on My Own',
-            action: () => console.log('Self exploration')
+            action: () => {
+              console.log('Self exploration');
+              // Mark onboarding as complete and help as seen when skipping
+              localStorage.setItem('onboarding-complete', 'true');
+              localStorage.setItem('help-first-time-user-seen', 'true');
+              // Hide the help bubble
+              hideHelp('first-time-user');
+            }
           }
         ]
       }]
