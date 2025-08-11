@@ -35,7 +35,7 @@ export function MentionInput({ value, onChange, onSend, placeholder, disabled }:
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch all users for mentions
-  const { data: users = [] } = useQuery<User[]>({
+  const { data: users = [], error } = useQuery<User[]>({
     queryKey: ["/api/users"],
     queryFn: async () => {
       const response = await fetch("/api/users", {
@@ -43,9 +43,16 @@ export function MentionInput({ value, onChange, onSend, placeholder, disabled }:
       });
       if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
+      console.log("Fetched users for mentions:", data?.length || 0, "users");
       return Array.isArray(data) ? data : [];
     },
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Available users for mentions:", users.length);
+    if (error) console.error("Error fetching users for mentions:", error);
+  }, [users, error]);
 
   // Parse mentions from text and highlight them
   const renderMessageWithMentions = (text: string) => {
@@ -105,19 +112,28 @@ export function MentionInput({ value, onChange, onSend, placeholder, disabled }:
         // Filter users based on search
         const filteredUsers = users
           .filter(user => {
-            const name = user.displayName || user.firstName || user.email.split('@')[0];
+            const fullName = user.firstName && user.lastName 
+              ? `${user.firstName} ${user.lastName}` 
+              : user.displayName || user.firstName || user.email.split('@')[0];
             const email = user.email;
             const searchTerm = textAfterAt.toLowerCase();
             
-            return name.toLowerCase().includes(searchTerm) || 
+            console.log(`Filtering user: ${fullName} (${email}) against "${searchTerm}"`);
+            
+            return fullName.toLowerCase().includes(searchTerm) || 
                    email.toLowerCase().includes(searchTerm);
           })
           .slice(0, 5) // Limit to 5 suggestions
           .map(user => ({
             id: user.id,
-            name: user.displayName || user.firstName || user.email.split('@')[0],
+            name: user.firstName && user.lastName 
+              ? `${user.firstName} ${user.lastName}` 
+              : user.displayName || user.firstName || user.email.split('@')[0],
             email: user.email
           }));
+
+        console.log(`Found ${filteredUsers.length} matching users for "@${textAfterAt}"`);
+        console.log("Filtered users:", filteredUsers);
 
         setSuggestions(filteredUsers);
         setShowSuggestions(filteredUsers.length > 0);
