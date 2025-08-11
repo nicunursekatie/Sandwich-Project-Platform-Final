@@ -24,12 +24,12 @@ import {
 
 const getRoomIcon = (roomId: string) => {
   switch (roomId) {
-    case "general": return <MessageSquare className="h-4 w-4" />;
-    case "core_team": return <Shield className="h-4 w-4" />;
+    case "general": return <Hash className="h-4 w-4" />;
+    case "core-team": return <Hash className="h-4 w-4" />;
     case "committee": return <Users className="h-4 w-4" />;
-    case "hosts": return <Building2 className="h-4 w-4" />;
-    case "drivers": return <Truck className="h-4 w-4" />;
-    case "recipients": return <Heart className="h-4 w-4" />;
+    case "host": return <Hash className="h-4 w-4" />;
+    case "driver": return <Hash className="h-4 w-4" />;
+    case "recipient": return <Hash className="h-4 w-4" />;
     default: return <Hash className="h-4 w-4" />;
   }
 };
@@ -204,13 +204,24 @@ export default function SocketChatHub() {
 
             {/* Messages */}
             <ScrollArea className="flex-1 px-6 py-4 bg-white">
-              <div className="space-y-3">
-                {(messages[currentRoom] || []).map((message: ChatMessage) => {
+              <div className="space-y-2">
+                {(messages[currentRoom] || []).map((message: ChatMessage, index) => {
                   console.log("Rendering socket chat message:", message);
+                  
+                  // Generate consistent colors based on user name
+                  const getAvatarColor = (userName: string) => {
+                    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-teal-500'];
+                    const hash = userName.split('').reduce((a, b) => {
+                      a = ((a << 5) - a) + b.charCodeAt(0);
+                      return a & a;
+                    }, 0);
+                    return colors[Math.abs(hash) % colors.length];
+                  };
+                  
                   return (
                     <div key={message.id} className="flex gap-3 group">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarFallback className="text-sm font-medium bg-[#236383] text-white">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarFallback className={`text-xs font-medium text-white ${getAvatarColor(message.userName)}`}>
                           {getInitials(message.userName)}
                         </AvatarFallback>
                       </Avatar>
