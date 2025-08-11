@@ -231,7 +231,7 @@ export default function SocketChatHub() {
                           <MessageWithMentions content={message.content} />
                         </p>
                         {/* Message actions */}
-                        <div className="flex items-center mt-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center mt-0">
                           <ChatMessageLikeButton messageId={message.id} />
                         </div>
                       </div>

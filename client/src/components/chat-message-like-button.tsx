@@ -90,6 +90,9 @@ export function ChatMessageLikeButton({ messageId, className = "" }: ChatMessage
     );
   }
 
+  // Show the button always if liked, or on hover if not liked
+  const shouldShow = likeCount > 0;
+  
   return (
     <TooltipProvider>
       <Tooltip>
@@ -99,7 +102,11 @@ export function ChatMessageLikeButton({ messageId, className = "" }: ChatMessage
             size="sm"
             onClick={handleLikeToggle}
             disabled={likeMutation.isPending || !user}
-            className={`h-6 px-2 py-1 transition-colors ${className}`}
+            className={`h-6 px-2 py-1 transition-all duration-200 ${className} ${
+              shouldShow 
+                ? "opacity-100" 
+                : "opacity-0 group-hover:opacity-100"
+            }`}
           >
             <Heart
               className={`w-4 h-4 mr-1 transition-colors ${
@@ -109,7 +116,7 @@ export function ChatMessageLikeButton({ messageId, className = "" }: ChatMessage
               }`}
             />
             {likeCount > 0 && (
-              <span className={`text-xs ${hasUserLiked ? "text-red-500" : "text-gray-500"}`}>
+              <span className={`text-xs font-medium ${hasUserLiked ? "text-red-500" : "text-gray-600"}`}>
                 {likeCount}
               </span>
             )}
