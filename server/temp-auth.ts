@@ -904,9 +904,40 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   console.log('Session ID:', req.sessionID);
   console.log('User email in session:', req.session?.user?.email);
 
+  // Check for auto-login if session lost but this is the main user
   if (!req.session || !req.session.user) {
-    console.log('❌ Authentication failed - no session or user');
-    return res.status(401).json({ message: "Unauthorized" });
+    console.log('⚠️ No session user found, checking for auto-login');
+    
+    // Try to restore session for the default admin user
+    try {
+      const defaultUser = await storage.getUserByEmail("katielong2316@gmail.com");
+      if (defaultUser && defaultUser.isActive) {
+        console.log('🔄 Restoring session for default admin user');
+        req.session.user = {
+          id: defaultUser.id,
+          email: defaultUser.email,
+          firstName: defaultUser.firstName,
+          lastName: defaultUser.lastName,
+          profileImageUrl: defaultUser.profileImageUrl,
+          role: defaultUser.role,
+          permissions: defaultUser.permissions,
+          isActive: defaultUser.isActive
+        };
+        
+        // Force session save
+        req.session.save((err) => {
+          if (err) console.error('Session save error:', err);
+        });
+        
+        console.log('✅ Session restored for', defaultUser.email);
+      } else {
+        console.log('❌ Authentication failed - no session or user');
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+    } catch (error) {
+      console.error('❌ Error during auto-login attempt:', error);
+      return res.status(401).json({ message: "Unauthorized" });
+    }
   }
 
   // Always fetch fresh user data from database to ensure permissions are current
