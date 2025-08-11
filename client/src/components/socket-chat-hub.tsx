@@ -163,12 +163,7 @@ export default function SocketChatHub() {
             </div>
           ))}
         </div>
-        
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="text-xs text-gray-600">
-            <span>Connected as Katie (Main)</span>
-          </div>
-        </div>
+
       </div>
 
       {/* Main Chat Area */}
