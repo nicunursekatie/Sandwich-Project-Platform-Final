@@ -1109,6 +1109,35 @@ class StorageWrapper implements IStorage {
       () => this.fallbackStorage.getAllUsersActivitySummary(days)
     );
   }
+
+  // Chat message like methods for Socket.IO chat messages
+  async likeChatMessage(messageId: number, userId: string, userName: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.likeChatMessage(messageId, userId, userName),
+      () => this.fallbackStorage.likeChatMessage(messageId, userId, userName)
+    );
+  }
+
+  async unlikeChatMessage(messageId: number, userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.unlikeChatMessage(messageId, userId),
+      () => this.fallbackStorage.unlikeChatMessage(messageId, userId)
+    );
+  }
+
+  async getChatMessageLikes(messageId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getChatMessageLikes(messageId),
+      () => this.fallbackStorage.getChatMessageLikes(messageId)
+    );
+  }
+
+  async hasUserLikedChatMessage(messageId: number, userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.hasUserLikedChatMessage(messageId, userId),
+      () => this.fallbackStorage.hasUserLikedChatMessage(messageId, userId)
+    );
+  }
 }
 
 export const storage = new StorageWrapper();
