@@ -112,74 +112,70 @@ export default function SocketChatHub() {
   }
 
   return (
-    <div className="flex h-full bg-white">
+    <div className="flex h-full bg-white relative">
       {/* Left Sidebar - Channels */}
-      <div className="w-80 bg-gray-50 border-r border-gray-200">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <Hash className="h-5 w-5 text-[#236383]" />
-            Team Chat
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">Real-time communication with your team across different channels</p>
+      <div className="w-72 bg-gray-50 border-r border-gray-200 relative">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-800 mb-1">Channels</h2>
+          <p className="text-sm text-gray-600">Team communication</p>
         </div>
 
-        <div className="p-4">
-          {/* Connection Status */}
-          <div className={`flex items-center gap-2 p-3 rounded-lg mb-4 ${
-            connected ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-          }`}>
-            <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm font-medium">
-              {connected ? 'Connected' : 'Disconnected'}
-            </span>
-          </div>
-
-          {/* Channels Section */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Channels</h3>
-            {rooms.map((room) => (
-              <div key={room.id}>
-                <button
-                  className={`w-full text-left p-3 rounded-lg transition-all duration-200 group ${
-                    currentRoom === room.id 
-                      ? 'bg-[#236383] text-white shadow-sm' 
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                  onClick={() => setCurrentRoom(room.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={currentRoom === room.id ? 'text-white' : 'text-[#236383]'}>
-                        {getRoomIcon(room.id)}
-                      </span>
+        <div className="p-4 space-y-1">
+          {rooms.map((room) => (
+            <div key={room.id}>
+              <button
+                className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 group ${
+                  currentRoom === room.id 
+                    ? 'bg-[#236383] text-white shadow-sm' 
+                    : 'hover:bg-gray-100 text-gray-700'
+                }`}
+                onClick={() => setCurrentRoom(room.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={currentRoom === room.id ? 'text-white' : 'text-[#236383]'}>
+                    {getRoomIcon(room.id)}
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
                       <span className="font-medium">{room.name}</span>
+                      {(messages[room.id] || []).length > 0 && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ml-2 ${
+                            currentRoom === room.id 
+                              ? 'border-white/30 text-white/90' 
+                              : 'border-gray-300 text-gray-500'
+                          }`}
+                        >
+                          {(messages[room.id] || []).length}
+                        </Badge>
+                      )}
                     </div>
-                    {(messages[room.id] || []).length > 0 && (
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          currentRoom === room.id 
-                            ? 'border-white/30 text-white/90' 
-                            : 'border-gray-300 text-gray-500'
-                        }`}
-                      >
-                        {(messages[room.id] || []).length}
-                      </Badge>
+                    {currentRoom !== room.id && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {room.id === 'general' && 'No messages yet • Click to start the conversation'}
+                        {room.id === 'core-team' && 'No messages yet • Click to start the conversation'}
+                        {room.id === 'committee' && 'No messages yet • Click to start the conversation'}
+                        {room.id === 'host' && 'No messages yet • Click to start the conversation'}
+                        {room.id === 'driver' && 'No messages yet • Click to start the conversation'}
+                        {room.id === 'recipient' && 'No messages yet • Click to start the conversation'}
+                      </p>
                     )}
                   </div>
-                  {currentRoom !== room.id && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {room.id === 'general' && 'Open discussion for all team members'}
-                      {room.id === 'core-team' && 'Core team coordination'}
-                      {room.id === 'committee' && 'Committee discussions'}
-                      {room.id === 'host' && 'Host coordination'}
-                      {room.id === 'driver' && 'Driver coordination'}
-                      {room.id === 'recipient' && 'Recipient communication'}
-                    </p>
-                  )}
-                </button>
-              </div>
-            ))}
+                </div>
+              </button>
+            </div>
+          ))}
+        </div>
+        
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className={`flex items-center gap-2 p-2 rounded text-xs ${
+            connected ? 'text-green-700' : 'text-red-700'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="font-medium">
+              Connected as Katie (Main)
+            </span>
           </div>
         </div>
       </div>
@@ -216,31 +212,29 @@ export default function SocketChatHub() {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-6 py-4 bg-gray-50">
-              <div className="space-y-6">
+            <ScrollArea className="flex-1 px-6 py-4 bg-white">
+              <div className="space-y-4">
                 {(messages[currentRoom] || []).map((message: ChatMessage) => {
                   console.log("Rendering socket chat message:", message);
                   return (
-                    <div key={message.id} className="flex gap-4">
-                      <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm">
-                        <AvatarFallback className="text-sm font-medium bg-[#236383] text-white">
+                    <div key={message.id} className="flex gap-3 group">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarFallback className="text-xs font-medium bg-[#236383] text-white">
                           {getInitials(message.userName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 mb-1">
-                          <span className="font-semibold text-gray-900">{message.userName}</span>
+                          <span className="font-semibold text-gray-900 text-sm">{message.userName}</span>
                           <span className="text-xs text-gray-500">
                             {formatTime(message.timestamp)}
                           </span>
                         </div>
-                        <div className="bg-white rounded-lg px-4 py-3 shadow-sm border border-gray-200">
-                          <p className="text-gray-800 leading-relaxed">
-                            <MessageWithMentions content={message.content} />
-                          </p>
-                        </div>
+                        <p className="text-gray-800 text-sm leading-relaxed">
+                          <MessageWithMentions content={message.content} />
+                        </p>
                         {/* Message actions */}
-                        <div className="flex items-center mt-2 space-x-2">
+                        <div className="flex items-center mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <ChatMessageLikeButton messageId={message.id} />
                         </div>
                       </div>
@@ -252,21 +246,17 @@ export default function SocketChatHub() {
             </ScrollArea>
 
             {/* Message Input with Mentions */}
-            <div className="px-6 py-4 bg-white border-t border-gray-200">
-              <div className="flex items-end gap-3">
-                <div className="flex-1">
-                  <MentionInput
-                    value={newMessage}
-                    onChange={setNewMessage}
-                    onSend={handleSendMessage}
-                    placeholder={`Message ${rooms.find(r => r.id === currentRoom)?.name || 'room'}...`}
-                    disabled={!connected}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Type @ to mention users • Press Tab or Enter to select • Press Esc to cancel
-                  </p>
-                </div>
-              </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <MentionInput
+                value={newMessage}
+                onChange={setNewMessage}
+                onSend={handleSendMessage}
+                placeholder={`Message ${rooms.find(r => r.id === currentRoom)?.name || 'General'}...`}
+                disabled={!connected}
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Type @ to mention users • Press Tab or Enter to select • Press Esc to cancel
+              </p>
             </div>
           </>
         ) : (
