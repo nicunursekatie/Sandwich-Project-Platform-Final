@@ -120,21 +120,21 @@ export default function SocketChatHub() {
           <p className="text-sm text-gray-600">Team communication</p>
         </div>
 
-        <div className="p-4 space-y-2">
+        <div className="p-3 space-y-1">
           {rooms.map((room) => (
-            <div key={room.id} className={`rounded-lg border ${
+            <div key={room.id} className={`rounded border ${
               currentRoom === room.id ? 'bg-[#236383] border-[#236383]' : 'bg-white border-gray-200 hover:border-gray-300'
             } transition-colors`}>
               <button
-                className="w-full text-left p-4"
+                className="w-full text-left p-3"
                 onClick={() => setCurrentRoom(room.id)}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <span className={currentRoom === room.id ? 'text-white' : 'text-[#236383]'}>
                       {getRoomIcon(room.id)}
                     </span>
-                    <span className={`font-medium ${currentRoom === room.id ? 'text-white' : 'text-gray-900'}`}>
+                    <span className={`font-medium text-sm ${currentRoom === room.id ? 'text-white' : 'text-gray-900'}`}>
                       {room.name}
                     </span>
                   </div>
@@ -151,7 +151,7 @@ export default function SocketChatHub() {
                     </Badge>
                   )}
                 </div>
-                <p className={`text-xs ${currentRoom === room.id ? 'text-blue-100' : 'text-gray-500'}`}>
+                <p className={`text-xs leading-tight ${currentRoom === room.id ? 'text-blue-100' : 'text-gray-500'}`}>
                   {room.id === 'general' && (messages.general?.length > 0 ? 'Katie (Main): Thank you so much everyone for logging...' : 'No messages yet • Click to start the conversation')}
                   {room.id === 'core-team' && 'Katie (Main): Is stephanie!'} 
                   {room.id === 'committee' && 'No messages yet • Click to start the conversation'}
@@ -203,8 +203,8 @@ export default function SocketChatHub() {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-6 py-4 bg-white">
-              <div className="space-y-2">
+            <ScrollArea className="flex-1 px-4 py-3 bg-white">
+              <div className="space-y-1">
                 {(messages[currentRoom] || []).map((message: ChatMessage, index) => {
                   console.log("Rendering socket chat message:", message);
                   
@@ -219,24 +219,24 @@ export default function SocketChatHub() {
                   };
                   
                   return (
-                    <div key={message.id} className="flex gap-3 group">
-                      <Avatar className="h-8 w-8 flex-shrink-0">
+                    <div key={message.id} className="flex gap-2 group py-1">
+                      <Avatar className="h-7 w-7 flex-shrink-0">
                         <AvatarFallback className={`text-xs font-medium text-white ${getAvatarColor(message.userName)}`}>
                           {getInitials(message.userName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="font-semibold text-gray-900">{message.userName}</span>
+                        <div className="flex items-baseline gap-2 mb-0">
+                          <span className="font-medium text-gray-900 text-sm">{message.userName}</span>
                           <span className="text-xs text-gray-500">
                             {formatTime(message.timestamp)}
                           </span>
                         </div>
-                        <p className="text-gray-800 leading-relaxed">
+                        <p className="text-gray-800 text-sm leading-tight">
                           <MessageWithMentions content={message.content} />
                         </p>
                         {/* Message actions */}
-                        <div className="flex items-center mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center mt-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <ChatMessageLikeButton messageId={message.id} />
                         </div>
                       </div>
@@ -248,7 +248,7 @@ export default function SocketChatHub() {
             </ScrollArea>
 
             {/* Message Input with Mentions */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
               <MentionInput
                 value={newMessage}
                 onChange={setNewMessage}
