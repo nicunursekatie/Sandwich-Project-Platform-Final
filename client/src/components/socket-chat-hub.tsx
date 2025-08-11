@@ -25,11 +25,11 @@ import {
 const getRoomIcon = (roomId: string) => {
   switch (roomId) {
     case "general": return <Hash className="h-4 w-4" />;
-    case "core-team": return <Hash className="h-4 w-4" />;
+    case "core-team": return <Shield className="h-4 w-4" />;
     case "committee": return <Users className="h-4 w-4" />;
-    case "host": return <Hash className="h-4 w-4" />;
-    case "driver": return <Hash className="h-4 w-4" />;
-    case "recipient": return <Hash className="h-4 w-4" />;
+    case "host": return <Heart className="h-4 w-4" />;
+    case "driver": return <Truck className="h-4 w-4" />;
+    case "recipient": return <MessageSquare className="h-4 w-4" />;
     default: return <Hash className="h-4 w-4" />;
   }
 };
