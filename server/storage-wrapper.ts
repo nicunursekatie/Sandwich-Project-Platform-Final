@@ -1138,6 +1138,14 @@ class StorageWrapper implements IStorage {
       () => this.fallbackStorage.hasUserLikedChatMessage(messageId, userId)
     );
   }
+
+  // Missing method: Mark all messages in a channel as read for a user
+  async markChannelMessagesAsRead(userId: string, channel: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.markChannelMessagesAsRead(userId, channel),
+      () => this.fallbackStorage.markChannelMessagesAsRead(userId, channel)
+    );
+  }
 }
 
 export const storage = new StorageWrapper();
