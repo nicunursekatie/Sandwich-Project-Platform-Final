@@ -1,5 +1,5 @@
 import { 
-  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses,
+  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -13,6 +13,7 @@ import {
   type AgendaItem, type InsertAgendaItem,
   type Meeting, type InsertMeeting,
   type DriverAgreement, type InsertDriverAgreement,
+  type Driver, type InsertDriver,
   type Host, type InsertHost,
   type HostContact, type InsertHostContact,
   type Recipient, type InsertRecipient,
@@ -174,6 +175,13 @@ export interface IStorage {
   // Driver Agreements (admin access only)
   createDriverAgreement(agreement: InsertDriverAgreement): Promise<DriverAgreement>;
   
+  // Drivers
+  getAllDrivers(): Promise<Driver[]>;
+  getDriver(id: number): Promise<Driver | undefined>;
+  createDriver(driver: InsertDriver): Promise<Driver>;
+  updateDriver(id: number, updates: Partial<Driver>): Promise<Driver | undefined>;
+  deleteDriver(id: number): Promise<boolean>;
+  
   // Hosts
   getAllHosts(): Promise<Host[]>;
   getAllHostsWithContacts(): Promise<Array<Host & { contacts: HostContact[] }>>;
@@ -288,6 +296,7 @@ export class MemStorage implements IStorage {
   private agendaItems: Map<number, AgendaItem>;
   private meetings: Map<number, Meeting>;
   private driverAgreements: Map<number, DriverAgreement>;
+  private drivers: Map<number, Driver>;
   private hosts: Map<number, Host>;
   private hostContacts: Map<number, HostContact>;
   private recipients: Map<number, Recipient>;
@@ -312,6 +321,7 @@ export class MemStorage implements IStorage {
     agendaItem: number;
     meeting: number;
     driverAgreement: number;
+    driver: number;
     host: number;
     hostContact: number;
     recipient: number;
@@ -336,6 +346,7 @@ export class MemStorage implements IStorage {
     this.agendaItems = new Map();
     this.meetings = new Map();
     this.driverAgreements = new Map();
+    this.drivers = new Map();
     this.hosts = new Map();
     this.hostContacts = new Map();
     this.recipients = new Map();
@@ -361,6 +372,7 @@ export class MemStorage implements IStorage {
       agendaItem: 1,
       meeting: 1,
       driverAgreement: 1,
+      driver: 1,
       host: 1,
       hostContact: 1,
       recipient: 1,
@@ -1074,6 +1086,44 @@ export class MemStorage implements IStorage {
     };
     this.driverAgreements.set(id, agreement);
     return agreement;
+  }
+
+  // Driver methods
+  async getAllDrivers(): Promise<Driver[]> {
+    return Array.from(this.drivers.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getDriver(id: number): Promise<Driver | undefined> {
+    return this.drivers.get(id);
+  }
+
+  async createDriver(insertDriver: InsertDriver): Promise<Driver> {
+    const id = this.currentIds.driver++;
+    const driver: Driver = { 
+      ...insertDriver, 
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.drivers.set(id, driver);
+    return driver;
+  }
+
+  async updateDriver(id: number, updates: Partial<Driver>): Promise<Driver | undefined> {
+    const driver = this.drivers.get(id);
+    if (!driver) return undefined;
+    
+    const updatedDriver: Driver = { 
+      ...driver, 
+      ...updates, 
+      updatedAt: new Date()
+    };
+    this.drivers.set(id, updatedDriver);
+    return updatedDriver;
+  }
+
+  async deleteDriver(id: number): Promise<boolean> {
+    return this.drivers.delete(id);
   }
 
   // Host methods
