@@ -110,19 +110,34 @@ export default function EmailStyleMessaging() {
     retry: false
   });
 
-  // Send message mutation
+  // Send message mutation - Use messaging API for proper email notifications
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
       console.log('Sending message data:', messageData);
-      const response = await apiRequest('POST', '/api/real-time-messages', messageData);
+      
+      // Find recipient user by email
+      const recipientUser = users.find(u => u.email === messageData.to);
+      if (!recipientUser) {
+        throw new Error('Recipient not found');
+      }
+      
+      // Format for messaging service API which supports email notifications
+      const messagingData = {
+        recipientIds: [recipientUser.id],
+        content: `Subject: ${messageData.subject}\n\n${messageData.content}`,
+        contextType: "direct" // This triggers email notifications
+      };
+      
+      const response = await apiRequest('POST', '/api/messaging', messagingData);
       console.log('Send message response:', response);
       return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/real-time-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
       toast({
         title: "Message sent",
-        description: "Your message has been delivered successfully."
+        description: "Your message has been delivered successfully and the recipient will be notified by email."
       });
       setIsComposing(false);
       setReplyData(null);
