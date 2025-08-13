@@ -46,11 +46,35 @@ router.get("/", requireAuth, async (req, res) => {
     try {
       // Get messages based on folder type
       if (folder === 'sent') {
-        // For sent folder, get messages where current user is the sender
-        const sentMessages = await storage.getMessagesBySender(userId);
+        // For sent folder, get messages where current user is the sender with recipient read status
+        const sentMessagesWithStatus = await storage.getMessagesBySenderWithReadStatus(userId);
         
+        // Group messages by message ID and aggregate read status for each recipient
+        const messageMap = new Map();
+        
+        sentMessagesWithStatus.forEach(item => {
+          const messageId = item.message.id;
+          if (!messageMap.has(messageId)) {
+            messageMap.set(messageId, {
+              ...item.message,
+              recipients: []
+            });
+          }
+          
+          if (item.recipientId) {
+            messageMap.get(messageId).recipients.push({
+              recipientId: item.recipientId,
+              read: item.recipientRead || false,
+              readAt: item.recipientReadAt
+            });
+          }
+        });
+
+        // Convert map to array and calculate overall read status
+        const messagesWithActualReadStatus = Array.from(messageMap.values());
+
         // Process messages and look up recipient information
-        const processedMessages = await Promise.all(sentMessages.map(async (msg) => {
+        const processedMessages = await Promise.all(messagesWithActualReadStatus.map(async (msg) => {
           let recipientName = 'Unknown Recipient';
           let recipientEmail = 'unknown@example.com';
           
@@ -92,6 +116,10 @@ router.get("/", requireAuth, async (req, res) => {
             recipientEmail = 'system@sandwich.project';
           }
           
+          // Calculate read status based on recipients
+          const allRead = msg.recipients.length > 0 && msg.recipients.every(r => r.read);
+          const hasRecipients = msg.recipients.length > 0;
+          
           return {
             id: msg.id.toString(),
             from: {
@@ -102,9 +130,12 @@ router.get("/", requireAuth, async (req, res) => {
             subject: msg.contextType || 'No Subject',
             content: msg.content,
             timestamp: msg.createdAt?.toISOString() || new Date().toISOString(),
-            read: true, // Sent messages are always "read" by sender
+            read: hasRecipients ? allRead : false, // Show actual read status from recipients
             starred: false,
-            folder: 'sent'
+            folder: 'sent',
+            // Additional metadata for debugging
+            recipientCount: msg.recipients.length,
+            readCount: msg.recipients.filter(r => r.read).length
           };
         }));
         

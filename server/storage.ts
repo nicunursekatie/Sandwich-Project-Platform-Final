@@ -95,6 +95,7 @@ export interface IStorage {
   updateReplyCount(messageId: number): Promise<void>;
   deleteMessage(id: number): Promise<boolean>;
   getMessagesBySender(senderId: string): Promise<Message[]>;
+  getMessagesBySenderWithReadStatus(senderId: string): Promise<any[]>;
   getMessagesForRecipient(recipientId: string): Promise<Message[]>;
   
   // Group messaging with individual thread management
@@ -703,6 +704,29 @@ export class MemStorage implements IStorage {
 
   async deleteMessage(id: number): Promise<boolean> {
     return this.messages.delete(id);
+  }
+
+  async getMessagesBySender(senderId: string): Promise<Message[]> {
+    return Array.from(this.messages.values())
+      .filter(message => message.senderId === senderId || message.userId === senderId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  async getMessagesBySenderWithReadStatus(senderId: string): Promise<any[]> {
+    // For memory storage, return messages with mock read status since we don't have recipient tracking
+    const messages = await this.getMessagesBySender(senderId);
+    return messages.map(message => ({
+      message,
+      recipientRead: false, // Always unread in memory storage since we don't track recipients
+      recipientReadAt: null,
+      recipientId: message.contextId || 'unknown'
+    }));
+  }
+
+  async getMessagesForRecipient(recipientId: string): Promise<Message[]> {
+    return Array.from(this.messages.values())
+      .filter(message => message.contextId === recipientId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
   // Committee management methods
