@@ -642,6 +642,32 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getMessagesBySenderWithReadStatus(senderId: string): Promise<any[]> {
+    console.log(`[DEBUG] getMessagesBySenderWithReadStatus called with senderId: ${senderId}`);
+    try {
+      const { messageRecipients } = await import("@shared/schema");
+      
+      // Get messages with recipient read status
+      const result = await db
+        .select({
+          message: messages,
+          recipientRead: messageRecipients.read,
+          recipientReadAt: messageRecipients.readAt,
+          recipientId: messageRecipients.recipientId
+        })
+        .from(messages)
+        .leftJoin(messageRecipients, eq(messages.id, messageRecipients.messageId))
+        .where(eq(messages.senderId, senderId))
+        .orderBy(desc(messages.createdAt));
+      
+      console.log(`[DEBUG] Found ${result.length} message-recipient pairs for sender ${senderId}`);
+      return result;
+    } catch (error) {
+      console.error(`[ERROR] getMessagesBySenderWithReadStatus failed for senderId ${senderId}:`, error);
+      return [];
+    }
+  }
+
   async getMessagesForRecipient(recipientId: string): Promise<Message[]> {
     console.log(`[DEBUG] getMessagesForRecipient called with recipientId: ${recipientId}`);
     try {
