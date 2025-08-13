@@ -222,7 +222,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
             <div className="text-center space-y-2">
               <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900">When did you collect the sandwiches?</h3>
-              <p className="text-sm sm:text-base text-gray-600 px-2">Enter the date you actually collected the sandwiches (not today's date)</p>
+              <p className="text-sm sm:text-base text-gray-600 px-2">Enter the actual date you collected the sandwiches, not today's submission date</p>
             </div>
             
             <div className="space-y-4">

@@ -147,7 +147,7 @@ export default function CompactCollectionForm({
           <div>
             <div className="flex items-center gap-1 mb-1">
               <label className="text-base md:text-sm font-medium text-[#236383]">
-                Collection Date
+                Date Sandwiches Were Collected
               </label>
               <Tooltip>
                 <TooltipTrigger>
