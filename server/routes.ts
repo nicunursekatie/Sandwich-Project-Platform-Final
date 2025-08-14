@@ -1363,7 +1363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch(
     "/api/sandwich-collections/:id",
-    requirePermission("edit_data"),
+    requirePermission("edit_all_collections"),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
