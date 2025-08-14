@@ -139,6 +139,7 @@ export interface IStorage {
   // Sandwich Collections
   getAllSandwichCollections(): Promise<SandwichCollection[]>;
   getSandwichCollections(limit: number, offset: number, sortField?: string, sortOrder?: string): Promise<SandwichCollection[]>;
+  getSandwichCollectionById(id: number): Promise<SandwichCollection | null>;
   getSandwichCollectionsCount(): Promise<number>;
   getCollectionStats(): Promise<{ totalEntries: number; totalSandwiches: number; }>;
   createSandwichCollection(collection: InsertSandwichCollection): Promise<SandwichCollection>;
@@ -886,6 +887,10 @@ export class MemStorage implements IStorage {
     });
     
     return all.slice(offset, offset + limit);
+  }
+
+  async getSandwichCollectionById(id: number): Promise<SandwichCollection | null> {
+    return this.sandwichCollections.get(id) || null;
   }
 
   async getSandwichCollectionsCount(): Promise<number> {

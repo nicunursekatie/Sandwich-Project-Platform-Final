@@ -1,6 +1,6 @@
 import { AlertTriangle, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import type { SandwichCollection } from "@shared/schema";
 
@@ -50,12 +50,15 @@ export function DuplicateAnalysisDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" aria-describedby="duplicate-analysis-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             Duplicate Collection Analysis
           </DialogTitle>
+          <DialogDescription id="duplicate-analysis-description">
+            Review and manage duplicate collection entries found in your data.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -118,16 +121,16 @@ export function DuplicateAnalysisDialog({
                     {/* Keep this one */}
                     <div className="p-3 bg-green-50 rounded border-l-4 border-green-500">
                       <div className="flex justify-between items-center">
-                        <Badge className="bg-green-100 text-green-800"
+                        <Badge className="bg-green-100 text-green-800">
                           KEEP
                         </Badge>
-                        <div className="text-sm text-gray-600"
+                        <div className="text-sm text-gray-600">
                           {group.keepNewest.collectionDate} - {group.keepNewest.hostName}
                         </div>
                       </div>
                       <div className="text-sm mt-1">
                         Individual: {group.keepNewest.individualSandwiches} | 
-                        Groups: {group.keepNewest.groupCollections}
+                        Groups: {(group.keepNewest.group1Count || 0) + (group.keepNewest.group2Count || 0)}
                       </div>
                     </div>
                     
@@ -136,13 +139,13 @@ export function DuplicateAnalysisDialog({
                       <div key={itemIndex} className="p-3 bg-red-50 rounded border-l-4 border-red-500">
                         <div className="flex justify-between items-center">
                           <Badge variant="destructive">DELETE</Badge>
-                          <div className="text-sm text-gray-600"
+                          <div className="text-sm text-gray-600">
                             {item.collectionDate} - {item.hostName}
                           </div>
                         </div>
                         <div className="text-sm mt-1">
                           Individual: {item.individualSandwiches} | 
-                          Groups: {item.groupCollections}
+                          Groups: {(item.group1Count || 0) + (item.group2Count || 0)}
                         </div>
                       </div>
                     ))}
@@ -163,16 +166,16 @@ export function DuplicateAnalysisDialog({
                 {analysis.suspiciousEntries.map((entry, index) => (
                   <div key={index} className="p-3 bg-yellow-50 rounded border-l-4 border-yellow-500">
                     <div className="flex justify-between items-center">
-                      <Badge className="bg-yellow-100 text-yellow-800"
+                      <Badge className="bg-yellow-100 text-yellow-800">
                         REVIEW
                       </Badge>
-                      <div className="text-sm text-gray-600"
+                      <div className="text-sm text-gray-600">
                         {entry.collectionDate} - {entry.hostName}
                       </div>
                     </div>
                     <div className="text-sm mt-1">
                       Individual: {entry.individualSandwiches} | 
-                      Groups: {entry.groupCollections}
+                      Groups: {(entry.group1Count || 0) + (entry.group2Count || 0)}
                     </div>
                   </div>
                 ))}
