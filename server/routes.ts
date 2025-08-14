@@ -1131,14 +1131,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             groupTotal += collectionGroupTotal;
           });
 
-          // Add 50,000 sandwiches to account for missing historical logs
-          const MISSING_LOGS_ADJUSTMENT = 50000;
+          // Data recovery completed: 148,907 sandwiches recovered, exceeding the 50K adjustment
+          // Removing temporary adjustment since actual missing data was recovered
           
           return {
             totalEntries: collections.length,
             individualSandwiches: individualTotal,
-
-            completeTotalSandwiches: individualTotal + groupTotal + MISSING_LOGS_ADJUSTMENT,
+            groupSandwiches: groupTotal,
+            completeTotalSandwiches: individualTotal + groupTotal,
           };
         },
         60000, // Cache for 1 minute since this data doesn't change frequently
