@@ -1807,8 +1807,8 @@ export default function SandwichCollectionLog() {
                   <SelectValue placeholder="Select host" />
                 </SelectTrigger>
                 <SelectContent>
-                  {hostOptions.map((host) => (
-                    <SelectItem key={host} value={host}>{host}</SelectItem>
+                  {hostOptions.map((host, index) => (
+                    <SelectItem key={`edit-host-${index}-${host}`} value={host}>{host}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1924,8 +1924,8 @@ export default function SandwichCollectionLog() {
                   <SelectValue placeholder="Select host (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {hostOptions.map((host) => (
-                    <SelectItem key={host} value={host}>{host}</SelectItem>
+                  {hostOptions.map((host, index) => (
+                    <SelectItem key={`batch-host-${index}-${host}`} value={host}>{host}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

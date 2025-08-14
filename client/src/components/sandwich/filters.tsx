@@ -62,8 +62,8 @@ export function Filters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Hosts</SelectItem>
-              {uniqueHosts.map(host => (
-                <SelectItem key={host} value={host}>{host}</SelectItem>
+              {uniqueHosts.map((host, index) => (
+                <SelectItem key={`filter-host-${index}-${host}`} value={host}>{host}</SelectItem>
               ))}
             </SelectContent>
           </Select>
