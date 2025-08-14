@@ -37,6 +37,7 @@ interface Recipient {
   email: string | null;
   phone: string;
   address: string | null;
+  region: string | null;
   preferences: string | null;
   status: 'active' | 'inactive';
 }
@@ -333,7 +334,12 @@ function PhoneDirectoryFixed() {
                         )}
                         {recipient.address && (
                           <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                            <span className="font-medium">Address:</span> {recipient.address}
+                            <span className="font-medium">Street Address:</span> {recipient.address}
+                          </p>
+                        )}
+                        {recipient.region && (
+                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                            <span className="font-medium">Region:</span> {recipient.region}
                           </p>
                         )}
                         {recipient.contactName && (

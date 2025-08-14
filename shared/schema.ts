@@ -529,7 +529,8 @@ export const recipients = pgTable("recipients", {
   contactName: text("contact_name"), // Contact person name
   phone: text("phone").notNull(),
   email: text("email"),
-  address: text("address"),
+  address: text("address"), // Actual street address
+  region: text("region"), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
   preferences: text("preferences"),
   weeklyEstimate: integer("weekly_estimate"), // Estimated weekly sandwich count
   status: text("status").notNull().default("active"), // 'active', 'inactive'

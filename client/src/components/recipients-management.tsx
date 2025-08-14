@@ -11,16 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
-
-interface Recipient {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  preferences: string;
-  status: "active" | "inactive";
-}
+import type { Recipient } from "@shared/schema";
 
 export default function RecipientsManagement() {
   const { toast } = useToast();
@@ -36,6 +27,7 @@ export default function RecipientsManagement() {
     phone: "",
     email: "",
     address: "",
+    region: "",
     preferences: "",
     status: "active" as const
   });
@@ -55,6 +47,7 @@ export default function RecipientsManagement() {
         phone: "",
         email: "",
         address: "",
+        region: "",
         preferences: "",
         status: "active"
       });
@@ -300,12 +293,21 @@ export default function RecipientsManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="address">Street Address</Label>
                     <Input
                       id="address"
                       value={newRecipient.address}
                       onChange={(e) => setNewRecipient({ ...newRecipient, address: e.target.value })}
                       placeholder="123 Main St, City, State 12345"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="region">Region/Area</Label>
+                    <Input
+                      id="region"
+                      value={newRecipient.region}
+                      onChange={(e) => setNewRecipient({ ...newRecipient, region: e.target.value })}
+                      placeholder="Downtown, Sandy Springs, Buckhead, etc."
                     />
                   </div>
                   <div>
@@ -384,6 +386,12 @@ export default function RecipientsManagement() {
                   <span>{recipient.address}</span>
                 </div>
               )}
+              {recipient.region && (
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <MapPin className="w-4 h-4" />
+                  <span className="font-medium">Region:</span> <span>{recipient.region}</span>
+                </div>
+              )}
               {recipient.preferences && (
                 <div className="text-sm text-slate-600">
                   <strong>Preferences:</strong> {recipient.preferences}
@@ -432,23 +440,31 @@ export default function RecipientsManagement() {
                 <Input
                   id="edit-email"
                   type="email"
-                  value={editingRecipient.email}
+                  value={editingRecipient.email || ""}
                   onChange={(e) => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
                 />
               </div>
               <div>
-                <Label htmlFor="edit-address">Address</Label>
+                <Label htmlFor="edit-address">Street Address</Label>
                 <Input
                   id="edit-address"
-                  value={editingRecipient.address}
+                  value={editingRecipient.address || ""}
                   onChange={(e) => setEditingRecipient({ ...editingRecipient, address: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-region">Region/Area</Label>
+                <Input
+                  id="edit-region"
+                  value={editingRecipient.region || ""}
+                  onChange={(e) => setEditingRecipient({ ...editingRecipient, region: e.target.value })}
                 />
               </div>
               <div>
                 <Label htmlFor="edit-preferences">Preferences</Label>
                 <Input
                   id="edit-preferences"
-                  value={editingRecipient.preferences}
+                  value={editingRecipient.preferences || ""}
                   onChange={(e) => setEditingRecipient({ ...editingRecipient, preferences: e.target.value })}
                 />
               </div>
