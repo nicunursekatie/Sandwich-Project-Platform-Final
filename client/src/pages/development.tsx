@@ -11,8 +11,8 @@ export default function Development() {
             <Building2 className="w-6 h-6 text-secondary" />
           </div>
           <div>
-            <h1 className="text-3xl font-main-heading text-primary">Development & Resources</h1>
-            <p className="font-body text-muted-foreground">Organizational documents and development resources</p>
+            <h1 className="text-3xl font-main-heading text-primary">Important Documents Library</h1>
+            <p className="font-body text-muted-foreground">Organizational documents, safety guidelines, operational tools, and volunteer resources</p>
           </div>
         </div>
 
