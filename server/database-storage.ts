@@ -764,6 +764,11 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
   }
 
+  async getSandwichCollectionById(id: number): Promise<SandwichCollection | null> {
+    const result = await db.select().from(sandwichCollections).where(eq(sandwichCollections.id, id));
+    return result[0] || null;
+  }
+
   async getSandwichCollectionsCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`count(*)::int` }).from(sandwichCollections);
     return Number(result[0].count);
