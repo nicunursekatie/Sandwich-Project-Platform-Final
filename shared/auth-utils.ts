@@ -75,6 +75,7 @@ export const PERMISSIONS = {
   // Data action permissions
   EXPORT_DATA: "export_data",
   IMPORT_DATA: "import_data",
+  EDIT_DATA: "edit_data", // General data editing permission
 
   // Message and communication permissions
   SEND_MESSAGES: "send_messages",
@@ -217,6 +218,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.SEND_MESSAGES,
         PERMISSIONS.EXPORT_DATA,
+        PERMISSIONS.EDIT_DATA, // Allow core team to edit data including collections
         PERMISSIONS.MANAGE_SUGGESTIONS,
         PERMISSIONS.ACCESS_SANDWICH_DATA
       ];
