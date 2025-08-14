@@ -1131,8 +1131,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             groupTotal += collectionGroupTotal;
           });
 
-          // Add 100,000 sandwiches to account for missing historical logs
-          const MISSING_LOGS_ADJUSTMENT = 100000;
+          // Add 50,000 sandwiches to account for missing historical logs
+          const MISSING_LOGS_ADJUSTMENT = 50000;
           
           return {
             totalEntries: collections.length,
