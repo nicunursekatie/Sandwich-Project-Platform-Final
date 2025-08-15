@@ -176,6 +176,7 @@ export class EmailService {
 
   /**
    * Send a new email - SIMPLIFIED (No threading)
+   * Always saves internal message, attempts SendGrid notification but doesn't fail if it's unavailable
    */
   async sendEmail(data: {
     senderId: string;
@@ -193,6 +194,7 @@ export class EmailService {
     isDraft?: boolean;
   }): Promise<EmailMessage> {
     try {
+      // First, save the internal message - this should always succeed
       const [newEmail] = await db
         .insert(emailMessages)
         .values({
@@ -216,9 +218,37 @@ export class EmailService {
         })
         .returning();
 
+      // Then try to send SendGrid notification (but don't fail if it doesn't work)
+      if (!data.isDraft) {
+        try {
+          const { sendEmail: sendGridEmail } = await import('../sendgrid');
+          await sendGridEmail({
+            to: data.recipientEmail,
+            from: 'katielong2316@gmail.com', // Your verified sender
+            subject: `New message: ${data.subject}`,
+            text: `You have a new message from ${data.senderName}.\n\nSubject: ${data.subject}\n\n${data.content}\n\nPlease log in to your account to view and respond to this message.`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #236383;">New Message</h2>
+                <p>You have a new message from <strong>${data.senderName}</strong>.</p>
+                <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3 style="margin-top: 0; color: #333;">Subject: ${data.subject}</h3>
+                  <p style="white-space: pre-wrap;">${data.content}</p>
+                </div>
+                <p>Please log in to your account to view and respond to this message.</p>
+              </div>
+            `
+          });
+          console.log(`[Email Service] SendGrid notification sent successfully to ${data.recipientEmail}`);
+        } catch (emailError: any) {
+          console.warn(`[Email Service] SendGrid notification failed (but internal message saved): ${emailError?.message || 'Unknown error'}`);
+          // Don't throw - the internal message was saved successfully
+        }
+      }
+
       return newEmail as EmailMessage;
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error('Failed to save internal email:', error);
       throw error;
     }
   }
