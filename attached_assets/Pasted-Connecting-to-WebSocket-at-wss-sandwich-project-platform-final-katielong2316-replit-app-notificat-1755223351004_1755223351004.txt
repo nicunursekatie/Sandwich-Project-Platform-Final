@@ -1,0 +1,986 @@
+Connecting to WebSocket at: wss://sandwich-project-platform-final-katielong2316.replit.app/notifications
+ Current URL location: /
+ Dashboard activeSection changed to: dashboard
+ WebSocket connected successfully
+ Messaging WebSocket connected
+ WebSocket connection closed: 1006 
+ Messaging WebSocket disconnected
+ WebSocket closed unexpectedly: 1006 
+w.onclose @ index-CnE_TnpF.js:785
+ WebSocket connected successfully
+ WebSocket connection closed: 1006 
+ WebSocket connected successfully
+ Navigation click: dashboard
+ Dashboard setActiveSection called with: dashboard
+ Current URL location: /dashboard
+ Navigation click: projects
+ Dashboard setActiveSection called with: projects
+ Rendering ProjectsClean component
+ Dashboard activeSection changed to: projects
+ Rendering ProjectsClean component
+ Navigation click: dashboard
+ Dashboard setActiveSection called with: dashboard
+ Dashboard activeSection changed to: dashboard
+ Navigation click: gmail-inbox
+ Dashboard setActiveSection called with: gmail-inbox
+ Dashboard activeSection changed to: gmail-inbox
+ Fetched 1 emails from inbox folder
+ Fetched 1 emails from inbox folder
+ Fetched 1 emails from inbox folder
+/api/drafts:1  Failed to load resource: the server responded with a status of 404 ()
+ Sending email with data: Object
+ Fetched 1 emails from inbox folder
+/api/drafts:1  Failed to load resource: the server responded with a status of 404 ()
+ Navigation click: collections
+ Dashboard setActiveSection called with: collections
+ Dashboard activeSection changed to: collections
+ Setting debounced filters: Object
+ Navigation click: projects
+ Dashboard setActiveSection called with: projects
+ Rendering ProjectsClean component
+ Dashboard activeSection changed to: projects
+ Rendering ProjectsClean component
+ Current URL location: /projects/26
+ Setting activeSection to project ID: project-26
+ Dashboard activeSection changed to: project-26
+ WebSocket connection closed: 1006 
+ WebSocket connected successfully
+ Navigation click: dashboard
+ Dashboard setActiveSection called with: dashboard
+ Current URL location: /dashboard
+ Dashboard activeSection changed to: dashboard
+ Navigation click: projects
+ Dashboard setActiveSection called with: projects
+ Rendering ProjectsClean component
+ Dashboard activeSection changed to: projects
+ Rendering ProjectsClean component
+ Current URL location: /projects/26
+ Setting activeSection to project ID: project-26
+ Dashboard activeSection changed to: project-26
+ 📍 Dashboard setActiveSection called with: messages
+ Dashboard activeSection changed to: messages
+ Sending message data: Object
+/api/messaging:1  Failed to load resource: the server responded with a status of 404 ()
+ Send message error: 
+onError @ index-CnE_TnpF.js:820
+ Sending message data: Object
+/api/messaging:1  Failed to load resource: the server responded with a status of 404 ()
+ Send message error: 
+onError @ index-CnE_TnpF.js:820
+ Sending message data: Object
+/api/messaging:1  Failed to load resource: the server responded with a status of 404 ()
+ Send message error: 
+onError @ index-CnE_TnpF.js:820
+ Sending message data: Object
+/api/messaging:1  Failed to load resource: the server responded with a status of 404 ()
+ Send message error: 
+onError @ index-CnE_TnpF.js:820
+ Navigation click: gmail-inbox
+ Dashboard setActiveSection called with: gmail-inbox
+ Current URL location: /dashboard
+ Dashboard activeSection changed to: gmail-inbox
+ Fetched 1 emails from inbox folder
+ Navigation click: chat
+ Dashboard setActiveSection called with: chat
+ Connecting to Socket.IO at: https://sandwich-project-platform-final-katielong2316.replit.app
+ Dashboard activeSection changed to: chat
+ Socket.io connected
+ Received rooms: Array(6)
+ Available users for mentions: 20
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Successfully joined channel: general
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ WebSocket connection closed: 1006 
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ WebSocket connected successfully
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ Rendering socket chat message: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ ChatMessageLikeButton rendered: Object
+ Navigation click: suggestions
+ Dashboard setActiveSection called with: suggestions
+ Socket.io disconnected
+ Dashboard activeSection changed to: suggestions
+ Navigation click: work-log
+ Dashboard setActiveSection called with: work-log
+ 🚀 Work logs query function called
+ Dashboard activeSection changed to: work-log
+ 🚀 Work logs API response data: Array(3)
+ Navigation click: chat
+ Dashboard setActiveSection called with: chat
+ Connecting to Socket.IO at: https://sandwich-project-platform-final-katielong2316.replit.app
+ Dashboard activeSection changed to: chat
+ Socket.io connected
+ WebSocket connection to 'wss://sandwich-project-platform-final-katielong2316.replit.app/socket.io/?EIO=4&transport=websocket&sid=2-doh0Kr2uh91HHcAAAG' failed: 
+createSocket @ index-CnE_TnpF.js:838
+ Received rooms: Array(6)
+index-CnE_TnpF.js:838 Available users for mentions: 20
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 Successfully joined channel: general
+index-CnE_TnpF.js:788 Navigation click: dashboard
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: dashboard
+index-CnE_TnpF.js:838 Socket.io disconnected
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: dashboard
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: phone-directory
+index-CnE_TnpF.js:788 Navigation click: dashboard
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: dashboard
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: dashboard
+index-CnE_TnpF.js:788 Navigation click: chat
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: chat
+index-CnE_TnpF.js:838 Connecting to Socket.IO at: https://sandwich-project-platform-final-katielong2316.replit.app
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: chat
+index-CnE_TnpF.js:838 Socket.io connected
+index-CnE_TnpF.js:838 Received rooms: Array(6)
+index-CnE_TnpF.js:838 Available users for mentions: 20
+index-CnE_TnpF.js:838 WebSocket connection to 'wss://sandwich-project-platform-final-katielong2316.replit.app/socket.io/?EIO=4&transport=websocket&sid=6qAQ7RHaE9OadPMhAAAI' failed: 
+createSocket @ index-CnE_TnpF.js:838
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: Object
+index-CnE_TnpF.js:838 Successfully joined channel: general
+index-CnE_TnpF.js:788 Navigation click: gmail-inbox
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: gmail-inbox
+index-CnE_TnpF.js:838 Socket.io disconnected
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: gmail-inbox
+index-CnE_TnpF.js:788 Navigation click: collections
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: collections
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: collections
+index-CnE_TnpF.js:647 Setting debounced filters: Object
+index-CnE_TnpF.js:788 Navigation click: gmail-inbox
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: gmail-inbox
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: gmail-inbox
+index-CnE_TnpF.js:788 Navigation click: projects
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: projects
+index-CnE_TnpF.js:838 Rendering ProjectsClean component
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: projects
+index-CnE_TnpF.js:788 Navigation click: suggestions
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: suggestions
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: suggestions
+index-CnE_TnpF.js:788 Navigation click: gmail-inbox
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: gmail-inbox
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: gmail-inbox
+index-CnE_TnpF.js:788 Navigation click: chat
+index-CnE_TnpF.js:838 Dashboard setActiveSection called with: chat
+index-CnE_TnpF.js:838 Connecting to Socket.IO at: https://sandwich-project-platform-final-katielong2316.replit.app
+index-CnE_TnpF.js:838 Dashboard activeSection changed to: chat
+index-CnE_TnpF.js:838 Socket.io connected
+index-CnE_TnpF.js:838 WebSocket connection to 'wss://sandwich-project-platform-final-katielong2316.replit.app/socket.io/?EIO=4&transport=websocket&sid=rfgN0zRZeLyBhYFKAAAK' failed: 
+createSocket @ index-CnE_TnpF.js:838
+doOpen @ index-CnE_TnpF.js:838
+open @ index-CnE_TnpF.js:838
+_probe @ index-CnE_TnpF.js:838
+onOpen @ index-CnE_TnpF.js:838
+onHandshake @ index-CnE_TnpF.js:838
+onHandshake @ index-CnE_TnpF.js:838
+_onPacket @ index-CnE_TnpF.js:838
+Mn.emit @ index-CnE_TnpF.js:838
+onPacket @ index-CnE_TnpF.js:838
+n @ index-CnE_TnpF.js:838
+onData @ index-CnE_TnpF.js:838
+Mn.emit @ index-CnE_TnpF.js:838
+_onLoad @ index-CnE_TnpF.js:838
+r.onreadystatechange @ index-CnE_TnpF.js:838
+index-CnE_TnpF.js:838 Received rooms: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+index-CnE_TnpF.js:838 Available users for mentions: 20
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 11, channel: 'general', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'i think we finally have a working real time messaging and chat feature guys', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 13, channel: 'general', userId: 'user_1753485125621_kgyxxezjp', userName: 'Jen Cohen', content: "Hi! I'm so excited for this platform. :)", …}channel: "general"content: "Hi! I'm so excited for this platform. :)"createdAt: "2025-07-25T23:12:45.495Z"editedAt: nullid: 13room: "general"timestamp: "2025-07-25T23:12:45.495Z"userId: "user_1753485125621_kgyxxezjp"userName: "Jen Cohen"[[Prototype]]: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 14, channel: 'general', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main) Long', content: 'I wish I had an award to give you for being the first one to communicate on here!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 15, channel: 'general', userId: 'user_1753473977467_ld546am0n', userName: 'Jordan', content: 'I’m in! This looks awesome!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 19, channel: 'general', userId: 'user_1751492211973_0pi1jdl3p', userName: 'Stephanie', content: 'Yay!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 22, channel: 'general', userId: 'user_1751072243271_fc8jaxl6u', userName: 'Marcy', content: 'Hey where is my award - the assitant award', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 23, channel: 'general', userId: 'user_1754665150914_7vldbh4au', userName: 'Juliet', content: 'Wahooo! Hey everyone', …}channel: "general"content: "Wahooo! Hey everyone"createdAt: "2025-08-08T15:00:38.826Z"editedAt: nullid: 23room: "general"timestamp: "2025-08-08T15:00:38.826Z"userId: "user_1754665150914_7vldbh4au"userName: "Juliet"[[Prototype]]: Object
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 24, channel: 'general', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'Thank you so much everyone for logging on and participating!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 25, channel: 'general', userId: 'user_1751072243271_fc8jaxl6u', userName: 'Marcy', content: 'Thanks for creating it, Katie!', …}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 11, numericMessageId: 11, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 13, numericMessageId: 13, user: 'user_1751072243271_fc8jaxl6u'}messageId: 13numericMessageId: 13user: "user_1751072243271_fc8jaxl6u"[[Prototype]]: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 14, numericMessageId: 14, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 15, numericMessageId: 15, user: 'user_1751072243271_fc8jaxl6u'}messageId: 15numericMessageId: 15user: "user_1751072243271_fc8jaxl6u"[[Prototype]]: Object
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 19, numericMessageId: 19, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 22, numericMessageId: 22, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 23, numericMessageId: 23, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 24, numericMessageId: 24, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 25, numericMessageId: 25, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 Successfully joined channel: general
+index-CnE_TnpF.js:788 WebSocket connection closed: 1006 
+index-CnE_TnpF.js:788 WebSocket connected successfully
+index-CnE_TnpF.js:788 WebSocket connection closed: 1006 
+index-CnE_TnpF.js:788 WebSocket connected successfully
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 10, channel: 'core-team', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'hi guys!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 17, channel: 'core-team', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'hellooooo out there', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 20, channel: 'core-team', userId: 'user_1751492211973_0pi1jdl3p', userName: 'Stephanie', content: 'HI!!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 21, channel: 'core-team', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'hi stephanie!', …}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 10, numericMessageId: 10, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 17, numericMessageId: 17, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 20, numericMessageId: 20, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 21, numericMessageId: 21, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 10, channel: 'core-team', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'hi guys!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 17, channel: 'core-team', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'hellooooo out there', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 20, channel: 'core-team', userId: 'user_1751492211973_0pi1jdl3p', userName: 'Stephanie', content: 'HI!!', …}
+index-CnE_TnpF.js:838 Rendering socket chat message: {id: 21, channel: 'core-team', userId: 'user_1751071509329_mrkw2z95z', userName: 'Katie (Main)', content: 'hi stephanie!', …}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 10, numericMessageId: 10, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 17, numericMessageId: 17, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 20, numericMessageId: 20, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 21, numericMessageId: 21, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 Successfully joined channel: core-team
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 10, numericMessageId: 10, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 17, numericMessageId: 17, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 20, numericMessageId: 20, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 ChatMessageLikeButton rendered: {messageId: 21, numericMessageId: 21, user: 'user_1751072243271_fc8jaxl6u'}
+index-CnE_TnpF.js:838 Successfully joined channel: committee
+index-CnE_TnpF.js:838 Successfully joined channel: host
