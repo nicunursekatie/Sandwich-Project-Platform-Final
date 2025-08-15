@@ -36,7 +36,7 @@ export default function RecipientsManagement() {
     contactPersonRole: ""
   });
 
-  const { data: recipients = [], isLoading } = useQuery({
+  const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
     queryKey: ["/api/recipients"],
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
   });
@@ -388,7 +388,7 @@ export default function RecipientsManagement() {
 
       {/* Recipients List */}
       <div className="grid gap-4">
-        {recipients.map((recipient: any) => (
+        {recipients.map((recipient) => (
           <Card key={recipient.id} className="border border-slate-200">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
