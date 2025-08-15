@@ -110,7 +110,7 @@ export default function EmailStyleMessaging() {
     retry: false
   });
 
-  // Send message mutation - Use messaging API for proper email notifications
+  // Send message mutation - Use messaging API for internal messages with graceful SendGrid handling
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
       console.log('Sending message data:', messageData);
@@ -118,10 +118,11 @@ export default function EmailStyleMessaging() {
       // Find recipient user by email
       const recipientUser = users.find((u: any) => u.email === messageData.to);
       if (!recipientUser) {
-        throw new Error('Recipient not found');
+        console.warn('Recipient not found in user list:', messageData.to);
+        throw new Error(`Recipient ${messageData.to} not found. Please make sure the email address is correct and the user exists in the system.`);
       }
       
-      // Format for messaging service API which supports email notifications
+      // Format for messaging service API which handles internal storage + SendGrid gracefully
       const messagingData = {
         recipientIds: [recipientUser.id],
         content: `Subject: ${messageData.subject}\n\n${messageData.content}`,
