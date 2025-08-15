@@ -797,14 +797,15 @@ export default function ProjectList() {
         {/* Edit Project Modal */}
         {editingProject && (
           <Dialog open={!!editingProject} onOpenChange={() => setEditingProject(null)}>
-            <DialogContent className="max-w-2xl" aria-describedby="edit-project-description">
-              <DialogHeader>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" aria-describedby="edit-project-description">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle>Edit Project</DialogTitle>
               </DialogHeader>
-              <p id="edit-project-description" className="text-sm text-slate-600 mb-4">
+              <p id="edit-project-description" className="text-sm text-slate-600 mb-4 flex-shrink-0">
                 Update project details, assignment, and timeline.
               </p>
-              <form onSubmit={handleUpdateProject} className="space-y-4">
+              <div className="flex-1 overflow-y-auto pr-2">
+                <form onSubmit={handleUpdateProject} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-title" className="text-sm font-medium text-slate-700">
@@ -949,25 +950,26 @@ export default function ProjectList() {
                     </div>
                   )}
                 </div>
-                
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setEditingProject(null)}
-                    disabled={updateProjectMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={updateProjectMutation.isPending || !editingProject.title?.trim()}
-                    className="btn-tsp-primary text-white"
-                  >
-                    {updateProjectMutation.isPending ? "Updating..." : "Update Project"}
-                  </Button>
-                </div>
-              </form>
+                </form>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4 flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingProject(null)}
+                  disabled={updateProjectMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateProject}
+                  disabled={updateProjectMutation.isPending || !editingProject.title?.trim()}
+                  className="btn-tsp-primary text-white"
+                >
+                  {updateProjectMutation.isPending ? "Updating..." : "Update Project"}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         )}
