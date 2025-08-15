@@ -49,38 +49,14 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
+import type { Driver, Host } from "@shared/schema";
 
-interface Driver {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  address?: string;
-  zone: string; // Keep for backward compatibility
-  routeDescription?: string; // New field for route descriptions like "SS to Dunwoody"
-
-  hostId?: number;
-  availability?: string;
-  isActive: boolean;
-  notes: string;
-  vanApproved: boolean;
-  homeAddress?: string;
-  availabilityNotes?: string;
-  emailAgreementSent: boolean;
-  voicemailLeft: boolean;
-  inactiveReason?: string;
-}
-
-interface Host {
-  id: number;
-  name: string;
-  status: string;
-}
+// Using shared schema types above - Driver and Host imported from @shared/schema
 
 export default function DriversManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.EDIT_COLLECTIONS);
+  const canEdit = hasPermission(user, PERMISSIONS.EDIT_ALL_COLLECTIONS);
   const canExport = hasPermission(user, PERMISSIONS.EXPORT_DATA);
   const queryClient = useQueryClient();
 
