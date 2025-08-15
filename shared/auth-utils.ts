@@ -392,10 +392,11 @@ export function canDeleteCollection(user: any, collection: any): boolean {
 export function canEditProject(user: any, project: any): boolean {
   if (!user || !user.permissions) return false;
 
-  // Super admins and users with EDIT_ALL_PROJECTS can edit all projects
+  // Super admins and users with EDIT_ALL_PROJECTS or MANAGE_ALL_PROJECTS can edit all projects
   if (
     user.role === "super_admin" ||
-    user.permissions.includes(PERMISSIONS.EDIT_ALL_PROJECTS)
+    user.permissions.includes(PERMISSIONS.EDIT_ALL_PROJECTS) ||
+    user.permissions.includes("MANAGE_ALL_PROJECTS")
   )
     return true;
 
