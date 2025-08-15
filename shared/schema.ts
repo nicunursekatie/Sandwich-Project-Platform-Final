@@ -554,7 +554,7 @@ export const hostContacts = pgTable("host_contacts", {
 export const recipients = pgTable("recipients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  contactName: text("contact_name"), // Contact person name
+  contactName: text("contact_name"), // Contact person name (legacy field)
   phone: text("phone").notNull(),
   email: text("email"),
   address: text("address"), // Actual street address
@@ -562,6 +562,11 @@ export const recipients = pgTable("recipients", {
   preferences: text("preferences"),
   weeklyEstimate: integer("weekly_estimate"), // Estimated weekly sandwich count
   status: text("status").notNull().default("active"), // 'active', 'inactive'
+  // New detailed contact fields
+  contactPersonName: text("contact_person_name"), // Our contact within the organization
+  contactPersonPhone: text("contact_person_phone"), // Contact person's phone
+  contactPersonEmail: text("contact_person_email"), // Contact person's email
+  contactPersonRole: text("contact_person_role"), // Their role/title (e.g., "Program Director", "Volunteer Coordinator")
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
