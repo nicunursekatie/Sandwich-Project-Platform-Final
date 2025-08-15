@@ -132,6 +132,33 @@ export default function SocketChatHub() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const formatDate = (timestamp: Date) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  // Group messages by date
+  const groupMessagesByDate = (messages: ChatMessage[]) => {
+    return messages.reduce((groups: { [key: string]: ChatMessage[] }, message) => {
+      const date = formatDate(message.timestamp);
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+      return groups;
+    }, {});
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -229,44 +256,61 @@ export default function SocketChatHub() {
             {/* Messages */}
             <ScrollArea className="flex-1 px-4 py-3 bg-white">
               <div className="space-y-1">
-                {(messages[currentRoom] || []).map((message: ChatMessage, index) => {
-                  console.log("Rendering socket chat message:", message);
+                {(() => {
+                  const currentMessages = messages[currentRoom] || [];
+                  const groupedMessages = groupMessagesByDate(currentMessages);
                   
-                  // Generate consistent colors based on user name
-                  const getAvatarColor = (userName: string) => {
-                    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-teal-500'];
-                    const hash = userName.split('').reduce((a, b) => {
-                      a = ((a << 5) - a) + b.charCodeAt(0);
-                      return a & a;
-                    }, 0);
-                    return colors[Math.abs(hash) % colors.length];
-                  };
-                  
-                  return (
-                    <div key={message.id} className="flex gap-2 group py-1">
-                      <Avatar className="h-7 w-7 flex-shrink-0">
-                        <AvatarFallback className={`text-xs font-medium text-white ${getAvatarColor(message.userName)}`}>
-                          {getInitials(message.userName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 mb-0">
-                          <span className="font-medium text-gray-900 text-sm">{message.userName}</span>
-                          <span className="text-xs text-gray-500">
-                            {formatTime(message.timestamp)}
-                          </span>
-                        </div>
-                        <p className="text-gray-800 text-sm leading-tight">
-                          <MessageWithMentions content={message.content} />
-                        </p>
-                        {/* Message actions */}
-                        <div className="flex items-center mt-0">
-                          <ChatMessageLikeButton messageId={message.id} />
-                        </div>
+                  return Object.entries(groupedMessages).map(([date, dateMessages]) => (
+                    <div key={date} className="mb-6">
+                      {/* Date separator */}
+                      <div className="flex items-center justify-center mb-4">
+                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-300">
+                          {date}
+                        </Badge>
                       </div>
+                      
+                      {/* Messages for this date */}
+                      {dateMessages.map((message: ChatMessage, index) => {
+                        console.log("Rendering socket chat message:", message);
+                        
+                        // Generate consistent colors based on user name
+                        const getAvatarColor = (userName: string) => {
+                          const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-teal-500'];
+                          const hash = userName.split('').reduce((a, b) => {
+                            a = ((a << 5) - a) + b.charCodeAt(0);
+                            return a & a;
+                          }, 0);
+                          return colors[Math.abs(hash) % colors.length];
+                        };
+                        
+                        return (
+                          <div key={message.id} className="flex gap-2 group py-1">
+                            <Avatar className="h-7 w-7 flex-shrink-0">
+                              <AvatarFallback className={`text-xs font-medium text-white ${getAvatarColor(message.userName)}`}>
+                                {getInitials(message.userName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 mb-0">
+                                <span className="font-medium text-gray-900 text-sm">{message.userName}</span>
+                                <span className="text-xs text-gray-500">
+                                  {formatTime(message.timestamp)}
+                                </span>
+                              </div>
+                              <p className="text-gray-800 text-sm leading-tight">
+                                <MessageWithMentions content={message.content} />
+                              </p>
+                              {/* Message actions */}
+                              <div className="flex items-center mt-0">
+                                <ChatMessageLikeButton messageId={message.id} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  ));
+                })()}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
