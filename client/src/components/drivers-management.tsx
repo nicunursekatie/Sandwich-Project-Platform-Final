@@ -227,7 +227,7 @@ export default function DriversManagement() {
       const driver = drivers?.find((d) => d.id === driverId);
       if (!driver) throw new Error("Driver not found");
 
-      const updatedNotes = updateAgreementInNotes(driver.notes, status);
+      const updatedNotes = updateAgreementInNotes(driver.notes || "", status);
 
       return apiRequest("PATCH", `/api/drivers/${driverId}`, {
         notes: updatedNotes,
@@ -245,7 +245,7 @@ export default function DriversManagement() {
         if (!old) return old;
         return old.map(driver => {
           if (driver.id === driverId) {
-            const updatedNotes = updateAgreementInNotes(driver.notes, status);
+            const updatedNotes = updateAgreementInNotes(driver.notes || "", status);
             return { ...driver, notes: updatedNotes };
           }
           return driver;
@@ -429,7 +429,7 @@ export default function DriversManagement() {
     const csvContent = [
       headers.join(","),
       ...drivers.map((driver) => {
-        const hasAgreement = hasSignedAgreement(driver.notes);
+        const hasAgreement = hasSignedAgreement(driver.notes || "");
         return [
           `"${driver.name}"`,
           `"${driver.phone || ""}"`,
@@ -478,7 +478,7 @@ export default function DriversManagement() {
       }
 
       // Missing agreements filter
-      if (filters.missingAgreementsOnly && hasSignedAgreement(driver.notes)) {
+      if (filters.missingAgreementsOnly && hasSignedAgreement(driver.notes || "")) {
         return false;
       }
 
