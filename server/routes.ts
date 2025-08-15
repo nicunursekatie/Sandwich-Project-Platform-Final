@@ -3387,30 +3387,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/recipients/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updates = req.body;
+      
+      // Validate the request body using the schema
+      const updates = insertRecipientSchema.partial().parse(req.body);
+      
       const updatedRecipient = await storage.updateRecipient(id, updates);
       if (!updatedRecipient) {
         return res.status(404).json({ message: "Recipient not found" });
       }
       res.json(updatedRecipient);
     } catch (error) {
-      logger.error("Failed to update recipient", error);
-      res.status(500).json({ message: "Failed to update recipient" });
+      if (error instanceof z.ZodError) {
+        logger.error("Invalid recipient data", error);
+        res.status(400).json({ 
+          message: "Invalid recipient data", 
+          errors: error.errors 
+        });
+      } else {
+        logger.error("Failed to update recipient", error);
+        res.status(500).json({ message: "Failed to update recipient" });
+      }
     }
   });
 
   app.patch("/api/recipients/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updates = req.body;
+      
+      // Validate the request body using the schema
+      const updates = insertRecipientSchema.partial().parse(req.body);
+      
       const updatedRecipient = await storage.updateRecipient(id, updates);
       if (!updatedRecipient) {
         return res.status(404).json({ message: "Recipient not found" });
       }
       res.json(updatedRecipient);
     } catch (error) {
-      logger.error("Failed to update recipient", error);
-      res.status(500).json({ message: "Failed to update recipient" });
+      if (error instanceof z.ZodError) {
+        logger.error("Invalid recipient data", error);
+        res.status(400).json({ 
+          message: "Invalid recipient data", 
+          errors: error.errors 
+        });
+      } else {
+        logger.error("Failed to update recipient", error);
+        res.status(500).json({ message: "Failed to update recipient" });
+      }
     }
   });
 
