@@ -177,9 +177,11 @@ export default function ProjectsClean() {
   const handleUpdateProject = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingProject) {
+      const { id, assigneeIds, ...projectData } = editingProject;
       updateProjectMutation.mutate({
-        id: editingProject.id,
-        ...editingProject
+        id,
+        ...projectData,
+        assigneeIds: assigneeIds ? JSON.stringify(assigneeIds) : undefined
       });
       setShowEditDialog(false);
       setEditingProject(null);
@@ -631,14 +633,15 @@ export default function ProjectsClean() {
 
       {/* Edit Project Dialog - Comprehensive Form */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-[#236383] font-roboto">Edit Project</DialogTitle>
             <p className="text-sm text-gray-600 font-roboto">Update project details and assignments</p>
           </DialogHeader>
           
           {editingProject && (
-            <form onSubmit={handleUpdateProject} className="space-y-4">
+            <div className="flex-1 overflow-y-auto">
+              <form onSubmit={handleUpdateProject} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <Label htmlFor="edit-project-title" className="font-roboto">Title</Label>
@@ -774,7 +777,8 @@ export default function ProjectsClean() {
                   {updateProjectMutation.isPending ? 'Updating...' : 'Update Project'}
                 </Button>
               </div>
-            </form>
+              </form>
+            </div>
           )}
         </DialogContent>
       </Dialog>

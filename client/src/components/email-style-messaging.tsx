@@ -116,7 +116,7 @@ export default function EmailStyleMessaging() {
       console.log('Sending message data:', messageData);
       
       // Find recipient user by email
-      const recipientUser = users.find(u => u.email === messageData.to);
+      const recipientUser = users.find((u: any) => u.email === messageData.to);
       if (!recipientUser) {
         throw new Error('Recipient not found');
       }
