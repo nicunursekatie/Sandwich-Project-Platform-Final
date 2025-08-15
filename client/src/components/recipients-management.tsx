@@ -29,7 +29,11 @@ export default function RecipientsManagement() {
     address: "",
     region: "",
     preferences: "",
-    status: "active" as const
+    status: "active" as const,
+    contactPersonName: "",
+    contactPersonPhone: "",
+    contactPersonEmail: "",
+    contactPersonRole: ""
   });
 
   const { data: recipients = [], isLoading } = useQuery({
@@ -49,7 +53,11 @@ export default function RecipientsManagement() {
         address: "",
         region: "",
         preferences: "",
-        status: "active"
+        status: "active",
+        contactPersonName: "",
+        contactPersonPhone: "",
+        contactPersonEmail: "",
+        contactPersonRole: ""
       });
       toast({
         title: "Success",
@@ -319,6 +327,50 @@ export default function RecipientsManagement() {
                       placeholder="Dietary restrictions or preferences"
                     />
                   </div>
+                  
+                  {/* Contact Person Section */}
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium text-sm text-slate-700 mb-3">Contact Person Information</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="contactPersonName">Contact Name</Label>
+                        <Input
+                          id="contactPersonName"
+                          value={newRecipient.contactPersonName}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonName: e.target.value })}
+                          placeholder="John Smith"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="contactPersonRole">Role/Title</Label>
+                        <Input
+                          id="contactPersonRole"
+                          value={newRecipient.contactPersonRole}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonRole: e.target.value })}
+                          placeholder="Program Director, Manager, etc."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="contactPersonPhone">Contact Phone</Label>
+                        <Input
+                          id="contactPersonPhone"
+                          value={newRecipient.contactPersonPhone}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonPhone: e.target.value })}
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="contactPersonEmail">Contact Email</Label>
+                        <Input
+                          id="contactPersonEmail"
+                          type="email"
+                          value={newRecipient.contactPersonEmail}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonEmail: e.target.value })}
+                          placeholder="john@organization.org"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                       Cancel
@@ -397,6 +449,36 @@ export default function RecipientsManagement() {
                   <strong>Preferences:</strong> {recipient.preferences}
                 </div>
               )}
+              
+              {/* Contact Person Information */}
+              {(recipient.contactPersonName || recipient.contactPersonPhone || recipient.contactPersonEmail) && (
+                <div className="border-t pt-3 mt-3">
+                  <div className="text-sm font-medium text-slate-700 mb-2">Contact Person</div>
+                  {recipient.contactPersonName && (
+                    <div className="text-sm text-slate-600 flex items-center gap-2">
+                      <span className="font-medium">Name:</span> 
+                      <span>{recipient.contactPersonName}</span>
+                      {recipient.contactPersonRole && (
+                        <Badge variant="outline" className="text-xs">
+                          {recipient.contactPersonRole}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  {recipient.contactPersonPhone && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
+                      <Phone className="w-4 h-4" />
+                      <span>{recipient.contactPersonPhone}</span>
+                    </div>
+                  )}
+                  {recipient.contactPersonEmail && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
+                      <Mail className="w-4 h-4" />
+                      <span>{recipient.contactPersonEmail}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -467,6 +549,50 @@ export default function RecipientsManagement() {
                   value={editingRecipient.preferences || ""}
                   onChange={(e) => setEditingRecipient({ ...editingRecipient, preferences: e.target.value })}
                 />
+              </div>
+              
+              {/* Contact Person Section */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium text-sm text-slate-700 mb-3">Contact Person Information</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit-contactPersonName">Contact Name</Label>
+                    <Input
+                      id="edit-contactPersonName"
+                      value={editingRecipient.contactPersonName || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, contactPersonName: e.target.value })}
+                      placeholder="John Smith"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-contactPersonRole">Role/Title</Label>
+                    <Input
+                      id="edit-contactPersonRole"
+                      value={editingRecipient.contactPersonRole || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, contactPersonRole: e.target.value })}
+                      placeholder="Program Director, Manager, etc."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-contactPersonPhone">Contact Phone</Label>
+                    <Input
+                      id="edit-contactPersonPhone"
+                      value={editingRecipient.contactPersonPhone || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, contactPersonPhone: e.target.value })}
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-contactPersonEmail">Contact Email</Label>
+                    <Input
+                      id="edit-contactPersonEmail"
+                      type="email"
+                      value={editingRecipient.contactPersonEmail || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, contactPersonEmail: e.target.value })}
+                      placeholder="john@organization.org"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setEditingRecipient(null)}>
