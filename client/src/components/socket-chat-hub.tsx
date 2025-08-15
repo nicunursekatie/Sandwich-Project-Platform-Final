@@ -132,29 +132,46 @@ export default function SocketChatHub() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const formatDate = (timestamp: Date) => {
+  const getRelativeTimeLabel = (timestamp: Date) => {
+    const now = new Date();
     const date = new Date(timestamp);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return date.toLocaleDateString();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+    
+    // Less than 1 minute
+    if (diffInMinutes < 1) return "now";
+    
+    // Less than 1 hour - show minutes
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    // Less than 24 hours - show hours
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    // Yesterday
+    if (diffInDays === 1) return "Yesterday";
+    
+    // Today (should not happen given the logic above, but safety check)
+    if (date.toDateString() === now.toDateString()) return "Today";
+    
+    // Less than a week - show day name
+    if (diffInDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long' });
     }
+    
+    // More than a week - show date
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Group messages by date
-  const groupMessagesByDate = (messages: ChatMessage[]) => {
+  // Group messages by relative time periods
+  const groupMessagesByTime = (messages: ChatMessage[]) => {
     return messages.reduce((groups: { [key: string]: ChatMessage[] }, message) => {
-      const date = formatDate(message.timestamp);
-      if (!groups[date]) {
-        groups[date] = [];
+      const timeLabel = getRelativeTimeLabel(message.timestamp);
+      if (!groups[timeLabel]) {
+        groups[timeLabel] = [];
       }
-      groups[date].push(message);
+      groups[timeLabel].push(message);
       return groups;
     }, {});
   };
@@ -258,19 +275,19 @@ export default function SocketChatHub() {
               <div className="space-y-1">
                 {(() => {
                   const currentMessages = messages[currentRoom] || [];
-                  const groupedMessages = groupMessagesByDate(currentMessages);
+                  const groupedMessages = groupMessagesByTime(currentMessages);
                   
-                  return Object.entries(groupedMessages).map(([date, dateMessages]) => (
-                    <div key={date} className="mb-6">
-                      {/* Date separator */}
-                      <div className="flex items-center justify-center mb-4">
-                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-300">
-                          {date}
-                        </Badge>
+                  return Object.entries(groupedMessages).map(([timeLabel, timeMessages]) => (
+                    <div key={timeLabel} className="mb-6">
+                      {/* Time separator - iMessage style */}
+                      <div className="flex items-center justify-end mb-4">
+                        <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                          {timeLabel}
+                        </span>
                       </div>
                       
-                      {/* Messages for this date */}
-                      {dateMessages.map((message: ChatMessage, index) => {
+                      {/* Messages for this time period */}
+                      {timeMessages.map((message: ChatMessage, index) => {
                         console.log("Rendering socket chat message:", message);
                         
                         // Generate consistent colors based on user name

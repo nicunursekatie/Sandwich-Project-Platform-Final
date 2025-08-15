@@ -263,30 +263,47 @@ export default function CoreTeamChat() {
     return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
-  const formatDate = (timestamp: string) => {
+  const getRelativeTimeLabel = (timestamp: string) => {
+    const now = new Date();
     const date = new Date(timestamp);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return date.toLocaleDateString();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+    
+    // Less than 1 minute
+    if (diffInMinutes < 1) return "now";
+    
+    // Less than 1 hour - show minutes
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    // Less than 24 hours - show hours
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    // Yesterday
+    if (diffInDays === 1) return "Yesterday";
+    
+    // Today (should not happen given the logic above, but safety check)
+    if (date.toDateString() === now.toDateString()) return "Today";
+    
+    // Less than a week - show day name
+    if (diffInDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long' });
     }
+    
+    // More than a week - show date
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Group messages by date using filtered displayedMessages
+  // Group messages by relative time periods using filtered displayedMessages
   const groupedMessages = displayedMessages.reduce(
     (groups: { [key: string]: ChatMessage[] }, message) => {
       const timestamp = message.createdAt || new Date().toISOString();
-      const date = formatDate(timestamp);
-      if (!groups[date]) {
-        groups[date] = [];
+      const timeLabel = getRelativeTimeLabel(timestamp);
+      if (!groups[timeLabel]) {
+        groups[timeLabel] = [];
       }
-      groups[date].push(message);
+      groups[timeLabel].push(message);
       return groups;
     },
     {},
@@ -322,15 +339,15 @@ export default function CoreTeamChat() {
               </p>
             </div>
           ) : (
-            Object.entries(groupedMessages).map(([date, dateMessages]) => (
-              <div key={date} className="mb-6">
-                <div className="flex items-center justify-center mb-4">
-                  <Badge variant="outline" className="text-xs">
-                    {date}
-                  </Badge>
+            Object.entries(groupedMessages).map(([timeLabel, timeMessages]) => (
+              <div key={timeLabel} className="mb-6">
+                <div className="flex items-center justify-end mb-4">
+                  <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    {timeLabel}
+                  </span>
                 </div>
 
-                {dateMessages.map((msg) => (
+                {timeMessages.map((msg) => (
                   <div key={msg.id} className="flex items-start space-x-3 mb-4">
                     <Avatar className="w-8 h-8">
                       <AvatarFallback className="bg-orange-100 text-orange-700 text-xs">
