@@ -485,6 +485,34 @@ export const drivers = pgTable("drivers", {
   emailAgreementSent: boolean("email_agreement_sent").notNull().default(false),
   voicemailLeft: boolean("voicemail_left").notNull().default(false),
   inactiveReason: text("inactive_reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const volunteers = pgTable("volunteers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(true),
+  vehicleType: text("vehicle_type"),
+  licenseNumber: text("license_number"),
+  availability: text("availability").default("available"), // "available", "busy", "off-duty"
+  zone: text("zone"), // Keep for migration compatibility
+  routeDescription: text("route_description"), // New field to preserve route info like "SS to Dunwoody"
+  hostLocation: text("host_location"), // Connect to specific host locations
+  hostId: integer("host_id"), // Reference to hosts table for directory connection
+  vanApproved: boolean("van_approved").notNull().default(false),
+  homeAddress: text("home_address"),
+  availabilityNotes: text("availability_notes"),
+  emailAgreementSent: boolean("email_agreement_sent").notNull().default(false),
+  voicemailLeft: boolean("voicemail_left").notNull().default(false),
+  inactiveReason: text("inactive_reason"),
+  volunteerType: text("volunteer_type").notNull().default("general"), // 'general', 'former_driver', 'driver_candidate', etc.
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const driverAgreements = pgTable("driver_agreements", {
@@ -564,6 +592,8 @@ export const insertDriveLinkSchema = createInsertSchema(driveLinks).omit({ id: t
 export const insertAgendaItemSchema = createInsertSchema(agendaItems).omit({ id: true, submittedAt: true });
 export const insertMeetingSchema = createInsertSchema(meetings).omit({ id: true, createdAt: true });
 export const insertDriverAgreementSchema = createInsertSchema(driverAgreements).omit({ id: true, submittedAt: true });
+export const insertDriverSchema = createInsertSchema(drivers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertVolunteerSchema = createInsertSchema(volunteers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertHostSchema = createInsertSchema(hosts).omit({ id: true, createdAt: true, updatedAt: true }).extend({
   name: z.string().min(1, "Host name is required").trim().refine(
     (name) => name.length > 0,
@@ -695,13 +725,11 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 
-// Driver types
-export const insertDriverSchema = createInsertSchema(drivers).omit({
-  id: true
-});
-
+// Driver and Volunteer types
 export type Driver = typeof drivers.$inferSelect;
 export type InsertDriver = z.infer<typeof insertDriverSchema>;
+export type Volunteer = typeof volunteers.$inferSelect;
+export type InsertVolunteer = z.infer<typeof insertVolunteerSchema>;
 
 // Notifications table for celebrations and system notifications
 export const notifications = pgTable("notifications", {
