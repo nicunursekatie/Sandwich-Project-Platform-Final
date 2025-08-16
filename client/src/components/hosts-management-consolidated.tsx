@@ -381,7 +381,7 @@ export default function HostsManagementConsolidated() {
 
   // Helper function to render role badges with special styling for leads
   const RoleBadge = ({ role }: { role: string }) => {
-    if (role.toLowerCase() === 'lead') {
+    if (role && role.toLowerCase() === 'lead') {
       return (
         <div className="flex items-center gap-1">
           <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold shadow-md border-0 flex items-center gap-1 px-2 py-1">
@@ -389,6 +389,14 @@ export default function HostsManagementConsolidated() {
             LEAD
           </Badge>
         </div>
+      );
+    }
+    // Handle empty/null roles
+    if (!role || role.trim() === '') {
+      return (
+        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+          No Role
+        </Badge>
       );
     }
     return (
@@ -512,7 +520,24 @@ export default function HostsManagementConsolidated() {
               </div>
             )}
             
-            <div className="flex space-x-2 pt-2">
+            <div className="flex flex-col space-y-2 pt-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  // Force fresh data when opening host details
+                  await queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+                  // Get the refreshed host data
+                  const freshHosts = queryClient.getQueryData(['/api/hosts-with-contacts']) as HostWithContacts[];
+                  const freshHost = freshHosts?.find(h => h.id === host.id);
+                  setSelectedHost(freshHost || host);
+                }}
+                className="w-full"
+              >
+                <Users className="w-3 h-3 mr-1" />
+                Manage Contacts
+              </Button>
+              <div className="flex space-x-2">
                 <Dialog 
                   open={editingHost?.id === host.id} 
                   onOpenChange={(open) => {
