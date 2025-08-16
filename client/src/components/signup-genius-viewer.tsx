@@ -5,7 +5,8 @@ import { ExternalLink, Calendar, Users, Clock, AlertCircle } from "lucide-react"
 
 export default function SignUpGeniusViewer() {
   const signupUrl = "https://www.signupgenius.com/go/5080A4BA5AA22A7F94-50444894-thesandwich#/";
-  const [iframeError, setIframeError] = useState(false);
+  // SignUp Genius blocks iframe embedding, so show fallback immediately
+  const [iframeError, setIframeError] = useState(true);
 
   const handleOpenExternal = () => {
     window.open(signupUrl, '_blank');
@@ -30,22 +31,8 @@ export default function SignUpGeniusViewer() {
         </CardHeader>
         
         <CardContent className="flex-1 p-6">
-          {!iframeError ? (
-            <div className="w-full h-full relative overflow-hidden rounded-lg border bg-white">
-              <iframe
-                id="signupgenius-iframe"
-                src={signupUrl}
-                className="w-full h-full border-0 rounded-lg"
-                style={{ 
-                  height: 'calc(100vh - 200px)',
-                  minHeight: '600px'
-                }}
-                title="SignUp Genius"
-                onError={handleIframeError}
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
-              />
-            </div>
-          ) : (
+          {/* Always show fallback since SignUp Genius blocks embedding */}
+          {(
             <div className="flex flex-col items-center justify-center h-full bg-white rounded-lg border-2 border-dashed border-gray-300 p-8">
               <div className="w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
                 <AlertCircle className="h-8 w-8 text-orange-600" />
@@ -56,8 +43,8 @@ export default function SignUpGeniusViewer() {
               </h3>
               
               <p className="text-gray-600 text-center mb-6 max-w-md">
-                SignUp Genius cannot be embedded due to security restrictions. 
-                Click below to open the volunteer signup page in a new tab.
+                SignUp Genius blocks embedding for security. 
+                Click below to access the volunteer signup page in a new tab.
               </p>
               
               <Button
