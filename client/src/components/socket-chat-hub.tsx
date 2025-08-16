@@ -225,12 +225,17 @@ export default function SocketChatHub() {
                   )}
                 </div>
                 <p className={`text-xs leading-tight ${currentRoom === room.id ? 'text-blue-100' : 'text-gray-500'}`}>
-                  {room.id === 'general' && (messages.general?.length > 0 ? 'Katie (Main): Thank you so much everyone for logging...' : 'No messages yet • Click to start the conversation')}
-                  {room.id === 'core-team' && 'Katie (Main): Is stephanie!'} 
-                  {room.id === 'committee' && 'No messages yet • Click to start the conversation'}
-                  {room.id === 'host' && 'No messages yet • Click to start the conversation'}
-                  {room.id === 'driver' && 'No messages yet • Click to start the conversation'}
-                  {room.id === 'recipient' && 'No messages yet • Click to start the conversation'}
+                  {(() => {
+                    const roomMessages = messages[room.id] || [];
+                    if (roomMessages.length === 0) {
+                      return 'No messages yet • Click to start the conversation';
+                    }
+                    const lastMessage = roomMessages[roomMessages.length - 1];
+                    const preview = lastMessage.content.length > 40 
+                      ? lastMessage.content.substring(0, 40) + '...' 
+                      : lastMessage.content;
+                    return `${lastMessage.userName}: ${preview}`;
+                  })()}
                 </p>
               </button>
             </div>
