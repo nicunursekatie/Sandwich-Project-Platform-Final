@@ -584,7 +584,7 @@ export const recipients = pgTable("recipients", {
   email: text("email"),
   address: text("address"), // Actual street address
   region: text("region"), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
-  preferences: text("preferences"),
+  preferences: text("preferences"), // Legacy field - keeping for backward compatibility
   weeklyEstimate: integer("weekly_estimate"), // Estimated weekly sandwich count
   status: text("status").notNull().default("active"), // 'active', 'inactive'
   // New detailed contact fields
@@ -592,6 +592,14 @@ export const recipients = pgTable("recipients", {
   contactPersonPhone: text("contact_person_phone"), // Contact person's phone
   contactPersonEmail: text("contact_person_email"), // Contact person's email
   contactPersonRole: text("contact_person_role"), // Their role/title (e.g., "Program Director", "Volunteer Coordinator")
+  // Enhanced fields for operational tracking
+  reportingGroup: text("reporting_group"), // Corresponds to host locations for operational grouping
+  estimatedSandwiches: integer("estimated_sandwiches"), // Estimated number of sandwiches needed
+  sandwichType: text("sandwich_type"), // Type of sandwiches preferred (replaces old "preferences" field)
+  tspContact: text("tsp_contact"), // TSP contact person (may be a user within our app)
+  tspContactUserId: varchar("tsp_contact_user_id"), // Link to users table if TSP contact is an app user
+  contractSigned: boolean("contract_signed").notNull().default(false), // Whether contract has been signed
+  contractSignedDate: timestamp("contract_signed_date"), // When contract was signed
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

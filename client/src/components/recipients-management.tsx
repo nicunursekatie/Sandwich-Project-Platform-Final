@@ -28,12 +28,20 @@ export default function RecipientsManagement() {
     email: "",
     address: "",
     region: "",
-    preferences: "",
+    preferences: "", // Legacy field - keeping for backward compatibility
     status: "active" as const,
     contactPersonName: "",
     contactPersonPhone: "",
     contactPersonEmail: "",
-    contactPersonRole: ""
+    contactPersonRole: "",
+    // New enhanced fields
+    reportingGroup: "",
+    estimatedSandwiches: "",
+    sandwichType: "",
+    tspContact: "",
+    tspContactUserId: "",
+    contractSigned: false,
+    contractSignedDate: ""
   });
 
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
@@ -57,7 +65,15 @@ export default function RecipientsManagement() {
         contactPersonName: "",
         contactPersonPhone: "",
         contactPersonEmail: "",
-        contactPersonRole: ""
+        contactPersonRole: "",
+        // Reset new enhanced fields
+        reportingGroup: "",
+        estimatedSandwiches: "",
+        sandwichType: "",
+        tspContact: "",
+        tspContactUserId: "",
+        contractSigned: false,
+        contractSignedDate: ""
       });
       toast({
         title: "Success",
@@ -371,6 +387,74 @@ export default function RecipientsManagement() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Enhanced Operational Fields */}
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium text-sm text-slate-700 mb-3">Operational Details</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="reportingGroup">Reporting Group</Label>
+                        <Input
+                          id="reportingGroup"
+                          value={newRecipient.reportingGroup}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, reportingGroup: e.target.value })}
+                          placeholder="Corresponds to host locations"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="estimatedSandwiches">Estimated Sandwiches</Label>
+                        <Input
+                          id="estimatedSandwiches"
+                          type="number"
+                          value={newRecipient.estimatedSandwiches}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, estimatedSandwiches: e.target.value })}
+                          placeholder="Number of sandwiches needed"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="sandwichType">Sandwich Type</Label>
+                        <Input
+                          id="sandwichType"
+                          value={newRecipient.sandwichType}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, sandwichType: e.target.value })}
+                          placeholder="Type preferred (e.g., PB&J, Deli, Mixed)"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tspContact">TSP Contact</Label>
+                        <Input
+                          id="tspContact"
+                          value={newRecipient.tspContact}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, tspContact: e.target.value })}
+                          placeholder="TSP team member name"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="contractSigned"
+                            checked={newRecipient.contractSigned}
+                            onChange={(e) => setNewRecipient({ ...newRecipient, contractSigned: e.target.checked })}
+                            className="h-4 w-4 text-[#236383] focus:ring-[#236383] border-gray-300 rounded"
+                          />
+                          <Label htmlFor="contractSigned" className="text-sm">Contract Signed</Label>
+                        </div>
+                      </div>
+                      {newRecipient.contractSigned && (
+                        <div>
+                          <Label htmlFor="contractSignedDate">Contract Signed Date</Label>
+                          <Input
+                            id="contractSignedDate"
+                            type="date"
+                            value={newRecipient.contractSignedDate}
+                            onChange={(e) => setNewRecipient({ ...newRecipient, contractSignedDate: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                       Cancel
@@ -449,6 +533,49 @@ export default function RecipientsManagement() {
                   <strong>Preferences:</strong> {recipient.preferences}
                 </div>
               )}
+
+              {/* Enhanced Operational Information */}
+              {(recipient.reportingGroup || recipient.estimatedSandwiches || recipient.sandwichType || recipient.tspContact || recipient.contractSigned) && (
+                <div className="border-t pt-3 mt-3">
+                  <div className="text-sm font-medium text-slate-700 mb-2">Operational Details</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {recipient.reportingGroup && (
+                      <div className="text-sm text-slate-600">
+                        <span className="font-medium">Reporting Group:</span> {recipient.reportingGroup}
+                      </div>
+                    )}
+                    {recipient.estimatedSandwiches && (
+                      <div className="text-sm text-slate-600">
+                        <span className="font-medium">Estimated:</span> {recipient.estimatedSandwiches} sandwiches
+                      </div>
+                    )}
+                    {recipient.sandwichType && (
+                      <div className="text-sm text-slate-600">
+                        <span className="font-medium">Type:</span> {recipient.sandwichType}
+                      </div>
+                    )}
+                    {recipient.tspContact && (
+                      <div className="text-sm text-slate-600">
+                        <span className="font-medium">TSP Contact:</span> {recipient.tspContact}
+                      </div>
+                    )}
+                    <div className="col-span-2 flex items-center gap-2">
+                      {recipient.contractSigned ? (
+                        <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                          Contract Signed
+                          {recipient.contractSignedDate && (
+                            <span className="ml-1">({new Date(recipient.contractSignedDate).toLocaleDateString()})</span>
+                          )}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          Contract Pending
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Contact Person Information */}
               {(recipient.contactPersonName || recipient.contactPersonPhone || recipient.contactPersonEmail) && (
@@ -493,7 +620,7 @@ export default function RecipientsManagement() {
       {/* Edit Modal */}
       {editingRecipient && (
         <Dialog open={!!editingRecipient} onOpenChange={() => setEditingRecipient(null)}>
-          <DialogContent aria-describedby="edit-recipient-description">
+          <DialogContent aria-describedby="edit-recipient-description" className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Recipient</DialogTitle>
             </DialogHeader>
@@ -594,6 +721,74 @@ export default function RecipientsManagement() {
                   </div>
                 </div>
               </div>
+
+              {/* Enhanced Operational Fields */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium text-sm text-slate-700 mb-3">Operational Details</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit-reportingGroup">Reporting Group</Label>
+                    <Input
+                      id="edit-reportingGroup"
+                      value={editingRecipient.reportingGroup || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, reportingGroup: e.target.value })}
+                      placeholder="Corresponds to host locations"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-estimatedSandwiches">Estimated Sandwiches</Label>
+                    <Input
+                      id="edit-estimatedSandwiches"
+                      type="number"
+                      value={editingRecipient.estimatedSandwiches || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, estimatedSandwiches: parseInt(e.target.value) || null })}
+                      placeholder="Number of sandwiches needed"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-sandwichType">Sandwich Type</Label>
+                    <Input
+                      id="edit-sandwichType"
+                      value={editingRecipient.sandwichType || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, sandwichType: e.target.value })}
+                      placeholder="Type preferred (e.g., PB&J, Deli, Mixed)"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-tspContact">TSP Contact</Label>
+                    <Input
+                      id="edit-tspContact"
+                      value={editingRecipient.tspContact || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, tspContact: e.target.value })}
+                      placeholder="TSP team member name"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="edit-contractSigned"
+                        checked={editingRecipient.contractSigned || false}
+                        onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSigned: e.target.checked })}
+                        className="h-4 w-4 text-[#236383] focus:ring-[#236383] border-gray-300 rounded"
+                      />
+                      <Label htmlFor="edit-contractSigned" className="text-sm">Contract Signed</Label>
+                    </div>
+                  </div>
+                  {editingRecipient.contractSigned && (
+                    <div>
+                      <Label htmlFor="edit-contractSignedDate">Contract Signed Date</Label>
+                      <Input
+                        id="edit-contractSignedDate"
+                        type="date"
+                        value={editingRecipient.contractSignedDate ? new Date(editingRecipient.contractSignedDate).toISOString().split('T')[0] : ""}
+                        onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSignedDate: e.target.value })}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setEditingRecipient(null)}>
                   Cancel
