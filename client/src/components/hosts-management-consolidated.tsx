@@ -415,7 +415,7 @@ export default function HostsManagementConsolidated() {
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-2 flex-1 min-w-0">
                 <Building2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${host.status === 'inactive' ? 'text-gray-400' : 'text-slate-600'}`} />
-                <CardTitle className={`text-base leading-tight break-words ${host.status === 'inactive' ? 'text-gray-600' : ''}`}>{host.name}</CardTitle>
+                <CardTitle className={`text-base leading-tight break-words hyphens-auto ${host.status === 'inactive' ? 'text-gray-600' : ''}`} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{host.name}</CardTitle>
               </div>
               <Badge 
                 variant={host.status === "active" ? "default" : "secondary"}
