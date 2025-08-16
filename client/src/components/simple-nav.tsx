@@ -41,9 +41,10 @@ interface NavigationItem {
 }
 
 export default function SimpleNav({ onSectionChange, activeSection, isCollapsed = false }: { onSectionChange: (section: string) => void; activeSection?: string; isCollapsed?: boolean }) {
-  const { user } = useAuth();
-  const [location] = useLocation();
-  const { unreadCounts, totalUnread } = useMessaging();
+  try {
+    const { user } = useAuth();
+    const [location] = useLocation();
+    const { unreadCounts, totalUnread } = useMessaging();
 
   // Get Gmail inbox unread count
   const { data: gmailUnreadCount = 0 } = useQuery({
@@ -225,4 +226,18 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
       })}
     </nav>
   );
+  } catch (error) {
+    console.error('SimpleNav error:', error);
+    return (
+      <div className="p-4 text-center">
+        <p className="text-sm text-gray-500">Navigation temporarily unavailable</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
 }
