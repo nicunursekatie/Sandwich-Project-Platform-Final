@@ -582,6 +582,7 @@ export const recipients = pgTable("recipients", {
   contactName: text("contact_name"), // Contact person name (legacy field)
   phone: text("phone").notNull(),
   email: text("email"),
+  website: text("website"), // Organization website URL
   address: text("address"), // Actual street address
   region: text("region"), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
   preferences: text("preferences"), // Legacy field - keeping for backward compatibility
