@@ -175,7 +175,33 @@ export default function HostsManagementConsolidated() {
     mutationFn: async (data: { id: number; updates: Partial<HostContact> }) => {
       return await apiRequest('PATCH', `/api/host-contacts/${data.id}`, data.updates);
     },
-    onSuccess: () => {
+    onSuccess: (updatedContact, { id, updates }) => {
+      // Update the cache immediately with the new contact data
+      queryClient.setQueryData(['/api/hosts-with-contacts'], (oldData: HostWithContacts[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(host => ({
+          ...host,
+          contacts: host.contacts.map(contact => 
+            contact.id === id 
+              ? { ...contact, ...updates }
+              : contact
+          )
+        }));
+      });
+      
+      // Update selectedHost immediately if this contact belongs to it
+      if (selectedHost) {
+        const updatedContacts = selectedHost.contacts.map(contact => 
+          contact.id === id 
+            ? { ...contact, ...updates }
+            : contact
+        );
+        setSelectedHost({
+          ...selectedHost,
+          contacts: updatedContacts
+        });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       setEditingContact(null);
       toast({
@@ -184,11 +210,43 @@ export default function HostsManagementConsolidated() {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `Failed to update contact: ${error.message}`,
-        variant: "destructive",
-      });
+      const errorMessage = error.message || "Unknown error occurred";
+      
+      // Check if it's a 404 error (contact not found)
+      if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+        // Remove the non-existent contact from cache
+        if (editingContact) {
+          queryClient.setQueryData(['/api/hosts-with-contacts'], (oldData: HostWithContacts[] | undefined) => {
+            if (!oldData) return oldData;
+            return oldData.map(host => ({
+              ...host,
+              contacts: host.contacts.filter(contact => contact.id !== editingContact.id)
+            }));
+          });
+          
+          // Update selectedHost to remove the non-existent contact
+          if (selectedHost) {
+            const updatedContacts = selectedHost.contacts.filter(contact => contact.id !== editingContact.id);
+            setSelectedHost({
+              ...selectedHost,
+              contacts: updatedContacts
+            });
+          }
+        }
+        
+        setEditingContact(null);
+        toast({
+          title: "Contact no longer exists",
+          description: "This contact has been deleted. The display has been refreshed.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `Failed to update contact: ${errorMessage}`,
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -411,7 +469,11 @@ export default function HostsManagementConsolidated() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setSelectedHost(host)}
+                onClick={() => {
+                  // Refresh data when opening host details to ensure fresh contact list
+                  queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+                  setSelectedHost(host);
+                }}
                 className="w-full"
               >
                 <Users className="w-3 h-3 mr-1" />
