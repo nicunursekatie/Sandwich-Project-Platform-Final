@@ -358,7 +358,7 @@ export default function HostsManagementConsolidated() {
   };
 
   const handleAddContact = () => {
-    if (!selectedHost || !newContact.name.trim() || !newContact.phone.trim()) return;
+    if (!selectedHost || !newContact.name.trim()) return;
     createContactMutation.mutate({
       ...newContact,
       hostId: selectedHost.id
@@ -831,7 +831,7 @@ export default function HostsManagementConsolidated() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="contact-phone">Phone *</Label>
+                          <Label htmlFor="contact-phone">Phone</Label>
                           <Input
                             id="contact-phone"
                             value={newContact.phone}
@@ -882,7 +882,7 @@ export default function HostsManagementConsolidated() {
                           </Button>
                           <Button 
                             type="submit"
-                            disabled={!newContact.name.trim() || !newContact.phone.trim() || createContactMutation.isPending}
+                            disabled={!newContact.name.trim() || createContactMutation.isPending}
                           >
                             {createContactMutation.isPending ? "Adding..." : "Add Contact"}
                           </Button>
