@@ -543,7 +543,13 @@ export default function HostsManagementConsolidated() {
                       <DialogTitle className="text-lg sm:text-xl">Edit Host</DialogTitle>
                     </DialogHeader>
                     {editingHost && (
-                      <div className="space-y-4">
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleUpdateHost();
+                        }}
+                        className="space-y-4"
+                      >
                         <div>
                           <Label htmlFor="edit-name">Name *</Label>
                           <Input
@@ -582,17 +588,17 @@ export default function HostsManagementConsolidated() {
                           />
                         </div>
                         <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setEditingHost(null)}>
+                          <Button type="button" variant="outline" onClick={() => setEditingHost(null)}>
                             Cancel
                           </Button>
                           <Button 
-                            onClick={handleUpdateHost}
+                            type="submit"
                             disabled={!editingHost.name.trim() || updateHostMutation.isPending}
                           >
                             {updateHostMutation.isPending ? "Updating..." : "Update Host"}
                           </Button>
                         </div>
-                      </div>
+                      </form>
                     )}
                   </DialogContent>
                 </Dialog>
@@ -636,7 +642,13 @@ export default function HostsManagementConsolidated() {
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">Add New Host</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddHost();
+              }}
+              className="space-y-4"
+            >
               <div>
                 <Label htmlFor="name">Host Name *</Label>
                 <Input
@@ -678,17 +690,17 @@ export default function HostsManagementConsolidated() {
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                   Cancel
                 </Button>
                 <Button 
-                  onClick={handleAddHost}
+                  type="submit"
                   disabled={!newHost.name.trim() || createHostMutation.isPending}
                 >
                   {createHostMutation.isPending ? "Adding..." : "Add Host"}
                 </Button>
               </div>
-            </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
