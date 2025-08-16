@@ -40,7 +40,7 @@ import MessageNotifications from "@/components/message-notifications";
 import WorkLogPage from "@/pages/work-log";
 import SuggestionsPortal from "@/pages/suggestions";
 import GoogleSheetsPage from "@/pages/google-sheets";
-import InboxPage from "@/pages/inbox";
+
 import MessagingSystem from "@/components/messaging-system";
 import RealTimeMessages from "@/pages/real-time-messages";
 import Governance from "@/pages/governance";
@@ -203,7 +203,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "gmail-inbox":
         return <GmailStyleInbox />;
       case "inbox":
-        return <InboxPage />;
+        return <GmailStyleInbox />;
       case "stream-messages":
         return <RealTimeMessages />;
       case "chat":
