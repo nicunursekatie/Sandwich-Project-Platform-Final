@@ -122,7 +122,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     { id: "collections", label: "Collections", icon: Sandwich },
     { id: "events", label: "Events", icon: Calendar },
     { id: "inventory-calculator", label: "Inventory Calculator", icon: Calculator },
-    { id: "messages", label: "Messages", icon: MessageCircle },
+
     
     // Data section (filtered by permissions)
     ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2 }] : []),
@@ -136,7 +136,6 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ListTodo }] : []),
     
     // Communication section
-    { id: "inbox", label: "Inbox", icon: MessageCircle },
     { id: "chat", label: "Chat", icon: MessageCircle },
     ...(hasPermission(user, PERMISSIONS.VIEW_COMMITTEE) ? [{ id: "committee", label: "Committee", icon: MessageCircle }] : []),
     { id: "directory", label: "Directory", icon: Phone },
@@ -200,11 +199,11 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "real-time-messages":
         return <RealTimeMessages />;
       case "messages":
-        return <InboxPage />;
+        return <GmailStyleInbox />;
       case "gmail-inbox":
         return <GmailStyleInbox />;
       case "inbox":
-        return <InboxPage />;
+        return <GmailStyleInbox />;
       case "stream-messages":
         return <RealTimeMessages />;
       case "chat":
