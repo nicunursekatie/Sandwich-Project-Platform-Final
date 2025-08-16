@@ -788,11 +788,11 @@ export default function GmailStyleInbox() {
                           <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-yellow-500 rounded-full animate-pulse"></div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs lg:text-sm font-bold text-gray-900 truncate">
+                          <p className="text-xs lg:text-sm font-bold text-gray-900">
                             <span className="text-yellow-700 font-bold">{kudo.senderName}</span> sent you kudos
                             {kudo.projectTitle && <span className="text-gray-600"> for "{kudo.projectTitle}"</span>}
                           </p>
-                          <p className="text-xs text-gray-700 truncate font-medium">{kudo.message}</p>
+                          <p className="text-xs text-gray-700 font-medium break-words">{kudo.message}</p>
                         </div>
                         <span className="text-xs text-yellow-600 flex-shrink-0 font-medium hidden sm:block">
                           {formatDistanceToNow(new Date(kudo.createdAt), { addSuffix: true })}
@@ -850,7 +850,7 @@ export default function GmailStyleInbox() {
                         >
                           <Heart className="h-3 w-3 text-gray-400 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-600 truncate">
+                            <p className="text-xs text-gray-600 break-words">
                               <span className="font-medium">{kudo.senderName}</span>
                               {kudo.projectTitle && <span className="text-gray-500"> • {kudo.projectTitle}</span>}
                             </p>
@@ -916,7 +916,7 @@ export default function GmailStyleInbox() {
                     </Avatar>
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex items-start justify-between mb-2 gap-2">
-                        <p className={`text-sm flex-1 truncate ${!message.isRead ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
+                        <p className={`text-sm flex-1 break-words ${!message.isRead ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
                           {activeFolder === 'sent' ? (message.recipientName || 'Unknown') : (message.senderName || 'Unknown')}
                         </p>
                         <span className="text-xs text-gray-500 whitespace-nowrap">
@@ -930,11 +930,8 @@ export default function GmailStyleInbox() {
                         </span>
                       </div>
                       <p className={`text-sm leading-relaxed ${!message.isRead ? 'font-bold text-gray-900' : 'font-normal text-gray-600'}`} style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        wordBreak: 'break-word'
+                        wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap'
                       }}>
                         {message.content}
                       </p>
