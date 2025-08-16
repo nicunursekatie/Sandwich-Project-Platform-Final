@@ -336,11 +336,11 @@ export default function HostsManagementConsolidated() {
 
   const handleDeleteHost = (id: number) => {
     const host = hosts.find(h => h.id === id);
-    if (confirm(`Are you sure you want to remove "${host?.name}" from the active hosts list? This will set it to inactive but preserve all data.`)) {
-      // Instead of deleting, set status to inactive
+    if (confirm(`Are you sure you want to hide "${host?.name}" from this list? It will be completely hidden but data will be preserved.`)) {
+      // Set status to hidden to completely remove from display
       updateHostMutation.mutate({
         id: id,
-        updates: { status: "inactive" }
+        updates: { status: "hidden" }
       });
     }
   };
@@ -394,9 +394,10 @@ export default function HostsManagementConsolidated() {
     );
   }
 
-  // Filter hosts by status
-  const activeHosts = hosts.filter(host => host.status === 'active');
-  const inactiveHosts = hosts.filter(host => host.status === 'inactive');
+  // Filter hosts by status - only show active and inactive, completely hide "hidden" hosts
+  const visibleHosts = hosts.filter(host => host.status !== 'hidden');
+  const activeHosts = visibleHosts.filter(host => host.status === 'active');
+  const inactiveHosts = visibleHosts.filter(host => host.status === 'inactive');
 
   // Render host grid component
   const HostGrid = ({ hostList }: { hostList: HostWithContacts[] }) => (
@@ -592,10 +593,10 @@ export default function HostsManagementConsolidated() {
                   size="sm"
                   disabled={!canEdit}
                   onClick={() => handleDeleteHost(host.id)}
-                  className="flex-1 text-red-600 hover:text-red-700"
+                  className="flex-1 text-orange-600 hover:text-orange-700"
                 >
                   <Trash2 className="w-3 h-3 mr-1" />
-                  Delete
+                  Hide
                 </Button>
               </div>
             </div>
