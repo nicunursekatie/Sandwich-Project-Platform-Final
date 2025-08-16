@@ -203,7 +203,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "gmail-inbox":
         return <GmailStyleInbox />;
       case "inbox":
-        return <GmailStyleInbox />;
+        return <InboxPage />;
       case "stream-messages":
         return <RealTimeMessages />;
       case "chat":
