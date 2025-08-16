@@ -66,11 +66,18 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  // Navigation organized by sections: OPERATIONS, PLANNING & COORDINATION, COMMUNICATION, DOCUMENTATION, ADMIN
+  // Navigation organized by sections: COLLECTIONS LOG (standalone), COMMUNICATION, OPERATIONS, PLANNING & COORDINATION, DOCUMENTATION, ADMIN
   const navigationItems: NavigationItem[] = [
+    // COLLECTIONS LOG (standalone at the very top)
+    { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections", group: "collections" },
+    
+    // COMMUNICATION
+    { id: "chat", label: "Team Chat", icon: Hash, href: "chat", group: "communication" },
+    { id: "gmail-inbox", label: "Inbox", icon: Inbox, href: "gmail-inbox", group: "communication" },
+    ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb, href: "suggestions", group: "communication" }] : []),
+    
     // OPERATIONS (the weekly flow)
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard", group: "operations" },
-    { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections", group: "operations" },
     ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
@@ -83,11 +90,6 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
     { id: "phone-directory", label: "Directory", icon: Phone, href: "phone-directory", group: "planning" },
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
-    
-    // COMMUNICATION
-    { id: "chat", label: "Team Chat", icon: Hash, href: "chat", group: "communication" },
-    { id: "gmail-inbox", label: "Inbox", icon: Inbox, href: "gmail-inbox", group: "communication" },
-    ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb, href: "suggestions", group: "communication" }] : []),
     
     // DOCUMENTATION
     ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "documentation" }] : []),
