@@ -19,7 +19,9 @@ import {
   Inbox,
   Hash,
   Scale,
-  Calendar
+  Calendar,
+  MapPin,
+  Route
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -63,38 +65,36 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  // Navigation organized by sections: MAIN, COMMUNICATION, WORKFLOW, PEOPLE, DATA
+  // Navigation organized by sections: OPERATIONS, PLANNING & COORDINATION, COMMUNICATION, DOCUMENTATION, ADMIN
   const navigationItems: NavigationItem[] = [
-    // MAIN section
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard" },
-    ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects" }] : []),
-    { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections" },
+    // OPERATIONS (the weekly flow)
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard", group: "operations" },
+    { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections", group: "operations" },
+    ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
+    { id: "route-tracking", label: "Route Tracking", icon: Route, href: "route-tracking", group: "operations" },
     
-    // COMMUNICATION section
-    { id: "gmail-inbox", label: "Inbox", icon: Inbox, href: "gmail-inbox", group: "communication" },
+    // PLANNING & COORDINATION
+    ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
+    { id: "events", label: "Events", icon: Calendar, href: "events", group: "planning" },
+    { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
+    { id: "phone-directory", label: "Directory", icon: Phone, href: "phone-directory", group: "planning" },
+    { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
+    
+    // COMMUNICATION
     { id: "chat", label: "Team Chat", icon: Hash, href: "chat", group: "communication" },
+    { id: "gmail-inbox", label: "Inbox", icon: Inbox, href: "gmail-inbox", group: "communication" },
     ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb, href: "suggestions", group: "communication" }] : []),
     
-    // WORKFLOW section
-    { id: "events", label: "Events", icon: Calendar, href: "events", group: "workflow" },
-    { id: "signup-genius", label: "SignUp Genius", icon: ClipboardList, href: "signup-genius", group: "workflow" },
-    ...(hasPermission(user, PERMISSIONS.ACCESS_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ListTodo, href: "work-log", group: "workflow" }] : []),
-    { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "workflow" },
-    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "workflow" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_GOVERNANCE) ? [{ id: "governance", label: "Governance", icon: Scale, href: "governance", group: "workflow" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList, href: "meetings", group: "workflow" }] : []),
+    // DOCUMENTATION
+    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "documentation" }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_GOVERNANCE) ? [{ id: "governance", label: "Governance", icon: Scale, href: "governance", group: "documentation" }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList, href: "meetings", group: "documentation" }] : []),
     
-    // PEOPLE section
-    { id: "phone-directory", label: "Directory", icon: Phone, href: "phone-directory", group: "people" },
-    ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "people" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "people" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "people" }] : []),
-    
-    // DATA section
-    ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3, href: "analytics", group: "data" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_SANDWICH_DATA) ? [{ id: "google-sheets", label: "Sandwich Data", icon: Sheet, href: "google-sheets", group: "data" }] : []),
-    
-    // Admin section (filtered by permissions)
+    // ADMIN
+    ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3, href: "analytics", group: "admin" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ListTodo, href: "work-log", group: "admin" }] : []),
     ...(hasPermission(user, PERMISSIONS.MANAGE_USERS) ? [{ id: "user-management", label: "User Management", icon: Settings, href: "user-management", group: "admin" }] : [])
   ];
 
@@ -125,10 +125,10 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
 
   const getGroupLabel = (group: string) => {
     const labels = {
+      operations: "OPERATIONS",
+      planning: "PLANNING & COORDINATION", 
       communication: "COMMUNICATION",
-      workflow: "WORKFLOW",
-      people: "PEOPLE",
-      data: "DATA",
+      documentation: "DOCUMENTATION",
       admin: "ADMIN"
     };
     return labels[group as keyof typeof labels] || group;

@@ -54,6 +54,7 @@ import { KudosInbox } from "@/components/kudos-inbox";
 import SocketChatHub from "@/components/socket-chat-hub";
 import EventsViewer from "@/components/events-viewer";
 import SignUpGeniusViewer from "@/components/signup-genius-viewer";
+import RouteTracking from "@/components/route-tracking";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -170,6 +171,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <EventsViewer />;
       case "signup-genius":
         return <SignUpGeniusViewer />;
+      case "route-tracking":
+        return <RouteTracking />;
       case "inventory-calculator":
         // Open the inventory calculator in a new tab and return to dashboard
         window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank');
