@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import TSPContactManager from "./tsp-contact-manager";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +49,12 @@ export default function RecipientsManagement() {
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
     queryKey: ["/api/recipients"],
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+  });
+
+  // Fetch users for TSP contact selection
+  const { data: users = [] } = useQuery({
+    queryKey: ["/api/users"],
+    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes
   });
 
   const createRecipientMutation = useMutation({
@@ -628,6 +635,14 @@ export default function RecipientsManagement() {
                   )}
                 </div>
               )}
+
+              {/* TSP Contacts Management Section */}
+              <div className="border-t pt-4 mt-4">
+                <TSPContactManager 
+                  recipientId={recipient.id} 
+                  recipientName={recipient.name} 
+                />
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -813,8 +828,11 @@ export default function RecipientsManagement() {
                       <Input
                         id="edit-contractSignedDate"
                         type="date"
-                        value={editingRecipient.contractSignedDate ? (typeof editingRecipient.contractSignedDate === 'string' ? editingRecipient.contractSignedDate.split('T')[0] : new Date(editingRecipient.contractSignedDate).toISOString().split('T')[0]) : ""}
-                        onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSignedDate: e.target.value })}
+                        value={editingRecipient.contractSignedDate ? 
+                          (typeof editingRecipient.contractSignedDate === 'string' ? 
+                            editingRecipient.contractSignedDate.split('T')[0] : 
+                            new Date(editingRecipient.contractSignedDate).toISOString().split('T')[0]) : ""}
+                        onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSignedDate: e.target.value as any })}
                       />
                     </div>
                   )}
