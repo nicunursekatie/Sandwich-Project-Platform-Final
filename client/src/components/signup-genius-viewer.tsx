@@ -34,17 +34,17 @@ export default function SignUpGeniusViewer() {
           {/* Always show fallback since SignUp Genius blocks embedding */}
           {(
             <div className="flex flex-col items-center justify-center h-full bg-white rounded-lg border-2 border-dashed border-gray-300 p-8">
-              <div className="w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                <AlertCircle className="h-8 w-8 text-orange-600" />
+              <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Users className="h-8 w-8 text-blue-600" />
               </div>
               
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Cannot Display SignUp Genius
+                Volunteer Signup Portal
               </h3>
               
               <p className="text-gray-600 text-center mb-6 max-w-md">
-                SignUp Genius blocks embedding for security. 
-                Click below to access the volunteer signup page in a new tab.
+                Access our volunteer signup system to register for events, 
+                choose time slots, and track your volunteer hours.
               </p>
               
               <Button
@@ -53,7 +53,7 @@ export default function SignUpGeniusViewer() {
                 size="lg"
               >
                 <ExternalLink className="h-5 w-5" />
-                Open SignUp Genius
+                Access Volunteer Portal
               </Button>
               
               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl">
