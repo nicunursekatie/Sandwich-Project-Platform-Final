@@ -605,6 +605,31 @@ export const recipients = pgTable("recipients", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// New table for managing multiple TSP contacts per recipient
+export const recipientTspContacts = pgTable("recipient_tsp_contacts", {
+  id: serial("id").primaryKey(),
+  recipientId: integer("recipient_id").notNull().references(() => recipients.id, { onDelete: "cascade" }),
+  // For app users
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }), // Link to users table if contact is an app user
+  userName: text("user_name"), // Cached user name for display
+  userEmail: text("user_email"), // Cached user email for display
+  // For external contacts (non-app users)
+  contactName: text("contact_name"), // Name if not an app user
+  contactEmail: text("contact_email"), // Email if not an app user
+  contactPhone: text("contact_phone"), // Phone if not an app user
+  // Common fields
+  role: text("role").notNull().default("liaison"), // 'primary', 'backup', 'liaison', 'coordinator'
+  notes: text("notes"), // Additional notes about this contact relationship
+  isActive: boolean("is_active").notNull().default(true),
+  isPrimary: boolean("is_primary").notNull().default(false), // Only one primary contact per recipient
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  recipientIdx: index("idx_recipient_tsp_contacts_recipient").on(table.recipientId),
+  userIdx: index("idx_recipient_tsp_contacts_user").on(table.userId),
+  primaryIdx: index("idx_recipient_tsp_contacts_primary").on(table.recipientId, table.isPrimary),
+}));
+
 export const projectDocuments = pgTable("project_documents", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull(),
@@ -641,6 +666,7 @@ export const insertHostSchema = createInsertSchema(hosts).omit({ id: true, creat
 });
 export const insertHostContactSchema = createInsertSchema(hostContacts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertRecipientSchema = createInsertSchema(recipients).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRecipientTspContactSchema = createInsertSchema(recipientTspContacts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({ id: true, uploadedAt: true });
 export const insertProjectTaskSchema = createInsertSchema(projectTasks).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectCommentSchema = createInsertSchema(projectComments).omit({ id: true, createdAt: true });
@@ -691,6 +717,8 @@ export type HostContact = typeof hostContacts.$inferSelect;
 export type InsertHostContact = z.infer<typeof insertHostContactSchema>;
 export type Recipient = typeof recipients.$inferSelect;
 export type InsertRecipient = z.infer<typeof insertRecipientSchema>;
+export type RecipientTspContact = typeof recipientTspContacts.$inferSelect;
+export type InsertRecipientTspContact = z.infer<typeof insertRecipientTspContactSchema>;
 export type ProjectDocument = typeof projectDocuments.$inferSelect;
 export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
 export type ProjectTask = typeof projectTasks.$inferSelect;

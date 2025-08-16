@@ -73,6 +73,7 @@ declare global {
   }
 }
 import dataManagementRoutes from "./routes/data-management";
+import recipientTspContactRoutes from "./routes/recipient-tsp-contacts";
 import { checkWeeklySubmissions, sendMissingSubmissionsEmail, runWeeklyMonitoring } from "./weekly-monitoring";
 import { registerPerformanceRoutes } from "./routes/performance";
 import { SearchEngine } from "./search-engine";
@@ -486,6 +487,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import and register recipients routes
   const recipientsRoutes = await import("./routes/recipients");
   app.use("/api/recipients", recipientsRoutes.default);
+
+  // Import and register recipient TSP contacts routes
+  app.use("/api/recipient-tsp-contacts", recipientTspContactRoutes);
 
   // Register work log routes
 
