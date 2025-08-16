@@ -109,7 +109,7 @@ export function MentionInput({ value, onChange, onSend, placeholder, disabled }:
         setMentionSearch(textAfterAt.toLowerCase());
         setMentionPosition(lastAtIndex);
         
-        // Filter users based on search
+        // Filter users based on search and sort alphabetically
         const filteredUsers = users
           .filter(user => {
             const fullName = user.firstName && user.lastName 
@@ -122,6 +122,15 @@ export function MentionInput({ value, onChange, onSend, placeholder, disabled }:
             
             return fullName.toLowerCase().includes(searchTerm) || 
                    email.toLowerCase().includes(searchTerm);
+          })
+          .sort((a, b) => {
+            const nameA = (a.firstName && a.lastName 
+              ? `${a.firstName} ${a.lastName}` 
+              : a.displayName || a.firstName || a.email.split('@')[0]).toLowerCase();
+            const nameB = (b.firstName && b.lastName 
+              ? `${b.firstName} ${b.lastName}` 
+              : b.displayName || b.firstName || b.email.split('@')[0]).toLowerCase();
+            return nameA.localeCompare(nameB);
           })
           .slice(0, 5) // Limit to 5 suggestions
           .map(user => ({

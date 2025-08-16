@@ -998,8 +998,14 @@ export default function GmailStyleInbox() {
                   <div className="flex items-center gap-2">
                     {/* Hide Reply button for Kudos messages */}
                     {!(selectedMessage as any).isKudos && (
-                      <Button variant="ghost" size="sm" onClick={() => setShowReply(true)}>
-                        <Reply className="h-4 w-4" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowReply(true)}
+                        className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 px-3 py-2 font-medium"
+                      >
+                        <Reply className="h-4 w-4 mr-2" />
+                        Reply to Message
                       </Button>
                     )}
                     <Button
@@ -1194,7 +1200,14 @@ export default function GmailStyleInbox() {
                   <SelectValue placeholder="Choose team member..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg border border-gray-200 bg-white shadow-lg z-50">
-                  {users.filter(u => u.id !== (user as any)?.id).map((user) => (
+                  {users
+                    .filter(u => u.id !== (user as any)?.id)
+                    .sort((a, b) => {
+                      const nameA = `${a.firstName} ${a.lastName}`.trim().toLowerCase();
+                      const nameB = `${b.firstName} ${b.lastName}`.trim().toLowerCase();
+                      return nameA.localeCompare(nameB);
+                    })
+                    .map((user) => (
                     <SelectItem 
                       key={user.id} 
                       value={user.id} 
