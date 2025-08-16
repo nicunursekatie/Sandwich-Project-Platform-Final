@@ -814,13 +814,22 @@ export default function HostsManagementConsolidated() {
                       <DialogHeader>
                         <DialogTitle>Add New Contact</DialogTitle>
                       </DialogHeader>
-                      <div className="space-y-4">
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleAddContact();
+                        }}
+                        className="space-y-4"
+                      >
                         <div>
                           <Label htmlFor="contact-name">Name *</Label>
                           <Input
                             id="contact-name"
                             value={newContact.name}
-                            onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setNewContact({ ...newContact, name: e.target.value });
+                            }}
                             placeholder="Enter contact name"
                           />
                         </div>
@@ -829,7 +838,10 @@ export default function HostsManagementConsolidated() {
                           <Input
                             id="contact-role"
                             value={newContact.role}
-                            onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setNewContact({ ...newContact, role: e.target.value });
+                            }}
                             placeholder="e.g., Manager, Coordinator, Volunteer"
                           />
                         </div>
@@ -838,7 +850,10 @@ export default function HostsManagementConsolidated() {
                           <Input
                             id="contact-phone"
                             value={newContact.phone}
-                            onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setNewContact({ ...newContact, phone: e.target.value });
+                            }}
                             placeholder="Enter phone number"
                           />
                         </div>
@@ -848,7 +863,10 @@ export default function HostsManagementConsolidated() {
                             id="contact-email"
                             type="email"
                             value={newContact.email}
-                            onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setNewContact({ ...newContact, email: e.target.value });
+                            }}
                             placeholder="Enter email address"
                           />
                         </div>
@@ -865,23 +883,26 @@ export default function HostsManagementConsolidated() {
                           <Textarea
                             id="contact-notes"
                             value={newContact.notes}
-                            onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setNewContact({ ...newContact, notes: e.target.value });
+                            }}
                             placeholder="Additional notes"
                             rows={3}
                           />
                         </div>
                         <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setIsAddingContact(false)}>
+                          <Button type="button" variant="outline" onClick={() => setIsAddingContact(false)}>
                             Cancel
                           </Button>
                           <Button 
-                            onClick={handleAddContact}
+                            type="submit"
                             disabled={!newContact.name.trim() || !newContact.phone.trim() || createContactMutation.isPending}
                           >
                             {createContactMutation.isPending ? "Adding..." : "Add Contact"}
                           </Button>
                         </div>
-                      </div>
+                      </form>
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -931,13 +952,22 @@ export default function HostsManagementConsolidated() {
                                   <DialogTitle>Edit Contact</DialogTitle>
                                 </DialogHeader>
                                 {editingContact && (
-                                  <div className="space-y-4">
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+                                      handleUpdateContact();
+                                    }}
+                                    className="space-y-4"
+                                  >
                                     <div>
                                       <Label htmlFor="edit-contact-name">Name *</Label>
                                       <Input
                                         id="edit-contact-name"
                                         value={editingContact.name}
-                                        onChange={(e) => setEditingContact({ ...editingContact, name: e.target.value })}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          setEditingContact({ ...editingContact, name: e.target.value });
+                                        }}
                                       />
                                     </div>
                                     <div>
@@ -945,7 +975,10 @@ export default function HostsManagementConsolidated() {
                                       <Input
                                         id="edit-contact-role"
                                         value={editingContact.role}
-                                        onChange={(e) => setEditingContact({ ...editingContact, role: e.target.value })}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          setEditingContact({ ...editingContact, role: e.target.value });
+                                        }}
                                       />
                                     </div>
                                     <div>
@@ -953,7 +986,10 @@ export default function HostsManagementConsolidated() {
                                       <Input
                                         id="edit-contact-phone"
                                         value={editingContact.phone}
-                                        onChange={(e) => setEditingContact({ ...editingContact, phone: e.target.value })}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          setEditingContact({ ...editingContact, phone: e.target.value });
+                                        }}
                                       />
                                     </div>
                                     <div>
@@ -962,7 +998,10 @@ export default function HostsManagementConsolidated() {
                                         id="edit-contact-email"
                                         type="email"
                                         value={editingContact.email || ""}
-                                        onChange={(e) => setEditingContact({ ...editingContact, email: e.target.value })}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          setEditingContact({ ...editingContact, email: e.target.value });
+                                        }}
                                       />
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -978,22 +1017,25 @@ export default function HostsManagementConsolidated() {
                                       <Textarea
                                         id="edit-contact-notes"
                                         value={editingContact.notes || ""}
-                                        onChange={(e) => setEditingContact({ ...editingContact, notes: e.target.value })}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          setEditingContact({ ...editingContact, notes: e.target.value });
+                                        }}
                                         rows={3}
                                       />
                                     </div>
                                     <div className="flex justify-end space-x-2">
-                                      <Button variant="outline" onClick={() => setEditingContact(null)}>
+                                      <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
                                         Cancel
                                       </Button>
                                       <Button 
-                                        onClick={handleUpdateContact}
+                                        type="submit"
                                         disabled={!editingContact.name.trim() || !editingContact.phone.trim() || updateContactMutation.isPending}
                                       >
                                         {updateContactMutation.isPending ? "Updating..." : "Update Contact"}
                                       </Button>
                                     </div>
-                                  </div>
+                                  </form>
                                 )}
                               </DialogContent>
                             </Dialog>
