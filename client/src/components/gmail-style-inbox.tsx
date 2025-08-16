@@ -503,7 +503,7 @@ export default function GmailStyleInbox() {
   };
 
   const handleReply = () => {
-    if (!selectedMessage || !replyContent) {
+    if (!selectedMessage || !replyContent.trim()) {
       toast({ 
         description: "Please enter a reply message", 
         variant: "destructive" 
@@ -519,13 +519,18 @@ export default function GmailStyleInbox() {
       conversationId: selectedMessage.conversationId
     });
 
-    replyMutation.mutate({
+    const replyData = {
       content: replyContent,
       sender: null, // Let backend use authenticated user info
       recipientId: selectedMessage.userId,
       conversationName: null, // Reply to existing conversation
       conversationId: selectedMessage.conversationId
-    });
+    };
+
+    replyMutation.mutate(replyData);
+    
+    // Clear the reply content after sending
+    setReplyContent("");
   };
 
   // Filter messages based on search
@@ -996,12 +1001,20 @@ export default function GmailStyleInbox() {
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    {/* Hide Reply button for Kudos messages */}
+                    {/* Quick scroll to reply for non-Kudos messages */}
                     {!(selectedMessage as any).isKudos && (
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => setShowReply(true)}
+                        onClick={() => {
+                          const replySection = document.querySelector('.reply-section');
+                          replySection?.scrollIntoView({ behavior: 'smooth' });
+                          // Focus the textarea after a short delay to allow for scrolling
+                          setTimeout(() => {
+                            const textarea = document.querySelector('.reply-section textarea') as HTMLTextAreaElement;
+                            textarea?.focus();
+                          }, 300);
+                        }}
                         className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 px-3 py-2 font-medium"
                       >
                         <Reply className="h-4 w-4 mr-2" />
@@ -1110,27 +1123,65 @@ export default function GmailStyleInbox() {
                 <div className="flex-1 min-h-0"></div>
               )}
 
-              {/* Reply Section - Hidden for Kudos messages */}
-              {showReply && !(selectedMessage as any).isKudos && (
-                <div className="border-t p-4 flex-shrink-0">
-                  <div className="space-y-3">
-                    <Label>Reply to {selectedMessage.senderName}</Label>
+              {/* Gmail-Style Reply Section - Always visible for non-Kudos messages */}
+              {!(selectedMessage as any).isKudos && (
+                <div className="reply-section border-t p-6 flex-shrink-0 bg-gray-50">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                      <Reply className="h-4 w-4" />
+                      <span>Reply to {selectedMessage.senderName}</span>
+                    </div>
                     <Textarea
-                      placeholder="Type your reply..."
+                      placeholder="Type your reply here..."
                       value={replyContent}
                       onChange={(e) => setReplyContent(e.target.value)}
-                      rows={4}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault();
+                          if (replyContent.trim()) {
+                            handleReply();
+                          }
+                        }
+                      }}
+                      rows={6}
+                      className="w-full bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-none"
+                      style={{ 
+                        minHeight: '150px',
+                        fontSize: '14px',
+                        lineHeight: '1.5'
+                      }}
                     />
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" onClick={() => setShowReply(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleReply}
-                        disabled={replyMutation.isPending}
-                      >
-                        {replyMutation.isPending ? "Sending..." : "Send Reply"}
-                      </Button>
+                    <div className="flex justify-between items-center">
+                      <div className="text-xs text-gray-500">
+                        Press Ctrl+Enter to send quickly
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setReplyContent("")}
+                          disabled={!replyContent.trim()}
+                        >
+                          Clear
+                        </Button>
+                        <Button 
+                          onClick={handleReply}
+                          disabled={replyMutation.isPending || !replyContent.trim()}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                        >
+                          {replyMutation.isPending ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                              Sending...
+                            </div>
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4 mr-2" />
+                              Send Reply
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
