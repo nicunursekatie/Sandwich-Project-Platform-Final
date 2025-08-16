@@ -730,6 +730,63 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  // Sandwich Distributions methods
+  async getAllSandwichDistributions() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllSandwichDistributions(),
+      () => this.fallbackStorage.getAllSandwichDistributions()
+    );
+  }
+
+  async getSandwichDistribution(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getSandwichDistribution(id),
+      () => this.fallbackStorage.getSandwichDistribution(id)
+    );
+  }
+
+  async createSandwichDistribution(insertDistribution: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createSandwichDistribution(insertDistribution),
+      () => this.fallbackStorage.createSandwichDistribution(insertDistribution)
+    );
+  }
+
+  async updateSandwichDistribution(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateSandwichDistribution(id, updates),
+      () => this.fallbackStorage.updateSandwichDistribution(id, updates)
+    );
+  }
+
+  async deleteSandwichDistribution(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteSandwichDistribution(id),
+      () => this.fallbackStorage.deleteSandwichDistribution(id)
+    );
+  }
+
+  async getSandwichDistributionsByWeek(weekEnding: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getSandwichDistributionsByWeek(weekEnding),
+      () => this.fallbackStorage.getSandwichDistributionsByWeek(weekEnding)
+    );
+  }
+
+  async getSandwichDistributionsByHost(hostId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getSandwichDistributionsByHost(hostId),
+      () => this.fallbackStorage.getSandwichDistributionsByHost(hostId)
+    );
+  }
+
+  async getSandwichDistributionsByRecipient(recipientId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getSandwichDistributionsByRecipient(recipientId),
+      () => this.fallbackStorage.getSandwichDistributionsByRecipient(recipientId)
+    );
+  }
+
   // General Contacts methods
   async getAllContacts() {
     return this.executeWithFallback(

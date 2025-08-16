@@ -1,5 +1,5 @@
 import { 
-  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses,
+  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -23,7 +23,8 @@ import {
   type CommitteeMembership, type InsertCommitteeMembership,
   type Suggestion, type InsertSuggestion,
   type SuggestionResponse, type InsertSuggestionResponse,
-  type ChatMessageLike, type InsertChatMessageLike
+  type ChatMessageLike, type InsertChatMessageLike,
+  type SandwichDistribution, type InsertSandwichDistribution
 } from "@shared/schema";
 
 export interface IStorage {
@@ -282,6 +283,16 @@ export interface IStorage {
     lastActive: Date | null;
     topSection: string;
   }[]>;
+
+  // Sandwich Distributions (Donation Tracking)
+  getAllSandwichDistributions(): Promise<SandwichDistribution[]>;
+  getSandwichDistribution(id: number): Promise<SandwichDistribution | undefined>;
+  createSandwichDistribution(insertDistribution: InsertSandwichDistribution): Promise<SandwichDistribution>;
+  updateSandwichDistribution(id: number, updates: Partial<SandwichDistribution>): Promise<SandwichDistribution | undefined>;
+  deleteSandwichDistribution(id: number): Promise<boolean>;
+  getSandwichDistributionsByWeek(weekEnding: string): Promise<SandwichDistribution[]>;
+  getSandwichDistributionsByHost(hostId: number): Promise<SandwichDistribution[]>;
+  getSandwichDistributionsByRecipient(recipientId: number): Promise<SandwichDistribution[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -308,6 +319,7 @@ export class MemStorage implements IStorage {
   private announcements: Map<number, any>;
   private suggestions: Map<number, Suggestion>;
   private suggestionResponses: Map<number, SuggestionResponse>;
+  private sandwichDistributions: Map<number, SandwichDistribution>;
   private shoutoutLogs: Map<number, any>;
   private currentIds: {
     user: number;
@@ -332,6 +344,7 @@ export class MemStorage implements IStorage {
     announcement: number;
     suggestion: number;
     suggestionResponse: number;
+    sandwichDistribution: number;
   };
 
   constructor() {
@@ -358,6 +371,7 @@ export class MemStorage implements IStorage {
     this.announcements = new Map();
     this.suggestions = new Map();
     this.suggestionResponses = new Map();
+    this.sandwichDistributions = new Map();
     this.shoutoutLogs = new Map();
     this.taskCompletions = new Map();
     this.currentIds = {
@@ -383,6 +397,7 @@ export class MemStorage implements IStorage {
       announcement: 1,
       suggestion: 1,
       suggestionResponse: 1,
+      sandwichDistribution: 1,
       shoutoutLog: 1
     };
     
@@ -1802,6 +1817,60 @@ export class MemStorage implements IStorage {
       topSection: Object.entries(summary.sections)
         .sort(([,a], [,b]) => b - a)[0]?.[0] || 'none'
     }));
+  }
+
+  // Sandwich Distribution Methods
+  async getAllSandwichDistributions(): Promise<SandwichDistribution[]> {
+    return Array.from(this.sandwichDistributions.values());
+  }
+
+  async getSandwichDistribution(id: number): Promise<SandwichDistribution | undefined> {
+    return this.sandwichDistributions.get(id);
+  }
+
+  async createSandwichDistribution(insertDistribution: InsertSandwichDistribution): Promise<SandwichDistribution> {
+    const id = this.currentIds.sandwichDistribution++;
+    const now = new Date();
+    const distribution: SandwichDistribution = {
+      id,
+      ...insertDistribution,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.sandwichDistributions.set(id, distribution);
+    return distribution;
+  }
+
+  async updateSandwichDistribution(id: number, updates: Partial<SandwichDistribution>): Promise<SandwichDistribution | undefined> {
+    const distribution = this.sandwichDistributions.get(id);
+    if (!distribution) return undefined;
+
+    const updated = {
+      ...distribution,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.sandwichDistributions.set(id, updated);
+    return updated;
+  }
+
+  async deleteSandwichDistribution(id: number): Promise<boolean> {
+    return this.sandwichDistributions.delete(id);
+  }
+
+  async getSandwichDistributionsByWeek(weekEnding: string): Promise<SandwichDistribution[]> {
+    const distributions = Array.from(this.sandwichDistributions.values());
+    return distributions.filter(d => d.weekEnding === weekEnding);
+  }
+
+  async getSandwichDistributionsByHost(hostId: number): Promise<SandwichDistribution[]> {
+    const distributions = Array.from(this.sandwichDistributions.values());
+    return distributions.filter(d => d.hostId === hostId);
+  }
+
+  async getSandwichDistributionsByRecipient(recipientId: number): Promise<SandwichDistribution[]> {
+    const distributions = Array.from(this.sandwichDistributions.values());
+    return distributions.filter(d => d.recipientId === recipientId);
   }
 }
 

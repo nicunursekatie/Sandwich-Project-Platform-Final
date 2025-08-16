@@ -5,26 +5,40 @@ import { insertSandwichDistributionSchema } from "@shared/schema";
 
 const router = Router();
 
-// Simple authentication middleware that matches temp-auth system behavior
-const isAuthenticated = (req: any, res: any, next: any) => {
-  // Check for user in session (temp-auth system)
-  const sessionUser = req.session?.user;
-  const reqUser = req.user;
-  
-  const user = sessionUser || reqUser;
-  
-  if (!user) {
-    return res.status(401).json({ error: "Authentication required" });
+// Authentication middleware that matches the main routes.ts authentication
+const isAuthenticated = async (req: any, res: any, next: any) => {
+  try {
+    // Get user from session or req.user (temp auth sets req.user)
+    let user = req.user || req.session?.user;
+
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Always fetch fresh user data from database to ensure permissions are current
+    if (user.email) {
+      try {
+        const freshUser = await storage.getUserByEmail(user.email);
+        if (freshUser) {
+          user = freshUser;
+          req.user = freshUser;
+        }
+      } catch (dbError) {
+        console.error("Database error in sandwich-distributions auth:", dbError);
+        // Continue with session user if database fails
+      }
+    }
+
+    // Ensure user is active
+    if (user.isActive === false) {
+      return res.status(401).json({ error: "Account is inactive" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Authentication error in sandwich-distributions:", error);
+    res.status(500).json({ error: "Authentication failed" });
   }
-  
-  // Ensure user is active
-  if (user.isActive === false) {
-    return res.status(401).json({ error: "Account is inactive" });
-  }
-  
-  // Set req.user for route handlers
-  req.user = user;
-  next();
 };
 
 // GET /api/sandwich-distributions - Get all distributions
