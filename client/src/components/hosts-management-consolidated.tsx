@@ -905,7 +905,11 @@ export default function HostsManagementConsolidated() {
                                 {contact.isPrimary && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
                               </div>
                             </div>
-                            <RoleBadge role={contact.role} />
+                            {contact.role && (
+                              <div className="text-sm text-slate-600">
+                                {contact.role}
+                              </div>
+                            )}
                             <div className="flex items-center text-sm text-slate-600">
                               <Phone className="w-4 h-4 mr-2" />
                               {contact.phone}
