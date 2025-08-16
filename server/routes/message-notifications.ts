@@ -1,6 +1,6 @@
 import { Request, Response, Express } from "express";
 import { eq, sql, and, gt, or, isNull } from "drizzle-orm";
-import { messages, messageRecipients, conversations, conversationParticipants, chatMessages, chatMessageReads, kudosTracking, users } from "../../shared/schema";
+import { messages, messageRecipients, conversations, conversationParticipants, chatMessages, chatMessageReads, kudosTracking, users, emailMessages } from "../../shared/schema";
 import { db } from "../db";
 import { isAuthenticated } from "../temp-auth";
 
@@ -111,24 +111,18 @@ const getUnreadCounts = async (req: Request, res: Response) => {
         // Calculate total will be done after formal messaging counts
 
         // Get unread email-style message counts (direct/group messages)
-        // Only count messages where user is recipient, never where user is sender
+        // Use the correct email_messages table that powers the inbox interface
         try {
           const directMessageCount = await db
             .select({ count: sql<number>`COUNT(*)::int` })
-            .from(messageRecipients)
-            .innerJoin(messages, eq(messages.id, messageRecipients.messageId))
+            .from(emailMessages)
             .where(
               and(
-                eq(messageRecipients.recipientId, userId),
-                eq(messageRecipients.read, false),
-                eq(messageRecipients.contextAccessRevoked, false),
-                isNull(messages.deletedAt),
-                // Only count direct messages, exclude messages where user is sender
-                or(
-                  eq(messages.contextType, 'direct'),
-                  isNull(messages.contextType)
-                ),
-                sql`${messages.senderId} != ${userId}`
+                eq(emailMessages.recipientId, userId),
+                eq(emailMessages.isRead, false),
+                eq(emailMessages.isDraft, false),
+                eq(emailMessages.isTrashed, false),
+                eq(emailMessages.isArchived, false)
               )
             );
 
@@ -140,19 +134,19 @@ const getUnreadCounts = async (req: Request, res: Response) => {
           unreadCounts.groups = 0;
         }
 
-        // Get unread kudos count
+        // Get unread kudos count from email system
         try {
           const kudosCount = await db
             .select({ count: sql<number>`COUNT(*)::int` })
-            .from(kudosTracking)
-            .innerJoin(messages, eq(kudosTracking.messageId, messages.id))
-            .innerJoin(messageRecipients, eq(messageRecipients.messageId, messages.id))
+            .from(emailMessages)
             .where(
               and(
-                eq(kudosTracking.recipientId, userId),
-                eq(messageRecipients.recipientId, userId),
-                eq(messageRecipients.read, false),
-                isNull(messages.deletedAt)
+                eq(emailMessages.recipientId, userId),
+                eq(emailMessages.isRead, false),
+                eq(emailMessages.isDraft, false),
+                eq(emailMessages.isTrashed, false),
+                eq(emailMessages.isArchived, false),
+                sql`${emailMessages.subject} LIKE '%Kudos%' OR ${emailMessages.content} LIKE '%kudos%'`
               )
             );
 
