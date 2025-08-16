@@ -197,7 +197,28 @@ export default function HostsManagementConsolidated() {
       return await apiRequest('DELETE', `/api/host-contacts/${id}`);
     },
     onSuccess: () => {
+      // Invalidate multiple related queries to ensure UI refresh
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/host-contacts'] });
+      
+      // Force a refetch to ensure immediate UI update
+      queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      
+      // Close any open dialogs and reset state if needed
+      if (selectedHost) {
+        // Force refresh the selected host data to show updated contacts
+        setTimeout(() => {
+          const updatedHost = hosts.find(h => h.id === selectedHost.id);
+          if (updatedHost) {
+            setSelectedHost(updatedHost);
+          } else {
+            // Host might have been deleted, close the modal
+            setSelectedHost(null);
+          }
+        }, 100); // Small delay to ensure query has refreshed
+      }
+      
       toast({
         title: "Contact deleted",
         description: "Contact has been deleted successfully.",
@@ -599,7 +620,22 @@ export default function HostsManagementConsolidated() {
       </Tabs>
 
       {/* Host Details Dialog */}
-      <Dialog open={!!selectedHost} onOpenChange={(open) => !open && setSelectedHost(null)}>
+      <Dialog 
+        open={!!selectedHost} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedHost(null);
+          } else if (selectedHost) {
+            // When opening the modal, ensure we have the latest data
+            queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] }).then(() => {
+              const refreshedHost = hosts.find(h => h.id === selectedHost.id);
+              if (refreshedHost) {
+                setSelectedHost(refreshedHost);
+              }
+            });
+          }
+        }}
+      >
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center">
