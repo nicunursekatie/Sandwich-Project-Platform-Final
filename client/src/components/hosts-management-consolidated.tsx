@@ -196,28 +196,32 @@ export default function HostsManagementConsolidated() {
     mutationFn: async (id: number) => {
       return await apiRequest('DELETE', `/api/host-contacts/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedContactId) => {
+      // Remove the deleted contact from all queries immediately to prevent 404s
+      queryClient.setQueryData(['/api/hosts-with-contacts'], (oldData: HostWithContacts[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(host => ({
+          ...host,
+          contacts: host.contacts.filter(contact => contact.id !== deletedContactId)
+        }));
+      });
+      
       // Invalidate multiple related queries to ensure UI refresh
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/hosts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/host-contacts'] });
       
-      // Force a refetch to ensure immediate UI update
-      queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
-      
-      // Only update selectedHost if we're not in edit mode to avoid interfering with forms
+      // Update selectedHost immediately to show the contact is gone
       if (selectedHost && !editingHost) {
-        // Force refresh the selected host data to show updated contacts
-        setTimeout(() => {
-          const updatedHost = hosts.find(h => h.id === selectedHost.id);
-          if (updatedHost) {
-            setSelectedHost(updatedHost);
-          } else {
-            // Host might have been deleted, close the modal
-            setSelectedHost(null);
-          }
-        }, 100); // Small delay to ensure query has refreshed
+        const updatedContacts = selectedHost.contacts.filter(contact => contact.id !== deletedContactId);
+        setSelectedHost({
+          ...selectedHost,
+          contacts: updatedContacts
+        });
       }
+      
+      // Force a refetch in the background for data consistency
+      queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
       
       toast({
         title: "Contact deleted",
