@@ -133,7 +133,13 @@ export default function HostsManagementConsolidated() {
     mutationFn: async (id: number) => {
       return await apiRequest('DELETE', `/api/hosts/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (_, hostId) => {
+      // Immediately update cache to remove deleted host
+      queryClient.setQueryData(['/api/hosts-with-contacts'], (oldData: HostWithContacts[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.filter(host => host.id !== hostId);
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/hosts'] });
       toast({
@@ -141,13 +147,34 @@ export default function HostsManagementConsolidated() {
         description: "Host has been deleted successfully.",
       });
     },
-    onError: (error: any) => {
+    onError: async (error: any, hostId) => {
       const errorMessage = error?.message || "Failed to delete host";
-      toast({
-        title: "Cannot delete host",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      
+      // Check if it's a constraint violation (409) - host has associated data
+      if (error?.status === 409 || errorMessage.includes("associated collection")) {
+        toast({
+          title: "Cannot delete host",
+          description: "This host has collection records and cannot be deleted. Please remove or reassign the collection data first.",
+          variant: "destructive",
+        });
+      }
+      // Check if it's a 404 error (host not found)
+      else if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+        // Force a complete data refresh to sync with the database
+        await queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+        await queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+        
+        toast({
+          title: "Data refreshed",
+          description: "Host data has been synchronized with the database.",
+        });
+      } else {
+        toast({
+          title: "Cannot delete host",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -308,8 +335,13 @@ export default function HostsManagementConsolidated() {
   };
 
   const handleDeleteHost = (id: number) => {
-    if (confirm("Are you sure you want to delete this host? This will also delete all associated contacts.")) {
-      deleteHostMutation.mutate(id);
+    const host = hosts.find(h => h.id === id);
+    if (confirm(`Are you sure you want to remove "${host?.name}" from the active hosts list? This will set it to inactive but preserve all data.`)) {
+      // Instead of deleting, set status to inactive
+      updateHostMutation.mutate({
+        id: id,
+        updates: { status: "inactive" }
+      });
     }
   };
 

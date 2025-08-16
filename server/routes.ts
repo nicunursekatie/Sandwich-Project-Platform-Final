@@ -3244,6 +3244,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       logger.error("Failed to delete host", error);
+      // Check if it's a constraint error (has associated records)
+      if (error.message && error.message.includes("associated collection")) {
+        return res.status(409).json({ 
+          message: error.message,
+          error: "Constraint violation - host has associated data"
+        });
+      }
       res.status(500).json({ message: "Failed to delete host" });
     }
   });
