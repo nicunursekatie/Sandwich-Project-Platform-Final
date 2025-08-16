@@ -18,7 +18,8 @@ import {
   Lightbulb,
   Inbox,
   Hash,
-  Scale
+  Scale,
+  Calendar
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,6 +68,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard" },
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects" }] : []),
     { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections" },
+    { id: "events", label: "Events", icon: Calendar, href: "events" },
     
     // COMMUNICATION section
     { id: "gmail-inbox", label: "Inbox", icon: Inbox, href: "gmail-inbox", group: "communication" },
