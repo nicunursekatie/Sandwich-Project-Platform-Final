@@ -512,24 +512,7 @@ export default function HostsManagementConsolidated() {
               </div>
             )}
             
-            <div className="flex flex-col space-y-2 pt-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={async () => {
-                  // Force fresh data when opening host details
-                  await queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
-                  // Get the refreshed host data
-                  const freshHosts = queryClient.getQueryData(['/api/hosts-with-contacts']) as HostWithContacts[];
-                  const freshHost = freshHosts?.find(h => h.id === host.id);
-                  setSelectedHost(freshHost || host);
-                }}
-                className="w-full"
-              >
-                <Users className="w-3 h-3 mr-1" />
-                See All Members
-              </Button>
-              <div className="flex space-x-2">
+            <div className="flex space-x-2 pt-2">
                 <Dialog 
                   open={editingHost?.id === host.id} 
                   onOpenChange={(open) => {
