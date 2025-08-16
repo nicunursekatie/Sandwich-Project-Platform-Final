@@ -66,9 +66,12 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  // Navigation organized by sections: COLLECTIONS LOG (standalone), COMMUNICATION, OPERATIONS, PLANNING & COORDINATION, DOCUMENTATION, ADMIN
+  // Navigation organized by sections: DASHBOARD (at top), COLLECTIONS LOG, COMMUNICATION, OPERATIONS, PLANNING & COORDINATION, DOCUMENTATION, ADMIN
   const navigationItems: NavigationItem[] = [
-    // COLLECTIONS LOG (standalone at the very top)
+    // DASHBOARD (at the very top)
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard", group: "dashboard" },
+    
+    // COLLECTIONS LOG
     { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections", group: "collections" },
     
     // COMMUNICATION
@@ -77,7 +80,6 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb, href: "suggestions", group: "communication" }] : []),
     
     // OPERATIONS (the weekly flow)
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard", group: "operations" },
     ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
