@@ -931,7 +931,20 @@ export default function HostsManagementConsolidated() {
                                   variant="outline" 
                                   size="sm"
                                   disabled={!canEdit}
-                                  onClick={() => setEditingContact(contact)}
+                                  onClick={async () => {
+                                    // Force fresh data before editing to ensure contact IDs are correct
+                                    await queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+                                    const freshHosts = queryClient.getQueryData(['/api/hosts-with-contacts']) as HostWithContacts[];
+                                    const freshHost = freshHosts?.find(h => h.id === selectedHost?.id);
+                                    const freshContact = freshHost?.contacts?.find(c => c.name === contact.name && c.phone === contact.phone);
+                                    
+                                    if (freshContact) {
+                                      setEditingContact(freshContact);
+                                    } else {
+                                      console.error('Could not find fresh contact data for:', contact.name);
+                                      setEditingContact(contact);
+                                    }
+                                  }}
                                 >
                                   <Edit className="w-3 h-3" />
                                 </Button>
