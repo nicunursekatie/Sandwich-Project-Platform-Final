@@ -1,4 +1,4 @@
-import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator } from "lucide-react";
+import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator, Calendar } from "lucide-react";
 import { useLocation } from "wouter";
 import sandwichLogo from "@assets/LOGOS/TSP_transparent.png";
 import squareSandwichLogo from "@assets/LOGOS/sandwich logo.png";
@@ -52,6 +52,7 @@ import GmailStyleInbox from "@/components/gmail-style-inbox";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
 import { KudosInbox } from "@/components/kudos-inbox";
 import SocketChatHub from "@/components/socket-chat-hub";
+import EventsViewer from "@/components/events-viewer";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -116,6 +117,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     // Core section
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "collections", label: "Collections", icon: Sandwich },
+    { id: "events", label: "Events", icon: Calendar },
     { id: "inventory-calculator", label: "Inventory Calculator", icon: Calculator },
     { id: "messages", label: "Messages", icon: MessageCircle },
     
@@ -163,6 +165,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <DashboardOverview onSectionChange={setActiveSection} />;
       case "collections":
         return <SandwichCollectionLog />;
+      case "events":
+        return <EventsViewer />;
       case "inventory-calculator":
         // Open the inventory calculator in a new tab and return to dashboard
         window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank');
