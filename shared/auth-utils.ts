@@ -44,6 +44,7 @@ export const PERMISSIONS = {
   MANAGE_HOSTS: "manage_hosts",
   MANAGE_RECIPIENTS: "manage_recipients",
   MANAGE_DRIVERS: "manage_drivers",
+  MANAGE_DIRECTORY: "manage_directory", // Edit/add contacts in directory
   MANAGE_MEETINGS: "manage_meetings",
   MANAGE_SUGGESTIONS: "manage_suggestions",
   SUBMIT_SUGGESTIONS: "submit_suggestions",
