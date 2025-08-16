@@ -69,7 +69,6 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard" },
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects" }] : []),
     { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections" },
-    { id: "events", label: "Events", icon: Calendar, href: "events" },
     
     // COMMUNICATION section
     { id: "gmail-inbox", label: "Inbox", icon: Inbox, href: "gmail-inbox", group: "communication" },
@@ -77,6 +76,8 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb, href: "suggestions", group: "communication" }] : []),
     
     // WORKFLOW section
+    { id: "events", label: "Events", icon: Calendar, href: "events", group: "workflow" },
+    { id: "signup-genius", label: "SignUp Genius", icon: ClipboardList, href: "signup-genius", group: "workflow" },
     ...(hasPermission(user, PERMISSIONS.ACCESS_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ListTodo, href: "work-log", group: "workflow" }] : []),
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "workflow" },
     ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "workflow" }] : []),
