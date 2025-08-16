@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Route, Clock, CheckCircle, AlertCircle, Navigation } from "lucide-react";
 
-export default function RouteTracking() {
+export default function DonationTracking() {
   const [activeRoutes] = useState([
     {
       id: 1,
@@ -77,14 +77,14 @@ export default function RouteTracking() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Route className="h-6 w-6 text-[#236383]" />
-            Route Tracking
+            Donation Tracking
           </h1>
           <p className="text-gray-600 mt-1">
-            Track host→recipient sandwich deliveries in real-time
+            Track sandwich distributions from host locations to recipient organizations
           </p>
         </div>
         <Button className="bg-[#236383] hover:bg-[#1d5470]">
-          Add New Route
+          Log New Distribution
         </Button>
       </div>
 
