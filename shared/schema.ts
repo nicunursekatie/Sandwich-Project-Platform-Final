@@ -402,6 +402,31 @@ export const weeklyReports = pgTable("weekly_reports", {
   submittedAt: timestamp("submitted_at").notNull().defaultNow(),
 });
 
+// Sandwich distribution tracking - tracks how many sandwiches go from each host to each recipient org each week
+export const sandwichDistributions = pgTable("sandwich_distributions", {
+  id: serial("id").primaryKey(),
+  distributionDate: text("distribution_date").notNull(), // Date of distribution (YYYY-MM-DD format)
+  weekEnding: text("week_ending").notNull(), // Week ending date for grouping (YYYY-MM-DD format)
+  hostId: integer("host_id").notNull(), // ID of host location
+  hostName: text("host_name").notNull(), // Name of host location (denormalized for reporting)
+  recipientId: integer("recipient_id").notNull(), // ID of recipient organization
+  recipientName: text("recipient_name").notNull(), // Name of recipient org (denormalized for reporting)
+  sandwichCount: integer("sandwich_count").notNull(), // Number of sandwiches distributed
+  notes: text("notes"), // Optional notes about the distribution
+  createdBy: text("created_by").notNull(), // User ID who created this entry
+  createdByName: text("created_by_name").notNull(), // Display name of creator
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  // Indexes for efficient querying
+  weekEndingIdx: index("idx_distributions_week_ending").on(table.weekEnding),
+  hostIdx: index("idx_distributions_host").on(table.hostId),
+  recipientIdx: index("idx_distributions_recipient").on(table.recipientId),
+  dateIdx: index("idx_distributions_date").on(table.distributionDate),
+  // Ensure no duplicate entries for same host+recipient+date
+  uniqueDistribution: unique().on(table.hostId, table.recipientId, table.distributionDate),
+}));
+
 export const sandwichCollections = pgTable("sandwich_collections", {
   id: serial("id").primaryKey(),
   collectionDate: text("collection_date").notNull(), // The date sandwiches were actually collected
@@ -998,6 +1023,16 @@ export type Suggestion = typeof suggestions.$inferSelect;
 export type InsertSuggestion = z.infer<typeof insertSuggestionSchema>;
 export type SuggestionResponse = typeof suggestionResponses.$inferSelect;
 export type InsertSuggestionResponse = z.infer<typeof insertSuggestionResponseSchema>;
+
+// Sandwich distribution tracking schema types
+export const insertSandwichDistributionSchema = createInsertSchema(sandwichDistributions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type SandwichDistribution = typeof sandwichDistributions.$inferSelect;
+export type InsertSandwichDistribution = z.infer<typeof insertSandwichDistributionSchema>;
 
 // Stream Chat schema types
 export const insertStreamUserSchema = createInsertSchema(streamUsers).omit({
