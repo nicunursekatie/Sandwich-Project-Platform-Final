@@ -18,7 +18,7 @@ The application features a consistent brand identity using The Sandwich Project'
 
 ### Technical Implementations
 - **Data Models**: Comprehensive management of Sandwich Collections, Hosts, Recipients, Projects, Users (with role-based access), and Audit Logs.
-- **Authentication & Authorization**: Replit-based authentication with custom role management (admin, core team, host, volunteer, viewer), robust session management, and detailed audit logging.
+- **Authentication & Authorization**: Temp-auth system with custom role management (admin, core team, host, volunteer, viewer), robust 30-day session management, and detailed audit logging.
 - **Performance**: Optimized for speed with query optimization, LRU caching, pagination, memoization, and database connection pooling.
 - **Messaging & Notifications**: Multi-layered communication system featuring a Gmail-style email interface (EmailStyleMessaging), committee-specific messaging (CommitteeChat), and real-time Socket.IO chat (SocketChatHub/SimpleChat) with @mentions, autocomplete dropdown, persistent like functionality, and email notifications. SendGrid integration powers email alerts and mention notifications. Dashboard bell notifications provide timely updates.
 - **Operational Tools**: Includes a project management system for tracking tasks and progress, meeting management for scheduling and minutes, and a comprehensive directory for contacts. Work logs, a user feedback portal, and analytics dashboards with PDF/CSV report generation are also integrated. A toolkit provides organized access to important documents.
