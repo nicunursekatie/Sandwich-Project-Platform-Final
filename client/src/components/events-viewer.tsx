@@ -28,9 +28,9 @@ export default function EventsViewer() {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <Card className="flex-1 flex flex-col">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-2 px-4 py-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
               🗓️ Events Calendar
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -55,13 +55,11 @@ export default function EventsViewer() {
               </Button>
             </div>
           </div>
-          <p className="text-sm text-gray-600">
-            Live view of The Sandwich Project events and calendar
-          </p>
+
         </CardHeader>
         
         <CardContent className="flex-1 p-0">
-          <div className="h-full relative">
+          <div className="w-full h-full relative overflow-hidden">
             {isLoading && (
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
                 <div className="flex items-center gap-2 text-gray-600">
@@ -74,8 +72,14 @@ export default function EventsViewer() {
             <iframe
               id="events-spreadsheet"
               src={embedUrl}
-              className="w-full h-full border-0 rounded-lg"
-              style={{ minHeight: '600px' }}
+              className="border-0 rounded-b-lg"
+              style={{ 
+                minHeight: '750px',
+                width: '110%',
+                height: '110%',
+                transform: 'scale(0.91)',
+                transformOrigin: 'top left'
+              }}
               title="Events Calendar"
               loading="lazy"
               sandbox="allow-scripts allow-same-origin allow-forms"
