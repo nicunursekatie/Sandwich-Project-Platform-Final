@@ -1,11 +1,19 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
-import { Phone, User, Users, Search } from "lucide-react";
+import { Phone, User, Users, Search, Edit, Plus, Star, Crown, Mail, MapPin, Building, Calendar } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Host {
   id: number;
@@ -73,12 +81,27 @@ interface GeneralContact {
 
 function PhoneDirectoryFixed() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingContact, setEditingContact] = useState<any>(null);
+  const [isAddingContact, setIsAddingContact] = useState(false);
+  const [newContact, setNewContact] = useState({
+    name: "",
+    organization: "",
+    role: "",
+    phone: "",
+    email: "",
+    address: "",
+    notes: "",
+    category: "general",
+    status: "active"
+  });
   const { user } = useAuth();
+  const { toast } = useToast();
 
   // Permission checks
   const canViewHosts = hasPermission(user, PERMISSIONS.ACCESS_HOSTS);
   const canViewRecipients = hasPermission(user, PERMISSIONS.ACCESS_RECIPIENTS);
   const canViewDrivers = hasPermission(user, PERMISSIONS.ACCESS_DRIVERS);
+  const canEditContacts = hasPermission(user, PERMISSIONS.ADMIN_ACCESS) || hasPermission(user, PERMISSIONS.MANAGE_USERS);
 
   // Smart default tab selection: prefer hosts, then other tabs (exclude contacts)
   const getDefaultTab = React.useCallback(() => {
@@ -153,6 +176,71 @@ function PhoneDirectoryFixed() {
            driver.zone.toLowerCase().includes(searchLower);
   });
 
+  // Create contact mutation
+  const createContactMutation = useMutation({
+    mutationFn: async (contactData: any) => {
+      return await apiRequest('POST', '/api/contacts', contactData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      setIsAddingContact(false);
+      setNewContact({
+        name: "",
+        organization: "",
+        role: "",
+        phone: "",
+        email: "",
+        address: "",
+        notes: "",
+        category: "general",
+        status: "active"
+      });
+      toast({
+        title: "Contact Added",
+        description: "New contact has been successfully created.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create contact.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update contact mutation
+  const updateContactMutation = useMutation({
+    mutationFn: async ({ id, ...contactData }: any) => {
+      return await apiRequest('PUT', `/api/contacts/${id}`, contactData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      setEditingContact(null);
+      toast({
+        title: "Contact Updated",
+        description: "Contact information has been successfully updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update contact.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddContact = () => {
+    if (!newContact.name.trim()) return;
+    createContactMutation.mutate(newContact);
+  };
+
+  const handleUpdateContact = () => {
+    if (!editingContact?.name.trim()) return;
+    updateContactMutation.mutate(editingContact);
+  };
+
   return (
     <div className="space-y-8 p-6 font-['Roboto',sans-serif]">
       {/* Header */}
@@ -212,13 +300,115 @@ function PhoneDirectoryFixed() {
         <TabsContent value="contacts" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
             <CardHeader className="pb-4 bg-muted">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
-                <Phone className="w-6 h-6 text-primary" />
-                General Contacts
-              </CardTitle>
-              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                Contact information for general contacts and volunteers
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                    <Phone className="w-6 h-6 text-primary" />
+                    General Contacts
+                  </CardTitle>
+                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                    Contact information for general contacts and volunteers
+                  </CardDescription>
+                </div>
+                {canEditContacts && (
+                  <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Contact
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Contact</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-name">Name *</Label>
+                            <Input
+                              id="new-name"
+                              value={newContact.name}
+                              onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                              placeholder="Enter full name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-organization">Organization</Label>
+                            <Input
+                              id="new-organization"
+                              value={newContact.organization}
+                              onChange={(e) => setNewContact({ ...newContact, organization: e.target.value })}
+                              placeholder="Company or organization"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-role">Role</Label>
+                            <Input
+                              id="new-role"
+                              value={newContact.role}
+                              onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
+                              placeholder="Job title or role"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-phone">Phone</Label>
+                            <Input
+                              id="new-phone"
+                              value={newContact.phone}
+                              onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                              placeholder="Phone number"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-email">Email</Label>
+                          <Input
+                            id="new-email"
+                            type="email"
+                            value={newContact.email}
+                            onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                            placeholder="Email address"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new-address">Address</Label>
+                          <Textarea
+                            id="new-address"
+                            value={newContact.address}
+                            onChange={(e) => setNewContact({ ...newContact, address: e.target.value })}
+                            placeholder="Street address, city, state, zip"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new-notes">Notes</Label>
+                          <Textarea
+                            id="new-notes"
+                            value={newContact.notes}
+                            onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
+                            placeholder="Additional notes or comments"
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button type="button" variant="outline" onClick={() => setIsAddingContact(false)}>
+                            Cancel
+                          </Button>
+                          <Button 
+                            onClick={handleAddContact}
+                            disabled={!newContact.name.trim() || createContactMutation.isPending}
+                          >
+                            {createContactMutation.isPending ? "Adding..." : "Add Contact"}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredContacts.length === 0 ? (
@@ -229,9 +419,169 @@ function PhoneDirectoryFixed() {
                 <div className="space-y-4">
                   {filteredContacts.map((contact) => (
                     <div key={contact.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
-                      <h3 className="font-bold text-lg mb-2 text-primary font-['Roboto',sans-serif]">{contact.name}</h3>
-                      <p className="text-base mb-1 text-muted-foreground font-['Roboto',sans-serif]">{contact.phone}</p>
-                      {contact.email && <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>{contact.email}</p>}
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{contact.name}</h3>
+                            {contact.organization && (
+                              <Badge variant="secondary" className="flex items-center gap-1">
+                                <Building className="w-3 h-3" />
+                                {contact.organization}
+                              </Badge>
+                            )}
+                            {contact.status === 'active' && (
+                              <Badge variant="default" className="bg-green-100 text-green-800">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {contact.phone && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Phone className="w-4 h-4" />
+                                <span>{contact.phone}</span>
+                              </div>
+                            )}
+                            {contact.email && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Mail className="w-4 h-4" />
+                                <span>{contact.email}</span>
+                              </div>
+                            )}
+                            {contact.role && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <User className="w-4 h-4" />
+                                <span>{contact.role}</span>
+                              </div>
+                            )}
+                            {contact.address && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <MapPin className="w-4 h-4" />
+                                <span>{contact.address}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {contact.notes && (
+                            <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                              <p className="text-sm text-muted-foreground">{contact.notes}</p>
+                            </div>
+                          )}
+                          
+                          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                            <Calendar className="w-3 h-3" />
+                            <span>Added: {new Date(contact.createdAt).toLocaleDateString()}</span>
+                            {contact.updatedAt && new Date(contact.updatedAt).getTime() !== new Date(contact.createdAt).getTime() && (
+                              <span>• Updated: {new Date(contact.updatedAt).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {canEditContacts && (
+                          <Dialog open={editingContact?.id === contact.id} onOpenChange={(open) => !open && setEditingContact(null)}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setEditingContact(contact)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Edit Contact</DialogTitle>
+                              </DialogHeader>
+                              {editingContact && (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label htmlFor="edit-name">Name *</Label>
+                                      <Input
+                                        id="edit-name"
+                                        value={editingContact.name}
+                                        onChange={(e) => setEditingContact({ ...editingContact, name: e.target.value })}
+                                        placeholder="Enter full name"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-organization">Organization</Label>
+                                      <Input
+                                        id="edit-organization"
+                                        value={editingContact.organization || ""}
+                                        onChange={(e) => setEditingContact({ ...editingContact, organization: e.target.value })}
+                                        placeholder="Company or organization"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label htmlFor="edit-role">Role</Label>
+                                      <Input
+                                        id="edit-role"
+                                        value={editingContact.role || ""}
+                                        onChange={(e) => setEditingContact({ ...editingContact, role: e.target.value })}
+                                        placeholder="Job title or role"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-phone">Phone</Label>
+                                      <Input
+                                        id="edit-phone"
+                                        value={editingContact.phone}
+                                        onChange={(e) => setEditingContact({ ...editingContact, phone: e.target.value })}
+                                        placeholder="Phone number"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-email">Email</Label>
+                                    <Input
+                                      id="edit-email"
+                                      type="email"
+                                      value={editingContact.email || ""}
+                                      onChange={(e) => setEditingContact({ ...editingContact, email: e.target.value })}
+                                      placeholder="Email address"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-address">Address</Label>
+                                    <Textarea
+                                      id="edit-address"
+                                      value={editingContact.address || ""}
+                                      onChange={(e) => setEditingContact({ ...editingContact, address: e.target.value })}
+                                      placeholder="Street address, city, state, zip"
+                                      rows={2}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-notes">Notes</Label>
+                                    <Textarea
+                                      id="edit-notes"
+                                      value={editingContact.notes || ""}
+                                      onChange={(e) => setEditingContact({ ...editingContact, notes: e.target.value })}
+                                      placeholder="Additional notes or comments"
+                                      rows={3}
+                                    />
+                                  </div>
+                                  <div className="flex justify-end space-x-2">
+                                    <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
+                                      Cancel
+                                    </Button>
+                                    <Button 
+                                      onClick={handleUpdateContact}
+                                      disabled={!editingContact.name.trim() || updateContactMutation.isPending}
+                                    >
+                                      {updateContactMutation.isPending ? "Updating..." : "Update Contact"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -270,22 +620,40 @@ function PhoneDirectoryFixed() {
                         <div className="space-y-3">
                           <h4 className="font-semibold text-base text-primary font-['Roboto',sans-serif]">Contacts:</h4>
                           {host.contacts.map((contact, idx) => (
-                            <div key={idx} className="ml-4 p-3 rounded-md bg-muted/50">
-                              <div className="font-semibold text-base mb-1 text-primary font-['Roboto',sans-serif]">{contact.name}</div>
-                              <div className="space-y-1">
-                                <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                                  <span className="font-medium">Phone:</span> {contact.phone}
-                                </p>
-                                {contact.email && (
-                                  <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                                    <span className="font-medium">Email:</span> {contact.email}
-                                  </p>
-                                )}
-                                {contact.role && (
-                                  <p className="text-base italic text-muted-foreground font-['Roboto',sans-serif]">
-                                    <span className="font-medium">Role:</span> {contact.role}
-                                  </p>
-                                )}
+                            <div key={idx} className="ml-4 p-4 rounded-md bg-muted/50 border border-border">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="font-semibold text-base text-primary font-['Roboto',sans-serif]">{contact.name}</div>
+                                    {contact.isPrimary && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
+                                    {contact.role === 'lead' && <Crown className="w-4 h-4 text-purple-600 fill-current" />}
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {contact.phone && (
+                                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Phone className="w-3 h-3" />
+                                        <span>{contact.phone}</span>
+                                      </div>
+                                    )}
+                                    {contact.email && (
+                                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Mail className="w-3 h-3" />
+                                        <span>{contact.email}</span>
+                                      </div>
+                                    )}
+                                    {contact.role && (
+                                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <User className="w-3 h-3" />
+                                        <span>{contact.role}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {contact.notes && (
+                                    <div className="mt-2 p-2 bg-background rounded text-xs text-muted-foreground">
+                                      {contact.notes}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -322,32 +690,55 @@ function PhoneDirectoryFixed() {
                 <div className="space-y-4">
                   {filteredRecipients.map((recipient) => (
                     <div key={recipient.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
-                      <h3 className="font-bold text-lg mb-2 text-primary font-['Roboto',sans-serif]">{recipient.name}</h3>
-                      <div className="space-y-1">
-                        <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                          <span className="font-medium">Phone:</span> {recipient.phone}
-                        </p>
-                        {recipient.email && (
-                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                            <span className="font-medium">Email:</span> {recipient.email}
-                          </p>
-                        )}
-                        {recipient.address && (
-                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                            <span className="font-medium">Street Address:</span> {recipient.address}
-                          </p>
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{recipient.name}</h3>
+                        {recipient.status === 'active' && (
+                          <Badge variant="default" className="bg-green-100 text-green-800">
+                            Active
+                          </Badge>
                         )}
                         {recipient.region && (
-                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                            <span className="font-medium">Region:</span> {recipient.region}
-                          </p>
-                        )}
-                        {recipient.contactName && (
-                          <p className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                            <span className="font-medium">Contact:</span> {recipient.contactName}
-                          </p>
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {recipient.region}
+                          </Badge>
                         )}
                       </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {recipient.phone && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Phone className="w-4 h-4" />
+                            <span>{recipient.phone}</span>
+                          </div>
+                        )}
+                        {recipient.email && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Mail className="w-4 h-4" />
+                            <span>{recipient.email}</span>
+                          </div>
+                        )}
+                        {recipient.contactName && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <User className="w-4 h-4" />
+                            <span>Contact: {recipient.contactName}</span>
+                          </div>
+                        )}
+                        {recipient.address && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            <span>{recipient.address}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {recipient.preferences && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                          <p className="text-sm text-muted-foreground">
+                            <span className="font-medium">Preferences:</span> {recipient.preferences}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -375,33 +766,68 @@ function PhoneDirectoryFixed() {
               ) : (
                 <div className="space-y-4">
                   {filteredDrivers.map((driver) => (
-                    <div key={driver.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200" style={{ borderColor: '#e6f3f7' }}>
+                    <div key={driver.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-lg" style={{ color: '#236383', fontFamily: 'Roboto, sans-serif' }}>{driver.name}</h3>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{driver.name}</h3>
                           {driver.isActive && (
-                            <span className="px-2 py-1 text-sm font-medium rounded-full text-white" style={{ backgroundColor: '#236383', fontFamily: 'Roboto, sans-serif' }}>
+                            <Badge variant="default" className="bg-green-100 text-green-800">
                               Active
-                            </span>
+                            </Badge>
                           )}
                           {driver.vanApproved && (
-                            <span className="px-2 py-1 text-sm font-medium rounded-full text-white" style={{ backgroundColor: '#FBAD3F', fontFamily: 'Roboto, sans-serif' }}>
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                               Van Driver
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
-                          <span className="font-medium">Phone:</span> {driver.phone}
-                        </p>
-                        <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
-                          <span className="font-medium">Email:</span> {driver.email}
-                        </p>
-                        <p className="text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
-                          <span className="font-medium">Zone:</span> {driver.zone}
-                        </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {driver.phone && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Phone className="w-4 h-4" />
+                            <span>{driver.phone}</span>
+                          </div>
+                        )}
+                        {driver.email && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Mail className="w-4 h-4" />
+                            <span>{driver.email}</span>
+                          </div>
+                        )}
+                        {driver.zone && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            <span>Zone: {driver.zone}</span>
+                          </div>
+                        )}
+                        {driver.homeAddress && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Building className="w-4 h-4" />
+                            <span>{driver.homeAddress}</span>
+                          </div>
+                        )}
                       </div>
+                      
+                      {(driver.notes || driver.availabilityNotes) && (
+                        <div className="mt-3 space-y-2">
+                          {driver.notes && (
+                            <div className="p-3 bg-muted/50 rounded-md">
+                              <p className="text-sm text-muted-foreground">
+                                <span className="font-medium">Notes:</span> {driver.notes}
+                              </p>
+                            </div>
+                          )}
+                          {driver.availabilityNotes && (
+                            <div className="p-3 bg-blue-50 rounded-md">
+                              <p className="text-sm text-blue-700">
+                                <span className="font-medium">Availability:</span> {driver.availabilityNotes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
