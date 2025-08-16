@@ -58,8 +58,8 @@ export default function EventsViewer() {
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      <Card className="flex-1 flex flex-col">
-        <CardHeader className="pb-2 px-4 py-3">
+      <Card className="flex-1 flex flex-col h-full">
+        <CardHeader className="pb-1 px-4 py-2 flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
             <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
               🗓️ Events Calendar
@@ -88,7 +88,7 @@ export default function EventsViewer() {
           </div>
 
           {/* Zoom Controls */}
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -136,7 +136,7 @@ export default function EventsViewer() {
           </div>
         </CardHeader>
         
-        <CardContent className="flex-1 p-0">
+        <CardContent className="flex-1 p-0 h-full">
           <div className="w-full h-full relative overflow-hidden">
             {isLoading && (
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
@@ -152,9 +152,9 @@ export default function EventsViewer() {
               src={embedUrl}
               className="border-0 rounded-b-lg"
               style={{ 
-                minHeight: '750px',
+                height: 'calc(100vh - 180px)',
+                minHeight: '800px',
                 width: `${100 / (zoomLevel / 100)}%`,
-                height: `${100 / (zoomLevel / 100)}%`,
                 transform: `scale(${zoomLevel / 100})`,
                 transformOrigin: 'top left'
               }}
