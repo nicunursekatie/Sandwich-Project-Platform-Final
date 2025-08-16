@@ -479,6 +479,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.use(routesModule.apiRoutes);
   }
 
+  // Import and register sandwich distributions routes
+  const sandwichDistributionsRoutes = await import("./routes/sandwich-distributions");
+  app.use("/api/sandwich-distributions", sandwichDistributionsRoutes.default);
+
+  // Import and register recipients routes
+  const recipientsRoutes = await import("./routes/recipients");
+  app.use("/api/recipients", recipientsRoutes.default);
+
   // Register work log routes
 
 

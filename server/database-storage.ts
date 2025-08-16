@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -26,7 +26,8 @@ import {
   type Suggestion, type InsertSuggestion,
   type SuggestionResponse, type InsertSuggestionResponse,
   type ChatMessageLike, type InsertChatMessageLike,
-  type UserActivityLog, type InsertUserActivityLog
+  type UserActivityLog, type InsertUserActivityLog,
+  type SandwichDistribution, type InsertSandwichDistribution
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like } from "drizzle-orm";
@@ -999,6 +1000,52 @@ export class DatabaseStorage implements IStorage {
   async deleteRecipient(id: number): Promise<boolean> {
     const result = await db.delete(recipients).where(eq(recipients.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Sandwich Distributions
+  async getAllSandwichDistributions(): Promise<SandwichDistribution[]> {
+    return await db.select().from(sandwichDistributions).orderBy(desc(sandwichDistributions.distributionDate));
+  }
+
+  async getSandwichDistribution(id: number): Promise<SandwichDistribution | undefined> {
+    const [distribution] = await db.select().from(sandwichDistributions).where(eq(sandwichDistributions.id, id));
+    return distribution || undefined;
+  }
+
+  async createSandwichDistribution(insertDistribution: InsertSandwichDistribution): Promise<SandwichDistribution> {
+    const [distribution] = await db.insert(sandwichDistributions).values(insertDistribution).returning();
+    return distribution;
+  }
+
+  async updateSandwichDistribution(id: number, updates: Partial<SandwichDistribution>): Promise<SandwichDistribution | undefined> {
+    const [distribution] = await db.update(sandwichDistributions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(sandwichDistributions.id, id))
+      .returning();
+    return distribution || undefined;
+  }
+
+  async deleteSandwichDistribution(id: number): Promise<boolean> {
+    const result = await db.delete(sandwichDistributions).where(eq(sandwichDistributions.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getSandwichDistributionsByWeek(weekEnding: string): Promise<SandwichDistribution[]> {
+    return await db.select().from(sandwichDistributions)
+      .where(eq(sandwichDistributions.weekEnding, weekEnding))
+      .orderBy(sandwichDistributions.hostName, sandwichDistributions.recipientName);
+  }
+
+  async getSandwichDistributionsByHost(hostId: number): Promise<SandwichDistribution[]> {
+    return await db.select().from(sandwichDistributions)
+      .where(eq(sandwichDistributions.hostId, hostId))
+      .orderBy(desc(sandwichDistributions.distributionDate));
+  }
+
+  async getSandwichDistributionsByRecipient(recipientId: number): Promise<SandwichDistribution[]> {
+    return await db.select().from(sandwichDistributions)
+      .where(eq(sandwichDistributions.recipientId, recipientId))
+      .orderBy(desc(sandwichDistributions.distributionDate));
   }
 
   // General Contacts
