@@ -80,6 +80,13 @@ router.delete("/hosts/:id", async (req, res) => {
     res.status(204).send();
   } catch (error) {
     console.error("Error deleting host:", error);
+    // Check if it's a constraint error (has associated records)
+    if (error.message && error.message.includes("associated collection")) {
+      return res.status(409).json({ 
+        error: error.message,
+        code: "CONSTRAINT_VIOLATION"
+      });
+    }
     res.status(500).json({ error: "Failed to delete host" });
   }
 });
