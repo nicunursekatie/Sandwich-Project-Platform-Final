@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Award, TrendingUp, Target, Lightbulb, Star, Crown, Calendar, ChevronUp, AlertCircle, Zap, Users2, BookOpen } from "lucide-react";
 import sandwichLogo from "@assets/LOGOS/sandwich logo.png";
 import type { SandwichCollection } from "@shared/schema";
-import { DetailedActivityAnalytics } from "@/components/detailed-activity-analytics";
+// Removed DetailedActivityAnalytics - user activity should only be visible to admins in user management
 
 export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('highlights');
@@ -878,7 +878,27 @@ export default function AnalyticsDashboard() {
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-6">
-          <DetailedActivityAnalytics />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users2 className="h-5 w-5" />
+                Community Engagement Analytics
+              </CardTitle>
+              <CardDescription>
+                Public analytics focused on community impact and engagement metrics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12 text-gray-500">
+                <BookOpen className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                <h3 className="text-lg font-medium mb-2">Community Analytics Coming Soon</h3>
+                <p className="text-sm max-w-md mx-auto">
+                  We're developing community engagement analytics that focus on public impact metrics 
+                  like volunteer participation trends, community reach, and organizational partnerships.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
