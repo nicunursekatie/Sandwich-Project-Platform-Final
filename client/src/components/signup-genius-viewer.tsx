@@ -39,11 +39,11 @@ export default function SignUpGeniusViewer() {
               </div>
               
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Volunteer Signup Portal
+                SignUp Genius
               </h3>
               
               <p className="text-gray-600 text-center mb-6 max-w-md">
-                Access our volunteer signup system to register for events, 
+                Access SignUp Genius to register for events, 
                 choose time slots, and track your volunteer hours.
               </p>
               
@@ -53,7 +53,7 @@ export default function SignUpGeniusViewer() {
                 size="lg"
               >
                 <ExternalLink className="h-5 w-5" />
-                Access Volunteer Portal
+                Open SignUp Genius
               </Button>
               
               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl">
