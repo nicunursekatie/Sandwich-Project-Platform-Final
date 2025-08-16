@@ -312,6 +312,13 @@ const PERMISSION_CATEGORIES = [
         icon: Edit,
         dangerLevel: "elevated"
       },
+      { 
+        key: PERMISSIONS.MANAGE_DIRECTORY, 
+        label: "Edit directory contacts", 
+        description: "Add/edit general contacts in directory",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
     ]
   },
   {
@@ -330,7 +337,7 @@ const PERMISSION_CATEGORIES = [
         dangerLevel: "safe"
       },
       { 
-        key: PERMISSIONS.ACCESS_REPORTS, 
+        key: PERMISSIONS.ACCESS_SANDWICH_DATA, 
         label: "Reports access", 
         description: "Generate and download reports",
         icon: FileText,
@@ -451,7 +458,7 @@ const PERMISSION_PRESETS = [
       PERMISSIONS.CREATE_PROJECTS,
       'MANAGE_ALL_PROJECTS',
       PERMISSIONS.ACCESS_ANALYTICS,
-      PERMISSIONS.ACCESS_REPORTS,
+      PERMISSIONS.ACCESS_SANDWICH_DATA,
       PERMISSIONS.MANAGE_HOSTS,
       PERMISSIONS.MANAGE_RECIPIENTS,
       PERMISSIONS.MANAGE_DRIVERS,
@@ -624,7 +631,7 @@ export default function EnhancedPermissionsDialog({
   const handleSave = () => {
     if (user) {
       // Deduplicate permissions before saving to prevent database inconsistencies
-      const deduplicatedPermissions = [...new Set(selectedPermissions)];
+      const deduplicatedPermissions = Array.from(new Set(selectedPermissions));
       onSave(user.id, selectedRole, deduplicatedPermissions);
       onOpenChange(false);
     }

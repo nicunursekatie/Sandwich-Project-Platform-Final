@@ -103,7 +103,7 @@ function PhoneDirectoryFixed() {
   const canViewDrivers = hasPermission(user, PERMISSIONS.ACCESS_DRIVERS);
   const canEditContacts = hasPermission(user, PERMISSIONS.ADMIN_ACCESS) || 
                          hasPermission(user, PERMISSIONS.MANAGE_USERS) || 
-                         hasPermission(user, PERMISSIONS.EDIT_DATA);
+                         hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY);
 
   // Smart default tab selection: prefer hosts, then other tabs (exclude contacts)
   const getDefaultTab = React.useCallback(() => {
