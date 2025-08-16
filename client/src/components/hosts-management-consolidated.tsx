@@ -527,7 +527,7 @@ export default function HostsManagementConsolidated() {
                 className="w-full"
               >
                 <Users className="w-3 h-3 mr-1" />
-                View Details
+                See All Members
               </Button>
               <div className="flex space-x-2">
                 <Dialog 
