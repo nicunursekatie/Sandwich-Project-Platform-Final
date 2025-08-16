@@ -54,7 +54,7 @@ import { KudosInbox } from "@/components/kudos-inbox";
 import SocketChatHub from "@/components/socket-chat-hub";
 import EventsViewer from "@/components/events-viewer";
 import SignUpGeniusViewer from "@/components/signup-genius-viewer";
-import RouteTracking from "@/components/route-tracking";
+import DonationTracking from "@/components/donation-tracking";
 import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
@@ -171,8 +171,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <EventsViewer />;
       case "signup-genius":
         return <SignUpGeniusViewer />;
-      case "route-tracking":
-        return <RouteTracking />;
+      case "donation-tracking":
+        return <DonationTracking />;
       case "weekly-monitoring":
         return (
           <div className="space-y-6 p-6">

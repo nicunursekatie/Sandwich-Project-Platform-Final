@@ -32,6 +32,8 @@ The application features a consistent brand identity using The Sandwich Project'
 - **User Roles**: Includes "Core Team" role with elevated permissions for trusted operational team members.
 - **Authentication UI**: Modernized login and authentication experience with enhanced landing pages, professional styling, and consistent branding.
 - **Password Reset System**: Complete SendGrid-powered password reset functionality with professional email templates, secure token-based authentication, and environment-aware URL generation for both development and production deployments.
+- **Donation Tracking**: System for logging sandwich distributions from host locations to recipient organizations, renamed from "Route Tracking" to better reflect functionality.
+- **Enhanced Directory**: Comprehensive contact information display with full edit/add capabilities, showing organization, role, phone, email, address, notes, and creation dates with proper permissions management.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
