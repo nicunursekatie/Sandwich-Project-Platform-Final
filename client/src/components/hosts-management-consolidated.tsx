@@ -182,8 +182,20 @@ export default function HostsManagementConsolidated() {
     mutationFn: async (data: InsertHostContact) => {
       return await apiRequest('POST', '/api/host-contacts', data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+    onSuccess: async () => {
+      // Invalidate and refetch the hosts data
+      await queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      
+      // Update the selected host with fresh data
+      if (selectedHost) {
+        const freshHosts = queryClient.getQueryData(['/api/hosts-with-contacts']) as HostWithContacts[];
+        const freshHost = freshHosts?.find(h => h.id === selectedHost.id);
+        if (freshHost) {
+          setSelectedHost(freshHost);
+        }
+      }
+      
       setNewContact({ name: "", role: "", phone: "", email: "", isPrimary: false, notes: "" });
       setIsAddingContact(false);
       toast({
