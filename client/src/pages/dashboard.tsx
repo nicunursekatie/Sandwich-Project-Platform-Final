@@ -174,7 +174,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "real-time-messages":
         return <RealTimeMessages />;
       case "messages":
-        return <RealTimeMessages />;
+        return <InboxPage />;
       case "gmail-inbox":
         return <GmailStyleInbox />;
       case "inbox":
