@@ -324,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       cookie: {
         secure: false, // Should be true in production with HTTPS, false for development
         httpOnly: false, // Allow frontend to access cookies for debugging in Replit
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for better persistence
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
         sameSite: "lax", // CSRF protection
         domain: undefined, // Let Express auto-detect domain for Replit
       },
