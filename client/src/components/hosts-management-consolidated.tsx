@@ -555,7 +555,10 @@ export default function HostsManagementConsolidated() {
                           <Input
                             id="edit-name"
                             value={editingHost.name}
-                            onChange={(e) => setEditingHost({ ...editingHost, name: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setEditingHost({ ...editingHost, name: e.target.value });
+                            }}
                           />
                         </div>
                         <div>
@@ -563,7 +566,10 @@ export default function HostsManagementConsolidated() {
                           <Input
                             id="edit-address"
                             value={editingHost.address || ""}
-                            onChange={(e) => setEditingHost({ ...editingHost, address: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setEditingHost({ ...editingHost, address: e.target.value });
+                            }}
                           />
                         </div>
                         <div>
@@ -583,7 +589,10 @@ export default function HostsManagementConsolidated() {
                           <Textarea
                             id="edit-notes"
                             value={editingHost.notes || ""}
-                            onChange={(e) => setEditingHost({ ...editingHost, notes: e.target.value })}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setEditingHost({ ...editingHost, notes: e.target.value });
+                            }}
                             rows={3}
                           />
                         </div>
@@ -654,7 +663,10 @@ export default function HostsManagementConsolidated() {
                 <Input
                   id="name"
                   value={newHost.name}
-                  onChange={(e) => setNewHost({ ...newHost, name: e.target.value })}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewHost({ ...newHost, name: e.target.value });
+                  }}
                   placeholder="Enter host location name"
                 />
               </div>
@@ -663,7 +675,10 @@ export default function HostsManagementConsolidated() {
                 <Input
                   id="address"
                   value={newHost.address || ""}
-                  onChange={(e) => setNewHost({ ...newHost, address: e.target.value })}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewHost({ ...newHost, address: e.target.value });
+                  }}
                   placeholder="Enter host location"
                 />
               </div>
@@ -684,7 +699,10 @@ export default function HostsManagementConsolidated() {
                 <Textarea
                   id="notes"
                   value={newHost.notes || ""}
-                  onChange={(e) => setNewHost({ ...newHost, notes: e.target.value })}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewHost({ ...newHost, notes: e.target.value });
+                  }}
                   placeholder="Enter any additional notes"
                   rows={3}
                 />
