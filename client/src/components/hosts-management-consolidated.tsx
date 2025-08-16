@@ -379,32 +379,7 @@ export default function HostsManagementConsolidated() {
     }
   };
 
-  // Helper function to render role badges with special styling for leads
-  const RoleBadge = ({ role }: { role: string }) => {
-    if (role && role.toLowerCase() === 'lead') {
-      return (
-        <div className="flex items-center gap-1">
-          <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold shadow-md border-0 flex items-center gap-1 px-2 py-1">
-            <Crown className="w-3 h-3" />
-            LEAD
-          </Badge>
-        </div>
-      );
-    }
-    // Handle empty/null roles
-    if (!role || role.trim() === '') {
-      return (
-        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
-          No Role
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="outline" className="text-xs">
-        {role}
-      </Badge>
-    );
-  };
+
 
   if (isLoading) {
     return (
@@ -481,9 +456,11 @@ export default function HostsManagementConsolidated() {
                               {contact.isPrimary && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
                             </div>
                           </div>
-                          <div className="flex items-center">
-                            <RoleBadge role={contact.role} />
-                          </div>
+                          {contact.role && (
+                            <div className="text-xs text-slate-600">
+                              {contact.role}
+                            </div>
+                          )}
                           <div className="flex items-center text-xs text-slate-600">
                             <Phone className="w-3 h-3 mr-1" />
                             {contact.phone}
