@@ -271,9 +271,15 @@ const projectDataUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Use memory-based session store to avoid PostgreSQL connectivity issues
-  console.log("Using memory-based session store for stability");
-  const sessionStore = new session.MemoryStore();
+  // Use database-backed session store for deployment persistence
+  console.log("Using database-backed session store for deployment persistence");
+  const PgSession = connectPg(session);
+  const sessionStore = new PgSession({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: 30 * 24 * 60 * 60, // 30 days in seconds (matches cookie maxAge)
+    tableName: "sessions",
+  });
 
   // Add CORS middleware before session middleware
   app.use((req, res, next) => {
