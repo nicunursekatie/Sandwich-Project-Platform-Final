@@ -1,4 +1,4 @@
-import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator, Calendar } from "lucide-react";
+import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator, Calendar, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 import sandwichLogo from "@assets/LOGOS/TSP_transparent.png";
 import squareSandwichLogo from "@assets/LOGOS/sandwich logo.png";
@@ -55,6 +55,7 @@ import SocketChatHub from "@/components/socket-chat-hub";
 import EventsViewer from "@/components/events-viewer";
 import SignUpGeniusViewer from "@/components/signup-genius-viewer";
 import RouteTracking from "@/components/route-tracking";
+import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -173,6 +174,21 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <SignUpGeniusViewer />;
       case "route-tracking":
         return <RouteTracking />;
+      case "weekly-monitoring":
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
+                <Clock className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Weekly Monitoring</h1>
+                <p className="text-gray-600">Track weekly submission status and send email notifications for missing data</p>
+              </div>
+            </div>
+            <WeeklyMonitoringDashboard />
+          </div>
+        );
       case "inventory-calculator":
         // Open the inventory calculator in a new tab and return to dashboard
         window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank');

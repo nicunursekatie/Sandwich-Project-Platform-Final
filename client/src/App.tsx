@@ -122,6 +122,7 @@ function Router() {
       <Route path="/meetings">{() => <Dashboard initialSection="meetings" />}</Route>
       <Route path="/projects">{() => <Dashboard initialSection="projects" />}</Route>
       <Route path="/projects/:id">{(params) => <Dashboard initialSection={`project-${params.id}`} />}</Route>
+      <Route path="/weekly-monitoring">{() => <Dashboard initialSection="weekly-monitoring" />}</Route>
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">{(params) => <Dashboard initialSection={params.section} />}</Route>
       <Route path="/">{() => <Dashboard />}</Route>

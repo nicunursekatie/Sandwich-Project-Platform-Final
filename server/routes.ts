@@ -73,6 +73,7 @@ declare global {
   }
 }
 import dataManagementRoutes from "./routes/data-management";
+import { checkWeeklySubmissions, sendMissingSubmissionsEmail, runWeeklyMonitoring } from "./weekly-monitoring";
 import { registerPerformanceRoutes } from "./routes/performance";
 import { SearchEngine } from "./search-engine";
 import { CacheManager } from "./performance/cache-manager";
@@ -6038,6 +6039,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ status: "error", message: "Health check failed" });
+    }
+  });
+
+  // Weekly monitoring endpoints
+  app.get("/api/monitoring/weekly-status", isAuthenticated, async (req, res) => {
+    try {
+      const submissionStatus = await checkWeeklySubmissions();
+      res.json(submissionStatus);
+    } catch (error) {
+      console.error('Error checking weekly submissions:', error);
+      res.status(500).json({ error: 'Failed to check weekly submissions' });
+    }
+  });
+
+  app.get("/api/monitoring/stats", isAuthenticated, async (req, res) => {
+    try {
+      const submissionStatus = await checkWeeklySubmissions();
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      
+      // Calculate next scheduled check
+      let nextCheck = "Thursday 7:00 PM";
+      if (dayOfWeek === 4 && now.getHours() >= 19) {
+        nextCheck = "Friday 8:00 AM";
+      } else if (dayOfWeek === 5 && now.getHours() >= 8) {
+        nextCheck = "Next Thursday 7:00 PM";
+      }
+
+      const stats = {
+        currentWeek: now.toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric', 
+          year: 'numeric' 
+        }),
+        totalExpectedLocations: submissionStatus.length,
+        submittedLocations: submissionStatus.filter(s => s.hasSubmitted).length,
+        missingLocations: submissionStatus.filter(s => !s.hasSubmitted).length,
+        lastCheckTime: now.toLocaleString(),
+        nextScheduledCheck: nextCheck
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting monitoring stats:', error);
+      res.status(500).json({ error: 'Failed to get monitoring stats' });
+    }
+  });
+
+  app.post("/api/monitoring/check-now", isAuthenticated, async (req, res) => {
+    try {
+      await runWeeklyMonitoring();
+      res.json({ success: true, message: 'Weekly monitoring check completed' });
+    } catch (error) {
+      console.error('Error running weekly monitoring:', error);
+      res.status(500).json({ error: 'Failed to run weekly monitoring' });
+    }
+  });
+
+  app.post("/api/monitoring/test-email", isAuthenticated, async (req, res) => {
+    try {
+      const submissionStatus = await checkWeeklySubmissions();
+      const emailSent = await sendMissingSubmissionsEmail(submissionStatus);
+      
+      if (emailSent) {
+        res.json({ success: true, message: 'Test email sent successfully' });
+      } else {
+        res.json({ success: false, message: 'Email not sent - SendGrid not configured or no missing submissions' });
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      res.status(500).json({ error: 'Failed to send test email' });
     }
   });
 

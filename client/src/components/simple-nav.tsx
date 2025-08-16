@@ -21,7 +21,8 @@ import {
   Scale,
   Calendar,
   MapPin,
-  Route
+  Route,
+  Clock
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -74,6 +75,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
     { id: "route-tracking", label: "Route Tracking", icon: Route, href: "route-tracking", group: "operations" },
+    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
     
     // PLANNING & COORDINATION
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
