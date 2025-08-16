@@ -413,9 +413,9 @@ export default function HostsManagementConsolidated() {
         >
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-2">
-                <Building2 className={`w-5 h-5 ${host.status === 'inactive' ? 'text-gray-400' : 'text-slate-600'}`} />
-                <CardTitle className={`text-base ${host.status === 'inactive' ? 'text-gray-600' : ''}`}>{host.name}</CardTitle>
+              <div className="flex items-start space-x-2 flex-1 min-w-0">
+                <Building2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${host.status === 'inactive' ? 'text-gray-400' : 'text-slate-600'}`} />
+                <CardTitle className={`text-base leading-tight break-words ${host.status === 'inactive' ? 'text-gray-600' : ''}`}>{host.name}</CardTitle>
               </div>
               <Badge 
                 variant={host.status === "active" ? "default" : "secondary"}
