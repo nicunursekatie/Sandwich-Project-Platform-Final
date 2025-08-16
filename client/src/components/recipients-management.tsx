@@ -26,6 +26,7 @@ export default function RecipientsManagement() {
     name: "",
     phone: "",
     email: "",
+    website: "",
     address: "",
     region: "",
     preferences: "", // Legacy field - keeping for backward compatibility
@@ -58,6 +59,7 @@ export default function RecipientsManagement() {
         name: "",
         phone: "",
         email: "",
+        website: "",
         address: "",
         region: "",
         preferences: "",
@@ -317,6 +319,16 @@ export default function RecipientsManagement() {
                     />
                   </div>
                   <div>
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      type="url"
+                      value={newRecipient.website}
+                      onChange={(e) => setNewRecipient({ ...newRecipient, website: e.target.value })}
+                      placeholder="https://www.organization.org"
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="address">Street Address</Label>
                     <Input
                       id="address"
@@ -516,6 +528,16 @@ export default function RecipientsManagement() {
                   <span>{recipient.email}</span>
                 </div>
               )}
+              {(recipient as any).website && (
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                  </svg>
+                  <a href={(recipient as any).website} target="_blank" rel="noopener noreferrer" className="hover:text-[#236383] underline">
+                    {(recipient as any).website}
+                  </a>
+                </div>
+              )}
               {recipient.address && (
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <MapPin className="w-4 h-4" />
@@ -651,6 +673,16 @@ export default function RecipientsManagement() {
                   type="email"
                   value={editingRecipient.email || ""}
                   onChange={(e) => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-website">Website</Label>
+                <Input
+                  id="edit-website"
+                  type="url"
+                  value={(editingRecipient as any).website || ""}
+                  onChange={(e) => setEditingRecipient({ ...editingRecipient, website: e.target.value })}
+                  placeholder="https://www.organization.org"
                 />
               </div>
               <div>
