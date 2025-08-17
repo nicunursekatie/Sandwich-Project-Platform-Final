@@ -57,9 +57,11 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
   // Debug logging
   console.log('TSP Contact Manager Debug:', {
     recipientId,
+    recipientName,
     tspContactsLength: tspContacts.length,
     tspContacts,
-    isLoading
+    isLoading,
+    queryKey: ["/api/recipient-tsp-contacts", recipientId]
   });
 
   // Fetch users for selection dropdown

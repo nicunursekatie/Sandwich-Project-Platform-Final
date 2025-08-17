@@ -491,7 +491,17 @@ export default function RecipientsManagement() {
 
       {/* Recipients List */}
       <div className="grid gap-4">
-        {recipients.map((recipient) => (
+        {recipients.map((recipient) => {
+          // Debug: Log each recipient being rendered
+          if (recipient.name.includes('Boys') || recipient.id === 19 || recipient.id === 36) {
+            console.log('Recipients Debug - Rendering:', {
+              id: recipient.id,
+              name: recipient.name,
+              isBoysAndGirls: recipient.name.includes('Boys'),
+              isZaban: recipient.name.includes('Zaban')
+            });
+          }
+          return (
           <Card key={recipient.id} className="border border-slate-200">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -645,7 +655,8 @@ export default function RecipientsManagement() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
 
         {recipients.length === 0 && (
           <div className="text-center py-12 text-slate-500">
