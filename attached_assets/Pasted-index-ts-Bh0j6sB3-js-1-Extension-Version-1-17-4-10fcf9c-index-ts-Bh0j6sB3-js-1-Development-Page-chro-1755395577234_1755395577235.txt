@@ -1,0 +1,186 @@
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=aazIxez7iVht' failed: 
+setupWebSocket @ client:536
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=aazIxez7iVht' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+message-notifications.tsx:99 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+dashboard.tsx:66 Current URL location: /
+dashboard.tsx:88 Dashboard activeSection changed to: dashboard
+message-notifications.tsx:111 WebSocket connected successfully
+useMessaging.ts:242 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+(anonymous) @ useMessaging.ts:242
+hook.js:608 Messaging WebSocket error: Event
+overrideMethod @ hook.js:608
+useMessaging.ts:286 Messaging WebSocket disconnected
+hook.js:608 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+simple-nav.tsx:206 Navigation click: recipients
+dashboard.tsx:494 Dashboard setActiveSection called with: recipients
+dashboard.tsx:66 Current URL location: /dashboard
+dashboard.tsx:88 Dashboard activeSection changed to: recipients
+recipients-management.tsx:497 Recipients Debug - Rendering: {id: 19, name: 'Boys and Girls Club', isBoysAndGirls: true, isZaban: false}
+recipients-management.tsx:497 Recipients Debug - Rendering: {id: 36, name: 'Zaban Paradies Center', isBoysAndGirls: false, isZaban: true}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 39, recipientName: "City of Atlanta Mayor's Office Initiative", tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 20, recipientName: 'Community Assistance Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 21, recipientName: 'Cross Cultural Ministries', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 37, recipientName: 'Eye Believe Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 22, recipientName: 'Focus Recovery (Veterans Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 23, recipientName: 'Gateway Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 24, recipientName: 'Giving Grace /Remerge', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 25, recipientName: 'Hope Atlanta', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 42, recipientName: 'Hope Thru Soap', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 26, recipientName: 'Intown Cares', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 27, recipientName: 'Lettum Eat', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 28, recipientName: 'Melody (City of Atlanta/Hope Atlanta)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 29, recipientName: 'Omega Support Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 40, recipientName: 'Operation Peace', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 30, recipientName: 'St. Vincent de Paul (Outreach Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 31, recipientName: 'The Elizabeth Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 41, recipientName: 'The Goodman Group', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 32, recipientName: 'The Shrine of The Immaculate Conception', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 33, recipientName: 'The Table on Delk', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 34, recipientName: 'The Zone (Davis Direction Foundation)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 35, recipientName: 'Toco Hills Community Alliance', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 38, recipientName: "True Worship / Angie's Kitchen", tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 36, recipientName: 'Zaban Paradies Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+recipients-management.tsx:497 Recipients Debug - Rendering: {id: 19, name: 'Boys and Girls Club', isBoysAndGirls: true, isZaban: false}
+recipients-management.tsx:497 Recipients Debug - Rendering: {id: 36, name: 'Zaban Paradies Center', isBoysAndGirls: false, isZaban: true}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 39, recipientName: "City of Atlanta Mayor's Office Initiative", tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 20, recipientName: 'Community Assistance Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 21, recipientName: 'Cross Cultural Ministries', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 37, recipientName: 'Eye Believe Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 22, recipientName: 'Focus Recovery (Veterans Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 23, recipientName: 'Gateway Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 24, recipientName: 'Giving Grace /Remerge', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 25, recipientName: 'Hope Atlanta', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 42, recipientName: 'Hope Thru Soap', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 26, recipientName: 'Intown Cares', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 27, recipientName: 'Lettum Eat', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 28, recipientName: 'Melody (City of Atlanta/Hope Atlanta)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 29, recipientName: 'Omega Support Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 40, recipientName: 'Operation Peace', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 30, recipientName: 'St. Vincent de Paul (Outreach Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 31, recipientName: 'The Elizabeth Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 41, recipientName: 'The Goodman Group', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 32, recipientName: 'The Shrine of The Immaculate Conception', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 33, recipientName: 'The Table on Delk', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 34, recipientName: 'The Zone (Davis Direction Foundation)', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 35, recipientName: 'Toco Hills Community Alliance', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 38, recipientName: "True Worship / Angie's Kitchen", tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 36, recipientName: 'Zaban Paradies Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 39, recipientName: "City of Atlanta Mayor's Office Initiative", tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 20, recipientName: 'Community Assistance Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 21, recipientName: 'Cross Cultural Ministries', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 37, recipientName: 'Eye Believe Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 22, recipientName: 'Focus Recovery (Veterans Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 23, recipientName: 'Gateway Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 24, recipientName: 'Giving Grace /Remerge', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 25, recipientName: 'Hope Atlanta', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 42, recipientName: 'Hope Thru Soap', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+hook.js:608 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. Error Component Stack
+    at DescriptionWarning (chunk-SUMVCW5P.js?v=7b3a3859:332:29)
+    at chunk-SUMVCW5P.js?v=7b3a3859:236:13
+    at chunk-SUMVCW5P.js?v=7b3a3859:159:58
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at chunk-SUMVCW5P.js?v=7b3a3859:150:64
+    at chunk-X5NZ3XE2.js?v=7b3a3859:79:13
+    at chunk-X5NZ3XE2.js?v=7b3a3859:56:13
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at chunk-XOOGDA2B.js?v=7b3a3859:262:22
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at DialogPortal (chunk-SUMVCW5P.js?v=7b3a3859:112:11)
+    at _c3 (dialog.tsx:35:6)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at Dialog (chunk-SUMVCW5P.js?v=7b3a3859:52:5)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at TSPContactManager (tsp-contact-manager.tsx:31:45)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at _c9 (card.tsx:62:6)
+    at div (<anonymous>)
+    at _c (card.tsx:8:6)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at RecipientsManagement (recipients-management.tsx:18:21)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at Dashboard (dashboard.tsx:60:37)
+    at Route (wouter.js?v=7b3a3859:206:16)
+    at Switch (wouter.js?v=7b3a3859:262:17)
+    at Router (App.tsx:24:49)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=7b3a3859:65:5)
+    at QueryClientProvider (@tanstack_react-query.js?v=7b3a3859:2933:3)
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:136:3)
+overrideMethod @ hook.js:608
+(anonymous) @ chunk-SUMVCW5P.js?v=7b3a3859:340
+commitHookEffectListMount @ chunk-276SZO74.js?v=7b3a3859:16915
+commitPassiveMountOnFiber @ chunk-276SZO74.js?v=7b3a3859:18156
+commitPassiveMountEffects_complete @ chunk-276SZO74.js?v=7b3a3859:18129
+commitPassiveMountEffects_begin @ chunk-276SZO74.js?v=7b3a3859:18119
+commitPassiveMountEffects @ chunk-276SZO74.js?v=7b3a3859:18109
+flushPassiveEffectsImpl @ chunk-276SZO74.js?v=7b3a3859:19490
+flushPassiveEffects @ chunk-276SZO74.js?v=7b3a3859:19447
+commitRootImpl @ chunk-276SZO74.js?v=7b3a3859:19416
+commitRoot @ chunk-276SZO74.js?v=7b3a3859:19277
+performSyncWorkOnRoot @ chunk-276SZO74.js?v=7b3a3859:18895
+flushSyncCallbacks @ chunk-276SZO74.js?v=7b3a3859:9119
+(anonymous) @ chunk-276SZO74.js?v=7b3a3859:18627
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 26, recipientName: 'Intown Cares', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 27, recipientName: 'Lettum Eat', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 28, recipientName: 'Melody (City of Atlanta/Hope Atlanta)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 29, recipientName: 'Omega Support Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 40, recipientName: 'Operation Peace', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 30, recipientName: 'St. Vincent de Paul (Outreach Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 31, recipientName: 'The Elizabeth Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 41, recipientName: 'The Goodman Group', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 32, recipientName: 'The Shrine of The Immaculate Conception', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 33, recipientName: 'The Table on Delk', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 34, recipientName: 'The Zone (Davis Direction Foundation)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 35, recipientName: 'Toco Hills Community Alliance', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 38, recipientName: "True Worship / Angie's Kitchen", tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 36, recipientName: 'Zaban Paradies Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+recipients-management.tsx:497 Recipients Debug - Rendering: {id: 19, name: 'Boys and Girls Club', isBoysAndGirls: true, isZaban: false}
+recipients-management.tsx:497 Recipients Debug - Rendering: {id: 36, name: 'Zaban Paradies Center', isBoysAndGirls: false, isZaban: true}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: true, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 39, recipientName: "City of Atlanta Mayor's Office Initiative", tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 20, recipientName: 'Community Assistance Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 21, recipientName: 'Cross Cultural Ministries', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 37, recipientName: 'Eye Believe Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 22, recipientName: 'Focus Recovery (Veterans Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 23, recipientName: 'Gateway Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 24, recipientName: 'Giving Grace /Remerge', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 25, recipientName: 'Hope Atlanta', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 42, recipientName: 'Hope Thru Soap', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 26, recipientName: 'Intown Cares', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 27, recipientName: 'Lettum Eat', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 28, recipientName: 'Melody (City of Atlanta/Hope Atlanta)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 29, recipientName: 'Omega Support Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 40, recipientName: 'Operation Peace', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 30, recipientName: 'St. Vincent de Paul (Outreach Program)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 31, recipientName: 'The Elizabeth Foundation', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 41, recipientName: 'The Goodman Group', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 32, recipientName: 'The Shrine of The Immaculate Conception', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 33, recipientName: 'The Table on Delk', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 34, recipientName: 'The Zone (Davis Direction Foundation)', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 35, recipientName: 'Toco Hills Community Alliance', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 38, recipientName: "True Worship / Angie's Kitchen", tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 36, recipientName: 'Zaban Paradies Center', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
+tsp-contact-manager.tsx:58 TSP Contact Manager Debug: {recipientId: 19, recipientName: 'Boys and Girls Club', tspContactsLength: 0, tspContacts: Array(0), isLoading: false, …}
