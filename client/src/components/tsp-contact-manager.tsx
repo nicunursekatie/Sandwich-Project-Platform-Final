@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, User, ExternalLink, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,28 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
     isPrimary: false,
   });
 
+  // Clear cache and refetch on mount
+  useEffect(() => {
+    queryClient.removeQueries({ queryKey: ["/api/recipient-tsp-contacts", recipientId] });
+    setTimeout(() => {
+      refetch();
+    }, 100);
+  }, [recipientId, refetch]);
+
   // Fetch TSP contacts for this recipient
   const { data: tspContacts = [], isLoading, refetch } = useQuery<RecipientTspContact[]>({
     queryKey: ["/api/recipient-tsp-contacts", recipientId],
     staleTime: 0, // Always fresh data for immediate updates
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
+  // Debug logging
+  console.log('TSP Contact Manager Debug:', {
+    recipientId,
+    tspContactsLength: tspContacts.length,
+    tspContacts,
+    isLoading
   });
 
   // Fetch users for selection dropdown
