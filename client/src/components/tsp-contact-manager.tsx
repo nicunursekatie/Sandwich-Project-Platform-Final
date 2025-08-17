@@ -678,7 +678,7 @@ export default function TSPContactManager({ recipientId, recipientName, compact 
                       size="sm"
                       onClick={() => startEdit(contact)}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
