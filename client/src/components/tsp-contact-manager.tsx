@@ -38,14 +38,6 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
     isPrimary: false,
   });
 
-  // Clear cache and refetch on mount
-  useEffect(() => {
-    queryClient.removeQueries({ queryKey: ["/api/recipient-tsp-contacts", recipientId] });
-    setTimeout(() => {
-      refetch();
-    }, 100);
-  }, [recipientId, refetch]);
-
   // Fetch TSP contacts for this recipient
   const { data: tspContacts = [], isLoading, refetch } = useQuery<RecipientTspContact[]>({
     queryKey: ["/api/recipient-tsp-contacts", recipientId],
@@ -53,6 +45,14 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+
+  // Clear cache and refetch on mount
+  useEffect(() => {
+    queryClient.removeQueries({ queryKey: ["/api/recipient-tsp-contacts", recipientId] });
+    setTimeout(() => {
+      refetch();
+    }, 100);
+  }, [recipientId, refetch]);
 
   // Debug logging
   console.log('TSP Contact Manager Debug:', {
