@@ -221,9 +221,9 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
   };
 
   const navigateToChat = (chatType: string) => {
-    // Simplified navigation - all notifications go to appropriate sections
+    // Updated navigation - route all chat notifications to the current messaging system
     if (chatType === 'direct' || chatType === 'groups') {
-      // Direct messages and groups go to messages
+      // Direct messages and groups go to messages inbox
       if ((window as any).dashboardSetActiveSection) {
         (window as any).dashboardSetActiveSection('messages');
       } else {
@@ -237,11 +237,11 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
         window.location.href = '/dashboard?section=gmail-inbox';
       }
     } else {
-      // Other chat types go to chat system
+      // All other chat types now go to the real-time messaging system instead of old chat
       if ((window as any).dashboardSetActiveSection) {
-        (window as any).dashboardSetActiveSection('chat');
+        (window as any).dashboardSetActiveSection('real-time-messages');
       } else {
-        window.location.href = '/dashboard?section=chat';
+        window.location.href = '/dashboard?section=real-time-messages';
       }
     }
   };
