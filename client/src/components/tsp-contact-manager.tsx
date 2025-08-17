@@ -41,9 +41,11 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
   // Fetch TSP contacts for this recipient
   const { data: tspContacts = [], isLoading, refetch } = useQuery<RecipientTspContact[]>({
     queryKey: ["/api/recipient-tsp-contacts", recipientId],
+    queryFn: () => fetch(`/api/recipient-tsp-contacts/${recipientId}`).then(res => res.json()),
     staleTime: 0, // Always fresh data for immediate updates
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    gcTime: 0, // Don't cache at all for debugging
   });
 
   // Clear cache and refetch on mount
