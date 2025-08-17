@@ -315,13 +315,106 @@ export default function TSPContactManager({ recipientId, recipientName, compact 
               <DialogTitle>Edit TSP Contact</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {/* Similar form fields for editing */}
+              {/* Contact Type Toggle */}
+              <div className="flex items-center space-x-4">
+                <Label>Contact Type:</Label>
+                <div className="flex space-x-2">
+                  <Button
+                    variant={isUserContact ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsUserContact(true)}
+                  >
+                    App User
+                  </Button>
+                  <Button
+                    variant={!isUserContact ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsUserContact(false)}
+                  >
+                    External Contact
+                  </Button>
+                </div>
+              </div>
+
+              {/* User Selection or External Contact Fields */}
+              {isUserContact ? (
+                <div>
+                  <Label htmlFor="editUserId">Select App User</Label>
+                  <Select
+                    value={newContact.userId || ""}
+                    onValueChange={(value) => setNewContact({ ...newContact, userId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a user..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label htmlFor="editContactName">Contact Name</Label>
+                    <Input
+                      id="editContactName"
+                      value={newContact.contactName || ""}
+                      onChange={(e) => setNewContact({ ...newContact, contactName: e.target.value })}
+                      placeholder="Enter contact name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editContactEmail">Email</Label>
+                    <Input
+                      id="editContactEmail"
+                      type="email"
+                      value={newContact.contactEmail || ""}
+                      onChange={(e) => setNewContact({ ...newContact, contactEmail: e.target.value })}
+                      placeholder="contact@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editContactPhone">Phone</Label>
+                    <Input
+                      id="editContactPhone"
+                      value={newContact.contactPhone || ""}
+                      onChange={(e) => setNewContact({ ...newContact, contactPhone: e.target.value })}
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <Label htmlFor="editNotes">Notes (optional)</Label>
+                <Input
+                  id="editNotes"
+                  value={newContact.notes || ""}
+                  onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
+                  placeholder="Any additional notes..."
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="editIsPrimary"
+                  checked={newContact.isPrimary}
+                  onChange={(e) => setNewContact({ ...newContact, isPrimary: e.target.checked })}
+                />
+                <Label htmlFor="editIsPrimary">Set as primary contact</Label>
+              </div>
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button variant="outline" onClick={() => setEditingContact(null)}>
                   Cancel
                 </Button>
                 <Button onClick={handleUpdate} disabled={updateContactMutation.isPending}>
-                  {updateContactMutation.isPending ? "Updating..." : "Update"}
+                  {updateContactMutation.isPending ? "Updating..." : "Update Contact"}
                 </Button>
               </div>
             </div>
