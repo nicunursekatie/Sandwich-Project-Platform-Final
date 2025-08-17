@@ -56,6 +56,7 @@ import EventsViewer from "@/components/events-viewer";
 import SignUpGeniusViewer from "@/components/signup-genius-viewer";
 import DonationTracking from "@/components/donation-tracking";
 import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard";
+import WishlistPage from "@/pages/wishlist";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
@@ -253,6 +254,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <DriversManagement />;
       case "phone-directory":
         return <PhoneDirectoryFixed />;
+      case "wishlist":
+        return <WishlistPage />;
       case "analytics":
         return (
           <div className="p-6">

@@ -22,7 +22,8 @@ import {
   Calendar,
   MapPin,
   Route,
-  Clock
+  Clock,
+  Gift
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -91,6 +92,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "events", label: "Events", icon: Calendar, href: "events", group: "planning" },
     { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
     { id: "phone-directory", label: "Directory", icon: Phone, href: "phone-directory", group: "planning" },
+    { id: "wishlist", label: "Amazon Wishlist", icon: Gift, href: "wishlist", group: "planning" },
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
     
     // DOCUMENTATION
