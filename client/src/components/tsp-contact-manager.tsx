@@ -39,9 +39,9 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
   });
 
   // Fetch TSP contacts for this recipient
-  const { data: tspContacts = [], isLoading } = useQuery<RecipientTspContact[]>({
+  const { data: tspContacts = [], isLoading, refetch } = useQuery<RecipientTspContact[]>({
     queryKey: ["/api/recipient-tsp-contacts", recipientId],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Always fresh data for immediate updates
   });
 
   // Fetch users for selection dropdown
@@ -53,7 +53,9 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
   const createContactMutation = useMutation({
     mutationFn: (contact: ContactFormData) => apiRequest('POST', '/api/recipient-tsp-contacts', contact),
     onSuccess: () => {
+      // Invalidate and immediately refetch to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-tsp-contacts", recipientId] });
+      refetch();
       setIsAddModalOpen(false);
       resetForm();
       toast({
@@ -74,7 +76,9 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
     mutationFn: ({ id, ...contact }: { id: number } & Partial<ContactFormData>) => 
       apiRequest('PATCH', `/api/recipient-tsp-contacts/${id}`, contact),
     onSuccess: () => {
+      // Invalidate and immediately refetch to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-tsp-contacts", recipientId] });
+      refetch();
       setEditingContact(null);
       toast({
         title: "Success",
@@ -93,7 +97,9 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
   const deleteContactMutation = useMutation({
     mutationFn: (id: number) => apiRequest('DELETE', `/api/recipient-tsp-contacts/${id}`),
     onSuccess: () => {
+      // Invalidate and immediately refetch to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-tsp-contacts", recipientId] });
+      refetch();
       toast({
         title: "Success",
         description: "TSP contact removed successfully",
