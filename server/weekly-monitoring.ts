@@ -36,24 +36,31 @@ interface WeeklySubmissionStatus {
 }
 
 /**
- * Get the current week's date range (Monday to Sunday)
+ * Get the current week's date range (Wednesday to Tuesday)
+ * Entries posted before Wednesday cannot count collections that happened Wednesday or after for that week's submission
  */
-function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
+export function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
   const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 3 = Wednesday
   
-  // Calculate Monday of current week
-  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - daysToMonday);
-  monday.setHours(0, 0, 0, 0);
+  // Calculate Wednesday of current week cycle
+  let daysToWednesday;
+  if (dayOfWeek >= 3) { // If today is Wednesday or later
+    daysToWednesday = dayOfWeek - 3; // Days since this Wednesday
+  } else { // If today is Sunday, Monday, or Tuesday
+    daysToWednesday = dayOfWeek + 4; // Days since last Wednesday (previous week)
+  }
   
-  // Calculate Sunday of current week
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+  const wednesday = new Date(now);
+  wednesday.setDate(now.getDate() - daysToWednesday);
+  wednesday.setHours(0, 0, 0, 0);
   
-  return { startDate: monday, endDate: sunday };
+  // Calculate Tuesday of current week cycle (6 days after Wednesday)
+  const tuesday = new Date(wednesday);
+  tuesday.setDate(wednesday.getDate() + 6);
+  tuesday.setHours(23, 59, 59, 999);
+  
+  return { startDate: wednesday, endDate: tuesday };
 }
 
 /**
