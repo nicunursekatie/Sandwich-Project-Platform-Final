@@ -24,7 +24,6 @@ interface ContactFormData {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
-  role: string;
   notes?: string;
   isPrimary: boolean;
 }
@@ -36,7 +35,6 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
   const [isUserContact, setIsUserContact] = useState(true); // Toggle between user and external contact
   const [newContact, setNewContact] = useState<ContactFormData>({
     recipientId,
-    role: "liaison",
     isPrimary: false,
   });
 
@@ -113,7 +111,6 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
   const resetForm = () => {
     setNewContact({
       recipientId,
-      role: "liaison",
       isPrimary: false,
     });
     setIsUserContact(true);
@@ -146,19 +143,14 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
       contactName: contact.contactName || "",
       contactEmail: contact.contactEmail || "",
       contactPhone: contact.contactPhone || "",
-      role: contact.role,
       notes: contact.notes || "",
       isPrimary: contact.isPrimary,
     });
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "primary": return "bg-blue-100 text-blue-800";
-      case "backup": return "bg-green-100 text-green-800";
-      case "coordinator": return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
+  // Simple TSP contact badge styling
+  const getTspContactColor = () => {
+    return "bg-teal-100 text-teal-800";
   };
 
   if (isLoading) {
@@ -255,24 +247,7 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
                 </div>
               )}
 
-              {/* Common Fields */}
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={newContact.role}
-                  onValueChange={(value) => setNewContact({ ...newContact, role: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary Contact</SelectItem>
-                    <SelectItem value="backup">Backup Contact</SelectItem>
-                    <SelectItem value="liaison">Liaison</SelectItem>
-                    <SelectItem value="coordinator">Coordinator</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Notes field - no role selection needed */}
 
               <div>
                 <Label htmlFor="notes">Notes</Label>
@@ -325,7 +300,7 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
                       {contact.isPrimary && <Star className="h-4 w-4 text-blue-600 fill-current" />}
-                      <Badge className={getRoleColor(contact.role)}>{contact.role}</Badge>
+                      <Badge className={getTspContactColor()}>TSP Contact</Badge>
                       {contact.userId ? (
                         <Badge variant="outline" className="text-green-700 border-green-300">
                           <User className="h-3 w-3 mr-1" />
@@ -469,23 +444,7 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
                 </div>
               )}
 
-              <div>
-                <Label htmlFor="edit-role">Role</Label>
-                <Select
-                  value={newContact.role}
-                  onValueChange={(value) => setNewContact({ ...newContact, role: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary Contact</SelectItem>
-                    <SelectItem value="backup">Backup Contact</SelectItem>
-                    <SelectItem value="liaison">Liaison</SelectItem>
-                    <SelectItem value="coordinator">Coordinator</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Role field removed - all contacts are TSP contacts */}
 
               <div>
                 <Label htmlFor="edit-notes">Notes</Label>

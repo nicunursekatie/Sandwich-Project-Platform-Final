@@ -618,7 +618,7 @@ export const recipientTspContacts = pgTable("recipient_tsp_contacts", {
   contactEmail: text("contact_email"), // Email if not an app user
   contactPhone: text("contact_phone"), // Phone if not an app user
   // Common fields
-  role: text("role").notNull().default("liaison"), // 'primary', 'backup', 'liaison', 'coordinator'
+  role: text("role").notNull().default("tsp_contact"), // All contacts are TSP contacts
   notes: text("notes"), // Additional notes about this contact relationship
   isActive: boolean("is_active").notNull().default(true),
   isPrimary: boolean("is_primary").notNull().default(false), // Only one primary contact per recipient

@@ -37,7 +37,7 @@ router.get("/:recipientId", requireAuth, requirePermission(PERMISSIONS.VIEW_RECI
         eq(recipientTspContacts.recipientId, recipientId),
         eq(recipientTspContacts.isActive, true)
       ))
-      .orderBy(recipientTspContacts.isPrimary, recipientTspContacts.role);
+      .orderBy(recipientTspContacts.isPrimary, recipientTspContacts.createdAt);
 
     res.json(contacts);
   } catch (error) {
@@ -62,12 +62,16 @@ router.post("/", requireAuth, requirePermission(PERMISSIONS.MANAGE_RECIPIENTS), 
     // If linking to a user, fetch and cache user info
     if (validatedData.userId) {
       const [user] = await db
-        .select({ name: users.username, email: users.email })
+        .select({ 
+          firstName: users.firstName, 
+          lastName: users.lastName, 
+          email: users.email 
+        })
         .from(users)
         .where(eq(users.id, validatedData.userId));
       
       if (user) {
-        validatedData.userName = user.name;
+        validatedData.userName = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email;
         validatedData.userEmail = user.email;
       }
     }
@@ -114,12 +118,16 @@ router.patch("/:id", requireAuth, requirePermission(PERMISSIONS.MANAGE_RECIPIENT
     // If updating user link, fetch and cache user info
     if (updateData.userId) {
       const [user] = await db
-        .select({ name: users.username, email: users.email })
+        .select({ 
+          firstName: users.firstName, 
+          lastName: users.lastName, 
+          email: users.email 
+        })
         .from(users)
         .where(eq(users.id, updateData.userId));
       
       if (user) {
-        updateData.userName = user.name;
+        updateData.userName = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email;
         updateData.userEmail = user.email;
       }
     }
