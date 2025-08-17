@@ -79,11 +79,10 @@ export default function TSPContactManager({ recipientId, recipientName, compact 
       // Invalidate and immediately refetch to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-tsp-contacts", recipientId] });
       refetch();
-      setIsAddModalOpen(false);
-      resetForm();
+      resetForm(); // Reset form but keep modal open for adding more contacts
       toast({
         title: "Success",
-        description: "TSP contact added successfully",
+        description: "TSP contact added successfully. You can add another or close this dialog.",
       });
     },
     onError: (error: any) => {
@@ -189,7 +188,10 @@ export default function TSPContactManager({ recipientId, recipientName, compact 
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add TSP Contact</DialogTitle>
+            <DialogTitle>Add TSP Contact for {recipientName}</DialogTitle>
+            <p className="text-sm text-slate-600">
+              You can add multiple contacts in this session. After adding each contact, the form will reset so you can add another.
+            </p>
           </DialogHeader>
           <div className="space-y-4">
             {/* Contact Type Toggle */}
@@ -286,13 +288,20 @@ export default function TSPContactManager({ recipientId, recipientName, compact 
               <Label htmlFor="isPrimary">Set as primary contact</Label>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAdd} disabled={createContactMutation.isPending}>
-                {createContactMutation.isPending ? "Adding..." : "Add Contact"}
-              </Button>
+            <div className="flex justify-between items-center pt-4">
+              <div className="text-sm text-slate-600">
+                {tspContacts.length > 0 && (
+                  <span>{tspContacts.length} contact{tspContacts.length !== 1 ? 's' : ''} added</span>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                  Done Adding
+                </Button>
+                <Button onClick={handleAdd} disabled={createContactMutation.isPending}>
+                  {createContactMutation.isPending ? "Adding..." : "Add This Contact"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
