@@ -6086,12 +6086,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nextCheck = "Next Thursday 7:00 PM";
       }
 
+      // Get current week range (Wednesday to Tuesday) to display proper week period
+      const { getCurrentWeekRange } = await import('./weekly-monitoring');
+      const { startDate, endDate } = getCurrentWeekRange();
+      
+      // Format week display as "Wed Aug 14 - Tue Aug 20, 2025"
+      const weekDisplay = `${startDate.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      })} - ${endDate.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric' 
+      })}`;
+
       const stats = {
-        currentWeek: now.toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
-        }),
+        currentWeek: weekDisplay,
         totalExpectedLocations: submissionStatus.length,
         submittedLocations: submissionStatus.filter(s => s.hasSubmitted).length,
         missingLocations: submissionStatus.filter(s => !s.hasSubmitted).length,
