@@ -16,6 +16,7 @@ import type { RecipientTspContact, User as AppUser } from "@shared/schema";
 interface TSPContactManagerProps {
   recipientId: number;
   recipientName: string;
+  compact?: boolean;
 }
 
 interface ContactFormData {
@@ -28,7 +29,7 @@ interface ContactFormData {
   isPrimary: boolean;
 }
 
-export default function TSPContactManager({ recipientId, recipientName }: TSPContactManagerProps) {
+export default function TSPContactManager({ recipientId, recipientName, compact = false }: TSPContactManagerProps) {
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<RecipientTspContact | null>(null);
@@ -181,8 +182,210 @@ export default function TSPContactManager({ recipientId, recipientName }: TSPCon
     return "bg-teal-100 text-teal-800";
   };
 
+  // Helper function to render modals
+  const renderModals = () => (
+    <>
+      {/* Add Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add TSP Contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Contact Type Toggle */}
+            <div className="flex items-center space-x-4">
+              <Label>Contact Type:</Label>
+              <div className="flex space-x-2">
+                <Button
+                  variant={isUserContact ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsUserContact(true)}
+                >
+                  App User
+                </Button>
+                <Button
+                  variant={!isUserContact ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsUserContact(false)}
+                >
+                  External Contact
+                </Button>
+              </div>
+            </div>
+
+            {/* User Selection or External Contact Fields */}
+            {isUserContact ? (
+              <div>
+                <Label htmlFor="userId">Select App User</Label>
+                <Select
+                  value={newContact.userId || ""}
+                  onValueChange={(value) => setNewContact({ ...newContact, userId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a user..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email} ({user.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="contactName">Contact Name</Label>
+                  <Input
+                    id="contactName"
+                    value={newContact.contactName || ""}
+                    onChange={(e) => setNewContact({ ...newContact, contactName: e.target.value })}
+                    placeholder="Enter contact name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contactEmail">Email</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={newContact.contactEmail || ""}
+                    onChange={(e) => setNewContact({ ...newContact, contactEmail: e.target.value })}
+                    placeholder="contact@example.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contactPhone">Phone</Label>
+                  <Input
+                    id="contactPhone"
+                    value={newContact.contactPhone || ""}
+                    onChange={(e) => setNewContact({ ...newContact, contactPhone: e.target.value })}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Input
+                id="notes"
+                value={newContact.notes || ""}
+                onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
+                placeholder="Any additional notes..."
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isPrimary"
+                checked={newContact.isPrimary}
+                onChange={(e) => setNewContact({ ...newContact, isPrimary: e.target.checked })}
+              />
+              <Label htmlFor="isPrimary">Set as primary contact</Label>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAdd} disabled={createContactMutation.isPending}>
+                {createContactMutation.isPending ? "Adding..." : "Add Contact"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      {editingContact && (
+        <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit TSP Contact</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Similar form fields for editing */}
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setEditingContact(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdate} disabled={updateContactMutation.isPending}>
+                  {updateContactMutation.isPending ? "Updating..." : "Update"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+
   if (isLoading) {
     return <div className="text-center py-4">Loading TSP contacts...</div>;
+  }
+
+  // Compact mode for inline display
+  if (compact) {
+    return (
+      <div className="border-t pt-3 mt-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm font-medium text-slate-700">TSP Contacts</div>
+          <Button
+            onClick={() => setIsAddModalOpen(true)}
+            size="sm"
+            variant="outline"
+            className="text-xs h-6 px-2"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add
+          </Button>
+        </div>
+        
+        {tspContacts.length > 0 ? (
+          <div className="space-y-1">
+            {tspContacts.map((contact) => (
+              <div key={contact.id} className="flex items-center justify-between text-sm text-slate-600 bg-slate-50 rounded px-2 py-1">
+                <div className="flex items-center gap-2">
+                  <User className="w-3 h-3" />
+                  <span className="font-medium">
+                    {contact.userName || contact.contactName || 'Unnamed Contact'}
+                  </span>
+                  {contact.userEmail && (
+                    <span className="text-xs text-slate-500">({contact.userEmail})</span>
+                  )}
+                  {contact.isPrimary && (
+                    <Badge variant="secondary" className="text-xs">Primary</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEdit(contact)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDelete(contact.id)}
+                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-slate-500 italic">No TSP contacts assigned</div>
+        )}
+        {renderModals()}
+      </div>
+    );
   }
 
   return (

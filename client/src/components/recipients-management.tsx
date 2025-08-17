@@ -593,11 +593,7 @@ export default function RecipientsManagement() {
                         <span className="font-medium">Type:</span> {recipient.sandwichType}
                       </div>
                     )}
-                    {recipient.tspContact && (
-                      <div className="text-sm text-slate-600">
-                        <span className="font-medium">TSP Contact:</span> {recipient.tspContact}
-                      </div>
-                    )}
+
                     <div className="col-span-2 flex items-center gap-2">
                       {recipient.contractSigned ? (
                         <Badge variant="default" className="text-xs bg-green-100 text-green-800">
@@ -646,13 +642,12 @@ export default function RecipientsManagement() {
                 </div>
               )}
 
-              {/* TSP Contacts Management Section */}
-              <div className="border-t pt-4 mt-4">
-                <TSPContactManager 
-                  recipientId={recipient.id} 
-                  recipientName={recipient.name} 
-                />
-              </div>
+              {/* TSP Contacts - Integrated */}
+              <TSPContactManager 
+                recipientId={recipient.id} 
+                recipientName={recipient.name} 
+                compact={true}
+              />
             </CardContent>
           </Card>
           );
