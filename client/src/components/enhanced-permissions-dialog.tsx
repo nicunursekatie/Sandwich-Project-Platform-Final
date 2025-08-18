@@ -90,6 +90,7 @@ import {
   PlusCircle,
   Search,
   AlertTriangle,
+  Upload,
 } from "lucide-react";
 
 interface User {
@@ -139,6 +140,27 @@ const PERMISSION_CATEGORIES = [
         description: "Access to simplified step-by-step form",
         icon: FormInput,
         dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_COLLECTIONS, 
+        label: "View collections (granular)", 
+        description: "Granular permission to view collection data",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EXPORT_DATA, 
+        label: "Export collection data", 
+        description: "Download collections as CSV/PDF reports",
+        icon: FileText,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.IMPORT_DATA, 
+        label: "Import collection data", 
+        description: "Upload and import collection data",
+        icon: Plus,
+        dangerLevel: "elevated"
       },
     ]
   },
@@ -211,6 +233,34 @@ const PERMISSION_CATEGORIES = [
         icon: Trash2,
         dangerLevel: "dangerous"
       },
+      { 
+        key: PERMISSIONS.ACCESS_CHAT, 
+        label: "View chat (granular)", 
+        description: "Granular permission to view chat channels",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_MESSAGES, 
+        label: "View messages (granular)", 
+        description: "Granular permission to view direct messages",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.SEND_MESSAGES, 
+        label: "Send messages (granular)", 
+        description: "Granular permission to send direct messages",
+        icon: Send,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.MODERATE_MESSAGES, 
+        label: "Moderate messages (granular)", 
+        description: "Granular permission to moderate messages",
+        icon: Shield,
+        dangerLevel: "elevated"
+      },
     ]
   },
   {
@@ -233,6 +283,27 @@ const PERMISSION_CATEGORIES = [
         key: 'MANAGE_ALL_PROJECTS', 
         label: "Manage ALL projects", 
         description: "Edit/delete any project",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_PROJECTS, 
+        label: "View projects (granular)", 
+        description: "Granular permission to view project information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_MEETINGS, 
+        label: "View meetings (granular)", 
+        description: "Granular permission to view meeting information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_MEETINGS, 
+        label: "Manage meetings (granular)", 
+        description: "Granular permission to create/edit meetings",
         icon: Edit,
         dangerLevel: "elevated"
       },
@@ -260,6 +331,27 @@ const PERMISSION_CATEGORIES = [
         description: "Read-only access to everyone's work logs",
         icon: Eye,
         dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_WORK_LOGS, 
+        label: "View work logs (granular)", 
+        description: "Granular permission to view work log section",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EDIT_ALL_WORK_LOGS, 
+        label: "Edit ALL work logs (granular)", 
+        description: "Granular permission to edit any work log",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.DELETE_ALL_WORK_LOGS, 
+        label: "Delete ALL work logs (granular)", 
+        description: "Granular permission to delete any work log",
+        icon: Trash2,
+        dangerLevel: "dangerous"
       },
     ]
   },
@@ -401,6 +493,41 @@ const PERMISSION_CATEGORIES = [
         icon: Send,
         dangerLevel: "elevated"
       },
+      { 
+        key: PERMISSIONS.ACCESS_TOOLKIT, 
+        label: "View toolkit (granular)", 
+        description: "Granular permission to view toolkit section",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_SUGGESTIONS, 
+        label: "View suggestions (granular)", 
+        description: "Granular permission to view suggestions section",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.SUBMIT_SUGGESTIONS, 
+        label: "Submit suggestions (granular)", 
+        description: "Granular permission to submit new suggestions",
+        icon: Plus,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_GOVERNANCE, 
+        label: "View governance (granular)", 
+        description: "Granular permission to view governance documents",
+        icon: FileText,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EDIT_DATA, 
+        label: "Edit data (granular)", 
+        description: "Granular permission for general data editing",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
     ]
   },
   {
@@ -438,6 +565,41 @@ const PERMISSION_CATEGORIES = [
         description: "FULL platform access - dangerous",
         icon: Shield,
         dangerLevel: "dangerous"
+      },
+      { 
+        key: PERMISSIONS.ADMIN_ACCESS, 
+        label: "Admin panel access (granular)", 
+        description: "Granular permission to access admin panel",
+        icon: Eye,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.VIEW_PHONE_DIRECTORY, 
+        label: "View directory (granular)", 
+        description: "Granular permission to view phone directory",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.VIEW_HOSTS, 
+        label: "View hosts (granular)", 
+        description: "Granular permission to view host information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.VIEW_RECIPIENTS, 
+        label: "View recipients (granular)", 
+        description: "Granular permission to view recipient information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.VIEW_DRIVERS, 
+        label: "View drivers (granular)", 
+        description: "Granular permission to view driver information",
+        icon: Eye,
+        dangerLevel: "safe"
       },
     ]
   }
