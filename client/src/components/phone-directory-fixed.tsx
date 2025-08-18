@@ -328,6 +328,7 @@ function PhoneDirectoryFixed() {
             else if (tab.id === 'hosts') count = filteredHosts.length;
             else if (tab.id === 'recipients') count = filteredRecipients.length;
             else if (tab.id === 'drivers') count = filteredDrivers.length;
+            else if (tab.id === 'volunteers') count = filteredVolunteers.length;
             
             return (
               <TabsTrigger 
