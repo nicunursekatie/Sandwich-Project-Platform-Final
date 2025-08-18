@@ -41,9 +41,9 @@ export function ProjectAssigneeSelector({
   const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([]);
   const [customNameInput, setCustomNameInput] = useState('');
 
-  // Fetch system users
+  // Fetch system users for assignments
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
     retry: false,
   });
 

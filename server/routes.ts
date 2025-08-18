@@ -505,6 +505,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // app.use(generalRateLimit);
   app.use(sanitizeMiddleware);
 
+  // User list for project assignments (available to anyone who can create projects)
+  app.get(
+    "/api/users/for-assignments",
+    isAuthenticated,
+    async (req, res) => {
+      try {
+        const users = await storage.getAllUsers();
+        // Return basic user info needed for assignments
+        const assignableUsers = users.map(user => ({
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role
+        }));
+        res.json(assignableUsers);
+      } catch (error) {
+        console.error("Error fetching users for assignments:", error);
+        res.status(500).json({ message: "Failed to fetch users" });
+      }
+    },
+  );
+
   // User management routes
   app.get(
     "/api/users",
