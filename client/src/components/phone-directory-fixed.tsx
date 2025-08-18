@@ -316,12 +316,8 @@ function PhoneDirectoryFixed() {
 
       {/* Directory Tabs - Permission-based visibility */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full h-14 p-1 rounded-lg bg-muted ${
-          availableTabs.length === 1 ? 'grid-cols-1' :
-          availableTabs.length === 2 ? 'grid-cols-2' :
-          availableTabs.length === 3 ? 'grid-cols-3' :
-          'grid-cols-4'
-        }`}>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="flex w-max min-w-full h-14 p-1 rounded-lg bg-muted space-x-1">
           {availableTabs.map(tab => {
             const Icon = tab.icon;
             let count = 0;
@@ -336,13 +332,15 @@ function PhoneDirectoryFixed() {
               <TabsTrigger 
                 key={tab.id}
                 value={tab.id} 
-                className="flex items-center gap-2 h-12 text-base font-medium rounded-md transition-all duration-200 data-[state=active]:shadow-sm font-['Roboto',sans-serif] text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                className="flex items-center gap-2 h-12 px-4 text-base font-medium rounded-md transition-all duration-200 data-[state=active]:shadow-sm font-['Roboto',sans-serif] text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground whitespace-nowrap flex-shrink-0">
                 <Icon className="w-5 h-5"/>
-                {tab.label} ({count})
+                <span className="hidden sm:inline">{tab.label} ({count})</span>
+                <span className="sm:hidden">{tab.label.substring(0, 1)}</span>
               </TabsTrigger>
             );
           })}
-        </TabsList>
+          </TabsList>
+        </div>
 
         <TabsContent value="contacts" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
