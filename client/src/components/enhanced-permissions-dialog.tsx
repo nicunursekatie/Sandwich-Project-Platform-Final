@@ -353,6 +353,79 @@ const PERMISSION_CATEGORIES = [
         icon: Trash2,
         dangerLevel: "dangerous"
       },
+      { 
+        key: PERMISSIONS.ACCESS_WEEKLY_MONITORING, 
+        label: "View weekly monitoring", 
+        description: "Access weekly monitoring dashboard and status",
+        icon: Clock,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_WEEKLY_MONITORING, 
+        label: "Manage weekly monitoring", 
+        description: "Send notifications and manage monitoring alerts",
+        icon: Settings,
+        dangerLevel: "elevated"
+      },
+    ]
+  },
+  {
+    id: "resources_tools",
+    label: "🛠️ Resources & Tools",
+    description: "Access to organizational resources and development tools",
+    icon: FolderOpen,
+    color: "bg-orange-50 border-orange-200",
+    iconColor: "text-orange-600",
+    permissions: [
+      { 
+        key: PERMISSIONS.ACCESS_TOOLKIT, 
+        label: "View toolkit", 
+        description: "Access to organizational documents and resources",
+        icon: FolderOpen,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_DEVELOPMENT, 
+        label: "View development", 
+        description: "Access development tools and system information",
+        icon: FileText,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_DEVELOPMENT, 
+        label: "Manage development", 
+        description: "Access to system logs and development controls",
+        icon: Settings,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_EVENTS, 
+        label: "View events", 
+        description: "Access to events calendar and scheduling",
+        icon: Calendar,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_EVENTS, 
+        label: "Manage events", 
+        description: "Create, edit, and delete events",
+        icon: Settings,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.ACCESS_SIGNUP_GENIUS, 
+        label: "View SignUp Genius", 
+        description: "Access to volunteer signup coordination",
+        icon: Users,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_SIGNUP_GENIUS, 
+        label: "Manage SignUp Genius", 
+        description: "Create and manage volunteer signups",
+        icon: Settings,
+        dangerLevel: "elevated"
+      },
     ]
   },
   {

@@ -122,7 +122,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     // Core section
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "collections", label: "Collections", icon: Sandwich },
-    { id: "events", label: "Events", icon: Calendar },
+    ...(hasPermission(user, PERMISSIONS.ACCESS_EVENTS) ? [{ id: "events", label: "Events", icon: Calendar }] : []),
     { id: "inventory-calculator", label: "Inventory Calculator", icon: Calculator },
 
     
@@ -136,6 +136,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     // Operations section
     ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3 }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_WEEKLY_MONITORING) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock }] : []),
 
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ListTodo }] : []),
     
@@ -146,9 +147,9 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb }] : []),
     
     // Resources section
-    { id: "toolkit", label: "Toolkit", icon: FolderOpen },
-    { id: "development", label: "Development", icon: FileText },
-    { id: "work-log", label: "Work Log", icon: ClipboardList },
+    ...(hasPermission(user, PERMISSIONS.ACCESS_TOOLKIT) ? [{ id: "toolkit", label: "Toolkit", icon: FolderOpen }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DEVELOPMENT) ? [{ id: "development", label: "Development", icon: FileText }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ClipboardList }] : []),
     
     // Admin section
     ...(hasPermission(user, PERMISSIONS.MANAGE_USERS) ? [{ id: "user-management", label: "Admin", icon: UserCog }] : []),
