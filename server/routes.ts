@@ -3694,21 +3694,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "targetType must be 'host' or 'recipient'" });
       }
 
-      // For now, we'll simulate the assignment by creating a note in the contact
-      // In a full implementation, you'd have a contact_assignments table
-      const assignmentNote = `Assigned to ${targetType}: ${targetId}`;
-      const updatedContact = await storage.updateContact(contactId, { 
-        notes: assignmentNote 
-      });
-      
-      if (!updatedContact) {
+      // Get the contact details
+      const contact = await storage.getContact(contactId);
+      if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
-      
-      res.status(201).json({ 
-        message: "Contact assigned successfully",
-        assignment: { contactId, targetType, targetId }
-      });
+
+      if (targetType === 'host') {
+        // Create a host contact for this person at the specified host location
+        const hostContactData = {
+          hostId: parseInt(targetId),
+          name: contact.name,
+          role: contact.role || 'Contact',
+          phone: contact.phone,
+          email: contact.email || null,
+          isPrimary: false, // Default to false unless specified
+          notes: `Assigned from general contacts - ${contact.notes || ''}`.trim()
+        };
+
+        // Create the host contact
+        const hostContact = await storage.createHostContact(hostContactData);
+        
+        // Update the original contact with assignment note
+        const assignmentNote = `Designated as host contact for location ID: ${targetId}`;
+        await storage.updateContact(contactId, { 
+          notes: contact.notes ? `${contact.notes}\n\n${assignmentNote}` : assignmentNote
+        });
+        
+        res.status(201).json({ 
+          message: "Contact successfully designated as host contact",
+          assignment: { contactId, targetType, targetId },
+          hostContact: hostContact
+        });
+      } else {
+        // For recipient assignments, just update the contact notes for now
+        const assignmentNote = `Assigned to ${targetType}: ${targetId}`;
+        const updatedContact = await storage.updateContact(contactId, { 
+          notes: contact.notes ? `${contact.notes}\n\n${assignmentNote}` : assignmentNote
+        });
+        
+        res.status(201).json({ 
+          message: "Contact assigned successfully",
+          assignment: { contactId, targetType, targetId }
+        });
+      }
     } catch (error) {
       logger.error("Failed to assign contact", error);
       res.status(500).json({ message: "Failed to assign contact" });
