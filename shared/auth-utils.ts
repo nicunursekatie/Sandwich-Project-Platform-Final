@@ -9,6 +9,7 @@ export const USER_ROLES = {
   RECIPIENT: "recipient",
   VIEWER: "viewer",
   WORK_LOGGER: "work_logger",
+  DEMO_USER: "demo_user",
 } as const;
 
 // Granular yet intuitive permission system
@@ -331,6 +332,45 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.VIEW_KUDOS
       ];
 
+    case USER_ROLES.DEMO_USER:
+      return [
+        // Can view all main sections but cannot edit/delete/manage anything
+        PERMISSIONS.ACCESS_DIRECTORY,
+        PERMISSIONS.ACCESS_HOSTS,
+        PERMISSIONS.ACCESS_RECIPIENTS,
+        PERMISSIONS.ACCESS_DRIVERS,
+        PERMISSIONS.ACCESS_VOLUNTEERS,
+        PERMISSIONS.ACCESS_DONATION_TRACKING,
+        PERMISSIONS.ACCESS_COLLECTIONS,
+        PERMISSIONS.ACCESS_CHAT,
+        PERMISSIONS.ACCESS_MESSAGES,
+        PERMISSIONS.ACCESS_TOOLKIT,
+        PERMISSIONS.ACCESS_MEETINGS,
+        PERMISSIONS.ACCESS_ANALYTICS,
+        PERMISSIONS.ACCESS_PROJECTS,
+        PERMISSIONS.ACCESS_SUGGESTIONS,
+        PERMISSIONS.ACCESS_WORK_LOGS,
+        PERMISSIONS.ACCESS_WEEKLY_MONITORING,
+        PERMISSIONS.ACCESS_EVENTS,
+        PERMISSIONS.ACCESS_DEVELOPMENT,
+        PERMISSIONS.ACCESS_SIGNUP_GENIUS,
+        
+        // Chat permissions (read-only)
+        PERMISSIONS.GENERAL_CHAT,
+        PERMISSIONS.COMMITTEE_CHAT,
+        PERMISSIONS.HOST_CHAT,
+        PERMISSIONS.DRIVER_CHAT,
+        PERMISSIONS.RECIPIENT_CHAT,
+        PERMISSIONS.CORE_TEAM_CHAT,
+        
+        // Can receive kudos but cannot send
+        PERMISSIONS.RECEIVE_KUDOS,
+        PERMISSIONS.VIEW_KUDOS,
+        
+        // Export data for reporting
+        PERMISSIONS.EXPORT_DATA,
+      ];
+
     case USER_ROLES.VIEWER:
       return [
         PERMISSIONS.ACCESS_DIRECTORY,
@@ -628,6 +668,8 @@ export function getRoleDisplayName(role: string): string {
       return "Viewer";
     case USER_ROLES.WORK_LOGGER:
       return "Work Logger";
+    case USER_ROLES.DEMO_USER:
+      return "Demo User";
     default:
       return role.charAt(0).toUpperCase() + role.slice(1).replace("_", " ");
   }

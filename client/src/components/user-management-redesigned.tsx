@@ -54,6 +54,7 @@ import AnnouncementManager from "@/components/announcement-manager";
 import AuthDebug from "@/components/auth-debug";
 import ShoutoutSystem from "@/components/shoutout-system";
 import MeaningfulUserAnalytics from "@/components/meaningful-user-analytics";
+import { ButtonTooltip } from "@/components/ui/button-tooltip";
 
 interface User {
   id: string;
@@ -73,6 +74,7 @@ const ROLE_COLORS = {
   [USER_ROLES.COMMITTEE_MEMBER]: "bg-blue-100 text-blue-800 border-blue-200",
   [USER_ROLES.CORE_TEAM]: "bg-orange-100 text-orange-800 border-orange-200",
   [USER_ROLES.HOST]: "bg-green-100 text-green-800 border-green-200",
+  [USER_ROLES.DEMO_USER]: "bg-purple-100 text-purple-800 border-purple-200",
   [USER_ROLES.VOLUNTEER]: "bg-purple-100 text-purple-800 border-purple-200",
   [USER_ROLES.RECIPIENT]: "bg-teal-100 text-teal-800 border-teal-200",
   [USER_ROLES.DRIVER]: "bg-indigo-100 text-indigo-800 border-indigo-200",
@@ -528,9 +530,11 @@ export default function UserManagementRedesigned() {
                               {formatLastLogin(user.lastLoginAt)}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">
-                                {user.permissions?.length || 0} permissions
-                              </Badge>
+                              <ButtonTooltip explanation="Shows how many specific permissions this user has been granted. Click the menu to edit their permissions.">
+                                <Badge variant="outline">
+                                  {user.permissions?.length || 0} permissions
+                                </Badge>
+                              </ButtonTooltip>
                             </TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
