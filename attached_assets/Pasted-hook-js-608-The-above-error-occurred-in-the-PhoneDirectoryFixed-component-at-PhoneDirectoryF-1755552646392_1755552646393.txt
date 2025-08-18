@@ -1,0 +1,47 @@
+hook.js:608 The above error occurred in the <PhoneDirectoryFixed> component:
+
+    at PhoneDirectoryFixed (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/phone-directory-fixed.tsx:37:39)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx:63:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=7b3a3859:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=7b3a3859:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=ASGw-AveCNrGD80GNro06:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.d…unner/workspace/node_modules/.vite/deps/chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.d…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=7b3a3859:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.d…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=7b3a3859:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=ASGw-AveCNrGD80GNro06:360:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod	@	hook.js:608
+logCapturedError	@	chunk-276SZO74.js?v=7b3a3859:14032
+callback	@	chunk-276SZO74.js?v=7b3a3859:14078
+callCallback	@	chunk-276SZO74.js?v=7b3a3859:11248
+commitUpdateQueue	@	chunk-276SZO74.js?v=7b3a3859:11265
+commitLayoutEffectOnFiber	@	chunk-276SZO74.js?v=7b3a3859:17075
+commitLayoutMountEffects_complete	@	chunk-276SZO74.js?v=7b3a3859:17980
+commitLayoutEffects_begin	@	chunk-276SZO74.js?v=7b3a3859:17969
+commitLayoutEffects	@	chunk-276SZO74.js?v=7b3a3859:17920
+commitRootImpl	@	chunk-276SZO74.js?v=7b3a3859:19353
+commitRoot	@	chunk-276SZO74.js?v=7b3a3859:19277
+performSyncWorkOnRoot	@	chunk-276SZO74.js?v=7b3a3859:18895
+flushSyncCallbacks	@	chunk-276SZO74.js?v=7b3a3859:9119
+(anonymous)	@	chunk-276SZO74.js?v=7b3a3859:18627
+error-boundary.tsx:28 Error caught by boundary: ReferenceError: filteredDrivers is not defined
+    at phone-directory-fixed.tsx:772:44
+    at Array.map (<anonymous>)
+    at PhoneDirectoryFixed (phone-directory-fixed.tsx:765:26)
+ 
+{componentStack: '\n    at PhoneDirectoryFixed (https://bb1d30f8-d852…v:5000/src/App.tsx?v=ASGw-AveCNrGD80GNro06:360:3)'}
+ Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:137:3)
+componentDidCatch	@	error-boundary.tsx:28
+message-notifications.tsx:137 WebSocket connection closed: 1000 Component unmounting
+﻿
+
