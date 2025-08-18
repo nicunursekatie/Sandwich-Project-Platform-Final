@@ -270,6 +270,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.MANAGE_RECIPIENTS,
         PERMISSIONS.MANAGE_DRIVERS,
         PERMISSIONS.MANAGE_VOLUNTEERS,
+        PERMISSIONS.MANAGE_USERS, // Core team can manage users
         PERMISSIONS.MANAGE_DONATION_TRACKING,
         // Granular volunteer permissions
         PERMISSIONS.VIEW_VOLUNTEERS,

@@ -59,6 +59,7 @@ export default function ProjectsClean() {
     priority: 'medium',
     category: 'technology',
     assigneeName: '',
+    assigneeIds: [],
     dueDate: '',
     startDate: '',
     estimatedHours: 0,
@@ -589,13 +590,18 @@ export default function ProjectsClean() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="assigneeName" className="font-roboto">Assigned To</Label>
-              <Input
-                id="assigneeName"
-                placeholder="Enter assignee name"
+              <ProjectAssigneeSelector
+                label="Assigned To"
                 value={newProject.assigneeName || ''}
-                onChange={(e) => setNewProject({...newProject, assigneeName: e.target.value})}
-                className="font-roboto"
+                onChange={(assigneeName, userIds) => {
+                  setNewProject({
+                    ...newProject, 
+                    assigneeName,
+                    assigneeIds: userIds || []
+                  });
+                }}
+                placeholder="Select team members or enter names"
+                multiple={true}
               />
             </div>
             
