@@ -73,6 +73,7 @@ import {
   Send,
   FormInput,
   Zap,
+  Plus,
   User,
   Globe,
   Lock,
@@ -292,6 +293,13 @@ const PERMISSION_CATEGORIES = [
         dangerLevel: "safe"
       },
       { 
+        key: PERMISSIONS.ACCESS_VOLUNTEERS, 
+        label: "Volunteer directory", 
+        description: "View volunteer contact information",
+        icon: Users,
+        dangerLevel: "safe"
+      },
+      { 
         key: PERMISSIONS.MANAGE_HOSTS, 
         label: "Edit host info", 
         description: "Modify host details and status",
@@ -309,6 +317,34 @@ const PERMISSION_CATEGORIES = [
         key: PERMISSIONS.MANAGE_DRIVERS, 
         label: "Edit driver info", 
         description: "Modify driver details and status",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_VOLUNTEERS, 
+        label: "Edit volunteer info", 
+        description: "Modify volunteer details and status",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.VIEW_VOLUNTEERS, 
+        label: "View volunteers (granular)", 
+        description: "Granular permission to view volunteer information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ADD_VOLUNTEERS, 
+        label: "Add volunteers (granular)", 
+        description: "Granular permission to add new volunteers",
+        icon: Plus,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EDIT_VOLUNTEERS, 
+        label: "Edit volunteers (granular)", 
+        description: "Granular permission to edit volunteer information",
         icon: Edit,
         dangerLevel: "elevated"
       },
