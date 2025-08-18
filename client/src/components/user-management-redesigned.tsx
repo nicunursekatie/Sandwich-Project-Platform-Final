@@ -39,7 +39,8 @@ import {
   Eye,
   EyeOff,
   Trophy,
-  Building
+  Building,
+  TrendingUp
 } from "lucide-react";
 import {
   DropdownMenu,

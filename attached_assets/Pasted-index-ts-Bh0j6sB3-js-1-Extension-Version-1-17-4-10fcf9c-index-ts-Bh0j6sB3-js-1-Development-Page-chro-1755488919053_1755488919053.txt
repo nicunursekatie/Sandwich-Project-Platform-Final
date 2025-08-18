@@ -1,0 +1,80 @@
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=sNE66rQ0TVW7' failed: 
+setupWebSocket @ client:536
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=sNE66rQ0TVW7' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+message-notifications.tsx:99 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+dashboard.tsx:68 Current URL location: /dashboard
+dashboard.tsx:90 Dashboard activeSection changed to: dashboard
+message-notifications.tsx:111 WebSocket connected successfully
+useMessaging.ts:242 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+(anonymous) @ useMessaging.ts:242
+hook.js:608 Messaging WebSocket error: Event
+overrideMethod @ hook.js:608
+useMessaging.ts:286 Messaging WebSocket disconnected
+hook.js:608 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+simple-nav.tsx:208 Navigation click: user-management
+dashboard.tsx:504 Dashboard setActiveSection called with: user-management
+dashboard.tsx:90 Dashboard activeSection changed to: user-management
+user-management-redesigned.tsx:283 Uncaught ReferenceError: TrendingUp is not defined
+    at UserManagementRedesigned (user-management-redesigned.tsx:283:14)
+    at renderWithHooks (chunk-276SZO74.js?v=7b3a3859:11548:26)
+    at updateFunctionComponent (chunk-276SZO74.js?v=7b3a3859:14582:28)
+    at beginWork (chunk-276SZO74.js?v=7b3a3859:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-276SZO74.js?v=7b3a3859:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-276SZO74.js?v=7b3a3859:3699:24)
+    at invokeGuardedCallback (chunk-276SZO74.js?v=7b3a3859:3733:39)
+    at beginWork$1 (chunk-276SZO74.js?v=7b3a3859:19765:15)
+    at performUnitOfWork (chunk-276SZO74.js?v=7b3a3859:19198:20)
+    at workLoopSync (chunk-276SZO74.js?v=7b3a3859:19137:13)
+user-management-redesigned.tsx:283 Uncaught ReferenceError: TrendingUp is not defined
+    at UserManagementRedesigned (user-management-redesigned.tsx:283:14)
+    at renderWithHooks (chunk-276SZO74.js?v=7b3a3859:11548:26)
+    at updateFunctionComponent (chunk-276SZO74.js?v=7b3a3859:14582:28)
+    at beginWork (chunk-276SZO74.js?v=7b3a3859:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-276SZO74.js?v=7b3a3859:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-276SZO74.js?v=7b3a3859:3699:24)
+    at invokeGuardedCallback (chunk-276SZO74.js?v=7b3a3859:3733:39)
+    at beginWork$1 (chunk-276SZO74.js?v=7b3a3859:19765:15)
+    at performUnitOfWork (chunk-276SZO74.js?v=7b3a3859:19198:20)
+    at workLoopSync (chunk-276SZO74.js?v=7b3a3859:19137:13)
+hook.js:608 The above error occurred in the <UserManagementRedesigned> component:
+
+    at UserManagementRedesigned (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/user-management-redesigned.tsx:106:33)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx:63:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=7b3a3859:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=7b3a3859:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=D39a3t9q0aaf9t46MyJ5J:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=7b3a3859:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=7b3a3859:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?v=D39a3t9q0aaf9t46MyJ5J:360:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: ReferenceError: TrendingUp is not defined
+    at UserManagementRedesigned (user-management-redesigned.tsx:283:14)
+    at renderWithHooks (chunk-276SZO74.js?v=7b3a3859:11548:26)
+    at updateFunctionComponent (chunk-276SZO74.js?v=7b3a3859:14582:28)
+    at beginWork (chunk-276SZO74.js?v=7b3a3859:15924:22)
+    at beginWork$1 (chunk-276SZO74.js?v=7b3a3859:19753:22)
+    at performUnitOfWork (chunk-276SZO74.js?v=7b3a3859:19198:20)
+    at workLoopSync (chunk-276SZO74.js?v=7b3a3859:19137:13)
+    at renderRootSync (chunk-276SZO74.js?v=7b3a3859:19116:15)
+    at recoverFromConcurrentError (chunk-276SZO74.js?v=7b3a3859:18736:28)
+    at performSyncWorkOnRoot (chunk-276SZO74.js?v=7b3a3859:18879:28) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:137:3)
+overrideMethod @ hook.js:608
+message-notifications.tsx:137 WebSocket connection closed: 1000 Component unmounting
