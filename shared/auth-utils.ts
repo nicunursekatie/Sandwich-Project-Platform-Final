@@ -448,6 +448,9 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 export function hasPermission(user: any, permission: string): boolean {
   if (!user || !user.permissions) return false;
   
+  // Super admins get all permissions automatically
+  if (user.role === "super_admin" || user.role === USER_ROLES.SUPER_ADMIN) return true;
+  
   // Check for exact match first
   if (user.permissions.includes(permission)) return true;
   
