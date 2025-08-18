@@ -95,22 +95,16 @@ export default function VolunteerManagement() {
   // Fetch volunteers (using drivers table for now - will be transitioned to volunteers)
   const { data: volunteers = [], isLoading } = useQuery({
     queryKey: ['/api/drivers'],
-    queryFn: () => apiRequest('/api/drivers')
+    queryFn: () => apiRequest('GET', '/api/drivers')
   });
 
   // Create/Update volunteer mutation
   const { mutate: saveVolunteer, isPending: isSaving } = useMutation({
     mutationFn: async (volunteerData: any) => {
       if (editingVolunteer) {
-        return apiRequest(`/api/drivers/${editingVolunteer.id}`, {
-          method: 'PATCH',
-          body: volunteerData
-        });
+        return apiRequest('PATCH', `/api/drivers/${editingVolunteer.id}`, volunteerData);
       } else {
-        return apiRequest('/api/drivers', {
-          method: 'POST',
-          body: volunteerData
-        });
+        return apiRequest('POST', '/api/drivers', volunteerData);
       }
     },
     onSuccess: () => {
@@ -134,9 +128,7 @@ export default function VolunteerManagement() {
   // Delete volunteer mutation
   const { mutate: deleteVolunteer } = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/drivers/${id}`, {
-        method: 'DELETE'
-      });
+      return apiRequest('DELETE', `/api/drivers/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
@@ -242,7 +234,7 @@ export default function VolunteerManagement() {
   };
 
   // Filter volunteers
-  const filteredVolunteers = volunteers.filter(volunteer => {
+  const filteredVolunteers = volunteers.filter((volunteer: any) => {
     const matchesSearch = !searchTerm || 
       `${volunteer.firstName} ${volunteer.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       volunteer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -323,7 +315,7 @@ export default function VolunteerManagement() {
             </CardContent>
           </Card>
         ) : (
-          filteredVolunteers.map((volunteer) => (
+          filteredVolunteers.map((volunteer: any) => (
             <Card key={volunteer.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
