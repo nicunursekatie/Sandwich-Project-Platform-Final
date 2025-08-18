@@ -107,8 +107,35 @@ interface Draft {
 }
 
 export default function GmailStyleInbox() {
-  const { user } = useAuth();
+  console.log('🔍 GmailStyleInbox component is rendering');
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  
+  // Add early return for loading state
+  if (authLoading) {
+    console.log('🔄 Auth is loading, showing loading state');
+    return (
+      <div className="flex h-full items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading messages...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    console.log('❌ No user found, showing error');
+    return (
+      <div className="flex h-full items-center justify-center bg-white">
+        <div className="text-center">
+          <p className="text-gray-600">Please log in to view messages</p>
+        </div>
+      </div>
+    );
+  }
+  
+  console.log('✅ User authenticated, rendering inbox for:', user.email);
   
   // UI State
   const [activeFolder, setActiveFolder] = useState("inbox");
@@ -565,7 +592,11 @@ export default function GmailStyleInbox() {
     { id: "trash", label: "Trash", icon: Trash2, count: getUnreadCount("trash") },
   ];
 
-  return (
+  console.log('🎨 About to render GmailStyleInbox main UI');
+  console.log('📊 Component state:', { activeFolder, selectedMessage: !!selectedMessage, messageCount: messages.length });
+
+  try {
+    return (
     <div className="flex h-full bg-white relative min-w-0 max-w-full overflow-hidden">
       {/* Mobile/Tablet Overlay for Sidebar - when sidebar is open as overlay */}
       {!isSidebarCollapsed && (screenSize === 'mobile' || screenSize === 'small-tablet') && (
@@ -771,8 +802,10 @@ export default function GmailStyleInbox() {
                           // Create a message object that matches the expected format
                           const kudosMessage = {
                             id: kudo.id,
+                            userId: kudo.userId || user?.id || 'unknown',
                             sender: kudo.sender,
                             senderName: kudo.senderName,
+                            conversationId: kudo.conversationId || kudo.id,
                             subject: `Kudos ${kudo.projectTitle ? `for ${kudo.projectTitle}` : ''}`,
                             content: kudo.message || kudo.content,
                             createdAt: kudo.createdAt,
@@ -836,8 +869,10 @@ export default function GmailStyleInbox() {
                           onClick={() => {
                             const kudosMessage = {
                               id: kudo.id,
+                              userId: kudo.userId || user?.id || 'unknown',
                               sender: kudo.sender,
                               senderName: kudo.senderName,
+                              conversationId: kudo.conversationId || kudo.id,
                               subject: `Kudos ${kudo.projectTitle ? `for ${kudo.projectTitle}` : ''}`,
                               content: kudo.message || kudo.content,
                               createdAt: kudo.createdAt,
@@ -1352,4 +1387,17 @@ export default function GmailStyleInbox() {
       </Dialog>
     </div>
   );
+  } catch (error) {
+    console.error('🔥 Error rendering GmailStyleInbox:', error);
+    return (
+      <div className="flex h-full items-center justify-center bg-white">
+        <div className="text-center text-red-600">
+          <p>Error loading inbox: {error.message}</p>
+          <button onClick={() => window.location.reload()} className="mt-2 text-blue-600 underline">
+            Reload page
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
