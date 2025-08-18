@@ -642,7 +642,7 @@ function PhoneDirectoryFixed() {
       {/* Directory Tabs - Permission-based visibility */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="w-full overflow-x-auto">
-          <TabsList className="flex w-max min-w-full h-14 p-1 rounded-lg bg-muted space-x-1">
+          <TabsList className="flex w-max min-w-full h-14 p-1 rounded-lg space-x-1" style={{backgroundColor: '#FBAD3F'}}>
           {availableTabs.map(tab => {
             const Icon = tab.icon;
             let count = 0;
