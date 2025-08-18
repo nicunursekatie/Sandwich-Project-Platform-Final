@@ -194,7 +194,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
               metadata
             });
 
-            console.log(`📊 Activity logged: ${user.firstName || user.email} - ${actionDetails.action} ${feature} in ${section}`);
+            // Activity logged silently
           }
         } catch (error) {
           console.error('Error logging user activity:', error);
