@@ -823,6 +823,42 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  // Volunteer methods
+  async getAllVolunteers() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllVolunteers(),
+      () => this.fallbackStorage.getAllVolunteers()
+    );
+  }
+
+  async getVolunteer(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getVolunteer(id),
+      () => this.fallbackStorage.getVolunteer(id)
+    );
+  }
+
+  async createVolunteer(volunteer: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createVolunteer(volunteer),
+      () => this.fallbackStorage.createVolunteer(volunteer)
+    );
+  }
+
+  async updateVolunteer(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateVolunteer(id, updates),
+      () => this.fallbackStorage.updateVolunteer(id, updates)
+    );
+  }
+
+  async deleteVolunteer(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteVolunteer(id),
+      () => this.fallbackStorage.deleteVolunteer(id)
+    );
+  }
+
   // Host Contacts methods
   async createHostContact(contact: any) {
     return this.executeWithFallback(

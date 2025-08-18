@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -16,6 +16,7 @@ import {
   type Meeting, type InsertMeeting,
   type DriverAgreement, type InsertDriverAgreement,
   type Driver, type InsertDriver,
+  type Volunteer, type InsertVolunteer,
   type Host, type InsertHost,
   type HostContact, type InsertHostContact,
   type Recipient, type InsertRecipient,
@@ -918,6 +919,34 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDriver(id: number): Promise<boolean> {
     const result = await db.delete(drivers).where(eq(drivers.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Volunteers
+  async getAllVolunteers(): Promise<Volunteer[]> {
+    return await db.select().from(volunteers).orderBy(volunteers.name);
+  }
+
+  async getVolunteer(id: number): Promise<Volunteer | undefined> {
+    const [volunteer] = await db.select().from(volunteers).where(eq(volunteers.id, id));
+    return volunteer || undefined;
+  }
+
+  async createVolunteer(insertVolunteer: InsertVolunteer): Promise<Volunteer> {
+    const [volunteer] = await db.insert(volunteers).values(insertVolunteer).returning();
+    return volunteer;
+  }
+
+  async updateVolunteer(id: number, updates: Partial<Volunteer>): Promise<Volunteer | undefined> {
+    const [volunteer] = await db.update(volunteers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(volunteers.id, id))
+      .returning();
+    return volunteer || undefined;
+  }
+
+  async deleteVolunteer(id: number): Promise<boolean> {
+    const result = await db.delete(volunteers).where(eq(volunteers.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
