@@ -1747,7 +1747,6 @@ function PhoneDirectoryFixed() {
                               type="button"
                               onClick={() => {
                                 console.log('VOLUNTEER BUTTON CLICKED:', volunteer.name);
-                                alert('Clicking volunteer: ' + volunteer.name);
                                 setEditingContact({
                                   id: volunteer.id,
                                   name: volunteer.name,
