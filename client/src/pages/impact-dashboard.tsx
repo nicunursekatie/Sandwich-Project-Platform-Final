@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { 
   TrendingUp, 
   Heart, 
@@ -19,8 +20,11 @@ import {
 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
 
 export default function ImpactDashboard() {
+  const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+
   // Fetch sandwich collections data
   const { data: collectionsData } = useQuery({
     queryKey: ["/api/sandwich-collections"],
@@ -42,7 +46,20 @@ export default function ImpactDashboard() {
   // Process data for visualizations
   const processCollectionData = () => {
     if (!Array.isArray(collections)) {
-      // Generate sample trend data based on verified weekly breakdown
+      if (chartView === 'weekly') {
+        // Generate sample weekly data
+        return [
+          { week: 'Week 1', sandwiches: 8750, collections: 12, hosts: 8 },
+          { week: 'Week 2', sandwiches: 9200, collections: 14, hosts: 9 },
+          { week: 'Week 3', sandwiches: 8900, collections: 13, hosts: 8 },
+          { week: 'Week 4', sandwiches: 9100, collections: 13, hosts: 9 },
+          { week: 'Week 5', sandwiches: 8800, collections: 12, hosts: 8 },
+          { week: 'Week 6', sandwiches: 9400, collections: 15, hosts: 10 },
+          { week: 'Week 7', sandwiches: 9000, collections: 14, hosts: 9 },
+          { week: 'Week 8', sandwiches: 8750, collections: 12, hosts: 8 }
+        ];
+      }
+      // Generate sample trend data based on verified monthly breakdown
       return [
         { month: '2023-01', sandwiches: 35000, collections: 45, hosts: 8 },
         { month: '2023-06', sandwiches: 42000, collections: 52, hosts: 10 },
@@ -55,8 +72,8 @@ export default function ImpactDashboard() {
       ];
     }
     
-    const monthlyData: Record<string, {
-      month: string;
+    const timeData: Record<string, {
+      period: string;
       sandwiches: number;
       collections: number;
       hosts: Set<string>;
@@ -66,11 +83,23 @@ export default function ImpactDashboard() {
       const collectionDate = collection.collectionDate;
       if (collectionDate) {
         const date = new Date(collectionDate);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        let periodKey: string;
         
-        if (!monthlyData[monthKey]) {
-          monthlyData[monthKey] = {
-            month: monthKey,
+        if (chartView === 'weekly') {
+          // Group by week (starting Monday)
+          const weekStart = new Date(date);
+          const day = weekStart.getDay();
+          const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
+          weekStart.setDate(diff);
+          periodKey = `Week of ${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+        } else {
+          // Group by month
+          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+        
+        if (!timeData[periodKey]) {
+          timeData[periodKey] = {
+            period: periodKey,
             sandwiches: 0,
             collections: 0,
             hosts: new Set()
@@ -95,21 +124,21 @@ export default function ImpactDashboard() {
           }
         }
         
-        monthlyData[monthKey].sandwiches += individualCount + groupCount;
-        monthlyData[monthKey].collections += 1;
+        timeData[periodKey].sandwiches += individualCount + groupCount;
+        timeData[periodKey].collections += 1;
         const hostName = collection.hostName;
         if (hostName) {
-          monthlyData[monthKey].hosts.add(hostName);
+          timeData[periodKey].hosts.add(hostName);
         }
       }
     });
 
-    return Object.values(monthlyData).map((item) => ({
-      month: item.month,
+    return Object.values(timeData).map((item) => ({
+      [chartView === 'weekly' ? 'week' : 'month']: item.period,
       sandwiches: item.sandwiches,
       collections: item.collections,
       hosts: item.hosts.size
-    })).sort((a, b) => a.month.localeCompare(b.month));
+    })).sort((a, b) => a[chartView === 'weekly' ? 'week' : 'month'].localeCompare(b[chartView === 'weekly' ? 'week' : 'month']));
   };
 
   const processHostPerformance = () => {
@@ -203,7 +232,7 @@ export default function ImpactDashboard() {
     };
   };
 
-  const monthlyData = processCollectionData();
+  const chartData = processCollectionData();
   const hostPerformance = processHostPerformance();
   const impactMetrics = calculateImpactMetrics();
 
@@ -291,24 +320,49 @@ export default function ImpactDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="w-5 h-5 mr-2" />
-                    Monthly Sandwich Collections
-                  </CardTitle>
-                  <CardDescription>Tracking sandwich collection trends over time</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center">
+                        <BarChart3 className="w-5 h-5 mr-2" />
+                        {chartView === 'weekly' ? 'Weekly' : 'Monthly'} Sandwich Collections
+                      </CardTitle>
+                      <CardDescription>Tracking sandwich collection trends over time</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={chartView === 'monthly' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setChartView('monthly')}
+                      >
+                        Monthly
+                      </Button>
+                      <Button
+                        variant={chartView === 'weekly' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setChartView('weekly')}
+                      >
+                        Weekly
+                      </Button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={monthlyData}>
+                    <AreaChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis 
-                        dataKey="month" 
+                        dataKey={chartView === 'weekly' ? 'week' : 'month'} 
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => value.split('-')[1] + '/' + value.split('-')[0].slice(2)}
+                        tickFormatter={(value) => {
+                          if (chartView === 'weekly') {
+                            return value.includes('Week of') ? value.replace('Week of ', '') : value;
+                          }
+                          return value.split('-')[1] + '/' + value.split('-')[0].slice(2);
+                        }}
                       />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip 
-                        labelFormatter={(value) => `Month: ${value}`}
+                        labelFormatter={(value) => `${chartView === 'weekly' ? 'Week' : 'Month'}: ${value}`}
                         formatter={(value, name) => [value, name === 'sandwiches' ? 'Sandwiches' : 'Collections']}
                       />
                       <Area 
