@@ -410,6 +410,25 @@ const PERMISSION_CATEGORIES = [
 // Permission presets as specified
 const PERMISSION_PRESETS = [
   {
+    id: 'all_permissions',
+    label: 'ALL Permissions',
+    description: 'Complete system access with every permission',
+    permissions: [
+      // Core system permissions from PERMISSIONS object
+      ...Object.values(PERMISSIONS),
+      // Additional administrative permissions
+      'VIEW_ALL_USERS',
+      'BASIC_USER_SUPPORT',
+      'SYSTEM_ADMINISTRATOR',
+      'MODERATE_ALL_CHAT',
+      'DELETE_ALL_MESSAGES',
+      'MANAGE_ALL_PROJECTS',
+      'MANAGE_ALL_KUDOS',
+      'MANAGE_ANNOUNCEMENTS',
+      'SCHEDULE_REPORTS'
+    ]
+  },
+  {
     id: 'basic_volunteer',
     label: 'Basic Volunteer',
     description: 'Collections + general chat',
