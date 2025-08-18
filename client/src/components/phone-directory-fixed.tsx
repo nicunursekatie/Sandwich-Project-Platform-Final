@@ -1002,11 +1002,14 @@ function PhoneDirectoryFixed() {
                             <SelectContent>
                               {hosts.map((host) => (
                                 <SelectItem key={host.id} value={host.id.toString()}>
-                                  {host.name}
+                                  {host.name} - {host.address}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This person will become a contact for the selected host location
+                          </p>
                         </div>
                       )}
 
@@ -2447,12 +2450,12 @@ function PhoneDirectoryFixed() {
                       <SelectValue placeholder={`Select ${assignmentTarget.type}`} />
                     </SelectTrigger>
                     <SelectContent>
-                      {assignmentTarget.type === "host" && hostsWithContactsData?.map((host: any) => (
+                      {assignmentTarget.type === "host" && hosts?.map((host: any) => (
                         <SelectItem key={host.id} value={host.id.toString()}>
                           {host.name}
                         </SelectItem>
                       ))}
-                      {assignmentTarget.type === "recipient" && recipientsData?.map((recipient: any) => (
+                      {assignmentTarget.type === "recipient" && recipients?.map((recipient: any) => (
                         <SelectItem key={recipient.id} value={recipient.id.toString()}>
                           {recipient.name}
                         </SelectItem>
