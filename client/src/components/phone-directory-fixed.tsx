@@ -149,11 +149,9 @@ function PhoneDirectoryFixed() {
     email: "",
     zone: "",
     homeAddress: "",
-    volunteerType: "collection",
     notes: "",
-    availabilityNotes: "",
-    isActive: true,
-    vanApproved: false
+    volunteerType: "General",
+    isActive: true
   });
 
   // Recipient management states
@@ -496,11 +494,9 @@ function PhoneDirectoryFixed() {
         email: "",
         zone: "",
         homeAddress: "",
-        volunteerType: "collection",
         notes: "",
-        availabilityNotes: "",
-        isActive: true,
-        vanApproved: false
+        volunteerType: "General",
+        isActive: true
       });
       toast({ title: "Volunteer Added", description: "New volunteer has been successfully created." });
     },
@@ -627,6 +623,11 @@ function PhoneDirectoryFixed() {
     createDriverMutation.mutate(newDriver);
   };
 
+  const handleAddVolunteer = () => {
+    if (!newVolunteer.name.trim() || !newVolunteer.phone.trim()) return;
+    createVolunteerMutation.mutate(newVolunteer);
+  };
+
   const handleUpdateDriver = () => {
     if (!editingDriver?.name.trim()) return;
     updateDriverMutation.mutate(editingDriver);
@@ -636,11 +637,6 @@ function PhoneDirectoryFixed() {
     if (confirm("Are you sure you want to delete this driver?")) {
       deleteDriverMutation.mutate(driverId);
     }
-  };
-
-  const handleAddVolunteer = () => {
-    if (!newVolunteer.name.trim()) return;
-    createVolunteerMutation.mutate(newVolunteer);
   };
 
   const handleUpdateVolunteer = () => {
