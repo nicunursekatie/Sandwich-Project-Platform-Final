@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { Phone, User, Users, Search, Edit, Plus, Star, Crown, Mail, MapPin, Building, Calendar, Trash2, UserPlus, Copy } from "lucide-react";
@@ -187,14 +188,10 @@ function PhoneDirectoryFixed() {
 
 
 
-  // Smart default tab selection: prefer hosts, then other tabs (exclude contacts)
+  // Smart default tab selection: prefer directory first as unified view
   const getDefaultTab = React.useCallback(() => {
-    if (canViewHosts) return "hosts";
-    if (canViewRecipients) return "recipients";  
-    if (canViewDrivers) return "drivers";
-    if (canViewVolunteers) return "volunteers";
-    return "contacts"; // fallback if no other permissions
-  }, [canViewHosts, canViewRecipients, canViewDrivers, canViewVolunteers]);
+    return "directory"; // Default to unified directory view
+  }, []);
 
   const [activeTab, setActiveTab] = useState(() => getDefaultTab());
 
@@ -221,7 +218,7 @@ function PhoneDirectoryFixed() {
 
   // Available tabs based on permissions
   const availableTabs = [
-    { id: 'contacts', label: 'Contacts', icon: Phone, enabled: true },
+    { id: 'directory', label: 'Directory', icon: Phone, enabled: true },
     { id: 'hosts', label: 'Hosts', icon: Users, enabled: canViewHosts },
     { id: 'recipients', label: 'Recipients', icon: User, enabled: canViewRecipients },
     { id: 'drivers', label: 'Drivers', icon: User, enabled: canViewDrivers },
@@ -256,11 +253,93 @@ function PhoneDirectoryFixed() {
            recipient.phone.includes(searchTerm);
   });
 
-  const filteredContacts = contacts.filter((contact) => {
+  // Create unified directory from all existing systems
+  const unifiedDirectory = React.useMemo(() => {
+    const allContacts: any[] = [];
+
+    // Add host contacts
+    hosts.forEach(host => {
+      host.contacts?.forEach(contact => {
+        allContacts.push({
+          id: `host-${contact.id}`,
+          name: contact.name,
+          phone: contact.phone,
+          email: contact.email,
+          organization: host.name,
+          role: contact.role,
+          type: 'Host Contact',
+          address: host.address,
+          notes: contact.notes,
+          isPrimary: contact.isPrimary,
+          source: 'host_contacts'
+        });
+      });
+    });
+
+    // Add recipients
+    recipients.forEach(recipient => {
+      allContacts.push({
+        id: `recipient-${recipient.id}`,
+        name: recipient.name,
+        phone: recipient.phone,
+        email: recipient.email,
+        organization: recipient.name,
+        role: 'Recipient Organization',
+        type: 'Recipient',
+        address: recipient.address,
+        notes: recipient.preferences,
+        source: 'recipients'
+      });
+    });
+
+    // Add drivers
+    drivers.forEach(driver => {
+      allContacts.push({
+        id: `driver-${driver.id}`,
+        name: driver.name,
+        phone: driver.phone,
+        email: driver.email,
+        organization: '',
+        role: 'Driver',
+        type: 'Driver',
+        address: driver.homeAddress,
+        notes: `Zone: ${driver.zone}${driver.notes ? ` - ${driver.notes}` : ''}`,
+        zone: driver.zone,
+        vanApproved: driver.vanApproved,
+        source: 'drivers'
+      });
+    });
+
+    // Add volunteers
+    volunteers.forEach(volunteer => {
+      allContacts.push({
+        id: `volunteer-${volunteer.id}`,
+        name: volunteer.name,
+        phone: volunteer.phone,
+        email: volunteer.email,
+        organization: '',
+        role: volunteer.volunteerType || 'Volunteer',
+        type: 'Volunteer',
+        address: volunteer.homeAddress,
+        notes: `Zone: ${volunteer.zone}${volunteer.notes ? ` - ${volunteer.notes}` : ''}`,
+        zone: volunteer.zone,
+        volunteerType: volunteer.volunteerType,
+        source: 'volunteers'
+      });
+    });
+
+    return allContacts.sort((a, b) => a.name.localeCompare(b.name));
+  }, [hosts, recipients, drivers, volunteers]);
+
+  const filteredDirectory = unifiedDirectory.filter((contact) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return contact.name.toLowerCase().includes(searchLower) ||
-           contact.phone.includes(searchTerm);
+           contact.phone.includes(searchTerm) ||
+           (contact.email && contact.email.toLowerCase().includes(searchLower)) ||
+           (contact.organization && contact.organization.toLowerCase().includes(searchLower)) ||
+           (contact.type && contact.type.toLowerCase().includes(searchLower)) ||
+           (contact.role && contact.role.toLowerCase().includes(searchLower));
   });
 
   const filteredDrivers = drivers.filter((driver) => {
@@ -612,6 +691,52 @@ function PhoneDirectoryFixed() {
     }
   };
 
+  // Universal contact update handler for role changes
+  const handleUniversalContactUpdate = async () => {
+    if (!editingContact) return;
+
+    try {
+      // Create API calls based on the role type change
+      const updateData = {
+        name: editingContact.name,
+        phone: editingContact.phone,
+        email: editingContact.email,
+        address: editingContact.address,
+        notes: editingContact.notes,
+        newRoleType: editingContact.newRoleType || editingContact.source,
+        assignedHostId: editingContact.assignedHostId,
+        volunteerType: editingContact.volunteerType,
+        zone: editingContact.zone,
+        vanApproved: editingContact.vanApproved
+      };
+
+      // Call universal contact update endpoint
+      await apiRequest('PUT', `/api/contacts/universal/${editingContact.id.replace(/^(host|recipient|driver|volunteer)-/, '')}`, {
+        ...updateData,
+        originalSource: editingContact.source
+      });
+
+      // Invalidate all contact-related queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteers'] });
+
+      toast({
+        title: "Contact Updated",
+        description: `${editingContact.name} has been updated and their role changed successfully.`,
+      });
+
+      setEditingContact(null);
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update contact. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-8 p-6 font-['Roboto',sans-serif]">
       {/* Header */}
@@ -647,7 +772,7 @@ function PhoneDirectoryFixed() {
             const Icon = tab.icon;
             let count = 0;
             
-            if (tab.id === 'contacts') count = filteredContacts.length;
+            if (tab.id === 'directory') count = filteredDirectory.length;
             else if (tab.id === 'hosts') count = filteredHosts.length;
             else if (tab.id === 'recipients') count = filteredRecipients.length;
             else if (tab.id === 'drivers') count = filteredDrivers.length;
@@ -667,141 +792,49 @@ function PhoneDirectoryFixed() {
           </TabsList>
         </div>
 
-        <TabsContent value="contacts" className="space-y-6 mt-6">
+        <TabsContent value="directory" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
             <CardHeader className="pb-4 bg-muted">
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
                     <Phone className="w-6 h-6 text-primary" />
-                    General Contacts
+                    Unified Directory
                   </CardTitle>
                   <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                    Contact information for general contacts and volunteers
+                    All contacts from hosts, recipients, drivers, and volunteers in one view
                   </CardDescription>
                 </div>
-                {canEditContacts && (
-                  <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Add Contact
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Add New Contact</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="new-name">Name *</Label>
-                            <Input
-                              id="new-name"
-                              value={newContact.name}
-                              onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                              placeholder="Enter full name"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="new-organization">Organization</Label>
-                            <Input
-                              id="new-organization"
-                              value={newContact.organization}
-                              onChange={(e) => setNewContact({ ...newContact, organization: e.target.value })}
-                              placeholder="Company or organization"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="new-role">Role</Label>
-                            <Input
-                              id="new-role"
-                              value={newContact.role}
-                              onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
-                              placeholder="Job title or role"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="new-phone">Phone</Label>
-                            <Input
-                              id="new-phone"
-                              value={newContact.phone}
-                              onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                              placeholder="Phone number"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="new-email">Email</Label>
-                          <Input
-                            id="new-email"
-                            type="email"
-                            value={newContact.email}
-                            onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                            placeholder="Email address"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="new-address">Address</Label>
-                          <Textarea
-                            id="new-address"
-                            value={newContact.address}
-                            onChange={(e) => setNewContact({ ...newContact, address: e.target.value })}
-                            placeholder="Street address, city, state, zip"
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="new-notes">Notes</Label>
-                          <Textarea
-                            id="new-notes"
-                            value={newContact.notes}
-                            onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
-                            placeholder="Additional notes or comments"
-                            rows={3}
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button type="button" variant="outline" onClick={() => setIsAddingContact(false)}>
-                            Cancel
-                          </Button>
-                          <Button 
-                            onClick={handleAddContact}
-                            disabled={!newContact.name.trim() || createContactMutation.isPending}
-                          >
-                            {createContactMutation.isPending ? "Adding..." : "Add Contact"}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                <div className="text-sm text-muted-foreground">
+                  This unified view shows all contacts from across the platform. To edit, use the specific management tabs.
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              {filteredContacts.length === 0 ? (
+              {filteredDirectory.length === 0 ? (
                 <div className="text-center py-12 text-base text-muted-foreground font-['Roboto',sans-serif]">
                   {searchTerm ? 'No contacts found matching your search.' : 'No contacts found.'}
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredContacts.map((contact) => (
+                  {filteredDirectory.map((contact) => (
                     <div key={contact.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
+                          <div className="flex items-center gap-3 mb-3 flex-wrap">
                             <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{contact.name}</h3>
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              {contact.type}
+                            </Badge>
                             {contact.organization && (
                               <Badge variant="secondary" className="flex items-center gap-1">
                                 <Building className="w-3 h-3" />
                                 {contact.organization}
                               </Badge>
                             )}
-                            {contact.status === 'active' && (
-                              <Badge variant="default" className="bg-green-100 text-green-800">
-                                Active
+                            {contact.isPrimary && (
+                              <Badge variant="default" className="bg-blue-100 text-blue-800">
+                                Primary Contact
                               </Badge>
                             )}
                           </div>
@@ -839,137 +872,23 @@ function PhoneDirectoryFixed() {
                             </div>
                           )}
                           
-                          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                            <Calendar className="w-3 h-3" />
-                            <span>Added: {new Date(contact.createdAt).toLocaleDateString()}</span>
-                            {contact.updatedAt && new Date(contact.updatedAt).getTime() !== new Date(contact.createdAt).getTime() && (
-                              <span>• Updated: {new Date(contact.updatedAt).toLocaleDateString()}</span>
+                          <div className="mt-3 flex items-center justify-between">
+                            <Badge variant="outline" className="text-xs">
+                              Source: {contact.source.replace('_', ' ')}
+                            </Badge>
+                            {canEditContacts && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setEditingContact(contact)}
+                                className="flex items-center gap-1"
+                              >
+                                <Edit className="w-4 h-4" />
+                                Edit & Reassign
+                              </Button>
                             )}
                           </div>
                         </div>
-                        
-                        {canEditContacts && (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleAssignContact(contact)}
-                              className="flex items-center gap-1"
-                            >
-                              <UserPlus className="w-4 h-4" />
-                              Assign
-                            </Button>
-                            <Dialog open={editingContact?.id === contact.id} onOpenChange={(open) => !open && setEditingContact(null)}>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setEditingContact(contact)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                              </DialogTrigger>
-                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Edit Contact</DialogTitle>
-                              </DialogHeader>
-                              {editingContact && (
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="edit-name">Name *</Label>
-                                      <Input
-                                        id="edit-name"
-                                        value={editingContact.name}
-                                        onChange={(e) => setEditingContact({ ...editingContact, name: e.target.value })}
-                                        placeholder="Enter full name"
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-organization">Organization</Label>
-                                      <Input
-                                        id="edit-organization"
-                                        value={editingContact.organization || ""}
-                                        onChange={(e) => setEditingContact({ ...editingContact, organization: e.target.value })}
-                                        placeholder="Company or organization"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="edit-role">Role</Label>
-                                      <Input
-                                        id="edit-role"
-                                        value={editingContact.role || ""}
-                                        onChange={(e) => setEditingContact({ ...editingContact, role: e.target.value })}
-                                        placeholder="Job title or role"
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-phone">Phone</Label>
-                                      <Input
-                                        id="edit-phone"
-                                        value={editingContact.phone}
-                                        onChange={(e) => setEditingContact({ ...editingContact, phone: e.target.value })}
-                                        placeholder="Phone number"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-email">Email</Label>
-                                    <Input
-                                      id="edit-email"
-                                      type="email"
-                                      value={editingContact.email || ""}
-                                      onChange={(e) => setEditingContact({ ...editingContact, email: e.target.value })}
-                                      placeholder="Email address"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-address">Address</Label>
-                                    <Textarea
-                                      id="edit-address"
-                                      value={editingContact.address || ""}
-                                      onChange={(e) => setEditingContact({ ...editingContact, address: e.target.value })}
-                                      placeholder="Street address, city, state, zip"
-                                      rows={2}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-notes">Notes</Label>
-                                    <Textarea
-                                      id="edit-notes"
-                                      value={editingContact.notes || ""}
-                                      onChange={(e) => setEditingContact({ ...editingContact, notes: e.target.value })}
-                                      placeholder="Additional notes or comments"
-                                      rows={3}
-                                    />
-                                  </div>
-                                  <div className="flex justify-end space-x-2">
-                                    <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
-                                      Cancel
-                                    </Button>
-                                    <Button 
-                                      onClick={handleUpdateContact}
-                                      disabled={!editingContact.name.trim() || updateContactMutation.isPending}
-                                    >
-                                      {updateContactMutation.isPending ? "Updating..." : "Update Contact"}
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteContact(contact.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -977,6 +896,199 @@ function PhoneDirectoryFixed() {
               )}
             </CardContent>
           </Card>
+
+          {/* Universal Contact Edit Dialog */}
+          {editingContact && (
+            <Dialog open={!!editingContact} onOpenChange={(open) => !open && setEditingContact(null)}>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Contact & Change Role</DialogTitle>
+                  <DialogDescription>
+                    Edit contact information and change their role/assignment across the platform
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  {/* Current Status */}
+                  <div className="p-4 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-medium">Current Status:</span>
+                      <Badge variant="outline">{editingContact.type}</Badge>
+                      <Badge variant="secondary">{editingContact.source.replace('_', ' ')}</Badge>
+                    </div>
+                    {editingContact.organization && (
+                      <p className="text-sm text-muted-foreground">Organization: {editingContact.organization}</p>
+                    )}
+                  </div>
+
+                  {/* Basic Contact Info */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-name">Name *</Label>
+                      <Input
+                        id="edit-name"
+                        value={editingContact.name}
+                        onChange={(e) => setEditingContact({ ...editingContact, name: e.target.value })}
+                        placeholder="Enter full name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-phone">Phone</Label>
+                      <Input
+                        id="edit-phone"
+                        value={editingContact.phone || ""}
+                        onChange={(e) => setEditingContact({ ...editingContact, phone: e.target.value })}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-email">Email</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={editingContact.email || ""}
+                      onChange={(e) => setEditingContact({ ...editingContact, email: e.target.value })}
+                      placeholder="Email address"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-address">Address</Label>
+                    <Textarea
+                      id="edit-address"
+                      value={editingContact.address || ""}
+                      onChange={(e) => setEditingContact({ ...editingContact, address: e.target.value })}
+                      placeholder="Street address, city, state, zip"
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Role Assignment Section */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-3">Change Role & Assignment</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>New Role Type</Label>
+                        <Select 
+                          value={editingContact.newRoleType || editingContact.source} 
+                          onValueChange={(value) => setEditingContact({ ...editingContact, newRoleType: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select new role type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="volunteers">Volunteer</SelectItem>
+                            <SelectItem value="host_contacts">Host Contact</SelectItem>
+                            <SelectItem value="recipients">Recipient Organization</SelectItem>
+                            <SelectItem value="drivers">Driver</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Host Assignment */}
+                      {editingContact.newRoleType === 'host_contacts' && (
+                        <div>
+                          <Label>Assign to Host Location</Label>
+                          <Select 
+                            value={editingContact.assignedHostId || ""} 
+                            onValueChange={(value) => setEditingContact({ ...editingContact, assignedHostId: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select host location" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {hosts.map((host) => (
+                                <SelectItem key={host.id} value={host.id.toString()}>
+                                  {host.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* Volunteer Assignment */}
+                      {editingContact.newRoleType === 'volunteers' && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Volunteer Type</Label>
+                            <Select 
+                              value={editingContact.volunteerType || ""} 
+                              onValueChange={(value) => setEditingContact({ ...editingContact, volunteerType: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select volunteer type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="General">General</SelectItem>
+                                <SelectItem value="Driver">Driver</SelectItem>
+                                <SelectItem value="Host">Host</SelectItem>
+                                <SelectItem value="Coordinator">Coordinator</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Zone</Label>
+                            <Input
+                              value={editingContact.zone || ""}
+                              onChange={(e) => setEditingContact({ ...editingContact, zone: e.target.value })}
+                              placeholder="Service zone"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Driver Specific */}
+                      {editingContact.newRoleType === 'drivers' && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Zone</Label>
+                            <Input
+                              value={editingContact.zone || ""}
+                              onChange={(e) => setEditingContact({ ...editingContact, zone: e.target.value })}
+                              placeholder="Service zone"
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="van-approved"
+                              checked={editingContact.vanApproved || false}
+                              onCheckedChange={(checked) => setEditingContact({ ...editingContact, vanApproved: checked })}
+                            />
+                            <Label htmlFor="van-approved">Van Approved</Label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-notes">Notes</Label>
+                    <Textarea
+                      id="edit-notes"
+                      value={editingContact.notes || ""}
+                      onChange={(e) => setEditingContact({ ...editingContact, notes: e.target.value })}
+                      placeholder="Additional notes or comments"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleUniversalContactUpdate}
+                      disabled={!editingContact.name.trim()}
+                    >
+                      Save Changes & Update Role
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </TabsContent>
 
         {canViewHosts && <TabsContent value="hosts" className="space-y-6 mt-6">

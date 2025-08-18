@@ -3680,6 +3680,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Universal contact update endpoint for role changes
+  app.put("/api/contacts/universal/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { 
+        name, 
+        phone, 
+        email, 
+        address, 
+        notes, 
+        newRoleType, 
+        assignedHostId, 
+        volunteerType, 
+        zone, 
+        vanApproved, 
+        originalSource 
+      } = req.body;
+
+      // First, update the existing record
+      if (originalSource === 'volunteers') {
+        const volunteerData = {
+          name,
+          phone,
+          email,
+          homeAddress: address,
+          notes,
+          zone: zone || '',
+          volunteerType: volunteerType || 'General'
+        };
+        await storage.updateVolunteer(id, volunteerData);
+      } else if (originalSource === 'drivers') {
+        const driverData = {
+          name,
+          phone,
+          email,
+          homeAddress: address,
+          notes,
+          zone: zone || '',
+          vanApproved: vanApproved || false
+        };
+        await storage.updateDriver(id, driverData);
+      } else if (originalSource === 'recipients') {
+        const recipientData = {
+          name,
+          phone,
+          email,
+          address,
+          preferences: notes
+        };
+        await storage.updateRecipient(id, recipientData);
+      } else if (originalSource === 'host_contacts') {
+        const hostContactData = {
+          name,
+          phone,
+          email,
+          notes
+        };
+        await storage.updateHostContact(id, hostContactData);
+      }
+
+      // Handle role type changes - create new records if role is changing
+      if (newRoleType && newRoleType !== originalSource) {
+        if (newRoleType === 'host_contacts' && assignedHostId) {
+          // Create new host contact
+          const hostContactData = {
+            hostId: parseInt(assignedHostId),
+            name,
+            role: 'Contact',
+            phone,
+            email: email || null,
+            isPrimary: false,
+            notes: notes || null
+          };
+          await storage.createHostContact(hostContactData);
+
+          // Remove from original source if different
+          if (originalSource === 'volunteers') {
+            await storage.deleteVolunteer(id);
+          } else if (originalSource === 'drivers') {
+            await storage.deleteDriver(id);
+          }
+        } else if (newRoleType === 'volunteers') {
+          // Create new volunteer
+          const volunteerData = {
+            name,
+            phone,
+            email,
+            homeAddress: address || '',
+            zone: zone || '',
+            volunteerType: volunteerType || 'General',
+            notes: notes || '',
+            isActive: true
+          };
+          await storage.createVolunteer(volunteerData);
+
+          // Remove from original source if different
+          if (originalSource === 'drivers') {
+            await storage.deleteDriver(id);
+          } else if (originalSource === 'host_contacts') {
+            await storage.deleteHostContact(id);
+          }
+        } else if (newRoleType === 'drivers') {
+          // Create new driver
+          const driverData = {
+            name,
+            phone,
+            email,
+            zone: zone || '',
+            homeAddress: address || '',
+            vanApproved: vanApproved || false,
+            notes: notes || '',
+            isActive: true
+          };
+          await storage.createDriver(driverData);
+
+          // Remove from original source if different
+          if (originalSource === 'volunteers') {
+            await storage.deleteVolunteer(id);
+          } else if (originalSource === 'host_contacts') {
+            await storage.deleteHostContact(id);
+          }
+        }
+      }
+
+      res.json({ message: "Contact updated and role changed successfully" });
+    } catch (error) {
+      logger.error("Failed to update universal contact", error);
+      res.status(500).json({ message: "Failed to update contact" });
+    }
+  });
+
   // Contact assignment endpoints
   app.post("/api/contact-assignments", async (req, res) => {
     try {
