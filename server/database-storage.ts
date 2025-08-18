@@ -1121,7 +1121,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateHostContact(id: number, updates: Partial<HostContact>): Promise<HostContact | undefined> {
     const [contact] = await db.update(hostContacts)
-      .set({ ...updates, updatedAt: new Date() })
+      .set(updates)
       .where(eq(hostContacts.id, id))
       .returning();
     return contact;
