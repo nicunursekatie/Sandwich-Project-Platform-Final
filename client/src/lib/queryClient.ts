@@ -3,7 +3,23 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    
+    // Create more specific error messages based on status codes
+    let errorMessage = `${res.status}: ${text}`;
+    
+    if (res.status === 401) {
+      errorMessage = 'AUTH_EXPIRED';
+    } else if (res.status === 403) {
+      errorMessage = 'PERMISSION_DENIED';
+    } else if (res.status === 404) {
+      errorMessage = 'DATA_LOADING_ERROR';
+    } else if (res.status >= 500) {
+      errorMessage = 'DATABASE_ERROR';
+    } else if (!navigator.onLine) {
+      errorMessage = 'NETWORK_ERROR';
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
@@ -58,10 +74,32 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error) => {
+        // Don't retry for auth, permission, or validation errors
+        const noRetryErrors = ['AUTH_EXPIRED', 'PERMISSION_DENIED', 'VALIDATION_ERROR'];
+        const errorMessage = error?.message || '';
+        
+        if (noRetryErrors.some(code => errorMessage.includes(code))) {
+          return false;
+        }
+        
+        // Only retry network errors up to 2 times
+        if (errorMessage.includes('NETWORK_ERROR') && failureCount < 2) {
+          return true;
+        }
+        
+        return false;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: false,
+      retry: (failureCount, error) => {
+        // Retry database errors once, but not auth/permission errors
+        const errorMessage = error?.message || '';
+        const retryableErrors = ['DATABASE_ERROR', 'NETWORK_ERROR'];
+        
+        return retryableErrors.some(code => errorMessage.includes(code)) && failureCount < 1;
+      },
     },
   },
 });

@@ -24,6 +24,7 @@ import shoutoutRoutes from "./routes/shoutouts";
 import { createUserActivityRoutes } from "./routes/user-activity";
 import { createEnhancedUserActivityRoutes } from "./routes/enhanced-user-activity";
 import { createActivityLogRoutes } from "./routes/activity-log";
+import { createErrorLogsRoutes } from "./routes/error-logs";
 
 // import { generalRateLimit, strictRateLimit, uploadRateLimit, clearRateLimit } from "./middleware/rateLimiter";
 import { sanitizeMiddleware } from "./middleware/sanitizer";
@@ -8058,6 +8059,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register message notification routes
   registerMessageNotificationRoutes(app);
+
+  // Register error logging routes
+  app.use("/api/error-logs", createErrorLogsRoutes(storage));
 
   // Register email routes (completely separate from chat)
   app.use("/api/emails", emailRoutes);
