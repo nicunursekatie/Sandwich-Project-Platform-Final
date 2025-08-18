@@ -23,6 +23,8 @@ export const PERMISSIONS = {
   ACCESS_HOSTS: "access_hosts",
   ACCESS_RECIPIENTS: "access_recipients",
   ACCESS_DRIVERS: "access_drivers",
+  ACCESS_VOLUNTEERS: "access_volunteers", // New volunteer management tab access
+  ACCESS_DONATION_TRACKING: "access_donation_tracking", // New donation tracking access
   ACCESS_COLLECTIONS: "access_collections",
   ACCESS_CHAT: "access_chat",
   ACCESS_MESSAGES: "access_messages",
@@ -44,6 +46,8 @@ export const PERMISSIONS = {
   MANAGE_HOSTS: "manage_hosts",
   MANAGE_RECIPIENTS: "manage_recipients",
   MANAGE_DRIVERS: "manage_drivers",
+  MANAGE_VOLUNTEERS: "manage_volunteers", // Full volunteer management permissions
+  MANAGE_DONATION_TRACKING: "manage_donation_tracking", // Create, edit, delete donations
   MANAGE_DIRECTORY: "manage_directory", // Edit/add contacts in directory
   MANAGE_MEETINGS: "manage_meetings",
   MANAGE_SUGGESTIONS: "manage_suggestions",
@@ -66,6 +70,17 @@ export const PERMISSIONS = {
   EDIT_ALL_COLLECTIONS: "edit_all_collections", // Edit any collection regardless of ownership
   DELETE_ALL_COLLECTIONS: "delete_all_collections", // Delete any collection regardless of ownership
   USE_COLLECTION_WALKTHROUGH: "use_collection_walkthrough", // Access to simplified walkthrough form
+
+  // Granular volunteer management permissions
+  VIEW_VOLUNTEERS: "view_volunteers", // View volunteer information
+  ADD_VOLUNTEERS: "add_volunteers", // Add new volunteers
+  EDIT_VOLUNTEERS: "edit_volunteers", // Edit volunteer information
+
+  // Granular donation tracking permissions
+  VIEW_DONATION_TRACKING: "view_donation_tracking", // View donation records
+  ADD_DONATION_TRACKING: "add_donation_tracking", // Add new donation records
+  EDIT_DONATION_TRACKING: "edit_donation_tracking", // Edit donation records
+  DELETE_DONATION_TRACKING: "delete_donation_tracking", // Delete donation records
 
   // Simplified work log permissions - CREATE automatically includes edit/delete own
   CREATE_WORK_LOGS: "create_work_logs", // Create new work logs + automatically edit/delete own work logs
@@ -103,6 +118,8 @@ export const PERMISSIONS = {
   VIEW_HOSTS: "access_hosts",
   VIEW_RECIPIENTS: "access_recipients",
   VIEW_DRIVERS: "access_drivers",
+  VIEW_VOLUNTEERS_TAB: "access_volunteers", // Legacy support
+  VIEW_DONATION_TRACKING_TAB: "access_donation_tracking", // Legacy support
   VIEW_COLLECTIONS: "access_collections",
   VIEW_MEETINGS: "access_meetings",
   VIEW_ANALYTICS: "access_analytics",
@@ -193,6 +210,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_HOSTS,
         PERMISSIONS.ACCESS_RECIPIENTS,
+        PERMISSIONS.ACCESS_DRIVERS,
+        PERMISSIONS.ACCESS_VOLUNTEERS,
+        PERMISSIONS.ACCESS_DONATION_TRACKING,
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
         PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
@@ -214,6 +234,17 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.MANAGE_HOSTS,
         PERMISSIONS.MANAGE_RECIPIENTS,
         PERMISSIONS.MANAGE_DRIVERS,
+        PERMISSIONS.MANAGE_VOLUNTEERS,
+        PERMISSIONS.MANAGE_DONATION_TRACKING,
+        // Granular volunteer permissions
+        PERMISSIONS.VIEW_VOLUNTEERS,
+        PERMISSIONS.ADD_VOLUNTEERS,
+        PERMISSIONS.EDIT_VOLUNTEERS,
+        // Granular donation tracking permissions
+        PERMISSIONS.VIEW_DONATION_TRACKING,
+        PERMISSIONS.ADD_DONATION_TRACKING,
+        PERMISSIONS.EDIT_DONATION_TRACKING,
+        PERMISSIONS.DELETE_DONATION_TRACKING,
         PERMISSIONS.CORE_TEAM_CHAT,
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.ACCESS_PROJECTS,

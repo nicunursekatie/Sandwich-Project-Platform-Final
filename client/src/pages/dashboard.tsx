@@ -12,6 +12,7 @@ import DashboardOverview from "@/components/dashboard-overview";
 import SandwichCollectionLog from "@/components/sandwich-collection-log";
 import RecipientsManagement from "@/components/recipients-management";
 import DriversManagement from "@/components/drivers-management";
+import VolunteerManagement from "@/components/volunteer-management";
 import HostsManagement from "@/components/hosts-management-consolidated";
 import { DocumentsBrowser } from "@/components/documents-browser";
 import PhoneDirectoryFixed from "@/components/phone-directory-fixed";
@@ -129,6 +130,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2 }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DONATION_TRACKING) ? [{ id: "donation-tracking", label: "Donation Tracking", icon: Truck }] : []),
     
     // Operations section
     ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList }] : []),
@@ -252,6 +255,10 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <RecipientsManagement />;
       case "drivers":
         return <DriversManagement />;
+      case "volunteers":
+        return <VolunteerManagement />;
+      case "donation-tracking":
+        return <DonationTracking />;
       case "phone-directory":
         return <PhoneDirectoryFixed />;
       case "wishlist":
