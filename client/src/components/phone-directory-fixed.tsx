@@ -79,6 +79,32 @@ interface GeneralContact {
   updatedAt: Date;
 }
 
+interface Volunteer {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  notes: string;
+  isActive: boolean;
+  vehicleType: string;
+  licenseNumber: string;
+  availability: string;
+  zone: string;
+  routeDescription: string;
+  hostLocation: string;
+  hostId?: number;
+  vanApproved: boolean;
+  homeAddress?: string;
+  availabilityNotes?: string;
+  emailAgreementSent: boolean;
+  voicemailLeft: boolean;
+  inactiveReason?: string;
+  volunteerType: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 function PhoneDirectoryFixed() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingContact, setEditingContact] = useState<any>(null);
@@ -101,6 +127,7 @@ function PhoneDirectoryFixed() {
   const canViewHosts = hasPermission(user, PERMISSIONS.ACCESS_HOSTS);
   const canViewRecipients = hasPermission(user, PERMISSIONS.ACCESS_RECIPIENTS);
   const canViewDrivers = hasPermission(user, PERMISSIONS.ACCESS_DRIVERS);
+  const canViewVolunteers = hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS);
   const canEditContacts = hasPermission(user, PERMISSIONS.ADMIN_ACCESS) || 
                          hasPermission(user, PERMISSIONS.MANAGE_USERS) || 
                          hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY);
@@ -110,8 +137,9 @@ function PhoneDirectoryFixed() {
     if (canViewHosts) return "hosts";
     if (canViewRecipients) return "recipients";  
     if (canViewDrivers) return "drivers";
+    if (canViewVolunteers) return "volunteers";
     return "contacts"; // fallback if no other permissions
-  }, [canViewHosts, canViewRecipients, canViewDrivers]);
+  }, [canViewHosts, canViewRecipients, canViewDrivers, canViewVolunteers]);
 
   const [activeTab, setActiveTab] = useState(() => getDefaultTab());
 
@@ -132,12 +160,17 @@ function PhoneDirectoryFixed() {
     queryKey: ["/api/drivers"],
   });
 
+  const { data: volunteers = [] } = useQuery<Volunteer[]>({
+    queryKey: ["/api/volunteers"],
+  });
+
   // Available tabs based on permissions
   const availableTabs = [
     { id: 'contacts', label: 'Contacts', icon: Phone, enabled: true },
     { id: 'hosts', label: 'Hosts', icon: Users, enabled: canViewHosts },
     { id: 'recipients', label: 'Recipients', icon: User, enabled: canViewRecipients },
-    { id: 'drivers', label: 'Drivers', icon: User, enabled: canViewDrivers }
+    { id: 'drivers', label: 'Drivers', icon: User, enabled: canViewDrivers },
+    { id: 'volunteers', label: 'Volunteers', icon: User, enabled: canViewVolunteers }
   ].filter(tab => tab.enabled);
 
   // Auto-select appropriate tab based on permissions
@@ -176,6 +209,15 @@ function PhoneDirectoryFixed() {
     return driver.name.toLowerCase().includes(searchLower) ||
            driver.phone.includes(searchTerm) ||
            driver.zone.toLowerCase().includes(searchLower);
+  });
+
+  const filteredVolunteers = volunteers.filter((volunteer) => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return volunteer.name.toLowerCase().includes(searchLower) ||
+           volunteer.phone.includes(searchTerm) ||
+           volunteer.zone.toLowerCase().includes(searchLower) ||
+           volunteer.volunteerType.toLowerCase().includes(searchLower);
   });
 
   // Create contact mutation
@@ -828,6 +870,106 @@ function PhoneDirectoryFixed() {
                               </p>
                             </div>
                           )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>}
+
+        {canViewVolunteers && <TabsContent value="volunteers" className="space-y-6 mt-6">
+          <Card className="border-2 shadow-sm border-border">
+            <CardHeader className="pb-4 bg-muted">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                <User className="w-6 h-6 text-primary" />
+                Volunteer Directory
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                Contact information for volunteers
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {filteredVolunteers.length === 0 ? (
+                <div className="text-center py-12 text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
+                  {searchTerm ? 'No volunteers found matching your search.' : 'No volunteers found.'}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredVolunteers.map((volunteer) => (
+                    <div key={volunteer.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{volunteer.name}</h3>
+                          {volunteer.isActive && (
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              Active
+                            </Badge>
+                          )}
+                          {volunteer.vanApproved && (
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                              Van Approved
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                            {volunteer.volunteerType}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {volunteer.phone && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Phone className="w-4 h-4" />
+                            <span>{volunteer.phone}</span>
+                          </div>
+                        )}
+                        {volunteer.email && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Mail className="w-4 h-4" />
+                            <span>{volunteer.email}</span>
+                          </div>
+                        )}
+                        {volunteer.zone && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            <span>Zone: {volunteer.zone}</span>
+                          </div>
+                        )}
+                        {volunteer.address && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Building className="w-4 h-4" />
+                            <span>{volunteer.address}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {(volunteer.vehicleType || volunteer.availability) && (
+                        <div className="mt-3 space-y-2">
+                          {volunteer.vehicleType && (
+                            <div className="p-3 bg-purple-50 rounded-md">
+                              <p className="text-sm text-purple-700">
+                                <span className="font-medium">Vehicle:</span> {volunteer.vehicleType}
+                              </p>
+                            </div>
+                          )}
+                          {volunteer.availability && (
+                            <div className="p-3 bg-blue-50 rounded-md">
+                              <p className="text-sm text-blue-700">
+                                <span className="font-medium">Availability:</span> {volunteer.availability}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {volunteer.notes && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                          <p className="text-sm text-muted-foreground">
+                            <span className="font-medium">Notes:</span> {volunteer.notes}
+                          </p>
                         </div>
                       )}
                     </div>

@@ -1,5 +1,5 @@
 import { 
-  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses,
+  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -14,6 +14,7 @@ import {
   type Meeting, type InsertMeeting,
   type DriverAgreement, type InsertDriverAgreement,
   type Driver, type InsertDriver,
+  type Volunteer, type InsertVolunteer,
   type Host, type InsertHost,
   type HostContact, type InsertHostContact,
   type Recipient, type InsertRecipient,
@@ -184,6 +185,13 @@ export interface IStorage {
   updateDriver(id: number, updates: Partial<Driver>): Promise<Driver | undefined>;
   deleteDriver(id: number): Promise<boolean>;
   
+  // Volunteers
+  getAllVolunteers(): Promise<Volunteer[]>;
+  getVolunteer(id: number): Promise<Volunteer | undefined>;
+  createVolunteer(volunteer: InsertVolunteer): Promise<Volunteer>;
+  updateVolunteer(id: number, updates: Partial<Volunteer>): Promise<Volunteer | undefined>;
+  deleteVolunteer(id: number): Promise<boolean>;
+  
   // Hosts
   getAllHosts(): Promise<Host[]>;
   getAllHostsWithContacts(): Promise<Array<Host & { contacts: HostContact[] }>>;
@@ -309,6 +317,7 @@ export class MemStorage implements IStorage {
   private meetings: Map<number, Meeting>;
   private driverAgreements: Map<number, DriverAgreement>;
   private drivers: Map<number, Driver>;
+  private volunteers: Map<number, Volunteer>;
   private hosts: Map<number, Host>;
   private hostContacts: Map<number, HostContact>;
   private recipients: Map<number, Recipient>;
@@ -335,6 +344,7 @@ export class MemStorage implements IStorage {
     meeting: number;
     driverAgreement: number;
     driver: number;
+    volunteer: number;
     host: number;
     hostContact: number;
     recipient: number;
@@ -361,6 +371,7 @@ export class MemStorage implements IStorage {
     this.meetings = new Map();
     this.driverAgreements = new Map();
     this.drivers = new Map();
+    this.volunteers = new Map();
     this.hosts = new Map();
     this.hostContacts = new Map();
     this.recipients = new Map();
@@ -388,6 +399,7 @@ export class MemStorage implements IStorage {
       meeting: 1,
       driverAgreement: 1,
       driver: 1,
+      volunteer: 1,
       host: 1,
       hostContact: 1,
       recipient: 1,
@@ -1144,6 +1156,44 @@ export class MemStorage implements IStorage {
 
   async deleteDriver(id: number): Promise<boolean> {
     return this.drivers.delete(id);
+  }
+
+  // Volunteer methods
+  async getAllVolunteers(): Promise<Volunteer[]> {
+    return Array.from(this.volunteers.values());
+  }
+
+  async getVolunteer(id: number): Promise<Volunteer | undefined> {
+    return this.volunteers.get(id);
+  }
+
+  async createVolunteer(insertVolunteer: InsertVolunteer): Promise<Volunteer> {
+    const id = this.currentIds.volunteer++;
+    const volunteer: Volunteer = { 
+      ...insertVolunteer, 
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.volunteers.set(id, volunteer);
+    return volunteer;
+  }
+
+  async updateVolunteer(id: number, updates: Partial<Volunteer>): Promise<Volunteer | undefined> {
+    const volunteer = this.volunteers.get(id);
+    if (!volunteer) return undefined;
+    
+    const updatedVolunteer: Volunteer = { 
+      ...volunteer, 
+      ...updates, 
+      updatedAt: new Date()
+    };
+    this.volunteers.set(id, updatedVolunteer);
+    return updatedVolunteer;
+  }
+
+  async deleteVolunteer(id: number): Promise<boolean> {
+    return this.volunteers.delete(id);
   }
 
   // Host methods
