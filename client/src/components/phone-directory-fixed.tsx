@@ -260,6 +260,15 @@ function PhoneDirectoryFixed() {
            (volunteer.zone && volunteer.zone.toLowerCase().includes(searchLower));
   });
 
+  const filteredDrivers = drivers.filter((driver) => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return driver.name.toLowerCase().includes(searchLower) ||
+           driver.phone.includes(searchTerm) ||
+           (driver.email && driver.email.toLowerCase().includes(searchLower)) ||
+           (driver.zone && driver.zone.toLowerCase().includes(searchLower));
+  });
+
   // Create unified directory from all existing systems
   const unifiedDirectory = React.useMemo(() => {
     const allContacts: any[] = [];
