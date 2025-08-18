@@ -1,0 +1,185 @@
+ Extension Version 1.17.4 10fcf9c
+ Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+Unchecked runtime.lastError: The page keeping the extension port is moved into back/forward cache, so the message channel is closed.
+Unchecked runtime.lastError: The page keeping the extension port is moved into back/forward cache, so the message channel is closed.
+ WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=b-ygA7gD1Kbf' failed: 
+setupWebSocket @ client:536
+client:536 Uncaught (in promise) 
+ Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+ Current URL location: /dashboard
+ Dashboard activeSection changed to: dashboard
+ WebSocket connected successfully
+ WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+(anonymous) @ useMessaging.ts:165
+ Messaging WebSocket error: Event
+overrideMethod @ installHook.js:1
+ Messaging WebSocket disconnected
+ WebSocket closed unexpectedly: 1006 
+overrideMethod @ installHook.js:1
+ Navigation click: recipients
+ Dashboard setActiveSection called with: recipients
+ Dashboard activeSection changed to: recipients
+ Recipients Debug - Rendering: Object
+ Recipients Debug - Rendering: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+ TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+recipients-management.tsx:497 Recipients Debug - Rendering: Object
+recipients-management.tsx:497 Recipients Debug - Rendering: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+tsp-contact-manager.tsx:61 TSP Contact Manager Debug: Object
+simple-nav.tsx:208 Navigation click: drivers
+dashboard.tsx:505 Dashboard setActiveSection called with: drivers
+dashboard.tsx:90 Dashboard activeSection changed to: drivers
+simple-nav.tsx:208 Navigation click: hosts
+dashboard.tsx:505 Dashboard setActiveSection called with: hosts
+dashboard.tsx:90 Dashboard activeSection changed to: hosts
+hook.js:608 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. Error Component Stack
+    at DescriptionWarning (chunk-SUMVCW5P.js?v=7b3a3859:332:29)
+    at chunk-SUMVCW5P.js?v=7b3a3859:236:13
+    at chunk-SUMVCW5P.js?v=7b3a3859:159:58
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at chunk-SUMVCW5P.js?v=7b3a3859:150:64
+    at chunk-X5NZ3XE2.js?v=7b3a3859:79:13
+    at chunk-X5NZ3XE2.js?v=7b3a3859:56:13
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at chunk-XOOGDA2B.js?v=7b3a3859:262:22
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at DialogPortal (chunk-SUMVCW5P.js?v=7b3a3859:112:11)
+    at _c3 (dialog.tsx:35:6)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at Dialog (chunk-SUMVCW5P.js?v=7b3a3859:52:5)
+    at div (<anonymous>)
+    at HostsManagementConsolidated (hosts-management-consolidated.tsx:25:21)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at Dashboard (dashboard.tsx:62:37)
+    at Route (wouter.js?v=7b3a3859:206:16)
+    at Switch (wouter.js?v=7b3a3859:262:17)
+    at Router (App.tsx:24:49)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=7b3a3859:65:5)
+    at QueryClientProvider (@tanstack_react-query.js?v=7b3a3859:2933:3)
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:137:3)
+overrideMethod @ hook.js:608
+hook.js:608 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. Error Component Stack
+    at DescriptionWarning (chunk-SUMVCW5P.js?v=7b3a3859:332:29)
+    at chunk-SUMVCW5P.js?v=7b3a3859:236:13
+    at chunk-SUMVCW5P.js?v=7b3a3859:159:58
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at chunk-SUMVCW5P.js?v=7b3a3859:150:64
+    at chunk-X5NZ3XE2.js?v=7b3a3859:79:13
+    at chunk-X5NZ3XE2.js?v=7b3a3859:56:13
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at chunk-XOOGDA2B.js?v=7b3a3859:262:22
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at DialogPortal (chunk-SUMVCW5P.js?v=7b3a3859:112:11)
+    at _c3 (dialog.tsx:35:6)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at Dialog (chunk-SUMVCW5P.js?v=7b3a3859:52:5)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at _c9 (card.tsx:62:6)
+    at div (<anonymous>)
+    at _c (card.tsx:8:6)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at @radix-ui_react-tabs.js?v=7b3a3859:178:13
+    at _c5 (tabs.tsx:41:6)
+    at div (<anonymous>)
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at @radix-ui_react-tabs.js?v=7b3a3859:55:7
+    at div (<anonymous>)
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at chunk-XOOGDA2B.js?v=7b3a3859:63:7
+    at chunk-X5NZ3XE2.js?v=7b3a3859:79:13
+    at chunk-X5NZ3XE2.js?v=7b3a3859:56:13
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at chunk-QNSTUMAI.js?v=7b3a3859:62:5
+    at chunk-SUMVCW5P.js?v=7b3a3859:236:13
+    at chunk-SUMVCW5P.js?v=7b3a3859:159:58
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at chunk-SUMVCW5P.js?v=7b3a3859:150:64
+    at chunk-X5NZ3XE2.js?v=7b3a3859:79:13
+    at chunk-X5NZ3XE2.js?v=7b3a3859:56:13
+    at chunk-SGAVZH5V.js?v=7b3a3859:43:13
+    at chunk-XOOGDA2B.js?v=7b3a3859:262:22
+    at Presence (chunk-GWCB6ZNV.js?v=7b3a3859:24:11)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at DialogPortal (chunk-SUMVCW5P.js?v=7b3a3859:112:11)
+    at _c3 (dialog.tsx:35:6)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at Dialog (chunk-SUMVCW5P.js?v=7b3a3859:52:5)
+    at div (<anonymous>)
+    at HostsManagementConsolidated (hosts-management-consolidated.tsx:25:21)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at Dashboard (dashboard.tsx:62:37)
+    at Route (wouter.js?v=7b3a3859:206:16)
+    at Switch (wouter.js?v=7b3a3859:262:17)
+    at Router (App.tsx:24:49)
+    at Provider (chunk-3RXG37ZK.js?v=7b3a3859:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=7b3a3859:65:5)
+    at QueryClientProvider (@tanstack_react-query.js?v=7b3a3859:2933:3)
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:137:3)
+overrideMethod @ hook.js:608
+:5000/api/host-contacts/42:1  Failed to load resource: the server responded with a status of 404 (Not Found)
