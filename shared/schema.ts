@@ -567,11 +567,12 @@ export const hostContacts = pgTable("host_contacts", {
   id: serial("id").primaryKey(),
   hostId: integer("host_id").notNull(),
   name: text("name").notNull(), // Contact person name
-  role: text("role").notNull(), // 'primary', 'backup', 'coordinator', 'manager', 'volunteer'
+  role: text("role").notNull(), // 'Lead', 'host', 'alternate', 'volunteer', 'head of school'
   phone: text("phone").notNull(),
   email: text("email"),
   isPrimary: boolean("is_primary").notNull().default(false),
   notes: text("notes"),
+  hostLocation: text("host_location"), // Location name for grouping contacts
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

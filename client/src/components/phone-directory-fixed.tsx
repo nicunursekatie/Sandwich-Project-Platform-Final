@@ -1082,10 +1082,9 @@ function PhoneDirectoryFixed() {
             </DialogContent>
           )}
         </Dialog>
-        {/* End malformed dialog - now proper TabsContent structure */}
-        </TabsContent>
 
-        <TabsContent value="volunteers" className="space-y-6 mt-6">
+      {/* Volunteers Tab */}  
+      {canViewVolunteers && <TabsContent value="volunteers" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
           <CardContent className="pt-6">
             {filteredVolunteers.length === 0 ? (
@@ -1197,7 +1196,7 @@ function PhoneDirectoryFixed() {
                                   <div className="flex items-center gap-2 mb-2">
                                     <div className="font-semibold text-base text-primary font-['Roboto',sans-serif]">{contact.name}</div>
                                     {contact.isPrimary && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
-                                    {contact.role === 'lead' && <Crown className="w-4 h-4 text-purple-600 fill-current" />}
+                                    {(contact.role === 'Lead' || contact.role === 'lead') && <Crown className="w-4 h-4 text-yellow-500 fill-current" />}
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     {contact.phone && (
@@ -2120,6 +2119,7 @@ function PhoneDirectoryFixed() {
           </Card>
         </TabsContent>}
       </Tabs>
+      </div>
 
       {/* Universal Contact Edit Dialog - Moved outside Tabs */}
       <Dialog open={!!editingContact} onOpenChange={(open) => {
@@ -2252,6 +2252,7 @@ function PhoneDirectoryFixed() {
               </DialogContent>
             )}
           </Dialog>
+      </div>
     </div>
   );
 }
