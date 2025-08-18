@@ -67,9 +67,9 @@ export default function DonationTracking() {
   const queryClient = useQueryClient();
   
   // State for filters and search
-  const [selectedWeek, setSelectedWeek] = useState<string>("");
-  const [selectedHost, setSelectedHost] = useState<string>("");
-  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
+  const [selectedWeek, setSelectedWeek] = useState<string>("all");
+  const [selectedHost, setSelectedHost] = useState<string>("all");
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   
   // State for the form dialog
@@ -199,7 +199,7 @@ export default function DonationTracking() {
       sandwichCount: parseInt(formData.sandwichCount),
       notes: formData.notes || null,
       createdBy: user?.id || '',
-      createdByName: user ? `${user.firstName} ${user.lastName}`.trim() : 'Unknown User'
+      createdByName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User' : 'Unknown User'
     };
 
     if (editingDistribution) {
@@ -229,9 +229,9 @@ export default function DonationTracking() {
 
   // Filter distributions based on selected filters and search
   const filteredDistributions = distributions.filter(dist => {
-    const matchesWeek = !selectedWeek || dist.weekEnding === selectedWeek;
-    const matchesHost = !selectedHost || dist.hostId.toString() === selectedHost;
-    const matchesRecipient = !selectedRecipient || dist.recipientId.toString() === selectedRecipient;
+    const matchesWeek = !selectedWeek || selectedWeek === "all" || dist.weekEnding === selectedWeek;
+    const matchesHost = !selectedHost || selectedHost === "all" || dist.hostId.toString() === selectedHost;
+    const matchesRecipient = !selectedRecipient || selectedRecipient === "all" || dist.recipientId.toString() === selectedRecipient;
     const matchesSearch = !searchTerm || 
       dist.hostName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       dist.recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -354,7 +354,7 @@ export default function DonationTracking() {
                   <SelectValue placeholder="All weeks" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All weeks</SelectItem>
+                  <SelectItem value="all">All weeks</SelectItem>
                   {availableWeeks.map(week => (
                     <SelectItem key={week} value={week}>
                       Week ending {format(new Date(week), 'MMM d, yyyy')}
@@ -371,7 +371,7 @@ export default function DonationTracking() {
                   <SelectValue placeholder="All hosts" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All hosts</SelectItem>
+                  <SelectItem value="all">All hosts</SelectItem>
                   {hosts.filter(h => h.status === 'active').map(host => (
                     <SelectItem key={host.id} value={host.id.toString()}>
                       {host.name}
@@ -388,7 +388,7 @@ export default function DonationTracking() {
                   <SelectValue placeholder="All recipients" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All recipients</SelectItem>
+                  <SelectItem value="all">All recipients</SelectItem>
                   {recipients.filter(r => r.status === 'active').map(recipient => (
                     <SelectItem key={recipient.id} value={recipient.id.toString()}>
                       {recipient.name}
@@ -405,9 +405,9 @@ export default function DonationTracking() {
                 variant="outline" 
                 size="sm"
                 onClick={() => {
-                  setSelectedWeek("");
-                  setSelectedHost("");
-                  setSelectedRecipient("");
+                  setSelectedWeek("all");
+                  setSelectedHost("all");
+                  setSelectedRecipient("all");
                   setSearchTerm("");
                 }}
               >
