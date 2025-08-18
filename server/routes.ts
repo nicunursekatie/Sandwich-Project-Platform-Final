@@ -42,12 +42,14 @@ import {
   insertMeetingSchema,
   insertDriverAgreementSchema,
   insertDriverSchema,
+  insertVolunteerSchema,
   insertHostSchema,
   insertHostContactSchema,
   insertRecipientSchema,
   insertContactSchema,
   insertAnnouncementSchema,
   drivers,
+  volunteers,
   projectTasks,
   taskCompletions,
   conversations,
@@ -2977,6 +2979,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       logger.error("Failed to create driver agreement", error);
       res.status(500).json({ message: "Failed to create driver agreement" });
+    }
+  });
+
+  // Volunteers API endpoints
+  app.get("/api/volunteers", async (req, res) => {
+    try {
+      const volunteers = await storage.getAllVolunteers();
+      res.json(volunteers);
+    } catch (error) {
+      logger.error("Failed to get volunteers", error);
+      res.status(500).json({ message: "Failed to get volunteers" });
+    }
+  });
+
+  app.get("/api/volunteers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const volunteer = await storage.getVolunteer(id);
+      if (!volunteer) {
+        return res.status(404).json({ message: "Volunteer not found" });
+      }
+      res.json(volunteer);
+    } catch (error) {
+      logger.error("Failed to get volunteer", error);
+      res.status(500).json({ message: "Failed to get volunteer" });
+    }
+  });
+
+  app.post("/api/volunteers", sanitizeMiddleware, async (req, res) => {
+    try {
+      const result = insertVolunteerSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid volunteer data" });
+      }
+      const volunteer = await storage.createVolunteer(result.data);
+      res.status(201).json(volunteer);
+    } catch (error) {
+      logger.error("Failed to create volunteer", error);
+      res.status(500).json({ message: "Failed to create volunteer" });
+    }
+  });
+
+  app.put("/api/volunteers/:id", sanitizeMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const volunteer = await storage.updateVolunteer(id, updates);
+      if (!volunteer) {
+        return res.status(404).json({ message: "Volunteer not found" });
+      }
+      res.json(volunteer);
+    } catch (error) {
+      logger.error("Failed to update volunteer", error);
+      res.status(500).json({ message: "Failed to update volunteer" });
+    }
+  });
+
+  app.patch("/api/volunteers/:id", sanitizeMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+
+      // Validate that we have some updates to apply
+      if (!updates || Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No updates provided" });
+      }
+
+      const volunteer = await storage.updateVolunteer(id, updates);
+      if (!volunteer) {
+        return res.status(404).json({ message: "Volunteer not found" });
+      }
+
+      res.json(volunteer);
+    } catch (error) {
+      logger.error("Failed to update volunteer", error);
+      res.status(500).json({ message: "Failed to update volunteer" });
+    }
+  });
+
+  app.delete("/api/volunteers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteVolunteer(id);
+      if (!success) {
+        return res.status(404).json({ message: "Volunteer not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Failed to delete volunteer", error);
+      res.status(500).json({ message: "Failed to delete volunteer" });
     }
   });
 
