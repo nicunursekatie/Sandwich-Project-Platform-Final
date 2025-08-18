@@ -123,6 +123,13 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  async setUserPassword(id: string, password: string): Promise<void> {
+    return this.executeWithFallback(
+      () => this.primaryStorage.setUserPassword(id, password),
+      () => this.fallbackStorage.setUserPassword(id, password)
+    );
+  }
+
   async deleteUser(id: string) {
     return this.executeWithFallback(
       () => this.primaryStorage.deleteUser(id),

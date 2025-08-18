@@ -40,7 +40,8 @@ import {
   EyeOff,
   Trophy,
   Building,
-  TrendingUp
+  TrendingUp,
+  KeyRound
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -131,8 +132,12 @@ export default function UserManagementRedesigned() {
     email: "",
     firstName: "",
     lastName: "",
-    role: "volunteer"
+    role: "volunteer",
+    password: ""
   });
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordUser, setPasswordUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   // Check permissions
   if (!hasPermission(currentUser, PERMISSIONS.MANAGE_USERS)) {
@@ -255,6 +260,44 @@ export default function UserManagementRedesigned() {
     }
 
     addUserMutation.mutate(newUser);
+  };
+
+  const setPasswordMutation = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      return apiRequest("PATCH", `/api/users/${userId}/password`, { password });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Password Set",
+        description: "User password has been successfully updated.",
+      });
+      setShowPasswordDialog(false);
+      setPasswordUser(null);
+      setNewPassword("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Password Update Failed",
+        description: error.message || "Failed to update user password.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSetPassword = () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: "Invalid Password",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordUser) {
+      setPasswordMutation.mutate({ userId: passwordUser.id, password: newPassword });
+    }
   };
 
   // Filter users
@@ -612,6 +655,13 @@ export default function UserManagementRedesigned() {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Permissions
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    setPasswordUser(user);
+                                    setShowPasswordDialog(true);
+                                  }}>
+                                    <KeyRound className="h-4 w-4 mr-2" />
+                                    Set Password
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => toggleUserStatusMutation.mutate({ 
                                       userId: user.id, 
@@ -730,12 +780,25 @@ export default function UserManagementRedesigned() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="password">Password (Optional)</Label>
+              <Input
+                id="password"
+                type="password"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                placeholder="Leave blank for no password"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                If no password is set, user will need to use email login or reset password
+              </p>
+            </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button 
                 variant="outline" 
                 onClick={() => {
                   setShowAddUserDialog(false);
-                  setNewUser({ email: "", firstName: "", lastName: "", role: "volunteer" });
+                  setNewUser({ email: "", firstName: "", lastName: "", role: "volunteer", password: "" });
                 }}
               >
                 Cancel
@@ -748,6 +811,49 @@ export default function UserManagementRedesigned() {
                 {addUserMutation.isPending ? "Adding..." : "Add User"}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Set Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Password for {passwordUser?.firstName} {passwordUser?.lastName}</DialogTitle>
+            <DialogDescription>
+              Set a new password for this user. They can use this password to log in directly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password (minimum 6 characters)"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPasswordDialog(false);
+                setPasswordUser(null);
+                setNewPassword("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSetPassword}
+              disabled={setPasswordMutation.isPending}
+              className="bg-[#236383] hover:bg-[#1a4d66]"
+            >
+              {setPasswordMutation.isPending ? "Setting..." : "Set Password"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
