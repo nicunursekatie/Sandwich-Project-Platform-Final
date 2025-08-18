@@ -146,8 +146,8 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     <nav className={`space-y-1 ${isCollapsed ? 'p-2' : 'p-3 sm:p-4'} pb-6 sm:pb-8`}>
       {/* Navigation Help Header - Hidden when collapsed */}
       {!isCollapsed && (
-        <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Navigation</div>
+        <div className="flex items-center justify-between pb-3 border-b border-amber-200">
+          <div className="text-xs font-semibold text-amber-700 uppercase tracking-wider">Navigation</div>
           <HelpBubble
             content={{
               id: 'navigation-help',
@@ -167,8 +167,8 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
           if (isCollapsed) return null;
           return (
             <div key={`sep-${index}`} className="pt-3 sm:pt-4 pb-2">
-              <div className="flex items-center text-xs font-medium text-slate-500 uppercase tracking-wider">
-                <div className="h-px bg-slate-200 flex-1 mr-2 sm:mr-3" />
+              <div className="flex items-center text-xs font-medium text-amber-700 uppercase tracking-wider">
+                <div className="h-px bg-amber-200 flex-1 mr-2 sm:mr-3" />
                 <span className="text-[10px] sm:text-xs">{getGroupLabel(item.group)}</span>
               </div>
             </div>
@@ -198,8 +198,8 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
             className={`
               w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-2 sm:px-3'} text-left h-10 sm:h-11 touch-manipulation relative
               ${isCurrentlyActive 
-                ? "bg-[#236383] hover:bg-[#1d5470] text-white shadow-sm border-l-4 border-l-orange-500" 
-                : "hover:bg-slate-100 text-slate-700"
+                ? "bg-[#236383] hover:bg-[#1d5470] text-white shadow-sm border-l-4 border-l-[#FBAD3F]" 
+                : "hover:bg-amber-50 text-amber-800"
               }
             `}
             onClick={(e) => {
@@ -239,10 +239,10 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     console.error('SimpleNav error:', error);
     return (
       <div className="p-4 text-center">
-        <p className="text-sm text-gray-500">Navigation temporarily unavailable</p>
+        <p className="text-sm text-amber-600">Navigation temporarily unavailable</p>
         <button 
           onClick={() => window.location.reload()} 
-          className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+          className="mt-2 text-[#236383] hover:text-[#1d5470] text-sm"
         >
           Refresh Page
         </button>

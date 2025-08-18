@@ -515,7 +515,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-gray-50">
+        <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30">
           {activeSection === 'gmail-inbox' ? (
             // Special full-height layout for inbox
             <div className="h-full">
