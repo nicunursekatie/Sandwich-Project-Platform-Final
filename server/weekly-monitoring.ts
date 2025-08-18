@@ -128,7 +128,7 @@ export async function checkWeeklySubmissions(): Promise<WeeklySubmissionStatus[]
 /**
  * Send email notification for missing submissions
  */
-export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubmissionStatus[]): Promise<boolean> {
+export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubmissionStatus[], isTest = false): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
     console.log('SendGrid not configured - would send email about missing submissions:', 
       missingSubmissions.map(s => s.location));
@@ -146,7 +146,8 @@ export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubm
     .filter(s => !s.hasSubmitted)
     .map(s => s.location);
 
-  if (missingLocations.length === 0) {
+  // For test emails, always send even if no missing locations
+  if (missingLocations.length === 0 && !isTest) {
     console.log('All locations have submitted - no email needed');
     return true;
   }
@@ -154,9 +155,15 @@ export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubm
   const emailContent = {
     to: ADMIN_EMAIL,
     from: FROM_EMAIL,
-    subject: `⚠️ Missing Sandwich Collection Numbers - Week of ${weekOf}`,
+    subject: isTest ? `🧪 TEST EMAIL - Missing Sandwich Collection Numbers - Week of ${weekOf}` : `⚠️ Missing Sandwich Collection Numbers - Week of ${weekOf}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        ${isTest ? `
+          <div style="background: #e3f2fd; border: 2px solid #1976d2; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <h3 style="color: #1976d2; margin: 0;">🧪 TEST EMAIL</h3>
+            <p style="color: #1976d2; margin: 5px 0 0 0; font-weight: bold;">This is a test of the weekly monitoring email system with sample data</p>
+          </div>
+        ` : ''}
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h2 style="color: #236383; margin: 0; display: flex; align-items: center;">
             🥪 The Sandwich Project - Weekly Numbers Alert
@@ -199,8 +206,7 @@ export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubm
         </div>
       </div>
     `,
-    text: `
-The Sandwich Project - Weekly Numbers Alert
+    text: `${isTest ? '🧪 TEST EMAIL - This is a test of the weekly monitoring email system with sample data\n\n' : ''}The Sandwich Project - Weekly Numbers Alert
 Week of ${weekOf}
 
 MISSING SUBMISSIONS:
