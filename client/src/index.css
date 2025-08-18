@@ -23,6 +23,66 @@ body {
   }
 }
 
+/* Global Tab Styling Overrides - Replace all gray tabs with gold */
+[role="tablist"] {
+  background-color: #FEF3E2 !important; /* Light amber background instead of gray */
+  border: 1px solid #FBAD3F !important;
+}
+
+[role="tab"] {
+  color: #92400e !important; /* Amber-800 text */
+  background-color: transparent !important;
+}
+
+[role="tab"][data-state="active"] {
+  background-color: #FBAD3F !important; /* Gold background for active tab */
+  color: #451a03 !important; /* Dark amber text for active tab */
+  border-bottom: 2px solid #FBAD3F !important;
+}
+
+[role="tab"]:hover {
+  background-color: #FED7AA !important; /* Light amber hover */
+  color: #92400e !important;
+}
+
+/* Additional overrides for any remaining gray elements */
+.bg-gray-100 {
+  background-color: #FEF3E2 !important; /* Light amber instead of gray */
+}
+
+.bg-gray-200 {
+  background-color: #FBAD3F !important; /* Gold instead of darker gray */
+}
+
+.border-gray-300 {
+  border-color: #FBAD3F !important; /* Gold borders */
+}
+
+.border-gray-200 {
+  border-color: #F3E8D3 !important; /* Light amber borders */
+}
+
+/* Specific tab styling to override shadcn defaults */
+[data-radix-tabs-list] {
+  background-color: #FEF3E2 !important;
+  border: 1px solid #FBAD3F !important;
+}
+
+[data-radix-tabs-trigger] {
+  color: #92400e !important;
+  background-color: transparent !important;
+}
+
+[data-radix-tabs-trigger][data-state="active"] {
+  background-color: #FBAD3F !important;
+  color: #451a03 !important;
+  border-bottom: 2px solid #FBAD3F !important;
+}
+
+[data-radix-tabs-trigger]:hover {
+  background-color: #FED7AA !important;
+}
+
 /* Mobile header fix */
 .mobile-header-fix {
   min-height: 60px;
@@ -179,6 +239,10 @@ body {
     --tsp-secondary: #FBAD3F;
     --tsp-accent: #A31C41;
     --tsp-muted: #007E8C;
+    
+    /* Override default tab styling to use brand colors */
+    --muted: 32 20% 90%; /* Light amber background for tabs */
+    --muted-foreground: 32 20% 40%; /* Darker amber text */
   }
 
   .dark {
@@ -606,7 +670,9 @@ body {
   }
 
   .badge-completed {
-    @apply px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full;
+    @apply px-2 py-1 text-xs font-medium rounded-full;
+    background-color: #FBAD3F;
+    color: #8B4513;
   }
 }
 
