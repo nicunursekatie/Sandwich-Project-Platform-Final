@@ -41,6 +41,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { apiRequest } from "@/lib/queryClient";
+import { ButtonTooltip } from "@/components/ui/button-tooltip";
 
 export default function VolunteerManagement() {
   const { user } = useAuth();
@@ -334,10 +335,12 @@ export default function VolunteerManagement() {
           <p className="text-gray-600">Manage volunteer information and coordination</p>
         </div>
         {canAdd && (
-          <Button onClick={handleAdd} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add Volunteer
-          </Button>
+          <ButtonTooltip explanation="Add a new volunteer to your database. You can track their contact information, skills, and availability for scheduling.">
+            <Button onClick={handleAdd} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Volunteer
+            </Button>
+          </ButtonTooltip>
         )}
       </div>
 
@@ -607,15 +610,17 @@ export default function VolunteerManagement() {
                         <p className="text-sm text-blue-800 mb-3">
                           Promote this volunteer to be a host contact at a specific location. They will appear in the host management section.
                         </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowHostDesignation(true)}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-100"
-                        >
-                          <Building2 className="w-4 h-4 mr-2" />
-                          Designate as Host
-                        </Button>
+                        <ButtonTooltip explanation="Convert this volunteer into a host location. This will let them collect sandwiches from their location and adds them to the hosts directory.">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowHostDesignation(true)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-100"
+                          >
+                            <Building2 className="w-4 h-4 mr-2" />
+                            Designate as Host
+                          </Button>
+                        </ButtonTooltip>
                       </div>
                     ) : (
                       <div className="bg-amber-50 rounded-lg p-4 space-y-4">

@@ -61,6 +61,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ButtonTooltip } from "@/components/ui/button-tooltip";
 
 interface User {
   id: string;
@@ -135,7 +136,7 @@ export default function GmailStyleInbox() {
     );
   }
   
-  console.log('✅ User authenticated, rendering inbox for:', user.email);
+  console.log('✅ User authenticated, rendering inbox for:', user?.email);
   
   // UI State
   const [activeFolder, setActiveFolder] = useState("inbox");
@@ -626,13 +627,15 @@ export default function GmailStyleInbox() {
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <Button 
-            onClick={() => setShowCompose(true)} 
-            className="w-full gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-['Roboto'] font-medium shadow-lg hover:shadow-xl transition-all duration-200"
-          >
-            <Plus className="h-4 w-4" />
-            Compose
-          </Button>
+          <ButtonTooltip explanation="Write a new message to send to team members. You can choose who to send it to and what it's about.">
+            <Button 
+              onClick={() => setShowCompose(true)} 
+              className="w-full gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-['Roboto'] font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Plus className="h-4 w-4" />
+              Compose
+            </Button>
+          </ButtonTooltip>
         </div>
         
         <ScrollArea className="flex-1">
@@ -801,8 +804,8 @@ export default function GmailStyleInbox() {
                           
                           // Create a message object that matches the expected format
                           const kudosMessage = {
-                            id: kudo.id,
-                            userId: kudo.userId || user?.id || 'unknown',
+                            id: kudo?.id,
+                            userId: kudo?.userId || user?.id || 'unknown',
                             sender: kudo.sender,
                             senderName: kudo.senderName,
                             conversationId: kudo.conversationId || kudo.id,
@@ -868,8 +871,8 @@ export default function GmailStyleInbox() {
                           key={kudo.id} 
                           onClick={() => {
                             const kudosMessage = {
-                              id: kudo.id,
-                              userId: kudo.userId || user?.id || 'unknown',
+                              id: kudo?.id,
+                              userId: kudo?.userId || user?.id || 'unknown',
                               sender: kudo.sender,
                               senderName: kudo.senderName,
                               conversationId: kudo.conversationId || kudo.id,
@@ -1368,20 +1371,22 @@ export default function GmailStyleInbox() {
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleSendMessage}
-              disabled={sendMessageMutation.isPending}
-              className="rounded-lg px-8 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-['Roboto'] font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
-            >
-              {sendMessageMutation.isPending ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Sending...
-                </div>
-              ) : (
-                "Send Message"
-              )}
-            </Button>
+            <ButtonTooltip explanation="Send your message to the selected recipients. Make sure you've filled in all the required fields.">
+              <Button 
+                onClick={handleSendMessage}
+                disabled={sendMessageMutation.isPending}
+                className="rounded-lg px-8 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-['Roboto'] font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+              >
+                {sendMessageMutation.isPending ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Sending...
+                  </div>
+                ) : (
+                  "Send Message"
+                )}
+              </Button>
+            </ButtonTooltip>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1392,7 +1397,7 @@ export default function GmailStyleInbox() {
     return (
       <div className="flex h-full items-center justify-center bg-white">
         <div className="text-center text-red-600">
-          <p>Error loading inbox: {error.message}</p>
+          <p>Error loading inbox: {error instanceof Error ? error.message : 'Unknown error'}</p>
           <button onClick={() => window.location.reload()} className="mt-2 text-blue-600 underline">
             Reload page
           </button>

@@ -739,6 +739,44 @@ const PERMISSION_PRESETS = [
     ]
   },
   {
+    id: 'demo_user_access',
+    label: 'Demo User',
+    description: 'View-only access to all sections without edit permissions - perfect for demonstrations',
+    permissions: [
+      // View all main sections
+      PERMISSIONS.ACCESS_DIRECTORY,
+      PERMISSIONS.ACCESS_HOSTS,
+      PERMISSIONS.ACCESS_RECIPIENTS,
+      PERMISSIONS.ACCESS_DRIVERS,
+      PERMISSIONS.ACCESS_VOLUNTEERS,
+      PERMISSIONS.ACCESS_DONATION_TRACKING,
+      PERMISSIONS.ACCESS_COLLECTIONS,
+      PERMISSIONS.ACCESS_CHAT,
+      PERMISSIONS.ACCESS_MESSAGES,
+      PERMISSIONS.ACCESS_TOOLKIT,
+      PERMISSIONS.ACCESS_MEETINGS,
+      PERMISSIONS.ACCESS_ANALYTICS,
+      PERMISSIONS.ACCESS_PROJECTS,
+      PERMISSIONS.ACCESS_SUGGESTIONS,
+      PERMISSIONS.ACCESS_WORK_LOGS,
+      PERMISSIONS.ACCESS_WEEKLY_MONITORING,
+      PERMISSIONS.ACCESS_EVENTS,
+      PERMISSIONS.ACCESS_DEVELOPMENT,
+      PERMISSIONS.ACCESS_SIGNUP_GENIUS,
+      // Chat permissions (read-only)
+      'GENERAL_CHAT',
+      'COMMITTEE_CHAT',
+      'HOST_CHAT',
+      'DRIVER_CHAT',
+      'RECIPIENT_CHAT',
+      'CORE_TEAM_CHAT',
+      // Basic permissions
+      PERMISSIONS.RECEIVE_KUDOS,
+      PERMISSIONS.VIEW_KUDOS,
+      PERMISSIONS.EXPORT_DATA
+    ]
+  },
+  {
     id: 'team_lead',
     label: 'Team Lead',
     description: 'Leadership with elevated permissions',
