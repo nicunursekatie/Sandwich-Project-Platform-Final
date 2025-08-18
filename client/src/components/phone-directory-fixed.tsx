@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
-import { Phone, User, Users, Search, Edit, Plus, Star, Crown, Mail, MapPin, Building, Calendar, Trash2, UserPlus } from "lucide-react";
+import { Phone, User, Users, Search, Edit, Plus, Star, Crown, Mail, MapPin, Building, Calendar, Trash2, UserPlus, Copy } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -241,7 +241,12 @@ function PhoneDirectoryFixed() {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return host.name.toLowerCase().includes(searchLower) ||
-           (host.address && host.address.toLowerCase().includes(searchLower));
+           (host.address && host.address.toLowerCase().includes(searchLower)) ||
+           (host.contacts && host.contacts.some(contact => 
+             contact.name.toLowerCase().includes(searchLower) ||
+             contact.phone.includes(searchTerm) ||
+             (contact.email && contact.email.toLowerCase().includes(searchLower))
+           ));
   });
 
   const filteredRecipients = recipients.filter((recipient) => {
@@ -1004,11 +1009,44 @@ function PhoneDirectoryFixed() {
                 <div className="space-y-6">
                   {filteredHosts.map((host) => (
                     <div key={host.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
-                      <h3 className="font-bold text-lg mb-3 text-primary font-['Roboto',sans-serif]">{host.name}</h3>
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{host.name}</h3>
+                        <Badge variant="secondary" className="text-xs">
+                          {host.contacts?.length || 0} contacts
+                        </Badge>
+                      </div>
                       {host.address && (
-                        <p className="text-base mb-4 text-muted-foreground font-['Roboto',sans-serif]">
-                          <span className="font-medium">Address:</span> {host.address}
-                        </p>
+                        <div className="flex items-start gap-2 mb-4 p-3 bg-muted/30 rounded-lg border border-muted">
+                          <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm text-primary font-['Roboto',sans-serif] mb-1">Location:</p>
+                            <p className="text-sm text-foreground font-['Roboto',sans-serif] leading-relaxed">
+                              {host.address}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(host.address);
+                              toast({
+                                title: "Address Copied",
+                                description: "Location address has been copied to clipboard.",
+                              });
+                            }}
+                            className="ml-2 text-muted-foreground hover:text-primary"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                      {!host.address && (
+                        <div className="flex items-start gap-2 mb-4 p-3 bg-muted/20 rounded-lg border border-dashed border-muted">
+                          <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-muted-foreground italic font-['Roboto',sans-serif]">
+                            Location information not available
+                          </p>
+                        </div>
                       )}
                       {host.contacts && host.contacts.length > 0 && (
                         <div className="space-y-3">
