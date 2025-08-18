@@ -6280,13 +6280,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/monitoring/test-email", isAuthenticated, async (req, res) => {
     try {
-      const submissionStatus = await checkWeeklySubmissions();
-      const emailSent = await sendMissingSubmissionsEmail(submissionStatus);
+      // Create sample test data for the email
+      const testSubmissionStatus = [
+        {
+          location: "Sample Host Location 1",
+          hasSubmitted: false,
+          lastSubmissionDate: undefined,
+          missingSince: "2025-08-10"
+        },
+        {
+          location: "Sample Host Location 2", 
+          hasSubmitted: false,
+          lastSubmissionDate: "2025-08-10",
+          missingSince: "2025-08-10"
+        },
+        {
+          location: "Sample Host Location 3 (Submitted)", 
+          hasSubmitted: true,
+          lastSubmissionDate: new Date().toISOString().split('T')[0],
+          missingSince: undefined
+        }
+      ];
+
+      // Send test email with sample data
+      const emailSent = await sendMissingSubmissionsEmail(testSubmissionStatus, true); // Add isTest flag
       
       if (emailSent) {
-        res.json({ success: true, message: 'Test email sent successfully' });
+        res.json({ success: true, message: 'Test email sent successfully with sample data' });
       } else {
-        res.json({ success: false, message: 'Email not sent - SendGrid not configured or no missing submissions' });
+        res.json({ success: false, message: 'Test email not sent - SendGrid not configured' });
       }
     } catch (error) {
       console.error('Error sending test email:', error);
