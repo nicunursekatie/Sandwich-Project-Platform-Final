@@ -41,6 +41,10 @@ export const PERMISSIONS = {
   ACCESS_SANDWICH_DATA: "access_sandwich_data",
   ACCESS_GOVERNANCE: "access_governance",
   ACCESS_WORK_LOGS: "access_work_logs",
+  ACCESS_WEEKLY_MONITORING: "access_weekly_monitoring",
+  ACCESS_EVENTS: "access_events",
+  ACCESS_SIGNUP_GENIUS: "access_signup_genius",
+  ACCESS_DEVELOPMENT: "access_development",
 
   // Simplified management permissions for each section
   MANAGE_HOSTS: "manage_hosts",
@@ -52,6 +56,10 @@ export const PERMISSIONS = {
   MANAGE_MEETINGS: "manage_meetings",
   MANAGE_SUGGESTIONS: "manage_suggestions",
   SUBMIT_SUGGESTIONS: "submit_suggestions",
+  MANAGE_WEEKLY_MONITORING: "manage_weekly_monitoring", // Send notifications and manage monitoring
+  MANAGE_EVENTS: "manage_events", // Create, edit, delete events
+  MANAGE_SIGNUP_GENIUS: "manage_signup_genius", // Manage SignUp Genius integrations
+  MANAGE_DEVELOPMENT: "manage_development", // Access development tools and logs
 
   // Simplified suggestions permissions - CREATE automatically includes edit/delete own
   CREATE_SUGGESTIONS: "create_suggestions", // Create new suggestions + automatically edit/delete own suggestions
@@ -123,6 +131,12 @@ export const PERMISSIONS = {
   VIEW_COLLECTIONS: "access_collections",
   VIEW_MEETINGS: "access_meetings",
   VIEW_ANALYTICS: "access_analytics",
+  VIEW_WEEKLY_MONITORING: "access_weekly_monitoring", // Legacy support
+  VIEW_EVENTS: "access_events", // Legacy support
+  VIEW_SIGNUP_GENIUS: "access_signup_genius", // Legacy support
+  VIEW_DEVELOPMENT: "access_development", // Legacy support
+  VIEW_WORK_LOGS: "access_work_logs", // Legacy support
+  VIEW_TOOLKIT: "access_toolkit", // Legacy support
   VIEW_PROJECTS: "access_projects",
   VIEW_ROLE_DEMO: "access_role_demo",
   VIEW_SUGGESTIONS: "access_suggestions",
@@ -164,6 +178,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_SANDWICH_DATA,
         PERMISSIONS.ACCESS_GOVERNANCE,
         PERMISSIONS.ACCESS_PROJECTS, // Committee members can view projects
+        PERMISSIONS.ACCESS_WORK_LOGS,
+        PERMISSIONS.ACCESS_WEEKLY_MONITORING,
+        PERMISSIONS.ACCESS_EVENTS,
+        PERMISSIONS.ACCESS_DEVELOPMENT,
         PERMISSIONS.GENERAL_CHAT,
         PERMISSIONS.COMMITTEE_CHAT,
         PERMISSIONS.EXPORT_DATA,
@@ -197,6 +215,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.ACCESS_TOOLKIT,
+        PERMISSIONS.ACCESS_EVENTS,
         
         // Kudos system
         PERMISSIONS.SEND_KUDOS,
@@ -252,7 +271,14 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.EXPORT_DATA,
         PERMISSIONS.EDIT_DATA, // Allow core team to edit data including collections
         PERMISSIONS.MANAGE_SUGGESTIONS,
-        PERMISSIONS.ACCESS_SANDWICH_DATA
+        PERMISSIONS.ACCESS_SANDWICH_DATA,
+        PERMISSIONS.ACCESS_WORK_LOGS,
+        PERMISSIONS.ACCESS_WEEKLY_MONITORING,
+        PERMISSIONS.ACCESS_EVENTS,
+        PERMISSIONS.ACCESS_DEVELOPMENT,
+        PERMISSIONS.MANAGE_WEEKLY_MONITORING,
+        PERMISSIONS.MANAGE_EVENTS,
+        PERMISSIONS.MANAGE_DEVELOPMENT
       ];
 
     case USER_ROLES.DRIVER:
