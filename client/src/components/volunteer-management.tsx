@@ -23,7 +23,9 @@ import {
   Calendar,
   FileText,
   AlertCircle,
-  Trash2
+  Trash2,
+  Building2,
+  ArrowRight
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,6 +68,12 @@ export default function VolunteerManagement() {
     status: "active"
   });
 
+  // Host designation state
+  const [showHostDesignation, setShowHostDesignation] = useState(false);
+  const [selectedHostId, setSelectedHostId] = useState<number | null>(null);
+  const [hostRole, setHostRole] = useState("volunteer");
+  const [hostNotes, setHostNotes] = useState("");
+
   // Check permissions
   const canManage = hasPermission(user, PERMISSIONS.MANAGE_VOLUNTEERS);
   const canAdd = hasPermission(user, PERMISSIONS.ADD_VOLUNTEERS);
@@ -98,6 +106,12 @@ export default function VolunteerManagement() {
     queryFn: () => apiRequest('GET', '/api/drivers')
   });
 
+  // Fetch hosts for designation dropdown
+  const { data: hosts = [] } = useQuery({
+    queryKey: ['/api/hosts'],
+    queryFn: () => apiRequest('GET', '/api/hosts')
+  });
+
   // Create/Update volunteer mutation
   const { mutate: saveVolunteer, isPending: isSaving } = useMutation({
     mutationFn: async (volunteerData: any) => {
@@ -120,6 +134,38 @@ export default function VolunteerManagement() {
       toast({
         title: "Error",
         description: `Failed to ${editingVolunteer ? 'update' : 'add'} volunteer`,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Designate as host mutation
+  const { mutate: designateAsHost, isPending: isDesignating } = useMutation({
+    mutationFn: async ({ volunteerData, hostContactData }: { volunteerData: any; hostContactData: any }) => {
+      // First update the volunteer's hostId
+      await apiRequest('PATCH', `/api/drivers/${editingVolunteer.id}`, {
+        hostId: hostContactData.hostId,
+        notes: volunteerData.notes
+      });
+      
+      // Then create a host contact entry
+      return await apiRequest('POST', '/api/host-contacts', hostContactData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      toast({
+        title: "Success",
+        description: `${editingVolunteer.firstName} ${editingVolunteer.lastName} has been designated as a host contact`,
+      });
+      resetForm();
+      setShowAddDialog(false);
+      setShowHostDesignation(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to designate as host: ${error.message}`,
         variant: "destructive",
       });
     }
@@ -159,6 +205,10 @@ export default function VolunteerManagement() {
       status: "active"
     });
     setEditingVolunteer(null);
+    setShowHostDesignation(false);
+    setSelectedHostId(null);
+    setHostRole("volunteer");
+    setHostNotes("");
   };
 
   const handleEdit = (volunteer: any) => {
@@ -231,6 +281,33 @@ export default function VolunteerManagement() {
     };
 
     saveVolunteer(volunteerData);
+  };
+
+  const handleHostDesignation = () => {
+    if (!selectedHostId || !editingVolunteer) {
+      toast({
+        title: "Error",
+        description: "Please select a host location",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const volunteerData = {
+      notes: formData.notes + (hostNotes ? `\n\nDesignated as host: ${hostNotes}` : "")
+    };
+
+    const hostContactData = {
+      hostId: selectedHostId,
+      name: `${formData.firstName} ${formData.lastName}`,
+      role: hostRole,
+      phone: formData.phone || "",
+      email: formData.email || "",
+      notes: hostNotes,
+      isPrimary: hostRole === "primary"
+    };
+
+    designateAsHost({ volunteerData, hostContactData });
   };
 
   // Filter volunteers
@@ -515,6 +592,106 @@ export default function VolunteerManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Host Designation Section */}
+              {editingVolunteer && canManage && (
+                <div className="border-t pt-4 mt-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-lg font-medium text-gray-900">Designate as Host</h3>
+                    </div>
+                    
+                    {!showHostDesignation ? (
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <p className="text-sm text-blue-800 mb-3">
+                          Promote this volunteer to be a host contact at a specific location. They will appear in the host management section.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowHostDesignation(true)}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-100"
+                        >
+                          <Building2 className="w-4 h-4 mr-2" />
+                          Designate as Host
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 rounded-lg p-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="hostLocation">Host Location</Label>
+                            <Select value={selectedHostId?.toString() || ""} onValueChange={(value) => setSelectedHostId(parseInt(value))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a location" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {hosts.map((host: any) => (
+                                  <SelectItem key={host.id} value={host.id.toString()}>
+                                    {host.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="hostRole">Role at Location</Label>
+                            <Select value={hostRole} onValueChange={setHostRole}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="volunteer">Volunteer</SelectItem>
+                                <SelectItem value="coordinator">Coordinator</SelectItem>
+                                <SelectItem value="manager">Manager</SelectItem>
+                                <SelectItem value="primary">Primary Contact</SelectItem>
+                                <SelectItem value="backup">Backup Contact</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="hostNotes">Host Assignment Notes</Label>
+                          <Textarea
+                            id="hostNotes"
+                            value={hostNotes}
+                            onChange={(e) => setHostNotes(e.target.value)}
+                            placeholder="Any notes about their role at this location..."
+                            rows={2}
+                          />
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowHostDesignation(false)}
+                            size="sm"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleHostDesignation}
+                            disabled={isDesignating || !selectedHostId}
+                            size="sm"
+                            className="bg-amber-600 hover:bg-amber-700"
+                          >
+                            {isDesignating ? 'Designating...' : (
+                              <>
+                                <ArrowRight className="w-4 h-4 mr-2" />
+                                Designate as Host
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             
             <DialogFooter className="gap-2">
