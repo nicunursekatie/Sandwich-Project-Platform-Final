@@ -3634,6 +3634,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contact assignment endpoints
+  app.post("/api/contact-assignments", async (req, res) => {
+    try {
+      const { contactId, targetType, targetId } = req.body;
+      
+      // Validate input
+      if (!contactId || !targetType || !targetId) {
+        return res.status(400).json({ message: "Missing required fields: contactId, targetType, targetId" });
+      }
+      
+      if (!['host', 'recipient'].includes(targetType)) {
+        return res.status(400).json({ message: "targetType must be 'host' or 'recipient'" });
+      }
+
+      // For now, we'll simulate the assignment by creating a note in the contact
+      // In a full implementation, you'd have a contact_assignments table
+      const assignmentNote = `Assigned to ${targetType}: ${targetId}`;
+      const updatedContact = await storage.updateContact(contactId, { 
+        notes: assignmentNote 
+      });
+      
+      if (!updatedContact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      
+      res.status(201).json({ 
+        message: "Contact assigned successfully",
+        assignment: { contactId, targetType, targetId }
+      });
+    } catch (error) {
+      logger.error("Failed to assign contact", error);
+      res.status(500).json({ message: "Failed to assign contact" });
+    }
+  });
+
   // Import recipients from CSV/XLSX
   app.post(
     "/api/recipients/import",

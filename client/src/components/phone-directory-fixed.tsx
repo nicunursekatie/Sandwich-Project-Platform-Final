@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
-import { Phone, User, Users, Search, Edit, Plus, Star, Crown, Mail, MapPin, Building, Calendar } from "lucide-react";
+import { Phone, User, Users, Search, Edit, Plus, Star, Crown, Mail, MapPin, Building, Calendar, Trash2, UserPlus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -107,6 +108,8 @@ interface Volunteer {
 
 function PhoneDirectoryFixed() {
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Contact management states
   const [editingContact, setEditingContact] = useState<any>(null);
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [newContact, setNewContact] = useState({
@@ -120,6 +123,56 @@ function PhoneDirectoryFixed() {
     category: "general",
     status: "active"
   });
+
+  // Driver management states
+  const [editingDriver, setEditingDriver] = useState<any>(null);
+  const [isAddingDriver, setIsAddingDriver] = useState(false);
+  const [newDriver, setNewDriver] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    zone: "",
+    homeAddress: "",
+    notes: "",
+    availabilityNotes: "",
+    isActive: true,
+    vanApproved: false
+  });
+
+  // Volunteer management states
+  const [editingVolunteer, setEditingVolunteer] = useState<any>(null);
+  const [isAddingVolunteer, setIsAddingVolunteer] = useState(false);
+  const [newVolunteer, setNewVolunteer] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    zone: "",
+    homeAddress: "",
+    volunteerType: "collection",
+    notes: "",
+    availabilityNotes: "",
+    isActive: true,
+    vanApproved: false
+  });
+
+  // Recipient management states
+  const [editingRecipient, setEditingRecipient] = useState<any>(null);
+  const [isAddingRecipient, setIsAddingRecipient] = useState(false);
+  const [newRecipient, setNewRecipient] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    contactName: "",
+    address: "",
+    region: "",
+    preferences: "",
+    status: "active"
+  });
+
+  // Contact assignment states
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [assigningContact, setAssigningContact] = useState<any>(null);
+  const [assignmentTarget, setAssignmentTarget] = useState({ type: "", id: "" });
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -222,7 +275,7 @@ function PhoneDirectoryFixed() {
            volunteer.volunteerType.toLowerCase().includes(searchLower);
   });
 
-  // Create contact mutation
+  // Contact mutations
   const createContactMutation = useMutation({
     mutationFn: async (contactData: any) => {
       return await apiRequest('POST', '/api/contacts', contactData);
@@ -277,6 +330,204 @@ function PhoneDirectoryFixed() {
     },
   });
 
+  // Delete contact mutation
+  const deleteContactMutation = useMutation({
+    mutationFn: async (contactId: number) => {
+      return await apiRequest('DELETE', `/api/contacts/${contactId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      toast({
+        title: "Contact Deleted",
+        description: "Contact has been successfully deleted.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete contact.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Driver mutations
+  const createDriverMutation = useMutation({
+    mutationFn: async (driverData: any) => {
+      return await apiRequest('POST', '/api/drivers', driverData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      setIsAddingDriver(false);
+      setNewDriver({
+        name: "",
+        phone: "",
+        email: "",
+        zone: "",
+        homeAddress: "",
+        notes: "",
+        availabilityNotes: "",
+        isActive: true,
+        vanApproved: false
+      });
+      toast({ title: "Driver Added", description: "New driver has been successfully created." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create driver.", variant: "destructive" });
+    },
+  });
+
+  const updateDriverMutation = useMutation({
+    mutationFn: async ({ id, ...driverData }: any) => {
+      return await apiRequest('PUT', `/api/drivers/${id}`, driverData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      setEditingDriver(null);
+      toast({ title: "Driver Updated", description: "Driver information has been successfully updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update driver.", variant: "destructive" });
+    },
+  });
+
+  const deleteDriverMutation = useMutation({
+    mutationFn: async (driverId: number) => {
+      return await apiRequest('DELETE', `/api/drivers/${driverId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      toast({ title: "Driver Deleted", description: "Driver has been successfully deleted." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete driver.", variant: "destructive" });
+    },
+  });
+
+  // Volunteer mutations
+  const createVolunteerMutation = useMutation({
+    mutationFn: async (volunteerData: any) => {
+      return await apiRequest('POST', '/api/volunteers', volunteerData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteers'] });
+      setIsAddingVolunteer(false);
+      setNewVolunteer({
+        name: "",
+        phone: "",
+        email: "",
+        zone: "",
+        homeAddress: "",
+        volunteerType: "collection",
+        notes: "",
+        availabilityNotes: "",
+        isActive: true,
+        vanApproved: false
+      });
+      toast({ title: "Volunteer Added", description: "New volunteer has been successfully created." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create volunteer.", variant: "destructive" });
+    },
+  });
+
+  const updateVolunteerMutation = useMutation({
+    mutationFn: async ({ id, ...volunteerData }: any) => {
+      return await apiRequest('PUT', `/api/volunteers/${id}`, volunteerData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteers'] });
+      setEditingVolunteer(null);
+      toast({ title: "Volunteer Updated", description: "Volunteer information has been successfully updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update volunteer.", variant: "destructive" });
+    },
+  });
+
+  const deleteVolunteerMutation = useMutation({
+    mutationFn: async (volunteerId: number) => {
+      return await apiRequest('DELETE', `/api/volunteers/${volunteerId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteers'] });
+      toast({ title: "Volunteer Deleted", description: "Volunteer has been successfully deleted." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete volunteer.", variant: "destructive" });
+    },
+  });
+
+  // Recipient mutations
+  const createRecipientMutation = useMutation({
+    mutationFn: async (recipientData: any) => {
+      return await apiRequest('POST', '/api/recipients', recipientData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      setIsAddingRecipient(false);
+      setNewRecipient({
+        name: "",
+        phone: "",
+        email: "",
+        contactName: "",
+        address: "",
+        region: "",
+        preferences: "",
+        status: "active"
+      });
+      toast({ title: "Recipient Added", description: "New recipient has been successfully created." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create recipient.", variant: "destructive" });
+    },
+  });
+
+  const updateRecipientMutation = useMutation({
+    mutationFn: async ({ id, ...recipientData }: any) => {
+      return await apiRequest('PUT', `/api/recipients/${id}`, recipientData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      setEditingRecipient(null);
+      toast({ title: "Recipient Updated", description: "Recipient information has been successfully updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update recipient.", variant: "destructive" });
+    },
+  });
+
+  const deleteRecipientMutation = useMutation({
+    mutationFn: async (recipientId: number) => {
+      return await apiRequest('DELETE', `/api/recipients/${recipientId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      toast({ title: "Recipient Deleted", description: "Recipient has been successfully deleted." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete recipient.", variant: "destructive" });
+    },
+  });
+
+  // Contact assignment mutation
+  const assignContactMutation = useMutation({
+    mutationFn: async ({ contactId, targetType, targetId }: any) => {
+      return await apiRequest('POST', '/api/contact-assignments', { contactId, targetType, targetId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      setShowAssignDialog(false);
+      setAssigningContact(null);
+      setAssignmentTarget({ type: "", id: "" });
+      toast({ title: "Contact Assigned", description: "Contact has been successfully assigned." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to assign contact.", variant: "destructive" });
+    },
+  });
+
   const handleAddContact = () => {
     if (!newContact.name.trim()) return;
     createContactMutation.mutate(newContact);
@@ -285,6 +536,75 @@ function PhoneDirectoryFixed() {
   const handleUpdateContact = () => {
     if (!editingContact?.name.trim()) return;
     updateContactMutation.mutate(editingContact);
+  };
+
+  const handleDeleteContact = (contactId: number) => {
+    if (confirm("Are you sure you want to delete this contact?")) {
+      deleteContactMutation.mutate(contactId);
+    }
+  };
+
+  const handleAddDriver = () => {
+    if (!newDriver.name.trim()) return;
+    createDriverMutation.mutate(newDriver);
+  };
+
+  const handleUpdateDriver = () => {
+    if (!editingDriver?.name.trim()) return;
+    updateDriverMutation.mutate(editingDriver);
+  };
+
+  const handleDeleteDriver = (driverId: number) => {
+    if (confirm("Are you sure you want to delete this driver?")) {
+      deleteDriverMutation.mutate(driverId);
+    }
+  };
+
+  const handleAddVolunteer = () => {
+    if (!newVolunteer.name.trim()) return;
+    createVolunteerMutation.mutate(newVolunteer);
+  };
+
+  const handleUpdateVolunteer = () => {
+    if (!editingVolunteer?.name.trim()) return;
+    updateVolunteerMutation.mutate(editingVolunteer);
+  };
+
+  const handleDeleteVolunteer = (volunteerId: number) => {
+    if (confirm("Are you sure you want to delete this volunteer?")) {
+      deleteVolunteerMutation.mutate(volunteerId);
+    }
+  };
+
+  const handleAddRecipient = () => {
+    if (!newRecipient.name.trim()) return;
+    createRecipientMutation.mutate(newRecipient);
+  };
+
+  const handleUpdateRecipient = () => {
+    if (!editingRecipient?.name.trim()) return;
+    updateRecipientMutation.mutate(editingRecipient);
+  };
+
+  const handleDeleteRecipient = (recipientId: number) => {
+    if (confirm("Are you sure you want to delete this recipient?")) {
+      deleteRecipientMutation.mutate(recipientId);
+    }
+  };
+
+  const handleAssignContact = (contact: any) => {
+    setAssigningContact(contact);
+    setShowAssignDialog(true);
+  };
+
+  const handleConfirmAssignment = () => {
+    if (assigningContact && assignmentTarget.type && assignmentTarget.id) {
+      assignContactMutation.mutate({
+        contactId: assigningContact.id,
+        targetType: assignmentTarget.type,
+        targetId: assignmentTarget.id
+      });
+    }
   };
 
   return (
@@ -524,16 +844,26 @@ function PhoneDirectoryFixed() {
                         </div>
                         
                         {canEditContacts && (
-                          <Dialog open={editingContact?.id === contact.id} onOpenChange={(open) => !open && setEditingContact(null)}>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setEditingContact(contact)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </DialogTrigger>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAssignContact(contact)}
+                              className="flex items-center gap-1"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                              Assign
+                            </Button>
+                            <Dialog open={editingContact?.id === contact.id} onOpenChange={(open) => !open && setEditingContact(null)}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setEditingContact(contact)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
                             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Edit Contact</DialogTitle>
@@ -625,6 +955,15 @@ function PhoneDirectoryFixed() {
                               )}
                             </DialogContent>
                           </Dialog>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteContact(contact.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -718,13 +1057,134 @@ function PhoneDirectoryFixed() {
         {canViewRecipients && <TabsContent value="recipients" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
             <CardHeader className="pb-4 bg-muted">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
-                <User className="w-6 h-6 text-primary" />
-                Recipient Directory
-              </CardTitle>
-              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                Contact information for sandwich delivery recipients
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                    <User className="w-6 h-6 text-primary" />
+                    Recipient Directory
+                  </CardTitle>
+                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                    Contact information for sandwich delivery recipients
+                  </CardDescription>
+                </div>
+                {canEditContacts && (
+                  <Dialog open={isAddingRecipient} onOpenChange={setIsAddingRecipient}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Recipient
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Recipient</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-recipient-name">Name *</Label>
+                            <Input
+                              id="new-recipient-name"
+                              value={newRecipient.name}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, name: e.target.value })}
+                              placeholder="Organization name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-recipient-contact">Contact Person</Label>
+                            <Input
+                              id="new-recipient-contact"
+                              value={newRecipient.contactName}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, contactName: e.target.value })}
+                              placeholder="Primary contact name"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-recipient-phone">Phone *</Label>
+                            <Input
+                              id="new-recipient-phone"
+                              value={newRecipient.phone}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, phone: e.target.value })}
+                              placeholder="Phone number"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-recipient-email">Email</Label>
+                            <Input
+                              id="new-recipient-email"
+                              type="email"
+                              value={newRecipient.email}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
+                              placeholder="Email address"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-recipient-address">Address</Label>
+                          <Textarea
+                            id="new-recipient-address"
+                            value={newRecipient.address}
+                            onChange={(e) => setNewRecipient({ ...newRecipient, address: e.target.value })}
+                            placeholder="Street address, city, state, zip"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-recipient-region">Region</Label>
+                            <Input
+                              id="new-recipient-region"
+                              value={newRecipient.region}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, region: e.target.value })}
+                              placeholder="Service region"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-recipient-status">Status</Label>
+                            <Select value={newRecipient.status} onValueChange={(value) => setNewRecipient({ ...newRecipient, status: value })}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-recipient-preferences">Preferences</Label>
+                          <Textarea
+                            id="new-recipient-preferences"
+                            value={newRecipient.preferences}
+                            onChange={(e) => setNewRecipient({ ...newRecipient, preferences: e.target.value })}
+                            placeholder="Dietary preferences or special requirements"
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex gap-3 pt-4">
+                          <Button 
+                            onClick={handleAddRecipient}
+                            disabled={createRecipientMutation.isPending}
+                            className="flex-1"
+                          >
+                            {createRecipientMutation.isPending ? "Adding..." : "Add Recipient"}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setIsAddingRecipient(false)}
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredRecipients.length === 0 ? (
@@ -735,18 +1195,152 @@ function PhoneDirectoryFixed() {
                 <div className="space-y-4">
                   {filteredRecipients.map((recipient) => (
                     <div key={recipient.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{recipient.name}</h3>
-                        {recipient.status === 'active' && (
-                          <Badge variant="default" className="bg-green-100 text-green-800">
-                            Active
-                          </Badge>
-                        )}
-                        {recipient.region && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {recipient.region}
-                          </Badge>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{recipient.name}</h3>
+                          {recipient.status === 'active' && (
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              Active
+                            </Badge>
+                          )}
+                          {recipient.region && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {recipient.region}
+                            </Badge>
+                          )}
+                        </div>
+                        {canEditContacts && (
+                          <div className="flex items-center gap-2">
+                            <Dialog open={editingRecipient?.id === recipient.id} onOpenChange={(open) => !open && setEditingRecipient(null)}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setEditingRecipient(recipient)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Recipient</DialogTitle>
+                                </DialogHeader>
+                                {editingRecipient && (
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="edit-recipient-name">Name *</Label>
+                                        <Input
+                                          id="edit-recipient-name"
+                                          value={editingRecipient.name}
+                                          onChange={(e) => setEditingRecipient({ ...editingRecipient, name: e.target.value })}
+                                          placeholder="Organization name"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-recipient-contact">Contact Person</Label>
+                                        <Input
+                                          id="edit-recipient-contact"
+                                          value={editingRecipient.contactName || ""}
+                                          onChange={(e) => setEditingRecipient({ ...editingRecipient, contactName: e.target.value })}
+                                          placeholder="Primary contact name"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="edit-recipient-phone">Phone *</Label>
+                                        <Input
+                                          id="edit-recipient-phone"
+                                          value={editingRecipient.phone}
+                                          onChange={(e) => setEditingRecipient({ ...editingRecipient, phone: e.target.value })}
+                                          placeholder="Phone number"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-recipient-email">Email</Label>
+                                        <Input
+                                          id="edit-recipient-email"
+                                          type="email"
+                                          value={editingRecipient.email || ""}
+                                          onChange={(e) => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
+                                          placeholder="Email address"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-recipient-address">Address</Label>
+                                      <Textarea
+                                        id="edit-recipient-address"
+                                        value={editingRecipient.address || ""}
+                                        onChange={(e) => setEditingRecipient({ ...editingRecipient, address: e.target.value })}
+                                        placeholder="Street address, city, state, zip"
+                                        rows={2}
+                                      />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="edit-recipient-region">Region</Label>
+                                        <Input
+                                          id="edit-recipient-region"
+                                          value={editingRecipient.region || ""}
+                                          onChange={(e) => setEditingRecipient({ ...editingRecipient, region: e.target.value })}
+                                          placeholder="Service region"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-recipient-status">Status</Label>
+                                        <Select value={editingRecipient.status} onValueChange={(value) => setEditingRecipient({ ...editingRecipient, status: value })}>
+                                          <SelectTrigger>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-recipient-preferences">Preferences</Label>
+                                      <Textarea
+                                        id="edit-recipient-preferences"
+                                        value={editingRecipient.preferences || ""}
+                                        onChange={(e) => setEditingRecipient({ ...editingRecipient, preferences: e.target.value })}
+                                        placeholder="Dietary preferences or special requirements"
+                                        rows={3}
+                                      />
+                                    </div>
+                                    <div className="flex gap-3 pt-4">
+                                      <Button 
+                                        onClick={handleUpdateRecipient}
+                                        disabled={updateRecipientMutation.isPending}
+                                        className="flex-1"
+                                      >
+                                        {updateRecipientMutation.isPending ? "Updating..." : "Update Recipient"}
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        onClick={() => setEditingRecipient(null)}
+                                        className="flex-1"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteRecipient(recipient.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         )}
                       </div>
                       
@@ -795,13 +1389,111 @@ function PhoneDirectoryFixed() {
         {canViewDrivers && <TabsContent value="drivers" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
             <CardHeader className="pb-4 bg-muted">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
-                <User className="w-6 h-6 text-primary" />
-                Driver Directory
-              </CardTitle>
-              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                Contact information for delivery drivers
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                    <User className="w-6 h-6 text-primary" />
+                    Driver Directory
+                  </CardTitle>
+                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                    Contact information for delivery drivers
+                  </CardDescription>
+                </div>
+                {canEditContacts && (
+                  <Dialog open={isAddingDriver} onOpenChange={setIsAddingDriver}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Driver
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Driver</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-driver-name">Name *</Label>
+                            <Input
+                              id="new-driver-name"
+                              value={newDriver.name}
+                              onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
+                              placeholder="Driver name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-driver-phone">Phone *</Label>
+                            <Input
+                              id="new-driver-phone"
+                              value={newDriver.phone}
+                              onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
+                              placeholder="Phone number"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-driver-email">Email</Label>
+                            <Input
+                              id="new-driver-email"
+                              type="email"
+                              value={newDriver.email}
+                              onChange={(e) => setNewDriver({ ...newDriver, email: e.target.value })}
+                              placeholder="Email address"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-driver-zone">Zone</Label>
+                            <Input
+                              id="new-driver-zone"
+                              value={newDriver.zone}
+                              onChange={(e) => setNewDriver({ ...newDriver, zone: e.target.value })}
+                              placeholder="Service zone"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-driver-address">Home Address</Label>
+                          <Textarea
+                            id="new-driver-address"
+                            value={newDriver.homeAddress}
+                            onChange={(e) => setNewDriver({ ...newDriver, homeAddress: e.target.value })}
+                            placeholder="Home address"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new-driver-notes">Notes</Label>
+                          <Textarea
+                            id="new-driver-notes"
+                            value={newDriver.notes}
+                            onChange={(e) => setNewDriver({ ...newDriver, notes: e.target.value })}
+                            placeholder="Additional notes"
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex gap-3 pt-4">
+                          <Button 
+                            onClick={handleAddDriver}
+                            disabled={createDriverMutation.isPending}
+                            className="flex-1"
+                          >
+                            {createDriverMutation.isPending ? "Adding..." : "Add Driver"}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setIsAddingDriver(false)}
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredDrivers.length === 0 ? (
@@ -826,6 +1518,115 @@ function PhoneDirectoryFixed() {
                             </Badge>
                           )}
                         </div>
+                        {canEditContacts && (
+                          <div className="flex items-center gap-2">
+                            <Dialog open={editingDriver?.id === driver.id} onOpenChange={(open) => !open && setEditingDriver(null)}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setEditingDriver(driver)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Driver</DialogTitle>
+                                </DialogHeader>
+                                {editingDriver && (
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="edit-driver-name">Name *</Label>
+                                        <Input
+                                          id="edit-driver-name"
+                                          value={editingDriver.name}
+                                          onChange={(e) => setEditingDriver({ ...editingDriver, name: e.target.value })}
+                                          placeholder="Driver name"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-driver-phone">Phone *</Label>
+                                        <Input
+                                          id="edit-driver-phone"
+                                          value={editingDriver.phone}
+                                          onChange={(e) => setEditingDriver({ ...editingDriver, phone: e.target.value })}
+                                          placeholder="Phone number"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="edit-driver-email">Email</Label>
+                                        <Input
+                                          id="edit-driver-email"
+                                          type="email"
+                                          value={editingDriver.email || ""}
+                                          onChange={(e) => setEditingDriver({ ...editingDriver, email: e.target.value })}
+                                          placeholder="Email address"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-driver-zone">Zone</Label>
+                                        <Input
+                                          id="edit-driver-zone"
+                                          value={editingDriver.zone || ""}
+                                          onChange={(e) => setEditingDriver({ ...editingDriver, zone: e.target.value })}
+                                          placeholder="Service zone"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-driver-address">Home Address</Label>
+                                      <Textarea
+                                        id="edit-driver-address"
+                                        value={editingDriver.homeAddress || ""}
+                                        onChange={(e) => setEditingDriver({ ...editingDriver, homeAddress: e.target.value })}
+                                        placeholder="Home address"
+                                        rows={2}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-driver-notes">Notes</Label>
+                                      <Textarea
+                                        id="edit-driver-notes"
+                                        value={editingDriver.notes || ""}
+                                        onChange={(e) => setEditingDriver({ ...editingDriver, notes: e.target.value })}
+                                        placeholder="Additional notes"
+                                        rows={3}
+                                      />
+                                    </div>
+                                    <div className="flex gap-3 pt-4">
+                                      <Button 
+                                        onClick={handleUpdateDriver}
+                                        disabled={updateDriverMutation.isPending}
+                                        className="flex-1"
+                                      >
+                                        {updateDriverMutation.isPending ? "Updating..." : "Update Driver"}
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        onClick={() => setEditingDriver(null)}
+                                        className="flex-1"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteDriver(driver.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -884,13 +1685,115 @@ function PhoneDirectoryFixed() {
         {canViewVolunteers && <TabsContent value="volunteers" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
             <CardHeader className="pb-4 bg-muted">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
-                <User className="w-6 h-6 text-primary" />
-                Volunteer Directory
-              </CardTitle>
-              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                Contact information for volunteers
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                    <User className="w-6 h-6 text-primary" />
+                    Volunteer Directory
+                  </CardTitle>
+                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                    Contact information for volunteers
+                  </CardDescription>
+                </div>
+                {canEditContacts && (
+                  <Dialog open={isAddingVolunteer} onOpenChange={setIsAddingVolunteer}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Volunteer
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Volunteer</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-volunteer-name">Name *</Label>
+                            <Input
+                              id="new-volunteer-name"
+                              value={newVolunteer.name}
+                              onChange={(e) => setNewVolunteer({ ...newVolunteer, name: e.target.value })}
+                              placeholder="Volunteer name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-volunteer-phone">Phone *</Label>
+                            <Input
+                              id="new-volunteer-phone"
+                              value={newVolunteer.phone}
+                              onChange={(e) => setNewVolunteer({ ...newVolunteer, phone: e.target.value })}
+                              placeholder="Phone number"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-volunteer-email">Email</Label>
+                            <Input
+                              id="new-volunteer-email"
+                              type="email"
+                              value={newVolunteer.email}
+                              onChange={(e) => setNewVolunteer({ ...newVolunteer, email: e.target.value })}
+                              placeholder="Email address"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-volunteer-type">Type</Label>
+                            <Select value={newVolunteer.volunteerType} onValueChange={(value) => setNewVolunteer({ ...newVolunteer, volunteerType: value })}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="collection">Collection</SelectItem>
+                                <SelectItem value="distribution">Distribution</SelectItem>
+                                <SelectItem value="both">Both</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-volunteer-address">Home Address</Label>
+                          <Textarea
+                            id="new-volunteer-address"
+                            value={newVolunteer.homeAddress}
+                            onChange={(e) => setNewVolunteer({ ...newVolunteer, homeAddress: e.target.value })}
+                            placeholder="Home address"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new-volunteer-notes">Notes</Label>
+                          <Textarea
+                            id="new-volunteer-notes"
+                            value={newVolunteer.notes}
+                            onChange={(e) => setNewVolunteer({ ...newVolunteer, notes: e.target.value })}
+                            placeholder="Additional notes"
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex gap-3 pt-4">
+                          <Button 
+                            onClick={handleAddVolunteer}
+                            disabled={createVolunteerMutation.isPending}
+                            className="flex-1"
+                          >
+                            {createVolunteerMutation.isPending ? "Adding..." : "Add Volunteer"}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setIsAddingVolunteer(false)}
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredVolunteers.length === 0 ? (
@@ -918,6 +1821,122 @@ function PhoneDirectoryFixed() {
                             {volunteer.volunteerType}
                           </Badge>
                         </div>
+                        {canEditContacts && (
+                          <div className="flex items-center gap-2">
+                            <Dialog open={editingVolunteer?.id === volunteer.id} onOpenChange={(open) => !open && setEditingVolunteer(null)}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setEditingVolunteer(volunteer)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Volunteer</DialogTitle>
+                                </DialogHeader>
+                                {editingVolunteer && (
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="edit-volunteer-name">Name *</Label>
+                                        <Input
+                                          id="edit-volunteer-name"
+                                          value={editingVolunteer.name}
+                                          onChange={(e) => setEditingVolunteer({ ...editingVolunteer, name: e.target.value })}
+                                          placeholder="Volunteer name"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-volunteer-phone">Phone *</Label>
+                                        <Input
+                                          id="edit-volunteer-phone"
+                                          value={editingVolunteer.phone}
+                                          onChange={(e) => setEditingVolunteer({ ...editingVolunteer, phone: e.target.value })}
+                                          placeholder="Phone number"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="edit-volunteer-email">Email</Label>
+                                        <Input
+                                          id="edit-volunteer-email"
+                                          type="email"
+                                          value={editingVolunteer.email || ""}
+                                          onChange={(e) => setEditingVolunteer({ ...editingVolunteer, email: e.target.value })}
+                                          placeholder="Email address"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-volunteer-type">Type</Label>
+                                        <Select 
+                                          value={editingVolunteer.volunteerType} 
+                                          onValueChange={(value) => setEditingVolunteer({ ...editingVolunteer, volunteerType: value })}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="collection">Collection</SelectItem>
+                                            <SelectItem value="distribution">Distribution</SelectItem>
+                                            <SelectItem value="both">Both</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-volunteer-address">Home Address</Label>
+                                      <Textarea
+                                        id="edit-volunteer-address"
+                                        value={editingVolunteer.homeAddress || ""}
+                                        onChange={(e) => setEditingVolunteer({ ...editingVolunteer, homeAddress: e.target.value })}
+                                        placeholder="Home address"
+                                        rows={2}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-volunteer-notes">Notes</Label>
+                                      <Textarea
+                                        id="edit-volunteer-notes"
+                                        value={editingVolunteer.notes || ""}
+                                        onChange={(e) => setEditingVolunteer({ ...editingVolunteer, notes: e.target.value })}
+                                        placeholder="Additional notes"
+                                        rows={3}
+                                      />
+                                    </div>
+                                    <div className="flex gap-3 pt-4">
+                                      <Button 
+                                        onClick={handleUpdateVolunteer}
+                                        disabled={updateVolunteerMutation.isPending}
+                                        className="flex-1"
+                                      >
+                                        {updateVolunteerMutation.isPending ? "Updating..." : "Update Volunteer"}
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        onClick={() => setEditingVolunteer(null)}
+                                        className="flex-1"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteVolunteer(volunteer.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -982,6 +2001,78 @@ function PhoneDirectoryFixed() {
         </TabsContent>}
 
       </Tabs>
+
+      {/* Contact Assignment Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Contact</DialogTitle>
+          </DialogHeader>
+          {assigningContact && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Assign <strong>{assigningContact.name}</strong> to a host location or recipient organization:
+              </p>
+              
+              <div className="space-y-3">
+                <Label>Assignment Target</Label>
+                <Select 
+                  value={assignmentTarget.type} 
+                  onValueChange={(value) => setAssignmentTarget({ ...assignmentTarget, type: value, id: "" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select assignment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="host">Host Location</SelectItem>
+                    <SelectItem value="recipient">Recipient Organization</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {assignmentTarget.type && (
+                  <Select 
+                    value={assignmentTarget.id} 
+                    onValueChange={(value) => setAssignmentTarget({ ...assignmentTarget, id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Select ${assignmentTarget.type}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assignmentTarget.type === "host" && hostsWithContactsData?.map((host: any) => (
+                        <SelectItem key={host.id} value={host.id.toString()}>
+                          {host.name}
+                        </SelectItem>
+                      ))}
+                      {assignmentTarget.type === "recipient" && recipientsData?.map((recipient: any) => (
+                        <SelectItem key={recipient.id} value={recipient.id.toString()}>
+                          {recipient.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  onClick={handleConfirmAssignment}
+                  disabled={!assignmentTarget.type || !assignmentTarget.id || assignContactMutation.isPending}
+                  className="flex-1"
+                >
+                  {assignContactMutation.isPending ? "Assigning..." : "Assign Contact"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAssignDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
