@@ -881,22 +881,18 @@ function PhoneDirectoryFixed() {
                             <Badge variant="outline" className="text-xs">
                               Source: {contact.source.replace('_', ' ')}
                             </Badge>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Edit button clicked for contact:', contact.name);
-                                console.log('canEditContacts value:', canEditContacts);
-                                console.log('User permissions:', user?.permissions);
+                            <button
+                              type="button"
+                              onClick={() => {
+                                alert('Button clicked for: ' + contact.name);
+                                console.log('Button clicked!', contact);
                                 setEditingContact(contact);
                               }}
-                              className="flex items-center gap-1"
+                              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
                             >
                               <Edit className="w-4 h-4" />
-                              Edit & Reassign ({canEditContacts ? 'allowed' : 'not allowed'})
-                            </Button>
+                              Edit & Reassign
+                            </button>
                           </div>
                         </div>
                       </div>
