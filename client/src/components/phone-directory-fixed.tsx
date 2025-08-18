@@ -182,7 +182,10 @@ function PhoneDirectoryFixed() {
   const canViewVolunteers = hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS);
   const canEditContacts = hasPermission(user, PERMISSIONS.ADMIN_ACCESS) || 
                          hasPermission(user, PERMISSIONS.MANAGE_USERS) || 
-                         hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY);
+                         hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY) ||
+                         hasPermission(user, PERMISSIONS.EDIT_ALL_COLLECTIONS) ||
+                         hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ||
+                         hasPermission(user, PERMISSIONS.VIEW_HOSTS);
 
 
 
@@ -878,22 +881,22 @@ function PhoneDirectoryFixed() {
                             <Badge variant="outline" className="text-xs">
                               Source: {contact.source.replace('_', ' ')}
                             </Badge>
-                            {canEditContacts && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  console.log('Edit button clicked for contact:', contact.name);
-                                  setEditingContact(contact);
-                                }}
-                                className="flex items-center gap-1"
-                              >
-                                <Edit className="w-4 h-4" />
-                                Edit & Reassign
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Edit button clicked for contact:', contact.name);
+                                console.log('canEditContacts value:', canEditContacts);
+                                console.log('User permissions:', user?.permissions);
+                                setEditingContact(contact);
+                              }}
+                              className="flex items-center gap-1"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit & Reassign ({canEditContacts ? 'allowed' : 'not allowed'})
+                            </Button>
                           </div>
                         </div>
                       </div>
