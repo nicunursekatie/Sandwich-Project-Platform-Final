@@ -52,7 +52,7 @@ import EnhancedPermissionsDialog from "@/components/enhanced-permissions-dialog"
 import AnnouncementManager from "@/components/announcement-manager";
 import AuthDebug from "@/components/auth-debug";
 import ShoutoutSystem from "@/components/shoutout-system";
-import EnhancedUserAnalytics from "@/components/enhanced-user-analytics";
+import MeaningfulUserAnalytics from "@/components/meaningful-user-analytics";
 
 interface User {
   id: string;
@@ -280,8 +280,8 @@ export default function UserManagementRedesigned() {
             <span className="hidden sm:inline">Users</span>
           </TabsTrigger>
           <TabsTrigger value="activity" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Activity</span>
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">Impact</span>
           </TabsTrigger>
           <TabsTrigger value="announcements" className="flex items-center gap-2">
             <Megaphone className="h-4 w-4" />
@@ -585,7 +585,7 @@ export default function UserManagementRedesigned() {
 
         {/* Activity Tab */}
         <TabsContent value="activity">
-          <EnhancedUserAnalytics />
+          <MeaningfulUserAnalytics />
         </TabsContent>
 
         {/* Announcements Tab */}
