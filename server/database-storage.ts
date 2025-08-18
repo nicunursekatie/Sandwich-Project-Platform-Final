@@ -1809,8 +1809,6 @@ export class DatabaseStorage implements IStorage {
   // Message Like methods
   async likeMessage(messageId: number, userId: string, userName: string): Promise<MessageLike | null> {
     try {
-      console.log(`[DB] User ${userId} liking message ${messageId}`);
-      
       const [like] = await db
         .insert(messageLikes)
         .values({
@@ -1820,11 +1818,9 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
       
-      console.log(`[DB] Created message like with ID: ${like.id}`);
       return like;
     } catch (error: any) {
       if (error.code === '23505') { // Unique constraint violation
-        console.log(`[DB] User ${userId} already liked message ${messageId}`);
         return null; // Already liked
       }
       console.error('Error liking message:', error);
@@ -1834,8 +1830,6 @@ export class DatabaseStorage implements IStorage {
 
   async unlikeMessage(messageId: number, userId: string): Promise<boolean> {
     try {
-      console.log(`[DB] User ${userId} unliking message ${messageId}`);
-      
       const result = await db
         .delete(messageLikes)
         .where(and(
@@ -1843,9 +1837,7 @@ export class DatabaseStorage implements IStorage {
           eq(messageLikes.userId, userId)
         ));
       
-      const success = (result.rowCount ?? 0) > 0;
-      console.log(`[DB] Unlike result: ${success}`);
-      return success;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error unliking message:', error);
       return false;
@@ -1854,15 +1846,12 @@ export class DatabaseStorage implements IStorage {
 
   async getMessageLikes(messageId: number): Promise<MessageLike[]> {
     try {
-      console.log(`[DB] Getting likes for message ${messageId}`);
-      
       const likes = await db
         .select()
         .from(messageLikes)
         .where(eq(messageLikes.messageId, messageId))
         .orderBy(messageLikes.likedAt);
       
-      console.log(`[DB] Found ${likes.length} likes for message ${messageId}`);
       return likes;
     } catch (error) {
       console.error('Error getting message likes:', error);
@@ -1891,8 +1880,6 @@ export class DatabaseStorage implements IStorage {
   // Chat Message Like methods
   async likeChatMessage(messageId: number, userId: string, userName: string): Promise<ChatMessageLike | null> {
     try {
-      console.log(`[DB] User ${userId} liking chat message ${messageId}`);
-      
       const [like] = await db
         .insert(chatMessageLikes)
         .values({
@@ -1902,11 +1889,9 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
       
-      console.log(`[DB] Created chat message like with ID: ${like.id}`);
       return like;
     } catch (error: any) {
       if (error.code === '23505') { // Unique constraint violation
-        console.log(`[DB] User ${userId} already liked chat message ${messageId}`);
         return null; // Already liked
       }
       console.error('Error liking chat message:', error);
@@ -1916,8 +1901,6 @@ export class DatabaseStorage implements IStorage {
 
   async unlikeChatMessage(messageId: number, userId: string): Promise<boolean> {
     try {
-      console.log(`[DB] User ${userId} unliking chat message ${messageId}`);
-      
       const result = await db
         .delete(chatMessageLikes)
         .where(and(
@@ -1925,9 +1908,7 @@ export class DatabaseStorage implements IStorage {
           eq(chatMessageLikes.userId, userId)
         ));
       
-      const success = (result.rowCount ?? 0) > 0;
-      console.log(`[DB] Unlike chat message result: ${success}`);
-      return success;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error unliking chat message:', error);
       return false;
@@ -1936,15 +1917,12 @@ export class DatabaseStorage implements IStorage {
 
   async getChatMessageLikes(messageId: number): Promise<ChatMessageLike[]> {
     try {
-      console.log(`[DB] Getting likes for chat message ${messageId}`);
-      
       const likes = await db
         .select()
         .from(chatMessageLikes)
         .where(eq(chatMessageLikes.messageId, messageId))
         .orderBy(chatMessageLikes.likedAt);
       
-      console.log(`[DB] Found ${likes.length} likes for chat message ${messageId}`);
       return likes;
     } catch (error) {
       console.error('Error getting chat message likes:', error);
