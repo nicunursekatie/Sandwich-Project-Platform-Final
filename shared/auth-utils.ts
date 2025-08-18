@@ -391,7 +391,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
       return [
         PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_MESSAGES,
         PERMISSIONS.ACCESS_TOOLKIT,
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.ACCESS_SUGGESTIONS,
