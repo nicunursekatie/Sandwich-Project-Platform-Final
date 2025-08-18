@@ -85,6 +85,24 @@ export const PERMISSIONS = {
   ADD_VOLUNTEERS: "add_volunteers", // Add new volunteers
   EDIT_VOLUNTEERS: "edit_volunteers", // Edit volunteer information
 
+  // Granular recipient management permissions
+  VIEW_RECIPIENTS: "view_recipients", // View recipient information
+  ADD_RECIPIENTS: "add_recipients", // Add new recipients
+  EDIT_RECIPIENTS: "edit_recipients", // Edit recipient information
+  DELETE_RECIPIENTS: "delete_recipients", // Delete recipients
+
+  // Granular host management permissions
+  VIEW_HOSTS: "view_hosts", // View host information
+  ADD_HOSTS: "add_hosts", // Add new hosts
+  EDIT_HOSTS: "edit_hosts", // Edit host information
+  DELETE_HOSTS: "delete_hosts", // Delete hosts
+
+  // Granular driver management permissions
+  VIEW_DRIVERS: "view_drivers", // View driver information
+  ADD_DRIVERS: "add_drivers", // Add new drivers
+  EDIT_DRIVERS: "edit_drivers", // Edit driver information
+  DELETE_DRIVERS: "delete_drivers", // Delete drivers
+
   // Granular donation tracking permissions
   VIEW_DONATION_TRACKING: "view_donation_tracking", // View donation records
   ADD_DONATION_TRACKING: "add_donation_tracking", // Add new donation records
@@ -124,9 +142,6 @@ export const PERMISSIONS = {
 
   // Legacy support for existing components (backwards compatibility)
   VIEW_PHONE_DIRECTORY: "access_directory",
-  VIEW_HOSTS: "access_hosts",
-  VIEW_RECIPIENTS: "access_recipients",
-  VIEW_DRIVERS: "access_drivers",
   VIEW_VOLUNTEERS_TAB: "access_volunteers", // Legacy support
   VIEW_DONATION_TRACKING_TAB: "access_donation_tracking", // Legacy support
   VIEW_COLLECTIONS: "access_collections",

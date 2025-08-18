@@ -514,6 +514,90 @@ const PERMISSION_CATEGORIES = [
         dangerLevel: "elevated"
       },
       { 
+        key: PERMISSIONS.VIEW_RECIPIENTS, 
+        label: "View recipients (granular)", 
+        description: "Granular permission to view recipient information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ADD_RECIPIENTS, 
+        label: "Add recipients (granular)", 
+        description: "Granular permission to add new recipients",
+        icon: Plus,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EDIT_RECIPIENTS, 
+        label: "Edit recipients (granular)", 
+        description: "Granular permission to edit recipient information",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.DELETE_RECIPIENTS, 
+        label: "Delete recipients (granular)", 
+        description: "Granular permission to delete recipients",
+        icon: Trash2,
+        dangerLevel: "high"
+      },
+      { 
+        key: PERMISSIONS.VIEW_HOSTS, 
+        label: "View hosts (granular)", 
+        description: "Granular permission to view host information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ADD_HOSTS, 
+        label: "Add hosts (granular)", 
+        description: "Granular permission to add new hosts",
+        icon: Plus,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EDIT_HOSTS, 
+        label: "Edit hosts (granular)", 
+        description: "Granular permission to edit host information",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.DELETE_HOSTS, 
+        label: "Delete hosts (granular)", 
+        description: "Granular permission to delete hosts",
+        icon: Trash2,
+        dangerLevel: "high"
+      },
+      { 
+        key: PERMISSIONS.VIEW_DRIVERS, 
+        label: "View drivers (granular)", 
+        description: "Granular permission to view driver information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ADD_DRIVERS, 
+        label: "Add drivers (granular)", 
+        description: "Granular permission to add new drivers",
+        icon: Plus,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EDIT_DRIVERS, 
+        label: "Edit drivers (granular)", 
+        description: "Granular permission to edit driver information",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.DELETE_DRIVERS, 
+        label: "Delete drivers (granular)", 
+        description: "Granular permission to delete drivers",
+        icon: Trash2,
+        dangerLevel: "high"
+      },
+      { 
         key: PERMISSIONS.MANAGE_DIRECTORY, 
         label: "Edit directory contacts", 
         description: "Add/edit general contacts in directory",
@@ -653,27 +737,7 @@ const PERMISSION_CATEGORIES = [
         icon: Eye,
         dangerLevel: "safe"
       },
-      { 
-        key: PERMISSIONS.VIEW_HOSTS, 
-        label: "View hosts (granular)", 
-        description: "Granular permission to view host information",
-        icon: Eye,
-        dangerLevel: "safe"
-      },
-      { 
-        key: PERMISSIONS.VIEW_RECIPIENTS, 
-        label: "View recipients (granular)", 
-        description: "Granular permission to view recipient information",
-        icon: Eye,
-        dangerLevel: "safe"
-      },
-      { 
-        key: PERMISSIONS.VIEW_DRIVERS, 
-        label: "View drivers (granular)", 
-        description: "Granular permission to view driver information",
-        icon: Eye,
-        dangerLevel: "safe"
-      },
+
     ]
   }
 ];
