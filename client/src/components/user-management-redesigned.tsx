@@ -49,6 +49,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import EnhancedPermissionsDialog from "@/components/enhanced-permissions-dialog";
 import AnnouncementManager from "@/components/announcement-manager";
 import AuthDebug from "@/components/auth-debug";
@@ -111,6 +126,13 @@ export default function UserManagementRedesigned() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+    role: "volunteer"
+  });
 
   // Check permissions
   if (!hasPermission(currentUser, PERMISSIONS.MANAGE_USERS)) {
@@ -200,6 +222,41 @@ export default function UserManagementRedesigned() {
     },
   });
 
+  const addUserMutation = useMutation({
+    mutationFn: async (userData: { email: string; firstName: string; lastName: string; role: string }) => {
+      return apiRequest("POST", "/api/users", userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "User Added",
+        description: "New user has been successfully added.",
+      });
+      setShowAddUserDialog(false);
+      setNewUser({ email: "", firstName: "", lastName: "", role: "volunteer" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Add User Failed",
+        description: error.message || "Failed to add user.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddUser = () => {
+    if (!newUser.email || !newUser.firstName || !newUser.lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addUserMutation.mutate(newUser);
+  };
+
   // Filter users
   const filteredUsers = (users as User[]).filter((user: User) => {
     const matchesSearch = 
@@ -265,10 +322,17 @@ export default function UserManagementRedesigned() {
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button className="bg-[#236383] hover:bg-[#1a4d66]">
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
+          <ButtonTooltip 
+            text="Open form to add a new user to the platform"
+          >
+            <Button 
+              className="bg-[#236383] hover:bg-[#1a4d66]"
+              onClick={() => setShowAddUserDialog(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          </ButtonTooltip>
         </div>
       </div>
 
@@ -608,6 +672,85 @@ export default function UserManagementRedesigned() {
           <AuthDebug />
         </TabsContent>
       </Tabs>
+
+      {/* Add User Dialog */}
+      <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account. They will receive login instructions via email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                placeholder="user@example.com"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={newUser.firstName}
+                  onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={newUser.lastName}
+                  onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="volunteer">Volunteer</SelectItem>
+                  <SelectItem value="host">Host</SelectItem>
+                  <SelectItem value="driver">Driver</SelectItem>
+                  <SelectItem value="core_team">Core Team</SelectItem>
+                  <SelectItem value="committee_member">Committee Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAddUserDialog(false);
+                  setNewUser({ email: "", firstName: "", lastName: "", role: "volunteer" });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddUser}
+                disabled={addUserMutation.isPending}
+                className="bg-[#236383] hover:bg-[#1a4d66]"
+              >
+                {addUserMutation.isPending ? "Adding..." : "Add User"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Enhanced Permissions Dialog */}
       <EnhancedPermissionsDialog
