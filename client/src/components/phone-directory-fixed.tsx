@@ -132,6 +132,18 @@ function PhoneDirectoryFixed() {
                          hasPermission(user, PERMISSIONS.MANAGE_USERS) || 
                          hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY);
 
+  // Debug: Log the permission state
+  console.log("Debug - Phone Directory Permissions:", {
+    user: user?.email,
+    role: user?.role,
+    canViewHosts,
+    canViewRecipients, 
+    canViewDrivers,
+    canViewVolunteers,
+    userPermissions: user?.permissions?.length,
+    hasAccessVolunteers: user?.permissions?.includes('access_volunteers')
+  });
+
   // Smart default tab selection: prefer hosts, then other tabs (exclude contacts)
   const getDefaultTab = React.useCallback(() => {
     if (canViewHosts) return "hosts";
