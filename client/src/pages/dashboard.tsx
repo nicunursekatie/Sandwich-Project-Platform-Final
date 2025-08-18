@@ -127,10 +127,10 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
     
     // Data section (filtered by permissions)
-    ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2 }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car }] : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_HOSTS) ? [{ id: "hosts", label: "Host Location", icon: Building2 }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteer", icon: Users }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_DONATION_TRACKING) ? [{ id: "donation-tracking", label: "Donation Tracking", icon: Truck }] : []),
     
     // Operations section
@@ -143,7 +143,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     // Communication section
     { id: "chat", label: "Chat", icon: MessageCircle },
     ...(hasPermission(user, PERMISSIONS.VIEW_COMMITTEE) ? [{ id: "committee", label: "Committee", icon: MessageCircle }] : []),
-    { id: "directory", label: "Directory", icon: Phone },
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DIRECTORY) ? [{ id: "phone-directory", label: "Directory", icon: Phone }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb }] : []),
     
     // Resources section
