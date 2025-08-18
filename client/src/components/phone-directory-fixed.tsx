@@ -882,7 +882,12 @@ function PhoneDirectoryFixed() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setEditingContact(contact)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('Edit button clicked for contact:', contact.name);
+                                  setEditingContact(contact);
+                                }}
                                 className="flex items-center gap-1"
                               >
                                 <Edit className="w-4 h-4" />
@@ -901,7 +906,10 @@ function PhoneDirectoryFixed() {
 
           {/* Universal Contact Edit Dialog */}
           {editingContact && (
-            <Dialog open={!!editingContact} onOpenChange={(open) => !open && setEditingContact(null)}>
+            <Dialog open={true} onOpenChange={(open) => {
+              console.log('Dialog open changed:', open);
+              if (!open) setEditingContact(null);
+            }}>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Edit Contact & Change Role</DialogTitle>
