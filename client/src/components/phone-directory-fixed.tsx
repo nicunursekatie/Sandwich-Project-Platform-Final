@@ -221,8 +221,8 @@ function PhoneDirectoryFixed() {
     { id: 'directory', label: 'Directory', icon: Phone, enabled: true },
     { id: 'hosts', label: 'Hosts', icon: Users, enabled: canViewHosts },
     { id: 'recipients', label: 'Recipients', icon: User, enabled: canViewRecipients },
-    { id: 'drivers', label: 'Drivers', icon: User, enabled: canViewDrivers },
-    { id: 'volunteers', label: 'Volunteers', icon: User, enabled: canViewVolunteers }
+    { id: 'volunteers', label: 'Volunteers', icon: User, enabled: canViewVolunteers },
+    { id: 'drivers', label: 'Drivers', icon: User, enabled: canViewDrivers }
   ].filter(tab => tab.enabled);
 
   // Auto-select appropriate tab based on permissions
@@ -251,6 +251,15 @@ function PhoneDirectoryFixed() {
     const searchLower = searchTerm.toLowerCase();
     return recipient.name.toLowerCase().includes(searchLower) ||
            recipient.phone.includes(searchTerm);
+  });
+
+  const filteredVolunteers = volunteers.filter((volunteer) => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return volunteer.name.toLowerCase().includes(searchLower) ||
+           volunteer.phone.includes(searchTerm) ||
+           (volunteer.email && volunteer.email.toLowerCase().includes(searchLower)) ||
+           (volunteer.zone && volunteer.zone.toLowerCase().includes(searchLower));
   });
 
   // Create unified directory from all existing systems
@@ -342,22 +351,7 @@ function PhoneDirectoryFixed() {
            (contact.role && contact.role.toLowerCase().includes(searchLower));
   });
 
-  const filteredDrivers = drivers.filter((driver) => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return driver.name.toLowerCase().includes(searchLower) ||
-           driver.phone.includes(searchTerm) ||
-           driver.zone.toLowerCase().includes(searchLower);
-  });
 
-  const filteredVolunteers = volunteers.filter((volunteer) => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return volunteer.name.toLowerCase().includes(searchLower) ||
-           volunteer.phone.includes(searchTerm) ||
-           volunteer.zone.toLowerCase().includes(searchLower) ||
-           volunteer.volunteerType.toLowerCase().includes(searchLower);
-  });
 
   // Contact mutations
   const createContactMutation = useMutation({
@@ -805,9 +799,12 @@ function PhoneDirectoryFixed() {
                     All contacts from hosts, recipients, drivers, and volunteers in one view
                   </CardDescription>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  This unified view shows all contacts from across the platform. To edit, use the specific management tabs.
-                </div>
+                {canEditContacts && (
+                  <Button className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add New Contact
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="pt-6">
@@ -1572,6 +1569,217 @@ function PhoneDirectoryFixed() {
                           <p className="text-sm text-muted-foreground">
                             <span className="font-medium">Preferences:</span> {recipient.preferences}
                           </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>}
+
+        {canViewVolunteers && <TabsContent value="volunteers" className="space-y-6 mt-6">
+          <Card className="border-2 shadow-sm border-border">
+            <CardHeader className="pb-4 bg-muted">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                    <User className="w-6 h-6 text-primary" />
+                    Volunteer Directory
+                  </CardTitle>
+                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                    Contact information for volunteers
+                  </CardDescription>
+                </div>
+                {canEditContacts && (
+                  <Dialog open={isAddingVolunteer} onOpenChange={setIsAddingVolunteer}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Volunteer
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Volunteer</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-volunteer-name">Name *</Label>
+                            <Input
+                              id="new-volunteer-name"
+                              value={newVolunteer.name}
+                              onChange={(e) => setNewVolunteer({ ...newVolunteer, name: e.target.value })}
+                              placeholder="Volunteer name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-volunteer-phone">Phone *</Label>
+                            <Input
+                              id="new-volunteer-phone"
+                              value={newVolunteer.phone}
+                              onChange={(e) => setNewVolunteer({ ...newVolunteer, phone: e.target.value })}
+                              placeholder="Phone number"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-volunteer-email">Email</Label>
+                            <Input
+                              id="new-volunteer-email"
+                              type="email"
+                              value={newVolunteer.email}
+                              onChange={(e) => setNewVolunteer({ ...newVolunteer, email: e.target.value })}
+                              placeholder="Email address"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-volunteer-zone">Zone</Label>
+                            <Input
+                              id="new-volunteer-zone"
+                              value={newVolunteer.zone}
+                              onChange={(e) => setNewVolunteer({ ...newVolunteer, zone: e.target.value })}
+                              placeholder="Service zone"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-volunteer-type">Volunteer Type</Label>
+                          <Select 
+                            value={newVolunteer.volunteerType} 
+                            onValueChange={(value) => setNewVolunteer({ ...newVolunteer, volunteerType: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select volunteer type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="General">General</SelectItem>
+                              <SelectItem value="Driver">Driver</SelectItem>
+                              <SelectItem value="Host">Host</SelectItem>
+                              <SelectItem value="Coordinator">Coordinator</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-volunteer-address">Home Address</Label>
+                          <Textarea
+                            id="new-volunteer-address"
+                            value={newVolunteer.homeAddress}
+                            onChange={(e) => setNewVolunteer({ ...newVolunteer, homeAddress: e.target.value })}
+                            placeholder="Home address"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new-volunteer-notes">Notes</Label>
+                          <Textarea
+                            id="new-volunteer-notes"
+                            value={newVolunteer.notes}
+                            onChange={(e) => setNewVolunteer({ ...newVolunteer, notes: e.target.value })}
+                            placeholder="Additional notes"
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex gap-3 pt-4">
+                          <Button 
+                            onClick={handleAddVolunteer}
+                            disabled={createVolunteerMutation.isPending}
+                            className="flex-1"
+                          >
+                            {createVolunteerMutation.isPending ? "Adding..." : "Add Volunteer"}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setIsAddingVolunteer(false)}
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {filteredVolunteers.length === 0 ? (
+                <div className="text-center py-12 text-base text-muted-foreground font-['Roboto',sans-serif]">
+                  {searchTerm ? 'No volunteers found matching your search.' : 'No volunteers found.'}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredVolunteers.map((volunteer) => (
+                    <div key={volunteer.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{volunteer.name}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {volunteer.volunteerType || 'General'}
+                          </Badge>
+                          {volunteer.isActive && (
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                        {canEditContacts && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingContact({
+                                id: volunteer.id,
+                                name: volunteer.name,
+                                phone: volunteer.phone,
+                                email: volunteer.email,
+                                address: volunteer.homeAddress,
+                                notes: volunteer.notes,
+                                zone: volunteer.zone,
+                                volunteerType: volunteer.volunteerType,
+                                type: 'Volunteer',
+                                source: 'volunteers'
+                              })}
+                              className="flex items-center gap-1"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit & Reassign
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {volunteer.phone && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="w-3 h-3" />
+                            <span>{volunteer.phone}</span>
+                          </div>
+                        )}
+                        {volunteer.email && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="w-3 h-3" />
+                            <span>{volunteer.email}</span>
+                          </div>
+                        )}
+                        {volunteer.zone && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="w-3 h-3" />
+                            <span>Zone: {volunteer.zone}</span>
+                          </div>
+                        )}
+                        {volunteer.homeAddress && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Building className="w-3 h-3" />
+                            <span>{volunteer.homeAddress}</span>
+                          </div>
+                        )}
+                      </div>
+                      {volunteer.notes && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                          <p className="text-sm text-muted-foreground">{volunteer.notes}</p>
                         </div>
                       )}
                     </div>
