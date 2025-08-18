@@ -977,13 +977,23 @@ function PhoneDirectoryFixed() {
         {canViewHosts && <TabsContent value="hosts" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
             <CardHeader className="pb-4 bg-muted">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
-                <Users className="w-6 h-6 text-primary" />
-                Host Directory
-              </CardTitle>
-              <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                Contact information for sandwich collection hosts
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
+                    <Users className="w-6 h-6 text-primary" />
+                    Host Directory
+                  </CardTitle>
+                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
+                    Contact information for sandwich collection hosts
+                  </CardDescription>
+                </div>
+                {canEditContacts && (
+                  <Button className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Host Contact
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               {filteredHosts.length === 0 ? (
@@ -1038,6 +1048,42 @@ function PhoneDirectoryFixed() {
                                     </div>
                                   )}
                                 </div>
+                                {canEditContacts && (
+                                  <div className="flex items-center gap-2 ml-4">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => {
+                                        // For now, show the contact assignment dialog
+                                        handleAssignContact(contact);
+                                      }}
+                                    >
+                                      <UserPlus className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => {
+                                        // Edit functionality for host contacts would go here
+                                        console.log('Edit contact:', contact);
+                                      }}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (confirm(`Are you sure you want to delete contact ${contact.name}?`)) {
+                                          console.log('Delete contact:', contact);
+                                        }
+                                      }}
+                                      className="text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
