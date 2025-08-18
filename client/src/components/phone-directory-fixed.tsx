@@ -903,14 +903,17 @@ function PhoneDirectoryFixed() {
             </CardContent>
           </Card>
 
-          {/* Universal Contact Edit Dialog */}
-          {editingContact && (
-            <Dialog open={true} onOpenChange={(open) => {
-              console.log('Dialog open changed:', open);
-              if (!open) setEditingContact(null);
-            }}>
-              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+        </TabsContent>
+      </Tabs>
+
+      {/* Universal Contact Edit Dialog */}
+      <Dialog open={!!editingContact} onOpenChange={(open) => {
+        console.log('Dialog open changed:', open, 'editingContact:', !!editingContact);
+        if (!open) setEditingContact(null);
+      }}>
+        {editingContact && (
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
                   <DialogTitle>Edit Contact & Change Role</DialogTitle>
                   <DialogDescription>
                     Edit contact information and change their role/assignment across the platform
@@ -1074,34 +1077,46 @@ function PhoneDirectoryFixed() {
                       )}
                     </div>
                   </div>
-
-                  <div>
-                    <Label htmlFor="edit-notes">Notes</Label>
-                    <Textarea
-                      id="edit-notes"
-                      value={editingContact.notes || ""}
-                      onChange={(e) => setEditingContact({ ...editingContact, notes: e.target.value })}
-                      placeholder="Additional notes or comments"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleUniversalContactUpdate}
-                      disabled={!editingContact.name.trim()}
-                    >
-                      Save Changes & Update Role
-                    </Button>
-                  </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              )}
+            </DialogContent>
           )}
+        </Dialog>
+        {/* End malformed dialog - now proper TabsContent structure */}
         </TabsContent>
+
+        <TabsContent value="volunteers" className="space-y-6 mt-6">
+          <Card className="border-2 shadow-sm border-border">
+          <CardContent className="pt-6">
+            {filteredVolunteers.length === 0 ? (
+              <div className="text-center py-12 text-base text-muted-foreground font-['Roboto',sans-serif]">
+                {searchTerm ? 'No volunteers found matching your search.' : 'No volunteers found.'}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {filteredVolunteers.map((contact) => (
+                  <div key={contact.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{contact.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="secondary" className="text-xs">Volunteer</Badge>
+                        <button
+                          type="button" 
+                          onClick={() => alert('Edit functionality placeholder for ' + contact.name)}
+                          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit & Reassign
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+          </Card>
+        </TabsContent>}
 
         {canViewHosts && <TabsContent value="hosts" className="space-y-6 mt-6">
           <Card className="border-2 shadow-sm border-border">
@@ -1747,7 +1762,7 @@ function PhoneDirectoryFixed() {
                               type="button"
                               onClick={() => {
                                 console.log('VOLUNTEER BUTTON CLICKED:', volunteer.name);
-                                setEditingContact({
+                                const contactData = {
                                   id: volunteer.id,
                                   name: volunteer.name,
                                   phone: volunteer.phone,
@@ -1758,7 +1773,9 @@ function PhoneDirectoryFixed() {
                                   volunteerType: volunteer.volunteerType,
                                   type: 'Volunteer',
                                   source: 'volunteers'
-                                });
+                                };
+                                console.log('Setting editingContact to:', contactData);
+                                setEditingContact(contactData);
                               }}
                               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
                             >
@@ -2102,398 +2119,139 @@ function PhoneDirectoryFixed() {
             </CardContent>
           </Card>
         </TabsContent>}
-
-        {canViewVolunteers && <TabsContent value="volunteers" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm border-border">
-            <CardHeader className="pb-4 bg-muted">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
-                    <User className="w-6 h-6 text-primary" />
-                    Volunteer Directory
-                  </CardTitle>
-                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                    Contact information for volunteers
-                  </CardDescription>
-                </div>
-                {canEditContacts && (
-                  <Dialog open={isAddingVolunteer} onOpenChange={setIsAddingVolunteer}>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Add Volunteer
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Add New Volunteer</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="new-volunteer-name">Name *</Label>
-                            <Input
-                              id="new-volunteer-name"
-                              value={newVolunteer.name}
-                              onChange={(e) => setNewVolunteer({ ...newVolunteer, name: e.target.value })}
-                              placeholder="Volunteer name"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="new-volunteer-phone">Phone *</Label>
-                            <Input
-                              id="new-volunteer-phone"
-                              value={newVolunteer.phone}
-                              onChange={(e) => setNewVolunteer({ ...newVolunteer, phone: e.target.value })}
-                              placeholder="Phone number"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="new-volunteer-email">Email</Label>
-                            <Input
-                              id="new-volunteer-email"
-                              type="email"
-                              value={newVolunteer.email}
-                              onChange={(e) => setNewVolunteer({ ...newVolunteer, email: e.target.value })}
-                              placeholder="Email address"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="new-volunteer-type">Type</Label>
-                            <Select value={newVolunteer.volunteerType} onValueChange={(value) => setNewVolunteer({ ...newVolunteer, volunteerType: value })}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="collection">Collection</SelectItem>
-                                <SelectItem value="distribution">Distribution</SelectItem>
-                                <SelectItem value="both">Both</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="new-volunteer-address">Home Address</Label>
-                          <Textarea
-                            id="new-volunteer-address"
-                            value={newVolunteer.homeAddress}
-                            onChange={(e) => setNewVolunteer({ ...newVolunteer, homeAddress: e.target.value })}
-                            placeholder="Home address"
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="new-volunteer-notes">Notes</Label>
-                          <Textarea
-                            id="new-volunteer-notes"
-                            value={newVolunteer.notes}
-                            onChange={(e) => setNewVolunteer({ ...newVolunteer, notes: e.target.value })}
-                            placeholder="Additional notes"
-                            rows={3}
-                          />
-                        </div>
-                        <div className="flex gap-3 pt-4">
-                          <Button 
-                            onClick={handleAddVolunteer}
-                            disabled={createVolunteerMutation.isPending}
-                            className="flex-1"
-                          >
-                            {createVolunteerMutation.isPending ? "Adding..." : "Add Volunteer"}
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setIsAddingVolunteer(false)}
-                            className="flex-1"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {filteredVolunteers.length === 0 ? (
-                <div className="text-center py-12 text-base" style={{ color: '#646464', fontFamily: 'Roboto, sans-serif' }}>
-                  {searchTerm ? 'No volunteers found matching your search.' : 'No volunteers found.'}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredVolunteers.map((volunteer) => (
-                    <div key={volunteer.id} className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">{volunteer.name}</h3>
-                          {volunteer.isActive && (
-                            <Badge variant="default" className="bg-green-100 text-green-800">
-                              Active
-                            </Badge>
-                          )}
-                          {volunteer.vanApproved && (
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                              Van Approved
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                            {volunteer.volunteerType}
-                          </Badge>
-                        </div>
-                        {canEditContacts && (
-                          <div className="flex items-center gap-2">
-                            <Dialog open={editingVolunteer?.id === volunteer.id} onOpenChange={(open) => !open && setEditingVolunteer(null)}>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setEditingVolunteer(volunteer)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle>Edit Volunteer</DialogTitle>
-                                </DialogHeader>
-                                {editingVolunteer && (
-                                  <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <Label htmlFor="edit-volunteer-name">Name *</Label>
-                                        <Input
-                                          id="edit-volunteer-name"
-                                          value={editingVolunteer.name}
-                                          onChange={(e) => setEditingVolunteer({ ...editingVolunteer, name: e.target.value })}
-                                          placeholder="Volunteer name"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="edit-volunteer-phone">Phone *</Label>
-                                        <Input
-                                          id="edit-volunteer-phone"
-                                          value={editingVolunteer.phone}
-                                          onChange={(e) => setEditingVolunteer({ ...editingVolunteer, phone: e.target.value })}
-                                          placeholder="Phone number"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <Label htmlFor="edit-volunteer-email">Email</Label>
-                                        <Input
-                                          id="edit-volunteer-email"
-                                          type="email"
-                                          value={editingVolunteer.email || ""}
-                                          onChange={(e) => setEditingVolunteer({ ...editingVolunteer, email: e.target.value })}
-                                          placeholder="Email address"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="edit-volunteer-type">Type</Label>
-                                        <Select 
-                                          value={editingVolunteer.volunteerType} 
-                                          onValueChange={(value) => setEditingVolunteer({ ...editingVolunteer, volunteerType: value })}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="collection">Collection</SelectItem>
-                                            <SelectItem value="distribution">Distribution</SelectItem>
-                                            <SelectItem value="both">Both</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-volunteer-address">Home Address</Label>
-                                      <Textarea
-                                        id="edit-volunteer-address"
-                                        value={editingVolunteer.homeAddress || ""}
-                                        onChange={(e) => setEditingVolunteer({ ...editingVolunteer, homeAddress: e.target.value })}
-                                        placeholder="Home address"
-                                        rows={2}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-volunteer-notes">Notes</Label>
-                                      <Textarea
-                                        id="edit-volunteer-notes"
-                                        value={editingVolunteer.notes || ""}
-                                        onChange={(e) => setEditingVolunteer({ ...editingVolunteer, notes: e.target.value })}
-                                        placeholder="Additional notes"
-                                        rows={3}
-                                      />
-                                    </div>
-                                    <div className="flex gap-3 pt-4">
-                                      <Button 
-                                        onClick={handleUpdateVolunteer}
-                                        disabled={updateVolunteerMutation.isPending}
-                                        className="flex-1"
-                                      >
-                                        {updateVolunteerMutation.isPending ? "Updating..." : "Update Volunteer"}
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        onClick={() => setEditingVolunteer(null)}
-                                        className="flex-1"
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </DialogContent>
-                            </Dialog>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteVolunteer(volunteer.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {volunteer.phone && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Phone className="w-4 h-4" />
-                            <span>{volunteer.phone}</span>
-                          </div>
-                        )}
-                        {volunteer.email && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Mail className="w-4 h-4" />
-                            <span>{volunteer.email}</span>
-                          </div>
-                        )}
-                        {volunteer.zone && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="w-4 h-4" />
-                            <span>Zone: {volunteer.zone}</span>
-                          </div>
-                        )}
-                        {volunteer.address && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Building className="w-4 h-4" />
-                            <span>{volunteer.address}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {(volunteer.vehicleType || volunteer.availability) && (
-                        <div className="mt-3 space-y-2">
-                          {volunteer.vehicleType && (
-                            <div className="p-3 bg-purple-50 rounded-md">
-                              <p className="text-sm text-purple-700">
-                                <span className="font-medium">Vehicle:</span> {volunteer.vehicleType}
-                              </p>
-                            </div>
-                          )}
-                          {volunteer.availability && (
-                            <div className="p-3 bg-blue-50 rounded-md">
-                              <p className="text-sm text-blue-700">
-                                <span className="font-medium">Availability:</span> {volunteer.availability}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {volunteer.notes && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-md">
-                          <p className="text-sm text-muted-foreground">
-                            <span className="font-medium">Notes:</span> {volunteer.notes}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>}
-
       </Tabs>
 
-      {/* Contact Assignment Dialog */}
-      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign Contact</DialogTitle>
-          </DialogHeader>
-          {assigningContact && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Assign <strong>{assigningContact.name}</strong> to a host location or recipient organization:
-              </p>
-              
-              <div className="space-y-3">
-                <Label>Assignment Target</Label>
-                <Select 
-                  value={assignmentTarget.type} 
-                  onValueChange={(value) => setAssignmentTarget({ ...assignmentTarget, type: value, id: "" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select assignment type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="host">Host Location</SelectItem>
-                    <SelectItem value="recipient">Recipient Organization</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {assignmentTarget.type && (
-                  <Select 
-                    value={assignmentTarget.id} 
-                    onValueChange={(value) => setAssignmentTarget({ ...assignmentTarget, id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select ${assignmentTarget.type}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assignmentTarget.type === "host" && hosts?.map((host: any) => (
-                        <SelectItem key={host.id} value={host.id.toString()}>
-                          {host.name}
-                        </SelectItem>
-                      ))}
-                      {assignmentTarget.type === "recipient" && recipients?.map((recipient: any) => (
-                        <SelectItem key={recipient.id} value={recipient.id.toString()}>
-                          {recipient.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+      {/* Universal Contact Edit Dialog - Moved outside Tabs */}
+      <Dialog open={!!editingContact} onOpenChange={(open) => {
+        console.log('Dialog open changed:', open, 'editingContact:', !!editingContact);
+        if (!open) setEditingContact(null);
+      }}>
+        {editingContact && (
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Contact & Change Role</DialogTitle>
+              <DialogDescription>
+                Edit contact information and change their role/assignment across the platform
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6">
+              {/* Current Status */}
+              <div className="p-4 bg-muted/30 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-medium">Current Status:</span>
+                  <Badge variant="outline">{editingContact.type}</Badge>
+                  <Badge variant="secondary">{editingContact.source.replace('_', ' ')}</Badge>
+                </div>
+                {editingContact.organization && (
+                  <p className="text-sm text-muted-foreground">Organization: {editingContact.organization}</p>
                 )}
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button 
-                  onClick={handleConfirmAssignment}
-                  disabled={!assignmentTarget.type || !assignmentTarget.id || assignContactMutation.isPending}
-                  className="flex-1"
-                >
-                  {assignContactMutation.isPending ? "Assigning..." : "Assign Contact"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAssignDialog(false)}
-                  className="flex-1"
-                >
+              {/* Basic Contact Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-name">Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={editingContact.name}
+                    onChange={(e) => setEditingContact({ ...editingContact, name: e.target.value })}
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-phone">Phone</Label>
+                  <Input
+                    id="edit-phone"
+                    value={editingContact.phone || ""}
+                    onChange={(e) => setEditingContact({ ...editingContact, phone: e.target.value })}
+                    placeholder="Phone number"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editingContact.email || ""}
+                  onChange={(e) => setEditingContact({ ...editingContact, email: e.target.value })}
+                  placeholder="Email address"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-address">Address</Label>
+                <Textarea
+                  id="edit-address"
+                  value={editingContact.address || ""}
+                  onChange={(e) => setEditingContact({ ...editingContact, address: e.target.value })}
+                  placeholder="Street address, city, state, zip"
+                  rows={2}
+                />
+              </div>
+
+              {/* Role Assignment Section */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-3">Change Role & Assignment</h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label>New Role Type</Label>
+                    <Select 
+                      value={editingContact.newRoleType || editingContact.source} 
+                      onValueChange={(value) => setEditingContact({ ...editingContact, newRoleType: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select new role type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="volunteers">Volunteer</SelectItem>
+                        <SelectItem value="host_contacts">Host Contact</SelectItem>
+                        <SelectItem value="recipients">Recipient Organization</SelectItem>
+                        <SelectItem value="drivers">Driver</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Host Assignment */}
+                  {editingContact.newRoleType === 'host_contacts' && (
+                    <div>
+                      <Label>Assign to Host Location</Label>
+                      <Select 
+                        value={editingContact.assignedHostId || ""} 
+                        onValueChange={(value) => setEditingContact({ ...editingContact, assignedHostId: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select host location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hosts?.map((host: any) => (
+                            <SelectItem key={host.id} value={host.id.toString()}>
+                              {host.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
                   Cancel
                 </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                <Button 
+                  onClick={handleUniversalContactUpdate}
+                  disabled={!editingContact.name.trim()}
+                >
+                  Save Changes & Update Role
+                </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            )}
+          </Dialog>
     </div>
   );
 }
