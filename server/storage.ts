@@ -36,6 +36,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  setUserPassword(id: string, password: string): Promise<void>;
   
   // Legacy user methods (for backwards compatibility)
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -497,6 +498,14 @@ export class MemStorage implements IStorage {
     const updated: User = { ...user, ...updates, updatedAt: new Date() };
     this.users.set(Number(id), updated);
     return updated;
+  }
+
+  async setUserPassword(id: string, password: string): Promise<void> {
+    const user = await this.getUser(id);
+    if (user) {
+      const updated: User = { ...user, passwordHash: password, updatedAt: new Date() };
+      this.users.set(Number(id), updated);
+    }
   }
 
   async deleteUser(id: string): Promise<boolean> {

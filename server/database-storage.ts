@@ -87,6 +87,13 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async setUserPassword(id: string, password: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ passwordHash: password, updatedAt: new Date() })
+      .where(eq(users.id, id));
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
     return (result.rowCount ?? 0) > 0;
