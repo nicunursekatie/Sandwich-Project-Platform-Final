@@ -3427,6 +3427,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/host-contacts", async (req, res) => {
     try {
       const contactData = insertHostContactSchema.parse(req.body);
+      
+      // Standardize role names
+      const roleMapping: { [key: string]: string } = {
+        'collection site host': 'host',
+        'Collection Site Host': 'host',
+        'primary': 'host',
+        'backup': 'alternate',
+        'coordinator': 'host',
+        'manager': 'Lead',
+        'lead': 'Lead',
+        'Lead': 'Lead',
+        'host': 'host',
+        'alternate': 'alternate',
+        'volunteer': 'volunteer',
+        'head of school': 'head of school',
+        'Head of School': 'head of school'
+      };
+      
+      if (contactData.role) {
+        contactData.role = roleMapping[contactData.role] || 'host';
+      }
+      
       const contact = await storage.createHostContact(contactData);
       res.status(201).json(contact);
     } catch (error) {
@@ -4182,15 +4204,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
+            // Standardize role names to prevent "Collection Site Host" entries
+            const roleMapping: { [key: string]: string } = {
+              'collection site host': 'host',
+              'Collection Site Host': 'host',
+              'primary': 'host',
+              'backup': 'alternate',
+              'coordinator': 'host',
+              'manager': 'Lead',
+              'lead': 'Lead',
+              'Lead': 'Lead',
+              'host': 'host',
+              'alternate': 'alternate',
+              'volunteer': 'volunteer',
+              'head of school': 'head of school',
+              'Head of School': 'head of school'
+            };
+
+            const standardizedRole = roleMapping[String(role).trim()] || 'host';
+
             // Create host contact
             await storage.createHostContact({
               hostId: host.id,
               name: String(contactName).trim(),
-              role: String(role).trim(),
+              role: standardizedRole,
               phone: cleanPhone,
               email: email ? String(email).trim() : null,
               isPrimary: false, // Can be updated manually later
               notes: normalizedRecord.notes || null,
+              hostLocation: host.name, // Set location for grouping
             });
 
             contactsImported++;
