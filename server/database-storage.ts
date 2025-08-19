@@ -1109,9 +1109,77 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // Cross-table duplicate checking helper
+  private async checkCrossTableDuplicate(name: string, email?: string, phone?: string): Promise<{
+    exists: boolean,
+    source: string,
+    contactId?: number
+  }> {
+    // Normalize phone for comparison (remove non-digits)
+    const normalizePhone = (phoneStr?: string) => phoneStr?.replace(/\D/g, '') || '';
+    const normalizedPhone = normalizePhone(phone);
+
+    // Check volunteers table
+    if (email) {
+      const volunteerMatch = await db.select()
+        .from(volunteers)
+        .where(
+          and(
+            eq(volunteers.name, name),
+            eq(volunteers.email, email)
+          )
+        )
+        .limit(1);
+      
+      if (volunteerMatch.length > 0) {
+        return { exists: true, source: 'volunteers', contactId: volunteerMatch[0].id };
+      }
+    }
+
+    // Check by phone across tables if provided
+    if (normalizedPhone) {
+      const volunteerPhoneMatch = await db.select()
+        .from(volunteers)
+        .where(
+          and(
+            eq(volunteers.name, name),
+            or(
+              eq(volunteers.phone, phone || ''),
+              eq(volunteers.phone, normalizedPhone),
+              eq(sql`REGEXP_REPLACE(${volunteers.phone}, '[^0-9]', '', 'g')`, normalizedPhone)
+            )
+          )
+        )
+        .limit(1);
+      
+      if (volunteerPhoneMatch.length > 0) {
+        return { exists: true, source: 'volunteers', contactId: volunteerPhoneMatch[0].id };
+      }
+    }
+
+    // Check general contacts table
+    if (email) {
+      const contactMatch = await db.select()
+        .from(contacts)
+        .where(
+          and(
+            eq(contacts.name, name),
+            eq(contacts.email, email)
+          )
+        )
+        .limit(1);
+      
+      if (contactMatch.length > 0) {
+        return { exists: true, source: 'contacts', contactId: contactMatch[0].id };
+      }
+    }
+
+    return { exists: false, source: '' };
+  }
+
   // Host Contact methods
   async createHostContact(insertContact: InsertHostContact): Promise<HostContact> {
-    // Check for existing contact with same name and email to prevent duplicates
+    // Check for existing contact within host_contacts table
     if (insertContact.name && insertContact.email) {
       const existingContact = await db.select()
         .from(hostContacts)
@@ -1128,8 +1196,25 @@ export class DatabaseStorage implements IStorage {
         return existingContact[0];
       }
     }
+
+    // Check for cross-table duplicates
+    const crossTableCheck = await this.checkCrossTableDuplicate(
+      insertContact.name, 
+      insertContact.email, 
+      insertContact.phone
+    );
+    
+    if (crossTableCheck.exists) {
+      console.log(`❌ CROSS-TABLE DUPLICATE DETECTED: ${insertContact.name} already exists in ${crossTableCheck.source} table (ID: ${crossTableCheck.contactId})`);
+      console.log(`   - Attempted to create in host_contacts: ${insertContact.email}, ${insertContact.phone}`);
+      console.log(`   - Use contact assignment/linking instead of creating duplicate records`);
+      
+      // Instead of creating a duplicate, throw an error or return a special response
+      throw new Error(`Contact "${insertContact.name}" already exists in ${crossTableCheck.source} table. Use contact assignment instead of creating duplicates.`);
+    }
     
     const [contact] = await db.insert(hostContacts).values(insertContact).returning();
+    console.log(`✅ New host contact created: ${contact.name} (${contact.email})`);
     return contact;
   }
 
