@@ -958,22 +958,11 @@ export default function HostsManagementConsolidated() {
                               </DialogTrigger>
                               <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                                 <DialogHeader>
-                                  <DialogTitle>Edit Contact & Change Role</DialogTitle>
+                                  <DialogTitle>Edit Contact</DialogTitle>
                                 </DialogHeader>
                                 {editingContact && (
                                   <div className="space-y-4">
-                                    {/* Current Status Section */}
-                                    <div className="bg-slate-50 p-4 rounded-lg space-y-2">
-                                      <h3 className="font-medium text-sm text-slate-700">Current Status</h3>
-                                      <div className="flex items-center space-x-2">
-                                        <Badge variant="secondary">Host Contact</Badge>
-                                        <Badge variant="outline">host contacts</Badge>
-                                      </div>
-                                      <div className="flex items-center space-x-2 text-sm text-slate-600">
-                                        <Building2 className="w-4 h-4" />
-                                        <span>Organization: {selectedHost?.name}/{selectedHost?.address || 'Location'}</span>
-                                      </div>
-                                    </div>
+
 
                                     <form
                                       onSubmit={(e) => {
@@ -994,48 +983,19 @@ export default function HostsManagementConsolidated() {
                                         />
                                       </div>
                                       
-                                      {/* Host Location Association */}
-                                      <div>
-                                        <Label htmlFor="edit-contact-location">Host Location</Label>
-                                        <Select
-                                          value={selectedHost?.id.toString()}
-                                          onValueChange={(value) => {
-                                            // Handle location change - this would require additional logic
-                                            console.log('Location change requested:', value);
-                                          }}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select host location" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {hosts.map((host) => (
-                                              <SelectItem key={host.id} value={host.id.toString()}>
-                                                {host.name}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <p className="text-xs text-slate-500 mt-1">
-                                          Currently assigned to: {selectedHost?.name}
-                                        </p>
-                                      </div>
+
 
                                       <div>
                                         <Label htmlFor="edit-contact-role">Role</Label>
                                         <Input
                                           id="edit-contact-role"
-                                          value={`${editingContact.role} - ${selectedHost?.name}`}
+                                          value={editingContact.role || ''}
                                           onChange={(e) => {
                                             e.stopPropagation();
-                                            // Extract just the role part (before the dash)
-                                            const roleOnly = e.target.value.split(' - ')[0];
-                                            setEditingContact({ ...editingContact, role: roleOnly });
+                                            setEditingContact({ ...editingContact, role: e.target.value });
                                           }}
-                                          placeholder="e.g., Manager - Sandy Springs/Chastain"
+                                          placeholder="e.g., Manager, Coordinator"
                                         />
-                                        <p className="text-xs text-slate-500 mt-1">
-                                          Format: Role Type - Location Designation
-                                        </p>
                                       </div>
                                     <div>
                                       <Label htmlFor="edit-contact-phone">Phone *</Label>
@@ -1095,68 +1055,6 @@ export default function HostsManagementConsolidated() {
                                             </span>
                                           </Label>
                                         </div>
-                                                value={editingContact.newAssignmentId?.toString() || selectedHost?.id.toString()}
-                                                onValueChange={(value) => {
-                                                  console.log('Host location assignment:', value);
-                                                  setEditingContact({ 
-                                                    ...editingContact, 
-                                                    newAssignmentId: parseInt(value)
-                                                  });
-                                                }}
-                                              >
-                                                <SelectTrigger>
-                                                  <SelectValue placeholder="Select host location" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  {hostsWithContacts?.map((host) => (
-                                                    <SelectItem key={host.id} value={host.id.toString()}>
-                                                      {host.name} - {host.address}
-                                                    </SelectItem>
-                                                  ))}
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                          )}
-
-                                          {editingContact.newRoleType === "Recipient Organization Contact" && (
-                                            <div>
-                                              <Label htmlFor="recipient-organization-assignment">Choose Recipient Organization</Label>
-                                              <Select
-                                                value={editingContact.newAssignmentId?.toString() || ""}
-                                                onValueChange={(value) => {
-                                                  console.log('Recipient organization assignment:', value);
-                                                  setEditingContact({ 
-                                                    ...editingContact, 
-                                                    newAssignmentId: parseInt(value)
-                                                  });
-                                                }}
-                                              >
-                                                <SelectTrigger>
-                                                  <SelectValue placeholder="Select recipient organization" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  {recipients?.map((recipient) => (
-                                                    <SelectItem key={recipient.id} value={recipient.id.toString()}>
-                                                      {recipient.name} - {recipient.contactName}
-                                                    </SelectItem>
-                                                  ))}
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                          )}
-
-                                          {(editingContact.newRoleType === "Volunteer" || 
-                                            editingContact.newRoleType === "Driver" || 
-                                            editingContact.newRoleType === "General Contact") && (
-                                            <div className="bg-blue-50 p-3 rounded-lg">
-                                              <p className="text-sm text-blue-700">
-                                                {editingContact.newRoleType === "Volunteer" && "This contact will be moved to the Volunteers directory."}
-                                                {editingContact.newRoleType === "Driver" && "This contact will be moved to the Drivers directory."}
-                                                {editingContact.newRoleType === "General Contact" && "This contact will be moved to the General Contacts directory."}
-                                              </p>
-                                            </div>
-                                          )}
-                                        </div>
                                       </div>
 
                                     <div className="flex justify-end space-x-2">
@@ -1167,7 +1065,7 @@ export default function HostsManagementConsolidated() {
                                         type="submit"
                                         disabled={!editingContact.name.trim() || !editingContact.phone.trim() || updateContactMutation.isPending}
                                       >
-                                        {updateContactMutation.isPending ? "Saving Changes..." : "Save Changes & Update Role"}
+                                        {updateContactMutation.isPending ? "Saving..." : "Save Changes"}
                                       </Button>
                                     </div>
                                   </form>
