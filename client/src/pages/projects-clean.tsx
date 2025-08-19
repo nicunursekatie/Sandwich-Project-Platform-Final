@@ -72,7 +72,8 @@ export default function ProjectsClean() {
     queryKey: ["/api/projects"],
     staleTime: 0, // Don't cache to ensure fresh data
     refetchOnWindowFocus: true,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchOnMount: true, // Always refetch when component mounts
+    gcTime: 0, // Don't keep stale data in cache
   });
 
   // Fetch archived projects data
@@ -86,7 +87,9 @@ export default function ProjectsClean() {
       return await apiRequest('POST', '/api/projects', projectData);
     },
     onSuccess: (data) => {
+      // Force immediate cache refresh
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      refetch(); // Manual refetch to ensure immediate update
       setShowCreateDialog(false);
       resetForm();
       toast({ 
