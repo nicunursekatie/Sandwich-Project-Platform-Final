@@ -86,8 +86,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - Updated `newDriver` state initialization to include all necessary fields
 - System is fully functional - users can successfully add/edit drivers with agreement status updates working correctly
 - **CRITICAL FIX**: Fixed agreement status persistence issue where users had to update 2-3 times - was caused by Select value reading from old `hasSignedAgreement(editingDriver)` function while onChange updated `emailAgreementSent` field, creating UI/data mismatch
-- **Availability Field Restored (Aug 2025)**: Added missing availability status field to both Add New Driver and Edit Driver forms with dropdown options: Available, Busy, Off Duty. Field exists in database schema but was missing from UI forms.
-- **Driver Card Availability Display (Aug 2025)**: Added color-coded availability status badges to driver cards - green for Available, yellow for Busy, gray for Off Duty - displayed prominently with other driver status badges for quick visual reference.
+- **Availability Field Corrected (Aug 2025)**: Removed dropdown availability status field from forms. Only using availabilityNotes as free text field for scheduling details like "M-F after 3" as intended. Driver cards display availabilityNotes content when present.
 
 ### Key Component Locations
 - **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`

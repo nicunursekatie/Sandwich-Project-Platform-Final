@@ -79,7 +79,7 @@ export default function DriversManagement() {
     email: "",
     vehicleType: "",
     licenseNumber: "",
-    availability: "available" as const,
+
     zone: "",
     routeDescription: "" as string | undefined,
     hostId: undefined as number | undefined,
@@ -845,28 +845,6 @@ export default function DriversManagement() {
                   </div>
 
                   <div>
-                    <Label htmlFor="availability">Availability Status</Label>
-                    <Select
-                      value={newDriver.availability}
-                      onValueChange={(value) =>
-                        setNewDriver({
-                          ...newDriver,
-                          availability: value as "available" | "busy" | "off-duty",
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select availability" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="available">Available</SelectItem>
-                        <SelectItem value="busy">Busy</SelectItem>
-                        <SelectItem value="off-duty">Off Duty</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
                     <Label htmlFor="availability-notes">Availability Notes</Label>
                     <Input
                       id="availability-notes"
@@ -1097,24 +1075,7 @@ export default function DriversManagement() {
                           Active
                         </Badge>
 
-                        {/* Availability Status */}
-                        <Badge
-                          variant="outline"
-                          className={`flex items-center gap-1 ${
-                            driver.availability === "available"
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : driver.availability === "busy"
-                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                              : "bg-gray-50 text-gray-700 border-gray-200"
-                          }`}
-                        >
-                          <Clock className="w-3 h-3" />
-                          {driver.availability === "available"
-                            ? "Available"
-                            : driver.availability === "busy"
-                            ? "Busy"
-                            : "Off Duty"}
-                        </Badge>
+
 
                         {/* Van Approval */}
                         {driver.vanApproved && (
@@ -1275,24 +1236,7 @@ export default function DriversManagement() {
                           Inactive
                         </Badge>
 
-                        {/* Availability Status (for inactive drivers) */}
-                        <Badge
-                          variant="outline"
-                          className={`flex items-center gap-1 ${
-                            driver.availability === "available"
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : driver.availability === "busy"
-                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                              : "bg-gray-50 text-gray-700 border-gray-200"
-                          }`}
-                        >
-                          <Clock className="w-3 h-3" />
-                          {driver.availability === "available"
-                            ? "Available"
-                            : driver.availability === "busy"
-                            ? "Busy"
-                            : "Off Duty"}
-                        </Badge>
+
 
                         {/* Van Approval (for inactive drivers) */}
                         {driver.vanApproved && (
@@ -1582,44 +1526,21 @@ export default function DriversManagement() {
               </div>
 
               {/* Availability Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-availability">Availability Status</Label>
-                  <Select
-                    value={editingDriver.availability ?? "available"}
-                    onValueChange={(value) =>
-                      setEditingDriver({
-                        ...editingDriver,
-                        availability: value as "available" | "busy" | "off-duty",
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="busy">Busy</SelectItem>
-                      <SelectItem value="off-duty">Off Duty</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-availability-notes">
-                    Availability Notes
-                  </Label>
-                  <Input
-                    id="edit-availability-notes"
-                    value={editingDriver.availabilityNotes ?? ""}
-                    onChange={(e) =>
-                      setEditingDriver({
-                        ...editingDriver,
-                        availabilityNotes: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., M-F after 3; weekends; unavailable until June"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="edit-availability-notes">
+                  Availability Notes
+                </Label>
+                <Input
+                  id="edit-availability-notes"
+                  value={editingDriver.availabilityNotes ?? ""}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      availabilityNotes: e.target.value,
+                    })
+                  }
+                  placeholder="e.g., M-F after 3; weekends; unavailable until June"
+                />
               </div>
 
               {/* Route and Location */}
