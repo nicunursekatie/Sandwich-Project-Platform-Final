@@ -845,6 +845,28 @@ export default function DriversManagement() {
                   </div>
 
                   <div>
+                    <Label htmlFor="availability">Availability Status</Label>
+                    <Select
+                      value={newDriver.availability}
+                      onValueChange={(value) =>
+                        setNewDriver({
+                          ...newDriver,
+                          availability: value as "available" | "busy" | "off-duty",
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select availability" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="busy">Busy</SelectItem>
+                        <SelectItem value="off-duty">Off Duty</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
                     <Label htmlFor="availability-notes">Availability Notes</Label>
                     <Input
                       id="availability-notes"
@@ -1522,21 +1544,44 @@ export default function DriversManagement() {
               </div>
 
               {/* Availability Details */}
-              <div>
-                <Label htmlFor="edit-availability-notes">
-                  Availability Notes
-                </Label>
-                <Input
-                  id="edit-availability-notes"
-                  value={editingDriver.availabilityNotes ?? ""}
-                  onChange={(e) =>
-                    setEditingDriver({
-                      ...editingDriver,
-                      availabilityNotes: e.target.value,
-                    })
-                  }
-                  placeholder="e.g., M-F after 3; weekends; unavailable until June"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-availability">Availability Status</Label>
+                  <Select
+                    value={editingDriver.availability ?? "available"}
+                    onValueChange={(value) =>
+                      setEditingDriver({
+                        ...editingDriver,
+                        availability: value as "available" | "busy" | "off-duty",
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Available</SelectItem>
+                      <SelectItem value="busy">Busy</SelectItem>
+                      <SelectItem value="off-duty">Off Duty</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-availability-notes">
+                    Availability Notes
+                  </Label>
+                  <Input
+                    id="edit-availability-notes"
+                    value={editingDriver.availabilityNotes ?? ""}
+                    onChange={(e) =>
+                      setEditingDriver({
+                        ...editingDriver,
+                        availabilityNotes: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., M-F after 3; weekends; unavailable until June"
+                  />
+                </div>
               </div>
 
               {/* Route and Location */}
