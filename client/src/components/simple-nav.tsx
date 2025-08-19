@@ -31,9 +31,7 @@ import { useMessaging } from "@/hooks/useMessaging";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { HelpBubble } from "@/components/help-system/HelpBubble";
-import sandwichLogo from "@assets/LOGOS/Copy of TSP_transparent.png";
-
-import sandwich_20logo from "@assets/LOGOS/sandwich logo.png";
+import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
 
 interface NavigationItem {
   id: string;
