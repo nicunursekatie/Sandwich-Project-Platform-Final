@@ -68,10 +68,11 @@ export default function ProjectsClean() {
   });
 
   // Fetch all projects
-  const { data: allProjects = [], isLoading } = useQuery<Project[]>({
+  const { data: allProjects = [], isLoading, refetch } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
-    staleTime: 30000,
+    staleTime: 0, // Don't cache to ensure fresh data
     refetchOnWindowFocus: true,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Fetch archived projects data

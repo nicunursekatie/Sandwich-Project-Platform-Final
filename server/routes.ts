@@ -683,8 +683,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     async (req, res) => {
       try {
-        // Check if user can create projects (either edit_own_projects or edit_all_projects)
-        if (!req.user?.permissions?.includes('edit_own_projects') && 
+        // User has create_projects permission, proceed with creation
+
+        // Check if user can create projects
+        if (!req.user?.permissions?.includes('create_projects') && 
             !req.user?.permissions?.includes('edit_all_projects') &&
             !req.user?.permissions?.includes('manage_projects')) {
           return res.status(403).json({ message: "Permission denied. You cannot create projects." });
