@@ -72,7 +72,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "dashboard", group: "dashboard" },
     
     // COLLECTIONS LOG
-    { id: "collections", label: "Collections Log", customIcon: sandwichLogo, href: "collections", group: "collections" },
+    { id: "collections", label: "Collections Log", customIcon: sandwich_logo, href: "collections", group: "collections" },
     
     // COMMUNICATION
     { id: "chat", label: "Team Chat", icon: Hash, href: "chat", group: "communication" },
