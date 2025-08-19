@@ -226,7 +226,7 @@ export default function SocketChatHub() {
   }
 
   return (
-    <div className={`flex bg-white relative overflow-hidden ${isMobile ? 'h-[calc(100vh-140px)]' : 'h-screen'}`}>
+    <div className={`flex bg-white relative ${isMobile ? 'overflow-hidden h-[calc(100vh-140px)]' : 'h-full'}`}>
       {/* Mobile Overlay */}
       {isMobile && showSidebar && (
         <div 
@@ -315,7 +315,7 @@ export default function SocketChatHub() {
       </div>
 
       {/* Main Chat Area - Fixed Layout */}
-      <div className={`flex-1 flex flex-col ${isMobile ? 'h-full' : 'h-full'}`}>
+      <div className={`flex-1 flex flex-col ${isMobile ? 'h-full' : 'min-h-0'}`}>
         {currentRoom ? (
           <>
             {/* Chat Header - Always Fixed at Top */}
@@ -370,9 +370,9 @@ export default function SocketChatHub() {
             </div>
 
             {/* Messages - Scrollable Middle Section */}
-            <div className="flex-1 overflow-hidden bg-white">
+            <div className={`flex-1 bg-white ${isMobile ? 'overflow-hidden' : 'min-h-0'}`}>
               <ScrollArea 
-                className="h-full px-2 md:px-4 py-2 md:py-3"
+                className={`${isMobile ? 'h-full' : 'h-full'} px-2 md:px-4 py-2 md:py-3`}
                 onScroll={(e) => {
                   const target = e.target as HTMLDivElement;
                   const { scrollTop, scrollHeight, clientHeight } = target;
