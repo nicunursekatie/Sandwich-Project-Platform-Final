@@ -383,6 +383,8 @@ function PhoneDirectoryFixed() {
         notes: `Zone: ${driver.zone}${driver.notes ? ` - ${driver.notes}` : ""}`,
         zone: driver.zone,
         vanApproved: driver.vanApproved,
+        emailAgreementSent: driver.emailAgreementSent,
+        voicemailLeft: driver.voicemailLeft,
         source: "drivers",
       });
     });
@@ -2736,32 +2738,62 @@ function PhoneDirectoryFixed() {
 
                   {/* Driver Specific */}
                   {editingContact.newRoleType === "drivers" && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Zone</Label>
-                        <Input
-                          value={editingContact.zone || ""}
-                          onChange={(e) =>
-                            setEditingContact({
-                              ...editingContact,
-                              zone: e.target.value,
-                            })
-                          }
-                          placeholder="Service zone"
-                        />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Zone</Label>
+                          <Input
+                            value={editingContact.zone || ""}
+                            onChange={(e) =>
+                              setEditingContact({
+                                ...editingContact,
+                                zone: e.target.value,
+                              })
+                            }
+                            placeholder="Service zone"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="van-approved"
+                            checked={editingContact.vanApproved || false}
+                            onCheckedChange={(checked) =>
+                              setEditingContact({
+                                ...editingContact,
+                                vanApproved: !!checked,
+                              })
+                            }
+                          />
+                          <Label htmlFor="van-approved">Van Approved</Label>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="van-approved"
-                          checked={editingContact.vanApproved || false}
-                          onCheckedChange={(checked) =>
-                            setEditingContact({
-                              ...editingContact,
-                              vanApproved: !!checked,
-                            })
-                          }
-                        />
-                        <Label htmlFor="van-approved">Van Approved</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="email-agreement-sent"
+                            checked={editingContact.emailAgreementSent || false}
+                            onCheckedChange={(checked) =>
+                              setEditingContact({
+                                ...editingContact,
+                                emailAgreementSent: !!checked,
+                              })
+                            }
+                          />
+                          <Label htmlFor="email-agreement-sent">Agreement Sent</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="voicemail-left"
+                            checked={editingContact.voicemailLeft || false}
+                            onCheckedChange={(checked) =>
+                              setEditingContact({
+                                ...editingContact,
+                                voicemailLeft: !!checked,
+                              })
+                            }
+                          />
+                          <Label htmlFor="voicemail-left">Voicemail Left</Label>
+                        </div>
                       </div>
                     </div>
                   )}
