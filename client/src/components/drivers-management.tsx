@@ -279,7 +279,7 @@ export default function DriversManagement() {
   });
 
   const handleAdd = () => {
-    if (!newDriver.name || !newDriver.phone || !newDriver.vehicleType) {
+    if (!newDriver.name || !newDriver.phone) {
       toast({
         title: "Please fill in required fields",
         variant: "destructive",
