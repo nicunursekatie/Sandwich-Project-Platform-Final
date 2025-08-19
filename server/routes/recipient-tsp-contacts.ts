@@ -11,7 +11,7 @@ import { isAuthenticated as requireAuth, requirePermission } from "../temp-auth"
 const router = Router();
 
 // Get all TSP contacts for a specific recipient
-router.get("/:recipientId", requireAuth, requirePermission(PERMISSIONS.VIEW_RECIPIENTS), async (req, res) => {
+router.get("/:recipientId", requireAuth, requirePermission(PERMISSIONS.ACCESS_RECIPIENTS), async (req, res) => {
   try {
     const recipientId = parseInt(req.params.recipientId);
     
