@@ -503,13 +503,25 @@ export default function DriversManagement() {
   });
   const availableZones = zoneSet.sort();
 
-  // Separate and sort drivers, then apply filters
+  // Separate and sort drivers by agreement status first, then by name
+  const sortByAgreementAndName = (a: Driver, b: Driver) => {
+    const aHasAgreement = hasSignedAgreement(a.notes || "");
+    const bHasAgreement = hasSignedAgreement(b.notes || "");
+    
+    // First sort by agreement status: signed agreements first
+    if (aHasAgreement && !bHasAgreement) return -1;
+    if (!aHasAgreement && bHasAgreement) return 1;
+    
+    // Then sort by name
+    return a.name.localeCompare(b.name);
+  };
+
   const allActiveDrivers = drivers
     .filter((driver) => driver.isActive)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort(sortByAgreementAndName);
   const allInactiveDrivers = drivers
     .filter((driver) => !driver.isActive)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort(sortByAgreementAndName);
 
   const activeDrivers = applyFilters(allActiveDrivers);
   const inactiveDrivers = applyFilters(allInactiveDrivers);
