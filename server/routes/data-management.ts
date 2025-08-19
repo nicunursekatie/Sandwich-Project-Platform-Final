@@ -18,7 +18,7 @@ const isAuthenticated = (req: any, res: any, next: any) => {
 const router = Router();
 
 // Export data endpoints
-router.get('/export/collections', async (req, res) => {
+router.get('/export/collections', isAuthenticated, async (req, res) => {
   try {
     const { format = 'csv', startDate, endDate } = req.query;
     
@@ -45,7 +45,7 @@ router.get('/export/collections', async (req, res) => {
   }
 });
 
-router.get('/export/hosts', async (req, res) => {
+router.get('/export/hosts', isAuthenticated, async (req, res) => {
   try {
     const { format = 'csv', includeInactive = 'false' } = req.query;
     

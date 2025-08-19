@@ -2891,7 +2891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Drivers API endpoints
-  app.get("/api/drivers", async (req, res) => {
+  app.get("/api/drivers", isAuthenticated, requirePermission("access_drivers"), async (req, res) => {
     try {
       const drivers = await storage.getAllDrivers();
       res.json(drivers);
@@ -2901,7 +2901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/drivers/:id", async (req, res) => {
+  app.get("/api/drivers/:id", isAuthenticated, requirePermission("access_drivers"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const driver = await storage.getDriver(id);
@@ -2915,7 +2915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/drivers", sanitizeMiddleware, async (req, res) => {
+  app.post("/api/drivers", isAuthenticated, requirePermission("manage_drivers"), sanitizeMiddleware, async (req, res) => {
     try {
       const result = insertDriverSchema.safeParse(req.body);
       if (!result.success) {
@@ -2929,7 +2929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/drivers/:id", sanitizeMiddleware, async (req, res) => {
+  app.put("/api/drivers/:id", isAuthenticated, requirePermission("manage_drivers"), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
@@ -3081,7 +3081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Volunteers API endpoints
-  app.get("/api/volunteers", async (req, res) => {
+  app.get("/api/volunteers", isAuthenticated, requirePermission("access_volunteers"), async (req, res) => {
     try {
       const volunteers = await storage.getAllVolunteers();
       res.json(volunteers);
@@ -3091,7 +3091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/volunteers/:id", async (req, res) => {
+  app.get("/api/volunteers/:id", isAuthenticated, requirePermission("access_volunteers"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const volunteer = await storage.getVolunteer(id);
@@ -3105,7 +3105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/volunteers", sanitizeMiddleware, async (req, res) => {
+  app.post("/api/volunteers", isAuthenticated, requirePermission("manage_volunteers"), sanitizeMiddleware, async (req, res) => {
     try {
       const result = insertVolunteerSchema.safeParse(req.body);
       if (!result.success) {
@@ -3119,7 +3119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/volunteers/:id", sanitizeMiddleware, async (req, res) => {
+  app.put("/api/volunteers/:id", isAuthenticated, requirePermission("manage_volunteers"), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
@@ -3270,7 +3270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Hosts API endpoints
-  app.get("/api/hosts", async (req, res) => {
+  app.get("/api/hosts", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
     try {
       const hosts = await storage.getAllHosts();
       res.json(hosts);
@@ -3280,7 +3280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/hosts/:id", async (req, res) => {
+  app.get("/api/hosts/:id", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const host = await storage.getHost(id);
@@ -3520,7 +3520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/hosts/:hostId/contacts", async (req, res) => {
+  app.get("/api/hosts/:hostId/contacts", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
     try {
       const hostId = parseInt(req.params.hostId);
       const contacts = await storage.getHostContacts(hostId);
@@ -3600,7 +3600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Optimized endpoint to get all hosts with their contacts in one call
-  app.get("/api/hosts-with-contacts", async (req, res) => {
+  app.get("/api/hosts-with-contacts", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
     try {
       const hostsWithContacts = await storage.getAllHostsWithContacts();
       res.json(hostsWithContacts);

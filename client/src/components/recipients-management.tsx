@@ -836,7 +836,7 @@ export default function RecipientsManagement() {
                         type="date"
                         value={editingRecipient.contractSignedDate ? 
                           (typeof editingRecipient.contractSignedDate === 'string' ? 
-                            editingRecipient.contractSignedDate.split('T')[0] : 
+                            editingRecipient.contractSignedDate.includes('T') ? editingRecipient.contractSignedDate.split('T')[0] : editingRecipient.contractSignedDate : 
                             new Date(editingRecipient.contractSignedDate).toISOString().split('T')[0]) : ""}
                         onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSignedDate: e.target.value as any })}
                       />
