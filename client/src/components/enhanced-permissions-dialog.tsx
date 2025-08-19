@@ -730,13 +730,7 @@ const PERMISSION_CATEGORIES = [
         icon: Eye,
         dangerLevel: "elevated"
       },
-      { 
-        key: PERMISSIONS.VIEW_PHONE_DIRECTORY, 
-        label: "View directory (granular)", 
-        description: "Granular permission to view phone directory",
-        icon: Eye,
-        dangerLevel: "safe"
-      },
+
 
     ]
   }
@@ -808,7 +802,6 @@ const PERMISSION_PRESETS = [
     description: 'View-only access to all sections without edit permissions - perfect for demonstrations',
     permissions: [
       // View all main sections
-      PERMISSIONS.ACCESS_DIRECTORY,
       PERMISSIONS.ACCESS_HOSTS,
       PERMISSIONS.ACCESS_RECIPIENTS,
       PERMISSIONS.ACCESS_DRIVERS,
@@ -1343,11 +1336,7 @@ export default function EnhancedPermissionsDialog({
                                     <p className="text-xs text-gray-600 leading-relaxed">
                                       {permission.description}
                                     </p>
-                                    {permission.autoBundles && isChecked && (
-                                      <div className="mt-2 text-xs text-gray-500">
-                                        <span className="font-medium">Auto-includes:</span> {permission.autoBundles.join(', ')}
-                                      </div>
-                                    )}
+
                                   </div>
                                 </div>
                               );

@@ -20,7 +20,6 @@ export const PERMISSIONS = {
   MANAGE_ANNOUNCEMENTS: "manage_announcements",
 
   // Main tab access permissions
-  ACCESS_DIRECTORY: "access_directory",
   ACCESS_HOSTS: "access_hosts",
   ACCESS_RECIPIENTS: "access_recipients",
   ACCESS_DRIVERS: "access_drivers",
@@ -141,7 +140,6 @@ export const PERMISSIONS = {
   MANAGE_ALL_KUDOS: "manage_all_kudos", // Admin ability to manage all kudos (view, delete)
 
   // Legacy support for existing components (backwards compatibility)
-  VIEW_PHONE_DIRECTORY: "access_directory",
   VIEW_VOLUNTEERS_TAB: "access_volunteers", // Legacy support
   VIEW_DONATION_TRACKING_TAB: "access_donation_tracking", // Legacy support
   VIEW_COLLECTIONS: "access_collections",
@@ -182,7 +180,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case USER_ROLES.COMMITTEE_MEMBER:
       return [
         // Can view these sections but not manage them
-        PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
@@ -210,7 +207,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case USER_ROLES.HOST:
       return [
         // Directory access
-        PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_HOSTS,
         PERMISSIONS.ACCESS_RECIPIENTS,
         
