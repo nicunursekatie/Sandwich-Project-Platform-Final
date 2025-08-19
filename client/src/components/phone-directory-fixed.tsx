@@ -1003,12 +1003,7 @@ function PhoneDirectoryFixed() {
                                 <span>{contact.email}</span>
                               </div>
                             )}
-                            {contact.role && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <User className="w-4 h-4" />
-                                <span>{contact.role}</span>
-                              </div>
-                            )}
+
                             {contact.address && (
                               <div className="flex items-center gap-2 text-muted-foreground">
                                 <MapPin className="w-4 h-4" />
