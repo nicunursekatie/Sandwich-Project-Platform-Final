@@ -3,11 +3,37 @@ import { z } from "zod";
 import { storage } from "../storage-wrapper";
 import { sanitizeMiddleware } from "../middleware/sanitizer";
 import { insertHostSchema, insertHostContactSchema } from "@shared/schema";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 const router = Router();
 
+// Authentication middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  const user = req.user || req.session?.user;
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  req.user = user; // Ensure req.user is set
+  next();
+};
+
+// Permission check functions
+function canManageHosts(req: any) {
+  const user = req.user;
+  return hasPermission(user, PERMISSIONS.MANAGE_HOSTS);
+}
+
+function canViewHosts(req: any) {
+  const user = req.user;
+  return hasPermission(user, PERMISSIONS.ACCESS_HOSTS);
+}
+
 // Host management routes
-router.get("/hosts", async (req, res) => {
+router.get("/hosts", isAuthenticated, async (req, res) => {
+  // Check if user has permission to view hosts
+  if (!canViewHosts(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to view hosts" });
+  }
   try {
     const hosts = await storage.getAllHosts();
     res.json(hosts);
@@ -41,7 +67,11 @@ router.get("/hosts/:id", async (req, res) => {
   }
 });
 
-router.post("/hosts", sanitizeMiddleware, async (req, res) => {
+router.post("/hosts", isAuthenticated, sanitizeMiddleware, async (req, res) => {
+  // Check if user has permission to manage hosts
+  if (!canManageHosts(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to create hosts" });
+  }
   try {
     const result = insertHostSchema.safeParse(req.body);
     if (!result.success) {
@@ -55,7 +85,11 @@ router.post("/hosts", sanitizeMiddleware, async (req, res) => {
   }
 });
 
-router.patch("/hosts/:id", sanitizeMiddleware, async (req, res) => {
+router.patch("/hosts/:id", isAuthenticated, sanitizeMiddleware, async (req, res) => {
+  // Check if user has permission to manage hosts
+  if (!canManageHosts(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to update hosts" });
+  }
   try {
     const id = parseInt(req.params.id);
     const updates = req.body;
@@ -70,7 +104,11 @@ router.patch("/hosts/:id", sanitizeMiddleware, async (req, res) => {
   }
 });
 
-router.delete("/hosts/:id", async (req, res) => {
+router.delete("/hosts/:id", isAuthenticated, async (req, res) => {
+  // Check if user has permission to manage hosts
+  if (!canManageHosts(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to delete hosts" });
+  }
   try {
     const id = parseInt(req.params.id);
     const success = await storage.deleteHost(id);

@@ -3,11 +3,32 @@ import { z } from "zod";
 import { storage } from "../storage-wrapper";
 import { sanitizeMiddleware } from "../middleware/sanitizer";
 import { insertMessageSchema } from "@shared/schema";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 const router = Router();
 
+// Authentication middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  const user = req.user || req.session?.user;
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  req.user = user; // Ensure req.user is set
+  next();
+};
+
+// Permission check functions
+function canAccessMessages(req: any) {
+  const user = req.user;
+  return hasPermission(user, PERMISSIONS.ACCESS_MESSAGES);
+}
+
 // UPDATED: Unified message management routes using new conversation system
-router.get("/messages", async (req, res) => {
+router.get("/messages", isAuthenticated, async (req, res) => {
+  // Check if user has permission to access messages
+  if (!canAccessMessages(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to view messages" });
+  }
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
 
@@ -39,7 +60,11 @@ router.get("/messages/:id/thread", async (req, res) => {
   }
 });
 
-router.post("/messages", sanitizeMiddleware, async (req, res) => {
+router.post("/messages", isAuthenticated, sanitizeMiddleware, async (req, res) => {
+  // Check if user has permission to send messages
+  if (!canAccessMessages(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to send messages" });
+  }
   try {
     const result = insertMessageSchema.safeParse(req.body);
     if (!result.success) {
@@ -71,7 +96,11 @@ router.post("/messages", sanitizeMiddleware, async (req, res) => {
   }
 });
 
-router.delete("/messages/:id", async (req, res) => {
+router.delete("/messages/:id", isAuthenticated, async (req, res) => {
+  // Check if user has permission to delete messages
+  if (!canAccessMessages(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to delete messages" });
+  }
   try {
     const id = parseInt(req.params.id);
     const success = await storage.deleteMessage(id);
