@@ -58,15 +58,13 @@ export default function VolunteerManagement() {
   
   // Form state
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
     email: "",
     phone: "",
     address: "",
-    skills: "",
-    availability: "",
     notes: "",
-    status: "active"
+    availability: "available",
+    isActive: true
   });
 
   // Host designation state
@@ -101,10 +99,10 @@ export default function VolunteerManagement() {
     );
   }
 
-  // Fetch volunteers (using drivers table for now - will be transitioned to volunteers)
+  // Fetch volunteers from the dedicated volunteers table
   const { data: volunteers = [], isLoading } = useQuery({
-    queryKey: ['/api/drivers'],
-    queryFn: () => apiRequest('GET', '/api/drivers')
+    queryKey: ['/api/volunteers'],
+    queryFn: () => apiRequest('GET', '/api/volunteers')
   });
 
   // Fetch hosts for designation dropdown
@@ -117,13 +115,13 @@ export default function VolunteerManagement() {
   const { mutate: saveVolunteer, isPending: isSaving } = useMutation({
     mutationFn: async (volunteerData: any) => {
       if (editingVolunteer) {
-        return apiRequest('PATCH', `/api/drivers/${editingVolunteer.id}`, volunteerData);
+        return apiRequest('PATCH', `/api/volunteers/${editingVolunteer.id}`, volunteerData);
       } else {
-        return apiRequest('POST', '/api/drivers', volunteerData);
+        return apiRequest('POST', '/api/volunteers', volunteerData);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteers'] });
       toast({
         title: "Success",
         description: `Volunteer ${editingVolunteer ? 'updated' : 'added'} successfully`,
@@ -175,10 +173,10 @@ export default function VolunteerManagement() {
   // Delete volunteer mutation
   const { mutate: deleteVolunteer } = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest('DELETE', `/api/drivers/${id}`);
+      return apiRequest('DELETE', `/api/volunteers/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteers'] });
       toast({
         title: "Success",
         description: "Volunteer deleted successfully",
@@ -195,15 +193,13 @@ export default function VolunteerManagement() {
 
   const resetForm = () => {
     setFormData({
-      firstName: "",
-      lastName: "",
+      name: "",
       email: "",
       phone: "",
       address: "",
-      skills: "",
-      availability: "",
       notes: "",
-      status: "active"
+      availability: "available",
+      isActive: true
     });
     setEditingVolunteer(null);
     setShowHostDesignation(false);
@@ -223,15 +219,13 @@ export default function VolunteerManagement() {
     }
 
     setFormData({
-      firstName: volunteer.firstName || "",
-      lastName: volunteer.lastName || "",
+      name: volunteer.name || "",
       email: volunteer.email || "",
       phone: volunteer.phone || "",
       address: volunteer.address || "",
-      skills: volunteer.skills || "",
-      availability: volunteer.availability || "",
       notes: volunteer.notes || "",
-      status: volunteer.status || "active"
+      availability: volunteer.availability || "available",
+      isActive: volunteer.isActive !== undefined ? volunteer.isActive : true
     });
     setEditingVolunteer(volunteer);
     setShowAddDialog(true);
@@ -261,7 +255,7 @@ export default function VolunteerManagement() {
       return;
     }
 
-    if (window.confirm(`Are you sure you want to delete ${volunteer.firstName} ${volunteer.lastName}?`)) {
+    if (window.confirm(`Are you sure you want to delete ${volunteer.name}?`)) {
       deleteVolunteer(volunteer.id);
     }
   };
@@ -270,15 +264,13 @@ export default function VolunteerManagement() {
     e.preventDefault();
     
     const volunteerData = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
+      name: formData.name,
       email: formData.email,
       phone: formData.phone,
       address: formData.address,
-      skills: formData.skills,
-      availability: formData.availability,
       notes: formData.notes,
-      status: formData.status
+      availability: formData.availability,
+      isActive: formData.isActive
     };
 
     saveVolunteer(volunteerData);
@@ -300,7 +292,7 @@ export default function VolunteerManagement() {
 
     const hostContactData = {
       hostId: selectedHostId,
-      name: `${formData.firstName} ${formData.lastName}`,
+      name: formData.name,
       role: hostRole,
       phone: formData.phone || "",
       email: formData.email || "",
@@ -314,11 +306,13 @@ export default function VolunteerManagement() {
   // Filter volunteers
   const filteredVolunteers = volunteers.filter((volunteer: any) => {
     const matchesSearch = !searchTerm || 
-      `${volunteer.firstName} ${volunteer.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      volunteer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       volunteer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       volunteer.phone?.includes(searchTerm);
     
-    const matchesStatus = statusFilter === "all" || volunteer.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && volunteer.isActive) ||
+      (statusFilter === "inactive" && !volunteer.isActive);
     
     return matchesSearch && matchesStatus;
   });
@@ -402,10 +396,10 @@ export default function VolunteerManagement() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {volunteer.firstName} {volunteer.lastName}
+                        {volunteer.name}
                       </h3>
-                      <Badge variant={volunteer.status === 'active' ? 'default' : 'secondary'}>
-                        {volunteer.status}
+                      <Badge variant={volunteer.isActive ? 'default' : 'secondary'}>
+                        {volunteer.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
                     
@@ -503,25 +497,15 @@ export default function VolunteerManagement() {
             </DialogHeader>
             
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  placeholder="Enter volunteer's full name"
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -554,23 +538,20 @@ export default function VolunteerManagement() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="skills">Skills/Expertise</Label>
-                <Textarea
-                  id="skills"
-                  value={formData.skills}
-                  onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                  placeholder="List any relevant skills, expertise, or areas of interest..."
-                />
-              </div>
-              
-              <div className="space-y-2">
                 <Label htmlFor="availability">Availability</Label>
-                <Textarea
-                  id="availability"
-                  value={formData.availability}
-                  onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                  placeholder="When are they available to volunteer?"
-                />
+                <Select 
+                  value={formData.availability} 
+                  onValueChange={(value) => setFormData({ ...formData, availability: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="busy">Busy</SelectItem>
+                    <SelectItem value="off-duty">Off Duty</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-2">
@@ -584,8 +565,11 @@ export default function VolunteerManagement() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <Label htmlFor="isActive">Status</Label>
+                <Select 
+                  value={formData.isActive ? "active" : "inactive"} 
+                  onValueChange={(value) => setFormData({ ...formData, isActive: value === "active" })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
