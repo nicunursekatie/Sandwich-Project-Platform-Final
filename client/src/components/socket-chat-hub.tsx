@@ -61,6 +61,8 @@ export default function SocketChatHub() {
   
   const [newMessage, setNewMessage] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -70,6 +72,21 @@ export default function SocketChatHub() {
   useEffect(() => {
     scrollToBottom();
   }, [messages[currentRoom]]);
+
+  // Handle mobile detection and responsive behavior
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowSidebar(false); // Always show sidebar on desktop
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (currentRoom) {
@@ -81,6 +98,13 @@ export default function SocketChatHub() {
     if (newMessage.trim() && currentRoom) {
       sendMessage(currentRoom, newMessage.trim());
       setNewMessage("");
+    }
+  };
+
+  const handleRoomSelect = (roomId: string) => {
+    setCurrentRoom(roomId);
+    if (isMobile) {
+      setShowSidebar(false); // Hide sidebar on mobile after selection
     }
   };
 
@@ -186,11 +210,40 @@ export default function SocketChatHub() {
 
   return (
     <div className="flex h-full bg-white relative">
+      {/* Mobile Overlay */}
+      {isMobile && showSidebar && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-10"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
+      
       {/* Left Sidebar - Channels */}
-      <div className="w-72 bg-gray-50 border-r border-gray-200 relative">
+      <div className={`
+        ${isMobile 
+          ? `fixed left-0 top-0 h-full w-80 z-20 transform transition-transform duration-300 ${
+              showSidebar ? 'translate-x-0' : '-translate-x-full'
+            }`
+          : 'w-72 relative'
+        } bg-gray-50 border-r border-gray-200
+      `}>
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800 mb-1">Channels</h2>
-          <p className="text-sm text-gray-600">Team communication</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-1">Channels</h2>
+              <p className="text-sm text-gray-600">Team communication</p>
+            </div>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSidebar(false)}
+                className="md:hidden"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="p-3 space-y-1">
@@ -200,7 +253,7 @@ export default function SocketChatHub() {
             } transition-colors`}>
               <button
                 className="w-full text-left p-3"
-                onClick={() => setCurrentRoom(room.id)}
+                onClick={() => handleRoomSelect(room.id)}
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
@@ -249,17 +302,27 @@ export default function SocketChatHub() {
         {currentRoom ? (
           <>
             {/* Chat Header */}
-            <div className="px-6 py-4 bg-[#236383] text-white border-b border-[#1e5573]">
+            <div className="px-4 md:px-6 py-4 bg-[#236383] text-white border-b border-[#1e5573]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSidebar(true)}
+                      className="text-white hover:bg-white/10 p-1"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  )}
                   <span className="text-white">
                     {getRoomIcon(currentRoom)}
                   </span>
-                  <div>
-                    <h3 className="text-lg font-semibold">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-semibold truncate">
                       {rooms.find(r => r.id === currentRoom)?.name || 'Unknown Room'}
                     </h3>
-                    <p className="text-blue-100 text-sm">
+                    <p className="text-blue-100 text-sm truncate">
                       {currentRoom === 'general' && 'Open discussion for all team members'}
                       {currentRoom === 'core-team' && 'Core team coordination'}
                       {currentRoom === 'committee' && 'Committee discussions'}
@@ -269,14 +332,14 @@ export default function SocketChatHub() {
                     </p>
                   </div>
                 </div>
-                <Badge className="bg-green-500 text-white border-green-400">
+                <Badge className="bg-green-500 text-white border-green-400 hidden sm:block">
                   {connected ? 'Connected' : 'Disconnected'}
                 </Badge>
               </div>
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-4 py-3 bg-white">
+            <ScrollArea className="flex-1 px-2 md:px-4 py-3 bg-white">
               <div className="space-y-1">
                 {(() => {
                   const currentMessages = messages[currentRoom] || [];
@@ -307,19 +370,19 @@ export default function SocketChatHub() {
                         
                         return (
                           <div key={message.id} className="flex gap-2 group py-1">
-                            <Avatar className="h-7 w-7 flex-shrink-0">
+                            <Avatar className="h-6 w-6 md:h-7 md:w-7 flex-shrink-0">
                               <AvatarFallback className={`text-xs font-medium text-white ${getAvatarColor(message.userName)}`}>
                                 {getInitials(message.userName)}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-baseline gap-2 mb-0">
-                                <span className="font-medium text-gray-900 text-sm">{message.userName}</span>
-                                <span className="text-xs text-gray-500">
+                              <div className="flex items-baseline gap-2 mb-0 flex-wrap">
+                                <span className="font-medium text-gray-900 text-sm break-words">{message.userName}</span>
+                                <span className="text-xs text-gray-500 flex-shrink-0">
                                   {formatTime(message.timestamp)}
                                 </span>
                               </div>
-                              <p className="text-gray-800 text-sm leading-tight">
+                              <p className="text-gray-800 text-sm leading-tight break-words">
                                 <MessageWithMentions content={message.content} />
                               </p>
                               {/* Message actions */}
@@ -338,7 +401,7 @@ export default function SocketChatHub() {
             </ScrollArea>
 
             {/* Message Input with Mentions */}
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <div className="px-2 md:px-4 py-3 bg-gray-50 border-t border-gray-200">
               <MentionInput
                 value={newMessage}
                 onChange={setNewMessage}
@@ -349,10 +412,19 @@ export default function SocketChatHub() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center p-6">
             <div className="text-center">
               <Hash className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Select a room to start chatting</p>
+              <p className="text-muted-foreground mb-4">Select a room to start chatting</p>
+              {isMobile && (
+                <Button 
+                  onClick={() => setShowSidebar(true)}
+                  className="bg-[#236383] hover:bg-[#1e5573]"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Choose Channel
+                </Button>
+              )}
             </div>
           </div>
         )}
