@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { 
   Copy, 
   ExternalLink, 
@@ -16,12 +18,17 @@ import {
   Gift,
   Users,
   TrendingUp,
-  MessageCircle
+  MessageCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Shield
 } from "lucide-react";
 
 export default function WishlistPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   const [newSuggestion, setNewSuggestion] = useState({
     item: "",
@@ -71,6 +78,31 @@ export default function WishlistPage() {
       toast({
         title: "Submission Failed",
         description: "There was an error submitting your suggestion. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Admin review mutation
+  const reviewSuggestionMutation = useMutation({
+    mutationFn: async ({ id, action, notes }: { id: number, action: 'approve' | 'reject', notes?: string }) => {
+      return apiRequest("PATCH", `/api/wishlist-suggestions/${id}`, {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        adminNotes: notes
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist-suggestions"] });
+      toast({
+        title: "Review Completed",
+        description: "Suggestion status has been updated",
+      });
+    },
+    onError: (error) => {
+      console.error("Review error:", error);
+      toast({
+        title: "Review Failed",
+        description: "There was an error updating the suggestion",
         variant: "destructive",
       });
     }
@@ -334,6 +366,75 @@ export default function WishlistPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Admin Review Section - Only visible to admins */}
+        {user && hasPermission(user.permissions || 0, PERMISSIONS.MANAGE_SETTINGS) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-[#A31C41]" />
+                Admin Review - Pending Suggestions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {suggestions.filter(s => s.status === 'pending').length === 0 ? (
+                  <p className="text-slate-500 text-center py-4">No pending suggestions to review</p>
+                ) : (
+                  suggestions
+                    .filter(s => s.status === 'pending')
+                    .map((suggestion: any) => (
+                      <div key={suggestion.id} className="border rounded-lg p-4 bg-yellow-50">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium">{suggestion.item}</h4>
+                              <Badge variant={
+                                suggestion.priority === 'high' ? 'destructive' :
+                                suggestion.priority === 'medium' ? 'default' : 'secondary'
+                              }>
+                                {suggestion.priority} priority
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-2">{suggestion.reason}</p>
+                            <p className="text-xs text-slate-500">
+                              Suggested on {new Date(suggestion.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => reviewSuggestionMutation.mutate({
+                              id: suggestion.id,
+                              action: 'approve'
+                            })}
+                            disabled={reviewSuggestionMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => reviewSuggestionMutation.mutate({
+                              id: suggestion.id,
+                              action: 'reject'
+                            })}
+                            disabled={reviewSuggestionMutation.isPending}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Activity */}
         <Card>
