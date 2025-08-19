@@ -951,38 +951,85 @@ export default function HostsManagementConsolidated() {
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
-                                  <DialogTitle>Edit Contact</DialogTitle>
+                                  <DialogTitle>Edit Contact & Change Role</DialogTitle>
                                 </DialogHeader>
                                 {editingContact && (
-                                  <form
-                                    onSubmit={(e) => {
-                                      e.preventDefault();
-                                      handleUpdateContact();
-                                    }}
-                                    className="space-y-4"
-                                  >
-                                    <div>
-                                      <Label htmlFor="edit-contact-name">Name *</Label>
-                                      <Input
-                                        id="edit-contact-name"
-                                        value={editingContact.name}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          setEditingContact({ ...editingContact, name: e.target.value });
-                                        }}
-                                      />
+                                  <div className="space-y-4">
+                                    {/* Current Status Section */}
+                                    <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                                      <h3 className="font-medium text-sm text-slate-700">Current Status</h3>
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant="secondary">Host Contact</Badge>
+                                        <Badge variant="outline">host contacts</Badge>
+                                      </div>
+                                      <div className="flex items-center space-x-2 text-sm text-slate-600">
+                                        <Building2 className="w-4 h-4" />
+                                        <span>Organization: {selectedHost?.name}/{selectedHost?.address || 'Location'}</span>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <Label htmlFor="edit-contact-role">Role</Label>
-                                      <Input
-                                        id="edit-contact-role"
-                                        value={editingContact.role}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          setEditingContact({ ...editingContact, role: e.target.value });
-                                        }}
-                                      />
-                                    </div>
+
+                                    <form
+                                      onSubmit={(e) => {
+                                        e.preventDefault();
+                                        handleUpdateContact();
+                                      }}
+                                      className="space-y-4"
+                                    >
+                                      <div>
+                                        <Label htmlFor="edit-contact-name">Name *</Label>
+                                        <Input
+                                          id="edit-contact-name"
+                                          value={editingContact.name}
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            setEditingContact({ ...editingContact, name: e.target.value });
+                                          }}
+                                        />
+                                      </div>
+                                      
+                                      {/* Host Location Association */}
+                                      <div>
+                                        <Label htmlFor="edit-contact-location">Host Location</Label>
+                                        <Select
+                                          value={selectedHost?.id.toString()}
+                                          onValueChange={(value) => {
+                                            // Handle location change - this would require additional logic
+                                            console.log('Location change requested:', value);
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select host location" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {hosts.map((host) => (
+                                              <SelectItem key={host.id} value={host.id.toString()}>
+                                                {host.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                          Currently assigned to: {selectedHost?.name}
+                                        </p>
+                                      </div>
+
+                                      <div>
+                                        <Label htmlFor="edit-contact-role">Role</Label>
+                                        <Input
+                                          id="edit-contact-role"
+                                          value={`${editingContact.role} - ${selectedHost?.name}`}
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            // Extract just the role part (before the dash)
+                                            const roleOnly = e.target.value.split(' - ')[0];
+                                            setEditingContact({ ...editingContact, role: roleOnly });
+                                          }}
+                                          placeholder="e.g., Manager - Sandy Springs/Chastain"
+                                        />
+                                        <p className="text-xs text-slate-500 mt-1">
+                                          Format: Role Type - Location Designation
+                                        </p>
+                                      </div>
                                     <div>
                                       <Label htmlFor="edit-contact-phone">Phone *</Label>
                                       <Input
@@ -1026,6 +1073,32 @@ export default function HostsManagementConsolidated() {
                                         rows={3}
                                       />
                                     </div>
+
+                                      {/* Change Role & Assignment Section */}
+                                      <div className="border-t pt-4">
+                                        <h3 className="font-medium text-sm text-slate-700 mb-3">Change Role & Assignment</h3>
+                                        <div>
+                                          <Label htmlFor="new-role-type">New Role Type</Label>
+                                          <Select 
+                                            value="Host Contact" 
+                                            onValueChange={(value) => {
+                                              console.log('Role type change requested:', value);
+                                              // This would handle converting between contact types
+                                            }}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select role type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="Host Contact">Host Contact</SelectItem>
+                                              <SelectItem value="Volunteer">Volunteer</SelectItem>
+                                              <SelectItem value="Driver">Driver</SelectItem>
+                                              <SelectItem value="General Contact">General Contact</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                      </div>
+
                                     <div className="flex justify-end space-x-2">
                                       <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
                                         Cancel
@@ -1034,10 +1107,11 @@ export default function HostsManagementConsolidated() {
                                         type="submit"
                                         disabled={!editingContact.name.trim() || !editingContact.phone.trim() || updateContactMutation.isPending}
                                       >
-                                        {updateContactMutation.isPending ? "Updating..." : "Update Contact"}
+                                        {updateContactMutation.isPending ? "Saving Changes..." : "Save Changes & Update Role"}
                                       </Button>
                                     </div>
                                   </form>
+                                  </div>
                                 )}
                               </DialogContent>
                             </Dialog>
