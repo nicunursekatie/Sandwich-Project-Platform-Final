@@ -262,8 +262,6 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <DriversManagement />;
       case "volunteers":
         return <VolunteerManagement />;
-      case "donation-tracking":
-        return <DonationTracking />;
 
       case "wishlist":
         return <WishlistPage />;

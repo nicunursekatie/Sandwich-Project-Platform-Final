@@ -732,7 +732,7 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
                                 recipientName={assigneeName}
                                 contextType="task"
                                 contextId={task.id.toString()}
-                                entityName={task.title}
+                                contextTitle={task.title}
                                 size="xs"
                               />
                             );
