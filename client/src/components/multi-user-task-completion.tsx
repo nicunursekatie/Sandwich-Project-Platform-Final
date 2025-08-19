@@ -192,7 +192,7 @@ export function MultiUserTaskCompletion({
                 recipientName={assigneeName}
                 contextType="task"
                 contextId={taskId.toString()}
-                entityName={`task completion`}
+                contextTitle={`task completion`}
                 size="sm"
                 className="ml-2"
               />

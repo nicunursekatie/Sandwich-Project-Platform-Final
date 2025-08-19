@@ -89,12 +89,27 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Agreement Status Bug Fixed (Aug 2025)**: Resolved issue where new drivers created with "Agreement Signed" selected would still show "Missing Agreement" badge. Root cause was inconsistent dialog structure between Add and Edit forms. Completely rebuilt Add New Driver dialog to mirror working Edit dialog structure, ensuring consistent field handling and agreement status persistence. Agreement status now saves and displays correctly for new drivers.
 - **Availability Field Corrected (Aug 2025)**: Removed dropdown availability status field from forms. Only using availabilityNotes as free text field for scheduling details like "M-F after 3" as intended. Driver cards display availabilityNotes content when present.
 
+### Kudos System Bug Fixed (Aug 2025)
+**Problem**: SendKudosButton components were using incorrect prop `entityName` instead of `contextTitle`, causing API validation errors.
+**Solution**: Fixed all SendKudosButton instances to use `contextTitle` prop which gets mapped to `entityName` in the API request:
+- `client/src/pages/project-detail-clean.tsx` (line 735): Fixed task completion kudos
+- `client/src/components/multi-user-task-completion.tsx` (line 198): Fixed task assignee kudos
+**API Schema**: `server/routes/messaging.ts` expects `entityName` field, component uses `contextTitle` prop internally
+
+### JSX Structure Fixes (Aug 2025)
+**Problem**: Duplicate case statements in dashboard navigation and unclosed div tags in drivers management component causing compilation errors.
+**Solution**: 
+- Fixed duplicate "donation-tracking" case in `client/src/pages/dashboard.tsx`
+- Corrected JSX structure in `client/src/components/drivers-management.tsx` by adding missing closing div tags for elements at lines 465, 467, 468
+**Files Fixed**: Dashboard navigation now renders without warnings, drivers management component compiles successfully
+
 ### Key Component Locations
 - **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`
 - **Recipient Forms**: `client/src/components/recipients-management.tsx` 
 - **Chat Components**: `client/src/components/socket-chat-hub.tsx`, `client/src/components/simple-chat.tsx`
 - **Schema Definitions**: `shared/schema.ts` (all database models and validation schemas)
 - **Backend Routes**: `server/routes.ts` (API endpoints with schema validation)
+- **Kudos Components**: `client/src/components/send-kudos-button.tsx`, kudos API at `server/routes/messaging.ts`
 
 ### Common Debugging Patterns
 1. **Form Validation Errors**: Check schema in `shared/schema.ts`, look for data type mismatches (string vs number/date)

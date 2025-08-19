@@ -954,13 +954,8 @@ export default function DriversManagement() {
                     {addDriverMutation.isPending ? "Adding..." : "Add Driver"}
                   </Button>
                 </div>
-                  </div>
-                </div>
               </DialogContent>
             </Dialog>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Filters */}
