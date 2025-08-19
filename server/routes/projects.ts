@@ -119,7 +119,11 @@ router.post("/projects", isAuthenticated, sanitizeMiddleware, async (req, res) =
   }
 });
 
-router.patch("/projects/:id", sanitizeMiddleware, async (req, res) => {
+router.patch("/projects/:id", isAuthenticated, sanitizeMiddleware, async (req, res) => {
+  // Check if user has permission to edit projects
+  if (!canEditProjects(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to edit projects" });
+  }
   try {
     const id = parseInt(req.params.id);
     const updates = req.body;
@@ -177,7 +181,11 @@ router.patch("/projects/:id", sanitizeMiddleware, async (req, res) => {
   }
 });
 
-router.delete("/projects/:id", async (req, res) => {
+router.delete("/projects/:id", isAuthenticated, async (req, res) => {
+  // Check if user has permission to delete projects
+  if (!canDeleteProjects(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to delete projects" });
+  }
   try {
     const id = parseInt(req.params.id);
     const success = await storage.deleteProject(id);

@@ -3,6 +3,17 @@ import { DataExporter } from "../data-export";
 import { BulkOperationsManager } from "../bulk-operations";
 import { AuditLogger } from "../audit-logger";
 import { z } from "zod";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
+
+// Authentication middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  const user = req.user || req.session?.user;
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  req.user = user;
+  next();
+};
 
 const router = Router();
 
@@ -82,7 +93,11 @@ router.get('/summary', async (req, res) => {
 });
 
 // Bulk operations endpoints
-router.post('/bulk/deduplicate-hosts', async (req: any, res) => {
+router.post('/bulk/deduplicate-hosts', isAuthenticated, async (req: any, res) => {
+  // Check if user has permission for data management
+  if (!hasPermission(req.user, PERMISSIONS.MANAGE_DATA)) {
+    return res.status(403).json({ error: "Insufficient permissions for data management operations" });
+  }
   try {
     const context = {
       userId: req.user?.claims?.sub,
@@ -99,7 +114,11 @@ router.post('/bulk/deduplicate-hosts', async (req: any, res) => {
   }
 });
 
-router.delete('/bulk/collections', async (req: any, res) => {
+router.delete('/bulk/collections', isAuthenticated, async (req: any, res) => {
+  // Check if user has permission for data management
+  if (!hasPermission(req.user, PERMISSIONS.MANAGE_DATA)) {
+    return res.status(403).json({ error: "Insufficient permissions for bulk deletion operations" });
+  }
   try {
     const schema = z.object({
       ids: z.array(z.number())
