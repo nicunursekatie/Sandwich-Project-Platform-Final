@@ -172,7 +172,21 @@ export default function RecipientsManagement() {
       });
       return;
     }
-    createRecipientMutation.mutate(newRecipient);
+    
+    // Convert data types to match schema expectations
+    const submissionData = {
+      ...newRecipient,
+      // Convert estimatedSandwiches from string to number (or null if empty)
+      estimatedSandwiches: newRecipient.estimatedSandwiches 
+        ? parseInt(newRecipient.estimatedSandwiches, 10) 
+        : null,
+      // Convert contractSignedDate from string to Date (or null if empty)
+      contractSignedDate: newRecipient.contractSignedDate 
+        ? new Date(newRecipient.contractSignedDate) 
+        : null,
+    };
+    
+    createRecipientMutation.mutate(submissionData);
   };
 
   const handleEdit = (recipient: Recipient) => {
@@ -181,7 +195,21 @@ export default function RecipientsManagement() {
 
   const handleUpdate = () => {
     if (!editingRecipient) return;
-    updateRecipientMutation.mutate(editingRecipient);
+    
+    // Convert data types to match schema expectations for update
+    const updateData = {
+      ...editingRecipient,
+      // Convert estimatedSandwiches from string to number (or null if empty)
+      estimatedSandwiches: (editingRecipient as any).estimatedSandwiches 
+        ? parseInt((editingRecipient as any).estimatedSandwiches, 10) 
+        : null,
+      // Convert contractSignedDate from string to Date (or null if empty)
+      contractSignedDate: (editingRecipient as any).contractSignedDate 
+        ? new Date((editingRecipient as any).contractSignedDate) 
+        : null,
+    };
+    
+    updateRecipientMutation.mutate(updateData);
   };
 
   const handleDelete = (id: number) => {
