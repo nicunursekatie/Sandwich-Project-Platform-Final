@@ -85,6 +85,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - Fixed `agreementSigned` → `emailAgreementSent` field naming for consistency with refactored agreement system
 - Updated `newDriver` state initialization to include all necessary fields
 - System is fully functional - users can successfully add/edit drivers with agreement status updates working correctly
+- **CRITICAL FIX**: Fixed agreement status persistence issue where users had to update 2-3 times - was caused by Select value reading from old `hasSignedAgreement(editingDriver)` function while onChange updated `emailAgreementSent` field, creating UI/data mismatch
 
 ### Key Component Locations
 - **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`

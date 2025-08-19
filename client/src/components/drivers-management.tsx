@@ -1500,7 +1500,7 @@ export default function DriversManagement() {
                 <Label htmlFor="edit-agreement">Agreement Status</Label>
                 <Select
                   value={
-                    hasSignedAgreement(editingDriver)
+                    editingDriver.emailAgreementSent
                       ? "signed"
                       : "missing"
                   }
