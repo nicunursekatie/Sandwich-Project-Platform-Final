@@ -1097,6 +1097,25 @@ export default function DriversManagement() {
                           Active
                         </Badge>
 
+                        {/* Availability Status */}
+                        <Badge
+                          variant="outline"
+                          className={`flex items-center gap-1 ${
+                            driver.availability === "available"
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : driver.availability === "busy"
+                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                              : "bg-gray-50 text-gray-700 border-gray-200"
+                          }`}
+                        >
+                          <Clock className="w-3 h-3" />
+                          {driver.availability === "available"
+                            ? "Available"
+                            : driver.availability === "busy"
+                            ? "Busy"
+                            : "Off Duty"}
+                        </Badge>
+
                         {/* Van Approval */}
                         {driver.vanApproved && (
                           <Badge
@@ -1254,6 +1273,25 @@ export default function DriversManagement() {
                         >
                           <XCircle className="w-3 h-3" />
                           Inactive
+                        </Badge>
+
+                        {/* Availability Status (for inactive drivers) */}
+                        <Badge
+                          variant="outline"
+                          className={`flex items-center gap-1 ${
+                            driver.availability === "available"
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : driver.availability === "busy"
+                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                              : "bg-gray-50 text-gray-700 border-gray-200"
+                          }`}
+                        >
+                          <Clock className="w-3 h-3" />
+                          {driver.availability === "available"
+                            ? "Available"
+                            : driver.availability === "busy"
+                            ? "Busy"
+                            : "Off Duty"}
                         </Badge>
 
                         {/* Van Approval (for inactive drivers) */}
