@@ -8734,6 +8734,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wishlist Suggestions API endpoints
+  app.get("/api/wishlist-suggestions", isAuthenticated, async (req, res) => {
+    try {
+      const suggestions = await storage.getAllWishlistSuggestions();
+      res.json(suggestions);
+    } catch (error) {
+      logger.error("Failed to get wishlist suggestions", error);
+      res.status(500).json({ message: "Failed to get wishlist suggestions" });
+    }
+  });
+
+  app.get("/api/wishlist-suggestions/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const suggestion = await storage.getWishlistSuggestion(id);
+      if (!suggestion) {
+        return res.status(404).json({ message: "Wishlist suggestion not found" });
+      }
+      res.json(suggestion);
+    } catch (error) {
+      logger.error("Failed to get wishlist suggestion", error);
+      res.status(500).json({ message: "Failed to get wishlist suggestion" });
+    }
+  });
+
+  app.post("/api/wishlist-suggestions", isAuthenticated, sanitizeMiddleware, async (req, res) => {
+    try {
+      const { insertWishlistSuggestionSchema } = await import("@shared/schema");
+      const result = insertWishlistSuggestionSchema.safeParse({
+        ...req.body,
+        suggestedBy: req.user?.id || 'anonymous'
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid wishlist suggestion data", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const suggestion = await storage.createWishlistSuggestion(result.data);
+      res.status(201).json(suggestion);
+    } catch (error) {
+      logger.error("Failed to create wishlist suggestion", error);
+      res.status(500).json({ message: "Failed to create wishlist suggestion" });
+    }
+  });
+
+  app.put("/api/wishlist-suggestions/:id", isAuthenticated, requirePermission("manage_settings"), sanitizeMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = {
+        ...req.body,
+        ...(req.body.status && req.body.status !== 'pending' && { 
+          reviewedAt: new Date(), 
+          reviewedBy: req.user?.id 
+        })
+      };
+      
+      const suggestion = await storage.updateWishlistSuggestion(id, updates);
+      if (!suggestion) {
+        return res.status(404).json({ message: "Wishlist suggestion not found" });
+      }
+      res.json(suggestion);
+    } catch (error) {
+      logger.error("Failed to update wishlist suggestion", error);
+      res.status(500).json({ message: "Failed to update wishlist suggestion" });
+    }
+  });
+
+  app.delete("/api/wishlist-suggestions/:id", isAuthenticated, requirePermission("manage_settings"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteWishlistSuggestion(id);
+      if (!success) {
+        return res.status(404).json({ message: "Wishlist suggestion not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Failed to delete wishlist suggestion", error);
+      res.status(500).json({ message: "Failed to delete wishlist suggestion" });
+    }
+  });
+
+  app.get("/api/wishlist-activity", isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const activity = await storage.getRecentWishlistActivity(limit);
+      res.json(activity);
+    } catch (error) {
+      logger.error("Failed to get wishlist activity", error);
+      res.status(500).json({ message: "Failed to get wishlist activity" });
+    }
+  });
+
   // Make broadcast functions available globally for use in other routes
   (global as any).broadcastNewMessage = broadcastNewMessage;
   (global as any).broadcastTaskAssignment = broadcastTaskAssignment;

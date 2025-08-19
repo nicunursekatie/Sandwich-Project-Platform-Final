@@ -1,5 +1,5 @@
 import { 
-  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses,
+  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses, wishlistSuggestions,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -25,7 +25,8 @@ import {
   type Suggestion, type InsertSuggestion,
   type SuggestionResponse, type InsertSuggestionResponse,
   type ChatMessageLike, type InsertChatMessageLike,
-  type SandwichDistribution, type InsertSandwichDistribution
+  type SandwichDistribution, type InsertSandwichDistribution,
+  type WishlistSuggestion, type InsertWishlistSuggestion
 } from "@shared/schema";
 
 export interface IStorage {
@@ -242,6 +243,14 @@ export interface IStorage {
   updateSuggestion(id: number, updates: Partial<Suggestion>): Promise<Suggestion | undefined>;
   deleteSuggestion(id: number): Promise<boolean>;
   upvoteSuggestion(id: number): Promise<boolean>;
+
+  // Wishlist Suggestions
+  getAllWishlistSuggestions(): Promise<WishlistSuggestion[]>;
+  getWishlistSuggestion(id: number): Promise<WishlistSuggestion | undefined>;
+  createWishlistSuggestion(suggestion: InsertWishlistSuggestion): Promise<WishlistSuggestion>;
+  updateWishlistSuggestion(id: number, updates: Partial<WishlistSuggestion>): Promise<WishlistSuggestion | undefined>;
+  deleteWishlistSuggestion(id: number): Promise<boolean>;
+  getRecentWishlistActivity(limit?: number): Promise<WishlistSuggestion[]>;
 
   // Suggestion Responses
   getSuggestionResponses(suggestionId: number): Promise<SuggestionResponse[]>;

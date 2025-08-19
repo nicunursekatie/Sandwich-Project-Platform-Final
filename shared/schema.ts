@@ -917,6 +917,33 @@ export type EmailDraft = typeof emailDrafts.$inferSelect;
 export type InsertEmailMessage = z.infer<typeof insertEmailMessageSchema>;
 export type InsertEmailDraft = z.infer<typeof insertEmailDraftSchema>;
 
+// Wishlist suggestions table for Amazon wishlist item requests
+export const wishlistSuggestions = pgTable("wishlist_suggestions", {
+  id: serial("id").primaryKey(),
+  item: text("item").notNull(),
+  reason: text("reason"),
+  priority: varchar("priority").notNull().default("medium"), // high, medium, low
+  suggestedBy: varchar("suggested_by").notNull(), // user ID who suggested it
+  status: varchar("status").notNull().default("pending"), // pending, approved, rejected, added
+  adminNotes: text("admin_notes"), // Notes from admin review
+  amazonUrl: text("amazon_url"), // URL if added to actual Amazon wishlist
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by"), // user ID who reviewed it
+});
+
+export const insertWishlistSuggestionSchema = createInsertSchema(wishlistSuggestions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  reviewedAt: true,
+});
+
+export type WishlistSuggestion = typeof wishlistSuggestions.$inferSelect;
+export type InsertWishlistSuggestion = z.infer<typeof insertWishlistSuggestionSchema>;
+
 // Google Sheets integration table
 export const googleSheets = pgTable("google_sheets", {
   id: serial("id").primaryKey(),

@@ -1722,6 +1722,8 @@ export default function DriversManagement() {
           </DialogContent>
         </Dialog>
       )}
+      </div>
     </div>
+  </div>
   );
 }
