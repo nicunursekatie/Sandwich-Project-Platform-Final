@@ -10,6 +10,7 @@ Form Design: Eliminate redundant or confusing form fields - host dialogs should 
 Mobile UX Priority: Mobile user experience is critical - chat positioning and space efficiency are key concerns. Vehicle type should NOT be required for new driver entries.
 Documentation: All technical findings and fixes must be documented in replit.md to avoid repeated searching and debugging.
 Navigation Icons: Collections log icon in simple-nav should use sandwich logo.png from LOGOS folder.
+Desktop Chat UX: Desktop users require proper scrolling behavior without nested scrolling containers that cause page focus issues - chat layout must handle desktop and mobile differently.
 
 ## System Architecture
 
@@ -24,7 +25,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Data Models**: Comprehensive management of Sandwich Collections, Hosts, Recipients, Projects, Users (with role-based access), and Audit Logs.
 - **Authentication & Authorization**: Comprehensive granular permissions system with custom role management, robust 30-day session management, detailed audit logging, and permissions controls for all application components.
 - **Performance**: Optimized for speed with query optimization, LRU caching, pagination, memoization, database connection pooling, and Express gzip/brotli compression.
-- **Messaging & Notifications**: Multi-layered communication system featuring a Gmail-style email interface, committee-specific messaging, and real-time Socket.IO chat with @mentions, autocomplete dropdown, persistent like functionality, and email notifications. Dashboard bell notifications provide timely updates.
+- **Messaging & Notifications**: Multi-layered communication system featuring a Gmail-style email interface, committee-specific messaging, and real-time Socket.IO chat with @mentions, autocomplete dropdown, persistent like functionality, and email notifications. Dashboard bell notifications provide timely updates. Desktop chat layout properly handles scrolling without nested containers that cause focus/scrolling issues.
 - **Operational Tools**: Includes a project management system, meeting management, work logs, a user feedback portal, analytics dashboards with PDF/CSV report generation, and a toolkit for important documents.
 - **Data Integrity**: Ensured through automated audit logging, Zod validation for all data inputs, and systems for correcting suspicious entries.
 - **Form Validation & Data Conversion**: Critical data type mismatches resolved with automatic conversion handling in backend schemas. Recipients form converts estimatedSandwiches (string→number/null) and contractSignedDate (string→Date/null). Website fields changed from type="url" to type="text" for flexibility. Driver vehicle type is optional.

@@ -217,8 +217,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <RealTimeMessages />;
       case "chat":
         return (
-          <div className="space-y-6 p-6">
-            <div className="flex items-center gap-4 mb-6">
+          <div className="h-full flex flex-col">
+            <div className="flex-shrink-0 flex items-center gap-4 p-6 pb-2 border-b border-gray-200">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
                 <MessageCircle className="w-6 h-6 text-blue-600" />
               </div>
@@ -227,7 +227,9 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
                 <p className="text-gray-600">Real-time communication with your team across different channels</p>
               </div>
             </div>
-            <SocketChatHub />
+            <div className="flex-1 min-h-0">
+              <SocketChatHub />
+            </div>
           </div>
         );
       case "kudos":
@@ -520,8 +522,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30">
-          {activeSection === 'gmail-inbox' ? (
-            // Special full-height layout for inbox
+          {(activeSection === 'gmail-inbox' || activeSection === 'chat') ? (
+            // Special full-height layout for inbox and chat
             (<div className="h-full">
               {renderContent()}
             </div>)
