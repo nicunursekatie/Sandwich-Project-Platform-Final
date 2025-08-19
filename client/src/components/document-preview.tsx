@@ -29,35 +29,34 @@ export function DocumentPreview({ documentPath, documentName, documentType, onCl
  switch (documentType?.toLowerCase()) {
  case 'pdf':
  return (
- <div className="flex flex-col items-center justify-center h-full p-8 text-center">
- <div className="mb-4">
- <FileText className="w-16 h-16 text-red-500 mx-auto mb-4" />
- <h3 className="text-lg font-semibold mb-2">{documentName}</h3>
- <p className="text-gray-600 mb-6">
- PDF preview may be blocked by your browser's security settings. Click "Open in New Tab" to view the document or download it to your device.
- </p>
- </div>
- <div className="flex gap-4 mb-6">
+ <div className="h-full flex flex-col">
+ {/* Header with buttons - compact */}
+ <div className="flex-shrink-0 flex items-center justify-between p-3 bg-gray-50 border-b">
+ <h3 className="text-sm font-medium truncate">{documentName}</h3>
+ <div className="flex gap-2">
  <Button 
- variant="default"
- onClick={handleOpenInNewTab}
- className="flex items-center gap-2"
- >
- <ExternalLink className="w-4 h-4" />
- Open PDF in New Tab
- </Button>
- <Button 
- variant="outline"
+ variant="ghost"
+ size="sm"
  onClick={handleDownload} 
- className="flex items-center gap-2"
+ className="flex items-center gap-1 h-8 px-2"
+ title="Download PDF"
  >
- <Download className="w-4 h-4" />
- Download PDF
+ <Download className="w-3 h-3" />
  </Button>
+ <Button 
+ variant="ghost"
+ size="sm"
+ onClick={handleOpenInNewTab}
+ className="flex items-center gap-1 h-8 px-2"
+ title="Open in New Tab"
+ >
+ <ExternalLink className="w-3 h-3" />
+ </Button>
+ </div>
  </div>
  
- {/* Fallback iframe for browsers that allow it */}
- <div className="w-full h-96 border rounded-lg overflow-hidden">
+ {/* PDF viewer - takes full space */}
+ <div className="flex-1 bg-white">
  <iframe
  src={documentPath}
  className="w-full h-full border-0"
@@ -65,8 +64,7 @@ export function DocumentPreview({ documentPath, documentName, documentType, onCl
  title={documentName}
  style={{ 
  display: 'block',
- border: 'none',
- borderRadius: '0.5rem'
+ border: 'none'
  }}
  />
  </div>
