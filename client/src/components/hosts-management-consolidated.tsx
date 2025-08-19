@@ -382,14 +382,13 @@ export default function HostsManagementConsolidated() {
     
     console.log('Updating contact:', editingContact.id, editingContact);
     
-    // Clean the updates object to only include valid HostContact fields
+    // Clean the updates object to only include valid HostContact fields - exclude timestamps and IDs
     const updates = {
-      name: editingContact.name,
-      role: editingContact.role,
-      phone: editingContact.phone,
-      email: editingContact.email,
-      isPrimary: editingContact.isPrimary,
-      notes: editingContact.notes
+      name: editingContact.name?.trim(),
+      role: editingContact.role?.trim(),
+      phone: editingContact.phone?.trim(),
+      email: editingContact.email?.trim(),
+      notes: editingContact.notes?.trim() || ""
     };
     
     updateContactMutation.mutate({
@@ -1082,14 +1081,7 @@ export default function HostsManagementConsolidated() {
                                         }}
                                       />
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Switch
-                                        id="edit-contact-primary"
-                                        checked={editingContact.isPrimary}
-                                        onCheckedChange={(checked) => setEditingContact({ ...editingContact, isPrimary: checked })}
-                                      />
-                                      <Label htmlFor="edit-contact-primary">Primary Contact</Label>
-                                    </div>
+
                                     <div>
                                       <Label htmlFor="edit-contact-notes">Notes</Label>
                                       <Textarea
