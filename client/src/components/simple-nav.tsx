@@ -33,6 +33,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { HelpBubble } from "@/components/help-system/HelpBubble";
 import sandwichLogo from "@assets/LOGOS/Copy of TSP_transparent.png";
 
+import sandwich_20logo from "@assets/sandwich%20logo.png";
+
 interface NavigationItem {
   id: string;
   label: string;
@@ -211,7 +213,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
           >
             {item.customIcon ? (
               <img 
-                src={item.customIcon} 
+                src={sandwich_20logo} 
                 alt={item.label}
                 className={`h-4 w-4 flex-shrink-0 ${isCollapsed ? '' : 'mr-2 sm:mr-3'}`}
               />
