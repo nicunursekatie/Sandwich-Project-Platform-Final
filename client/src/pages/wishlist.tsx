@@ -37,14 +37,14 @@ export default function WishlistPage() {
   });
 
   // Fetch wishlist suggestions
-  const { data: suggestions = [], isLoading, error: suggestionsError } = useQuery({
+  const { data: suggestions = [], isLoading, error: suggestionsError } = useQuery<any[]>({
     queryKey: ["/api/wishlist-suggestions"],
     retry: 1,
     staleTime: 30000,
   });
 
   // Fetch recent activity
-  const { data: activity = [], error: activityError } = useQuery({
+  const { data: activity = [], error: activityError } = useQuery<any[]>({
     queryKey: ["/api/wishlist-activity"],
     retry: 1,
     staleTime: 30000,
@@ -427,13 +427,7 @@ export default function WishlistPage() {
         </Card>
 
         {/* Admin Review Section - Only visible to admins */}
-        {console.log('Wishlist permissions check:', { 
-          user: user ? 'exists' : 'null', 
-          permissions: user?.permissions, 
-          hasManageWishlist: user ? hasPermission(user.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) : false,
-          MANAGE_WISHLIST_value: PERMISSIONS.MANAGE_WISHLIST
-        })}
-        {user && hasPermission(user.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && (
+        {user && hasPermission((user as any)?.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
