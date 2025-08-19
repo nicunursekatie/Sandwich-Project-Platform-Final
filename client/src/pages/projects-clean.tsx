@@ -22,7 +22,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Project, InsertProject } from '@shared/schema';
 import SendKudosButton from '@/components/send-kudos-button';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
-import sandwichLogo from '@assets/LOGOS/TSP_transparent.png';
+import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 
 // Component to display assignee email
 function AssigneeEmail({ assigneeId }: { assigneeId: string | number }) {
