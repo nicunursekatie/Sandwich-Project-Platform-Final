@@ -196,14 +196,34 @@ export function GoogleSheetsViewer({ initialUrl = "", title = "Google Sheets Vie
         <CardContent>
           {fallbackFileStatus?.hasFile ? (
             <>
-              <div className="border rounded-lg overflow-hidden">
+              <div 
+                className="border rounded-lg overflow-hidden relative"
+                onWheel={(e) => {
+                  // Prevent parent scrolling when scrolling within the iframe container
+                  e.stopPropagation();
+                }}
+                onTouchMove={(e) => {
+                  // Prevent parent scrolling on mobile
+                  e.stopPropagation();
+                }}
+                style={{ 
+                  height: `${height}px`,
+                  overflow: 'hidden',
+                  isolation: 'isolate'
+                }}
+              >
                 <iframe
                   src="/api/project-data/current"
                   width="100%"
                   height={height}
-                  style={{ border: 'none' }}
+                  style={{ 
+                    border: 'none',
+                    display: 'block',
+                    overflow: 'hidden'
+                  }}
                   title="Sandwich Totals Data Sheet"
                   onLoad={() => setIsLoading(false)}
+                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                 />
               </div>
               
