@@ -39,6 +39,8 @@ import {
   Trash2,
   UserPlus,
   Copy,
+  Truck,
+  Heart,
 } from "lucide-react";
 import {
   Select,
@@ -345,6 +347,8 @@ function PhoneDirectoryFixed() {
           notes: contact.notes,
           isPrimary: contact.isPrimary,
           source: "host_contacts",
+          hostId: host.id,
+          assignedHostId: host.id.toString(),
         });
       });
     });
@@ -361,6 +365,8 @@ function PhoneDirectoryFixed() {
         address: recipient.address,
         notes: recipient.preferences,
         source: "recipients",
+        recipientId: recipient.id,
+        assignedRecipientId: recipient.id.toString(),
       });
     });
 
@@ -957,7 +963,17 @@ function PhoneDirectoryFixed() {
                   {filteredDirectory.map((contact) => (
                     <div
                       key={contact.id}
-                      className="p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 border-border bg-card"
+                      className={`p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 bg-card ${
+                        contact.type === "Host Contact"
+                          ? "border-emerald-200 hover:border-emerald-300"
+                          : contact.type === "Volunteer"
+                          ? "border-blue-200 hover:border-blue-300"
+                          : contact.type === "Driver"
+                          ? "border-purple-200 hover:border-purple-300"
+                          : contact.type === "Recipient"
+                          ? "border-orange-200 hover:border-orange-300"
+                          : "border-border"
+                      }`}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -967,8 +983,30 @@ function PhoneDirectoryFixed() {
                             </h3>
                             <Badge
                               variant="outline"
-                              className="flex items-center gap-1"
+                              className={`flex items-center gap-1 ${
+                                contact.type === "Host Contact"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : contact.type === "Volunteer"
+                                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                                  : contact.type === "Driver"
+                                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                                  : contact.type === "Recipient"
+                                  ? "bg-orange-50 text-orange-700 border-orange-200"
+                                  : ""
+                              }`}
                             >
+                              {contact.type === "Host Contact" && (
+                                <Building className="w-3 h-3" />
+                              )}
+                              {contact.type === "Volunteer" && (
+                                <Users className="w-3 h-3" />
+                              )}
+                              {contact.type === "Driver" && (
+                                <Truck className="w-3 h-3" />
+                              )}
+                              {contact.type === "Recipient" && (
+                                <Heart className="w-3 h-3" />
+                              )}
                               {contact.type}
                             </Badge>
                             {contact.organization && (
