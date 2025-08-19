@@ -34,7 +34,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Authentication UI**: Modernized login and authentication experience with enhanced landing pages, professional styling, and consistent branding.
 - **Password Reset System**: Complete SendGrid-powered password reset functionality with professional email templates, secure token-based authentication, and environment-aware URL generation for both development and production deployments.
 - **Donation Tracking**: System for logging sandwich distributions from host locations to recipient organizations, renamed from "Route Tracking" to better reflect functionality.
-- **Enhanced Directory**: Comprehensive contact information display with full edit/add capabilities, showing organization, role, phone, email, address, notes, and creation dates with proper permissions management.
+- **Streamlined Navigation**: Directory functionality completely removed from navigation and permissions system as requested, with contact management now handled directly within each specific section (Hosts, Drivers, Recipients, Volunteers).
 - **Complete Permissions Coverage**: All application components now have proper permissions controls, including Weekly Monitoring, Events, SignUp Genius, Development tools, Work Logs, and Toolkit, all accessible through the enhanced permissions dialog with categorized permission management.
 
 ## External Dependencies

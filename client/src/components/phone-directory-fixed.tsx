@@ -236,7 +236,7 @@ function PhoneDirectoryFixed() {
     hasPermission(user, PERMISSIONS.VIEW_HOSTS);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState<string>("directory");
+  const [activeTab, setActiveTab] = useState<string>("hosts");
 
   // Data queries
   const { data: hosts = [] } = useQuery<HostWithContacts[]>({
@@ -261,7 +261,6 @@ function PhoneDirectoryFixed() {
 
   // Available tabs
   const availableTabs = [
-    { id: "directory", label: "Directory", icon: Phone, enabled: true },
     { id: "hosts", label: "Hosts", icon: Users, enabled: canViewHosts },
     {
       id: "recipients",
@@ -919,8 +918,7 @@ function PhoneDirectoryFixed() {
             {availableTabs.map((tab) => {
               const Icon = tab.icon;
               let count = 0;
-              if (tab.id === "directory") count = filteredDirectory.length;
-              else if (tab.id === "hosts") count = filteredHosts.length;
+              if (tab.id === "hosts") count = filteredHosts.length;
               else if (tab.id === "recipients")
                 count = filteredRecipients.length;
               else if (tab.id === "drivers") count = filteredDrivers.length;
@@ -944,204 +942,7 @@ function PhoneDirectoryFixed() {
           </TabsList>
         </div>
 
-        {/* Directory */}
-        <TabsContent value="directory" className="space-y-6 mt-6">
-          <Card className="border-2 shadow-sm border-border">
-            <CardHeader className="pb-4 bg-muted">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-primary font-['Roboto',sans-serif]">
-                    <Phone className="w-6 h-6 text-primary" />
-                    Unified Directory
-                  </CardTitle>
-                  <CardDescription className="text-base text-muted-foreground font-['Roboto',sans-serif]">
-                    All contacts from hosts, recipients, drivers, and volunteers
-                    in one view
-                  </CardDescription>
-                </div>
-                {canEditContacts && (
-                  <Button
-                    className="flex items-center gap-2"
-                    onClick={() => setIsAddingContact(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add New Contact
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {filteredDirectory.length === 0 ? (
-                <div className="text-center py-12 text-base text-muted-foreground font-['Roboto',sans-serif]">
-                  {searchTerm
-                    ? "No contacts found matching your search."
-                    : "No contacts found."}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredDirectory.map((contact) => (
-                    <div
-                      key={contact.id}
-                      className={`p-5 border-2 rounded-lg hover:shadow-md transition-shadow duration-200 bg-card ${
-                        contact.type === "Host Contact"
-                          ? "border-emerald-200 hover:border-emerald-300"
-                          : contact.type === "Volunteer"
-                          ? "border-blue-200 hover:border-blue-300"
-                          : contact.type === "Driver"
-                          ? "border-purple-200 hover:border-purple-300"
-                          : contact.type === "Recipient"
-                          ? "border-orange-200 hover:border-orange-300"
-                          : "border-border"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3 flex-wrap">
-                            <h3 className="font-bold text-lg text-primary font-['Roboto',sans-serif]">
-                              {contact.name}
-                            </h3>
-                            <Badge
-                              variant="outline"
-                              className={`flex items-center gap-1 ${
-                                contact.type === "Host Contact"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : contact.type === "Volunteer"
-                                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                                  : contact.type === "Driver"
-                                  ? "bg-purple-50 text-purple-700 border-purple-200"
-                                  : contact.type === "Recipient"
-                                  ? "bg-orange-50 text-orange-700 border-orange-200"
-                                  : ""
-                              }`}
-                            >
-                              {contact.type === "Host Contact" && (
-                                <Building className="w-3 h-3" />
-                              )}
-                              {contact.type === "Volunteer" && (
-                                <Users className="w-3 h-3" />
-                              )}
-                              {contact.type === "Driver" && (
-                                <Truck className="w-3 h-3" />
-                              )}
-                              {contact.type === "Recipient" && (
-                                <Heart className="w-3 h-3" />
-                              )}
-                              {contact.type}
-                            </Badge>
-                            {contact.organization && (
-                              <Badge
-                                variant="secondary"
-                                className="flex items-center gap-1"
-                              >
-                                <Building className="w-3 h-3" />
-                                {contact.organization}
-                              </Badge>
-                            )}
-                            {contact.type === "Driver" && contact.zone && (
-                              <Badge
-                                variant="outline"
-                                className="bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1"
-                              >
-                                <MapPin className="w-3 h-3" />
-                                Zone: {contact.zone}
-                              </Badge>
-                            )}
-                            {contact.type === "Driver" && (
-                              <Badge
-                                variant="outline"
-                                className={`flex items-center gap-1 ${
-                                  (contact as any).emailAgreementSent
-                                    ? "bg-green-50 text-green-700 border-green-200"
-                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                }`}
-                              >
-                                {(contact as any).emailAgreementSent ? (
-                                  <>
-                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                    Agreement Signed
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                    Agreement Pending
-                                  </>
-                                )}
-                              </Badge>
-                            )}
-                            {contact.isPrimary && (
-                              <Badge
-                                variant="default"
-                                className="bg-blue-100 text-blue-800"
-                              >
-                                Primary Contact
-                              </Badge>
-                            )}
-                          </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {contact.phone && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Phone className="w-4 h-4" />
-                                <span>{contact.phone}</span>
-                              </div>
-                            )}
-                            {contact.email && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Mail className="w-4 h-4" />
-                                <span>{contact.email}</span>
-                              </div>
-                            )}
-
-                            {contact.address && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <MapPin className="w-4 h-4" />
-                                <span>{contact.address}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {contact.notes && (
-                            <div className="mt-3 p-3 bg-muted/50 rounded-md">
-                              <p className="text-sm text-muted-foreground">
-                                {contact.notes}
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="mt-3 flex items-center justify-between">
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Extract zone from notes if it exists
-                                let extractedZone = contact.zone || "";
-                                if (!extractedZone && contact.notes) {
-                                  const zoneMatch = contact.notes.match(/Zone:\s*([^-]+)/);
-                                  if (zoneMatch) {
-                                    extractedZone = zoneMatch[1].trim();
-                                  }
-                                }
-                                
-                                setEditingContact({
-                                  ...contact,
-                                  zone: extractedZone
-                                });
-                              }}
-                              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
-                            >
-                              <Edit className="w-4 h-4" />
-                              Edit & Reassign
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Hosts */}
         {canViewHosts && (
