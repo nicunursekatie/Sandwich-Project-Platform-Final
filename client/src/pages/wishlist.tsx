@@ -427,6 +427,12 @@ export default function WishlistPage() {
         </Card>
 
         {/* Admin Review Section - Only visible to admins */}
+        {console.log('Wishlist permissions check:', { 
+          user: user ? 'exists' : 'null', 
+          permissions: user?.permissions, 
+          hasManageWishlist: user ? hasPermission(user.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) : false,
+          MANAGE_WISHLIST_value: PERMISSIONS.MANAGE_WISHLIST
+        })}
         {user && hasPermission(user.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && (
           <Card>
             <CardHeader>

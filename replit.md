@@ -37,7 +37,8 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Donation Tracking**: System for logging sandwich distributions from host locations to recipient organizations.
 - **Streamlined Navigation**: Contact management is handled directly within each specific section (Hosts, Drivers, Recipients, Volunteers).
 - **Complete Permissions Coverage**: All application components have proper permissions controls, including Weekly Monitoring, Events, SignUp Genius, Development tools, Work Logs, and Toolkit.
-- **Wishlist System**: Amazon wishlist suggestion system fully implemented with database persistence, API endpoints, and responsive UI.
+- **Wishlist System**: Amazon wishlist suggestion system fully implemented with database persistence, API endpoints, responsive UI, and admin review functionality with MANAGE_WISHLIST permissions.
+- **Mobile Header Optimization**: Header layout optimized for tablets/iPads ensuring logout button remains accessible even with console open. Uses gap-based spacing and flex-shrink-0 constraints.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
