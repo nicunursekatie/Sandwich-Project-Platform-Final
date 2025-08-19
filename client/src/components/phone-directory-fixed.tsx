@@ -380,7 +380,7 @@ function PhoneDirectoryFixed() {
         role: "Driver",
         type: "Driver",
         address: driver.homeAddress,
-        notes: `Zone: ${driver.zone}${driver.notes ? ` - ${driver.notes}` : ""}`,
+        notes: driver.notes, // Remove zone from notes since it's now a badge
         zone: driver.zone,
         vanApproved: driver.vanApproved,
         emailAgreementSent: driver.emailAgreementSent,
@@ -1018,6 +1018,15 @@ function PhoneDirectoryFixed() {
                               >
                                 <Building className="w-3 h-3" />
                                 {contact.organization}
+                              </Badge>
+                            )}
+                            {contact.type === "Driver" && contact.zone && (
+                              <Badge
+                                variant="outline"
+                                className="bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1"
+                              >
+                                <MapPin className="w-3 h-3" />
+                                Zone: {contact.zone}
                               </Badge>
                             )}
                             {contact.isPrimary && (
