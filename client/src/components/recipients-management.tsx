@@ -330,10 +330,10 @@ export default function RecipientsManagement() {
                     <Label htmlFor="website">Website</Label>
                     <Input
                       id="website"
-                      type="url"
+                      type="text"
                       value={newRecipient.website}
                       onChange={(e) => setNewRecipient({ ...newRecipient, website: e.target.value })}
-                      placeholder="https://www.organization.org"
+                      placeholder="www.organization.org or https://organization.org"
                     />
                   </div>
                   <div>
@@ -702,10 +702,10 @@ export default function RecipientsManagement() {
                 <Label htmlFor="edit-website">Website</Label>
                 <Input
                   id="edit-website"
-                  type="url"
+                  type="text"
                   value={(editingRecipient as any).website || ""}
                   onChange={(e) => setEditingRecipient({ ...editingRecipient, website: e.target.value })}
-                  placeholder="https://www.organization.org"
+                  placeholder="www.organization.org or https://organization.org"
                 />
               </div>
               <div>
