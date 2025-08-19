@@ -1,7 +1,7 @@
 import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, Phone, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator, Calendar, Clock, Truck } from "lucide-react";
 import { useLocation } from "wouter";
-import sandwichLogo from "@assets/LOGOS/TSP_transparent.png";
-import squareSandwichLogo from "@assets/LOGOS/sandwich logo.png";
+// Using optimized SVG for faster loading
+const sandwichLogo = "/sandwich-icon-optimized.svg";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectList from "@/components/project-list";
 import WeeklySandwichForm from "@/components/weekly-sandwich-form";
@@ -367,7 +367,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <img src={sandwichLogo} alt="Sandwich Logo" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+          <img src={sandwichLogo} alt="Sandwich Logo" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" width="24" height="24" />
           <h1 className="text-base sm:text-lg font-semibold text-teal-800 hidden sm:block">The Sandwich Project</h1>
           <h1 className="text-sm font-semibold text-teal-800 sm:hidden">TSP</h1>
         </div>
@@ -416,7 +416,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
           >
             <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
-          <MessageNotifications user={user} />
+          {/* Defer MessageNotifications to improve first paint performance */}
+          {typeof window !== 'undefined' && <MessageNotifications user={user} />}
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -490,7 +491,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
               aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isSidebarCollapsed ? (
-                <img src={squareSandwichLogo} alt="Expand" className="w-5 h-5" />
+                <img src={sandwichLogo} alt="Expand" className="w-5 h-5" />
               ) : (
                 <ChevronDown className="w-4 h-4 text-amber-700 rotate-90" />
               )}

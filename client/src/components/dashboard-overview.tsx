@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, TrendingUp, Calendar, Award, Download, ExternalLink, Sandwich, Eye, BarChart3, Target, Activity, Users, Zap, Clock, Building2, Layers, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,9 @@ import { AnimatedCounter } from "@/components/modern-dashboard/animated-counter"
 
 // Dark mode toggle removed per user request
 import { SandwichStackIcon, GrowthTrendIcon, CommunityIcon, TargetIcon, SparkleIcon, NetworkIcon } from "@/components/modern-dashboard/custom-svg-icons";
-import tspLogo from "@assets/sandwich_project_transparent_1753668698851.png";
-import sandwichLogo from "@assets/LOGOS/sandwich logo.png";
+// Using optimized SVG logos for faster loading
+const tspLogoSvg = "/logo-optimized.svg";
+const sandwichIconSvg = "/sandwich-icon-optimized.svg";
 
 interface DashboardOverviewProps {
   onSectionChange: (section: string) => void;
@@ -54,6 +56,9 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
     });
   };
 
+  // Defer stats loading until after first render for better FCP/LCP
+  const [deferredLoad, setDeferredLoad] = useState(false);
+  
   const { data: statsData } = useQuery({
     queryKey: ["/api/sandwich-collections/stats"],
     queryFn: async () => {
@@ -62,8 +67,15 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
       return response.json();
     },
     staleTime: 0,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    enabled: deferredLoad // Only fetch after component has rendered
   });
+
+  // Trigger deferred loading after initial render
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDeferredLoad(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Key organizational documents from attached assets
   const importantDocuments = [
@@ -122,9 +134,11 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         <div className="bg-white rounded-xl mx-4 mt-8 p-8 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
           <div className="relative">
             <img 
-              src={tspLogo} 
+              src={tspLogoSvg} 
               alt="The Sandwich Project" 
               className="w-[250px] md:w-[400px] mb-6 mx-auto" 
+              width="400"
+              height="125"
             />
           </div>
           <p className="text-lg md:text-xl text-[#236383] font-medium">
