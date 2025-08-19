@@ -46,14 +46,11 @@ export default function WishlistPage() {
   // Create suggestion mutation
   const createSuggestionMutation = useMutation({
     mutationFn: async (data: typeof newSuggestion) => {
-      return apiRequest("/api/wishlist-suggestions", {
-        method: "POST",
-        body: JSON.stringify({
-          item: data.item,
-          reason: data.reason,
-          priority: data.priority,
-          status: "pending"
-        }),
+      return apiRequest("POST", "/api/wishlist-suggestions", {
+        item: data.item,
+        reason: data.reason,
+        priority: data.priority,
+        status: "pending"
       });
     },
     onSuccess: () => {
