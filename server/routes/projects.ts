@@ -39,6 +39,13 @@ const isAuthenticated = (req: any, res: any, next: any) => {
 // Permission check for project creation
 function canCreateProjects(req: any) {
   const user = req.user;
+  console.log('🔍 Permission check:', {
+    user: user?.email,
+    userId: user?.id,
+    permissions: user?.permissions,
+    checkingFor: PERMISSIONS.CREATE_PROJECTS,
+    hasPermission: hasPermission(user, PERMISSIONS.CREATE_PROJECTS)
+  });
   return hasPermission(user, PERMISSIONS.CREATE_PROJECTS);
 }
 
@@ -69,10 +76,16 @@ router.get("/projects/:id", async (req, res) => {
 
 router.post("/projects", isAuthenticated, sanitizeMiddleware, async (req, res) => {
   try {
+    console.log('🚨 Project creation request from:', req.user?.email);
+    console.log('🚨 User permissions:', req.user?.permissions);
+    console.log('🚨 Required permission:', PERMISSIONS.CREATE_PROJECTS);
+    
     // Check if user has permission to create projects
     if (!canCreateProjects(req)) {
-      return res.status(403).json({ error: "Insufficient permissions to create projects" });
+      console.log('🚨 PERMISSION DENIED');
+      return res.status(403).json({ message: "Permission denied. You cannot create projects." });
     }
+    console.log('🚨 PERMISSION GRANTED');
     
     const result = insertProjectSchema.safeParse(req.body);
     if (!result.success) {
