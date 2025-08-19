@@ -64,11 +64,12 @@ export function CollectionFilters({
             )}
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Filter Collections</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="hostFilter">Host Name</Label>
               <Select
