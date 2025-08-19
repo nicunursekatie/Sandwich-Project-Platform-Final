@@ -6,6 +6,7 @@ This full-stack application for The Sandwich Project, a nonprofit, manages sandw
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
+Form Design: Eliminate redundant or confusing form fields - host dialogs should have a single "Host Location Name" field instead of separate "Name" and "Host Location" fields.
 
 ## System Architecture
 
