@@ -383,7 +383,6 @@ function PhoneDirectoryFixed() {
         notes: driver.notes, // Remove zone from notes since it's now a badge
         zone: driver.zone,
         vanApproved: driver.vanApproved,
-        emailAgreementSent: driver.emailAgreementSent,
         source: "drivers",
       });
     });
@@ -745,6 +744,25 @@ function PhoneDirectoryFixed() {
       toast({
         title: "Error",
         description: error.message || "Failed to assign contact.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateHostMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: any }) =>
+      apiRequest("PATCH", `/api/hosts/${id}`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/hosts-with-contacts"] });
+      toast({
+        title: "Host Updated",
+        description: "Host information has been successfully updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update host.",
         variant: "destructive",
       });
     },
@@ -1198,14 +1216,42 @@ function PhoneDirectoryFixed() {
                               <Copy className="w-3 h-3" />
                             </Button>
                           </div>
-                        ) : (
+                        ) : canEditContacts ? (
                           <div className="flex items-start gap-2 mb-4 p-3 bg-muted/20 rounded-lg border border-dashed border-muted">
                             <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-muted-foreground italic font-['Roboto',sans-serif]">
-                              Location information not available
-                            </p>
+                            <div className="flex-1">
+                              <p className="font-medium text-sm text-primary font-['Roboto',sans-serif] mb-1">
+                                Location:
+                              </p>
+                              <Input
+                                placeholder="Add location address..."
+                                className="text-sm"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const target = e.target as HTMLInputElement;
+                                    if (target.value.trim()) {
+                                      // Update host address
+                                      updateHostMutation.mutate({
+                                        id: host.id,
+                                        updates: { address: target.value.trim() }
+                                      });
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const target = e.target as HTMLInputElement;
+                                  if (target.value.trim()) {
+                                    // Update host address
+                                    updateHostMutation.mutate({
+                                      id: host.id,
+                                      updates: { address: target.value.trim() }
+                                    });
+                                  }
+                                }}
+                              />
+                            </div>
                           </div>
-                        )}
+                        ) : null}
 
                         {host.contacts && host.contacts.length > 0 ? (
                           <div className="space-y-3">
