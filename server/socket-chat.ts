@@ -82,7 +82,7 @@ export function setupSocketChat(httpServer: HttpServer) {
             timestamp: new Date(msg.createdAt),
             room: msg.channel  // Add room property for client compatibility
           })).reverse();
-          socket.emit("message-history", formattedMessages);
+          socket.emit("message-history", { room: channel, messages: formattedMessages });
           
           // Auto-mark all messages in this channel as read for the joining user
           try {
@@ -133,6 +133,16 @@ export function setupSocketChat(httpServer: HttpServer) {
 
         // Broadcast to all users in the channel
         io.to(channel).emit("new-message", message);
+        
+        // Trigger notification system for new messages
+        if ((global as any).broadcastNewMessage) {
+          (global as any).broadcastNewMessage({
+            type: 'notification',
+            message: 'New chat message received',
+            userId: user.id,
+            channel: channel
+          });
+        }
         
         // Process mentions and send email notifications
         try {
@@ -266,6 +276,23 @@ export function setupSocketChat(httpServer: HttpServer) {
       } catch (error) {
         console.error("Error deleting message:", error);
         socket.emit("error", { message: "Failed to delete message" });
+      }
+    });
+
+    // Get history for a channel
+    socket.on("get-history", async (channel: string) => {
+      try {
+        const messageHistory = await storage.getChatMessages(channel, 50);
+        const formattedMessages = messageHistory.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.createdAt),
+          room: msg.channel
+        })).reverse();
+        socket.emit("message-history", { room: channel, messages: formattedMessages });
+        console.log(`Sent message history for ${channel}: ${formattedMessages.length} messages`);
+      } catch (error) {
+        console.error("Error loading message history:", error);
+        socket.emit("message-history", { room: channel, messages: [] });
       }
     });
 
