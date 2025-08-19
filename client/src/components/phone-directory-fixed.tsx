@@ -1021,9 +1021,7 @@ function PhoneDirectoryFixed() {
                           )}
 
                           <div className="mt-3 flex items-center justify-between">
-                            <Badge variant="outline" className="text-xs">
-                              Source: {contact.source.replace("_", " ")}
-                            </Badge>
+
                             <button
                               type="button"
                               onClick={() => {
