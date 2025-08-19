@@ -43,12 +43,36 @@ if (process.env.NODE_ENV === "production") {
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db-init";
 import { setupSocketChat } from "./socket-chat";
 
 const app = express();
+
+// Enable gzip/brotli compression for performance
+app.use(compression({
+  filter: (req, res) => {
+    // Don't compress if the client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    
+    // Compress all text-based content types and JSON
+    const contentType = res.get('content-type');
+    if (!contentType) return false;
+    
+    return /text|javascript|json|css|html|xml|svg/.test(contentType) ||
+           contentType.includes('application/json') ||
+           contentType.includes('application/javascript') ||
+           contentType.includes('text/');
+  },
+  threshold: 1024, // Only compress files larger than 1KB
+  level: 6, // Compression level (1-9, 6 is good balance)
+  memLevel: 8 // Memory usage level (1-9, 8 is good balance)
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
