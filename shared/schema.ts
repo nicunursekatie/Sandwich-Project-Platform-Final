@@ -669,7 +669,20 @@ export const insertHostSchema = createInsertSchema(hosts).omit({ id: true, creat
   ),
 });
 export const insertHostContactSchema = createInsertSchema(hostContacts).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertRecipientSchema = createInsertSchema(recipients).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRecipientSchema = createInsertSchema(recipients).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  // Convert estimatedSandwiches from string to number or null
+  estimatedSandwiches: z.union([
+    z.string().transform((val) => val === "" ? null : parseInt(val, 10)),
+    z.number(),
+    z.null()
+  ]).optional(),
+  // Convert contractSignedDate from string to Date or null
+  contractSignedDate: z.union([
+    z.string().transform((val) => val === "" ? null : new Date(val)),
+    z.date(),
+    z.null()
+  ]).optional(),
+});
 export const insertRecipientTspContactSchema = createInsertSchema(recipientTspContacts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({ id: true, uploadedAt: true });
 export const insertProjectTaskSchema = createInsertSchema(projectTasks).omit({ id: true, createdAt: true, updatedAt: true });
