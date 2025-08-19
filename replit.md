@@ -80,6 +80,12 @@ The application features a consistent brand identity using The Sandwich Project'
 **New Driver Form Enhancement**: Added missing agreement status, van approval, and active/inactive status fields to "Add New Driver" dialog (lines 932-972) with proper state management and form reset functionality
 **Agreement Status System Refactored (Aug 2025)**: Completely refactored agreement status system to use dedicated `emailAgreementSent` boolean field instead of complex notes parsing. Removed `updateAgreementMutation`, `updateAgreementInNotes` functions, and `hasSignedAgreement(notes)` parsing. Agreement status now managed through simple dropdown in edit modal that updates the boolean field directly, with signed agreement badges displayed on driver cards based on `driver.emailAgreementSent` value.
 
+**Add New Driver Form Enhancement (Aug 2025)**: Enhanced Add New Driver dialog to include missing fields for form consistency with Edit Driver dialog:
+- Added `availabilityNotes` field to new driver form with proper state management
+- Fixed `agreementSigned` → `emailAgreementSent` field naming for consistency with refactored agreement system
+- Updated `newDriver` state initialization to include all necessary fields
+- System is fully functional - users can successfully add/edit drivers with agreement status updates working correctly
+
 ### Key Component Locations
 - **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`
 - **Recipient Forms**: `client/src/components/recipients-management.tsx` 
