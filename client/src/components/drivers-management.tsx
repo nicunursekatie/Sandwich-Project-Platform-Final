@@ -231,6 +231,9 @@ export default function DriversManagement() {
       ...newDriver,
     };
 
+    console.log("Adding driver with data:", driverData);
+    console.log("EmailAgreementSent value:", driverData.emailAgreementSent);
+
     addDriverMutation.mutate(driverData);
   };
 
@@ -903,12 +906,15 @@ export default function DriversManagement() {
                       <Label htmlFor="agreement-status">Agreement Status</Label>
                       <Select
                         value={newDriver.emailAgreementSent ? "signed" : "not_signed"}
-                        onValueChange={(value) =>
+                        onValueChange={(value) => {
+                          console.log("Agreement status changed to:", value);
+                          const newValue = value === "signed";
+                          console.log("Setting emailAgreementSent to:", newValue);
                           setNewDriver({
                             ...newDriver,
-                            emailAgreementSent: value === "signed",
-                          })
-                        }
+                            emailAgreementSent: newValue,
+                          });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select agreement status" />
@@ -918,6 +924,9 @@ export default function DriversManagement() {
                           <SelectItem value="signed">Agreement Signed</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Current value: {String(newDriver.emailAgreementSent)}
+                      </p>
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
