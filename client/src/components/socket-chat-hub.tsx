@@ -300,15 +300,12 @@ export default function SocketChatHub() {
 
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Chat Area - Fixed Layout */}
+      <div className="flex-1 flex flex-col h-full">
         {currentRoom ? (
           <>
-            {/* Chat Header - Fixed position on mobile */}
-            <div className={`
-              px-4 md:px-6 py-4 bg-[#236383] text-white border-b border-[#1e5573]
-              ${isMobile ? 'sticky top-0 z-10' : ''}
-            `}>
+            {/* Chat Header - Always Fixed at Top */}
+            <div className="flex-shrink-0 px-4 md:px-6 py-4 bg-[#236383] text-white border-b border-[#1e5573]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {isMobile && (
@@ -358,9 +355,10 @@ export default function SocketChatHub() {
               </div>
             </div>
 
-            {/* Messages */}
-            <ScrollArea className="flex-1 px-2 md:px-4 py-2 md:py-3 bg-white">
-              <div className={isMobile ? "space-y-0" : "space-y-1"}>
+            {/* Messages - Scrollable Middle Section */}
+            <div className="flex-1 overflow-hidden bg-white">
+              <ScrollArea className="h-full px-2 md:px-4 py-2 md:py-3">
+                <div className={isMobile ? "space-y-0" : "space-y-1"}>
                 {(() => {
                   const currentMessages = messages[currentRoom] || [];
                   const groupedMessages = groupMessagesByTime(currentMessages);
@@ -416,12 +414,14 @@ export default function SocketChatHub() {
                     </div>
                   ));
                 })()}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+                  {/* Auto-scroll anchor */}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            </div>
 
-            {/* Message Input with Mentions */}
-            <div className="px-2 md:px-4 py-2 md:py-3 bg-gray-50 border-t border-gray-200">
+            {/* Message Input - Always Fixed at Bottom */}
+            <div className="flex-shrink-0 px-2 md:px-4 py-2 md:py-3 bg-gray-50 border-t border-gray-200">
               <MentionInput
                 value={newMessage}
                 onChange={setNewMessage}
