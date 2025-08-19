@@ -82,8 +82,9 @@ export default function DriversManagement() {
     availability: "available" as const,
     zone: "",
     routeDescription: "" as string | undefined,
-
     hostId: undefined as number | undefined,
+    vanApproved: false,
+    agreementSigned: false,
   });
 
   const [volunteerForm, setVolunteerForm] = useState({
@@ -124,8 +125,9 @@ export default function DriversManagement() {
         availability: "available",
         zone: "",
         routeDescription: "",
-
         hostId: undefined,
+        vanApproved: false,
+        agreementSigned: false,
       });
       setIsAddModalOpen(false);
       toast({ title: "Driver added successfully" });
@@ -286,7 +288,16 @@ export default function DriversManagement() {
       });
       return;
     }
-    addDriverMutation.mutate(newDriver);
+
+    // Prepare driver data with agreement status in notes field
+    const driverData = {
+      ...newDriver,
+      notes: newDriver.agreementSigned 
+        ? `Agreement: Yes${newDriver.notes ? ` | ${newDriver.notes}` : ''}` 
+        : newDriver.notes || '',
+    };
+
+    addDriverMutation.mutate(driverData);
   };
 
   const handleUpdate = () => {
@@ -924,6 +935,50 @@ export default function DriversManagement() {
                       }
                       placeholder="e.g., SS to Dunwoody, East Cobb to anywhere"
                     />
+                  </div>
+
+                  {/* Agreement and Van Approval Section */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="van-approved">Van Driver Status</Label>
+                      <Select
+                        value={newDriver.vanApproved ? "approved" : "not_approved"}
+                        onValueChange={(value) =>
+                          setNewDriver({
+                            ...newDriver,
+                            vanApproved: value === "approved",
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select van status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="not_approved">Not Van Approved</SelectItem>
+                          <SelectItem value="approved">Van Approved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="agreement-status">Agreement Status</Label>
+                      <Select
+                        value={newDriver.agreementSigned ? "signed" : "not_signed"}
+                        onValueChange={(value) =>
+                          setNewDriver({
+                            ...newDriver,
+                            agreementSigned: value === "signed",
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select agreement status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="not_signed">Agreement Not Signed</SelectItem>
+                          <SelectItem value="signed">Agreement Signed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
                     <Button
