@@ -73,15 +73,16 @@ export default function AddMeetingModal({ open, onOpenChange }: AddMeetingModalP
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center">
             <Plus className="text-purple-500 mr-2 w-5 h-5" />
             Add Meeting Minutes
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="space-y-4 pr-2">
           <div>
             <Label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">
               Meeting Title *
@@ -139,7 +140,7 @@ export default function AddMeetingModal({ open, onOpenChange }: AddMeetingModalP
             />
           </div>
           
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex justify-end space-x-2 pt-4 mt-6 border-t bg-white sticky bottom-0">
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
@@ -151,7 +152,8 @@ export default function AddMeetingModal({ open, onOpenChange }: AddMeetingModalP
               {addMeetingMutation.isPending ? "Adding..." : "Add Meeting Minutes"}
             </Button>
           </div>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

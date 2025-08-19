@@ -289,14 +289,15 @@ export default function RecipientsManagement() {
                   Add Recipient
                 </Button>
               </DialogTrigger>
-              <DialogContent aria-describedby="add-recipient-description">
-                <DialogHeader>
+              <DialogContent aria-describedby="add-recipient-description" className="max-h-[90vh] flex flex-col">
+                <DialogHeader className="flex-shrink-0">
                   <DialogTitle>Add New Recipient</DialogTitle>
                 </DialogHeader>
-                <p id="add-recipient-description" className="text-sm text-slate-600 mb-4">
-                  Add a new recipient to the system for sandwich deliveries.
-                </p>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex-1 overflow-y-auto px-1">
+                  <p id="add-recipient-description" className="text-sm text-slate-600 mb-4">
+                    Add a new recipient to the system for sandwich deliveries.
+                  </p>
+                  <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="name">Name *</Label>
                     <Input
@@ -474,7 +475,7 @@ export default function RecipientsManagement() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end space-x-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
                     <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                       Cancel
                     </Button>
@@ -482,7 +483,8 @@ export default function RecipientsManagement() {
                       {createRecipientMutation.isPending ? "Adding..." : "Add Recipient"}
                     </Button>
                   </div>
-                </form>
+                  </form>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
@@ -836,7 +838,7 @@ export default function RecipientsManagement() {
                         type="date"
                         value={editingRecipient.contractSignedDate ? 
                           (typeof editingRecipient.contractSignedDate === 'string' ? 
-                            editingRecipient.contractSignedDate.includes('T') ? editingRecipient.contractSignedDate.split('T')[0] : editingRecipient.contractSignedDate : 
+                            (editingRecipient.contractSignedDate.includes('T') ? editingRecipient.contractSignedDate.split('T')[0] : editingRecipient.contractSignedDate) : 
                             new Date(editingRecipient.contractSignedDate).toISOString().split('T')[0]) : ""}
                         onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSignedDate: e.target.value as any })}
                       />

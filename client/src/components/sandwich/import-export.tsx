@@ -108,15 +108,16 @@ export function ImportExportDialog({ onImport, onExport, isImporting, collection
               Import CSV
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
+          <DialogContent className="max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>Import Collection Data</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="text-sm text-gray-600"
-                Upload a CSV file with collection data. The file should have columns for:
-                Date, Host Name, Individual Sandwiches, and Group Collections.
-              </div>
+            <div className="flex-1 overflow-y-auto pr-2">
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  Upload a CSV file with collection data. The file should have columns for:
+                  Date, Host Name, Individual Sandwiches, and Group Collections.
+                </div>
               
               {importProgress > 0 && (
                 <div className="space-y-2">
@@ -165,6 +166,7 @@ export function ImportExportDialog({ onImport, onExport, isImporting, collection
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           </DialogContent>
         </Dialog>

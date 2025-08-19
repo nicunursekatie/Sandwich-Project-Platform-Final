@@ -622,17 +622,18 @@ export default function DriversManagement() {
                   <span className="sm:hidden">Submit</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
+              <DialogContent className="max-h-[90vh] flex flex-col">
+                <DialogHeader className="flex-shrink-0">
                   <DialogTitle>Submit Volunteer Driver Agreement</DialogTitle>
                 </DialogHeader>
-                <form
-                  className="space-y-4"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSubmitVolunteer();
-                  }}
-                >
+                <div className="flex-1 overflow-y-auto pr-2">
+                  <form
+                    className="space-y-4"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSubmitVolunteer();
+                    }}
+                  >
                   <div>
                     <Label htmlFor="volunteer-name">Full Name *</Label>
                     <Input
@@ -761,7 +762,7 @@ export default function DriversManagement() {
                       terms *
                     </Label>
                   </div>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
                     <Button
                       type="button"
                       variant="outline"
@@ -778,7 +779,8 @@ export default function DriversManagement() {
                         : "Submit Agreement"}
                     </Button>
                   </div>
-                </form>
+                  </form>
+                </div>
               </DialogContent>
             </Dialog>
 
@@ -790,11 +792,12 @@ export default function DriversManagement() {
                   <span className="sm:hidden">Add</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
+              <DialogContent className="max-h-[90vh] flex flex-col">
+                <DialogHeader className="flex-shrink-0">
                   <DialogTitle>Add New Driver</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="flex-1 overflow-y-auto pr-2">
+                  <div className="space-y-4">
                   <div>
                     <Label htmlFor="name">Driver Name *</Label>
                     <Input
@@ -910,7 +913,7 @@ export default function DriversManagement() {
                       placeholder="e.g., SS to Dunwoody, East Cobb to anywhere"
                     />
                   </div>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
                     <Button
                       variant="outline"
                       onClick={() => setIsAddModalOpen(false)}
@@ -923,6 +926,7 @@ export default function DriversManagement() {
                     >
                       {addDriverMutation.isPending ? "Adding..." : "Add Driver"}
                     </Button>
+                  </div>
                   </div>
                 </div>
               </DialogContent>
