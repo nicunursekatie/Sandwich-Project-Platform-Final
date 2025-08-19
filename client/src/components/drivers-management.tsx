@@ -918,6 +918,9 @@ export default function DriversManagement() {
                           <SelectItem value="signed">Agreement Signed</SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="text-xs text-blue-600 mt-1">
+                        Debug: {newDriver.emailAgreementSent ? "TRUE - Agreement Signed" : "FALSE - Not Signed"}
+                      </div>
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
