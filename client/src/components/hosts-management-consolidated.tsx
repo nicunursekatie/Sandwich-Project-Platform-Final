@@ -15,10 +15,15 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
-import type { Host, InsertHost, HostContact, InsertHostContact } from "@shared/schema";
+import type { Host, InsertHost, HostContact, InsertHostContact, Recipient } from "@shared/schema";
 
 interface HostWithContacts extends Host {
   contacts: HostContact[];
+}
+
+interface ExtendedHostContact extends HostContact {
+  newRoleType?: string;
+  newAssignmentId?: number;
 }
 
 export default function HostsManagementConsolidated() {
@@ -30,7 +35,7 @@ export default function HostsManagementConsolidated() {
   const [editingHost, setEditingHost] = useState<Host | null>(null);
   const [selectedHost, setSelectedHost] = useState<HostWithContacts | null>(null);
   const [isAddingContact, setIsAddingContact] = useState(false);
-  const [editingContact, setEditingContact] = useState<HostContact | null>(null);
+  const [editingContact, setEditingContact] = useState<ExtendedHostContact | null>(null);
   const [expandedContacts, setExpandedContacts] = useState<Set<number>>(new Set());
 
   // Helper function to sort contacts by priority (leads first, then primary contacts)
@@ -80,11 +85,18 @@ export default function HostsManagementConsolidated() {
     notes: ""
   });
 
-  const { data: hosts = [], isLoading } = useQuery<HostWithContacts[]>({
+  const { data: hostsWithContacts = [], isLoading } = useQuery<HostWithContacts[]>({
     queryKey: ['/api/hosts-with-contacts'],
     staleTime: 0, // Always fetch fresh data
     gcTime: 0, // Don't cache data
   });
+
+  const { data: recipients = [] } = useQuery<Recipient[]>({
+    queryKey: ['/api/recipients']
+  });
+
+  // Alias for backward compatibility
+  const hosts = hostsWithContacts;
 
   const createHostMutation = useMutation({
     mutationFn: async (data: InsertHost) => {
@@ -1081,10 +1093,14 @@ export default function HostsManagementConsolidated() {
                                           <div>
                                             <Label htmlFor="new-role-type">New Role Type</Label>
                                             <Select 
-                                              value="Host Contact" 
+                                              value={editingContact.newRoleType || "Host Contact"} 
                                               onValueChange={(value) => {
                                                 console.log('Role type change requested:', value);
-                                                // This would handle converting between contact types
+                                                setEditingContact({ 
+                                                  ...editingContact, 
+                                                  newRoleType: value,
+                                                  newAssignmentId: undefined // Clear assignment when role changes
+                                                });
                                               }}
                                             >
                                               <SelectTrigger>
@@ -1092,6 +1108,7 @@ export default function HostsManagementConsolidated() {
                                               </SelectTrigger>
                                               <SelectContent>
                                                 <SelectItem value="Host Contact">Host Contact</SelectItem>
+                                                <SelectItem value="Recipient Organization Contact">Recipient Organization Contact</SelectItem>
                                                 <SelectItem value="Volunteer">Volunteer</SelectItem>
                                                 <SelectItem value="Driver">Driver</SelectItem>
                                                 <SelectItem value="General Contact">General Contact</SelectItem>
@@ -1099,30 +1116,72 @@ export default function HostsManagementConsolidated() {
                                             </Select>
                                           </div>
                                           
-                                          <div>
-                                            <Label htmlFor="host-location-assignment">Host Location Assignment</Label>
-                                            <Select
-                                              value={selectedHost?.id.toString()}
-                                              onValueChange={(value) => {
-                                                console.log('Host location change requested:', value);
-                                                // This would handle changing the host location assignment
-                                              }}
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Select host location" />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                {hostsWithContacts?.map((host) => (
-                                                  <SelectItem key={host.id} value={host.id.toString()}>
-                                                    {host.name} - {host.address}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                              Current: {selectedHost?.name} - {selectedHost?.address}
-                                            </p>
-                                          </div>
+                                          {/* Dynamic Assignment Dropdown */}
+                                          {editingContact.newRoleType === "Host Contact" && (
+                                            <div>
+                                              <Label htmlFor="host-location-assignment">Choose Host Location</Label>
+                                              <Select
+                                                value={editingContact.newAssignmentId?.toString() || selectedHost?.id.toString()}
+                                                onValueChange={(value) => {
+                                                  console.log('Host location assignment:', value);
+                                                  setEditingContact({ 
+                                                    ...editingContact, 
+                                                    newAssignmentId: parseInt(value)
+                                                  });
+                                                }}
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue placeholder="Select host location" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {hostsWithContacts?.map((host) => (
+                                                    <SelectItem key={host.id} value={host.id.toString()}>
+                                                      {host.name} - {host.address}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                          )}
+
+                                          {editingContact.newRoleType === "Recipient Organization Contact" && (
+                                            <div>
+                                              <Label htmlFor="recipient-organization-assignment">Choose Recipient Organization</Label>
+                                              <Select
+                                                value={editingContact.newAssignmentId?.toString() || ""}
+                                                onValueChange={(value) => {
+                                                  console.log('Recipient organization assignment:', value);
+                                                  setEditingContact({ 
+                                                    ...editingContact, 
+                                                    newAssignmentId: parseInt(value)
+                                                  });
+                                                }}
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue placeholder="Select recipient organization" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {recipients?.map((recipient) => (
+                                                    <SelectItem key={recipient.id} value={recipient.id.toString()}>
+                                                      {recipient.name} - {recipient.contactName}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                          )}
+
+                                          {(editingContact.newRoleType === "Volunteer" || 
+                                            editingContact.newRoleType === "Driver" || 
+                                            editingContact.newRoleType === "General Contact") && (
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                              <p className="text-sm text-blue-700">
+                                                {editingContact.newRoleType === "Volunteer" && "This contact will be moved to the Volunteers directory."}
+                                                {editingContact.newRoleType === "Driver" && "This contact will be moved to the Drivers directory."}
+                                                {editingContact.newRoleType === "General Contact" && "This contact will be moved to the General Contacts directory."}
+                                              </p>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
 
