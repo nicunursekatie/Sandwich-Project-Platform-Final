@@ -61,7 +61,7 @@ import WishlistPage from "@/pages/wishlist";
 
 import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
 
-import sandwich_20logo from "@assets/sandwich%20logo.png";
+import sandwich_20logo from "@assets/LOGOS/sandwich logo.png";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
