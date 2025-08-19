@@ -59,6 +59,8 @@ import DonationTracking from "@/components/donation-tracking";
 import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard";
 import WishlistPage from "@/pages/wishlist";
 
+import sandwich_logo from "@assets/sandwich logo.png";
+
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
@@ -351,10 +353,9 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
   }
 
   return (
-      <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+    <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
       {/* Announcement Banner */}
       <AnnouncementBanner />
-      
       {/* Top Header */}
       <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px]">
         <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
@@ -366,7 +367,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <img src={sandwichLogo} alt="Sandwich Logo" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" width="24" height="24" />
+          <img src={sandwich_logo} alt="Sandwich Logo" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" width="24" height="24" />
           <h1 className="text-base sm:text-lg font-semibold text-teal-800 hidden sm:block">The Sandwich Project</h1>
           <h1 className="text-sm font-semibold text-teal-800 sm:hidden">TSP</h1>
         </div>
@@ -466,7 +467,6 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
           </div>
         </div>
       </div>
-
       <div className="flex flex-1 relative pt-[60px] md:pt-0">
         {/* Mobile overlay */}
         {isMobileMenuOpen && (
@@ -519,18 +519,18 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30">
           {activeSection === 'gmail-inbox' ? (
             // Special full-height layout for inbox
-            <div className="h-full">
+            (<div className="h-full">
               {renderContent()}
-            </div>
+            </div>)
           ) : (
             // Normal layout for other content
-            <div className="h-full overflow-y-auto overflow-x-hidden">
+            (<div className="h-full overflow-y-auto overflow-x-hidden">
               <div className="p-0 sm:p-4 md:p-6 pb-20 min-h-full">
                 <div className="max-w-full overflow-x-hidden">
                   {renderContent()}
                 </div>
               </div>
-            </div>
+            </div>)
           )}
         </div>
       </div>
