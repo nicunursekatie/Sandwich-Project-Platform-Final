@@ -153,11 +153,9 @@ export default function DriversManagement() {
     },
   });
   const updateAgreement = (driver: Driver, newStatus: "signed" | "missing") => {
-    const updatedNotes = updateAgreementInNotes(driver.notes || "", newStatus);
-
     updateDriverMutation.mutate({
       id: driver.id,
-      updates: { notes: updatedNotes },
+      updates: { emailAgreementSent: newStatus === "signed" },
     });
   };
   // Delete driver mutation
@@ -216,68 +214,7 @@ export default function DriversManagement() {
     },
   });
 
-  // Update agreement status mutation
-  const updateAgreementMutation = useMutation({
-    mutationFn: ({
-      driverId,
-      status,
-    }: {
-      driverId: number;
-      status: "signed" | "missing";
-    }) => {
-      const driver = drivers?.find((d) => d.id === driverId);
-      if (!driver) throw new Error("Driver not found");
 
-      const updatedNotes = updateAgreementInNotes(driver.notes || "", status);
-
-      return apiRequest("PATCH", `/api/drivers/${driverId}`, {
-        notes: updatedNotes,
-      });
-    },
-    onMutate: async ({ driverId, status }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["/api/drivers"] });
-
-      // Snapshot the previous value
-      const previousDrivers = queryClient.getQueryData(["/api/drivers"]);
-
-      // Optimistically update to the new value
-      queryClient.setQueryData(["/api/drivers"], (old: Driver[] | undefined) => {
-        if (!old) return old;
-        return old.map(driver => {
-          if (driver.id === driverId) {
-            const updatedNotes = updateAgreementInNotes(driver.notes || "", status);
-            return { ...driver, notes: updatedNotes };
-          }
-          return driver;
-        });
-      });
-
-      // Return a context object with the snapshotted value
-      return { previousDrivers };
-    },
-    onSuccess: (_, { status }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/drivers"] });
-      toast({
-        title: `Agreement marked as ${status}`,
-        description: "Driver agreement status updated successfully",
-      });
-    },
-    onError: (err, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousDrivers) {
-        queryClient.setQueryData(["/api/drivers"], context.previousDrivers);
-      }
-      toast({
-        title: "Failed to update agreement status",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ["/api/drivers"] });
-    },
-  });
 
   const handleAdd = () => {
     if (!newDriver.name || !newDriver.phone) {
@@ -288,12 +225,10 @@ export default function DriversManagement() {
       return;
     }
 
-    // Prepare driver data with agreement status in notes field
+    // Prepare driver data with agreement status
     const driverData = {
       ...newDriver,
-      notes: newDriver.agreementSigned 
-        ? `Agreement: Yes${newDriver.notes ? ` | ${newDriver.notes}` : ''}` 
-        : newDriver.notes || '',
+      emailAgreementSent: newDriver.agreementSigned,
     };
 
     addDriverMutation.mutate(driverData);
@@ -344,15 +279,8 @@ export default function DriversManagement() {
     submitVolunteerMutation.mutate(volunteerForm);
   };
 
-  const hasSignedAgreement = (notes: string) => {
-    if (!notes) return false;
-    const agreementText = notes.toLowerCase();
-    return (
-      agreementText.includes("agreement: yes") ||
-      agreementText.includes("agreement: signed") ||
-      agreementText.includes("agreement: true") ||
-      agreementText.includes("agreement received") // Legacy format
-    );
+  const hasSignedAgreement = (driver: Driver) => {
+    return driver.emailAgreementSent || false;
   };
 
   // Helper function to clean notes for display (removes redundant info)
@@ -393,29 +321,7 @@ export default function DriversManagement() {
     return parts.length > 0 ? parts.join('; ') : null;
   };
 
-  // Helper function to update agreement status in notes while preserving other content
-  const updateAgreementInNotes = (
-    currentNotes: string = "",
-    newStatus: "signed" | "missing",
-  ): string => {
-    // Remove any existing agreement status
-    let updatedNotes = currentNotes
-      .replace(/Agreement:\s*(yes|signed|true|no|missing|false)/gi, "")
-      .trim();
 
-    // Remove trailing semicolons or commas
-    updatedNotes = updatedNotes.replace(/[;,]\s*$/, "").trim();
-
-    // Add the new agreement status
-    const agreementText = `Agreement: ${newStatus}`;
-
-    // If there are other notes, add agreement status at the end
-    if (updatedNotes) {
-      return `${updatedNotes}; ${agreementText}`;
-    }
-
-    return agreementText;
-  };
 
   // Export function
   const handleExport = () => {
@@ -439,7 +345,7 @@ export default function DriversManagement() {
     const csvContent = [
       headers.join(","),
       ...drivers.map((driver) => {
-        const hasAgreement = hasSignedAgreement(driver.notes || "");
+        const hasAgreement = hasSignedAgreement(driver);
         return [
           `"${driver.name}"`,
           `"${driver.phone || ""}"`,
@@ -515,8 +421,8 @@ export default function DriversManagement() {
 
   // Separate and sort drivers by agreement status first, then by name
   const sortByAgreementAndName = (a: Driver, b: Driver) => {
-    const aHasAgreement = hasSignedAgreement(a.notes || "");
-    const bHasAgreement = hasSignedAgreement(b.notes || "");
+    const aHasAgreement = hasSignedAgreement(a);
+    const bHasAgreement = hasSignedAgreement(b);
     
     // First sort by agreement status: signed agreements first
     if (aHasAgreement && !bHasAgreement) return -1;
@@ -1167,42 +1073,29 @@ export default function DriversManagement() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
-                              disabled={
-                                !canEdit || updateAgreementMutation.isPending
-                              }
+                              disabled={!canEdit}
                               className={`cursor-pointer transition-all duration-200 hover:shadow-sm flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold
                                 ${
-                                  hasSignedAgreement(driver.notes)
+                                  hasSignedAgreement(driver)
                                     ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                                     : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
                                 }
-                                ${!canEdit ? "cursor-not-allowed opacity-50" : ""}
-                                ${updateAgreementMutation.isPending ? "animate-pulse" : ""}`}
+                                ${!canEdit ? "cursor-not-allowed opacity-50" : ""}`}
                             >
-                              {updateAgreementMutation.isPending ? (
-                                <Clock className="w-3 h-3 animate-spin" />
-                              ) : hasSignedAgreement(driver.notes) ? (
+                              {hasSignedAgreement(driver) ? (
                                 <FileCheck className="w-3 h-3" />
                               ) : (
                                 <AlertTriangle className="w-3 h-3" />
                               )}
-                              {hasSignedAgreement(driver.notes)
+                              {hasSignedAgreement(driver)
                                 ? "Signed Agreement"
                                 : "Missing Agreement"}
                             </button>
                           </DropdownMenuTrigger>
 
                           <DropdownMenuContent>
-                            <DropdownMenuItem
-                              onClick={() => updateAgreement(driver, "signed")}
-                            >
-                              Mark as Signed
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem
-                              onClick={() => updateAgreement(driver, "missing")}
-                            >
-                              Mark as Missing
+                            <DropdownMenuItem disabled>
+                              Edit driver to change agreement status
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1339,56 +1232,28 @@ export default function DriversManagement() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
-                              disabled={
-                                !canEdit || updateAgreementMutation.isPending
-                              }
+                              disabled={!canEdit}
                               className={`cursor-pointer transition-all duration-200 hover:shadow-sm flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold
                                 ${
-                                  hasSignedAgreement(driver.notes)
+                                  hasSignedAgreement(driver)
                                     ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                                     : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
                                 }
-                                ${!canEdit ? "cursor-not-allowed opacity-50" : ""}
-                                ${updateAgreementMutation.isPending ? "animate-pulse" : ""}`}
+                                ${!canEdit ? "cursor-not-allowed opacity-50" : ""}`}
                             >
-                              {updateAgreementMutation.isPending ? (
-                                <Clock className="w-3 h-3 animate-spin" />
-                              ) : hasSignedAgreement(driver.notes) ? (
+                              {hasSignedAgreement(driver) ? (
                                 <FileCheck className="w-3 h-3" />
                               ) : (
                                 <AlertTriangle className="w-3 h-3" />
                               )}
-                              {hasSignedAgreement(driver.notes)
+                              {hasSignedAgreement(driver)
                                 ? "Signed Agreement"
                                 : "Missing Agreement"}
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                updateAgreementMutation.mutate({
-                                  driverId: driver.id,
-                                  status: "signed",
-                                })
-                              }
-                              disabled={updateAgreementMutation.isPending}
-                              className="flex items-center gap-2"
-                            >
-                              <FileCheck className="w-4 h-4 text-blue-600" />✅
-                              Mark as Signed
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                updateAgreementMutation.mutate({
-                                  driverId: driver.id,
-                                  status: "missing",
-                                })
-                              }
-                              disabled={updateAgreementMutation.isPending}
-                              className="flex items-center gap-2"
-                            >
-                              <AlertTriangle className="w-4 h-4 text-orange-600" />
-                              ❌ Mark as Missing
+                            <DropdownMenuItem disabled>
+                              Edit driver to change agreement status
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1618,36 +1483,13 @@ export default function DriversManagement() {
                 <Label htmlFor="edit-agreement">Agreement Status</Label>
                 <Select
                   value={
-                    hasSignedAgreement(editingDriver.notes)
+                    hasSignedAgreement(editingDriver)
                       ? "signed"
                       : "missing"
                   }
                   onValueChange={(value) => {
-                    let updatedNotes = editingDriver.notes || "";
-
-                    // Remove any existing agreement status from notes
-                    updatedNotes = updatedNotes
-                      .replace(
-                        /agreement:\s*(yes|no|signed|missing|true|false)/gi,
-                        "",
-                      )
-                      .replace(/\s+/g, " ")
-                      .trim();
-
-                    // Add new agreement status
-                    if (value === "signed") {
-                      updatedNotes = updatedNotes
-                        ? `${updatedNotes} Agreement: signed`
-                        : "Agreement: signed";
-                    } else {
-                      updatedNotes = updatedNotes
-                        ? `${updatedNotes} Agreement: missing`
-                        : "Agreement: missing";
-                    }
-
                     setEditingDriver({
                       ...editingDriver,
-                      notes: updatedNotes.trim(),
                       emailAgreementSent: value === "signed",
                     });
                   }}
