@@ -1328,6 +1328,16 @@ export class MemStorage implements IStorage {
 
   // Host Contact methods
   async createHostContact(insertContact: InsertHostContact): Promise<HostContact> {
+    // Check for existing contact with same name and email to prevent duplicates
+    if (insertContact.name && insertContact.email) {
+      for (const contact of this.hostContacts.values()) {
+        if (contact.name === insertContact.name && contact.email === insertContact.email) {
+          console.log(`Duplicate host contact prevented in memory: ${insertContact.name} (${insertContact.email})`);
+          return contact;
+        }
+      }
+    }
+    
     const id = this.currentIds.hostContact++;
     const now = new Date();
     const contact: HostContact = {

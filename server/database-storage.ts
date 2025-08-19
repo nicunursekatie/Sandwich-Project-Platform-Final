@@ -1111,6 +1111,24 @@ export class DatabaseStorage implements IStorage {
 
   // Host Contact methods
   async createHostContact(insertContact: InsertHostContact): Promise<HostContact> {
+    // Check for existing contact with same name and email to prevent duplicates
+    if (insertContact.name && insertContact.email) {
+      const existingContact = await db.select()
+        .from(hostContacts)
+        .where(
+          and(
+            eq(hostContacts.name, insertContact.name),
+            eq(hostContacts.email, insertContact.email)
+          )
+        )
+        .limit(1);
+      
+      if (existingContact.length > 0) {
+        console.log(`Duplicate host contact prevented: ${insertContact.name} (${insertContact.email})`);
+        return existingContact[0];
+      }
+    }
+    
     const [contact] = await db.insert(hostContacts).values(insertContact).returning();
     return contact;
   }
