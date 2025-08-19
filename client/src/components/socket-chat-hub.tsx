@@ -20,7 +20,9 @@ import {
   Hash,
   ChevronLeft,
   ChevronRight,
-  MessageCircle
+  MessageCircle,
+  Menu,
+  Grid3X3
 } from "lucide-react";
 
 const getRoomIcon = (roomId: string) => {
@@ -315,8 +317,9 @@ export default function SocketChatHub() {
                       size="sm"
                       onClick={() => setShowSidebar(true)}
                       className="text-white hover:bg-white/10 p-2 rounded-lg"
+                      title="Switch Channels"
                     >
-                      <Hash className="h-5 w-5" />
+                      <Menu className="h-5 w-5" />
                     </Button>
                   )}
                   <span className="text-white">
@@ -343,8 +346,9 @@ export default function SocketChatHub() {
                       size="sm"
                       onClick={() => setShowSidebar(true)}
                       className="text-white hover:bg-white/10 p-2 rounded-lg"
+                      title="Switch Channels"
                     >
-                      <Users className="h-4 w-4" />
+                      <Grid3X3 className="h-4 w-4" />
                     </Button>
                   )}
                   <Badge className="bg-green-500 text-white border-green-400 hidden sm:block">
@@ -451,8 +455,9 @@ export default function SocketChatHub() {
             onClick={() => setShowSidebar(true)}
             className="fixed bottom-20 right-4 z-20 h-14 w-14 rounded-full bg-[#236383] hover:bg-[#1e5573] shadow-lg"
             size="icon"
+            title="Switch Channels"
           >
-            <Hash className="h-6 w-6 text-white" />
+            <Menu className="h-6 w-6 text-white" />
           </Button>
         )}
       </div>
