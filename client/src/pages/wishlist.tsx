@@ -270,6 +270,65 @@ export default function WishlistPage() {
           </Card>
         </div>
 
+        {/* Current Suggestions List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-[#236383]" />
+              Current Wishlist Suggestions ({suggestions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {suggestions.length === 0 ? (
+              <p className="text-slate-500 text-center py-4">No suggestions yet. Be the first to suggest an item!</p>
+            ) : (
+              <div className="space-y-3">
+                {suggestions.map((suggestion: any) => (
+                  <div key={suggestion.id} className={`p-4 rounded-lg border ${
+                    suggestion.status === 'approved' ? 'bg-green-50 border-green-200' :
+                    suggestion.status === 'rejected' ? 'bg-red-50 border-red-200' :
+                    'bg-yellow-50 border-yellow-200'
+                  }`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium">{suggestion.item}</h4>
+                          <Badge variant={
+                            suggestion.priority === 'high' ? 'destructive' :
+                            suggestion.priority === 'medium' ? 'default' : 'secondary'
+                          }>
+                            {suggestion.priority}
+                          </Badge>
+                          <Badge variant={
+                            suggestion.status === 'approved' ? 'default' :
+                            suggestion.status === 'rejected' ? 'destructive' : 'secondary'
+                          }>
+                            {suggestion.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-600 mb-1">{suggestion.reason}</p>
+                        <p className="text-xs text-slate-500">
+                          Suggested on {new Date(suggestion.createdAt).toLocaleDateString()}
+                        </p>
+                        {suggestion.adminNotes && (
+                          <p className="text-xs text-slate-700 mt-1 font-medium">
+                            Admin note: {suggestion.adminNotes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {suggestion.status === 'pending' && <Clock className="w-4 h-4 text-yellow-600" />}
+                        {suggestion.status === 'approved' && <CheckCircle className="w-4 h-4 text-green-600" />}
+                        {suggestion.status === 'rejected' && <XCircle className="w-4 h-4 text-red-600" />}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Suggest New Items */}
         <Card>
           <CardHeader>
