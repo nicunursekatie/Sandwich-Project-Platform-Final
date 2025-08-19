@@ -216,6 +216,14 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "stream-messages":
         return <RealTimeMessages />;
       case "chat":
+        // On mobile, render chat with full screen takeover
+        const isMobile = window.innerWidth < 768;
+        
+        if (isMobile) {
+          return <SocketChatHub />;
+        }
+        
+        // On desktop, render with normal dashboard structure
         return (
           <div className="space-y-6 p-6">
             <div className="flex items-center gap-4 mb-6">
