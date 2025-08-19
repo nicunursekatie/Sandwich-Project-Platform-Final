@@ -226,7 +226,7 @@ export default function SocketChatHub() {
   }
 
   return (
-    <div className={`flex bg-white relative overflow-hidden ${isMobile ? 'h-screen fixed inset-0' : 'h-screen'}`}>
+    <div className={`flex bg-white relative overflow-hidden ${isMobile ? 'h-[calc(100vh-140px)]' : 'h-screen'}`}>
       {/* Mobile Overlay */}
       {isMobile && showSidebar && (
         <div 
@@ -315,7 +315,7 @@ export default function SocketChatHub() {
       </div>
 
       {/* Main Chat Area - Fixed Layout */}
-      <div className={`flex-1 flex flex-col ${isMobile ? 'h-screen' : 'h-full'}`}>
+      <div className={`flex-1 flex flex-col ${isMobile ? 'h-full' : 'h-full'}`}>
         {currentRoom ? (
           <>
             {/* Chat Header - Always Fixed at Top */}
