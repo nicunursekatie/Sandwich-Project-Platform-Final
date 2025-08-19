@@ -19,7 +19,8 @@ import {
   Shield,
   Hash,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 } from "lucide-react";
 
 const getRoomIcon = (roomId: string) => {
