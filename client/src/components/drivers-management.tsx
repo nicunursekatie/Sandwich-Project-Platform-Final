@@ -726,217 +726,234 @@ export default function DriversManagement() {
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto pr-2">
                   <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Driver Name *</Label>
-                    <Input
-                      id="name"
-                      value={newDriver.name}
-                      onChange={(e) =>
-                        setNewDriver({ ...newDriver, name: e.target.value })
-                      }
-                      placeholder="Enter driver name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      value={newDriver.phone}
-                      onChange={(e) =>
-                        setNewDriver({ ...newDriver, phone: e.target.value })
-                      }
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newDriver.email}
-                      onChange={(e) =>
-                        setNewDriver({ ...newDriver, email: e.target.value })
-                      }
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="vehicle-type">Vehicle Type</Label>
-                    <Select
-                      value={newDriver.vehicleType}
-                      onValueChange={(value) =>
-                        setNewDriver({ ...newDriver, vehicleType: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select vehicle type (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Car">Car</SelectItem>
-                        <SelectItem value="Van">Van</SelectItem>
-                        <SelectItem value="Truck">Truck</SelectItem>
-                        <SelectItem value="Motorcycle">Motorcycle</SelectItem>
-                        <SelectItem value="Bicycle">Bicycle</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="license">License Number</Label>
-                    <Input
-                      id="license"
-                      value={newDriver.licenseNumber}
-                      onChange={(e) =>
-                        setNewDriver({
-                          ...newDriver,
-                          licenseNumber: e.target.value,
-                        })
-                      }
-                      placeholder="License number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="host">Host Location</Label>
-                    <Select
-                      value={
-                        newDriver.hostId ? newDriver.hostId.toString() : "none"
-                      }
-                      onValueChange={(value) =>
-                        setNewDriver({
-                          ...newDriver,
-                          hostId:
-                            value === "none" ? undefined : parseInt(value),
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a host location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No host assigned</SelectItem>
-                        {hosts
-                          .filter((host) => host.status === "active")
-                          .map((host) => (
-                            <SelectItem
-                              key={host.id}
-                              value={host.id.toString()}
-                            >
-                              {host.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="route-description">Route Description</Label>
-                    <Input
-                      id="route-description"
-                      value={newDriver.routeDescription || ""}
-                      onChange={(e) =>
-                        setNewDriver({
-                          ...newDriver,
-                          routeDescription: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., SS to Dunwoody, East Cobb to anywhere"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="availability-notes">Availability Notes</Label>
-                    <Input
-                      id="availability-notes"
-                      value={newDriver.availabilityNotes || ""}
-                      onChange={(e) =>
-                        setNewDriver({
-                          ...newDriver,
-                          availabilityNotes: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., M-F after 3; weekends; unavailable until June"
-                    />
-                  </div>
-
-                  {/* Status, Agreement and Van Approval Section */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="status">Status</Label>
-                      <Select
-                        value={newDriver.isActive ? "active" : "inactive"}
-                        onValueChange={(value) =>
-                          setNewDriver({
-                            ...newDriver,
-                            isActive: value === "active",
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    {/* Basic Information */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name">Driver Name *</Label>
+                        <Input
+                          id="name"
+                          value={newDriver.name}
+                          onChange={(e) =>
+                            setNewDriver({ ...newDriver, name: e.target.value })
+                          }
+                          placeholder="Full name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <Input
+                          id="phone"
+                          value={newDriver.phone}
+                          onChange={(e) =>
+                            setNewDriver({ ...newDriver, phone: e.target.value })
+                          }
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
                     </div>
+
                     <div>
-                      <Label htmlFor="van-approved">Van Driver Status</Label>
-                      <Select
-                        value={newDriver.vanApproved ? "approved" : "not_approved"}
-                        onValueChange={(value) =>
-                          setNewDriver({
-                            ...newDriver,
-                            vanApproved: value === "approved",
-                          })
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newDriver.email}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, email: e.target.value })
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select van status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="not_approved">Not Van Approved</SelectItem>
-                          <SelectItem value="approved">Van Approved</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        placeholder="email@example.com"
+                      />
                     </div>
+
+                    {/* Status and Permissions */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="status">Status</Label>
+                        <Select
+                          value={newDriver.isActive ? "active" : "inactive"}
+                          onValueChange={(value) =>
+                            setNewDriver({
+                              ...newDriver,
+                              isActive: value === "active",
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="van-approved">Van Driver Status</Label>
+                        <Select
+                          value={newDriver.vanApproved ? "approved" : "not_approved"}
+                          onValueChange={(value) =>
+                            setNewDriver({
+                              ...newDriver,
+                              vanApproved: value === "approved",
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="approved">Van Driver Approved</SelectItem>
+                            <SelectItem value="not_approved">Not Van Approved</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Agreement Status */}
                     <div>
-                      <Label htmlFor="agreement-status">Agreement Status</Label>
+                      <Label htmlFor="agreement">Agreement Status</Label>
                       <Select
-                        value={newDriver.emailAgreementSent ? "signed" : "not_signed"}
-                        onValueChange={(value) =>
+                        value={newDriver.emailAgreementSent ? "signed" : "missing"}
+                        onValueChange={(value) => {
                           setNewDriver({
                             ...newDriver,
                             emailAgreementSent: value === "signed",
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="signed">Signed Agreement</SelectItem>
+                          <SelectItem value="missing">Missing Agreement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Availability Details */}
+                    <div>
+                      <Label htmlFor="availability-notes">Availability Notes</Label>
+                      <Input
+                        id="availability-notes"
+                        value={newDriver.availabilityNotes}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            availabilityNotes: e.target.value,
+                          })
+                        }
+                        placeholder="e.g., M-F after 3; weekends; unavailable until June"
+                      />
+                    </div>
+
+                    {/* Vehicle and Route Information */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="vehicle-type">Vehicle Type</Label>
+                        <Select
+                          value={newDriver.vehicleType || ""}
+                          onValueChange={(value) =>
+                            setNewDriver({ ...newDriver, vehicleType: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select vehicle type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Car">Car</SelectItem>
+                            <SelectItem value="Van">Van</SelectItem>
+                            <SelectItem value="Truck">Truck</SelectItem>
+                            <SelectItem value="Motorcycle">Motorcycle</SelectItem>
+                            <SelectItem value="Bicycle">Bicycle</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="license">License Number</Label>
+                        <Input
+                          id="license"
+                          value={newDriver.licenseNumber}
+                          onChange={(e) =>
+                            setNewDriver({
+                              ...newDriver,
+                              licenseNumber: e.target.value,
+                            })
+                          }
+                          placeholder="License number"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="zone">Zone</Label>
+                      <Input
+                        id="zone"
+                        value={newDriver.zone}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, zone: e.target.value })
+                        }
+                        placeholder="e.g., East Cobb, Dunwoody, Sandy Springs"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="route-description">Route Description</Label>
+                      <Input
+                        id="route-description"
+                        value={newDriver.routeDescription || ""}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            routeDescription: e.target.value,
+                          })
+                        }
+                        placeholder="e.g., SS to Dunwoody, East Cobb to anywhere"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="host">Host Location</Label>
+                      <Select
+                        value={newDriver.hostId ? newDriver.hostId.toString() : "none"}
+                        onValueChange={(value) =>
+                          setNewDriver({
+                            ...newDriver,
+                            hostId: value === "none" ? undefined : parseInt(value),
                           })
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select agreement status" />
+                          <SelectValue placeholder="Select a host location" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="not_signed">Agreement Not Signed</SelectItem>
-                          <SelectItem value="signed">Agreement Signed</SelectItem>
+                          <SelectItem value="none">No host assigned</SelectItem>
+                          {hosts
+                            .filter((host) => host.status === "active")
+                            .map((host) => (
+                              <SelectItem key={host.id} value={host.id.toString()}>
+                                {host.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
-                      <div className="text-xs text-blue-600 mt-1">
-                        Debug: {newDriver.emailAgreementSent ? "TRUE - Agreement Signed" : "FALSE - Not Signed"}
-                      </div>
                     </div>
                   </div>
-                  <div className="flex justify-end gap-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsAddModalOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleAdd}
-                      disabled={addDriverMutation.isPending}
-                    >
-                      {addDriverMutation.isPending ? "Adding..." : "Add Driver"}
-                    </Button>
-                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleAdd}
+                    disabled={addDriverMutation.isPending}
+                  >
+                    {addDriverMutation.isPending ? "Adding..." : "Add Driver"}
+                  </Button>
+                </div>
                   </div>
                 </div>
               </DialogContent>
