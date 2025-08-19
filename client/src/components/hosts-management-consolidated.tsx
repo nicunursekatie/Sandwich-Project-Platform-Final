@@ -483,7 +483,7 @@ export default function HostsManagementConsolidated() {
                           </div>
                           {contact.role && (
                             <div className="text-xs text-slate-600">
-                              {contact.role}
+                              {contact.role === 'lead' ? 'Lead' : contact.role}
                             </div>
                           )}
                           <div className="flex items-center text-xs text-slate-600">
