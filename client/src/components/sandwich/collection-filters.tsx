@@ -132,6 +132,7 @@ export function CollectionFilters({
               />
             </div>
           </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -142,7 +143,7 @@ export function CollectionFilters({
         </Button>
       )}
 
-      <div className="text-sm text-gray-600"
+      <div className="text-sm text-gray-600">
         Showing {filteredCollections} of {totalCollections} collections
       </div>
     </div>

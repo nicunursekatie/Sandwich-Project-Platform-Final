@@ -65,6 +65,12 @@ export function useSocketChat() {
     newSocket.on("rooms", ({ available }) => {
       setRooms(available);
       console.log("Received rooms:", available);
+      
+      // Request message history for all rooms to populate "no messages yet" correctly
+      available.forEach((room: ChatRoom) => {
+        newSocket.emit("get-history", room.id);
+      });
+      
       // Auto-select first room if none selected
       if (available.length > 0 && !currentRoom) {
         setCurrentRoom(available[0].id);
@@ -76,16 +82,19 @@ export function useSocketChat() {
         ...prev,
         [message.room]: [...(prev[message.room] || []), message]
       }));
+      
+      // Trigger notification refresh for new messages
+      window.dispatchEvent(new CustomEvent('refreshNotifications'));
+      console.log('New message received, triggering notification refresh');
     });
 
-    newSocket.on("message-history", (messages: ChatMessage[]) => {
-      if (messages.length > 0) {
-        const room = messages[0].room;
-        setMessages(prev => ({
-          ...prev,
-          [room]: messages
-        }));
-      }
+    newSocket.on("message-history", (data: { room: string; messages: ChatMessage[] }) => {
+      const { room, messages: roomMessages } = data;
+      setMessages(prev => ({
+        ...prev,
+        [room]: roomMessages || []
+      }));
+      console.log(`Received message history for ${room}:`, roomMessages?.length || 0, 'messages');
     });
 
     newSocket.on("joined-channel", ({ channel }) => {
