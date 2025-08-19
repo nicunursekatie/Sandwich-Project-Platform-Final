@@ -216,11 +216,22 @@ export default function HostsManagementConsolidated() {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `Failed to add contact: ${error.message}`,
-        variant: "destructive",
-      });
+      const errorMessage = error?.message || error?.response?.data?.message || "Unknown error";
+      
+      // Handle specific duplicate contact error
+      if (error?.status === 409 || errorMessage.includes("already exists")) {
+        toast({
+          title: "Duplicate Contact",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `Failed to add contact: ${errorMessage}`,
+          variant: "destructive",
+        });
+      }
     }
   });
 
