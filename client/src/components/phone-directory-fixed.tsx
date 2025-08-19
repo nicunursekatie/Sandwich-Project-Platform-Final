@@ -303,7 +303,7 @@ function PhoneDirectoryFixed() {
   const filteredRecipients = recipients.filter((r) => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
-    return r.name.toLowerCase().includes(s) || r.phone.includes(searchTerm);
+    return r.name.toLowerCase().includes(s) || (r.phone && r.phone.includes(searchTerm));
   });
 
   const filteredVolunteers = volunteers.filter((v) => {
@@ -311,7 +311,7 @@ function PhoneDirectoryFixed() {
     const s = searchTerm.toLowerCase();
     return (
       v.name.toLowerCase().includes(s) ||
-      v.phone.includes(searchTerm) ||
+      (v.phone && v.phone.includes(searchTerm)) ||
       (v.email && v.email.toLowerCase().includes(s)) ||
       (v.zone && v.zone.toLowerCase().includes(s))
     );
@@ -322,7 +322,7 @@ function PhoneDirectoryFixed() {
     const s = searchTerm.toLowerCase();
     return (
       d.name.toLowerCase().includes(s) ||
-      d.phone.includes(searchTerm) ||
+      (d.phone && d.phone.includes(searchTerm)) ||
       (d.email && d.email.toLowerCase().includes(s)) ||
       (d.zone && d.zone.toLowerCase().includes(s))
     );
