@@ -2917,11 +2917,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/drivers", isAuthenticated, requirePermission("manage_drivers"), sanitizeMiddleware, async (req, res) => {
     try {
+      console.log("=== DRIVER CREATION DEBUG ===");
+      console.log("Raw request body:", JSON.stringify(req.body, null, 2));
+      console.log("EmailAgreementSent in body:", req.body.emailAgreementSent);
+      
       const result = insertDriverSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({ message: "Invalid driver data" });
+        console.log("Validation errors:", result.error.issues);
+        return res.status(400).json({ message: "Invalid driver data", errors: result.error.issues });
       }
+      
+      console.log("Validated data:", JSON.stringify(result.data, null, 2));
+      console.log("EmailAgreementSent in validated data:", result.data.emailAgreementSent);
+      
       const driver = await storage.createDriver(result.data);
+      console.log("Created driver:", JSON.stringify(driver, null, 2));
+      console.log("=== END DRIVER DEBUG ===");
+      
       res.status(201).json(driver);
     } catch (error) {
       logger.error("Failed to create driver", error);
