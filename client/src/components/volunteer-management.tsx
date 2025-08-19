@@ -402,7 +402,7 @@ export default function VolunteerManagement() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {volunteer.name || `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim() || 'Unnamed Volunteer'}
+                        {volunteer.firstName} {volunteer.lastName}
                       </h3>
                       <Badge variant={volunteer.status === 'active' ? 'default' : 'secondary'}>
                         {volunteer.status}
