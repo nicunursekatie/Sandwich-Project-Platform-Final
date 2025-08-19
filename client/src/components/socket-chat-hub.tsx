@@ -425,10 +425,10 @@ export default function SocketChatHub() {
                               <p className={`text-gray-800 text-sm break-words ${isMobile ? "leading-snug" : "leading-tight"}`}>
                                 <MessageWithMentions content={message.content} />
                               </p>
-                              {/* Message actions */}
-                              <div className={`flex items-center ${isMobile ? "mt-0" : "mt-0"}`}>
-                                <ChatMessageLikeButton messageId={message.id} />
-                              </div>
+                            </div>
+                            {/* Message actions - moved to right side */}
+                            <div className="flex items-start mt-0 ml-2 flex-shrink-0">
+                              <ChatMessageLikeButton messageId={message.id} />
                             </div>
                           </div>
                         );
