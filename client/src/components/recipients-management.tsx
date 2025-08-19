@@ -46,8 +46,6 @@ export default function RecipientsManagement() {
     contractSignedDate: ""
   });
 
-  const [contractFile, setContractFile] = useState<File | null>(null);
-
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
     queryKey: ["/api/recipients"],
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
@@ -477,40 +475,6 @@ export default function RecipientsManagement() {
                     </div>
                   </div>
 
-                  {/* Contract Upload Section */}
-                  <div className="border-t pt-4 mt-4">
-                    <h4 className="font-medium text-sm text-slate-700 mb-3">Contract Management</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="file"
-                          id="contractUpload"
-                          accept=".pdf,.doc,.docx"
-                          className="hidden"
-                          onChange={(e) => setContractFile(e.target.files?.[0] || null)}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2"
-                          onClick={() => document.getElementById('contractUpload')?.click()}
-                        >
-                          <Upload className="w-4 h-4" />
-                          {contractFile ? "Change Contract" : "Upload Contract"}
-                        </Button>
-                        <span className="text-sm text-slate-500">
-                          {contractFile ? contractFile.name : "Upload signed recipient agreement (PDF, DOC, DOCX)"}
-                        </span>
-                      </div>
-                      {contractFile && (
-                        <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
-                          ✓ File selected: {contractFile.name} ({(contractFile.size / 1024).toFixed(1)} KB)
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="flex justify-end space-x-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
                     <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                       Cancel
@@ -873,32 +837,13 @@ export default function RecipientsManagement() {
                         id="edit-contractSignedDate"
                         type="date"
                         value={editingRecipient.contractSignedDate ? 
-                          String(editingRecipient.contractSignedDate).split('T')[0] : ""}
-                        onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSignedDate: e.target.value })}
+                          (typeof editingRecipient.contractSignedDate === 'string' ? 
+                            (editingRecipient.contractSignedDate.includes('T') ? editingRecipient.contractSignedDate.split('T')[0] : editingRecipient.contractSignedDate) : 
+                            new Date(editingRecipient.contractSignedDate).toISOString().split('T')[0]) : ""}
+                        onChange={(e) => setEditingRecipient({ ...editingRecipient, contractSignedDate: e.target.value as any })}
                       />
                     </div>
                   )}
-                </div>
-
-                {/* Contract Upload Section for Edit Modal */}
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="font-medium text-sm text-slate-700 mb-3">Contract Management</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <Upload className="w-4 h-4" />
-                        Upload Contract
-                      </Button>
-                      <span className="text-sm text-slate-500">
-                        Upload signed recipient agreement
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
 

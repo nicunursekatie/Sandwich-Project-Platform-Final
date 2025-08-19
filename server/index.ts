@@ -51,8 +51,6 @@ import { setupSocketChat } from "./socket-chat";
 
 const app = express();
 
-
-
 // Enable gzip/brotli compression for performance
 app.use(compression({
   filter: (req, res) => {

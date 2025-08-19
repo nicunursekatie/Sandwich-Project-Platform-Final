@@ -276,7 +276,7 @@ export interface IStorage {
   getShoutoutHistory(): Promise<any[]>;
 
   // User Activity methods
-  logUserActivity(activity: any): Promise<any>;
+  logUserActivity(activity: InsertUserActivityLog): Promise<UserActivityLog>;
   getUserActivityStats(userId: string, days?: number): Promise<{
     totalActions: number;
     sectionsUsed: string[];
@@ -305,7 +305,7 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
+  private users: Map<number, User>;
   private projects: Map<number, Project>;
   private projectTasks: Map<number, ProjectTask>;
   private projectComments: Map<number, ProjectComment>;
