@@ -78,7 +78,7 @@ The application features a consistent brand identity using The Sandwich Project'
 **Validation**: Backend `insertDriverSchema` requires no custom validation - basic schema supports nullable vehicle types
 **Critical Fix**: Removed `!newDriver.vehicleType` from `handleAdd` validation (line 285) - was causing "Please fill in required fields" error despite vehicle type being optional
 **New Driver Form Enhancement**: Added missing agreement status, van approval, and active/inactive status fields to "Add New Driver" dialog (lines 932-972) with proper state management and form reset functionality
-**Agreement Status Bug Fix (Aug 2025)**: Fixed inconsistent agreement status parsing - `updateAgreement` function now uses `updateAgreementInNotes` helper for consistent "Agreement: signed" format, ensuring UI displays match backend updates
+**Agreement Status System Refactored (Aug 2025)**: Completely refactored agreement status system to use dedicated `emailAgreementSent` boolean field instead of complex notes parsing. Removed `updateAgreementMutation`, `updateAgreementInNotes` functions, and `hasSignedAgreement(notes)` parsing. Agreement status now managed through simple dropdown in edit modal that updates the boolean field directly, with signed agreement badges displayed on driver cards based on `driver.emailAgreementSent` value.
 
 ### Key Component Locations
 - **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`
