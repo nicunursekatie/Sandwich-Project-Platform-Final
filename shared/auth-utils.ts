@@ -56,6 +56,7 @@ export const PERMISSIONS = {
   MANAGE_MEETINGS: "manage_meetings",
   MANAGE_SUGGESTIONS: "manage_suggestions",
   SUBMIT_SUGGESTIONS: "submit_suggestions",
+  MANAGE_WISHLIST: "manage_wishlist", // Approve/reject wishlist suggestions
   MANAGE_WEEKLY_MONITORING: "manage_weekly_monitoring", // Send notifications and manage monitoring
   MANAGE_EVENTS: "manage_events", // Create, edit, delete events
   MANAGE_SIGNUP_GENIUS: "manage_signup_genius", // Manage SignUp Genius integrations

@@ -73,6 +73,7 @@ import {
   Send,
   FormInput,
   Zap,
+  Gift,
   Plus,
   User,
   Globe,
@@ -641,6 +642,13 @@ const PERMISSION_CATEGORIES = [
         label: "Manage ALL suggestions", 
         description: "Review and respond to all suggestions",
         icon: Settings,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_WISHLIST, 
+        label: "Manage wishlist", 
+        description: "Approve/reject wishlist suggestions",
+        icon: Gift,
         dangerLevel: "elevated"
       },
       { 

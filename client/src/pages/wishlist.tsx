@@ -427,7 +427,7 @@ export default function WishlistPage() {
         </Card>
 
         {/* Admin Review Section - Only visible to admins */}
-        {user && hasPermission(user.permissions || 0, PERMISSIONS.MANAGE_SETTINGS) && (
+        {user && hasPermission(user.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
