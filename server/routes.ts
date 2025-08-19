@@ -2953,28 +2953,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const updates = req.body;
 
-      // Log the update data for debugging
-      console.log(
-        `Updating driver ${id} with data:`,
-        JSON.stringify(updates, null, 2),
-      );
+      console.log(`🔧 PATCH /api/drivers/${id} - Direct DB update`, { id, updates });
 
       // Validate that we have some updates to apply
       if (!updates || Object.keys(updates).length === 0) {
         return res.status(400).json({ message: "No updates provided" });
       }
 
-      const driver = await storage.updateDriver(id, updates);
-      if (!driver) {
+      // Direct database update to bypass storage issues
+      const { drivers } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      // Clean updates to only include valid driver fields
+      const cleanUpdates = {
+        ...(updates.name && { name: updates.name }),
+        ...(updates.phone && { phone: updates.phone }),
+        ...(updates.email && { email: updates.email }),
+        ...(updates.address && { address: updates.address }),
+        ...(updates.notes !== undefined && { notes: updates.notes }),
+        ...(updates.vehicleType && { vehicleType: updates.vehicleType }),
+        ...(updates.licenseNumber && { licenseNumber: updates.licenseNumber }),
+        ...(updates.availability && { availability: updates.availability }),
+        ...(updates.zone && { zone: updates.zone }),
+        ...(updates.routeDescription && { routeDescription: updates.routeDescription }),
+        ...(updates.hostId !== undefined && { hostId: updates.hostId }),
+        updatedAt: new Date()
+      };
+
+      const [updatedDriver] = await db.update(drivers)
+        .set(cleanUpdates)
+        .where(eq(drivers.id, id))
+        .returning();
+        
+      if (!updatedDriver) {
         return res.status(404).json({ message: "Driver not found" });
       }
 
-      console.log(
-        `Driver ${id} updated successfully:`,
-        JSON.stringify(driver, null, 2),
-      );
-      res.json(driver);
+      console.log(`✅ Driver ${id} updated successfully`);
+      res.json(updatedDriver);
     } catch (error) {
+      console.error(`❌ Failed to update driver ${req.params.id}:`, error);
       logger.error("Failed to update driver", error);
       res.status(500).json({ message: "Failed to update driver" });
     }
@@ -3493,12 +3511,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-      const updatedContact = await storage.updateHostContact(id, updates);
+      
+      console.log(`🔧 PATCH /api/host-contacts/${id} - Direct DB update`, { id, updates });
+      
+      // Direct database update to bypass storage issues
+      const { hostContacts } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      // Clean updates to only include valid host contact fields
+      const cleanUpdates = {
+        ...(updates.name && { name: updates.name }),
+        ...(updates.role && { role: updates.role }),
+        ...(updates.phone && { phone: updates.phone }),
+        ...(updates.email && { email: updates.email }),
+        ...(updates.notes !== undefined && { notes: updates.notes }),
+        updatedAt: new Date()
+      };
+      
+      const [updatedContact] = await db.update(hostContacts)
+        .set(cleanUpdates)
+        .where(eq(hostContacts.id, id))
+        .returning();
+        
       if (!updatedContact) {
         return res.status(404).json({ message: "Host contact not found" });
       }
+      
+      console.log(`✅ Host contact ${id} updated successfully`);
       res.json(updatedContact);
     } catch (error) {
+      console.error(`❌ Failed to update host contact ${req.params.id}:`, error);
       logger.error("Failed to update host contact", error);
       res.status(500).json({ message: "Failed to update host contact" });
     }
