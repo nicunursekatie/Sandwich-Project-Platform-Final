@@ -76,6 +76,7 @@ The application features a consistent brand identity using The Sandwich Project'
 **Database Schema**: `drivers.vehicleType: text("vehicle_type")` - nullable field (no `.notNull()` constraint)
 **Frontend**: Removed asterisk from "Vehicle Type *" label and updated placeholder to indicate optional field
 **Validation**: Backend `insertDriverSchema` requires no custom validation - basic schema supports nullable vehicle types
+**Critical Fix**: Removed `!newDriver.vehicleType` from `handleAdd` validation (line 285) - was causing "Please fill in required fields" error despite vehicle type being optional
 
 ### Key Component Locations
 - **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`
