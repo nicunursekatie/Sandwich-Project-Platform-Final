@@ -239,7 +239,11 @@ export default function ProjectsClean() {
     <Card 
       key={project.id} 
       className="hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-200 bg-white"
-      onClick={() => setLocation(`/projects/${project.id}`)}
+      onClick={() => {
+        console.log('🎯 Project card clicked:', project.id, project.title);
+        setLocation(`/projects/${project.id}`);
+        console.log('🚀 setLocation called with:', `/projects/${project.id}`);
+      }}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
