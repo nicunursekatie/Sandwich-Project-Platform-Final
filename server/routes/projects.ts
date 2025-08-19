@@ -5,6 +5,7 @@ import path from "path";
 import { storage } from "../storage-wrapper";
 import { sanitizeMiddleware } from "../middleware/sanitizer";
 import { insertProjectSchema, insertProjectTaskSchema, insertProjectCommentSchema } from "@shared/schema";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 // Configure multer for file uploads
 const taskUpload = multer({
@@ -24,6 +25,22 @@ const taskUpload = multer({
 });
 
 const router = Router();
+
+// Authentication middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  const user = req.user || req.session?.user;
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  req.user = user; // Ensure req.user is set
+  next();
+};
+
+// Permission check for project creation
+function canCreateProjects(req: any) {
+  const user = req.user;
+  return hasPermission(user, PERMISSIONS.CREATE_PROJECTS);
+}
 
 // Project management routes
 router.get("/projects", async (req, res) => {
@@ -50,8 +67,13 @@ router.get("/projects/:id", async (req, res) => {
   }
 });
 
-router.post("/projects", sanitizeMiddleware, async (req, res) => {
+router.post("/projects", isAuthenticated, sanitizeMiddleware, async (req, res) => {
   try {
+    // Check if user has permission to create projects
+    if (!canCreateProjects(req)) {
+      return res.status(403).json({ error: "Insufficient permissions to create projects" });
+    }
+    
     const result = insertProjectSchema.safeParse(req.body);
     if (!result.success) {
       return res.status(400).json({ error: result.error.message });
