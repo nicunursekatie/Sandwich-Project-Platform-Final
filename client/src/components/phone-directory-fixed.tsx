@@ -2437,7 +2437,12 @@ function PhoneDirectoryFixed() {
                 </div>
                 {editingContact.organization && (
                   <p className="text-sm text-muted-foreground">
-                    Organization: {editingContact.organization}
+                    Role Type - Location Designation: {editingContact.type} - {editingContact.organization}
+                  </p>
+                )}
+                {!editingContact.organization && (
+                  <p className="text-sm text-muted-foreground">
+                    Role Type: {editingContact.type}
                   </p>
                 )}
               </div>
@@ -2532,9 +2537,10 @@ function PhoneDirectoryFixed() {
                           Host Contact
                         </SelectItem>
                         <SelectItem value="recipients">
-                          Recipient Organization
+                          Recipient Organization Contact
                         </SelectItem>
                         <SelectItem value="drivers">Driver</SelectItem>
+                        <SelectItem value="contacts">General Contact</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2569,6 +2575,39 @@ function PhoneDirectoryFixed() {
                       <p className="text-xs text-muted-foreground mt-1">
                         This person will become a contact for the selected host
                         location
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Recipient Organization Assignment */}
+                  {editingContact.newRoleType === "recipients" && (
+                    <div>
+                      <Label>Assign to Recipient Organization</Label>
+                      <Select
+                        value={editingContact.assignedRecipientId || ""}
+                        onValueChange={(value) =>
+                          setEditingContact({
+                            ...editingContact,
+                            assignedRecipientId: value,
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select recipient organization" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {recipients.map((recipient) => (
+                            <SelectItem
+                              key={recipient.id}
+                              value={recipient.id.toString()}
+                            >
+                              {recipient.name} - {recipient.contactName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This person will become a contact for the selected recipient organization
                       </p>
                     </div>
                   )}
