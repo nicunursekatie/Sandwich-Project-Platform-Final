@@ -302,8 +302,11 @@ export default function SocketChatHub() {
       <div className="flex-1 flex flex-col">
         {currentRoom ? (
           <>
-            {/* Chat Header */}
-            <div className="px-4 md:px-6 py-4 bg-[#236383] text-white border-b border-[#1e5573]">
+            {/* Chat Header - Fixed position on mobile */}
+            <div className={`
+              px-4 md:px-6 py-4 bg-[#236383] text-white border-b border-[#1e5573]
+              ${isMobile ? 'sticky top-0 z-10' : ''}
+            `}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {isMobile && (
@@ -311,9 +314,9 @@ export default function SocketChatHub() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowSidebar(true)}
-                      className="text-white hover:bg-white/10 p-1"
+                      className="text-white hover:bg-white/10 p-2 rounded-lg"
                     >
-                      <ChevronRight className="h-5 w-5" />
+                      <Hash className="h-5 w-5" />
                     </Button>
                   )}
                   <span className="text-white">
@@ -323,7 +326,7 @@ export default function SocketChatHub() {
                     <h3 className="text-lg font-semibold truncate">
                       {rooms.find(r => r.id === currentRoom)?.name || 'Unknown Room'}
                     </h3>
-                    <p className="text-blue-100 text-sm truncate">
+                    <p className="text-blue-100 text-sm truncate hidden sm:block">
                       {currentRoom === 'general' && 'Open discussion for all team members'}
                       {currentRoom === 'core-team' && 'Core team coordination'}
                       {currentRoom === 'committee' && 'Committee discussions'}
@@ -333,24 +336,36 @@ export default function SocketChatHub() {
                     </p>
                   </div>
                 </div>
-                <Badge className="bg-green-500 text-white border-green-400 hidden sm:block">
-                  {connected ? 'Connected' : 'Disconnected'}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSidebar(true)}
+                      className="text-white hover:bg-white/10 p-2 rounded-lg"
+                    >
+                      <Users className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Badge className="bg-green-500 text-white border-green-400 hidden sm:block">
+                    {connected ? 'Connected' : 'Disconnected'}
+                  </Badge>
+                </div>
               </div>
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-2 md:px-4 py-3 bg-white">
-              <div className="space-y-1">
+            <ScrollArea className="flex-1 px-2 md:px-4 py-2 md:py-3 bg-white">
+              <div className={isMobile ? "space-y-0" : "space-y-1"}>
                 {(() => {
                   const currentMessages = messages[currentRoom] || [];
                   const groupedMessages = groupMessagesByTime(currentMessages);
                   
                   return Object.entries(groupedMessages).map(([timeLabel, timeMessages]) => (
-                    <div key={timeLabel} className="mb-6">
+                    <div key={timeLabel} className={isMobile ? "mb-3" : "mb-6"}>
                       {/* Time separator - iMessage style */}
-                      <div className="flex items-center justify-end mb-4">
-                        <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      <div className={`flex items-center justify-end ${isMobile ? "mb-2" : "mb-4"}`}>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 md:px-3 py-1 rounded-full">
                           {timeLabel}
                         </span>
                       </div>
@@ -370,7 +385,7 @@ export default function SocketChatHub() {
                         };
                         
                         return (
-                          <div key={message.id} className="flex gap-2 group py-1">
+                          <div key={message.id} className={`flex gap-2 group ${isMobile ? "py-0.5 mb-1" : "py-1"}`}>
                             <Avatar className="h-6 w-6 md:h-7 md:w-7 flex-shrink-0">
                               <AvatarFallback className={`text-xs font-medium text-white ${getAvatarColor(message.userName)}`}>
                                 {getInitials(message.userName)}
@@ -383,11 +398,11 @@ export default function SocketChatHub() {
                                   {formatTime(message.timestamp)}
                                 </span>
                               </div>
-                              <p className="text-gray-800 text-sm leading-tight break-words">
+                              <p className={`text-gray-800 text-sm break-words ${isMobile ? "leading-snug" : "leading-tight"}`}>
                                 <MessageWithMentions content={message.content} />
                               </p>
                               {/* Message actions */}
-                              <div className="flex items-center mt-0">
+                              <div className={`flex items-center ${isMobile ? "mt-0" : "mt-0"}`}>
                                 <ChatMessageLikeButton messageId={message.id} />
                               </div>
                             </div>
@@ -402,7 +417,7 @@ export default function SocketChatHub() {
             </ScrollArea>
 
             {/* Message Input with Mentions */}
-            <div className="px-2 md:px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <div className="px-2 md:px-4 py-2 md:py-3 bg-gray-50 border-t border-gray-200">
               <MentionInput
                 value={newMessage}
                 onChange={setNewMessage}
