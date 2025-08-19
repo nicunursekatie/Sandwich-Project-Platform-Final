@@ -124,7 +124,6 @@ export default function DriversManagement() {
         email: "",
         vehicleType: "",
         licenseNumber: "",
-        availability: "available",
         zone: "",
         routeDescription: "",
         hostId: undefined,
@@ -230,7 +229,6 @@ export default function DriversManagement() {
     // Prepare driver data with agreement status
     const driverData = {
       ...newDriver,
-      emailAgreementSent: newDriver.agreementSigned,
     };
 
     addDriverMutation.mutate(driverData);
