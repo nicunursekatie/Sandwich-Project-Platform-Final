@@ -384,8 +384,6 @@ function PhoneDirectoryFixed() {
         zone: driver.zone,
         vanApproved: driver.vanApproved,
         emailAgreementSent: driver.emailAgreementSent,
-        voicemailLeft: driver.voicemailLeft,
-        isActive: driver.isActive,
         source: "drivers",
       });
     });
@@ -1028,14 +1026,6 @@ function PhoneDirectoryFixed() {
                               >
                                 <MapPin className="w-3 h-3" />
                                 Zone: {contact.zone}
-                              </Badge>
-                            )}
-                            {contact.type === "Driver" && contact.isActive === false && (
-                              <Badge
-                                variant="outline"
-                                className="bg-red-50 text-red-700 border-red-200"
-                              >
-                                Inactive
                               </Badge>
                             )}
                             {contact.isPrimary && (
@@ -2798,34 +2788,6 @@ function PhoneDirectoryFixed() {
                             }
                           />
                           <Label htmlFor="email-agreement-sent">Agreement Sent</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="voicemail-left"
-                            checked={editingContact.voicemailLeft || false}
-                            onCheckedChange={(checked) =>
-                              setEditingContact({
-                                ...editingContact,
-                                voicemailLeft: !!checked,
-                              })
-                            }
-                          />
-                          <Label htmlFor="voicemail-left">Voicemail Left</Label>
-                        </div>
-                      </div>
-                      <div className="pt-2 border-t">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="driver-active"
-                            checked={editingContact.isActive !== false}
-                            onCheckedChange={(checked) =>
-                              setEditingContact({
-                                ...editingContact,
-                                isActive: !!checked,
-                              })
-                            }
-                          />
-                          <Label htmlFor="driver-active">Active Driver</Label>
                         </div>
                       </div>
                     </div>
