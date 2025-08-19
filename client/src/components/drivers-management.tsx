@@ -153,10 +153,7 @@ export default function DriversManagement() {
     },
   });
   const updateAgreement = (driver: Driver, newStatus: "signed" | "missing") => {
-    const updatedNotes =
-      newStatus === "signed"
-        ? `${driver.notes || ""} AGREEMENT RECEIVED`
-        : `${driver.notes || ""} AGREEMENT MISSING`;
+    const updatedNotes = updateAgreementInNotes(driver.notes || "", newStatus);
 
     updateDriverMutation.mutate({
       id: driver.id,
@@ -354,7 +351,7 @@ export default function DriversManagement() {
       agreementText.includes("agreement: yes") ||
       agreementText.includes("agreement: signed") ||
       agreementText.includes("agreement: true") ||
-      agreementText.includes("agreement received")
+      agreementText.includes("agreement received") // Legacy format
     );
   };
 
