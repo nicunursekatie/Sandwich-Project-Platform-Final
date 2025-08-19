@@ -83,8 +83,9 @@ export default function DriversManagement() {
     zone: "",
     routeDescription: "" as string | undefined,
     hostId: undefined as number | undefined,
+    availabilityNotes: "",
     vanApproved: false,
-    agreementSigned: false,
+    emailAgreementSent: false,
     isActive: true,
   });
 
@@ -127,8 +128,9 @@ export default function DriversManagement() {
         zone: "",
         routeDescription: "",
         hostId: undefined,
+        availabilityNotes: "",
         vanApproved: false,
-        agreementSigned: false,
+        emailAgreementSent: false,
         isActive: true,
       });
       setIsAddModalOpen(false);
@@ -842,6 +844,21 @@ export default function DriversManagement() {
                     />
                   </div>
 
+                  <div>
+                    <Label htmlFor="availability-notes">Availability Notes</Label>
+                    <Input
+                      id="availability-notes"
+                      value={newDriver.availabilityNotes || ""}
+                      onChange={(e) =>
+                        setNewDriver({
+                          ...newDriver,
+                          availabilityNotes: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., M-F after 3; weekends; unavailable until June"
+                    />
+                  </div>
+
                   {/* Status, Agreement and Van Approval Section */}
                   <div className="grid grid-cols-3 gap-4">
                     <div>
@@ -887,11 +904,11 @@ export default function DriversManagement() {
                     <div>
                       <Label htmlFor="agreement-status">Agreement Status</Label>
                       <Select
-                        value={newDriver.agreementSigned ? "signed" : "not_signed"}
+                        value={newDriver.emailAgreementSent ? "signed" : "not_signed"}
                         onValueChange={(value) =>
                           setNewDriver({
                             ...newDriver,
-                            agreementSigned: value === "signed",
+                            emailAgreementSent: value === "signed",
                           })
                         }
                       >
@@ -1553,7 +1570,7 @@ export default function DriversManagement() {
                   onValueChange={(value) =>
                     setEditingDriver({
                       ...editingDriver,
-                      hostId: value === "none" ? undefined : parseInt(value),
+                      hostId: value === "none" ? null : parseInt(value),
                     })
                   }
                 >
