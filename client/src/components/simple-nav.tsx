@@ -213,7 +213,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
           >
             {item.customIcon ? (
               <img 
-                src={sandwich_20logo} 
+                src={sandwich_logo} 
                 alt={item.label}
                 className={`h-4 w-4 flex-shrink-0 ${isCollapsed ? '' : 'mr-2 sm:mr-3'}`}
               />

@@ -225,9 +225,9 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
     if (chatType === 'direct' || chatType === 'groups') {
       // Direct messages and groups go to messages inbox
       if ((window as any).dashboardSetActiveSection) {
-        (window as any).dashboardSetActiveSection('messages');
+        (window as any).dashboardSetActiveSection('gmail-inbox');
       } else {
-        window.location.href = '/dashboard?section=messages';
+        window.location.href = '/dashboard?section=gmail-inbox';
       }
     } else if (chatType === 'kudos') {
       // Kudos go to inbox where they can be viewed
@@ -236,12 +236,19 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
       } else {
         window.location.href = '/dashboard?section=gmail-inbox';
       }
-    } else {
-      // All other chat types now go to the real-time messaging system instead of old chat
+    } else if (chatType === 'general') {
+      // General chat goes to the Team Chat section (SocketChatHub)
       if ((window as any).dashboardSetActiveSection) {
-        (window as any).dashboardSetActiveSection('real-time-messages');
+        (window as any).dashboardSetActiveSection('chat');
       } else {
-        window.location.href = '/dashboard?section=real-time-messages';
+        window.location.href = '/dashboard?section=chat';
+      }
+    } else {
+      // Other chat types (committee, hosts, drivers, recipients, core_team) go to their respective chat sections
+      if ((window as any).dashboardSetActiveSection) {
+        (window as any).dashboardSetActiveSection('chat');
+      } else {
+        window.location.href = '/dashboard?section=chat';
       }
     }
   };
