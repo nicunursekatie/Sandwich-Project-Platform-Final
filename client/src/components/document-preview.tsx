@@ -29,12 +29,48 @@ export function DocumentPreview({ documentPath, documentName, documentType, onCl
  switch (documentType?.toLowerCase()) {
  case 'pdf':
  return (
+ <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+ <div className="mb-4">
+ <FileText className="w-16 h-16 text-red-500 mx-auto mb-4" />
+ <h3 className="text-lg font-semibold mb-2">{documentName}</h3>
+ <p className="text-gray-600 mb-6">
+ PDF preview may be blocked by your browser's security settings. Click "Open in New Tab" to view the document or download it to your device.
+ </p>
+ </div>
+ <div className="flex gap-4 mb-6">
+ <Button 
+ variant="default"
+ onClick={handleOpenInNewTab}
+ className="flex items-center gap-2"
+ >
+ <ExternalLink className="w-4 h-4" />
+ Open PDF in New Tab
+ </Button>
+ <Button 
+ variant="outline"
+ onClick={handleDownload} 
+ className="flex items-center gap-2"
+ >
+ <Download className="w-4 h-4" />
+ Download PDF
+ </Button>
+ </div>
+ 
+ {/* Fallback iframe for browsers that allow it */}
+ <div className="w-full h-96 border rounded-lg overflow-hidden">
  <iframe
  src={documentPath}
  className="w-full h-full border-0"
  onLoad={() => setIsLoading(false)}
  title={documentName}
+ style={{ 
+ display: 'block',
+ border: 'none',
+ borderRadius: '0.5rem'
+ }}
  />
+ </div>
+ </div>
  );
  case 'docx':
  // For DOCX files, show a download option since viewing requires conversion
