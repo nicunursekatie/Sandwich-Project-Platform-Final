@@ -2922,12 +2922,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-      const driver = await storage.updateDriver(id, updates);
+      
+      console.log(`🔧 PUT /api/drivers/${id} - Storage update`, { id, updates });
+
+      // Ensure critical boolean fields are properly handled
+      const cleanUpdates = {
+        ...updates,
+        ...(updates.isActive !== undefined && { isActive: Boolean(updates.isActive) }),
+        ...(updates.emailAgreementSent !== undefined && { emailAgreementSent: Boolean(updates.emailAgreementSent) }),
+        ...(updates.vanApproved !== undefined && { vanApproved: Boolean(updates.vanApproved) }),
+        ...(updates.voicemailLeft !== undefined && { voicemailLeft: Boolean(updates.voicemailLeft) }),
+        updatedAt: new Date()
+      };
+
+      const driver = await storage.updateDriver(id, cleanUpdates);
       if (!driver) {
         return res.status(404).json({ message: "Driver not found" });
       }
+      
+      console.log(`✅ Driver ${id} updated successfully via PUT`);
       res.json(driver);
     } catch (error) {
+      console.error(`❌ Failed to update driver ${req.params.id} via PUT:`, error);
       logger.error("Failed to update driver", error);
       res.status(500).json({ message: "Failed to update driver" });
     }
@@ -2977,6 +2993,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...(updates.zone && { zone: updates.zone }),
         ...(updates.routeDescription && { routeDescription: updates.routeDescription }),
         ...(updates.hostId !== undefined && { hostId: updates.hostId }),
+        ...(updates.homeAddress !== undefined && { homeAddress: updates.homeAddress }),
+        ...(updates.availabilityNotes !== undefined && { availabilityNotes: updates.availabilityNotes }),
+        ...(updates.isActive !== undefined && { isActive: updates.isActive }),
+        ...(updates.emailAgreementSent !== undefined && { emailAgreementSent: updates.emailAgreementSent }),
+        ...(updates.vanApproved !== undefined && { vanApproved: updates.vanApproved }),
+        ...(updates.voicemailLeft !== undefined && { voicemailLeft: updates.voicemailLeft }),
+        ...(updates.inactiveReason !== undefined && { inactiveReason: updates.inactiveReason }),
         updatedAt: new Date()
       };
 
