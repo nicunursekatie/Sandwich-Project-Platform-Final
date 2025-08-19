@@ -398,7 +398,27 @@ function PhoneDirectoryFixed() {
       });
     });
 
-    return all.sort((a, b) => a.name.localeCompare(b.name));
+    // Remove duplicates based on normalized phone number
+    const normalizePhone = (phone: string): string => {
+      return phone.replace(/\D/g, ''); // Remove all non-digits
+    };
+
+    const deduplicatedAll: any[] = [];
+    const seenPhones = new Set<string>();
+
+    all.forEach((contact) => {
+      const normalizedPhone = normalizePhone(contact.phone || '');
+      
+      if (!normalizedPhone || !seenPhones.has(normalizedPhone)) {
+        if (normalizedPhone) seenPhones.add(normalizedPhone);
+        deduplicatedAll.push(contact);
+      } else {
+        // If duplicate found, log it for debugging
+        console.log(`Duplicate contact found and removed: ${contact.name} (${contact.phone}) - ${contact.source}`);
+      }
+    });
+
+    return deduplicatedAll.sort((a, b) => a.name.localeCompare(b.name));
   }, [hosts, recipients, drivers, volunteers]);
 
   const filteredDirectory = unifiedDirectory.filter((c) => {
