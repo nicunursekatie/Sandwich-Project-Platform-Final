@@ -12,7 +12,6 @@ import {
   Car, 
   Building2, 
   FileText, 
-  Phone,
   Settings,
   Sheet,
   Lightbulb,
@@ -91,7 +90,6 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
     { id: "events", label: "Events", icon: Calendar, href: "events", group: "planning" },
     { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
-    { id: "phone-directory", label: "Directory", icon: Phone, href: "phone-directory", group: "planning" },
     { id: "wishlist", label: "Amazon Wishlist", icon: Gift, href: "wishlist", group: "planning" },
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
     
