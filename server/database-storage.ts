@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -28,7 +28,8 @@ import {
   type SuggestionResponse, type InsertSuggestionResponse,
   type ChatMessageLike, type InsertChatMessageLike,
   type UserActivityLog, type InsertUserActivityLog,
-  type SandwichDistribution, type InsertSandwichDistribution
+  type SandwichDistribution, type InsertSandwichDistribution,
+  type WishlistSuggestion, type InsertWishlistSuggestion
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like } from "drizzle-orm";
@@ -2414,5 +2415,53 @@ export class DatabaseStorage implements IStorage {
       lastActive: row.lastActive,
       topSection: row.topSection || 'none'
     }));
+  }
+
+  // Wishlist Suggestions
+  async getAllWishlistSuggestions(): Promise<WishlistSuggestion[]> {
+    const results = await db.select()
+      .from(wishlistSuggestions)
+      .orderBy(desc(wishlistSuggestions.createdAt));
+    return results;
+  }
+
+  async getWishlistSuggestion(id: number): Promise<WishlistSuggestion | undefined> {
+    const [result] = await db.select()
+      .from(wishlistSuggestions)
+      .where(eq(wishlistSuggestions.id, id));
+    return result || undefined;
+  }
+
+  async createWishlistSuggestion(suggestion: InsertWishlistSuggestion): Promise<WishlistSuggestion> {
+    const [result] = await db.insert(wishlistSuggestions)
+      .values(suggestion)
+      .returning();
+    return result;
+  }
+
+  async updateWishlistSuggestion(id: number, updates: Partial<WishlistSuggestion>): Promise<WishlistSuggestion | undefined> {
+    const [result] = await db.update(wishlistSuggestions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(wishlistSuggestions.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteWishlistSuggestion(id: number): Promise<boolean> {
+    const result = await db.delete(wishlistSuggestions)
+      .where(eq(wishlistSuggestions.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getRecentWishlistActivity(limit: number = 10): Promise<WishlistSuggestion[]> {
+    const results = await db.select()
+      .from(wishlistSuggestions)
+      .where(or(
+        eq(wishlistSuggestions.status, 'approved'),
+        eq(wishlistSuggestions.status, 'added')
+      ))
+      .orderBy(desc(wishlistSuggestions.updatedAt))
+      .limit(limit);
+    return results;
   }
 }

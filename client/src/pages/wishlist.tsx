@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Copy, 
   ExternalLink, 
@@ -19,10 +21,57 @@ import {
 
 export default function WishlistPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const [newSuggestion, setNewSuggestion] = useState({
     item: "",
     reason: "",
     priority: "medium" as "high" | "medium" | "low"
+  });
+
+  // Fetch wishlist suggestions
+  const { data: suggestions = [], isLoading } = useQuery({
+    queryKey: ["/api/wishlist-suggestions"],
+  });
+
+  // Fetch recent activity
+  const { data: activity = [] } = useQuery({
+    queryKey: ["/api/wishlist-activity"],
+  });
+
+  // Create suggestion mutation
+  const createSuggestionMutation = useMutation({
+    mutationFn: async (data: typeof newSuggestion) => {
+      return apiRequest("/api/wishlist-suggestions", {
+        method: "POST",
+        body: JSON.stringify({
+          itemName: data.item,
+          description: data.reason,
+          priority: data.priority,
+          status: "pending"
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist-activity"] });
+      toast({
+        title: "Suggestion Submitted",
+        description: "Your wishlist suggestion has been recorded for review",
+      });
+      setNewSuggestion({
+        item: "",
+        reason: "",
+        priority: "medium"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your suggestion. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Amazon wishlist URL
@@ -65,18 +114,8 @@ export default function WishlistPage() {
   const handleSuggestionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSuggestion.item.trim()) return;
-
-    // TODO: Implement suggestion submission to backend
-    toast({
-      title: "Suggestion Submitted",
-      description: "Your wishlist suggestion has been recorded for review",
-    });
-
-    setNewSuggestion({
-      item: "",
-      reason: "",
-      priority: "medium"
-    });
+    
+    createSuggestionMutation.mutate(newSuggestion);
   };
 
   return (
@@ -146,8 +185,8 @@ export default function WishlistPage() {
               <div className="flex items-center space-x-2">
                 <Users className="w-8 h-8 text-[#236383]" />
                 <div>
-                  <p className="text-2xl font-bold">24</p>
-                  <p className="text-xs text-slate-600">Items on List</p>
+                  <p className="text-2xl font-bold">{suggestions.length}</p>
+                  <p className="text-xs text-slate-600">Items Suggested</p>
                 </div>
               </div>
             </CardContent>
@@ -158,8 +197,8 @@ export default function WishlistPage() {
               <div className="flex items-center space-x-2">
                 <TrendingUp className="w-8 h-8 text-[#FBAD3F]" />
                 <div>
-                  <p className="text-2xl font-bold">12</p>
-                  <p className="text-xs text-slate-600">Items Purchased</p>
+                  <p className="text-2xl font-bold">{suggestions.filter(s => s.status === 'approved').length}</p>
+                  <p className="text-xs text-slate-600">Items Approved</p>
                 </div>
               </div>
             </CardContent>
@@ -170,8 +209,8 @@ export default function WishlistPage() {
               <div className="flex items-center space-x-2">
                 <Gift className="w-8 h-8 text-[#A31C41]" />
                 <div>
-                  <p className="text-2xl font-bold">$450</p>
-                  <p className="text-xs text-slate-600">Total Value</p>
+                  <p className="text-2xl font-bold">{suggestions.filter(s => s.priority === 'high').length}</p>
+                  <p className="text-xs text-slate-600">High Priority</p>
                 </div>
               </div>
             </CardContent>
@@ -226,9 +265,13 @@ export default function WishlistPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={createSuggestionMutation.isPending || !newSuggestion.item.trim()}
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Submit Suggestion
+                {createSuggestionMutation.isPending ? "Submitting..." : "Submit Suggestion"}
               </Button>
             </form>
           </CardContent>
@@ -281,29 +324,31 @@ export default function WishlistPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Gift className="w-4 h-4 text-green-600" />
-                  <span>Disposable Gloves (100 pack) purchased</span>
-                </div>
-                <span className="text-xs text-slate-500">2 days ago</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Plus className="w-4 h-4 text-blue-600" />
-                  <span>Insulated Food Containers added to wishlist</span>
-                </div>
-                <span className="text-xs text-slate-500">1 week ago</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Gift className="w-4 h-4 text-green-600" />
-                  <span>Hand Sanitizer (6 pack) purchased</span>
-                </div>
-                <span className="text-xs text-slate-500">2 weeks ago</span>
-              </div>
+              {activity.length === 0 ? (
+                <p className="text-slate-500 text-center py-4">No recent activity to show</p>
+              ) : (
+                activity.map((item: any, index: number) => (
+                  <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${
+                    item.type === 'suggestion' ? 'bg-blue-50' : 
+                    item.status === 'approved' ? 'bg-green-50' : 'bg-orange-50'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      {item.type === 'suggestion' ? (
+                        <Plus className={`w-4 h-4 ${
+                          item.status === 'approved' ? 'text-green-600' : 
+                          item.status === 'pending' ? 'text-blue-600' : 'text-orange-600'
+                        }`} />
+                      ) : (
+                        <Gift className="w-4 h-4 text-green-600" />
+                      )}
+                      <span>{item.description || `${item.itemName || item.item} ${item.type === 'suggestion' ? 'suggested' : 'updated'}`}</span>
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
