@@ -77,6 +77,7 @@ The application features a consistent brand identity using The Sandwich Project'
 **Frontend**: Removed asterisk from "Vehicle Type *" label and updated placeholder to indicate optional field
 **Validation**: Backend `insertDriverSchema` requires no custom validation - basic schema supports nullable vehicle types
 **Critical Fix**: Removed `!newDriver.vehicleType` from `handleAdd` validation (line 285) - was causing "Please fill in required fields" error despite vehicle type being optional
+**New Driver Form Enhancement**: Added missing agreement status and van approval fields to "Add New Driver" dialog (lines 932-972) with proper state management and form reset functionality
 
 ### Key Component Locations
 - **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`
