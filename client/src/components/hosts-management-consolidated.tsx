@@ -37,6 +37,7 @@ export default function HostsManagementConsolidated() {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<ExtendedHostContact | null>(null);
   const [expandedContacts, setExpandedContacts] = useState<Set<number>>(new Set());
+  const [hideEmptyHosts, setHideEmptyHosts] = useState(false);
 
   // Helper function to sort contacts by priority (leads first, then primary contacts)
   const sortContactsByPriority = (contacts: HostContact[]) => {
@@ -425,8 +426,17 @@ export default function HostsManagementConsolidated() {
     );
   }
 
-  // Filter hosts by status - only show active and inactive, completely hide "hidden" hosts
-  const visibleHosts = hosts.filter(host => host.status !== 'hidden');
+  // Filter hosts by status and contact count
+  const visibleHosts = hosts.filter(host => {
+    // Always hide "hidden" hosts
+    if (host.status === 'hidden') return false;
+    
+    // Optionally hide hosts with no contacts
+    if (hideEmptyHosts && (!host.contacts || host.contacts.length === 0)) return false;
+    
+    return true;
+  });
+  
   const activeHosts = visibleHosts.filter(host => host.status === 'active');
   const inactiveHosts = visibleHosts.filter(host => host.status === 'inactive');
 
@@ -465,12 +475,38 @@ export default function HostsManagementConsolidated() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {host.address && (
-              <div className="flex items-center text-sm text-slate-600">
-                <MapPin className="w-4 h-4 mr-2" />
-                <span className="truncate">{host.address}</span>
+            {/* Location Information */}
+            <div className="flex items-start text-sm text-slate-600">
+              <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <div className="text-slate-700 font-medium">Location:</div>
+                {editingHost?.id === host.id ? (
+                  <Input
+                    value={editingHost.address || ""}
+                    onChange={(e) => setEditingHost({...editingHost, address: e.target.value})}
+                    placeholder="Add location address..."
+                    className="text-sm"
+                  />
+                ) : (
+                  <div className="text-slate-600">
+                    {host.address || (
+                      canEdit ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 text-left justify-start text-slate-500 hover:text-slate-700"
+                          onClick={() => setEditingHost(host)}
+                        >
+                          Add location address...
+                        </Button>
+                      ) : (
+                        <span className="text-slate-400 italic">Location information not available</span>
+                      )
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
             
             {/* Display contacts */}
             {host.contacts && host.contacts.length > 0 && (
@@ -732,6 +768,20 @@ export default function HostsManagementConsolidated() {
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Filter Controls */}
+      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="hide-empty-hosts"
+            checked={hideEmptyHosts}
+            onCheckedChange={setHideEmptyHosts}
+          />
+          <Label htmlFor="hide-empty-hosts" className="text-sm font-medium">
+            Hide locations with no contacts
+          </Label>
+        </div>
       </div>
 
       <Tabs defaultValue="active" className="w-full">
