@@ -43,7 +43,11 @@ router.get("/hosts", isAuthenticated, async (req, res) => {
   }
 });
 
-router.get("/hosts-with-contacts", async (req, res) => {
+router.get("/hosts-with-contacts", isAuthenticated, async (req, res) => {
+  // Check if user has permission to view hosts
+  if (!canViewHosts(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to view hosts" });
+  }
   try {
     const hostsWithContacts = await storage.getAllHostsWithContacts();
     res.json(hostsWithContacts);
@@ -53,7 +57,11 @@ router.get("/hosts-with-contacts", async (req, res) => {
   }
 });
 
-router.get("/hosts/:id", async (req, res) => {
+router.get("/hosts/:id", isAuthenticated, async (req, res) => {
+  // Check if user has permission to view hosts
+  if (!canViewHosts(req)) {
+    return res.status(403).json({ error: "Insufficient permissions to view hosts" });
+  }
   try {
     const id = parseInt(req.params.id);
     const host = await storage.getHost(id);

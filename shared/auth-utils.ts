@@ -238,7 +238,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case USER_ROLES.CORE_TEAM:
       return [
         // All Host permissions first
-        PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_HOSTS,
         PERMISSIONS.ACCESS_RECIPIENTS,
         PERMISSIONS.ACCESS_DRIVERS,
@@ -296,7 +295,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.DRIVER:
       return [
-        PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
@@ -347,7 +345,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case USER_ROLES.DEMO_USER:
       return [
         // Can view all main sections but cannot edit/delete/manage anything
-        PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_HOSTS,
         PERMISSIONS.ACCESS_RECIPIENTS,
         PERMISSIONS.ACCESS_DRIVERS,
@@ -385,7 +382,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.VIEWER:
       return [
-        PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.ACCESS_TOOLKIT,
         PERMISSIONS.ACCESS_PROJECTS,
@@ -397,7 +393,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.WORK_LOGGER:
       return [
-        PERMISSIONS.ACCESS_DIRECTORY,
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
