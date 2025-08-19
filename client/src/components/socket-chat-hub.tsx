@@ -72,9 +72,23 @@ export default function SocketChatHub() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Track if user is near bottom of scroll area
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
+  // Only auto-scroll if user is near bottom or it's a new message they sent
   useEffect(() => {
-    scrollToBottom();
-  }, [messages[currentRoom]]);
+    if (!hasInitiallyLoaded) {
+      // Don't auto-scroll on initial load to prevent jumping to bottom
+      setHasInitiallyLoaded(true);
+      return;
+    }
+    
+    // Only auto-scroll if user is near the bottom (actively reading)
+    if (isNearBottom) {
+      scrollToBottom();
+    }
+  }, [messages[currentRoom], hasInitiallyLoaded, isNearBottom]);
 
   // Handle mobile detection and responsive behavior
   useEffect(() => {
@@ -357,7 +371,15 @@ export default function SocketChatHub() {
 
             {/* Messages - Scrollable Middle Section */}
             <div className="flex-1 overflow-hidden bg-white">
-              <ScrollArea className="h-full px-2 md:px-4 py-2 md:py-3">
+              <ScrollArea 
+                className="h-full px-2 md:px-4 py-2 md:py-3"
+                onScroll={(e) => {
+                  const target = e.target as HTMLDivElement;
+                  const { scrollTop, scrollHeight, clientHeight } = target;
+                  // Consider "near bottom" if within 100px of bottom
+                  setIsNearBottom(scrollHeight - scrollTop - clientHeight < 100);
+                }}
+              >
                 <div className={isMobile ? "space-y-0" : "space-y-1"}>
                 {(() => {
                   const currentMessages = messages[currentRoom] || [];
