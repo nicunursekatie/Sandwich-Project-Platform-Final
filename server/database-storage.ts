@@ -30,7 +30,7 @@ import {
   type UserActivityLog, type InsertUserActivityLog,
   type SandwichDistribution, type InsertSandwichDistribution
 } from "@shared/schema";
-import { db } from "./db";
+// Database functionality removed - using in-memory storage
 import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
