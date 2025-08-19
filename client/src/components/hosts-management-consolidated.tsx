@@ -1076,39 +1076,25 @@ export default function HostsManagementConsolidated() {
 
                                       {/* Change Role & Assignment Section */}
                                       <div className="border-t pt-4">
-                                        <h3 className="font-medium text-sm text-slate-700 mb-3">Change Role & Assignment</h3>
-                                        <div className="space-y-3">
-                                          <div>
-                                            <Label htmlFor="new-role-type">New Role Type</Label>
-                                            <Select 
-                                              value={editingContact.newRoleType || "Host Contact"} 
-                                              onValueChange={(value) => {
-                                                console.log('Role type change requested:', value);
-                                                setEditingContact({ 
-                                                  ...editingContact, 
-                                                  newRoleType: value,
-                                                  newAssignmentId: undefined // Clear assignment when role changes
-                                                });
-                                              }}
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Select role type" />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectItem value="Host Contact">Host Contact</SelectItem>
-                                                <SelectItem value="Recipient Organization Contact">Recipient Organization Contact</SelectItem>
-                                                <SelectItem value="Volunteer">Volunteer</SelectItem>
-                                                <SelectItem value="Driver">Driver</SelectItem>
-                                                <SelectItem value="General Contact">General Contact</SelectItem>
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-                                          
-                                          {/* Dynamic Assignment Dropdown */}
-                                          {editingContact.newRoleType === "Host Contact" && (
-                                            <div>
-                                              <Label htmlFor="host-location-assignment">Choose Host Location</Label>
-                                              <Select
+                                        <h3 className="font-medium text-sm text-slate-700 mb-3">Contact Settings</h3>
+                                        <div className="flex items-center space-x-2">
+                                          <Switch
+                                            id="edit-contact-lead"
+                                            checked={editingContact.role === 'lead'}
+                                            onCheckedChange={(checked) => {
+                                              setEditingContact({ 
+                                                ...editingContact, 
+                                                role: checked ? 'lead' : ''
+                                              });
+                                            }}
+                                          />
+                                          <Label htmlFor="edit-contact-lead" className="text-sm">
+                                            Mark as Location Lead
+                                            <span className="block text-xs text-slate-500">
+                                              Leads will be highlighted with a star in the main view
+                                            </span>
+                                          </Label>
+                                        </div>
                                                 value={editingContact.newAssignmentId?.toString() || selectedHost?.id.toString()}
                                                 onValueChange={(value) => {
                                                   console.log('Host location assignment:', value);
