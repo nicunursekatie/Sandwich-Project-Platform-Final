@@ -85,6 +85,7 @@ export default function DriversManagement() {
     hostId: undefined as number | undefined,
     vanApproved: false,
     agreementSigned: false,
+    isActive: true,
   });
 
   const [volunteerForm, setVolunteerForm] = useState({
@@ -128,6 +129,7 @@ export default function DriversManagement() {
         hostId: undefined,
         vanApproved: false,
         agreementSigned: false,
+        isActive: true,
       });
       setIsAddModalOpen(false);
       toast({ title: "Driver added successfully" });
@@ -937,8 +939,28 @@ export default function DriversManagement() {
                     />
                   </div>
 
-                  {/* Agreement and Van Approval Section */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Status, Agreement and Van Approval Section */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select
+                        value={newDriver.isActive ? "active" : "inactive"}
+                        onValueChange={(value) =>
+                          setNewDriver({
+                            ...newDriver,
+                            isActive: value === "active",
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div>
                       <Label htmlFor="van-approved">Van Driver Status</Label>
                       <Select
