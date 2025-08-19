@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 320" width="1024" height="320">
+  <!-- The Sandwich Project Logo - Optimized SVG -->
+  <defs>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FBAD3F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E6962F;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2DD4BF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891B2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sandwich Icon -->
+  <g transform="translate(40,40)">
+    <!-- Top piece (handle) -->
+    <circle cx="120" cy="40" r="20" fill="url(#orangeGrad)"/>
+    <rect x="100" y="40" width="40" height="80" fill="url(#orangeGrad)" rx="4"/>
+    
+    <!-- Container -->
+    <path d="M40 120 L200 120 Q220 120 220 140 L220 200 Q220 220 200 220 L40 220 Q20 220 20 200 L20 140 Q20 120 40 120 Z" 
+          fill="none" stroke="url(#orangeGrad)" stroke-width="8" opacity="0.9"/>
+    
+    <!-- Sandwich layers -->
+    <path d="M60 160 L180 160" stroke="url(#orangeGrad)" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+    <path d="M60 180 L180 180" stroke="url(#orangeGrad)" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+    <path d="M60 200 L180 200" stroke="url(#orangeGrad)" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+  </g>
+  
+  <!-- Text -->
+  <g transform="translate(320,80)">
+    <text x="0" y="60" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="url(#tealGrad)">THE SANDWICH</text>
+    <text x="0" y="120" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="url(#tealGrad)">PROJECT</text>
+  </g>
+</svg>

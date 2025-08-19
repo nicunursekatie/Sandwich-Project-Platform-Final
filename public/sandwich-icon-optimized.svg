@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Sandwich Icon Only - Optimized SVG -->
+  <defs>
+    <linearGradient id="orangeGradIcon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FBAD3F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E6962F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Top piece (handle) -->
+  <circle cx="100" cy="40" r="16" fill="url(#orangeGradIcon)"/>
+  <rect x="84" y="40" width="32" height="60" fill="url(#orangeGradIcon)" rx="3"/>
+  
+  <!-- Container -->
+  <path d="M30 100 L170 100 Q185 100 185 115 L185 160 Q185 175 170 175 L30 175 Q15 175 15 160 L15 115 Q15 100 30 100 Z" 
+        fill="none" stroke="url(#orangeGradIcon)" stroke-width="6" opacity="0.9"/>
+  
+  <!-- Sandwich layers -->
+  <path d="M40 130 L160 130" stroke="url(#orangeGradIcon)" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+  <path d="M40 145 L160 145" stroke="url(#orangeGradIcon)" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+  <path d="M40 160 L160 160" stroke="url(#orangeGradIcon)" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+</svg>
