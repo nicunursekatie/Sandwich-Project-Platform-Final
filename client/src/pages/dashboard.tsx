@@ -59,7 +59,7 @@ import DonationTracking from "@/components/donation-tracking";
 import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard";
 import WishlistPage from "@/pages/wishlist";
 
-import sandwich_logo from "@assets/sandwich logo.png";
+import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
 
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();

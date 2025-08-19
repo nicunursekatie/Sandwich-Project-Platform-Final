@@ -487,9 +487,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const sandwichDistributionsRoutes = await import("./routes/sandwich-distributions");
   app.use("/api/sandwich-distributions", sandwichDistributionsRoutes.default);
 
-  // Import and register recipients routes
-  const recipientsRoutes = await import("./routes/recipients");
-  app.use("/api/recipients", recipientsRoutes.default);
+  // Recipients routes are handled directly in this file below
+  // const recipientsRoutes = await import("./routes/recipients");
+  // app.use("/api/recipients", recipientsRoutes.default);
 
   // Import and register recipient TSP contacts routes
   app.use("/api/recipient-tsp-contacts", recipientTspContactRoutes);
@@ -3630,7 +3630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recipients
-  app.get("/api/recipients", async (req, res) => {
+  app.get("/api/recipients", isAuthenticated, requirePermission("access_recipients"), async (req, res) => {
     try {
       const recipients = await storage.getAllRecipients();
       res.json(recipients);
@@ -3640,18 +3640,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/recipients", async (req, res) => {
+  app.post("/api/recipients", isAuthenticated, requirePermission("manage_recipients"), async (req, res) => {
     try {
       const recipientData = insertRecipientSchema.parse(req.body);
       const recipient = await storage.createRecipient(recipientData);
       res.status(201).json(recipient);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.error("Invalid recipient data", error);
+        return res.status(400).json({ 
+          error: "Invalid data",
+          details: error.errors 
+        });
+      }
       logger.error("Failed to create recipient", error);
-      res.status(400).json({ message: "Invalid recipient data" });
+      res.status(500).json({ message: "Failed to create recipient" });
     }
   });
 
-  app.put("/api/recipients/:id", async (req, res) => {
+  app.put("/api/recipients/:id", isAuthenticated, requirePermission("manage_recipients"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -3677,7 +3684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/recipients/:id", async (req, res) => {
+  app.patch("/api/recipients/:id", isAuthenticated, requirePermission("manage_recipients"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
