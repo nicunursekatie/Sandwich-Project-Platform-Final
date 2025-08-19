@@ -693,10 +693,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         console.log("Received project data:", req.body);
+        
+        // Sanitize numeric fields - convert empty strings to null to prevent database errors
+        const sanitizedBody = { ...req.body };
+        if (sanitizedBody.estimatedHours === '') sanitizedBody.estimatedHours = null;
+        if (sanitizedBody.actualHours === '') sanitizedBody.actualHours = null;
+        if (sanitizedBody.dueDate === '') sanitizedBody.dueDate = null;
+        if (sanitizedBody.startDate === '') sanitizedBody.startDate = null;
+        if (sanitizedBody.budget === '') sanitizedBody.budget = null;
+        
         const projectData = insertProjectSchema.parse({
-          ...req.body,
-          created_by: req.user.id,
-          created_by_name: req.user.firstName ? `${req.user.firstName} ${req.user.lastName || ''}`.trim() : req.user.email
+          ...sanitizedBody,
+          createdBy: req.user.id,
+          createdByName: req.user.firstName ? `${req.user.firstName} ${req.user.lastName || ''}`.trim() : req.user.email
         });
         console.log("Parsed project data with creator:", projectData);
         const project = await storage.createProject(projectData);

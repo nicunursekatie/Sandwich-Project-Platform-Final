@@ -644,7 +644,10 @@ export const projectDocuments = pgTable("project_documents", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  estimatedHours: z.number().int().nullable().optional(),
+  actualHours: z.number().int().nullable().optional(),
+});
 export const insertArchivedProjectSchema = createInsertSchema(archivedProjects).omit({ id: true, archivedAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMessageRecipientSchema = createInsertSchema(messageRecipients).omit({ id: true, createdAt: true });
