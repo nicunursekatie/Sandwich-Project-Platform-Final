@@ -358,7 +358,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       {/* Announcement Banner */}
       <AnnouncementBanner />
       {/* Top Header */}
-      <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px]">
+      <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-hidden">
         <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
           {/* Mobile menu button - positioned first for easy access */}
           <button
@@ -369,102 +369,104 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <img src={sandwich_20logo} alt="Sandwich Logo" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" width="24" height="24" />
-          <h1 className="text-base sm:text-lg font-semibold text-teal-800 hidden sm:block">The Sandwich Project</h1>
-          <h1 className="text-sm font-semibold text-teal-800 sm:hidden">TSP</h1>
+          <h1 className="text-base sm:text-lg font-semibold text-teal-800 hidden lg:block truncate">The Sandwich Project</h1>
+          <h1 className="text-sm font-semibold text-teal-800 lg:hidden truncate">TSP</h1>
         </div>
         
-        {/* Flexible spacer */}
-        <div className="flex-1" />
+        {/* Flexible spacer - min width to ensure buttons don't get pushed off */}
+        <div className="flex-1 min-w-0" />
         
-        {/* Current User Indicator - moved to right side with right-aligned buttons */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Right side container - optimized for tablets/mobile */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* Compact user indicator for tablets */}
           {user && (
-            <div className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 shadow-sm">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full flex items-center justify-center shadow-sm">
+            <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 shadow-sm max-w-[180px] md:max-w-none">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
                 <span className="text-xs font-medium text-teal-800">
                   {(user as any)?.firstName?.charAt(0) || (user as any)?.email?.charAt(0) || 'U'}
                 </span>
               </div>
-              <div className="hidden sm:flex flex-col">
-                <span className="text-xs font-medium text-teal-800">
+              <div className="hidden lg:flex flex-col min-w-0">
+                <span className="text-xs font-medium text-teal-800 truncate">
                   {(user as any)?.firstName ? `${(user as any).firstName} ${(user as any)?.lastName || ''}`.trim() : (user as any)?.email}
                 </span>
-                <span className="text-xs text-amber-600">
+                <span className="text-xs text-amber-600 truncate">
                   {(user as any)?.email}
                 </span>
               </div>
-              <div className="sm:hidden">
-                <span className="text-xs font-medium text-teal-800">
+              <div className="lg:hidden min-w-0 flex-1">
+                <span className="text-xs font-medium text-teal-800 truncate block">
                   {(user as any)?.firstName ? `${(user as any).firstName}` : (user as any)?.email?.split('@')[0] || 'User'}
                 </span>
               </div>
             </div>
           )}
-          <div className="flex items-center space-x-1 sm:space-x-2 relative z-50 flex-shrink-0">
-          <button
-            onClick={() => {
-              console.log('Messages button clicked');
-              setActiveSection("messages");
-              setIsMobileMenuOpen(false);
-            }}
-            className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation ${
-              activeSection === "messages"
-                ? "bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm"
-                : "text-teal-600 hover:bg-teal-50 hover:text-teal-800"
-            }`}
-            title="Messages"
-            aria-label="Messages"
-          >
-            <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          {/* Defer MessageNotifications to improve first paint performance */}
-          {typeof window !== 'undefined' && <MessageNotifications user={user} />}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('Profile button clicked, current section:', activeSection);
-              setActiveSection("profile");
-              // Force update URL to ensure proper navigation
-              window.history.pushState({}, '', '/dashboard?section=profile');
-              // Close mobile menu if open
-              setIsMobileMenuOpen(false);
-            }}
-            className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation ${
-              activeSection === "profile"
-                ? "bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm"
-                : "text-teal-600 hover:bg-teal-50 hover:text-teal-800"
-            }`}
-            title="Account Settings"
-            aria-label="Account Settings"
-          >
-            <UserCog className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          <button 
-            onClick={async () => {
-              try {
-                // Call logout API to clear session
-                await fetch('/api/logout', {
-                  method: 'POST',
-                  credentials: 'include'
-                });
-                // Clear query cache
-                queryClient.clear();
-                // Redirect to landing page
-                window.location.href = "/";
-              } catch (error) {
-                console.error('Logout error:', error);
-                // Fallback: clear cache and redirect anyway
-                queryClient.clear();
-                window.location.href = "/";
-              }
-            }}
-            className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 text-amber-700 hover:text-amber-900 rounded-lg hover:bg-amber-50 transition-colors touch-manipulation border border-amber-200 hover:border-amber-300"
-            aria-label="Logout"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="text-xs sm:text-sm hidden sm:block">Logout</span>
-          </button>
+          
+          {/* Essential buttons - always visible */}
+          <div className="flex items-center gap-1 relative z-50 flex-shrink-0">
+            <button
+              onClick={() => {
+                console.log('Messages button clicked');
+                setActiveSection("messages");
+                setIsMobileMenuOpen(false);
+              }}
+              className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation ${
+                activeSection === "messages"
+                  ? "bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm"
+                  : "text-teal-600 hover:bg-teal-50 hover:text-teal-800"
+              }`}
+              title="Messages"
+              aria-label="Messages"
+            >
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            
+            {/* MessageNotifications component */}
+            {typeof window !== 'undefined' && <MessageNotifications user={user} />}
+            
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Profile button clicked, current section:', activeSection);
+                setActiveSection("profile");
+                window.history.pushState({}, '', '/dashboard?section=profile');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation ${
+                activeSection === "profile"
+                  ? "bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm"
+                  : "text-teal-600 hover:bg-teal-50 hover:text-teal-800"
+              }`}
+              title="Account Settings"
+              aria-label="Account Settings"
+            >
+              <UserCog className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            
+            {/* Logout button - ALWAYS visible and accessible */}
+            <button 
+              onClick={async () => {
+                try {
+                  await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                  });
+                  queryClient.clear();
+                  window.location.href = "/";
+                } catch (error) {
+                  console.error('Logout error:', error);
+                  queryClient.clear();
+                  window.location.href = "/";
+                }
+              }}
+              className="flex items-center gap-1 px-2 py-2 text-amber-700 hover:text-amber-900 rounded-lg hover:bg-amber-50 transition-colors touch-manipulation border border-amber-200 hover:border-amber-300 flex-shrink-0 min-w-[44px]"
+              aria-label="Logout"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4 flex-shrink-0" />
+              <span className="text-xs hidden md:block whitespace-nowrap">Logout</span>
+            </button>
           </div>
         </div>
       </div>
