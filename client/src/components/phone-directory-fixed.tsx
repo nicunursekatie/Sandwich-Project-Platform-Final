@@ -1032,12 +1032,12 @@ function PhoneDirectoryFixed() {
                               <Badge
                                 variant="outline"
                                 className={`flex items-center gap-1 ${
-                                  contact.emailAgreementSent
+                                  (contact as any).emailAgreementSent
                                     ? "bg-green-50 text-green-700 border-green-200"
                                     : "bg-yellow-50 text-yellow-700 border-yellow-200"
                                 }`}
                               >
-                                {contact.emailAgreementSent ? (
+                                {(contact as any).emailAgreementSent ? (
                                   <>
                                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                                     Agreement Signed

@@ -961,7 +961,7 @@ export default function HostsManagementConsolidated() {
                                   <Edit className="w-3 h-3" />
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent>
+                              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                                 <DialogHeader>
                                   <DialogTitle>Edit Contact & Change Role</DialogTitle>
                                 </DialogHeader>
