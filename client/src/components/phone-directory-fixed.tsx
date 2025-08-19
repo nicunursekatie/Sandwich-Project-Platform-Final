@@ -2454,6 +2454,36 @@ function PhoneDirectoryFixed() {
                                           rows={3}
                                         />
                                       </div>
+                                      
+                                      {/* Agreement and Van Approval Checkboxes */}
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id="edit-driver-agreement"
+                                            checked={editingDriver.emailAgreementSent || false}
+                                            onCheckedChange={(checked) =>
+                                              setEditingDriver({
+                                                ...editingDriver,
+                                                emailAgreementSent: !!checked,
+                                              })
+                                            }
+                                          />
+                                          <Label htmlFor="edit-driver-agreement">Agreement Signed</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id="edit-driver-van"
+                                            checked={editingDriver.vanApproved || false}
+                                            onCheckedChange={(checked) =>
+                                              setEditingDriver({
+                                                ...editingDriver,
+                                                vanApproved: !!checked,
+                                              })
+                                            }
+                                          />
+                                          <Label htmlFor="edit-driver-van">Van Approved</Label>
+                                        </div>
+                                      </div>
                                       <div className="flex gap-3 pt-4">
                                         <Button
                                           onClick={handleUpdateDriver}
