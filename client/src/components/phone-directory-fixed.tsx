@@ -1028,6 +1028,28 @@ function PhoneDirectoryFixed() {
                                 Zone: {contact.zone}
                               </Badge>
                             )}
+                            {contact.type === "Driver" && (
+                              <Badge
+                                variant="outline"
+                                className={`flex items-center gap-1 ${
+                                  contact.emailAgreementSent
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                }`}
+                              >
+                                {contact.emailAgreementSent ? (
+                                  <>
+                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                    Agreement Signed
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                    Agreement Pending
+                                  </>
+                                )}
+                              </Badge>
+                            )}
                             {contact.isPrimary && (
                               <Badge
                                 variant="default"
@@ -2787,7 +2809,7 @@ function PhoneDirectoryFixed() {
                               })
                             }
                           />
-                          <Label htmlFor="email-agreement-sent">Agreement Sent</Label>
+                          <Label htmlFor="email-agreement-sent">Agreement Signed</Label>
                         </div>
                       </div>
                     </div>
