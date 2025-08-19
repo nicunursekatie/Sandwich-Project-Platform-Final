@@ -212,7 +212,7 @@ export default function SocketChatHub() {
   }
 
   return (
-    <div className="flex h-screen bg-white relative overflow-hidden">
+    <div className={`flex bg-white relative overflow-hidden ${isMobile ? 'h-screen fixed inset-0' : 'h-screen'}`}>
       {/* Mobile Overlay */}
       {isMobile && showSidebar && (
         <div 
@@ -301,7 +301,7 @@ export default function SocketChatHub() {
       </div>
 
       {/* Main Chat Area - Fixed Layout */}
-      <div className="flex-1 flex flex-col h-full">
+      <div className={`flex-1 flex flex-col ${isMobile ? 'h-screen' : 'h-full'}`}>
         {currentRoom ? (
           <>
             {/* Chat Header - Always Fixed at Top */}
@@ -453,7 +453,7 @@ export default function SocketChatHub() {
         {isMobile && currentRoom && (
           <Button
             onClick={() => setShowSidebar(true)}
-            className="fixed bottom-20 right-4 z-20 h-14 w-14 rounded-full bg-[#236383] hover:bg-[#1e5573] shadow-lg"
+            className="fixed bottom-6 right-4 z-30 h-14 w-14 rounded-full bg-[#236383] hover:bg-[#1e5573] shadow-lg"
             size="icon"
             title="Switch Channels"
           >
