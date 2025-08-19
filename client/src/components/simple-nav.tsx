@@ -82,6 +82,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     // OPERATIONS (the weekly flow)
     ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
     { id: "donation-tracking", label: "Donation Tracking", icon: Route, href: "donation-tracking", group: "operations" },
     ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
