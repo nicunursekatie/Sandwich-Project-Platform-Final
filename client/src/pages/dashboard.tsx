@@ -61,6 +61,8 @@ import WishlistPage from "@/pages/wishlist";
 
 import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
 
+import sandwich_20logo from "@assets/sandwich%20logo.png";
+
 export default function Dashboard({ initialSection = "dashboard" }: { initialSection?: string }) {
   const [location] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
@@ -367,7 +369,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <img src={sandwich_logo} alt="Sandwich Logo" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" width="24" height="24" />
+          <img src={sandwich_20logo} alt="Sandwich Logo" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" width="24" height="24" />
           <h1 className="text-base sm:text-lg font-semibold text-teal-800 hidden sm:block">The Sandwich Project</h1>
           <h1 className="text-sm font-semibold text-teal-800 sm:hidden">TSP</h1>
         </div>
