@@ -1,7 +1,8 @@
 import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator, Calendar, Clock, Truck } from "lucide-react";
 import { useLocation } from "wouter";
 // Using optimized SVG for faster loading
-const sandwichLogo = "/sandwich-icon-optimized.svg";
+import sandwichLogoUrl from "@assets/LOGOS/sandwich logo.png";
+const sandwichLogo = sandwichLogoUrl;
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectList from "@/components/project-list";
 import WeeklySandwichForm from "@/components/weekly-sandwich-form";
