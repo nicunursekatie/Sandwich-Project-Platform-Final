@@ -3854,28 +3854,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (targetType === 'host') {
-        // Create a host contact for this person at the specified host location
+        // Check if this contact is already assigned as a host contact to prevent duplicates
+        const existingHostContacts = await storage.getAllHostContacts();
+        const existingAssignment = existingHostContacts.find(hc => 
+          hc.email === contact.email && hc.name === contact.name
+        );
+        
+        if (existingAssignment) {
+          return res.status(400).json({ 
+            message: "This contact is already assigned as a host contact",
+            existingAssignment: existingAssignment
+          });
+        }
+
+        // Link the contact to the host location by creating a host contact record
         const hostContactData = {
           hostId: parseInt(targetId),
           name: contact.name,
           role: contact.role || 'Contact',
           phone: contact.phone,
           email: contact.email || null,
-          isPrimary: false, // Default to false unless specified
-          notes: `Assigned from general contacts - ${contact.notes || ''}`.trim()
+          isPrimary: false,
+          notes: `Linked from general contacts - ${contact.notes || ''}`.trim()
         };
 
-        // Create the host contact
         const hostContact = await storage.createHostContact(hostContactData);
         
         // Update the original contact with assignment note
-        const assignmentNote = `Designated as host contact for location ID: ${targetId}`;
+        const assignmentNote = `Linked to host location ID: ${targetId}`;
         await storage.updateContact(contactId, { 
           notes: contact.notes ? `${contact.notes}\n\n${assignmentNote}` : assignmentNote
         });
         
         res.status(201).json({ 
-          message: "Contact successfully designated as host contact",
+          message: "Contact successfully linked to host location",
           assignment: { contactId, targetType, targetId },
           hostContact: hostContact
         });
@@ -4192,14 +4204,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
-            // Check for duplicate contact
-            const existingContacts = await storage.getHostContacts(host.id);
-            const isDuplicate = existingContacts.some(
-              (c) => c.phone.replace(/\D/g, "") === cleanPhone,
-            );
-
-            if (isDuplicate) {
-              errors.push(`Skipped ${contactName}: Duplicate phone number`);
+            // Check for duplicate contact across the entire system (not just this host)
+            const allHostContacts = await storage.getAllHostContacts();
+            const emailMatch = email ? allHostContacts.find(c => c.email === String(email).trim()) : null;
+            const phoneMatch = allHostContacts.find(c => c.phone.replace(/\D/g, "") === cleanPhone);
+            
+            if (emailMatch || phoneMatch) {
+              const reason = emailMatch ? "email already exists" : "phone number already exists";
+              errors.push(`Skipped ${contactName}: ${reason} in system`);
               skipped++;
               continue;
             }
