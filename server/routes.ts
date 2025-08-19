@@ -3474,6 +3474,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res
           .status(400)
           .json({ message: "Invalid host contact data", errors: error.errors });
+      } else if (error instanceof Error && error.message.includes("already exists")) {
+        res.status(409).json({ 
+          message: error.message,
+          type: "duplicate_contact"
+        });
       } else {
         logger.error("Failed to create host contact", error);
         res.status(500).json({ message: "Failed to create host contact" });

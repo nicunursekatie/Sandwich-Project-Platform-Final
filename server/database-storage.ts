@@ -1193,7 +1193,7 @@ export class DatabaseStorage implements IStorage {
       
       if (existingContact.length > 0) {
         console.log(`Duplicate host contact prevented: ${insertContact.name} (${insertContact.email})`);
-        return existingContact[0];
+        throw new Error(`Contact "${insertContact.name}" with email "${insertContact.email}" already exists for this host. Each contact must have a unique name and email combination.`);
       }
     }
 
