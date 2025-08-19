@@ -1077,25 +1077,52 @@ export default function HostsManagementConsolidated() {
                                       {/* Change Role & Assignment Section */}
                                       <div className="border-t pt-4">
                                         <h3 className="font-medium text-sm text-slate-700 mb-3">Change Role & Assignment</h3>
-                                        <div>
-                                          <Label htmlFor="new-role-type">New Role Type</Label>
-                                          <Select 
-                                            value="Host Contact" 
-                                            onValueChange={(value) => {
-                                              console.log('Role type change requested:', value);
-                                              // This would handle converting between contact types
-                                            }}
-                                          >
-                                            <SelectTrigger>
-                                              <SelectValue placeholder="Select role type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="Host Contact">Host Contact</SelectItem>
-                                              <SelectItem value="Volunteer">Volunteer</SelectItem>
-                                              <SelectItem value="Driver">Driver</SelectItem>
-                                              <SelectItem value="General Contact">General Contact</SelectItem>
-                                            </SelectContent>
-                                          </Select>
+                                        <div className="space-y-3">
+                                          <div>
+                                            <Label htmlFor="new-role-type">New Role Type</Label>
+                                            <Select 
+                                              value="Host Contact" 
+                                              onValueChange={(value) => {
+                                                console.log('Role type change requested:', value);
+                                                // This would handle converting between contact types
+                                              }}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select role type" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="Host Contact">Host Contact</SelectItem>
+                                                <SelectItem value="Volunteer">Volunteer</SelectItem>
+                                                <SelectItem value="Driver">Driver</SelectItem>
+                                                <SelectItem value="General Contact">General Contact</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                          
+                                          <div>
+                                            <Label htmlFor="host-location-assignment">Host Location Assignment</Label>
+                                            <Select
+                                              value={selectedHost?.id.toString()}
+                                              onValueChange={(value) => {
+                                                console.log('Host location change requested:', value);
+                                                // This would handle changing the host location assignment
+                                              }}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select host location" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                {hostsWithContacts?.map((host) => (
+                                                  <SelectItem key={host.id} value={host.id.toString()}>
+                                                    {host.name} - {host.address}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                              Current: {selectedHost?.name} - {selectedHost?.address}
+                                            </p>
+                                          </div>
                                         </div>
                                       </div>
 
