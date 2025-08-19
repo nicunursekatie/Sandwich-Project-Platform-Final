@@ -270,7 +270,7 @@ export default function WishlistPage() {
           </Card>
         </div>
 
-        {/* Current Suggestions List */}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
