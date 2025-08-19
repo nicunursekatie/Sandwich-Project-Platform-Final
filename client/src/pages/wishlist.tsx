@@ -30,13 +30,17 @@ export default function WishlistPage() {
   });
 
   // Fetch wishlist suggestions
-  const { data: suggestions = [], isLoading } = useQuery({
+  const { data: suggestions = [], isLoading, error: suggestionsError } = useQuery({
     queryKey: ["/api/wishlist-suggestions"],
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Fetch recent activity
-  const { data: activity = [] } = useQuery({
+  const { data: activity = [], error: activityError } = useQuery({
     queryKey: ["/api/wishlist-activity"],
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Create suggestion mutation
@@ -65,7 +69,8 @@ export default function WishlistPage() {
         priority: "medium"
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Wishlist submission error:", error);
       toast({
         title: "Submission Failed",
         description: "There was an error submitting your suggestion. Please try again.",
@@ -117,6 +122,25 @@ export default function WishlistPage() {
     
     createSuggestionMutation.mutate(newSuggestion);
   };
+
+  // Show error states if needed
+  if (suggestionsError || activityError) {
+    return (
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-red-600">Error Loading Wishlist</h1>
+          <p className="text-slate-600">
+            {suggestionsError && "Failed to load suggestions. "}
+            {activityError && "Failed to load activity. "}
+            Please refresh the page or try again later.
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -341,7 +365,7 @@ export default function WishlistPage() {
                       ) : (
                         <Gift className="w-4 h-4 text-green-600" />
                       )}
-                      <span>{item.description || `${item.itemName || item.item} ${item.type === 'suggestion' ? 'suggested' : 'updated'}`}</span>
+                      <span>{item.description || `${item.item} ${item.type === 'suggestion' ? 'suggested' : 'updated'}`}</span>
                     </div>
                     <span className="text-xs text-slate-500">
                       {new Date(item.createdAt).toLocaleDateString()}
