@@ -87,7 +87,15 @@ router.post("/projects", isAuthenticated, sanitizeMiddleware, async (req, res) =
     }
     console.log('🚨 PERMISSION GRANTED');
     
-    const result = insertProjectSchema.safeParse(req.body);
+    // Sanitize numeric fields - convert empty strings to null to prevent database errors
+    const sanitizedBody = { ...req.body };
+    if (sanitizedBody.estimatedHours === '') sanitizedBody.estimatedHours = null;
+    if (sanitizedBody.actualHours === '') sanitizedBody.actualHours = null;
+    if (sanitizedBody.dueDate === '') sanitizedBody.dueDate = null;
+    if (sanitizedBody.startDate === '') sanitizedBody.startDate = null;
+    if (sanitizedBody.budget === '') sanitizedBody.budget = null;
+    
+    const result = insertProjectSchema.safeParse(sanitizedBody);
     if (!result.success) {
       return res.status(400).json({ error: result.error.message });
     }
@@ -139,7 +147,14 @@ router.patch("/projects/:id", isAuthenticated, sanitizeMiddleware, async (req, r
   }
   try {
     const id = parseInt(req.params.id);
-    const updates = req.body;
+    
+    // Sanitize numeric fields in updates - convert empty strings to null
+    const updates = { ...req.body };
+    if (updates.estimatedHours === '') updates.estimatedHours = null;
+    if (updates.actualHours === '') updates.actualHours = null;
+    if (updates.dueDate === '') updates.dueDate = null;
+    if (updates.startDate === '') updates.startDate = null;
+    if (updates.budget === '') updates.budget = null;
     
     // Get original project to compare assignees
     const originalProject = await storage.getProject(id);
