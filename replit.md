@@ -7,6 +7,8 @@ This full-stack application for The Sandwich Project, a nonprofit, manages sandw
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
 Form Design: Eliminate redundant or confusing form fields - host dialogs should have a single "Host Location Name" field instead of separate "Name" and "Host Location" fields.
+Mobile UX Priority: Mobile user experience is critical - chat positioning and space efficiency are key concerns. Vehicle type should NOT be required for new driver entries.
+Documentation: All technical findings and fixes must be documented in replit.md to avoid repeated searching and debugging.
 
 ## System Architecture
 
@@ -24,6 +26,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Messaging & Notifications**: Multi-layered communication system featuring a Gmail-style email interface (EmailStyleMessaging), committee-specific messaging (CommitteeChat), and real-time Socket.IO chat (SocketChatHub/SimpleChat) with @mentions, autocomplete dropdown, persistent like functionality, and email notifications. SendGrid integration powers email alerts and mention notifications. Dashboard bell notifications provide timely updates.
 - **Operational Tools**: Includes a project management system for tracking tasks and progress, meeting management for scheduling and minutes, and a comprehensive directory for contacts. Work logs, a user feedback portal, and analytics dashboards with PDF/CSV report generation are also integrated. A toolkit provides organized access to important documents.
 - **Data Integrity**: Ensured through automated audit logging, Zod validation for all data inputs, and systems for correcting suspicious entries.
+- **Form Validation & Data Conversion**: Critical data type mismatches resolved with automatic conversion handling in backend schemas. Recipients form converts estimatedSandwiches (string→number/null) and contractSignedDate (string→Date/null). Website fields changed from type="url" to type="text" for flexibility. Driver vehicle type is optional (not required).
 
 ### Feature Specifications
 - **Real-time Chat**: Socket.IO-powered system with SocketChatHub and SimpleChat components, supporting distinct channels (General, Core Team, Committee, Host, Driver, Recipient), real-time message broadcasting, persistent like functionality with visual indicators, and @mentions with autocomplete dropdown and email notifications.
@@ -49,3 +52,40 @@ The application features a consistent brand identity using The Sandwich Project'
 - **File Uploads**: `multer`
 - **Google Integration**: Google Sheets API
 - **Analytics**: Google Analytics (G-9M4XDZGN68)
+
+## Recent Technical Fixes & Architecture Details
+
+### Form Data Type Conversion Issues (Aug 2025)
+**Problem**: HTML forms send all data as strings, causing 400 errors when backend expects numbers/dates.
+**Solution**: Enhanced `insertRecipientSchema` in `shared/schema.ts` with automatic type conversion:
+- `estimatedSandwiches`: String→Number/null conversion with `z.union([z.string().transform(...), z.number(), z.null()])`  
+- `contractSignedDate`: String→Date/null conversion with similar union pattern
+- Changed website fields from `type="url"` to `type="text"` for validation flexibility
+
+**Files Affected**: 
+- `shared/schema.ts` (lines 672-688): Enhanced recipient schema with data conversion
+- `client/src/components/recipients-management.tsx`: Form submission with type conversion
+- `client/src/components/drivers-management.tsx` (line 851): Vehicle type made optional
+
+### Mobile Chat Positioning (Aug 2025)
+**Problem**: Chat loading too far down screen on mobile devices
+**Solution**: Fixed using proper viewport calculations `h-[calc(100vh-140px)]` for mobile-optimized positioning
+**Files Affected**: `client/src/components/socket-chat-hub.tsx`
+
+### Driver Management Form Validation (Aug 2025)
+**Database Schema**: `drivers.vehicleType: text("vehicle_type")` - nullable field (no `.notNull()` constraint)
+**Frontend**: Removed asterisk from "Vehicle Type *" label and updated placeholder to indicate optional field
+**Validation**: Backend `insertDriverSchema` requires no custom validation - basic schema supports nullable vehicle types
+
+### Key Component Locations
+- **Driver Forms**: `client/src/components/drivers-management.tsx`, `client/src/components/drivers/driver-form.tsx`
+- **Recipient Forms**: `client/src/components/recipients-management.tsx` 
+- **Chat Components**: `client/src/components/socket-chat-hub.tsx`, `client/src/components/simple-chat.tsx`
+- **Schema Definitions**: `shared/schema.ts` (all database models and validation schemas)
+- **Backend Routes**: `server/routes.ts` (API endpoints with schema validation)
+
+### Common Debugging Patterns
+1. **Form Validation Errors**: Check schema in `shared/schema.ts`, look for data type mismatches (string vs number/date)
+2. **Field Requirements**: Database nullable fields don't require frontend validation - remove asterisks from labels
+3. **Mobile Issues**: Use viewport calculations for positioning, prioritize vertical space efficiency
+4. **Data Conversion**: Use Zod union types with transform functions for automatic type conversion
