@@ -86,7 +86,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - Updated `newDriver` state initialization to include all necessary fields
 - System is fully functional - users can successfully add/edit drivers with agreement status updates working correctly
 - **CRITICAL FIX**: Fixed agreement status persistence issue where users had to update 2-3 times - was caused by Select value reading from old `hasSignedAgreement(editingDriver)` function while onChange updated `emailAgreementSent` field, creating UI/data mismatch
-- **Agreement Status Bug Fixed (Aug 2025)**: Resolved issue where new drivers created with "Agreement Signed" selected would still show "Missing Agreement" badge. Problem was handleAdd function incorrectly mapping `newDriver.agreementSigned` instead of using `newDriver.emailAgreementSent` directly. Agreement status now saves and displays correctly for new drivers.
+- **Agreement Status Bug Fixed (Aug 2025)**: Resolved issue where new drivers created with "Agreement Signed" selected would still show "Missing Agreement" badge. Root cause was inconsistent dialog structure between Add and Edit forms. Completely rebuilt Add New Driver dialog to mirror working Edit dialog structure, ensuring consistent field handling and agreement status persistence. Agreement status now saves and displays correctly for new drivers.
 - **Availability Field Corrected (Aug 2025)**: Removed dropdown availability status field from forms. Only using availabilityNotes as free text field for scheduling details like "M-F after 3" as intended. Driver cards display availabilityNotes content when present.
 
 ### Key Component Locations
