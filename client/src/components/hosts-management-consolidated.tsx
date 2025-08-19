@@ -573,7 +573,7 @@ export default function HostsManagementConsolidated() {
                         className="space-y-4"
                       >
                         <div>
-                          <Label htmlFor="edit-name">Name *</Label>
+                          <Label htmlFor="edit-name">Host Location Name *</Label>
                           <Input
                             id="edit-name"
                             value={editingHost.name}
@@ -581,17 +581,7 @@ export default function HostsManagementConsolidated() {
                               e.stopPropagation();
                               setEditingHost({ ...editingHost, name: e.target.value });
                             }}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="edit-address">Host Location</Label>
-                          <Input
-                            id="edit-address"
-                            value={editingHost.address || ""}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setEditingHost({ ...editingHost, address: e.target.value });
-                            }}
+                            placeholder="Enter host location name"
                           />
                         </div>
                         <div>
@@ -681,7 +671,7 @@ export default function HostsManagementConsolidated() {
               className="space-y-4"
             >
               <div>
-                <Label htmlFor="name">Host Name *</Label>
+                <Label htmlFor="name">Host Location Name *</Label>
                 <Input
                   id="name"
                   value={newHost.name}
@@ -689,19 +679,7 @@ export default function HostsManagementConsolidated() {
                     e.stopPropagation();
                     setNewHost({ ...newHost, name: e.target.value });
                   }}
-                  placeholder="Enter host location name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="address">Host Location</Label>
-                <Input
-                  id="address"
-                  value={newHost.address || ""}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    setNewHost({ ...newHost, address: e.target.value });
-                  }}
-                  placeholder="Enter host location"
+                  placeholder="Enter host location name (e.g., Alpharetta, Dunwoody/PTC)"
                 />
               </div>
               <div>
