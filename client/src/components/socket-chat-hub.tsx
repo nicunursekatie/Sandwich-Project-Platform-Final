@@ -212,7 +212,7 @@ export default function SocketChatHub() {
   }
 
   return (
-    <div className="flex h-full bg-white relative">
+    <div className="flex h-screen bg-white relative overflow-hidden">
       {/* Mobile Overlay */}
       {isMobile && showSidebar && (
         <div 
@@ -227,8 +227,8 @@ export default function SocketChatHub() {
           ? `fixed left-0 top-0 h-full w-80 z-20 transform transition-transform duration-300 ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
             }`
-          : 'w-72 relative'
-        } bg-gray-50 border-r border-gray-200
+          : 'w-72 relative h-full'
+        } bg-gray-50 border-r border-gray-200 flex flex-col
       `}>
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -249,7 +249,7 @@ export default function SocketChatHub() {
           </div>
         </div>
 
-        <div className="p-3 space-y-1">
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {rooms.map((room) => (
             <div key={room.id} className={`rounded border ${
               currentRoom === room.id ? 'bg-[#236383] border-[#236383]' : 'bg-white border-gray-200 hover:border-gray-300'
