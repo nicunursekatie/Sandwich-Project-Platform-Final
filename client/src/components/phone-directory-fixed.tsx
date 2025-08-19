@@ -1025,7 +1025,19 @@ function PhoneDirectoryFixed() {
                             <button
                               type="button"
                               onClick={() => {
-                                setEditingContact(contact);
+                                // Extract zone from notes if it exists
+                                let extractedZone = contact.zone || "";
+                                if (!extractedZone && contact.notes) {
+                                  const zoneMatch = contact.notes.match(/Zone:\s*([^-]+)/);
+                                  if (zoneMatch) {
+                                    extractedZone = zoneMatch[1].trim();
+                                  }
+                                }
+                                
+                                setEditingContact({
+                                  ...contact,
+                                  zone: extractedZone
+                                });
                               }}
                               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
                             >
@@ -2520,6 +2532,22 @@ function PhoneDirectoryFixed() {
                     })
                   }
                   placeholder="Street address, city, state, zip"
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Textarea
+                  id="edit-notes"
+                  value={editingContact.notes || ""}
+                  onChange={(e) =>
+                    setEditingContact({
+                      ...editingContact,
+                      notes: e.target.value,
+                    })
+                  }
+                  placeholder="Additional notes or information"
                   rows={2}
                 />
               </div>
