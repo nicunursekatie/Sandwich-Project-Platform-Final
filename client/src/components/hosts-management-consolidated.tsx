@@ -830,7 +830,7 @@ export default function HostsManagementConsolidated() {
                               e.stopPropagation();
                               setNewContact({ ...newContact, role: e.target.value });
                             }}
-                            placeholder="e.g., Manager, Coordinator, Volunteer"
+                            placeholder="e.g., Manager, Coordinator, Lead, Volunteer"
                           />
                         </div>
                         <div>
@@ -994,7 +994,7 @@ export default function HostsManagementConsolidated() {
                                             e.stopPropagation();
                                             setEditingContact({ ...editingContact, role: e.target.value });
                                           }}
-                                          placeholder="e.g., Manager, Coordinator"
+                                          placeholder="e.g., Manager, Coordinator, Lead"
                                         />
                                       </div>
                                     <div>
