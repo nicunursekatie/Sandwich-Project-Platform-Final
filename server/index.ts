@@ -51,14 +51,7 @@ import { setupSocketChat } from "./socket-chat";
 
 const app = express();
 
-// Serve static files with proper MIME types BEFORE other middleware
-app.use(express.static('public', {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.svg')) {
-      res.setHeader('Content-Type', 'image/svg+xml');
-    }
-  }
-}));
+
 
 // Enable gzip/brotli compression for performance
 app.use(compression({
