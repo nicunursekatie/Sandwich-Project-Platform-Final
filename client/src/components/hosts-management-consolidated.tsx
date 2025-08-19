@@ -379,9 +379,22 @@ export default function HostsManagementConsolidated() {
 
   const handleUpdateContact = () => {
     if (!editingContact) return;
+    
+    console.log('Updating contact:', editingContact.id, editingContact);
+    
+    // Clean the updates object to only include valid HostContact fields
+    const updates = {
+      name: editingContact.name,
+      role: editingContact.role,
+      phone: editingContact.phone,
+      email: editingContact.email,
+      isPrimary: editingContact.isPrimary,
+      notes: editingContact.notes
+    };
+    
     updateContactMutation.mutate({
       id: editingContact.id,
-      updates: editingContact
+      updates: updates
     });
   };
 
@@ -944,16 +957,20 @@ export default function HostsManagementConsolidated() {
                                   size="sm"
                                   disabled={!canEdit}
                                   onClick={async () => {
+                                    console.log('Edit button clicked for contact:', contact.id, contact.name);
+                                    
                                     // Force fresh data before editing to ensure contact IDs are correct
                                     await queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
                                     const freshHosts = queryClient.getQueryData(['/api/hosts-with-contacts']) as HostWithContacts[];
                                     const freshHost = freshHosts?.find(h => h.id === selectedHost?.id);
-                                    const freshContact = freshHost?.contacts?.find(c => c.name === contact.name && c.phone === contact.phone);
+                                    const freshContact = freshHost?.contacts?.find(c => c.id === contact.id);
+                                    
+                                    console.log('Fresh contact found:', freshContact);
                                     
                                     if (freshContact) {
                                       setEditingContact(freshContact);
                                     } else {
-                                      console.error('Could not find fresh contact data for:', contact.name);
+                                      console.error('Could not find fresh contact data for ID:', contact.id, 'Contact:', contact.name);
                                       setEditingContact(contact);
                                     }
                                   }}
