@@ -1260,6 +1260,49 @@ class StorageWrapper implements IStorage {
       () => this.fallbackStorage.markChannelMessagesAsRead(userId, channel)
     );
   }
+
+  // Wishlist Suggestions methods
+  async getAllWishlistSuggestions() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllWishlistSuggestions(),
+      () => this.fallbackStorage.getAllWishlistSuggestions()
+    );
+  }
+
+  async getWishlistSuggestion(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getWishlistSuggestion(id),
+      () => this.fallbackStorage.getWishlistSuggestion(id)
+    );
+  }
+
+  async createWishlistSuggestion(suggestion: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createWishlistSuggestion(suggestion),
+      () => this.fallbackStorage.createWishlistSuggestion(suggestion)
+    );
+  }
+
+  async updateWishlistSuggestion(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateWishlistSuggestion(id, updates),
+      () => this.fallbackStorage.updateWishlistSuggestion(id, updates)
+    );
+  }
+
+  async deleteWishlistSuggestion(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteWishlistSuggestion(id),
+      () => this.fallbackStorage.deleteWishlistSuggestion(id)
+    );
+  }
+
+  async getRecentWishlistActivity(limit?: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getRecentWishlistActivity(limit),
+      () => this.fallbackStorage.getRecentWishlistActivity(limit)
+    );
+  }
 }
 
 export const storage = new StorageWrapper();

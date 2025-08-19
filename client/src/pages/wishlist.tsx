@@ -45,8 +45,8 @@ export default function WishlistPage() {
       return apiRequest("/api/wishlist-suggestions", {
         method: "POST",
         body: JSON.stringify({
-          itemName: data.item,
-          description: data.reason,
+          item: data.item,
+          reason: data.reason,
           priority: data.priority,
           status: "pending"
         }),
