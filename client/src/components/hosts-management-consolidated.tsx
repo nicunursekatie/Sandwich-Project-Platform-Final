@@ -226,6 +226,7 @@ export default function HostsManagementConsolidated() {
 
   const updateContactMutation = useMutation({
     mutationFn: async (data: { id: number; updates: Partial<HostContact> }) => {
+      console.log('PATCH request data:', data);
       return await apiRequest('PATCH', `/api/host-contacts/${data.id}`, data.updates);
     },
     onSuccess: (updatedContact, { id, updates }) => {
