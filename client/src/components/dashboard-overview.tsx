@@ -15,6 +15,7 @@ import { AnimatedCounter } from "@/components/modern-dashboard/animated-counter"
 
 // Dark mode toggle removed per user request
 import { SandwichStackIcon, GrowthTrendIcon, CommunityIcon, TargetIcon, SparkleIcon, NetworkIcon } from "@/components/modern-dashboard/custom-svg-icons";
+import CMYK_PRINT_TSP_01__2_ from "@assets/CMYK_PRINT_TSP-01 (2).png";
 // Using optimized SVG logos for faster loading
 const tspLogoSvg = "/logo-optimized.svg";
 const sandwichIconSvg = "/sandwich-icon-optimized.svg";
@@ -128,13 +129,12 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-
       <div className="space-y-8 pb-8">
         {/* Header */}
         <div className="bg-white rounded-xl mx-4 mt-8 p-8 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
           <div className="relative">
             <img 
-              src={tspLogoSvg} 
+              src={CMYK_PRINT_TSP_01__2_} 
               alt="The Sandwich Project" 
               className="w-[250px] md:w-[400px] mb-6 mx-auto" 
               width="400"
@@ -430,7 +430,6 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           </HelpBubble>
         </div>
       </div>
-
       {/* Document Preview Modal */}
       <DocumentPreviewModal 
         isOpen={previewModal.isOpen}
