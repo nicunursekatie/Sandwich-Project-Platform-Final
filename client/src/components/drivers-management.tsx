@@ -845,7 +845,7 @@ export default function DriversManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="vehicle-type">Vehicle Type *</Label>
+                    <Label htmlFor="vehicle-type">Vehicle Type</Label>
                     <Select
                       value={newDriver.vehicleType}
                       onValueChange={(value) =>
@@ -853,7 +853,7 @@ export default function DriversManagement() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select vehicle type" />
+                        <SelectValue placeholder="Select vehicle type (optional)" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Car">Car</SelectItem>
