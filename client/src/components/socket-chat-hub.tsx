@@ -444,6 +444,17 @@ export default function SocketChatHub() {
             </div>
           </div>
         )}
+
+        {/* Floating Action Button for Channel Switching - Mobile Only */}
+        {isMobile && currentRoom && (
+          <Button
+            onClick={() => setShowSidebar(true)}
+            className="fixed bottom-20 right-4 z-20 h-14 w-14 rounded-full bg-[#236383] hover:bg-[#1e5573] shadow-lg"
+            size="icon"
+          >
+            <Hash className="h-6 w-6 text-white" />
+          </Button>
+        )}
       </div>
     </div>
   );
