@@ -24,6 +24,8 @@ import {
   XCircle,
   Download,
   Truck,
+  FileCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -312,6 +314,17 @@ export default function DriversManagement() {
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Active
                             </Badge>
+                            {driver.emailAgreementSent ? (
+                              <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                                <FileCheck className="w-3 h-3 mr-1" />
+                                Agreement Sent
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                Missing Agreement
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-4 mt-1">
                             {driver.phone && (
@@ -387,6 +400,17 @@ export default function DriversManagement() {
                               <XCircle className="w-3 h-3 mr-1" />
                               Inactive
                             </Badge>
+                            {driver.emailAgreementSent ? (
+                              <Badge variant="outline" className="border-green-200 text-green-600 bg-green-50">
+                                <FileCheck className="w-3 h-3 mr-1" />
+                                Agreement Sent
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-orange-200 text-orange-600 bg-orange-50">
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                Missing Agreement
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-4 mt-1">
                             {driver.phone && (
