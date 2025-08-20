@@ -11,7 +11,7 @@ import GoogleDriveLinks from "@/components/google-drive-links";
 import DashboardOverview from "@/components/dashboard-overview";
 import SandwichCollectionLog from "@/components/sandwich-collection-log";
 import RecipientsManagement from "@/components/recipients-management";
-// import DriversManagement from "@/components/drivers-management";
+import DriversManagement from "@/components/drivers-management-simple";
 import VolunteerManagement from "@/components/volunteer-management";
 import HostsManagement from "@/components/hosts-management-consolidated";
 import { DocumentsBrowser } from "@/components/documents-browser";
@@ -261,8 +261,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "recipients":
         return <RecipientsManagement />;
       case "drivers":
-        return <div className="p-6">Drivers management temporarily disabled</div>;
-        // return <DriversManagement />;
+        return <DriversManagement />;
       case "volunteers":
         return <VolunteerManagement />;
 
