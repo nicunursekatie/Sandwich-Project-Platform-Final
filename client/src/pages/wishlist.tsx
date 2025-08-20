@@ -308,12 +308,41 @@ export default function WishlistPage() {
                         </div>
                         <p className="text-sm text-slate-600 mb-1">{suggestion.reason}</p>
                         <p className="text-xs text-slate-500">
-                          Suggested on {new Date(suggestion.createdAt).toLocaleDateString()}
+                          Suggested by {suggestion.suggestedByFirstName ? `${suggestion.suggestedByFirstName} ${suggestion.suggestedByLastName}` : 'Unknown User'} on {new Date(suggestion.createdAt).toLocaleDateString()}
                         </p>
                         {suggestion.adminNotes && (
                           <p className="text-xs text-slate-700 mt-1 font-medium">
                             Admin note: {suggestion.adminNotes}
                           </p>
+                        )}
+                        {/* Admin Review Buttons - Show for pending suggestions if user has permissions */}
+                        {user && hasPermission((user as any)?.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && suggestion.status === 'pending' && (
+                          <div className="flex gap-2 mt-3">
+                            <Button
+                              size="sm"
+                              onClick={() => reviewSuggestionMutation.mutate({
+                                id: suggestion.id,
+                                action: 'approve'
+                              })}
+                              disabled={reviewSuggestionMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => reviewSuggestionMutation.mutate({
+                                id: suggestion.id,
+                                action: 'reject'
+                              })}
+                              disabled={reviewSuggestionMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
