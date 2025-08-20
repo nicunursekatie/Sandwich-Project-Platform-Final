@@ -339,11 +339,12 @@ export default function WishlistPage() {
                             Admin note: {suggestion.adminNotes}
                           </p>
                         )}
-                        {/* Debug user permissions */}
-                        {console.log('User in wishlist:', user, 'Permissions:', (user as any)?.permissions, 'Has MANAGE_WISHLIST:', user && hasPermission((user as any)?.permissions || 0, PERMISSIONS.MANAGE_WISHLIST))}
-                        
                         {/* Admin Management Buttons - Show for all suggestions if user has permissions */}
-                        {user && hasPermission((user as any)?.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && (
+                        {user && (
+                          (user as any)?.permissions?.includes?.("manage_wishlist") || 
+                          (user as any)?.role === "super_admin" || 
+                          (user as any)?.role === "admin"
+                        ) && (
                           <div className="flex gap-2 mt-3">
                             {suggestion.status === 'pending' ? (
                               <>

@@ -1,0 +1,688 @@
+cdn.segment.com/next-integrations/actions/tiktok-pixel/920266289e7b08bf066b.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ Failed to create PluginFactory Object
+overrideMethod @ installHook.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+u @ sdk.min.js:1
+ Failed to load Remote Plugin 
+overrideMethod @ installHook.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+u @ sdk.min.js:1
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+Sandwich-Project-Platform-Final:1 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+Sandwich-Project-Platform-Final:1 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+Sandwich-Project-Platform-Final:1 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+ [LaunchDarkly] LaunchDarkly client initialized
+ Adding extension: Javascript Commands Object
+ Adding extension: ReplDB Export and Import Object
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+ Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'battery'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'layout-animations'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'navigation-override'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'oversized-images'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'publickey-credentials'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'speaker-selection'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'unoptimized-images'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'unsized-media'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Unrecognized feature: 'pointer-lock'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ framework-a87c513cf81d12a8.js:1
+uD @ framework-a87c513cf81d12a8.js:1
+uI @ framework-a87c513cf81d12a8.js:1
+uM @ framework-a87c513cf81d12a8.js:1
+uS @ framework-a87c513cf81d12a8.js:1
+C @ framework-a87c513cf81d12a8.js:1
+z @ framework-a87c513cf81d12a8.js:1
+(anonymous) @ commons.59560ac….js.gz:1
+y @ commons.59560ac….js.gz:1
+c @ commons.59560ac….js.gz:1
+ Adding extension: repl.tv Object
+ Adding extension: AI Playground Object
+ Command: javascript-root-command has unrecognized contributions: commandbar. Valid contributions are commandbar,filetree-context-menu,sidebar-search,editor-context-menu Object
+overrideMethod @ installHook.js:1
+(anonymous) @ _app-6376c7d3ed1cebf9.js:13
+a @ 7870-b7633385387ea6f7.js:1
+warn @ 7870-b7633385387ea6f7.js:1
+(anonymous) @ replEnvironmentDeskt…018e3cfe7de79a.js:2
+(anonymous) @ main-50625d9d904e14f0.js:1
+n @ main-50625d9d904e14f0.js:1
+u @ main-50625d9d904e14f0.js:1
+(anonymous) @ main-50625d9d904e14f0.js:1
+(anonymous) @ main-50625d9d904e14f0.js:1
+registerCreateCommand @ replEnvironmentDeskt…018e3cfe7de79a.js:2
+r @ replEnvironmentDeskt…018e3cfe7de79a.js:2
+n @ _app-6376c7d3ed1cebf9.js:13
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+Sandwich-Project-Platform-Final:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ stallwart: failed ping 1
+_app-6376c7d3ed1cebf9.js:13 Uncaught 
+_app-6376c7d3ed1cebf9.js:13 Uncaught 
+_app-6376c7d3ed1cebf9.js:13 Uncaught 
+ stallwart: failed ping 2
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=d2cb9129-e8f4-40d2-a574-2e66f5af329b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=7cac2685-b663-4e30-b805-7f4cd0c337d2:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=b939980a-c144-4440-b7cc-40df08111fc6:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=6b9e0c60-ebdb-4764-9c95-cf8e6015e5ef:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=ede11047-99fd-436a-af29-09c1131344f3:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=dbe78c74-7109-4658-a611-5e89d6a7edb6:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=c39d25a2-8a6e-471d-a576-3895252c9447:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=bd2de933-e6bf-451b-9cea-31f9588fef84:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=c6ca11d7-8b90-4e2d-9fb7-32876740cc83:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+27c7b5fc:1  Failed to load resource: net::ERR_NETWORK_CHANGED
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=0c019121-e304-4652-8d0c-65a3c402bbc6:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=03830d6f-26fd-4305-b445-b09347d952b7:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=853ce851-ce31-4dd3-be93-3864b53391cb:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+9397-c2f5b5284e546286.js:1 WebSocket connection to 'wss://eval.spock.platform.replit.com/wsv2/v2.public.Q2dZSTRwdVV4UVlTQmdpQnVKVEZCaUlGYzNCdlkyc3dBRHJ2QVFva1ltSXhaRE13WmpndFpEZzFNaTAwWW1GbExXRmlZMlF0WWpkak5EVXlNV1V6WkRnMUVnTnVhWGdhRjNKbGNHeHBkQzF5WlhCc0xXWnBiR1Z6TFhOd2IyTnJJaDlUWVc1a2QybGphQzFRY205cVpXTjBMVkJzWVhSbWIzSnRMVVpwYm1Gc0tnMXJZWFJwWld4dmJtY3lNekUyUWxFS0dISmxjR3hwZEMxeVpYQnNMV0pzYjJOcmN5MXpjRzlqYXhJV2NtVndiR2wwTFhKbGNHd3RiV1YwWVMxemNHOWpheG9kY21Wd2JHbDBMVzFoY21kaGNtbHVaUzFpYkc5amEzTXRjM0J2WTJ0S0J3anhoY0lVRUFGUUFGb0laWGh3Ykc5eVpYSmFEMmx1ZEdWdWRGOXd...rVGtkc2EwSnBjakY2V0VKcFVGbzFSRlJvSlRKQ1VVSnRSRVJXSlRKR2VFSlhPRTVIY25kb1UzazRKVEpHVkhKeE1FeFpSVkJSTkRSdWMwa3ljRkIyWlhWTVpXUWxNa0pzY0dvd1ZUbDBiRXhJZVVSMGRtNUlkMFZ6T0ZWTFEzbGxVM1pEVVZCTk1EbEpka1JLTjFWcU1pVXlRbEV3WlZWblFUQnFNR3RYV1daSWVqZ3hkWE40WkRsc1NuRnFjRFJDVURFMFZFRWxNa1oyTkVsdmMxSlJTSEU0VVZOU2FGVkVKVEpDZFhSR1RETkVXVXMyWldwcFdISTJVWEZFYVRWTmNHTnpVVzExYlRrMWVuQlFWMmRFVVNVelJDVXpSQT09JvknnTR9-q9E5ZT4CQtjGyBf1rLhiii1BbzjvwdltR25gLAWiNrsRw_pd5CsJq_3VMi1dNj--1kkNDWVPt7lBw.Q2dad2NtOWtPak1pQ25KbGNHeHBkQzVqYjIwPQ' failed: 
+(anonymous) @ 9397-c2f5b5284e546286.js:1
+_app-6376c7d3ed1cebf9.js:40 WebSocket connection to 'wss://replit.com/graphql_subscriptions' failed: 
+(anonymous) @ _app-6376c7d3ed1cebf9.js:40
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=731ad30b-4f39-472a-87b9-53acb3132e00:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=51ee6728-48a2-4966-8138-d8f7d7e48860:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=6303e2c5-0983-4ee7-8d6c-11bb9c3088e7:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=307b5bbd-a396-4aaa-9c3e-727db403b31b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=2da3b60e-b463-42f4-8e32-e43158e49735:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=f517c832-8025-42b4-9d73-f7d6e9d26751:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Ac4ccca0a&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=5dd95650-725d-4cb8-b4f3-3933e5f7c518:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html:32 Unrecognized feature: 'battery'.
+workspace_iframe.html:32 Unrecognized feature: 'battery'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+Network.js:227 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=7uiGM2iqkU9j' failed: 
+t @ Network.js:227
+ WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=7uiGM2iqkU9j' failed: 
+t @ eruda.js:2
+Network.js:227 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=7uiGM2iqkU9j' is invalid.
+    at new t (Network.js:227:18)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+beacon.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+beacon.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+Console.js:61 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+Console.js:61 Current URL location: /wishlist
+Console.js:61 Dashboard activeSection changed to: wishlist
+Console.js:61 WebSocket connected successfully
+Network.js:227 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ Network.js:227
+ WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ eruda.js:2
+Console.js:61 Messaging WebSocket error: Event
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 Messaging WebSocket disconnected
+Console.js:61 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 User in wishlist: Object Permissions: Array(100) Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: Object Permissions: Array(100) Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: Object Permissions: Array(100) Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: Object Permissions: Array(100) Has MANAGE_WISHLIST: false
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=7uiGM2iqkU9j' failed: 
+t @ Network.js:227
+setupWebSocket @ client:536
+(anonymous) @ client:531
+Network.js:227 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=7uiGM2iqkU9j' is invalid.
+    at new t (Network.js:227:18)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+t @ Network.js:227
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+workspace_iframe.html?initialPath=%2Fwishlist&id=%3Ar751%3A:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2Fwishlist&id=%3Ar751%3A:142
+Console.js:61 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+Console.js:61 Current URL location: /wishlist
+Console.js:61 Dashboard activeSection changed to: wishlist
+Console.js:61 WebSocket connected successfully
+useMessaging.ts:242 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ Network.js:227
+(anonymous) @ useMessaging.ts:242
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=953a46bf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=953a46bf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=953a46bf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=953a46bf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+Console.js:61 Messaging WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+Mt.forEach.n.<computed> @ Console.js:61
+ws.onerror @ useMessaging.ts:281
+Console.js:61 Messaging WebSocket disconnected
+Console.js:61 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ Console.js:61
+ws.onclose @ useMessaging.ts:291
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
+Console.js:61 User in wishlist: {id: 'admin_1751065261945', email: 'admin@sandwich.project', firstName: 'Katie (Admin)', lastName: 'Long', displayName: 'Katie (admin)', …} Permissions: (100) ['BASIC_USER_SUPPORT', 'CORE_TEAM_CHAT', 'DELETE_ALL_MESSAGES', 'DRIVER_CHAT', 'GENERAL_CHAT', 'HOST_CHAT', 'MANAGE_ALL_PROJECTS', 'MODERATE_ALL_CHAT', 'RECIPIENT_CHAT', 'SYSTEM_ADMINISTRATOR', 'VIEW_ALL_USERS', 'access_analytics', 'access_chat', 'access_collections', 'access_directory', 'access_drivers', 'access_governance', 'access_hosts', 'access_meetings', 'access_messages', 'access_projects', 'access_recipients', 'access_reports', 'access_role_demo', 'access_sandwich_data', 'access_suggestions', 'access_toolkit', 'access_work_logs', 'admin_access', 'committee_chat', 'core_team_chat', 'create_collections', 'create_projects', 'create_suggestions', 'create_work_logs', 'delete_all_collections', 'delete_all_projects', 'delete_all_suggestions', 'delete_all_work_logs', 'direct_messages', 'driver_chat', 'edit_all_collections', 'edit_all_projects', 'edit_all_suggestions', 'edit_all_work_logs', 'export_data', 'general_chat', 'group_messages', 'host_chat', 'import_data', 'manage_all_kudos', 'manage_announcements', 'manage_collections', 'manage_drivers', 'manage_hosts', 'manage_meetings', 'manage_recipients', 'manage_suggestions', 'manage_users', 'moderate_messages', 'receive_kudos', 'recipient_chat', 'schedule_reports', 'send_kudos', 'send_messages', 'submit_suggestions', 'use_collection_walkthrough', 'view_all_work_logs', 'view_kudos', 'access_volunteers', 'access_donation_tracking', 'manage_volunteers', 'manage_donation_tracking', 'view_volunteers', 'add_volunteers', 'edit_volunteers', 'view_donation_tracking', 'add_donation_tracking', 'edit_donation_tracking', 'delete_donation_tracking', 'manage_directory', 'access_development', 'manage_development', 'access_events', 'manage_events', 'access_signup_genius', 'manage_signup_genius', 'view_recipients', 'add_recipients', 'edit_recipients', 'delete_recipients', 'view_hosts', 'add_hosts', 'edit_hosts', 'delete_hosts', 'view_drivers', 'add_drivers', 'edit_drivers', 'delete_drivers', 'edit_data'] Has MANAGE_WISHLIST: false
