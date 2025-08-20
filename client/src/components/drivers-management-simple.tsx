@@ -117,11 +117,11 @@ export default function DriversManagement() {
     addDriverMutation.mutate(newDriver);
   };
 
-  const handleUpdateDriver = (driver: Driver) => {
+  const handleUpdateDriver = () => {
     if (!editingDriver) return;
     updateDriverMutation.mutate({
       id: editingDriver.id,
-      data: driver,
+      data: editingDriver,
     });
   };
 
@@ -266,6 +266,124 @@ export default function DriversManagement() {
           </div>
         </div>
       </div>
+
+      {/* Edit Driver Dialog */}
+      <Dialog open={!!editingDriver} onOpenChange={() => setEditingDriver(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Driver</DialogTitle>
+          </DialogHeader>
+          {editingDriver && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={editingDriver.name}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, name: e.target.value })
+                  }
+                  placeholder="Enter driver name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input
+                  id="edit-phone"
+                  value={editingDriver.phone || ""}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, phone: e.target.value })
+                  }
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editingDriver.email || ""}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, email: e.target.value })
+                  }
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-vehicleType">Vehicle Type</Label>
+                <Input
+                  id="edit-vehicleType"
+                  value={editingDriver.vehicleType || ""}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, vehicleType: e.target.value })
+                  }
+                  placeholder="e.g., Car, Van, Truck"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-zone">Zone</Label>
+                <Input
+                  id="edit-zone"
+                  value={editingDriver.zone || ""}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, zone: e.target.value })
+                  }
+                  placeholder="Enter zone assignment"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-routeDescription">Route Description</Label>
+                <Input
+                  id="edit-routeDescription"
+                  value={editingDriver.routeDescription || ""}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, routeDescription: e.target.value })
+                  }
+                  placeholder="e.g., SS to Dunwoody"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-emailAgreementSent"
+                  checked={editingDriver.emailAgreementSent || false}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, emailAgreementSent: e.target.checked })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-emailAgreementSent">Email Agreement Sent</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-isActive"
+                  checked={editingDriver.isActive}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, isActive: e.target.checked })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-isActive">Active Driver</Label>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingDriver(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateDriver}
+                  disabled={updateDriverMutation.isPending}
+                >
+                  {updateDriverMutation.isPending ? "Updating..." : "Update Driver"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Drivers List */}
       <Tabs defaultValue="active" className="w-full">
