@@ -20,8 +20,8 @@ interface GroupCollection {
 export default function CollectionWalkthrough({ onComplete, onCancel }: CollectionWalkthroughProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [collectionDate, setCollectionDate] = useState("");
-  const [actualCollectionDate, setActualCollectionDate] = useState(""); // The Thursday closest to their input
-  const [useExactDate, setUseExactDate] = useState(false); // Allow override of Thursday calculation
+  const [actualCollectionDate, setActualCollectionDate] = useState(""); // The Wednesday closest to their input
+  const [useExactDate, setUseExactDate] = useState(false); // Allow override of Wednesday calculation
   const [hostName, setHostName] = useState("");
   const [individualCount, setIndividualCount] = useState<number | null>(null);
   const [hasGroups, setHasGroups] = useState<boolean | null>(null);
@@ -39,35 +39,35 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   // Filter to only show active hosts
   const hosts = allHosts.filter((host: any) => host.status === 'active');
 
-  // Function to find the most recent Thursday that has already passed
-  const findMostRecentThursday = (inputDate: string): string => {
+  // Function to find the most recent Wednesday that has already passed
+  const findMostRecentWednesday = (inputDate: string): string => {
     if (!inputDate) return "";
     
     const date = new Date(inputDate + "T12:00:00"); // Add time to avoid timezone issues
     const today = new Date();
-    const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 4 = Thursday, 6 = Saturday
+    const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 3 = Wednesday, 6 = Saturday
     
-    let daysToThursday;
-    if (day === 4) {
-      // If it's Thursday, use that Thursday (unless it's in the future)
-      daysToThursday = 0;
-    } else if (day < 4) {
-      // If it's Sunday-Wednesday, go to the previous Thursday
-      daysToThursday = day - 4; // This will be negative
+    let daysToWednesday;
+    if (day === 3) {
+      // If it's Wednesday, use that Wednesday (unless it's in the future)
+      daysToWednesday = 0;
+    } else if (day < 3) {
+      // If it's Sunday-Tuesday, go to the previous Wednesday
+      daysToWednesday = day - 3; // This will be negative
     } else {
-      // If it's Friday-Saturday, go to the Thursday of that week (which already passed)
-      daysToThursday = day - 4; // This will be positive (1-2 days ago)
+      // If it's Thursday-Saturday, go to the Wednesday of that week (which already passed)
+      daysToWednesday = day - 3; // This will be positive (1-3 days ago)
     }
     
-    const thursday = new Date(date);
-    thursday.setDate(date.getDate() - Math.abs(daysToThursday));
+    const wednesday = new Date(date);
+    wednesday.setDate(date.getDate() - Math.abs(daysToWednesday));
     
-    // If the calculated Thursday is in the future, go back one more week
-    if (thursday > today) {
-      thursday.setDate(thursday.getDate() - 7);
+    // If the calculated Wednesday is in the future, go back one more week
+    if (wednesday > today) {
+      wednesday.setDate(wednesday.getDate() - 7);
     }
     
-    return thursday.toISOString().split('T')[0];
+    return wednesday.toISOString().split('T')[0];
   };
 
   const submitMutation = useMutation({
@@ -98,8 +98,8 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
     if (useExactDate) {
       setActualCollectionDate(date);
     } else {
-      const thursday = findMostRecentThursday(date);
-      setActualCollectionDate(thursday);
+      const wednesday = findMostRecentWednesday(date);
+      setActualCollectionDate(wednesday);
     }
   };
 
@@ -107,8 +107,8 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
   const initializeDate = () => {
     const today = new Date().toISOString().split('T')[0];
     setCollectionDate(today);
-    const thursday = findMostRecentThursday(today);
-    setActualCollectionDate(thursday);
+    const wednesday = findMostRecentWednesday(today);
+    setActualCollectionDate(wednesday);
   };
 
   // Initialize date on first render
@@ -243,7 +243,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                         month: 'long',
                         day: 'numeric'
                       }) :
-                      `Thursday, ${new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
+                      `Wednesday, ${new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -253,7 +253,7 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                   </p>
                   {!useExactDate && (
                     <p className="text-xs text-blue-600 mt-1">
-                      We automatically assign collections to the Thursday of that week for consistent reporting.
+                      We automatically assign collections to the Wednesday of that week for consistent reporting.
                     </p>
                   )}
                   
@@ -267,8 +267,8 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                         if (e.target.checked) {
                           setActualCollectionDate(collectionDate);
                         } else {
-                          const thursday = findMostRecentThursday(collectionDate);
-                          setActualCollectionDate(thursday);
+                          const wednesday = findMostRecentWednesday(collectionDate);
+                          setActualCollectionDate(wednesday);
                         }
                       }}
                       className="rounded border-blue-300 text-blue-600"

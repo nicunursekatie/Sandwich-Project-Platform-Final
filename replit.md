@@ -31,7 +31,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Data Integrity**: Ensured through automated audit logging, Zod validation for all data inputs, and systems for correcting suspicious entries.
 - **Form Validation & Data Conversion**: Critical data type mismatches resolved with automatic conversion handling in backend schemas. Recipients form converts estimatedSandwiches (string→number/null) and contractSignedDate (string→Date/null). Website fields changed from type="url" to type="text" for flexibility. Driver vehicle type is optional.
 - **Real-time Chat**: Socket.IO-powered system supporting distinct channels, real-time message broadcasting, persistent like functionality, and @mentions with autocomplete dropdown and email notifications.
-- **Collection Walkthrough Tool**: Provides a permissions-based data entry system with a standard form and a step-by-step walkthrough.
+- **Collection Walkthrough Tool**: Provides a permissions-based data entry system with a standard form and a step-by-step walkthrough. Automatically assigns collection dates to the most recent Wednesday for consistent reporting.
 - **Kudos System**: Integrated into the Gmail-style inbox with read tracking and archiving capabilities.
 - **Analytics**: Comprehensive dashboard providing community impact insights including total sandwiches provided, organizations served, volunteer participation, and support opportunities with interactive visualizations. Features key metrics, user activity tracking, and comprehensive filtering to exclude administrative accounts from analytics data.
 - **User Roles**: Includes "Core Team" role with elevated permissions.
