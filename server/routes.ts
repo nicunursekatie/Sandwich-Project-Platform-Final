@@ -58,6 +58,7 @@ import {
   messages as messagesTable,
   emailMessages,
   users,
+  wishlistSuggestions,
 } from "@shared/schema";
 
 import { getDefaultPermissionsForRole, hasPermission, hasAccessToChat } from "@shared/auth-utils";
@@ -8737,7 +8738,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wishlist Suggestions API endpoints
   app.get("/api/wishlist-suggestions", isAuthenticated, async (req, res) => {
     try {
-      const suggestions = await storage.getAllWishlistSuggestions();
+      // Get suggestions with user information
+      const suggestions = await db
+        .select({
+          id: wishlistSuggestions.id,
+          item: wishlistSuggestions.item,
+          reason: wishlistSuggestions.reason,
+          priority: wishlistSuggestions.priority,
+          suggestedBy: wishlistSuggestions.suggestedBy,
+          status: wishlistSuggestions.status,
+          adminNotes: wishlistSuggestions.adminNotes,
+          amazonUrl: wishlistSuggestions.amazonUrl,
+          estimatedCost: wishlistSuggestions.estimatedCost,
+          createdAt: wishlistSuggestions.createdAt,
+          updatedAt: wishlistSuggestions.updatedAt,
+          reviewedAt: wishlistSuggestions.reviewedAt,
+          reviewedBy: wishlistSuggestions.reviewedBy,
+          suggestedByFirstName: users.firstName,
+          suggestedByLastName: users.lastName,
+          suggestedByEmail: users.email,
+        })
+        .from(wishlistSuggestions)
+        .leftJoin(users, eq(wishlistSuggestions.suggestedBy, users.id))
+        .orderBy(desc(wishlistSuggestions.createdAt));
+      
       res.json(suggestions);
     } catch (error) {
       logger.error("Failed to get wishlist suggestions", error);
