@@ -8828,6 +8828,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/wishlist-suggestions/:id", isAuthenticated, requirePermission("manage_wishlist"), sanitizeMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = {
+        ...req.body,
+        ...(req.body.status && req.body.status !== 'pending' && { 
+          reviewedAt: new Date(), 
+          reviewedBy: req.user?.id 
+        })
+      };
+      
+      const suggestion = await storage.updateWishlistSuggestion(id, updates);
+      if (!suggestion) {
+        return res.status(404).json({ message: "Wishlist suggestion not found" });
+      }
+      res.json(suggestion);
+    } catch (error) {
+      logger.error("Failed to update wishlist suggestion", error);
+      res.status(500).json({ message: "Failed to update wishlist suggestion" });
+    }
+  });
+
+  app.delete("/api/wishlist-suggestions/:id", isAuthenticated, requirePermission("manage_wishlist"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteWishlistSuggestion(id);
+      if (!success) {
+        return res.status(404).json({ message: "Wishlist suggestion not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Failed to delete wishlist suggestion", error);
+      res.status(500).json({ message: "Failed to delete wishlist suggestion" });
+    }
+  });
+
   app.patch("/api/wishlist-suggestions/:id", isAuthenticated, requirePermission("manage_settings"), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

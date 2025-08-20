@@ -93,6 +93,7 @@ export default function WishlistPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wishlist-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist-activity"] });
       toast({
         title: "Review Completed",
         description: "Suggestion status has been updated",
@@ -103,6 +104,29 @@ export default function WishlistPage() {
       toast({
         title: "Review Failed",
         description: "There was an error updating the suggestion",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete suggestion mutation
+  const deleteSuggestionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/wishlist-suggestions/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist-activity"] });
+      toast({
+        title: "Suggestion Deleted",
+        description: "The suggestion has been permanently removed",
+      });
+    },
+    onError: (error) => {
+      console.error("Delete error:", error);
+      toast({
+        title: "Delete Failed",
+        description: "There was an error deleting the suggestion",
         variant: "destructive",
       });
     }
@@ -315,33 +339,77 @@ export default function WishlistPage() {
                             Admin note: {suggestion.adminNotes}
                           </p>
                         )}
-                        {/* Admin Review Buttons - Show for pending suggestions if user has permissions */}
-                        {user && hasPermission((user as any)?.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && suggestion.status === 'pending' && (
+                        {/* Admin Management Buttons - Show for all suggestions if user has permissions */}
+                        {user && hasPermission((user as any)?.permissions || 0, PERMISSIONS.MANAGE_WISHLIST) && (
                           <div className="flex gap-2 mt-3">
-                            <Button
-                              size="sm"
-                              onClick={() => reviewSuggestionMutation.mutate({
-                                id: suggestion.id,
-                                action: 'approve'
-                              })}
-                              disabled={reviewSuggestionMutation.isPending}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => reviewSuggestionMutation.mutate({
-                                id: suggestion.id,
-                                action: 'reject'
-                              })}
-                              disabled={reviewSuggestionMutation.isPending}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Reject
-                            </Button>
+                            {suggestion.status === 'pending' ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => reviewSuggestionMutation.mutate({
+                                    id: suggestion.id,
+                                    action: 'approve'
+                                  })}
+                                  disabled={reviewSuggestionMutation.isPending}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => reviewSuggestionMutation.mutate({
+                                    id: suggestion.id,
+                                    action: 'reject'
+                                  })}
+                                  disabled={reviewSuggestionMutation.isPending}
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                {suggestion.status === 'approved' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => reviewSuggestionMutation.mutate({
+                                      id: suggestion.id,
+                                      action: 'reject'
+                                    })}
+                                    disabled={reviewSuggestionMutation.isPending}
+                                  >
+                                    <XCircle className="w-4 h-4 mr-1" />
+                                    Mark as Rejected
+                                  </Button>
+                                )}
+                                {suggestion.status === 'rejected' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => reviewSuggestionMutation.mutate({
+                                      id: suggestion.id,
+                                      action: 'approve'
+                                    })}
+                                    disabled={reviewSuggestionMutation.isPending}
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                    Mark as Approved
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => deleteSuggestionMutation.mutate(suggestion.id)}
+                                  disabled={deleteSuggestionMutation.isPending}
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Delete
+                                </Button>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
