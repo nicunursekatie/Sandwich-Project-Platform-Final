@@ -243,12 +243,12 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
                         month: 'long',
                         day: 'numeric'
                       }) :
-                      `Wednesday, ${new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
+                      new Date(actualCollectionDate + "T12:00:00").toLocaleDateString('en-US', { 
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
-                      })}`
+                      })
                     }
                   </p>
                   {!useExactDate && (
