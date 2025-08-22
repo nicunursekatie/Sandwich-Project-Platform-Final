@@ -26,6 +26,7 @@ import {
   Truck,
   FileCheck,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,6 +102,19 @@ export default function DriversManagement() {
     },
   });
 
+  // Delete driver mutation
+  const deleteDriverMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/drivers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/drivers"] });
+      toast({ title: "Driver deleted successfully" });
+    },
+    onError: (error) => {
+      console.error("Driver delete error:", error);
+      toast({ title: "Error deleting driver", variant: "destructive" });
+    },
+  });
+
   const resetNewDriver = () => {
     setNewDriver({
       name: "",
@@ -132,6 +146,12 @@ export default function DriversManagement() {
       id: editingDriver.id,
       data: editingDriver,
     });
+  };
+
+  const handleDeleteDriver = (driver: Driver) => {
+    if (window.confirm(`Are you sure you want to delete ${driver.name}? This action cannot be undone.`)) {
+      deleteDriverMutation.mutate(driver.id);
+    }
   };
 
   const handleExport = async () => {
@@ -536,14 +556,25 @@ export default function DriversManagement() {
                           )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingDriver(driver)}
-                        disabled={!canEdit}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingDriver(driver)}
+                          disabled={!canEdit}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteDriver(driver)}
+                          disabled={!canEdit || deleteDriverMutation.isPending}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -612,14 +643,25 @@ export default function DriversManagement() {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingDriver(driver)}
-                        disabled={!canEdit}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingDriver(driver)}
+                          disabled={!canEdit}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteDriver(driver)}
+                          disabled={!canEdit || deleteDriverMutation.isPending}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

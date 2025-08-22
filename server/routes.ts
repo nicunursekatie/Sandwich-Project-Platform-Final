@@ -2963,7 +2963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/drivers/:id", async (req, res) => {
+  app.delete("/api/drivers/:id", isAuthenticated, requirePermission("manage_drivers"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteDriver(id);
