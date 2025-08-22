@@ -66,14 +66,15 @@ export default function DriversManagement() {
   // Add driver mutation
   const addDriverMutation = useMutation({
     mutationFn: (driverData: any) =>
-      apiRequest("/api/drivers", "POST", driverData),
+      apiRequest("POST", "/api/drivers", driverData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/drivers"] });
       setIsAddModalOpen(false);
       resetNewDriver();
       toast({ title: "Driver added successfully" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Driver addition error:", error);
       toast({ title: "Error adding driver", variant: "destructive" });
     },
   });
@@ -81,13 +82,14 @@ export default function DriversManagement() {
   // Update driver mutation
   const updateDriverMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
-      apiRequest(`/api/drivers/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/drivers/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/drivers"] });
       setEditingDriver(null);
       toast({ title: "Driver updated successfully" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Driver update error:", error);
       toast({ title: "Error updating driver", variant: "destructive" });
     },
   });
