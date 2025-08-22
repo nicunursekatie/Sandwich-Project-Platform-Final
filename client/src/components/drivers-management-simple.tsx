@@ -47,7 +47,7 @@ export default function DriversManagement() {
     phone: "",
     email: "",
     hostLocation: "",
-    availability: "available",
+    availability: "",
     emailAgreementSent: false,
     vanApproved: false,
     isActive: true,
@@ -100,7 +100,7 @@ export default function DriversManagement() {
       phone: "",
       email: "",
       hostLocation: "",
-      availability: "available",
+      availability: "",
       emailAgreementSent: false,
       vanApproved: false,
       isActive: true,
@@ -244,19 +244,15 @@ export default function DriversManagement() {
                       </select>
                     </div>
                     <div>
-                      <Label htmlFor="availability">Availability</Label>
-                      <select
+                      <Label htmlFor="availability">Availability Notes</Label>
+                      <Input
                         id="availability"
                         value={newDriver.availability}
                         onChange={(e) =>
                           setNewDriver({ ...newDriver, availability: e.target.value })
                         }
-                        className="w-full px-3 py-2 border rounded-md"
-                      >
-                        <option value="available">Available</option>
-                        <option value="busy">Busy</option>
-                        <option value="off-duty">Off-duty</option>
-                      </select>
+                        placeholder="Enter availability notes (e.g., weekends only, mornings, etc.)"
+                      />
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -365,19 +361,15 @@ export default function DriversManagement() {
                 </select>
               </div>
               <div>
-                <Label htmlFor="edit-availability">Availability</Label>
-                <select
+                <Label htmlFor="edit-availability">Availability Notes</Label>
+                <Input
                   id="edit-availability"
-                  value={editingDriver.availability || "available"}
+                  value={editingDriver.availability || ""}
                   onChange={(e) =>
                     setEditingDriver({ ...editingDriver, availability: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  <option value="available">Available</option>
-                  <option value="busy">Busy</option>
-                  <option value="off-duty">Off-duty</option>
-                </select>
+                  placeholder="Enter availability notes (e.g., weekends only, mornings, etc.)"
+                />
               </div>
               <div className="flex items-center space-x-2">
                 <input
