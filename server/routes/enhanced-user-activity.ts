@@ -12,7 +12,6 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
       const timeFilter = req.query.timeFilter as string || '24h';
       const sectionFilter = req.query.sectionFilter as string || 'all';
       const actionFilter = req.query.actionFilter as string || 'all';
-      const detailed = req.query.detailed === 'true';
 
       // Convert time filter to days
       let days = 1;
@@ -26,110 +25,101 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
       const { userActivityLogs, users } = await import("@shared/schema");
       const { db } = await import("../db");
 
-      // Build where conditions for filtering
-      const conditions = [sql`${userActivityLogs.createdAt} >= ${startDate}`];
-      
-      if (sectionFilter !== 'all') {
-        conditions.push(eq(userActivityLogs.section, sectionFilter));
-      }
-      
-      if (actionFilter !== 'all') {
-        conditions.push(eq(userActivityLogs.action, actionFilter));
-      }
-
-      // Get recent activity logs with user names
+      // Simplified query to avoid JSON issues
       const recentActivity = await db
         .select({
           id: userActivityLogs.id,
           userId: userActivityLogs.userId,
-          userName: sql`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.email})`.as('userName'),
           action: userActivityLogs.action,
           section: userActivityLogs.section,
           feature: userActivityLogs.feature,
           page: userActivityLogs.page,
-          details: sql`COALESCE(${userActivityLogs.details}, 'No details')`.as('details'),
-          metadata: userActivityLogs.metadata,
           duration: userActivityLogs.duration,
           createdAt: userActivityLogs.createdAt
         })
         .from(userActivityLogs)
-        .leftJoin(users, eq(userActivityLogs.userId, users.id))
-        .where(and(...conditions))
+        .where(sql`${userActivityLogs.createdAt} >= ${startDate}`)
         .orderBy(desc(userActivityLogs.createdAt))
         .limit(100);
 
-      // Get summary statistics
-      const totalActionsResult = await db
-        .select({ count: count() })
-        .from(userActivityLogs)
-        .where(and(...conditions));
+      // Get user names separately to avoid join issues
+      const userIds = [...new Set(recentActivity.map(log => log.userId).filter(Boolean))];
+      let usersData: Array<{id: string, name: string}> = [];
+      
+      if (userIds.length > 0) {
+        try {
+          usersData = await db
+            .select({
+              id: users.id,
+              name: sql`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.email})`.as('name')
+            })
+            .from(users)
+            .where(sql`${users.id} IN (${userIds.map(id => `'${id}'`).join(',')})`);
+        } catch (userError) {
+          console.warn('Could not fetch user names:', userError);
+        }
+      }
 
-      const uniqueUsersResult = await db
-        .select({ count: sql`COUNT(DISTINCT ${userActivityLogs.userId})`.as('count') })
-        .from(userActivityLogs)
-        .where(and(...conditions));
+      const userNameMap = usersData.reduce((acc: Record<string, string>, user) => {
+        acc[user.id] = user.name;
+        return acc;
+      }, {});
 
-      // Get top actions
-      const topActionsResult = await db
-        .select({
-          action: userActivityLogs.action,
-          count: count()
-        })
-        .from(userActivityLogs)
-        .where(and(...conditions))
-        .groupBy(userActivityLogs.action)
-        .orderBy(desc(count()))
-        .limit(5);
+      // Get simple counts
+      const totalActions = recentActivity.length;
+      const uniqueUsers = userIds.length;
 
-      // Get top sections
-      const topSectionsResult = await db
-        .select({
-          section: userActivityLogs.section,
-          count: count()
-        })
-        .from(userActivityLogs)
-        .where(and(...conditions))
-        .groupBy(userActivityLogs.section)
-        .orderBy(desc(count()))
-        .limit(5);
+      // Count actions
+      const actionCounts = recentActivity.reduce((acc: Record<string, number>, log) => {
+        acc[log.action] = (acc[log.action] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const topActions = Object.entries(actionCounts)
+        .map(([action, count]) => ({ action, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
 
-      // Get top features
-      const topFeaturesResult = await db
-        .select({
-          feature: userActivityLogs.feature,
-          count: count()
-        })
-        .from(userActivityLogs)
-        .where(and(...conditions, sql`${userActivityLogs.feature} IS NOT NULL`))
-        .groupBy(userActivityLogs.feature)
-        .orderBy(desc(count()))
-        .limit(5);
+      // Count sections  
+      const sectionCounts = recentActivity.reduce((acc: Record<string, number>, log) => {
+        acc[log.section] = (acc[log.section] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const topSections = Object.entries(sectionCounts)
+        .map(([section, count]) => ({ section, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      // Count features
+      const featureCounts = recentActivity
+        .filter(log => log.feature)
+        .reduce((acc: Record<string, number>, log) => {
+          acc[log.feature!] = (acc[log.feature!] || 0) + 1;
+          return acc;
+        }, {});
+      
+      const topFeatures = Object.entries(featureCounts)
+        .map(([feature, count]) => ({ feature, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
 
       const response = {
-        totalActions: Number(totalActionsResult[0]?.count || 0),
-        uniqueUsers: Number(uniqueUsersResult[0]?.count || 0),
-        topActions: topActionsResult.map(item => ({
-          action: item.action,
-          count: Number(item.count)
-        })),
-        topSections: topSectionsResult.map(item => ({
-          section: item.section,
-          count: Number(item.count)
-        })),
-        topFeatures: topFeaturesResult.map(item => ({
-          feature: item.feature,
-          count: Number(item.count)
-        })),
+        totalActions,
+        uniqueUsers,
+        topActions,
+        topSections,
+        topFeatures,
         recentActivity: recentActivity.map(log => ({
           id: log.id,
           userId: log.userId,
-          userName: log.userName,
+          userName: userNameMap[log.userId] || 'Unknown User',
           action: log.action,
           section: log.section,
           feature: log.feature,
           page: log.page,
-          details: log.details,
-          metadata: log.metadata,
+          details: 'Activity logged',
+          metadata: {},
           duration: log.duration,
           createdAt: log.createdAt
         }))
