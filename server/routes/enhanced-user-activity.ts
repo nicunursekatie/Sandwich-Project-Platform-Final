@@ -6,6 +6,142 @@ import { sql, eq, and, desc, asc, count } from 'drizzle-orm';
 export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
   const router = Router();
 
+  // Main endpoint that returns detailed activity summary
+  router.get('/', isAuthenticated, async (req, res) => {
+    try {
+      const timeFilter = req.query.timeFilter as string || '24h';
+      const sectionFilter = req.query.sectionFilter as string || 'all';
+      const actionFilter = req.query.actionFilter as string || 'all';
+      const detailed = req.query.detailed === 'true';
+
+      // Convert time filter to days
+      let days = 1;
+      if (timeFilter === '7d') days = 7;
+      else if (timeFilter === '30d') days = 30;
+      else if (timeFilter === '24h') days = 1;
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const { userActivityLogs, users } = await import("@shared/schema");
+      const { db } = await import("../db");
+
+      // Build where conditions for filtering
+      const conditions = [sql`${userActivityLogs.createdAt} >= ${startDate}`];
+      
+      if (sectionFilter !== 'all') {
+        conditions.push(eq(userActivityLogs.section, sectionFilter));
+      }
+      
+      if (actionFilter !== 'all') {
+        conditions.push(eq(userActivityLogs.action, actionFilter));
+      }
+
+      // Get recent activity logs with user names
+      const recentActivity = await db
+        .select({
+          id: userActivityLogs.id,
+          userId: userActivityLogs.userId,
+          userName: sql`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.email})`.as('userName'),
+          action: userActivityLogs.action,
+          section: userActivityLogs.section,
+          feature: userActivityLogs.feature,
+          page: userActivityLogs.page,
+          details: sql`COALESCE(${userActivityLogs.details}, 'No details')`.as('details'),
+          metadata: userActivityLogs.metadata,
+          duration: userActivityLogs.duration,
+          createdAt: userActivityLogs.createdAt
+        })
+        .from(userActivityLogs)
+        .leftJoin(users, eq(userActivityLogs.userId, users.id))
+        .where(and(...conditions))
+        .orderBy(desc(userActivityLogs.createdAt))
+        .limit(100);
+
+      // Get summary statistics
+      const totalActionsResult = await db
+        .select({ count: count() })
+        .from(userActivityLogs)
+        .where(and(...conditions));
+
+      const uniqueUsersResult = await db
+        .select({ count: sql`COUNT(DISTINCT ${userActivityLogs.userId})`.as('count') })
+        .from(userActivityLogs)
+        .where(and(...conditions));
+
+      // Get top actions
+      const topActionsResult = await db
+        .select({
+          action: userActivityLogs.action,
+          count: count()
+        })
+        .from(userActivityLogs)
+        .where(and(...conditions))
+        .groupBy(userActivityLogs.action)
+        .orderBy(desc(count()))
+        .limit(5);
+
+      // Get top sections
+      const topSectionsResult = await db
+        .select({
+          section: userActivityLogs.section,
+          count: count()
+        })
+        .from(userActivityLogs)
+        .where(and(...conditions))
+        .groupBy(userActivityLogs.section)
+        .orderBy(desc(count()))
+        .limit(5);
+
+      // Get top features
+      const topFeaturesResult = await db
+        .select({
+          feature: userActivityLogs.feature,
+          count: count()
+        })
+        .from(userActivityLogs)
+        .where(and(...conditions, sql`${userActivityLogs.feature} IS NOT NULL`))
+        .groupBy(userActivityLogs.feature)
+        .orderBy(desc(count()))
+        .limit(5);
+
+      const response = {
+        totalActions: Number(totalActionsResult[0]?.count || 0),
+        uniqueUsers: Number(uniqueUsersResult[0]?.count || 0),
+        topActions: topActionsResult.map(item => ({
+          action: item.action,
+          count: Number(item.count)
+        })),
+        topSections: topSectionsResult.map(item => ({
+          section: item.section,
+          count: Number(item.count)
+        })),
+        topFeatures: topFeaturesResult.map(item => ({
+          feature: item.feature,
+          count: Number(item.count)
+        })),
+        recentActivity: recentActivity.map(log => ({
+          id: log.id,
+          userId: log.userId,
+          userName: log.userName,
+          action: log.action,
+          section: log.section,
+          feature: log.feature,
+          page: log.page,
+          details: log.details,
+          metadata: log.metadata,
+          duration: log.duration,
+          createdAt: log.createdAt
+        }))
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching enhanced user activity:', error);
+      res.status(500).json({ error: 'Failed to fetch enhanced user activity' });
+    }
+  });
+
   // Enhanced system statistics with granular insights
   router.get('/enhanced-stats', isAuthenticated, async (req, res) => {
     try {
