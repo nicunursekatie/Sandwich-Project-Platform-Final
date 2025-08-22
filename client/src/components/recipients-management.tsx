@@ -105,7 +105,10 @@ export default function RecipientsManagement() {
 
     // Apply TSP contact filter
     if (tspContactFilter !== "all") {
-      filtered = filtered.filter(recipient => recipient.tspContact === tspContactFilter);
+      filtered = filtered.filter(recipient => 
+        recipient.tspContact && 
+        recipient.tspContact.toLowerCase().includes(tspContactFilter.toLowerCase())
+      );
     }
 
     // Apply sandwich type filter
@@ -123,8 +126,16 @@ export default function RecipientsManagement() {
   }, [recipients]);
 
   const uniqueTspContacts = useMemo(() => {
-    const contacts = recipients.map(r => r.tspContact).filter(Boolean);
-    return [...new Set(contacts)].sort();
+    const allContacts = recipients
+      .map(r => r.tspContact)
+      .filter(Boolean)
+      .flatMap(contact => 
+        // Split contacts by common separators (/, &, and, comma)
+        contact.split(/[/&,]|and/i).map(c => c.trim())
+      )
+      .filter(contact => contact.length > 0);
+    
+    return [...new Set(allContacts)].sort();
   }, [recipients]);
 
   const uniqueSandwichTypes = useMemo(() => {
