@@ -227,14 +227,21 @@ export default function DriversManagement() {
                     </div>
                     <div>
                       <Label htmlFor="hostLocation">Host Location</Label>
-                      <Input
+                      <select
                         id="hostLocation"
                         value={newDriver.hostLocation}
                         onChange={(e) =>
                           setNewDriver({ ...newDriver, hostLocation: e.target.value })
                         }
-                        placeholder="Enter host location"
-                      />
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        <option value="">Select host location</option>
+                        {hosts.map((host) => (
+                          <option key={host.id} value={host.name}>
+                            {host.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <Label htmlFor="availability">Availability</Label>
@@ -341,14 +348,21 @@ export default function DriversManagement() {
               </div>
               <div>
                 <Label htmlFor="edit-hostLocation">Host Location</Label>
-                <Input
+                <select
                   id="edit-hostLocation"
                   value={editingDriver.hostLocation || ""}
                   onChange={(e) =>
                     setEditingDriver({ ...editingDriver, hostLocation: e.target.value })
                   }
-                  placeholder="Enter host location"
-                />
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="">Select host location</option>
+                  {hosts.map((host) => (
+                    <option key={host.id} value={host.name}>
+                      {host.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <Label htmlFor="edit-availability">Availability</Label>
