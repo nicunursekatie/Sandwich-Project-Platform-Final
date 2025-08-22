@@ -226,7 +226,7 @@ export default function SocketChatHub() {
   }
 
   return (
-    <div className={`flex bg-white relative ${isMobile ? 'overflow-hidden h-[calc(100vh-140px)]' : 'h-full'}`}>
+    <div className={`flex bg-white relative ${isMobile ? 'overflow-hidden h-[calc(100vh-200px)]' : 'h-full'}`}>
       {/* Mobile Overlay */}
       {isMobile && showSidebar && (
         <div 
