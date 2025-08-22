@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Edit, Trash2, Phone, Mail, User, AlertCircle, MapPin, Star, Building2, UserPlus, Crown } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Phone, Mail, User, AlertCircle, MapPin, Star, Building2, UserPlus, Crown, Search, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,12 @@ export default function HostsManagementConsolidated() {
   const [editingContact, setEditingContact] = useState<ExtendedHostContact | null>(null);
   const [expandedContacts, setExpandedContacts] = useState<Set<number>>(new Set());
   const [hideEmptyHosts, setHideEmptyHosts] = useState(false);
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [contactFilter, setContactFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Helper function to sort contacts by priority (leads first, then primary contacts)
   const sortContactsByPriority = (contacts: HostContact[]) => {
@@ -96,8 +102,51 @@ export default function HostsManagementConsolidated() {
     queryKey: ['/api/recipients']
   });
 
+  // Filtered and searched hosts
+  const filteredHosts = useMemo(() => {
+    let filtered = hostsWithContacts;
+
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(host => 
+        host.name.toLowerCase().includes(term) ||
+        host.address?.toLowerCase().includes(term) ||
+        host.notes?.toLowerCase().includes(term) ||
+        host.contacts.some(contact => 
+          contact.name.toLowerCase().includes(term) ||
+          contact.email?.toLowerCase().includes(term) ||
+          contact.phone?.toLowerCase().includes(term)
+        )
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(host => host.status === statusFilter);
+    }
+
+    // Apply contact filter
+    if (contactFilter === "has_contacts") {
+      filtered = filtered.filter(host => host.contacts.length > 0);
+    } else if (contactFilter === "no_contacts") {
+      filtered = filtered.filter(host => host.contacts.length === 0);
+    } else if (contactFilter === "has_primary") {
+      filtered = filtered.filter(host => host.contacts.some(c => c.isPrimary));
+    } else if (contactFilter === "has_lead") {
+      filtered = filtered.filter(host => host.contacts.some(c => c.role === 'lead'));
+    }
+
+    // Apply hide empty hosts filter
+    if (hideEmptyHosts) {
+      filtered = filtered.filter(host => host.contacts.length > 0);
+    }
+
+    return filtered;
+  }, [hostsWithContacts, searchTerm, statusFilter, contactFilter, hideEmptyHosts]);
+
   // Alias for backward compatibility
-  const hosts = hostsWithContacts;
+  const hosts = filteredHosts;
 
   const createHostMutation = useMutation({
     mutationFn: async (data: InsertHost) => {
@@ -770,17 +819,106 @@ export default function HostsManagementConsolidated() {
         </Dialog>
       </div>
 
-      {/* Filter Controls */}
-      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="hide-empty-hosts"
-            checked={hideEmptyHosts}
+      {/* Search and Filter Controls */}
+      <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Search Bar */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Input
+              placeholder="Search hosts, contacts, locations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          {/* Filter Toggle Button */}
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {(statusFilter !== "all" || contactFilter !== "all") && (
+              <Badge variant="secondary" className="ml-1">
+                {[statusFilter !== "all" && "Status", contactFilter !== "all" && "Contacts"].filter(Boolean).length}
+              </Badge>
+            )}
+          </Button>
+        </div>
+
+        {/* Expanded Filters */}
+        {showFilters && (
+          <div className="flex flex-col md:flex-row gap-3 pt-3 border-t border-slate-200">
+            <div className="flex flex-col space-y-2">
+              <Label className="text-xs font-medium text-slate-600">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <Label className="text-xs font-medium text-slate-600">Contacts</Label>
+              <Select value={contactFilter} onValueChange={setContactFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Hosts</SelectItem>
+                  <SelectItem value="has_contacts">Has Contacts</SelectItem>
+                  <SelectItem value="no_contacts">No Contacts</SelectItem>
+                  <SelectItem value="has_primary">Has Primary Contact</SelectItem>
+                  <SelectItem value="has_lead">Has Lead Contact</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setContactFilter("all");
+                }}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="hide-empty-hosts"
+              checked={hideEmptyHosts}
             onCheckedChange={setHideEmptyHosts}
           />
-          <Label htmlFor="hide-empty-hosts" className="text-sm font-medium">
-            Hide locations with no contacts
-          </Label>
+            <Label htmlFor="hide-empty-hosts" className="text-sm font-medium">
+              Hide locations with no contacts
+            </Label>
+          </div>
+          
+          {/* Results Summary */}
+          <div className="text-sm text-slate-600">
+            Showing {hosts.length} of {hostsWithContacts.length} hosts
+            {searchTerm && <span> • Search: "{searchTerm}"</span>}
+            {statusFilter !== "all" && <span> • {statusFilter}</span>}
+            {contactFilter !== "all" && <span> • {contactFilter.replace('_', ' ')}</span>}
+          </div>
         </div>
       </div>
 

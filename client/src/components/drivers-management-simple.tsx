@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,9 @@ import {
   FileCheck,
   AlertTriangle,
   Trash2,
+  Search,
+  Filter,
+  X,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,6 +46,13 @@ export default function DriversManagement() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [agreementFilter, setAgreementFilter] = useState<string>("all");
+  const [vanFilter, setVanFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const [newDriver, setNewDriver] = useState({
     name: "",
@@ -63,6 +74,46 @@ export default function DriversManagement() {
   const { data: hosts = [] } = useQuery<Host[]>({
     queryKey: ["/api/hosts"],
   });
+
+  // Filtered and searched drivers
+  const filteredDrivers = useMemo(() => {
+    let filtered = drivers;
+
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(driver =>
+        driver.name?.toLowerCase().includes(term) ||
+        driver.email?.toLowerCase().includes(term) ||
+        driver.phone?.toLowerCase().includes(term) ||
+        driver.hostLocation?.toLowerCase().includes(term) ||
+        driver.availability?.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter === "active") {
+      filtered = filtered.filter(driver => driver.isActive === true);
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter(driver => driver.isActive === false);
+    }
+
+    // Apply agreement filter
+    if (agreementFilter === "sent") {
+      filtered = filtered.filter(driver => driver.emailAgreementSent === true);
+    } else if (agreementFilter === "missing") {
+      filtered = filtered.filter(driver => !driver.emailAgreementSent);
+    }
+
+    // Apply van filter
+    if (vanFilter === "approved") {
+      filtered = filtered.filter(driver => driver.vanApproved === true);
+    } else if (vanFilter === "not_approved") {
+      filtered = filtered.filter(driver => !driver.vanApproved);
+    }
+
+    return filtered;
+  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter]);
 
   // Add driver mutation
   const addDriverMutation = useMutation({
@@ -180,8 +231,8 @@ export default function DriversManagement() {
     return <div className="p-6">Loading drivers...</div>;
   }
 
-  const activeDrivers = drivers.filter(driver => driver.isActive);
-  const inactiveDrivers = drivers.filter(driver => !driver.isActive);
+  const activeDrivers = filteredDrivers.filter(driver => driver.isActive);
+  const inactiveDrivers = filteredDrivers.filter(driver => !driver.isActive);
 
   return (
     <div className="space-y-6">
@@ -335,6 +386,110 @@ export default function DriversManagement() {
                 </DialogContent>
               </Dialog>
             </div>
+          </div>
+        </div>
+        
+        {/* Search and Filter Controls */}
+        <div className="space-y-3 p-4 bg-slate-50 rounded-lg border-t border-slate-200">
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Input
+                placeholder="Search drivers by name, email, phone, location..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {/* Filter Toggle Button */}
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {(statusFilter !== "all" || agreementFilter !== "all" || vanFilter !== "all") && (
+                <Badge variant="secondary" className="ml-1">
+                  {[statusFilter !== "all" && "Status", agreementFilter !== "all" && "Agreement", vanFilter !== "all" && "Van"].filter(Boolean).length}
+                </Badge>
+              )}
+            </Button>
+          </div>
+
+          {/* Expanded Filters */}
+          {showFilters && (
+            <div className="flex flex-col md:flex-row gap-3 pt-3 border-t border-slate-200">
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">Agreement</Label>
+                <Select value={agreementFilter} onValueChange={setAgreementFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Agreements</SelectItem>
+                    <SelectItem value="sent">Agreement Sent</SelectItem>
+                    <SelectItem value="missing">Missing Agreement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">Van Status</Label>
+                <Select value={vanFilter} onValueChange={setVanFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Van Status</SelectItem>
+                    <SelectItem value="approved">Van Approved</SelectItem>
+                    <SelectItem value="not_approved">Not Van Approved</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setStatusFilter("all");
+                    setAgreementFilter("all");
+                    setVanFilter("all");
+                  }}
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Results Summary */}
+          <div className="text-sm text-slate-600">
+            Showing {filteredDrivers.length} of {drivers.length} drivers
+            {searchTerm && <span> • Search: "{searchTerm}"</span>}
+            {statusFilter !== "all" && <span> • {statusFilter}</span>}
+            {agreementFilter !== "all" && <span> • {agreementFilter}</span>}
+            {vanFilter !== "all" && <span> • {vanFilter}</span>}
           </div>
         </div>
       </div>

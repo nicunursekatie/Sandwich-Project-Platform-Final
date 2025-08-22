@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Edit, Trash2, Phone, Mail, MapPin, Upload } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Phone, Mail, MapPin, Upload, Search, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import TSPContactManager from "./tsp-contact-manager";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +22,13 @@ export default function RecipientsManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(null);
+
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [contractFilter, setContractFilter] = useState<string>("all");
+  const [regionFilter, setRegionFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResults, setImportResults] = useState<{ imported: number; skipped: number } | null>(null);
   const [newRecipient, setNewRecipient] = useState({
@@ -56,6 +64,51 @@ export default function RecipientsManagement() {
     queryKey: ["/api/users"],
     staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes
   });
+
+  // Filtered and searched recipients
+  const filteredRecipients = useMemo(() => {
+    let filtered = recipients;
+
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(recipient =>
+        recipient.name?.toLowerCase().includes(term) ||
+        recipient.email?.toLowerCase().includes(term) ||
+        recipient.phone?.toLowerCase().includes(term) ||
+        recipient.address?.toLowerCase().includes(term) ||
+        recipient.region?.toLowerCase().includes(term) ||
+        recipient.contactPersonName?.toLowerCase().includes(term) ||
+        recipient.contactPersonEmail?.toLowerCase().includes(term) ||
+        recipient.reportingGroup?.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(recipient => recipient.status === statusFilter);
+    }
+
+    // Apply contract filter
+    if (contractFilter === "signed") {
+      filtered = filtered.filter(recipient => recipient.contractSigned === true);
+    } else if (contractFilter === "unsigned") {
+      filtered = filtered.filter(recipient => !recipient.contractSigned);
+    }
+
+    // Apply region filter
+    if (regionFilter !== "all") {
+      filtered = filtered.filter(recipient => recipient.region === regionFilter);
+    }
+
+    return filtered;
+  }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter]);
+
+  // Get unique regions for filter dropdown
+  const uniqueRegions = useMemo(() => {
+    const regions = recipients.map(r => r.region).filter(Boolean);
+    return [...new Set(regions)].sort();
+  }, [recipients]);
 
   const createRecipientMutation = useMutation({
     mutationFn: (recipient: any) => apiRequest('POST', '/api/recipients', recipient),
@@ -519,9 +572,114 @@ export default function RecipientsManagement() {
         </div>
       </div>
 
+      {/* Search and Filter Controls */}
+      <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Search Bar */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Input
+              placeholder="Search recipients by name, email, phone, address, region..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          {/* Filter Toggle Button */}
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {(statusFilter !== "all" || contractFilter !== "all" || regionFilter !== "all") && (
+              <Badge variant="secondary" className="ml-1">
+                {[statusFilter !== "all" && "Status", contractFilter !== "all" && "Contract", regionFilter !== "all" && "Region"].filter(Boolean).length}
+              </Badge>
+            )}
+          </Button>
+        </div>
+
+        {/* Expanded Filters */}
+        {showFilters && (
+          <div className="flex flex-col md:flex-row gap-3 pt-3 border-t border-slate-200">
+            <div className="flex flex-col space-y-2">
+              <Label className="text-xs font-medium text-slate-600">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <Label className="text-xs font-medium text-slate-600">Contract</Label>
+              <Select value={contractFilter} onValueChange={setContractFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Contracts</SelectItem>
+                  <SelectItem value="signed">Contract Signed</SelectItem>
+                  <SelectItem value="unsigned">Contract Pending</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <Label className="text-xs font-medium text-slate-600">Region</Label>
+              <Select value={regionFilter} onValueChange={setRegionFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  {uniqueRegions.map(region => (
+                    <SelectItem key={region} value={region}>{region}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setContractFilter("all");
+                  setRegionFilter("all");
+                }}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Results Summary */}
+        <div className="text-sm text-slate-600">
+          Showing {filteredRecipients.length} of {recipients.length} recipients
+          {searchTerm && <span> • Search: "{searchTerm}"</span>}
+          {statusFilter !== "all" && <span> • {statusFilter}</span>}
+          {contractFilter !== "all" && <span> • {contractFilter}</span>}
+          {regionFilter !== "all" && <span> • Region: {regionFilter}</span>}
+        </div>
+      </div>
+
       {/* Recipients List */}
       <div className="grid gap-4">
-        {recipients.map((recipient) => {
+        {filteredRecipients.map((recipient) => {
           // Debug: Log each recipient being rendered
           if (recipient.name.includes('Boys') || recipient.id === 19 || recipient.id === 36) {
             console.log('Recipients Debug - Rendering:', {
@@ -682,6 +840,12 @@ export default function RecipientsManagement() {
           </Card>
           );
         })}
+
+        {filteredRecipients.length === 0 && recipients.length > 0 && (
+          <div className="text-center py-12 text-slate-500">
+            No recipients match your current filters. Try adjusting your search or filter criteria.
+          </div>
+        )}
 
         {recipients.length === 0 && (
           <div className="text-center py-12 text-slate-500">
