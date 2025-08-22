@@ -255,9 +255,9 @@ export function DetailedActivityAnalytics() {
                           <span className="text-xs text-muted-foreground">
                             {activity.userName} • {new Date(activity.createdAt).toLocaleString()}
                           </span>
-                          {activity.metadata && (
+                          {activity.metadata && Object.keys(activity.metadata).length > 0 && (
                             <span className="text-xs text-muted-foreground">
-                              {Object.keys(JSON.parse(activity.metadata) || {}).length} metadata fields
+                              {Object.keys(activity.metadata).length} metadata fields
                             </span>
                           )}
                         </div>
