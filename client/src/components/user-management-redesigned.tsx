@@ -70,6 +70,7 @@ import AnnouncementManager from "@/components/announcement-manager";
 import AuthDebug from "@/components/auth-debug";
 import ShoutoutSystem from "@/components/shoutout-system";
 import MeaningfulUserAnalytics from "@/components/meaningful-user-analytics";
+import { DetailedActivityAnalytics } from "@/components/detailed-activity-analytics";
 import { ButtonTooltip } from "@/components/ui/button-tooltip";
 
 interface User {
@@ -380,7 +381,7 @@ export default function UserManagementRedesigned() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-        <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -388,6 +389,10 @@ export default function UserManagementRedesigned() {
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Users</span>
+          </TabsTrigger>
+          <TabsTrigger value="user-activity" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Activity</span>
           </TabsTrigger>
           <TabsTrigger value="activity" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
@@ -702,7 +707,12 @@ export default function UserManagementRedesigned() {
           </Card>
         </TabsContent>
 
-        {/* Activity Tab */}
+        {/* User Activity Tab */}
+        <TabsContent value="user-activity">
+          <DetailedActivityAnalytics />
+        </TabsContent>
+
+        {/* Impact Tab */}
         <TabsContent value="activity">
           <MeaningfulUserAnalytics />
         </TabsContent>
