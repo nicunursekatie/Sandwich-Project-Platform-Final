@@ -46,10 +46,10 @@ export default function DriversManagement() {
     name: "",
     phone: "",
     email: "",
-    vehicleType: "",
-    licenseNumber: "",
-    zone: "",
-    routeDescription: "",
+    hostLocation: "",
+    availability: "available",
+    emailAgreementSent: false,
+    vanApproved: false,
     isActive: true,
   });
 
@@ -99,10 +99,10 @@ export default function DriversManagement() {
       name: "",
       phone: "",
       email: "",
-      vehicleType: "",
-      licenseNumber: "",
-      zone: "",
-      routeDescription: "",
+      hostLocation: "",
+      availability: "available",
+      emailAgreementSent: false,
+      vanApproved: false,
       isActive: true,
     });
   };
@@ -226,26 +226,54 @@ export default function DriversManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="vehicleType">Vehicle Type</Label>
+                      <Label htmlFor="hostLocation">Host Location</Label>
                       <Input
-                        id="vehicleType"
-                        value={newDriver.vehicleType}
+                        id="hostLocation"
+                        value={newDriver.hostLocation}
                         onChange={(e) =>
-                          setNewDriver({ ...newDriver, vehicleType: e.target.value })
+                          setNewDriver({ ...newDriver, hostLocation: e.target.value })
                         }
-                        placeholder="e.g., Car, Van, Truck"
+                        placeholder="Enter host location"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="zone">Zone</Label>
-                      <Input
-                        id="zone"
-                        value={newDriver.zone}
+                      <Label htmlFor="availability">Availability</Label>
+                      <select
+                        id="availability"
+                        value={newDriver.availability}
                         onChange={(e) =>
-                          setNewDriver({ ...newDriver, zone: e.target.value })
+                          setNewDriver({ ...newDriver, availability: e.target.value })
                         }
-                        placeholder="Enter zone assignment"
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        <option value="available">Available</option>
+                        <option value="busy">Busy</option>
+                        <option value="off-duty">Off-duty</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="emailAgreementSent"
+                        checked={newDriver.emailAgreementSent}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, emailAgreementSent: e.target.checked })
+                        }
+                        className="rounded border-gray-300"
                       />
+                      <Label htmlFor="emailAgreementSent">Agreement Signed</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="vanApproved"
+                        checked={newDriver.vanApproved}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, vanApproved: e.target.checked })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="vanApproved">Van Approved</Label>
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
                       <Button
@@ -312,37 +340,30 @@ export default function DriversManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-vehicleType">Vehicle Type</Label>
+                <Label htmlFor="edit-hostLocation">Host Location</Label>
                 <Input
-                  id="edit-vehicleType"
-                  value={editingDriver.vehicleType || ""}
+                  id="edit-hostLocation"
+                  value={editingDriver.hostLocation || ""}
                   onChange={(e) =>
-                    setEditingDriver({ ...editingDriver, vehicleType: e.target.value })
+                    setEditingDriver({ ...editingDriver, hostLocation: e.target.value })
                   }
-                  placeholder="e.g., Car, Van, Truck"
+                  placeholder="Enter host location"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-zone">Zone</Label>
-                <Input
-                  id="edit-zone"
-                  value={editingDriver.zone || ""}
+                <Label htmlFor="edit-availability">Availability</Label>
+                <select
+                  id="edit-availability"
+                  value={editingDriver.availability || "available"}
                   onChange={(e) =>
-                    setEditingDriver({ ...editingDriver, zone: e.target.value })
+                    setEditingDriver({ ...editingDriver, availability: e.target.value })
                   }
-                  placeholder="Enter zone assignment"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-routeDescription">Route Description</Label>
-                <Input
-                  id="edit-routeDescription"
-                  value={editingDriver.routeDescription || ""}
-                  onChange={(e) =>
-                    setEditingDriver({ ...editingDriver, routeDescription: e.target.value })
-                  }
-                  placeholder="e.g., SS to Dunwoody"
-                />
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="available">Available</option>
+                  <option value="busy">Busy</option>
+                  <option value="off-duty">Off-duty</option>
+                </select>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -354,7 +375,19 @@ export default function DriversManagement() {
                   }
                   className="rounded border-gray-300"
                 />
-                <Label htmlFor="edit-emailAgreementSent">Email Agreement Sent</Label>
+                <Label htmlFor="edit-emailAgreementSent">Agreement Signed</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-vanApproved"
+                  checked={editingDriver.vanApproved || false}
+                  onChange={(e) =>
+                    setEditingDriver({ ...editingDriver, vanApproved: e.target.checked })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-vanApproved">Van Approved</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -460,15 +493,21 @@ export default function DriversManagement() {
                               </div>
                             )}
                           </div>
-                          {driver.zone && (
+                          {driver.hostLocation && (
                             <div className="text-xs text-gray-500 mt-1">
-                              Zone: {driver.zone}
+                              Host Location: {driver.hostLocation}
                             </div>
                           )}
-                          {driver.vehicleType && (
+                          {driver.availability && (
                             <div className="text-xs text-gray-500">
-                              Vehicle: {driver.vehicleType}
+                              Availability: {driver.availability}
                             </div>
+                          )}
+                          {driver.vanApproved && (
+                            <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-200 mt-1">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Van Approved
+                            </Badge>
                           )}
                         </div>
                       </div>
