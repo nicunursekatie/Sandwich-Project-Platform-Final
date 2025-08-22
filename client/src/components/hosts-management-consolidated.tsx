@@ -44,6 +44,7 @@ export default function HostsManagementConsolidated() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [contactFilter, setContactFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"locations" | "contacts">("locations");
 
   // Helper function to sort contacts by priority (leads first, then primary contacts)
   const sortContactsByPriority = (contacts: HostContact[]) => {
@@ -144,6 +145,55 @@ export default function HostsManagementConsolidated() {
 
     return filtered;
   }, [hostsWithContacts, searchTerm, statusFilter, contactFilter, hideEmptyHosts]);
+
+  // Individual contacts for contact view mode
+  const allContacts = useMemo(() => {
+    const contacts: (HostContact & { hostName: string; hostAddress?: string; hostStatus: string })[] = [];
+    
+    filteredHosts.forEach(host => {
+      host.contacts.forEach(contact => {
+        contacts.push({
+          ...contact,
+          hostName: host.name,
+          hostAddress: host.address || undefined,
+          hostStatus: host.status
+        });
+      });
+    });
+
+    return contacts;
+  }, [filteredHosts]);
+
+  // Filter contacts based on search term in contact view mode
+  const filteredContacts = useMemo(() => {
+    if (viewMode !== "contacts") return [];
+    
+    let filtered = allContacts;
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(contact =>
+        contact.name.toLowerCase().includes(term) ||
+        contact.email?.toLowerCase().includes(term) ||
+        contact.phone.toLowerCase().includes(term) ||
+        contact.role.toLowerCase().includes(term) ||
+        contact.hostName.toLowerCase().includes(term) ||
+        contact.hostAddress?.toLowerCase().includes(term) ||
+        contact.notes?.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      // Sort by role priority first (lead > primary > others)
+      if (a.role === 'lead' && b.role !== 'lead') return -1;
+      if (b.role === 'lead' && a.role !== 'lead') return 1;
+      if (a.isPrimary && !b.isPrimary) return -1;
+      if (b.isPrimary && !a.isPrimary) return 1;
+      
+      // Then by name
+      return a.name.localeCompare(b.name);
+    });
+  }, [allContacts, searchTerm, viewMode]);
 
   // Alias for backward compatibility
   const hosts = filteredHosts;
@@ -747,7 +797,26 @@ export default function HostsManagementConsolidated() {
           </h2>
           <p className="text-slate-600 mt-1">Manage collection hosts and their contact information</p>
         </div>
+        
+        {/* View Toggle */}
+        <div className="flex items-center gap-2">
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "locations" | "contacts")} className="w-auto">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="locations" className="flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Locations
+              </TabsTrigger>
+              <TabsTrigger value="contacts" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Contacts
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
 
+      {/* Action Bar */}
+      <div className="flex items-center justify-between">
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
           <DialogTrigger asChild>
             <Button disabled={!canEdit}>
@@ -922,42 +991,168 @@ export default function HostsManagementConsolidated() {
         </div>
       </div>
 
-      <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="active" className="flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            Active Locations ({activeHosts.length})
-          </TabsTrigger>
-          <TabsTrigger value="inactive" className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            Inactive Locations ({inactiveHosts.length})
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="active" className="mt-6">
-          {activeHosts.length === 0 ? (
+      {/* Main Content based on View Mode */}
+      {viewMode === "contacts" ? (
+        /* Individual Contact Cards View */
+        <div className="space-y-4">
+          <div className="text-sm text-slate-600">
+            Showing {filteredContacts.length} individual contacts
+            {searchTerm && <span> • Search: "{searchTerm}"</span>}
+          </div>
+          
+          {filteredContacts.length === 0 ? (
             <div className="text-center py-12">
-              <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">No active hosts found</h3>
-              <p className="text-slate-500">Add a new host to get started.</p>
+              <User className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">No contacts found</h3>
+              <p className="text-slate-500">
+                {searchTerm ? "Try adjusting your search terms." : "No contacts are available in the system."}
+              </p>
             </div>
           ) : (
-            <HostGrid hostList={activeHosts} />
-          )}
-        </TabsContent>
-        
-        <TabsContent value="inactive" className="mt-6">
-          {inactiveHosts.length === 0 ? (
-            <div className="text-center py-12">
-              <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">No inactive hosts</h3>
-              <p className="text-slate-500">All host locations are currently active.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredContacts.map((contact) => (
+                <Card key={contact.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {/* Contact Header */}
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-gray-900 truncate">{contact.name}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge 
+                              className={`text-xs ${
+                                contact.role === 'lead' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                contact.isPrimary ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                contact.role === 'primary' ? 'bg-green-100 text-green-800 border-green-200' :
+                                'bg-gray-100 text-gray-800 border-gray-200'
+                              }`}
+                            >
+                              {contact.role}
+                            </Badge>
+                            {contact.isPrimary && (
+                              <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                                <Star className="w-3 h-3 mr-1" />
+                                Primary
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Host Location */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Building2 className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{contact.hostName}</span>
+                      </div>
+
+                      {/* Contact Information */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <a 
+                            href={`tel:${contact.phone}`}
+                            className="text-blue-600 hover:underline truncate"
+                          >
+                            {contact.phone}
+                          </a>
+                        </div>
+                        
+                        {contact.email && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <a 
+                              href={`mailto:${contact.email}`}
+                              className="text-blue-600 hover:underline truncate"
+                            >
+                              {contact.email}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Location Address if available */}
+                      {contact.hostAddress && (
+                        <div className="flex items-start gap-2 text-sm text-gray-600">
+                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <span className="text-xs">{contact.hostAddress}</span>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {contact.notes && (
+                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                          <p className="text-xs italic">{contact.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Edit Actions */}
+                      {canEdit && (
+                        <div className="flex gap-2 pt-2 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs"
+                            onClick={() => setEditingContact(contact as ExtendedHostContact)}
+                          >
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteContact(contact.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          ) : (
-            <HostGrid hostList={inactiveHosts} />
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      ) : (
+        /* Original Location-based View */
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="active" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Active Locations ({activeHosts.length})
+            </TabsTrigger>
+            <TabsTrigger value="inactive" className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              Inactive Locations ({inactiveHosts.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active" className="mt-6">
+            {activeHosts.length === 0 ? (
+              <div className="text-center py-12">
+                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No active hosts found</h3>
+                <p className="text-slate-500">Add a new host to get started.</p>
+              </div>
+            ) : (
+              <HostGrid hostList={activeHosts} />
+            )}
+          </TabsContent>
+          
+          <TabsContent value="inactive" className="mt-6">
+            {inactiveHosts.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No inactive hosts</h3>
+                <p className="text-slate-500">All host locations are currently active.</p>
+              </div>
+            ) : (
+              <HostGrid hostList={inactiveHosts} />
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
 
       {/* Host Details Dialog */}
       <Dialog 

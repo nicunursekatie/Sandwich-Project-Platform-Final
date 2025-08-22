@@ -123,7 +123,6 @@ function Router() {
       <Route path="/projects">{() => <Dashboard initialSection="projects" />}</Route>
       <Route path="/projects/:id">{(params) => <Dashboard initialSection={`project-${params.id}`} />}</Route>
       <Route path="/weekly-monitoring">{() => <Dashboard initialSection="weekly-monitoring" />}</Route>
-      <Route path="/host-directory">{() => <Dashboard initialSection="host-directory" />}</Route>
       <Route path="/wishlist">{() => <Dashboard initialSection="wishlist" />}</Route>
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">{(params) => <Dashboard initialSection={params.section} />}</Route>
