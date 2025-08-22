@@ -28,6 +28,8 @@ export default function RecipientsManagement() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [contractFilter, setContractFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
+  const [tspContactFilter, setTspContactFilter] = useState<string>("all");
+  const [sandwichTypeFilter, setSandwichTypeFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResults, setImportResults] = useState<{ imported: number; skipped: number } | null>(null);
@@ -101,13 +103,33 @@ export default function RecipientsManagement() {
       filtered = filtered.filter(recipient => recipient.region === regionFilter);
     }
 
-    return filtered;
-  }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter]);
+    // Apply TSP contact filter
+    if (tspContactFilter !== "all") {
+      filtered = filtered.filter(recipient => recipient.tspContact === tspContactFilter);
+    }
 
-  // Get unique regions for filter dropdown
+    // Apply sandwich type filter
+    if (sandwichTypeFilter !== "all") {
+      filtered = filtered.filter(recipient => recipient.sandwichType === sandwichTypeFilter);
+    }
+
+    return filtered;
+  }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter]);
+
+  // Get unique values for filter dropdowns
   const uniqueRegions = useMemo(() => {
     const regions = recipients.map(r => r.region).filter(Boolean);
     return [...new Set(regions)].sort();
+  }, [recipients]);
+
+  const uniqueTspContacts = useMemo(() => {
+    const contacts = recipients.map(r => r.tspContact).filter(Boolean);
+    return [...new Set(contacts)].sort();
+  }, [recipients]);
+
+  const uniqueSandwichTypes = useMemo(() => {
+    const types = recipients.map(r => r.sandwichType).filter(Boolean);
+    return [...new Set(types)].sort();
   }, [recipients]);
 
   const createRecipientMutation = useMutation({
@@ -594,9 +616,9 @@ export default function RecipientsManagement() {
           >
             <Filter className="w-4 h-4" />
             Filters
-            {(statusFilter !== "all" || contractFilter !== "all" || regionFilter !== "all") && (
+            {(statusFilter !== "all" || contractFilter !== "all" || regionFilter !== "all" || tspContactFilter !== "all" || sandwichTypeFilter !== "all") && (
               <Badge variant="secondary" className="ml-1">
-                {[statusFilter !== "all" && "Status", contractFilter !== "all" && "Contract", regionFilter !== "all" && "Region"].filter(Boolean).length}
+                {[statusFilter !== "all" && "Status", contractFilter !== "all" && "Contract", regionFilter !== "all" && "Region", tspContactFilter !== "all" && "TSP Contact", sandwichTypeFilter !== "all" && "Sandwich Type"].filter(Boolean).length}
               </Badge>
             )}
           </Button>
@@ -604,65 +626,103 @@ export default function RecipientsManagement() {
 
         {/* Expanded Filters */}
         {showFilters && (
-          <div className="flex flex-col md:flex-row gap-3 pt-3 border-t border-slate-200">
-            <div className="flex flex-col space-y-2">
-              <Label className="text-xs font-medium text-slate-600">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active Only</SelectItem>
-                  <SelectItem value="inactive">Inactive Only</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-3 pt-3 border-t border-slate-200">
+            {/* First row of filters */}
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">Contract</Label>
+                <Select value={contractFilter} onValueChange={setContractFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Contracts</SelectItem>
+                    <SelectItem value="signed">Contract Signed</SelectItem>
+                    <SelectItem value="unsigned">Contract Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">Region</Label>
+                <Select value={regionFilter} onValueChange={setRegionFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    {uniqueRegions.map(region => (
+                      <SelectItem key={region} value={region}>{region}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="flex flex-col space-y-2">
-              <Label className="text-xs font-medium text-slate-600">Contract</Label>
-              <Select value={contractFilter} onValueChange={setContractFilter}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Contracts</SelectItem>
-                  <SelectItem value="signed">Contract Signed</SelectItem>
-                  <SelectItem value="unsigned">Contract Pending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Second row of filters */}
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">TSP Contact</Label>
+                <Select value={tspContactFilter} onValueChange={setTspContactFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All TSP Contacts</SelectItem>
+                    {uniqueTspContacts.map(contact => (
+                      <SelectItem key={contact} value={contact}>{contact}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="flex flex-col space-y-2">
-              <Label className="text-xs font-medium text-slate-600">Region</Label>
-              <Select value={regionFilter} onValueChange={setRegionFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Regions</SelectItem>
-                  {uniqueRegions.map(region => (
-                    <SelectItem key={region} value={region}>{region}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">Sandwich Type</Label>
+                <Select value={sandwichTypeFilter} onValueChange={setSandwichTypeFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sandwich Types</SelectItem>
+                    {uniqueSandwichTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="flex items-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("all");
-                  setContractFilter("all");
-                  setRegionFilter("all");
-                }}
-                className="text-slate-500 hover:text-slate-700"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Clear All
-              </Button>
+              <div className="flex items-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setStatusFilter("all");
+                    setContractFilter("all");
+                    setRegionFilter("all");
+                    setTspContactFilter("all");
+                    setSandwichTypeFilter("all");
+                  }}
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -674,6 +734,8 @@ export default function RecipientsManagement() {
           {statusFilter !== "all" && <span> • {statusFilter}</span>}
           {contractFilter !== "all" && <span> • {contractFilter}</span>}
           {regionFilter !== "all" && <span> • Region: {regionFilter}</span>}
+          {tspContactFilter !== "all" && <span> • TSP Contact: {tspContactFilter}</span>}
+          {sandwichTypeFilter !== "all" && <span> • Type: {sandwichTypeFilter}</span>}
         </div>
       </div>
 
