@@ -14,6 +14,7 @@ import RecipientsManagement from "@/components/recipients-management";
 import DriversManagement from "@/components/drivers-management-simple";
 import VolunteerManagement from "@/components/volunteer-management";
 import HostsManagement from "@/components/hosts-management-consolidated";
+import HostDirectory from "@/components/host-directory";
 import { DocumentsBrowser } from "@/components/documents-browser";
 
 import BulkDataManager from "@/components/bulk-data-manager";
@@ -258,6 +259,12 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
       case "hosts":
         return <HostsManagement />;
+      case "host-directory":
+        return (
+          <div className="space-y-6 p-6">
+            <HostDirectory />
+          </div>
+        );
       case "recipients":
         return <RecipientsManagement />;
       case "drivers":
