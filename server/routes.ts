@@ -2937,14 +2937,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔧 PUT /api/drivers/${id} - Storage update`, { id, updates });
 
-      // Ensure critical boolean fields are properly handled
+      // Ensure critical boolean fields are properly handled and remove timestamp fields
       const cleanUpdates = {
         ...updates,
         ...(updates.isActive !== undefined && { isActive: Boolean(updates.isActive) }),
         ...(updates.emailAgreementSent !== undefined && { emailAgreementSent: Boolean(updates.emailAgreementSent) }),
         ...(updates.vanApproved !== undefined && { vanApproved: Boolean(updates.vanApproved) }),
         ...(updates.voicemailLeft !== undefined && { voicemailLeft: Boolean(updates.voicemailLeft) }),
-        updatedAt: new Date()
+        // Remove timestamp fields that cause database issues
+        createdAt: undefined,
+        updatedAt: undefined
       };
 
       const driver = await storage.updateDriver(id, cleanUpdates);

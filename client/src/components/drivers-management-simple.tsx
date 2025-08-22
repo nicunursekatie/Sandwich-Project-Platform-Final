@@ -81,8 +81,15 @@ export default function DriversManagement() {
 
   // Update driver mutation
   const updateDriverMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) =>
-      apiRequest("PUT", `/api/drivers/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      // Clean the data to remove timestamp fields that cause issues
+      const cleanData = {
+        ...data,
+        createdAt: undefined,
+        updatedAt: undefined,
+      };
+      return apiRequest("PUT", `/api/drivers/${id}`, cleanData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/drivers"] });
       setEditingDriver(null);
@@ -277,6 +284,18 @@ export default function DriversManagement() {
                         className="rounded border-gray-300"
                       />
                       <Label htmlFor="vanApproved">Van Approved</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isActive"
+                        checked={newDriver.isActive}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, isActive: e.target.checked })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="isActive">Active Driver</Label>
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
                       <Button
