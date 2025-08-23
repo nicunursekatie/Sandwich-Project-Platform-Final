@@ -1,6 +1,6 @@
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, lazy } from "react";
 
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,6 +64,7 @@ function Router() {
       <Switch>
         <Route path="/signup" component={SignupPage} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/sms-opt-in" component={lazy(() => import('./pages/sms-opt-in'))} />
         <Route path="/login">
           {() => {
             // Redirect to the backend login page
@@ -124,6 +125,7 @@ function Router() {
       <Route path="/projects/:id">{(params) => <Dashboard initialSection={`project-${params.id}`} />}</Route>
       <Route path="/weekly-monitoring">{() => <Dashboard initialSection="weekly-monitoring" />}</Route>
       <Route path="/wishlist">{() => <Dashboard initialSection="wishlist" />}</Route>
+      <Route path="/sms-opt-in" component={lazy(() => import('./pages/sms-opt-in'))} />
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">{(params) => <Dashboard initialSection={params.section} />}</Route>
       <Route path="/">{() => <Dashboard />}</Route>

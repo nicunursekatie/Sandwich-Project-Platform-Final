@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Crown, MessageSquare, Smartphone, Settings } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Crown, MessageSquare, Smartphone, Settings, Send } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -61,6 +61,7 @@ export default function WeeklyMonitoringDashboard() {
   const [reportWeeks, setReportWeeks] = useState(4); // Number of weeks for multi-week report
   const [showSMSTest, setShowSMSTest] = useState(false);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
+  const [showAnnouncementPanel, setShowAnnouncementPanel] = useState(false);
   
   // Get monitoring status for selected week
   const { data: submissionStatus = [], isLoading: statusLoading, error: statusError } = useQuery({
@@ -115,6 +116,12 @@ export default function WeeklyMonitoringDashboard() {
   const testSMSMutation = useMutation({
     mutationFn: (data: { phoneNumber: string; appUrl?: string }) => 
       apiRequest('POST', '/api/monitoring/test-sms', data),
+  });
+  
+  // SMS announcement mutation
+  const sendAnnouncementMutation = useMutation({
+    mutationFn: (data: { testMode?: boolean; testEmail?: string }) => 
+      apiRequest('POST', '/api/sms-announcement/send-sms-announcement', data),
   });
   
   // Get SMS configuration status
@@ -232,6 +239,15 @@ export default function WeeklyMonitoringDashboard() {
           >
             <Smartphone className="h-4 w-4" />
             Test SMS
+          </Button>
+          
+          <Button
+            onClick={() => setShowAnnouncementPanel(!showAnnouncementPanel)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Send className="h-4 w-4" />
+            SMS Announcement
           </Button>
           
           <Button
@@ -434,6 +450,87 @@ export default function WeeklyMonitoringDashboard() {
                     </ul>
                   </div>
                 </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SMS Announcement Panel */}
+      {showAnnouncementPanel && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Send SMS Capability Announcement
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">What this announcement does:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Sends an email to all registered app users</li>
+                  <li>• Explains the new SMS reminder feature</li>
+                  <li>• Includes a link for users to opt-in to SMS notifications</li>
+                  <li>• Emphasizes that SMS is completely voluntary</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => sendAnnouncementMutation.mutate({ testMode: true })}
+                  variant="outline"
+                  disabled={sendAnnouncementMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  {sendAnnouncementMutation.isPending ? "Sending..." : "Send Test (to yourself)"}
+                </Button>
+                
+                <Button
+                  onClick={() => {
+                    if (confirm("Send SMS announcement to ALL registered users? This cannot be undone.")) {
+                      sendAnnouncementMutation.mutate({ testMode: false });
+                    }
+                  }}
+                  disabled={sendAnnouncementMutation.isPending}
+                  className="flex items-center gap-2 bg-[#236383] hover:bg-[#1d5470]"
+                >
+                  <Send className="h-4 w-4" />
+                  {sendAnnouncementMutation.isPending ? "Sending..." : "Send to All Users"}
+                </Button>
+              </div>
+
+              {sendAnnouncementMutation.isSuccess && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {sendAnnouncementMutation.data?.message}
+                    {sendAnnouncementMutation.data?.smsOptInUrl && (
+                      <div className="mt-2">
+                        <span className="font-medium">Opt-in URL: </span>
+                        <a 
+                          href={sendAnnouncementMutation.data.smsOptInUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {sendAnnouncementMutation.data.smsOptInUrl}
+                        </a>
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {sendAnnouncementMutation.isError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Failed to send announcement. Please try again.
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
           </CardContent>

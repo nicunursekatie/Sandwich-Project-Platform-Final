@@ -23,7 +23,7 @@ interface SMSReminderResult {
 }
 
 /**
- * Send SMS reminder to a specific host location
+ * Send SMS reminder to a specific host location using opted-in users
  */
 export async function sendSMSReminder(
   hostLocation: string,
@@ -44,75 +44,54 @@ export async function sendSMSReminder(
   }
 
   try {
-    // Find hosts for this location who have phone numbers
-    const hostContacts = await db
-      .select({
-        id: hosts.id,
-        name: hosts.name,
-        phone: hosts.phone,
-        email: hosts.email
-      })
-      .from(hosts)
-      .where(
-        and(
-          eq(hosts.status, 'active'),
-          // Match location name variations
-          // This is a simple approach - you might want to make this more sophisticated
-        )
-      );
-
-    // Filter hosts that match the location and have phone numbers
-    const matchingHosts = hostContacts.filter(host => {
-      if (!host.phone) return false;
-      
-      // Simple matching logic - improve this based on your host location naming
-      const hostName = host.name.toLowerCase();
-      const location = hostLocation.toLowerCase();
-      
-      return hostName.includes(location.split('/')[0].toLowerCase()) ||
-             location.includes(hostName) ||
-             hostName.includes(location);
+    // Import storage to get users who have opted in to SMS
+    const { storage } = await import('./storage');
+    
+    // Get all users who have opted in to SMS
+    const allUsers = await storage.getAllUsers();
+    const optedInUsers = allUsers.filter(user => {
+      const metadata = user.metadata || {};
+      const smsConsent = metadata.smsConsent || {};
+      return smsConsent.enabled && smsConsent.phoneNumber;
     });
 
-    if (matchingHosts.length === 0) {
+    if (optedInUsers.length === 0) {
       return {
         success: false,
-        message: `No hosts found with phone numbers for location: ${hostLocation}`
+        message: `No users have opted in to SMS reminders yet`
       };
     }
 
-    // Send SMS to each matching host
+    // Send SMS to each opted-in user
     const results = [];
-    for (const host of matchingHosts) {
+    for (const user of optedInUsers) {
       try {
-        // Clean phone number (remove any non-digits except +)
-        const cleanPhone = host.phone.replace(/[^\d+]/g, '');
-        
-        // Add +1 if it's a 10-digit US number
-        const formattedPhone = cleanPhone.length === 10 ? `+1${cleanPhone}` : cleanPhone;
+        const metadata = user.metadata || {};
+        const smsConsent = metadata.smsConsent || {};
+        const phoneNumber = smsConsent.phoneNumber;
 
-        const message = `Hi ${host.name}! 🥪 Friendly reminder: The Sandwich Project weekly numbers haven't been submitted yet for ${hostLocation}. Please submit at: ${appUrl} - Thanks for all you do!`;
+        const message = `Hi! 🥪 Friendly reminder: The Sandwich Project weekly numbers haven't been submitted yet for ${hostLocation}. Please submit at: ${appUrl} - Thanks for all you do!`;
 
         const result = await twilioClient.messages.create({
           body: message,
           from: process.env.TWILIO_PHONE_NUMBER,
-          to: formattedPhone
+          to: phoneNumber
         });
 
         results.push({
-          host: host.name,
-          phone: formattedPhone,
+          user: user.email,
+          phone: phoneNumber,
           messageSid: result.sid,
           success: true
         });
 
-        console.log(`✅ SMS sent to ${host.name} (${formattedPhone}) for ${hostLocation}`);
+        console.log(`✅ SMS sent to ${user.email} (${phoneNumber}) for ${hostLocation}`);
         
       } catch (error) {
-        console.error(`❌ Failed to send SMS to ${host.name}:`, error);
+        console.error(`❌ Failed to send SMS to ${user.email}:`, error);
         results.push({
-          host: host.name,
-          phone: host.phone,
+          user: user.email,
+          phone: user.metadata?.smsConsent?.phoneNumber || 'unknown',
           error: error.message,
           success: false
         });
@@ -124,8 +103,8 @@ export async function sendSMSReminder(
 
     return {
       success: successCount > 0,
-      message: `SMS reminders sent: ${successCount}/${totalCount} successful`,
-      sentTo: results.filter(r => r.success).map(r => r.host).join(', ')
+      message: `SMS reminders sent: ${successCount}/${totalCount} opted-in users contacted`,
+      sentTo: results.filter(r => r.success).map(r => r.user).join(', ')
     };
 
   } catch (error) {

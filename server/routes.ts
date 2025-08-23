@@ -6768,6 +6768,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SMS user routes
+  app.get("/api/users/sms-status", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const userRecord = await storage.getUserById(user.id);
+      if (!userRecord) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const metadata = userRecord.metadata || {};
+      const smsConsent = metadata.smsConsent || {};
+
+      res.json({
+        hasOptedIn: !!smsConsent.enabled,
+        phoneNumber: smsConsent.phoneNumber || null,
+        optInDate: smsConsent.optInDate || null
+      });
+    } catch (error) {
+      console.error('Error getting SMS status:', error);
+      res.status(500).json({ error: 'Failed to get SMS status' });
+    }
+  });
+
+  app.post("/api/users/sms-opt-in", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      const { phoneNumber, consent } = req.body;
+
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      if (!phoneNumber || !consent) {
+        return res.status(400).json({ error: 'Phone number and consent are required' });
+      }
+
+      // Clean and format phone number
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
+      if (cleanPhone.length !== 10) {
+        return res.status(400).json({ error: 'Please enter a valid 10-digit phone number' });
+      }
+      const formattedPhone = `+1${cleanPhone}`;
+
+      // Update user metadata with SMS consent
+      const userRecord = await storage.getUserById(user.id);
+      if (!userRecord) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const metadata = userRecord.metadata || {};
+      metadata.smsConsent = {
+        enabled: true,
+        phoneNumber: formattedPhone,
+        displayPhone: phoneNumber, // Keep original formatted version for display
+        optInDate: new Date().toISOString(),
+        consent: true
+      };
+
+      await storage.updateUser(user.id, { metadata });
+
+      console.log(`✅ User ${user.email} opted in to SMS with phone ${formattedPhone}`);
+
+      res.json({
+        success: true,
+        message: 'Successfully opted in to SMS reminders',
+        phoneNumber: formattedPhone
+      });
+    } catch (error) {
+      console.error('Error opting in to SMS:', error);
+      res.status(500).json({ error: 'Failed to opt in to SMS reminders' });
+    }
+  });
+
+  app.post("/api/users/sms-opt-out", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      // Update user metadata to disable SMS consent
+      const userRecord = await storage.getUserById(user.id);
+      if (!userRecord) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const metadata = userRecord.metadata || {};
+      metadata.smsConsent = {
+        enabled: false,
+        phoneNumber: null,
+        displayPhone: null,
+        optOutDate: new Date().toISOString(),
+        consent: false
+      };
+
+      await storage.updateUser(user.id, { metadata });
+
+      console.log(`✅ User ${user.email} opted out of SMS`);
+
+      res.json({
+        success: true,
+        message: 'Successfully opted out of SMS reminders'
+      });
+    } catch (error) {
+      console.error('Error opting out of SMS:', error);
+      res.status(500).json({ error: 'Failed to opt out of SMS reminders' });
+    }
+  });
+
+  // Register SMS announcement routes
+  const { smsAnnouncementRoutes } = await import('./routes/sms-announcement');
+  app.use("/api/sms-announcement", smsAnnouncementRoutes);
+
   // Register Google Sheets routes
   app.use("/api/google-sheets", googleSheetsRoutes);
   
