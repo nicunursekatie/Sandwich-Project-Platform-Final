@@ -3,32 +3,31 @@ import { eq, sql, and, gt, or, isNull } from "drizzle-orm";
 import { messages, messageRecipients, conversations, conversationParticipants, chatMessages, chatMessageReads, kudosTracking, users, emailMessages } from "../../shared/schema";
 import { db } from "../db";
 import { isAuthenticated } from "../temp-auth";
+import { hasPermission, PERMISSIONS } from "../../shared/auth-utils";
 
 // Helper function to check if user has permission for specific chat type
 function checkUserChatPermission(user: any, chatType: string): boolean {
-  if (!user || !user.permissions) return false;
-
-  const permissions = user.permissions;
+  if (!user) return false;
 
   switch (chatType) {
     case 'core_team':
-      return permissions.includes('core_team_chat');
+      return hasPermission(user, PERMISSIONS.CORE_TEAM_CHAT);
     case 'committee':
-      return permissions.includes('committee_chat');
+      return hasPermission(user, PERMISSIONS.COMMITTEE_CHAT);
     case 'hosts':
-      return permissions.includes('host_chat');
+      return hasPermission(user, PERMISSIONS.HOST_CHAT);
     case 'drivers':
-      return permissions.includes('driver_chat');
+      return hasPermission(user, PERMISSIONS.DRIVER_CHAT);
     case 'recipients':
-      return permissions.includes('recipient_chat');
+      return hasPermission(user, PERMISSIONS.RECIPIENT_CHAT);
     case 'direct':
-      return permissions.includes('direct_messages');
+      return hasPermission(user, PERMISSIONS.DIRECT_MESSAGES);
     case 'groups':
-      return permissions.includes('group_messages');
+      return hasPermission(user, PERMISSIONS.GROUP_MESSAGES);
     case 'general':
-      return permissions.includes('general_chat');
+      return hasPermission(user, PERMISSIONS.GENERAL_CHAT);
     default:
-      return permissions.includes('general_chat');
+      return hasPermission(user, PERMISSIONS.GENERAL_CHAT);
   }
 }
 

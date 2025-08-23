@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Edit2, Trash2, Check, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 export interface ChatMessage {
   id: string;
@@ -28,7 +29,7 @@ export default function ChatMessageComponent({ message, onEdit, onDelete }: Chat
   const [editContent, setEditContent] = useState(message.content);
 
   const isOwnMessage = user?.id === message.userId;
-  const isAdmin = user?.permissions?.includes('MANAGE_USERS') || user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = hasPermission(user, PERMISSIONS.MANAGE_USERS);
   const canEdit = isOwnMessage;
   const canDelete = isOwnMessage || isAdmin;
 

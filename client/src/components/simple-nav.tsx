@@ -82,10 +82,10 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     // OPERATIONS (the weekly flow)
     ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
     { id: "donation-tracking", label: "Donation Tracking", icon: Route, href: "donation-tracking", group: "operations" },
-    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_WEEKLY_MONITORING) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
     
     // PLANNING & COORDINATION
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
@@ -95,7 +95,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
     
     // DOCUMENTATION
-    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "documentation" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DEVELOPMENT) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "documentation" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_GOVERNANCE) ? [{ id: "governance", label: "Governance", icon: Scale, href: "governance", group: "documentation" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList, href: "meetings", group: "documentation" }] : []),
     

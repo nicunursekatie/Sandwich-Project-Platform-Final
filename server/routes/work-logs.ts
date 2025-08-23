@@ -31,7 +31,7 @@ function isSuperAdmin(req) {
 }
 
 // Import permission utilities
-import { hasPermission, PERMISSIONS } from "../shared/auth-utils";
+import { hasPermission, PERMISSIONS } from "../../shared/auth-utils";
 
 // Middleware to check if user can log work
 function canLogWork(req) {
