@@ -30,13 +30,18 @@ function isSuperAdmin(req) {
   return req.user?.role === "super_admin" || req.user?.role === "admin";
 }
 
+// Import permission utilities
+import { hasPermission, PERMISSIONS } from "../shared/auth-utils";
+
 // Middleware to check if user can log work
 function canLogWork(req) {
-  // Allow admin, super_admin, or users with general permissions
-  return req.user?.role === "admin" || req.user?.role === "super_admin" || req.user?.role === "work_logger";
+  // Check for CREATE_WORK_LOGS permission or admin roles for backwards compatibility
+  return hasPermission(req.user, PERMISSIONS.CREATE_WORK_LOGS) || 
+         req.user?.role === "admin" || 
+         req.user?.role === "super_admin";
 }
 
-// Get work logs - Admins see ALL, users see only their own
+// Get work logs - Check permissions first
 router.get("/work-logs", isAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -44,16 +49,27 @@ router.get("/work-logs", isAuthenticated, async (req, res) => {
     const userRole = req.user.role;
     
     console.log(`[WORK LOGS] User: ${userId}, Email: ${userEmail}, Role: ${userRole}`);
-    console.log(`[WORK LOGS] isSuperAdmin check: ${isSuperAdmin(req)}, isMarcy: ${userEmail === 'mdlouza@gmail.com'}`);
     
-    // Super admin and Marcy can see ALL work logs
-    if (isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com') {
-      console.log(`[WORK LOGS] Admin access - fetching ALL logs`);
+    // Check if user has any work log permissions
+    const canCreate = hasPermission(req.user, PERMISSIONS.CREATE_WORK_LOGS);
+    const canViewAll = hasPermission(req.user, PERMISSIONS.VIEW_ALL_WORK_LOGS);
+    const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
+    
+    console.log(`[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`);
+    
+    // User must have at least CREATE_WORK_LOGS permission to access work logs
+    if (!canCreate && !canViewAll && !isAdmin) {
+      return res.status(403).json({ error: "Insufficient permissions to view work logs" });
+    }
+    
+    // Users with VIEW_ALL_WORK_LOGS or admin roles can see ALL work logs
+    if (canViewAll || isAdmin) {
+      console.log(`[WORK LOGS] Admin/ViewAll access - fetching ALL logs`);
       const logs = await db.select().from(workLogs);
       console.log(`[WORK LOGS] Found ${logs.length} total logs:`, logs.map(l => `${l.id}: ${l.userId}`));
       return res.json(logs);
     } else {
-      // Regular users can only see their own logs
+      // Regular users with CREATE_WORK_LOGS can only see their own logs
       console.log(`[WORK LOGS] Regular user access - fetching logs for ${userId}`);
       const logs = await db.select().from(workLogs).where(eq(workLogs.userId, userId));
       console.log(`[WORK LOGS] Found ${logs.length} logs for user ${userId}:`, logs.map(l => `${l.id}: ${l.description.substring(0, 30)}`));

@@ -101,7 +101,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     
     // ADMIN
     ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3, href: "analytics", group: "admin" }] : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ListTodo, href: "work-log", group: "admin" }] : []),
+    ...(hasPermission(user, PERMISSIONS.CREATE_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ListTodo, href: "work-log", group: "admin" }] : []),
     ...(hasPermission(user, PERMISSIONS.MANAGE_USERS) ? [{ id: "user-management", label: "User Management", icon: Settings, href: "user-management", group: "admin" }] : [])
   ];
 
