@@ -1,13 +1,13 @@
-import { Twilio } from 'twilio';
+import Twilio from 'twilio';
 import { db } from './db';
 import { hosts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 
 // Initialize Twilio client
-let twilioClient: Twilio | null = null;
+let twilioClient: ReturnType<typeof Twilio> | null = null;
 
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  twilioClient = new Twilio(
+  twilioClient = Twilio(
     process.env.TWILIO_ACCOUNT_SID,
     process.env.TWILIO_AUTH_TOKEN
   );
