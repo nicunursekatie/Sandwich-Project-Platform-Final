@@ -336,7 +336,7 @@ export default function WeeklyMonitoringDashboard() {
                   <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
                   <span className="ml-2 text-gray-600">Loading submission status...</span>
                 </div>
-              ) : (
+              ) : submissionStatus && submissionStatus.length > 0 ? (
                 <div className="grid gap-3">
                   {submissionStatus.map((status: WeeklySubmissionStatus) => (
                     <div
@@ -376,6 +376,10 @@ export default function WeeklyMonitoringDashboard() {
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No submission data available for this week.
+                </div>
               )}
             </CardContent>
           </Card>
@@ -413,7 +417,12 @@ export default function WeeklyMonitoringDashboard() {
               </CardContent>
             </Card>
             
-            {multiWeekReport && (
+            {reportLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-600">Loading multi-week report...</span>
+              </div>
+            ) : multiWeekReport && multiWeekReport.weeks && multiWeekReport.summary ? (
               <>
                 {/* Summary Statistics */}
                 <Card>
@@ -425,7 +434,7 @@ export default function WeeklyMonitoringDashboard() {
                       <div className="space-y-2">
                         <h4 className="font-medium text-green-700">Most Reliable (≥75%)</h4>
                         <div className="space-y-1">
-                          {multiWeekReport.summary.mostReliable.map(location => (
+                          {multiWeekReport.summary.mostReliable && multiWeekReport.summary.mostReliable.map ? multiWeekReport.summary.mostReliable.map(location => (
                             <div key={location} className="flex items-center gap-2 text-sm">
                               <CheckCircle className="h-4 w-4 text-green-600" />
                               <span>{location}</span>
@@ -433,14 +442,14 @@ export default function WeeklyMonitoringDashboard() {
                                 {multiWeekReport.summary.overallStats[location]?.percentage}%
                               </Badge>
                             </div>
-                          ))}
+                          )) : <div className="text-sm text-gray-500">No data available</div>}
                         </div>
                       </div>
                       
                       <div className="space-y-2">
                         <h4 className="font-medium text-red-700">Most Missing</h4>
                         <div className="space-y-1">
-                          {multiWeekReport.summary.mostMissing.map(location => (
+                          {multiWeekReport.summary.mostMissing && multiWeekReport.summary.mostMissing.map ? multiWeekReport.summary.mostMissing.map(location => (
                             <div key={location} className="flex items-center gap-2 text-sm">
                               <XCircle className="h-4 w-4 text-red-600" />
                               <span>{location}</span>
@@ -448,15 +457,15 @@ export default function WeeklyMonitoringDashboard() {
                                 {multiWeekReport.summary.overallStats[location]?.missed} missed
                               </Badge>
                             </div>
-                          ))}
+                          )) : <div className="text-sm text-gray-500">No data available</div>}
                         </div>
                       </div>
                       
                       <div className="space-y-2">
                         <h4 className="font-medium text-gray-700">Overall Stats</h4>
                         <div className="text-sm space-y-1">
-                          <p>Total weeks analyzed: {multiWeekReport.summary.totalWeeks}</p>
-                          <p>Locations tracked: {multiWeekReport.summary.locationsTracked.length}</p>
+                          <p>Total weeks analyzed: {multiWeekReport.summary.totalWeeks || 0}</p>
+                          <p>Locations tracked: {multiWeekReport.summary.locationsTracked?.length || 0}</p>
                         </div>
                       </div>
                     </div>
@@ -470,11 +479,11 @@ export default function WeeklyMonitoringDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {multiWeekReport.weeks.map((week, index) => (
+                      {multiWeekReport.weeks && multiWeekReport.weeks.map ? multiWeekReport.weeks.map((week, index) => (
                         <div key={index} className="border rounded-lg p-4">
                           <h4 className="font-medium mb-3">{week.weekLabel}</h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {week.submissionStatus.map((status) => (
+                            {week.submissionStatus && week.submissionStatus.map ? week.submissionStatus.map((status) => (
                               <div
                                 key={status.location}
                                 className={`p-2 rounded text-sm flex items-center gap-2 ${
@@ -493,14 +502,18 @@ export default function WeeklyMonitoringDashboard() {
                                   </div>
                                 )}
                               </div>
-                            ))}
+                            )) : <div className="text-sm text-gray-500">No submission data for this week</div>}
                           </div>
                         </div>
-                      ))}
+                      )) : <div className="text-center py-8 text-gray-500">No weekly data available</div>}
                     </div>
                   </CardContent>
                 </Card>
               </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No multi-week report data available.
+              </div>
             )}
           </div>
         </TabsContent>

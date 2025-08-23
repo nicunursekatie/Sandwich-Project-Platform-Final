@@ -1,0 +1,274 @@
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=HbJ5nekaXWvA' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=HbJ5nekaXWvA' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+message-notifications.tsx:99 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+dashboard.tsx:72 Current URL location: /dashboard
+dashboard.tsx:94 Dashboard activeSection changed to: dashboard
+useMessaging.ts:242 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+(anonymous) @ useMessaging.ts:242
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=953a46bf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=953a46bf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=953a46bf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=953a46bf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+useMessaging.ts:281 Messaging WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+overrideMethod @ hook.js:608
+ws.onerror @ useMessaging.ts:281
+useMessaging.ts:286 Messaging WebSocket disconnected
+useMessaging.ts:291 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+ws.onclose @ useMessaging.ts:291
+message-notifications.tsx:111 WebSocket connected successfully
+simple-nav.tsx:207 Navigation click: weekly-monitoring
+dashboard.tsx:509 Dashboard setActiveSection called with: weekly-monitoring
+dashboard.tsx:94 Dashboard activeSection changed to: weekly-monitoring
+weekly-monitoring-dashboard.tsx:341 Uncaught TypeError: Cannot read properties of null (reading 'map')
+    at WeeklyMonitoringDashboard (weekly-monitoring-dashboard.tsx:341:37)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=953a46bf:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=953a46bf:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=953a46bf:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=953a46bf:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=953a46bf:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=953a46bf:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=953a46bf:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=953a46bf:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=953a46bf:19137:13)
+WeeklyMonitoringDashboard @ weekly-monitoring-dashboard.tsx:341
+renderWithHooks @ chunk-RPCDYKBN.js?v=953a46bf:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=953a46bf:14582
+beginWork @ chunk-RPCDYKBN.js?v=953a46bf:15924
+callCallback2 @ chunk-RPCDYKBN.js?v=953a46bf:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=953a46bf:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=953a46bf:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=953a46bf:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=953a46bf:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=953a46bf:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=953a46bf:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+setTimeout
+defaultScheduler @ @tanstack_react-query.js?v=953a46bf:565
+flush @ @tanstack_react-query.js?v=953a46bf:589
+batch @ @tanstack_react-query.js?v=953a46bf:607
+dispatch_fn @ @tanstack_react-query.js?v=953a46bf:1040
+setData @ @tanstack_react-query.js?v=953a46bf:718
+onSuccess @ @tanstack_react-query.js?v=953a46bf:940
+resolve @ @tanstack_react-query.js?v=953a46bf:475
+Promise.then
+run @ @tanstack_react-query.js?v=953a46bf:517
+start @ @tanstack_react-query.js?v=953a46bf:555
+fetch @ @tanstack_react-query.js?v=953a46bf:969
+executeFetch_fn @ @tanstack_react-query.js?v=953a46bf:2279
+onSubscribe @ @tanstack_react-query.js?v=953a46bf:1983
+subscribe @ @tanstack_react-query.js?v=953a46bf:24
+(anonymous) @ @tanstack_react-query.js?v=953a46bf:3146
+subscribeToStore @ chunk-RPCDYKBN.js?v=953a46bf:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=953a46bf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=953a46bf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=953a46bf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=953a46bf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+weekly-monitoring-dashboard.tsx:341 Uncaught TypeError: Cannot read properties of null (reading 'map')
+    at WeeklyMonitoringDashboard (weekly-monitoring-dashboard.tsx:341:37)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=953a46bf:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=953a46bf:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=953a46bf:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=953a46bf:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=953a46bf:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=953a46bf:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=953a46bf:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=953a46bf:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=953a46bf:19137:13)
+WeeklyMonitoringDashboard @ weekly-monitoring-dashboard.tsx:341
+renderWithHooks @ chunk-RPCDYKBN.js?v=953a46bf:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=953a46bf:14582
+beginWork @ chunk-RPCDYKBN.js?v=953a46bf:15924
+callCallback2 @ chunk-RPCDYKBN.js?v=953a46bf:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=953a46bf:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=953a46bf:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=953a46bf:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=953a46bf:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=953a46bf:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=953a46bf:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=953a46bf:18736
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18879
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+setTimeout
+defaultScheduler @ @tanstack_react-query.js?v=953a46bf:565
+flush @ @tanstack_react-query.js?v=953a46bf:589
+batch @ @tanstack_react-query.js?v=953a46bf:607
+dispatch_fn @ @tanstack_react-query.js?v=953a46bf:1040
+setData @ @tanstack_react-query.js?v=953a46bf:718
+onSuccess @ @tanstack_react-query.js?v=953a46bf:940
+resolve @ @tanstack_react-query.js?v=953a46bf:475
+Promise.then
+run @ @tanstack_react-query.js?v=953a46bf:517
+start @ @tanstack_react-query.js?v=953a46bf:555
+fetch @ @tanstack_react-query.js?v=953a46bf:969
+executeFetch_fn @ @tanstack_react-query.js?v=953a46bf:2279
+onSubscribe @ @tanstack_react-query.js?v=953a46bf:1983
+subscribe @ @tanstack_react-query.js?v=953a46bf:24
+(anonymous) @ @tanstack_react-query.js?v=953a46bf:3146
+subscribeToStore @ chunk-RPCDYKBN.js?v=953a46bf:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=953a46bf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=953a46bf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=953a46bf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=953a46bf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+hook.js:608 The above error occurred in the <WeeklyMonitoringDashboard> component:
+
+    at WeeklyMonitoringDashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/weekly-monitoring-dashboard.tsx?t=1755912446222:30:23)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1755912446222:62:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=953a46bf:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=953a46bf:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1755912446222&v=gQWcY0iz7Z1vaXRn_AJ-8:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=953a46bf:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=953a46bf:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=953a46bf:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1755912446222&v=gQWcY0iz7Z1vaXRn_AJ-8:360:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+logCapturedError @ chunk-RPCDYKBN.js?v=953a46bf:14032
+callback @ chunk-RPCDYKBN.js?v=953a46bf:14078
+callCallback @ chunk-RPCDYKBN.js?v=953a46bf:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=953a46bf:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:17075
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=953a46bf:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19353
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+setTimeout
+defaultScheduler @ @tanstack_react-query.js?v=953a46bf:565
+flush @ @tanstack_react-query.js?v=953a46bf:589
+batch @ @tanstack_react-query.js?v=953a46bf:607
+dispatch_fn @ @tanstack_react-query.js?v=953a46bf:1040
+setData @ @tanstack_react-query.js?v=953a46bf:718
+onSuccess @ @tanstack_react-query.js?v=953a46bf:940
+resolve @ @tanstack_react-query.js?v=953a46bf:475
+Promise.then
+run @ @tanstack_react-query.js?v=953a46bf:517
+start @ @tanstack_react-query.js?v=953a46bf:555
+fetch @ @tanstack_react-query.js?v=953a46bf:969
+executeFetch_fn @ @tanstack_react-query.js?v=953a46bf:2279
+onSubscribe @ @tanstack_react-query.js?v=953a46bf:1983
+subscribe @ @tanstack_react-query.js?v=953a46bf:24
+(anonymous) @ @tanstack_react-query.js?v=953a46bf:3146
+subscribeToStore @ chunk-RPCDYKBN.js?v=953a46bf:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=953a46bf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=953a46bf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=953a46bf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=953a46bf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+error-boundary.tsx:28 Error caught by boundary: TypeError: Cannot read properties of null (reading 'map')
+    at WeeklyMonitoringDashboard (weekly-monitoring-dashboard.tsx:341:37)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=953a46bf:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=953a46bf:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=953a46bf:15924:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=953a46bf:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=953a46bf:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=953a46bf:19137:13)
+    at renderRootSync (chunk-RPCDYKBN.js?v=953a46bf:19116:15)
+    at recoverFromConcurrentError (chunk-RPCDYKBN.js?v=953a46bf:18736:28)
+    at performSyncWorkOnRoot (chunk-RPCDYKBN.js?v=953a46bf:18879:28) {componentStack: '\n    at WeeklyMonitoringDashboard (https://bb1d30f…sx?t=1755912446222&v=gQWcY0iz7Z1vaXRn_AJ-8:360:3)'} Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:137:3)
+overrideMethod @ hook.js:608
+componentDidCatch @ error-boundary.tsx:28
+callback @ chunk-RPCDYKBN.js?v=953a46bf:14084
+callCallback @ chunk-RPCDYKBN.js?v=953a46bf:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=953a46bf:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:17075
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=953a46bf:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19353
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+setTimeout
+defaultScheduler @ @tanstack_react-query.js?v=953a46bf:565
+flush @ @tanstack_react-query.js?v=953a46bf:589
+batch @ @tanstack_react-query.js?v=953a46bf:607
+dispatch_fn @ @tanstack_react-query.js?v=953a46bf:1040
+setData @ @tanstack_react-query.js?v=953a46bf:718
+onSuccess @ @tanstack_react-query.js?v=953a46bf:940
+resolve @ @tanstack_react-query.js?v=953a46bf:475
+Promise.then
+run @ @tanstack_react-query.js?v=953a46bf:517
+start @ @tanstack_react-query.js?v=953a46bf:555
+fetch @ @tanstack_react-query.js?v=953a46bf:969
+executeFetch_fn @ @tanstack_react-query.js?v=953a46bf:2279
+onSubscribe @ @tanstack_react-query.js?v=953a46bf:1983
+subscribe @ @tanstack_react-query.js?v=953a46bf:24
+(anonymous) @ @tanstack_react-query.js?v=953a46bf:3146
+subscribeToStore @ chunk-RPCDYKBN.js?v=953a46bf:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=953a46bf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=953a46bf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=953a46bf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=953a46bf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=953a46bf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=953a46bf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=953a46bf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=953a46bf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=953a46bf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=953a46bf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=953a46bf:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=953a46bf:18627
+message-notifications.tsx:137 WebSocket connection closed: 1000 Component unmounting
+dashboard:1 The resource https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/sandwich-icon-optimized.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+dashboard:1 The resource https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/index.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+dashboard:1 The resource https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/logo-optimized.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+dashboard:1 The resource https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/main.tsx was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
