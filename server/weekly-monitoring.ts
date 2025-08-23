@@ -144,6 +144,7 @@ export async function checkWeeklySubmissions(weeksAgo: number = 0): Promise<Week
   const { startDate, endDate } = getWeekRange(weeksAgo);
   
   console.log(`Checking submissions for week: ${startDate.toDateString()} to ${endDate.toDateString()}`);
+  console.log(`Week range: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
   
   try {
     // Get all submissions for this week
@@ -160,6 +161,8 @@ export async function checkWeeklySubmissions(weeksAgo: number = 0): Promise<Week
           lte(sandwichCollections.collectionDate, endDate.toISOString().split('T')[0])
         )
       );
+
+    console.log(`Found ${weeklySubmissions.length} submissions for this week:`, weeklySubmissions);
 
     // Get the set of locations that have submitted this week
     const submittedLocations = new Set(
@@ -208,6 +211,7 @@ export async function checkWeeklySubmissions(weeksAgo: number = 0): Promise<Week
       });
     }
 
+    console.log(`Status results:`, statusResults);
     return statusResults;
   } catch (error) {
     console.error('Error checking weekly submissions:', error);
