@@ -43,6 +43,8 @@ export default function HostsManagementConsolidated() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [contactFilter, setContactFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"locations" | "contacts">("locations");
 
@@ -103,6 +105,15 @@ export default function HostsManagementConsolidated() {
     queryKey: ['/api/recipients']
   });
 
+  // Get unique locations for the location filter
+  const uniqueLocations = useMemo(() => {
+    const locations = hostsWithContacts
+      .map(host => host.name)
+      .filter(name => name && name.trim())
+      .sort();
+    return Array.from(new Set(locations));
+  }, [hostsWithContacts]);
+
   // Filtered and searched hosts
   const filteredHosts = useMemo(() => {
     let filtered = hostsWithContacts;
@@ -127,6 +138,11 @@ export default function HostsManagementConsolidated() {
       filtered = filtered.filter(host => host.status === statusFilter);
     }
 
+    // Apply location filter
+    if (locationFilter !== "all") {
+      filtered = filtered.filter(host => host.name === locationFilter);
+    }
+
     // Apply contact filter
     if (contactFilter === "has_contacts") {
       filtered = filtered.filter(host => host.contacts.length > 0);
@@ -138,13 +154,24 @@ export default function HostsManagementConsolidated() {
       filtered = filtered.filter(host => host.contacts.some(c => c.role === 'lead'));
     }
 
+    // Apply role filter
+    if (roleFilter !== "all") {
+      if (roleFilter === "leads") {
+        filtered = filtered.filter(host => host.contacts.some(c => c.role === 'lead'));
+      } else if (roleFilter === "hosts") {
+        filtered = filtered.filter(host => host.contacts.some(c => c.role === 'host' || c.role === 'primary'));
+      } else if (roleFilter === "alternates") {
+        filtered = filtered.filter(host => host.contacts.some(c => c.role === 'alternate' || c.role === 'alternate contact'));
+      }
+    }
+
     // Apply hide empty hosts filter
     if (hideEmptyHosts) {
       filtered = filtered.filter(host => host.contacts.length > 0);
     }
 
     return filtered;
-  }, [hostsWithContacts, searchTerm, statusFilter, contactFilter, hideEmptyHosts]);
+  }, [hostsWithContacts, searchTerm, statusFilter, locationFilter, contactFilter, roleFilter, hideEmptyHosts]);
 
   // Individual contacts for contact view mode
   const allContacts = useMemo(() => {
@@ -183,6 +210,22 @@ export default function HostsManagementConsolidated() {
       );
     }
 
+    // Apply location filter for contacts view
+    if (locationFilter !== "all") {
+      filtered = filtered.filter(contact => contact.hostName === locationFilter);
+    }
+
+    // Apply role filter for contacts view
+    if (roleFilter !== "all") {
+      if (roleFilter === "leads") {
+        filtered = filtered.filter(contact => contact.role === 'lead');
+      } else if (roleFilter === "hosts") {
+        filtered = filtered.filter(contact => contact.role === 'host' || contact.role === 'primary');
+      } else if (roleFilter === "alternates") {
+        filtered = filtered.filter(contact => contact.role === 'alternate' || contact.role === 'alternate contact');
+      }
+    }
+
     return filtered.sort((a, b) => {
       // Sort by role priority first (lead > primary > others)
       if (a.role === 'lead' && b.role !== 'lead') return -1;
@@ -193,7 +236,7 @@ export default function HostsManagementConsolidated() {
       // Then by name
       return a.name.localeCompare(b.name);
     });
-  }, [allContacts, searchTerm, viewMode]);
+  }, [allContacts, searchTerm, locationFilter, roleFilter, viewMode]);
 
   // Alias for backward compatibility
   const hosts = filteredHosts;
@@ -910,9 +953,14 @@ export default function HostsManagementConsolidated() {
           >
             <Filter className="w-4 h-4" />
             Filters
-            {(statusFilter !== "all" || contactFilter !== "all") && (
+            {(statusFilter !== "all" || contactFilter !== "all" || locationFilter !== "all" || roleFilter !== "all") && (
               <Badge variant="secondary" className="ml-1">
-                {[statusFilter !== "all" && "Status", contactFilter !== "all" && "Contacts"].filter(Boolean).length}
+                {[
+                  statusFilter !== "all" && "Status", 
+                  contactFilter !== "all" && "Contacts", 
+                  locationFilter !== "all" && "Location",
+                  roleFilter !== "all" && "Role"
+                ].filter(Boolean).length}
               </Badge>
             )}
           </Button>
@@ -931,6 +979,38 @@ export default function HostsManagementConsolidated() {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active Only</SelectItem>
                   <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <Label className="text-xs font-medium text-slate-600">Location</Label>
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {uniqueLocations.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <Label className="text-xs font-medium text-slate-600">Role</Label>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="leads">Leads</SelectItem>
+                  <SelectItem value="hosts">Hosts</SelectItem>
+                  <SelectItem value="alternates">Alternates</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -958,6 +1038,8 @@ export default function HostsManagementConsolidated() {
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
+                  setLocationFilter("all");
+                  setRoleFilter("all");
                   setContactFilter("all");
                 }}
                 className="text-slate-500 hover:text-slate-700"
@@ -986,6 +1068,8 @@ export default function HostsManagementConsolidated() {
             Showing {hosts.length} of {hostsWithContacts.length} hosts
             {searchTerm && <span> • Search: "{searchTerm}"</span>}
             {statusFilter !== "all" && <span> • {statusFilter}</span>}
+            {locationFilter !== "all" && <span> • Location: {locationFilter}</span>}
+            {roleFilter !== "all" && <span> • Role: {roleFilter}</span>}
             {contactFilter !== "all" && <span> • {contactFilter.replace('_', ' ')}</span>}
           </div>
         </div>
@@ -998,6 +1082,8 @@ export default function HostsManagementConsolidated() {
           <div className="text-sm text-slate-600">
             Showing {filteredContacts.length} individual contacts
             {searchTerm && <span> • Search: "{searchTerm}"</span>}
+            {locationFilter !== "all" && <span> • Location: {locationFilter}</span>}
+            {roleFilter !== "all" && <span> • Role: {roleFilter}</span>}
           </div>
           
           {filteredContacts.length === 0 ? (
