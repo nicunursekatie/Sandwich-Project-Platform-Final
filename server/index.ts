@@ -110,16 +110,6 @@ async function startServer() {
   try {
     console.log("🚀 Starting The Sandwich Project server...");
 
-    // Health check route
-    app.get("/health", (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: "healthy",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
-        initialized: false,
-      });
-    });
 
     // Basic error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -136,33 +126,8 @@ async function startServer() {
       `Starting server on ${host}:${port} in ${process.env.NODE_ENV || "development"} mode`,
     );
 
-    // Retry port allocation for deployment robustness
-    const tryPort = async (
-      basePort: number,
-      maxRetries = 5,
-    ): Promise<number> => {
-      for (let i = 0; i < maxRetries; i++) {
-        const testPort = basePort + i;
-        try {
-          const testServer = require("net").createServer();
-          await new Promise((resolve, reject) => {
-            testServer.once("error", reject);
-            testServer.once("listening", () => {
-              testServer.close(resolve);
-            });
-            testServer.listen(testPort, host);
-          });
-          return testPort;
-        } catch (err) {
-          if (i === maxRetries - 1) {
-            console.log(`⚠ All ports busy, using ${basePort} anyway`);
-            return basePort;
-          }
-          continue;
-        }
-      }
-      return basePort;
-    };
+    // Simple port allocation for faster deployment
+    const finalPort = port;
 
     // Set up basic routes BEFORE starting server
     app.use("/attached_assets", express.static("attached_assets"));
@@ -192,8 +157,6 @@ async function startServer() {
       );
     }
 
-    // Use smart port selection in production
-    const finalPort = port;
 
     const httpServer = createServer(app);
 

@@ -2186,67 +2186,6 @@ export class DatabaseStorage implements IStorage {
     throw new Error('Database shoutout history not implemented - using memory storage');
   }
 
-  // User Activity Tracking methods (database implementations)
-  async logUserActivity(activity: InsertUserActivityLog): Promise<UserActivityLog> {
-    const { userActivityLogs } = await import("@shared/schema");
-    const [newActivity] = await db.insert(userActivityLogs).values(activity).returning();
-    return newActivity;
-  }
-
-  async getUserActivityStats(userId: string, days: number = 30): Promise<{
-    totalActions: number;
-    sectionsUsed: string[];
-    topActions: { action: string; count: number }[];
-    dailyActivity: { date: string; count: number }[];
-  }> {
-    const { userActivityLogs } = await import("@shared/schema");
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    // Get user activity from the last X days
-    const activities = await db
-      .select()
-      .from(userActivityLogs)
-      .where(
-        and(
-          eq(userActivityLogs.userId, userId),
-          sql`${userActivityLogs.createdAt} >= ${startDate}`
-        )
-      );
-
-    // Calculate statistics
-    const totalActions = activities.length;
-    const sectionsUsed = [...new Set(activities.map(a => a.section))];
-    
-    // Get top actions by count
-    const actionCounts = activities.reduce((acc: Record<string, number>, activity) => {
-      acc[activity.action] = (acc[activity.action] || 0) + 1;
-      return acc;
-    }, {});
-    
-    const topActions = Object.entries(actionCounts)
-      .map(([action, count]) => ({ action, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-
-    // Calculate daily activity
-    const dailyActivity = activities.reduce((acc: Record<string, number>, activity) => {
-      const date = activity.createdAt.toISOString().split('T')[0];
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {});
-
-    const dailyActivityArray = Object.entries(dailyActivity)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    return {
-      totalActions,
-      sectionsUsed,
-      topActions,
-      dailyActivity: dailyActivityArray
-    };
-  }
 
   async getAllUsersActivitySummary(days: number = 30): Promise<{
     userId: string;
