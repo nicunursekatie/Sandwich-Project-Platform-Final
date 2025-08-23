@@ -444,7 +444,7 @@ export default function DriversManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Agreements</SelectItem>
-                    <SelectItem value="sent">Agreement Sent</SelectItem>
+                    <SelectItem value="sent">Agreement Signed</SelectItem>
                     <SelectItem value="missing">Missing Agreement</SelectItem>
                   </SelectContent>
                 </Select>
@@ -670,7 +670,7 @@ export default function DriversManagement() {
                             {driver.emailAgreementSent ? (
                               <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
                                 <FileCheck className="w-3 h-3 mr-1" />
-                                Agreement Sent
+                                Agreement Signed
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">
@@ -773,7 +773,7 @@ export default function DriversManagement() {
                             {driver.emailAgreementSent ? (
                               <Badge variant="outline" className="border-green-200 text-green-600 bg-green-50">
                                 <FileCheck className="w-3 h-3 mr-1" />
-                                Agreement Sent
+                                Agreement Signed
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="border-orange-200 text-orange-600 bg-orange-50">
