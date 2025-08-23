@@ -360,7 +360,17 @@ export default function WeeklyMonitoringDashboard() {
                           </div>
                           {status.lastSubmissionDate && (
                             <p className="text-sm text-gray-600">
-                              Last submission: {new Date(status.lastSubmissionDate).toLocaleDateString()}
+                              Last submission: {(() => {
+                                // Handle date without timezone conversion issues
+                                const dateStr = status.lastSubmissionDate;
+                                if (dateStr.includes('-')) {
+                                  // Parse YYYY-MM-DD format directly to avoid timezone issues
+                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                  const date = new Date(year, month - 1, day); // month is 0-indexed
+                                  return date.toLocaleDateString();
+                                }
+                                return new Date(dateStr).toLocaleDateString();
+                              })()}
                             </p>
                           )}
                           {status.submittedBy && status.submittedBy.length > 0 && (
