@@ -552,15 +552,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const { id } = req.params;
-        const { role, permissions } = req.body;
+        const { role, permissions, metadata } = req.body;
         
         // Deduplicate permissions to prevent database inconsistencies
         const deduplicatedPermissions = permissions ? [...new Set(permissions)] : [];
         
-        const updatedUser = await storage.updateUser(id, { 
-          role, 
-          permissions: deduplicatedPermissions 
-        });
+        // Build update object with only provided fields
+        const updateData: any = {};
+        if (role !== undefined) updateData.role = role;
+        if (permissions !== undefined) updateData.permissions = deduplicatedPermissions;
+        if (metadata !== undefined) updateData.metadata = metadata;
+        
+        const updatedUser = await storage.updateUser(id, updateData);
         res.json(updatedUser);
       } catch (error) {
         console.error("Error updating user:", error);
