@@ -303,7 +303,12 @@ export default function UserManagementRedesigned() {
       // Get current user data from the existing users query
       const currentUsers = queryClient.getQueryData(["/api/users"]) as User[];
       const currentUser = currentUsers?.find(u => u.id === userId);
-      const existingMetadata = currentUser?.metadata || {};
+      
+      if (!currentUser) {
+        throw new Error("User not found");
+      }
+      
+      const existingMetadata = currentUser.metadata || {};
       
       let smsConsent;
       if (enabled && phoneNumber) {
@@ -331,6 +336,7 @@ export default function UserManagementRedesigned() {
         smsConsent
       };
 
+      // Only send metadata field to avoid overwriting other user properties like permissions
       return apiRequest("PATCH", `/api/users/${userId}`, { metadata: updatedMetadata });
     },
     onSuccess: () => {
