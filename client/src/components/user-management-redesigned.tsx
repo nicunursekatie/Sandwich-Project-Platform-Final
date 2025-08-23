@@ -336,8 +336,12 @@ export default function UserManagementRedesigned() {
         smsConsent
       };
 
-      // Only send metadata field to avoid overwriting other user properties like permissions
-      return apiRequest("PATCH", `/api/users/${userId}`, { metadata: updatedMetadata });
+      // Send ALL current user data plus the updated metadata to prevent overwriting other fields
+      return apiRequest("PATCH", `/api/users/${userId}`, {
+        role: currentUser.role,
+        permissions: currentUser.permissions,
+        metadata: updatedMetadata
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
