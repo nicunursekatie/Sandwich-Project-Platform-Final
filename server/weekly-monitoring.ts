@@ -151,7 +151,7 @@ export async function checkWeeklySubmissions(weeksAgo: number = 0): Promise<Week
       .select({
         hostName: sandwichCollections.hostName,
         collectionDate: sandwichCollections.collectionDate,
-        submittedBy: sandwichCollections.submittedBy,
+        submittedBy: sandwichCollections.createdByName,
       })
       .from(sandwichCollections)
       .where(
