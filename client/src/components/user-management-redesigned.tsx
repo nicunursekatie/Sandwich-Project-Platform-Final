@@ -300,12 +300,15 @@ export default function UserManagementRedesigned() {
 
   const updateSMSConsentMutation = useMutation({
     mutationFn: async ({ userId, phoneNumber, enabled }: { userId: string; phoneNumber?: string; enabled: boolean }) => {
-      const userRecord = await apiRequest("GET", `/api/users/${userId}`);
-      const metadata = userRecord.metadata || {};
+      // Get current user data from the existing users query
+      const currentUsers = queryClient.getQueryData(["/api/users"]) as User[];
+      const currentUser = currentUsers?.find(u => u.id === userId);
+      const existingMetadata = currentUser?.metadata || {};
       
+      let smsConsent;
       if (enabled && phoneNumber) {
         // Opt in
-        metadata.smsConsent = {
+        smsConsent = {
           enabled: true,
           phoneNumber: phoneNumber.startsWith('+1') ? phoneNumber : `+1${phoneNumber.replace(/\D/g, '')}`,
           displayPhone: phoneNumber,
@@ -314,7 +317,7 @@ export default function UserManagementRedesigned() {
         };
       } else {
         // Opt out
-        metadata.smsConsent = {
+        smsConsent = {
           enabled: false,
           phoneNumber: null,
           displayPhone: null,
@@ -323,7 +326,12 @@ export default function UserManagementRedesigned() {
         };
       }
 
-      return apiRequest("PATCH", `/api/users/${userId}`, { metadata });
+      const updatedMetadata = {
+        ...existingMetadata,
+        smsConsent
+      };
+
+      return apiRequest("PATCH", `/api/users/${userId}`, { metadata: updatedMetadata });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
