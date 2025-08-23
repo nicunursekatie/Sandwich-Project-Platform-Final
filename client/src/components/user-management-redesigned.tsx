@@ -83,6 +83,15 @@ interface User {
   isActive: boolean;
   lastLoginAt: string | null;
   createdAt: string;
+  metadata?: {
+    smsConsent?: {
+      enabled: boolean;
+      phoneNumber?: string;
+      displayPhone?: string;
+      optInDate?: string;
+      optOutDate?: string;
+    };
+  };
 }
 
 const ROLE_COLORS = {
@@ -139,6 +148,9 @@ export default function UserManagementRedesigned() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [showSMSDialog, setShowSMSDialog] = useState(false);
+  const [smsUser, setSmsUser] = useState<User | null>(null);
+  const [smsPhoneNumber, setSmsPhoneNumber] = useState("");
 
   // Check permissions
   if (!hasPermission(currentUser, PERMISSIONS.MANAGE_USERS)) {
@@ -286,6 +298,52 @@ export default function UserManagementRedesigned() {
     },
   });
 
+  const updateSMSConsentMutation = useMutation({
+    mutationFn: async ({ userId, phoneNumber, enabled }: { userId: string; phoneNumber?: string; enabled: boolean }) => {
+      const userRecord = await apiRequest("GET", `/api/users/${userId}`);
+      const metadata = userRecord.metadata || {};
+      
+      if (enabled && phoneNumber) {
+        // Opt in
+        metadata.smsConsent = {
+          enabled: true,
+          phoneNumber: phoneNumber.startsWith('+1') ? phoneNumber : `+1${phoneNumber.replace(/\D/g, '')}`,
+          displayPhone: phoneNumber,
+          optInDate: new Date().toISOString(),
+          consent: true
+        };
+      } else {
+        // Opt out
+        metadata.smsConsent = {
+          enabled: false,
+          phoneNumber: null,
+          displayPhone: null,
+          optOutDate: new Date().toISOString(),
+          consent: false
+        };
+      }
+
+      return apiRequest("PATCH", `/api/users/${userId}`, { metadata });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "SMS Preferences Updated",
+        description: "User SMS preferences have been successfully updated.",
+      });
+      setShowSMSDialog(false);
+      setSmsUser(null);
+      setSmsPhoneNumber("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "SMS Update Failed",
+        description: error.message || "Failed to update SMS preferences.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSetPassword = () => {
     if (!newPassword || newPassword.length < 6) {
       toast({
@@ -299,6 +357,29 @@ export default function UserManagementRedesigned() {
     if (passwordUser) {
       setPasswordMutation.mutate({ userId: passwordUser.id, password: newPassword });
     }
+  };
+
+  const handleManageSMS = (user: User) => {
+    setSmsUser(user);
+    setSmsPhoneNumber(user.metadata?.smsConsent?.displayPhone || "");
+    setShowSMSDialog(true);
+  };
+
+  const handleUpdateSMS = (enabled: boolean) => {
+    if (enabled && !smsPhoneNumber) {
+      toast({
+        title: "Phone Number Required",
+        description: "Please enter a phone number to enable SMS notifications.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateSMSConsentMutation.mutate({
+      userId: smsUser!.id,
+      phoneNumber: smsPhoneNumber,
+      enabled
+    });
   };
 
   // Filter users
@@ -595,6 +676,7 @@ export default function UserManagementRedesigned() {
                       <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>SMS Notifications</TableHead>
                       <TableHead>Last Login</TableHead>
                       <TableHead>Permissions</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -603,7 +685,7 @@ export default function UserManagementRedesigned() {
                   <TableBody>
                     {filteredUsers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           No users found matching your criteria
                         </TableCell>
                       </TableRow>
@@ -638,6 +720,24 @@ export default function UserManagementRedesigned() {
                                 {user.isActive ? "Active" : "Inactive"}
                               </Badge>
                             </TableCell>
+                            <TableCell>
+                              {user.metadata?.smsConsent?.enabled ? (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                    <Phone className="h-3 w-3 mr-1" />
+                                    Opted In
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">
+                                    {user.metadata.smsConsent.displayPhone || user.metadata.smsConsent.phoneNumber}
+                                  </span>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="bg-gray-50 text-gray-600">
+                                  <Phone className="h-3 w-3 mr-1" />
+                                  Not Opted In
+                                </Badge>
+                              )}
+                            </TableCell>
                             <TableCell className="text-sm text-gray-600">
                               {formatLastLogin(user.lastLoginAt)}
                             </TableCell>
@@ -666,6 +766,10 @@ export default function UserManagementRedesigned() {
                                   }}>
                                     <KeyRound className="h-4 w-4 mr-2" />
                                     Set Password
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleManageSMS(user)}>
+                                    <Phone className="h-4 w-4 mr-2" />
+                                    Manage SMS
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => toggleUserStatusMutation.mutate({ 
@@ -863,6 +967,85 @@ export default function UserManagementRedesigned() {
               className="bg-[#236383] hover:bg-[#1a4d66]"
             >
               {setPasswordMutation.isPending ? "Setting..." : "Set Password"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* SMS Management Dialog */}
+      <Dialog open={showSMSDialog} onOpenChange={setShowSMSDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage SMS Notifications for {smsUser?.firstName} {smsUser?.lastName}</DialogTitle>
+            <DialogDescription>
+              Update SMS notification preferences for this user. Users can also manage their own preferences in their profile.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <Phone className="h-5 w-5 text-[#236383]" />
+                <div>
+                  <p className="font-medium">Current Status</p>
+                  <p className="text-sm text-gray-600">
+                    {smsUser?.metadata?.smsConsent?.enabled ? (
+                      <span className="text-green-700">Opted in to SMS notifications</span>
+                    ) : (
+                      <span className="text-gray-500">Not opted in to SMS notifications</span>
+                    )}
+                  </p>
+                  {smsUser?.metadata?.smsConsent?.phoneNumber && (
+                    <p className="text-sm text-gray-500">
+                      Phone: {smsUser.metadata.smsConsent.displayPhone || smsUser.metadata.smsConsent.phoneNumber}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="sms-phone">Phone Number</Label>
+                <Input
+                  id="sms-phone"
+                  type="tel"
+                  value={smsPhoneNumber}
+                  onChange={(e) => setSmsPhoneNumber(e.target.value)}
+                  placeholder="(555) 123-4567"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Required for SMS notifications. Include area code.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-between">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleUpdateSMS(true)}
+                disabled={updateSMSConsentMutation.isPending || !smsPhoneNumber}
+                className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                {updateSMSConsentMutation.isPending ? "Updating..." : "Enable SMS"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleUpdateSMS(false)}
+                disabled={updateSMSConsentMutation.isPending}
+                className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700"
+              >
+                {updateSMSConsentMutation.isPending ? "Updating..." : "Disable SMS"}
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSMSDialog(false);
+                setSmsUser(null);
+                setSmsPhoneNumber("");
+              }}
+            >
+              Close
             </Button>
           </div>
         </DialogContent>
