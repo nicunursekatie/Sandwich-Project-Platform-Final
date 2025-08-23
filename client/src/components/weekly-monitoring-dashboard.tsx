@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Crown } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Crown, MessageSquare, Smartphone, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -59,6 +59,8 @@ export default function WeeklyMonitoringDashboard() {
   const queryClient = useQueryClient();
   const [selectedWeek, setSelectedWeek] = useState(0); // 0 = current week, 1 = last week, etc.
   const [reportWeeks, setReportWeeks] = useState(4); // Number of weeks for multi-week report
+  const [showSMSTest, setShowSMSTest] = useState(false);
+  const [testPhoneNumber, setTestPhoneNumber] = useState('');
   
   // Get monitoring status for selected week
   const { data: submissionStatus = [], isLoading: statusLoading, error: statusError } = useQuery({
@@ -97,6 +99,28 @@ export default function WeeklyMonitoringDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/monitoring/weekly-status'] });
       queryClient.invalidateQueries({ queryKey: ['/api/monitoring/multi-week-report'] });
     },
+  });
+  
+  // SMS mutations
+  const sendSMSRemindersMutation = useMutation({
+    mutationFn: (data: { missingLocations: string[]; appUrl?: string }) => 
+      apiRequest('POST', '/api/monitoring/send-sms-reminders', data),
+  });
+  
+  const sendSingleSMSMutation = useMutation({
+    mutationFn: (data: { location: string; appUrl?: string }) => 
+      apiRequest('POST', `/api/monitoring/send-sms-reminder/${encodeURIComponent(data.location)}`, { appUrl: data.appUrl }),
+  });
+  
+  const testSMSMutation = useMutation({
+    mutationFn: (data: { phoneNumber: string; appUrl?: string }) => 
+      apiRequest('POST', '/api/monitoring/test-sms', data),
+  });
+  
+  // Get SMS configuration status
+  const { data: smsConfig } = useQuery({
+    queryKey: ['/api/monitoring/sms-config'],
+    queryFn: () => apiRequest('GET', '/api/monitoring/sms-config'),
   });
 
   // Send test email mutation
@@ -175,8 +199,41 @@ export default function WeeklyMonitoringDashboard() {
             className="flex items-center gap-2"
           >
             <Mail className="h-4 w-4" />
-            {testEmailMutation.isPending ? "Sending..." : "Send Test Email"}
+            {testEmailMutation.isPending ? "Sending..." : "Test Email"}
           </Button>
+          
+          {smsConfig?.isConfigured && (
+            <Button
+              onClick={() => {
+                const missingLocations = submissionStatus
+                  .filter(s => !s.hasSubmitted)
+                  .map(s => s.location);
+                if (missingLocations.length > 0) {
+                  sendSMSRemindersMutation.mutate({ 
+                    missingLocations,
+                    appUrl: window.location.origin 
+                  });
+                }
+              }}
+              variant="outline"
+              disabled={sendSMSRemindersMutation.isPending || !submissionStatus.some(s => !s.hasSubmitted)}
+              className="flex items-center gap-2 text-green-700 border-green-200 hover:bg-green-50"
+            >
+              <MessageSquare className="h-4 w-4" />
+              {sendSMSRemindersMutation.isPending ? "Sending SMS..." : "Send SMS Reminders"}
+            </Button>
+          )}
+          
+          <Button
+            onClick={() => setShowSMSTest(!showSMSTest)}
+            variant="outline"
+            disabled={!smsConfig?.isConfigured}
+            className="flex items-center gap-2"
+          >
+            <Smartphone className="h-4 w-4" />
+            Test SMS
+          </Button>
+          
           <Button
             onClick={() => selectedWeek === 0 ? manualCheckMutation.mutate() : checkWeekMutation.mutate(selectedWeek)}
             disabled={manualCheckMutation.isPending || checkWeekMutation.isPending}
@@ -307,6 +364,81 @@ export default function WeeklyMonitoringDashboard() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* SMS Test Panel */}
+      {showSMSTest && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5" />
+              Test SMS Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {smsConfig?.isConfigured ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-sm">SMS service is configured and ready</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      placeholder="Phone number (e.g., +1234567890)"
+                      value={testPhoneNumber}
+                      onChange={(e) => setTestPhoneNumber(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <Button
+                      onClick={() => testSMSMutation.mutate({ 
+                        phoneNumber: testPhoneNumber,
+                        appUrl: window.location.origin 
+                      })}
+                      disabled={testSMSMutation.isPending || !testPhoneNumber}
+                      className="flex items-center gap-2"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      {testSMSMutation.isPending ? "Sending..." : "Send Test SMS"}
+                    </Button>
+                  </div>
+                  {testSMSMutation.isSuccess && (
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Test SMS sent successfully!
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {testSMSMutation.isError && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Failed to send test SMS. Check your phone number format and Twilio configuration.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-orange-700">
+                    <Settings className="h-4 w-4" />
+                    <span className="text-sm">SMS service requires configuration</span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <p>Missing environment variables:</p>
+                    <ul className="list-disc list-inside mt-1">
+                      {smsConfig?.missingItems?.map(item => (
+                        <li key={item} className="font-mono text-xs">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Main Content - Tabs for different views */}
       <Tabs defaultValue="weekly" className="w-full">
@@ -381,12 +513,30 @@ export default function WeeklyMonitoringDashboard() {
                         </div>
                       </div>
                       
-                      <Badge 
-                        className={`${getStatusColor(status.hasSubmitted)} flex items-center gap-1`}
-                      >
-                        {getStatusIcon(status.hasSubmitted)}
-                        {status.hasSubmitted ? "Submitted" : "Missing"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          className={`${getStatusColor(status.hasSubmitted)} flex items-center gap-1`}
+                        >
+                          {getStatusIcon(status.hasSubmitted)}
+                          {status.hasSubmitted ? "Submitted" : "Missing"}
+                        </Badge>
+                        
+                        {!status.hasSubmitted && smsConfig?.isConfigured && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => sendSingleSMSMutation.mutate({ 
+                              location: status.location,
+                              appUrl: window.location.origin 
+                            })}
+                            disabled={sendSingleSMSMutation.isPending}
+                            className="flex items-center gap-1 text-xs px-2 py-1 h-7"
+                          >
+                            <MessageSquare className="h-3 w-3" />
+                            {sendSingleSMSMutation.isPending ? "Sending..." : "SMS"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -608,7 +758,7 @@ export default function WeeklyMonitoringDashboard() {
         </Alert>
       )}
 
-      {(manualCheckMutation.isError || testEmailMutation.isError || checkWeekMutation.isError) && (
+      {(manualCheckMutation.isError || testEmailMutation.isError || checkWeekMutation.isError || sendSMSRemindersMutation.isError || sendSingleSMSMutation.isError) && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -622,6 +772,24 @@ export default function WeeklyMonitoringDashboard() {
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
             Week check completed! {checkWeekMutation.data?.missingCount || 0} locations missing.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {sendSMSRemindersMutation.isSuccess && (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>
+            {sendSMSRemindersMutation.data?.message}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {sendSingleSMSMutation.isSuccess && (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>
+            SMS reminder sent successfully!
           </AlertDescription>
         </Alert>
       )}

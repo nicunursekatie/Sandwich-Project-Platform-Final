@@ -6696,6 +6696,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SMS Reminder Routes
+  app.post("/api/monitoring/send-sms-reminders", isAuthenticated, async (req, res) => {
+    try {
+      const { missingLocations, appUrl } = req.body;
+      const { sendWeeklyReminderSMS } = await import('./sms-service');
+      
+      if (!missingLocations || !Array.isArray(missingLocations)) {
+        return res.status(400).json({ error: 'Missing locations array is required' });
+      }
+
+      const results = await sendWeeklyReminderSMS(missingLocations, appUrl);
+      
+      const successCount = Object.values(results).filter(r => r.success).length;
+      const totalCount = Object.keys(results).length;
+      
+      res.json({
+        success: successCount > 0,
+        message: `SMS reminders sent to ${successCount}/${totalCount} locations`,
+        results
+      });
+    } catch (error) {
+      console.error('Error sending SMS reminders:', error);
+      res.status(500).json({ error: 'Failed to send SMS reminders' });
+    }
+  });
+
+  app.post("/api/monitoring/send-sms-reminder/:location", isAuthenticated, async (req, res) => {
+    try {
+      const location = decodeURIComponent(req.params.location);
+      const { appUrl } = req.body;
+      const { sendSMSReminder } = await import('./sms-service');
+      
+      const result = await sendSMSReminder(location, appUrl);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error sending SMS reminder:', error);
+      res.status(500).json({ error: 'Failed to send SMS reminder' });
+    }
+  });
+
+  app.post("/api/monitoring/test-sms", isAuthenticated, async (req, res) => {
+    try {
+      const { phoneNumber, appUrl } = req.body;
+      const { sendTestSMS } = await import('./sms-service');
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
+      
+      const result = await sendTestSMS(phoneNumber, appUrl);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error sending test SMS:', error);
+      res.status(500).json({ error: 'Failed to send test SMS' });
+    }
+  });
+
+  app.get("/api/monitoring/sms-config", isAuthenticated, async (req, res) => {
+    try {
+      const { validateSMSConfig } = await import('./sms-service');
+      
+      const config = validateSMSConfig();
+      
+      res.json(config);
+    } catch (error) {
+      console.error('Error checking SMS config:', error);
+      res.status(500).json({ error: 'Failed to check SMS configuration' });
+    }
+  });
+
   // Register Google Sheets routes
   app.use("/api/google-sheets", googleSheetsRoutes);
   
