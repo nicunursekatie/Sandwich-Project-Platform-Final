@@ -336,7 +336,11 @@ export default function WeeklyMonitoringDashboard() {
                   <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
                   <span className="ml-2 text-gray-600">Loading submission status...</span>
                 </div>
-              ) : submissionStatus && submissionStatus.length > 0 ? (
+              ) : statusError ? (
+                <div className="text-center py-8 text-red-500">
+                  Error loading submission data: {statusError.message}
+                </div>
+              ) : Array.isArray(submissionStatus) && submissionStatus.length > 0 ? (
                 <div className="grid gap-3">
                   {submissionStatus.map((status: WeeklySubmissionStatus) => (
                     <div
@@ -378,7 +382,7 @@ export default function WeeklyMonitoringDashboard() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  No submission data available for this week.
+                  No submission data available for this week. (Data: {JSON.stringify(submissionStatus)})
                 </div>
               )}
             </CardContent>
@@ -434,7 +438,7 @@ export default function WeeklyMonitoringDashboard() {
                       <div className="space-y-2">
                         <h4 className="font-medium text-green-700">Most Reliable (≥75%)</h4>
                         <div className="space-y-1">
-                          {multiWeekReport.summary.mostReliable && multiWeekReport.summary.mostReliable.map ? multiWeekReport.summary.mostReliable.map(location => (
+                          {multiWeekReport.summary.mostReliable && multiWeekReport.summary.mostReliable.map ? multiWeekReport.summary.mostReliable.map((location: string) => (
                             <div key={location} className="flex items-center gap-2 text-sm">
                               <CheckCircle className="h-4 w-4 text-green-600" />
                               <span>{location}</span>
@@ -449,7 +453,7 @@ export default function WeeklyMonitoringDashboard() {
                       <div className="space-y-2">
                         <h4 className="font-medium text-red-700">Most Missing</h4>
                         <div className="space-y-1">
-                          {multiWeekReport.summary.mostMissing && multiWeekReport.summary.mostMissing.map ? multiWeekReport.summary.mostMissing.map(location => (
+                          {multiWeekReport.summary.mostMissing && multiWeekReport.summary.mostMissing.map ? multiWeekReport.summary.mostMissing.map((location: string) => (
                             <div key={location} className="flex items-center gap-2 text-sm">
                               <XCircle className="h-4 w-4 text-red-600" />
                               <span>{location}</span>
@@ -479,11 +483,11 @@ export default function WeeklyMonitoringDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {multiWeekReport.weeks && multiWeekReport.weeks.map ? multiWeekReport.weeks.map((week, index) => (
+                      {multiWeekReport.weeks && multiWeekReport.weeks.map ? multiWeekReport.weeks.map((week: any, index: number) => (
                         <div key={index} className="border rounded-lg p-4">
                           <h4 className="font-medium mb-3">{week.weekLabel}</h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {week.submissionStatus && week.submissionStatus.map ? week.submissionStatus.map((status) => (
+                            {week.submissionStatus && week.submissionStatus.map ? week.submissionStatus.map((status: any) => (
                               <div
                                 key={status.location}
                                 className={`p-2 rounded text-sm flex items-center gap-2 ${
