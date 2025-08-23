@@ -1,7 +1,7 @@
 import { MailService } from '@sendgrid/mail';
 import { db } from './db';
 import { sandwichCollections, hosts } from '@shared/schema';
-import { eq, sql, and, gte, lte } from 'drizzle-orm';
+import { eq, sql, and, gte, lte, like, or } from 'drizzle-orm';
 
 if (!process.env.SENDGRID_API_KEY) {
   console.error("SENDGRID_API_KEY environment variable must be set for email notifications");
@@ -33,13 +33,44 @@ interface WeeklySubmissionStatus {
   hasSubmitted: boolean;
   lastSubmissionDate?: string;
   missingSince?: string;
+  submittedBy?: string[];
+  dunwoodyStatus?: {
+    lisaHiles: boolean;
+    stephanieOrMarcy: boolean;
+    complete: boolean;
+  };
+}
+
+interface MultiWeekReport {
+  weekRange: { startDate: Date; endDate: Date };
+  weekLabel: string;
+  submissionStatus: WeeklySubmissionStatus[];
+}
+
+interface ComprehensiveReport {
+  reportPeriod: string;
+  weeks: MultiWeekReport[];
+  summary: {
+    totalWeeks: number;
+    locationsTracked: string[];
+    mostMissing: string[];
+    mostReliable: string[];
+    overallStats: {
+      [location: string]: {
+        submitted: number;
+        missed: number;
+        percentage: number;
+      };
+    };
+  };
 }
 
 /**
- * Get the current week's date range (Wednesday to Tuesday)
+ * Get the week's date range for a given offset (Wednesday to Tuesday)
  * Entries posted before Wednesday cannot count collections that happened Wednesday or after for that week's submission
+ * @param weeksAgo - Number of weeks to go back (0 = current week, 1 = last week, etc.)
  */
-export function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
+export function getWeekRange(weeksAgo: number = 0): { startDate: Date; endDate: Date } {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 3 = Wednesday
   
@@ -52,7 +83,7 @@ export function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
   }
   
   const wednesday = new Date(now);
-  wednesday.setDate(now.getDate() - daysToWednesday);
+  wednesday.setDate(now.getDate() - daysToWednesday - (weeksAgo * 7));
   wednesday.setHours(0, 0, 0, 0);
   
   // Calculate Tuesday of current week cycle (6 days after Wednesday)
@@ -64,10 +95,53 @@ export function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
 }
 
 /**
- * Check which host locations have submitted for the current week
+ * Get the current week's date range (Wednesday to Tuesday) - backwards compatibility
  */
-export async function checkWeeklySubmissions(): Promise<WeeklySubmissionStatus[]> {
-  const { startDate, endDate } = getCurrentWeekRange();
+export function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
+  return getWeekRange(0);
+}
+
+/**
+ * Check Dunwoody special requirements: need both Lisa Hiles AND either Stephanie or Marcy
+ */
+function checkDunwoodyStatus(submissions: any[], location: string): any {
+  const dunwoodySubmissions = submissions.filter(sub => 
+    sub.hostName?.toLowerCase().includes('dunwoody')
+  );
+  
+  if (dunwoodySubmissions.length === 0) {
+    return {
+      lisaHiles: false,
+      stephanieOrMarcy: false,
+      complete: false
+    };
+  }
+  
+  // Check for Lisa Hiles
+  const lisaSubmission = dunwoodySubmissions.some(sub => 
+    sub.submittedBy?.toLowerCase().includes('lisa') && 
+    sub.submittedBy?.toLowerCase().includes('hiles')
+  );
+  
+  // Check for Stephanie or Marcy
+  const stephanieOrMarcySubmission = dunwoodySubmissions.some(sub => {
+    const submitter = sub.submittedBy?.toLowerCase() || '';
+    return submitter.includes('stephanie') || submitter.includes('marcy');
+  });
+  
+  return {
+    lisaHiles: lisaSubmission,
+    stephanieOrMarcy: stephanieOrMarcySubmission,
+    complete: lisaSubmission && stephanieOrMarcySubmission
+  };
+}
+
+/**
+ * Check which host locations have submitted for a specific week
+ * @param weeksAgo - Number of weeks to go back (0 = current week, 1 = last week, etc.)
+ */
+export async function checkWeeklySubmissions(weeksAgo: number = 0): Promise<WeeklySubmissionStatus[]> {
+  const { startDate, endDate } = getWeekRange(weeksAgo);
   
   console.log(`Checking submissions for week: ${startDate.toDateString()} to ${endDate.toDateString()}`);
   
@@ -77,6 +151,7 @@ export async function checkWeeklySubmissions(): Promise<WeeklySubmissionStatus[]
       .select({
         hostName: sandwichCollections.hostName,
         collectionDate: sandwichCollections.collectionDate,
+        submittedBy: sandwichCollections.submittedBy,
       })
       .from(sandwichCollections)
       .where(
@@ -97,24 +172,39 @@ export async function checkWeeklySubmissions(): Promise<WeeklySubmissionStatus[]
     for (const expectedLocation of EXPECTED_HOST_LOCATIONS) {
       const normalizedExpected = expectedLocation.toLowerCase().trim();
       
-      // Check if any submission matches this location (fuzzy matching)
-      const hasSubmitted = Array.from(submittedLocations).some(submitted => 
-        submitted && (
-          submitted.includes(normalizedExpected) ||
-          normalizedExpected.includes(submitted) ||
+      // Get submissions for this location
+      const locationSubmissions = weeklySubmissions.filter(sub => {
+        const hostName = sub.hostName?.toLowerCase().trim() || '';
+        return hostName && (
+          hostName.includes(normalizedExpected) ||
+          normalizedExpected.includes(hostName) ||
           // Handle variations like "East Cobb" vs "East Cobb/Roswell"
-          submitted.replace(/[\/\-\s]/g, '').includes(normalizedExpected.replace(/[\/\-\s]/g, '')) ||
-          normalizedExpected.replace(/[\/\-\s]/g, '').includes(submitted.replace(/[\/\-\s]/g, ''))
-        )
-      );
+          hostName.replace(/[\/\-\s]/g, '').includes(normalizedExpected.replace(/[\/\-\s]/g, '')) ||
+          normalizedExpected.replace(/[\/\-\s]/g, '').includes(hostName.replace(/[\/\-\s]/g, ''))
+        );
+      });
+      
+      let hasSubmitted = locationSubmissions.length > 0;
+      let dunwoodyStatus = undefined;
+      
+      // Special handling for Dunwoody
+      if (expectedLocation === 'Dunwoody/PTC') {
+        dunwoodyStatus = checkDunwoodyStatus(locationSubmissions, expectedLocation);
+        hasSubmitted = dunwoodyStatus.complete; // Only mark as submitted if both requirements met
+      }
+      
+      const submittedBy = locationSubmissions
+        .map(sub => sub.submittedBy)
+        .filter(Boolean)
+        .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
 
       statusResults.push({
         location: expectedLocation,
         hasSubmitted,
-        lastSubmissionDate: hasSubmitted ? 
-          weeklySubmissions.find(sub => 
-            sub.hostName?.toLowerCase().includes(normalizedExpected.split('/')[0].toLowerCase())
-          )?.collectionDate : undefined
+        lastSubmissionDate: locationSubmissions.length > 0 ? 
+          locationSubmissions[locationSubmissions.length - 1]?.collectionDate : undefined,
+        submittedBy,
+        dunwoodyStatus
       });
     }
 
@@ -126,9 +216,84 @@ export async function checkWeeklySubmissions(): Promise<WeeklySubmissionStatus[]
 }
 
 /**
+ * Generate a comprehensive multi-week report
+ */
+export async function generateMultiWeekReport(numberOfWeeks: number = 4): Promise<ComprehensiveReport> {
+  const weeks: MultiWeekReport[] = [];
+  
+  // Generate reports for each week
+  for (let i = 0; i < numberOfWeeks; i++) {
+    const { startDate, endDate } = getWeekRange(i);
+    const submissionStatus = await checkWeeklySubmissions(i);
+    
+    weeks.push({
+      weekRange: { startDate, endDate },
+      weekLabel: `Week of ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      submissionStatus
+    });
+  }
+  
+  // Calculate summary statistics
+  const locationsTracked = EXPECTED_HOST_LOCATIONS;
+  const overallStats: { [location: string]: { submitted: number; missed: number; percentage: number } } = {};
+  
+  // Initialize stats for each location
+  locationsTracked.forEach(location => {
+    overallStats[location] = { submitted: 0, missed: 0, percentage: 0 };
+  });
+  
+  // Calculate statistics across all weeks
+  weeks.forEach(week => {
+    week.submissionStatus.forEach(status => {
+      if (status.hasSubmitted) {
+        overallStats[status.location].submitted++;
+      } else {
+        overallStats[status.location].missed++;
+      }
+    });
+  });
+  
+  // Calculate percentages
+  Object.keys(overallStats).forEach(location => {
+    const stats = overallStats[location];
+    const total = stats.submitted + stats.missed;
+    stats.percentage = total > 0 ? Math.round((stats.submitted / total) * 100) : 0;
+  });
+  
+  // Find most missing and most reliable
+  const mostMissing = Object.entries(overallStats)
+    .filter(([location, stats]) => stats.missed > 0)
+    .sort(([, a], [, b]) => b.missed - a.missed)
+    .slice(0, 3)
+    .map(([location]) => location);
+    
+  const mostReliable = Object.entries(overallStats)
+    .filter(([location, stats]) => stats.percentage >= 75)
+    .sort(([, a], [, b]) => b.percentage - a.percentage)
+    .slice(0, 3)
+    .map(([location]) => location);
+  
+  const startDate = weeks[weeks.length - 1]?.weekRange.startDate;
+  const endDate = weeks[0]?.weekRange.endDate;
+  const reportPeriod = `${startDate?.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate?.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+  
+  return {
+    reportPeriod,
+    weeks: weeks.reverse(), // Most recent first
+    summary: {
+      totalWeeks: numberOfWeeks,
+      locationsTracked,
+      mostMissing,
+      mostReliable,
+      overallStats
+    }
+  };
+}
+
+/**
  * Send email notification for missing submissions
  */
-export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubmissionStatus[], isTest = false): Promise<boolean> {
+export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubmissionStatus[], isTest = false, weekLabel?: string): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
     console.log('SendGrid not configured - would send email about missing submissions:', 
       missingSubmissions.map(s => s.location));
@@ -136,7 +301,7 @@ export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubm
   }
 
   const { startDate } = getCurrentWeekRange();
-  const weekOf = startDate.toLocaleDateString('en-US', { 
+  const weekOf = weekLabel || startDate.toLocaleDateString('en-US', { 
     month: 'long', 
     day: 'numeric', 
     year: 'numeric' 
@@ -179,20 +344,44 @@ export async function sendMissingSubmissionsEmail(missingSubmissions: WeeklySubm
         </div>
 
         <ul style="background: white; border: 1px solid #ddd; border-radius: 6px; padding: 20px; margin: 20px 0;">
-          ${missingLocations.map(location => 
-            `<li style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-              <strong>${location}</strong>
-            </li>`
-          ).join('')}
+          ${missingLocations.map(location => {
+            const status = missingSubmissions.find(s => s.location === location);
+            let specialNote = '';
+            
+            if (status?.dunwoodyStatus && location === 'Dunwoody/PTC') {
+              const { lisaHiles, stephanieOrMarcy } = status.dunwoodyStatus;
+              if (!lisaHiles && !stephanieOrMarcy) {
+                specialNote = ' (Missing both Lisa Hiles AND Stephanie/Marcy entries)';
+              } else if (!lisaHiles) {
+                specialNote = ' (Missing Lisa Hiles entry)';
+              } else if (!stephanieOrMarcy) {
+                specialNote = ' (Missing Stephanie/Marcy entry)';
+              }
+            }
+            
+            return `<li style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+              <strong>${location}</strong>${specialNote}
+            </li>`;
+          }).join('')}
         </ul>
 
         <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
           <h4 style="color: #155724; margin: 0 0 10px 0;">✅ Locations That Have Submitted</h4>
           ${missingSubmissions.filter(s => s.hasSubmitted).length > 0 ? 
             `<ul style="margin: 0; padding-left: 20px;">
-              ${missingSubmissions.filter(s => s.hasSubmitted).map(s => 
-                `<li style="color: #155724;">${s.location}</li>`
-              ).join('')}
+              ${missingSubmissions.filter(s => s.hasSubmitted).map(s => {
+                let submitterInfo = '';
+                if (s.submittedBy && s.submittedBy.length > 0) {
+                  submitterInfo = ` (by: ${s.submittedBy.join(', ')})`;
+                }
+                
+                let specialNote = '';
+                if (s.dunwoodyStatus && s.location === 'Dunwoody/PTC') {
+                  specialNote = ' ✓ Both required entries received';
+                }
+                
+                return `<li style="color: #155724;">${s.location}${submitterInfo}${specialNote}</li>`;
+              }).join('')}
             </ul>` :
             '<p style="color: #155724; margin: 0;">None yet this week</p>'
           }

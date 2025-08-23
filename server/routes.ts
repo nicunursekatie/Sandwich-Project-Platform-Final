@@ -6644,6 +6644,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New enhanced monitoring routes
+  app.get("/api/monitoring/weekly-status/:weeksAgo", isAuthenticated, async (req, res) => {
+    try {
+      const weeksAgo = parseInt(req.params.weeksAgo) || 0;
+      const { checkWeeklySubmissions } = await import('./weekly-monitoring');
+      const submissionStatus = await checkWeeklySubmissions(weeksAgo);
+      res.json(submissionStatus);
+    } catch (error) {
+      console.error('Error checking weekly submissions:', error);
+      res.status(500).json({ error: 'Failed to check weekly submissions' });
+    }
+  });
+
+  app.get("/api/monitoring/multi-week-report/:numberOfWeeks", isAuthenticated, async (req, res) => {
+    try {
+      const numberOfWeeks = parseInt(req.params.numberOfWeeks) || 4;
+      const { generateMultiWeekReport } = await import('./weekly-monitoring');
+      const report = await generateMultiWeekReport(numberOfWeeks);
+      res.json(report);
+    } catch (error) {
+      console.error('Error generating multi-week report:', error);
+      res.status(500).json({ error: 'Failed to generate multi-week report' });
+    }
+  });
+
+  app.post("/api/monitoring/check-week/:weeksAgo", isAuthenticated, async (req, res) => {
+    try {
+      const weeksAgo = parseInt(req.params.weeksAgo) || 0;
+      const { checkWeeklySubmissions, sendMissingSubmissionsEmail, getWeekRange } = await import('./weekly-monitoring');
+      
+      const submissionStatus = await checkWeeklySubmissions(weeksAgo);
+      const { startDate } = getWeekRange(weeksAgo);
+      const weekLabel = `Week of ${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+      
+      // Optionally send email for missing submissions
+      const missingSubmissions = submissionStatus.filter(s => !s.hasSubmitted);
+      if (missingSubmissions.length > 0) {
+        await sendMissingSubmissionsEmail(submissionStatus, false, weekLabel);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Check completed for ${weekLabel}`,
+        submissionStatus,
+        missingCount: missingSubmissions.length
+      });
+    } catch (error) {
+      console.error('Error checking specific week:', error);
+      res.status(500).json({ error: 'Failed to check specific week' });
+    }
+  });
+
   // Register Google Sheets routes
   app.use("/api/google-sheets", googleSheetsRoutes);
   
