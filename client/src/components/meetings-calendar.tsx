@@ -335,7 +335,7 @@ export default function MeetingsCalendar() {
                     <div className="space-y-2 text-sm text-slate-600">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        {new Date(meeting.date).toLocaleDateString()}
+                        {new Date(meeting.date + 'T00:00:00').toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
@@ -423,7 +423,7 @@ export default function MeetingsCalendar() {
                     <div className="space-y-2 text-sm text-slate-600">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        {new Date(meeting.date).toLocaleDateString()}
+                        {new Date(meeting.date + 'T00:00:00').toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
