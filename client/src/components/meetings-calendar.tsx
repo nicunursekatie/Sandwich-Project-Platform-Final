@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar, Clock, MapPin, Users, Plus, Filter, Upload, FileText, Edit, Trash2, Video } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, Filter, Upload, FileText, Edit, Trash2, Video, Grid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,8 @@ export default function MeetingsCalendar() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [newMeeting, setNewMeeting] = useState({
     title: "",
     type: "",
@@ -125,6 +127,52 @@ export default function MeetingsCalendar() {
 
   const getTypeConfig = (type: string) => {
     return meetingTypes.find(t => t.value === type) || { value: type, label: type, color: "bg-gray-100 text-gray-800" };
+  };
+
+  // Calendar helper functions
+  const getCalendarDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    const endDate = new Date(lastDay);
+    
+    // Adjust to start from Sunday
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+    // Adjust to end on Saturday
+    endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+    
+    const days = [];
+    const currentDay = new Date(startDate);
+    
+    while (currentDay <= endDate) {
+      days.push(new Date(currentDay));
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+    
+    return days;
+  };
+
+  const getMeetingsForDate = (date: Date) => {
+    const dateString = date.toISOString().split('T')[0];
+    return filteredMeetings.filter((meeting: Meeting) => meeting.date === dateString);
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === currentDate.getMonth();
+  };
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + (direction === 'prev' ? -1 : 1));
+    setCurrentDate(newDate);
   };
 
   const filteredMeetings = selectedType === "all" 
@@ -262,7 +310,7 @@ export default function MeetingsCalendar() {
         </Dialog>
       </div>
 
-      {/* Filters */}
+      {/* View Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -283,165 +331,296 @@ export default function MeetingsCalendar() {
             </SelectContent>
           </Select>
         </div>
-        <div className="text-sm text-slate-600">
-          {filteredMeetings.length} meeting{filteredMeetings.length !== 1 ? 's' : ''} found
+        
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-slate-600">
+            {filteredMeetings.length} meeting{filteredMeetings.length !== 1 ? 's' : ''} found
+          </div>
+          
+          {/* View Toggle */}
+          <div className="flex items-center bg-slate-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === "calendar" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("calendar")}
+              className="h-8 px-3"
+            >
+              <Grid className="w-4 h-4 mr-1" />
+              Calendar
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="h-8 px-3"
+            >
+              <List className="w-4 h-4 mr-1" />
+              List
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Upcoming Meetings */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Upcoming Meetings</h2>
-        {upcomingMeetings.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
-            <Calendar className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-slate-900 mb-2">No upcoming meetings</h3>
-            <p className="text-slate-500 mb-6 max-w-md mx-auto">
-              {selectedType === "all" 
-                ? "Ready to schedule your first meeting? Click the button below to get started."
-                : `No upcoming ${getTypeConfig(selectedType).label.toLowerCase()} meetings found. Schedule a new one to get organized.`
-              }
-            </p>
-            <Button 
-              size="lg" 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Schedule Your First Meeting
-            </Button>
+      {/* Calendar View */}
+      {viewMode === "calendar" && (
+        <div className="space-y-4">
+          {/* Calendar Navigation */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">
+              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth('prev')}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentDate(new Date())}
+                className="h-8 px-3"
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth('next')}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {upcomingMeetings.map((meeting: Meeting) => {
-              const typeConfig = getTypeConfig(meeting.type);
-              return (
-                <Card key={meeting.id} className="border border-slate-200 hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-base font-semibold text-slate-900 mb-1">
-                          {meeting.title}
-                        </CardTitle>
-                        <Badge className={`${typeConfig.color} text-xs mb-2`}>
-                          {typeConfig.label}
-                        </Badge>
+
+          {/* Calendar Grid */}
+          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div key={day} className="p-3 text-center text-sm font-medium text-slate-600">
+                  {day}
+                </div>
+              ))}
+            </div>
+            
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7">
+              {getCalendarDays().map((date, index) => {
+                const dayMeetings = getMeetingsForDate(date);
+                const isCurrentMonthDay = isCurrentMonth(date);
+                const isTodayDay = isToday(date);
+                
+                return (
+                  <div
+                    key={index}
+                    className={`min-h-[120px] border-r border-b border-slate-200 last:border-r-0 ${
+                      !isCurrentMonthDay ? 'bg-slate-50' : ''
+                    } ${isTodayDay ? 'bg-blue-50' : ''}`}
+                  >
+                    <div className="p-2">
+                      <div className={`text-sm font-medium mb-2 ${
+                        !isCurrentMonthDay ? 'text-slate-400' : 
+                        isTodayDay ? 'text-blue-600' : 'text-slate-900'
+                      }`}>
+                        {date.getDate()}
                       </div>
-                      <Badge variant={meeting.status === "completed" ? "default" : meeting.status === "agenda_set" ? "secondary" : "outline"}>
-                        {meeting.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2 text-sm text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(meeting.date + 'T00:00:00').toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {meeting.time}
-                      </div>
-                      {meeting.location && (
-                        <div className="flex items-center gap-2">
-                          {meeting.location.includes('meet.google.com') ? (
-                            <>
-                              <Video className="w-4 h-4" />
-                              <a 
-                                href={meeting.location} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline"
-                              >
-                                Join Google Meet
-                              </a>
-                            </>
-                          ) : (
-                            <>
-                              <MapPin className="w-4 h-4" />
-                              {meeting.location}
-                            </>
-                          )}
-                        </div>
-                      )}
-                      {meeting.description && (
-                        <p className="text-slate-600 text-sm mt-2 line-clamp-2">
-                          {meeting.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedMeeting(meeting);
-                            setIsUploadModalOpen(true);
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <Upload className="w-3 h-3" />
-                          Upload Agenda
-                        </Button>
-                        {meeting.finalAgenda && (
-                          <Badge variant="secondary" className="text-xs">
-                            <FileText className="w-3 h-3 mr-1" />
-                            Agenda Ready
-                          </Badge>
+                      <div className="space-y-1">
+                        {dayMeetings.slice(0, 3).map((meeting: Meeting) => {
+                          const typeConfig = getTypeConfig(meeting.type);
+                          return (
+                            <div
+                              key={meeting.id}
+                              className={`text-xs p-1 rounded truncate cursor-pointer hover:shadow-sm transition-shadow ${typeConfig.color}`}
+                              title={`${meeting.title} at ${meeting.time}`}
+                              onClick={() => {
+                                setSelectedMeeting(meeting);
+                                setIsUploadModalOpen(true);
+                              }}
+                            >
+                              <div className="font-medium truncate">{meeting.title}</div>
+                              <div className="text-xs opacity-75">{meeting.time}</div>
+                            </div>
+                          );
+                        })}
+                        {dayMeetings.length > 3 && (
+                          <div className="text-xs text-slate-500 pl-1">
+                            +{dayMeetings.length - 3} more
+                          </div>
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Past Meetings */}
-      {pastMeetings.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Past Meetings</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {pastMeetings.slice(0, 6).map((meeting: Meeting) => {
-              const typeConfig = getTypeConfig(meeting.type);
-              return (
-                <Card key={meeting.id} className="border border-slate-200 opacity-75">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-base font-semibold text-slate-900 mb-1">
-                          {meeting.title}
-                        </CardTitle>
-                        <Badge className={`${typeConfig.color} text-xs`}>
-                          {typeConfig.label}
-                        </Badge>
-                      </div>
-                      <Badge variant="secondary">Completed</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2 text-sm text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(meeting.date + 'T00:00:00').toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {meeting.time}
-                      </div>
-                      {meeting.finalAgenda && (
-                        <Badge variant="outline" className="text-xs mt-2">
-                          <FileText className="w-3 h-3 mr-1" />
-                          Agenda Available
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
+      )}
+
+      {/* List View */}
+      {viewMode === "list" && (
+        <>
+          {/* Upcoming Meetings */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Upcoming Meetings</h2>
+            {upcomingMeetings.length === 0 ? (
+              <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
+                <Calendar className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-slate-900 mb-2">No upcoming meetings</h3>
+                <p className="text-slate-500 mb-6 max-w-md mx-auto">
+                  {selectedType === "all" 
+                    ? "Ready to schedule your first meeting? Click the button below to get started."
+                    : `No upcoming ${getTypeConfig(selectedType).label.toLowerCase()} meetings found. Schedule a new one to get organized.`
+                  }
+                </p>
+                <Button 
+                  size="lg" 
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Schedule Your First Meeting
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {upcomingMeetings.map((meeting: Meeting) => {
+                  const typeConfig = getTypeConfig(meeting.type);
+                  return (
+                    <Card key={meeting.id} className="border border-slate-200 hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-base font-semibold text-slate-900 mb-1">
+                              {meeting.title}
+                            </CardTitle>
+                            <Badge className={`${typeConfig.color} text-xs mb-2`}>
+                              {typeConfig.label}
+                            </Badge>
+                          </div>
+                          <Badge variant={meeting.status === "completed" ? "default" : meeting.status === "agenda_set" ? "secondary" : "outline"}>
+                            {meeting.status.replace("_", " ")}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2 text-sm text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            {new Date(meeting.date + 'T00:00:00').toLocaleDateString()}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            {meeting.time}
+                          </div>
+                          {meeting.location && (
+                            <div className="flex items-center gap-2">
+                              {meeting.location.includes('meet.google.com') ? (
+                                <>
+                                  <Video className="w-4 h-4" />
+                                  <a 
+                                    href={meeting.location} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 underline"
+                                  >
+                                    Join Google Meet
+                                  </a>
+                                </>
+                              ) : (
+                                <>
+                                  <MapPin className="w-4 h-4" />
+                                  {meeting.location}
+                                </>
+                              )}
+                            </div>
+                          )}
+                          {meeting.description && (
+                            <p className="text-slate-600 text-sm mt-2 line-clamp-2">
+                              {meeting.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedMeeting(meeting);
+                                setIsUploadModalOpen(true);
+                              }}
+                              className="flex items-center gap-1"
+                            >
+                              <Upload className="w-3 h-3" />
+                              Upload Agenda
+                            </Button>
+                            {meeting.finalAgenda && (
+                              <Badge variant="secondary" className="text-xs">
+                                <FileText className="w-3 h-3 mr-1" />
+                                Agenda Ready
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Past Meetings */}
+          {pastMeetings.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-slate-900">Past Meetings</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {pastMeetings.slice(0, 6).map((meeting: Meeting) => {
+                  const typeConfig = getTypeConfig(meeting.type);
+                  return (
+                    <Card key={meeting.id} className="border border-slate-200 opacity-75">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-base font-semibold text-slate-900 mb-1">
+                              {meeting.title}
+                            </CardTitle>
+                            <Badge className={`${typeConfig.color} text-xs`}>
+                              {typeConfig.label}
+                            </Badge>
+                          </div>
+                          <Badge variant="secondary">Completed</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2 text-sm text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            {new Date(meeting.date + 'T00:00:00').toLocaleDateString()}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            {meeting.time}
+                          </div>
+                          {meeting.finalAgenda && (
+                            <Badge variant="outline" className="text-xs mt-2">
+                              <FileText className="w-3 h-3 mr-1" />
+                              Agenda Available
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Upload Agenda Modal */}

@@ -489,6 +489,28 @@ export const meetings = pgTable("meetings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const compiledAgendas = pgTable("compiled_agendas", {
+  id: serial("id").primaryKey(),
+  meetingId: integer("meeting_id").notNull(), // Links to meeting
+  title: text("title").notNull(),
+  date: text("date").notNull(),
+  status: text("status").notNull().default("draft"), // "draft", "finalized", "published"
+  sections: jsonb("sections").notNull().default('[]'), // Array of agenda sections with items
+  deferredItems: jsonb("deferred_items").notNull().default('[]'), // Items deferred to next meeting
+  compiledBy: text("compiled_by").notNull(), // User who compiled the agenda
+  compiledAt: timestamp("compiled_at").defaultNow().notNull(),
+  finalizedAt: timestamp("finalized_at"),
+  publishedAt: timestamp("published_at"),
+});
+
+export const agendaSections = pgTable("agenda_sections", {
+  id: serial("id").primaryKey(),
+  compiledAgendaId: integer("compiled_agenda_id").notNull(),
+  title: text("title").notNull(), // "Old Business", "New Business", "Committee Reports", etc.
+  orderIndex: integer("order_index").notNull(), // For ordering sections
+  items: jsonb("items").notNull().default('[]'), // Array of agenda items in this section
+});
+
 export const drivers = pgTable("drivers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -659,6 +681,8 @@ export const insertMeetingMinutesSchema = createInsertSchema(meetingMinutes).omi
 export const insertDriveLinkSchema = createInsertSchema(driveLinks).omit({ id: true });
 export const insertAgendaItemSchema = createInsertSchema(agendaItems).omit({ id: true, submittedAt: true });
 export const insertMeetingSchema = createInsertSchema(meetings).omit({ id: true, createdAt: true });
+export const insertCompiledAgendaSchema = createInsertSchema(compiledAgendas).omit({ id: true, compiledAt: true, finalizedAt: true, publishedAt: true });
+export const insertAgendaSectionSchema = createInsertSchema(agendaSections).omit({ id: true });
 export const insertDriverAgreementSchema = createInsertSchema(driverAgreements).omit({ id: true, submittedAt: true });
 export const insertDriverSchema = createInsertSchema(drivers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertVolunteerSchema = createInsertSchema(volunteers).omit({ id: true, createdAt: true, updatedAt: true });
@@ -700,6 +724,10 @@ export type ArchivedProject = typeof archivedProjects.$inferSelect;
 export type InsertArchivedProject = z.infer<typeof insertArchivedProjectSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type CompiledAgenda = typeof compiledAgendas.$inferSelect;
+export type InsertCompiledAgenda = z.infer<typeof insertCompiledAgendaSchema>;
+export type AgendaSection = typeof agendaSections.$inferSelect;
+export type InsertAgendaSection = z.infer<typeof insertAgendaSectionSchema>;
 
 // Message likes schema types
 export const insertMessageLikeSchema = createInsertSchema(messageLikes).omit({
