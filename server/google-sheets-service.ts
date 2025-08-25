@@ -98,44 +98,130 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Write or update rows in the Google Sheet
+   * Write or update rows in the Google Sheet (preserves formatting)
    */
   async updateSheet(rows: SheetRow[]): Promise<boolean> {
     try {
-      const values = rows.map(row => [
-        row.task, // Column A
-        row.reviewStatus, // Column B
-        row.priority, // Column C
-        row.owner, // Column D
-        row.supportPeople, // Column E
-        row.status, // Column F
-        row.startDate, // Column G
-        row.endDate, // Column H
-        row.milestone, // Column I
-        row.subTasksOwners, // Column J
-        row.deliverable, // Column K
-        row.notes // Column L
-      ]);
-
-      // Clear existing data and write new data
-      await this.sheets.spreadsheets.values.clear({
-        spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A2:L`,
-      });
-
-      await this.sheets.spreadsheets.values.update({
-        spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A2:L`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values
+      // Get existing data to identify what rows to update vs append
+      const existingRows = await this.readSheet();
+      const existingRowMap = new Map();
+      existingRows.forEach(row => {
+        if (row.task && row.rowIndex) {
+          existingRowMap.set(row.task.toLowerCase().trim(), row.rowIndex);
         }
       });
+
+      const updates: any[] = [];
+      const newRows: any[] = [];
+
+      for (const row of rows) {
+        const rowData = [
+          row.task, // Column A
+          row.reviewStatus, // Column B
+          row.priority, // Column C
+          row.owner, // Column D
+          row.supportPeople, // Column E
+          row.status, // Column F
+          row.startDate, // Column G
+          row.endDate, // Column H
+          row.milestone, // Column I
+          row.subTasksOwners, // Column J
+          row.deliverable, // Column K
+          row.notes // Column L
+        ];
+
+        // Check if this project already exists in the sheet
+        const existingRowIndex = existingRowMap.get(row.task.toLowerCase().trim());
+        
+        if (existingRowIndex) {
+          // Update existing row
+          updates.push({
+            range: `${this.config.worksheetName}!A${existingRowIndex}:L${existingRowIndex}`,
+            values: [rowData]
+          });
+        } else {
+          // New row to append
+          newRows.push(rowData);
+        }
+      }
+
+      // Batch update existing rows (preserves formatting)
+      if (updates.length > 0) {
+        await this.sheets.spreadsheets.values.batchUpdate({
+          spreadsheetId: this.config.spreadsheetId,
+          resource: {
+            valueInputOption: 'USER_ENTERED',
+            data: updates
+          }
+        });
+        console.log(`Updated ${updates.length} existing rows`);
+      }
+
+      // Append new rows
+      if (newRows.length > 0) {
+        await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.config.spreadsheetId,
+          range: `${this.config.worksheetName}!A:L`,
+          valueInputOption: 'USER_ENTERED',
+          resource: {
+            values: newRows
+          }
+        });
+        console.log(`Added ${newRows.length} new rows`);
+      }
 
       return true;
     } catch (error) {
       console.error('Error updating Google Sheet:', error);
       throw new Error('Failed to update Google Sheets');
+    }
+  }
+
+  /**
+   * Safe append-only mode for highly formatted sheets
+   */
+  async appendOnlySync(rows: SheetRow[]): Promise<{ added: number; skipped: number }> {
+    try {
+      // Get existing project titles to avoid duplicates
+      const existingRows = await this.readSheet();
+      const existingTitles = new Set(existingRows.map(row => row.task.toLowerCase().trim()));
+
+      // Only append truly new projects
+      const newRows = rows
+        .filter(row => row.task && !existingTitles.has(row.task.toLowerCase().trim()))
+        .map(row => [
+          row.task,
+          row.reviewStatus,
+          row.priority,
+          row.owner,
+          row.supportPeople,
+          row.status,
+          row.startDate,
+          row.endDate,
+          row.milestone,
+          row.subTasksOwners,
+          row.deliverable,
+          row.notes
+        ]);
+
+      if (newRows.length > 0) {
+        await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.config.spreadsheetId,
+          range: `${this.config.worksheetName}!A:L`,
+          valueInputOption: 'USER_ENTERED',
+          resource: {
+            values: newRows
+          }
+        });
+      }
+
+      return {
+        added: newRows.length,
+        skipped: rows.length - newRows.length
+      };
+    } catch (error) {
+      console.error('Error in append-only sync:', error);
+      throw new Error('Failed to perform append-only sync');
     }
   }
 

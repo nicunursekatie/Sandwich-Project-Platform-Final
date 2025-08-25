@@ -445,6 +445,73 @@ router.get('/projects/config/check', async (req, res) => {
   }
 });
 
+// Append-only sync (safe for formatted sheets)
+router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
+  try {
+    const { getGoogleSheetsService } = await import('../google-sheets-service');
+    
+    const config = {
+      spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID,
+      worksheetName: process.env.GOOGLE_WORKSHEET_NAME || 'Sheet1'
+    };
+
+    const sheetsService = getGoogleSheetsService(config);
+    if (!sheetsService) {
+      return res.status(500).json({
+        success: false,
+        error: 'Google Sheets service not configured'
+      });
+    }
+
+    // Get projects from database
+    const { storage } = await import('../storage-wrapper');
+    const projects = await storage.getAllProjects();
+    
+    // Convert to sheet format
+    const sheetRows = [];
+    for (const project of projects) {
+      const projectTasks = await storage.getProjectTasks(project.id);
+      const formattedTasks = projectTasks
+        .map(task => {
+          const assignee = task.assigneeName || (task.assigneeNames && task.assigneeNames[0]);
+          return assignee ? `• ${task.title}: ${assignee}` : `• ${task.title}`;
+        })
+        .join('\n');
+
+      sheetRows.push({
+        task: project.title,
+        reviewStatus: project.reviewInNextMeeting ? 'P1' : '',
+        priority: project.priority || 'Medium',
+        owner: project.assigneeName || project.assigneeNames || '',
+        supportPeople: project.supportPeople || '',
+        status: project.status || 'Not started',
+        startDate: project.startDate || '',
+        endDate: project.dueDate || '',
+        milestone: project.category || '',
+        subTasksOwners: formattedTasks,
+        deliverable: project.deliverables || '',
+        notes: project.notes || project.description || ''
+      });
+    }
+
+    const result = await sheetsService.appendOnlySync(sheetRows);
+
+    res.json({
+      success: true,
+      message: `Append-only sync complete: ${result.added} new projects added, ${result.skipped} existing projects skipped`,
+      added: result.added,
+      skipped: result.skipped
+    });
+  } catch (error) {
+    console.error('Error in append-only sync:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to perform append-only sync',
+      message: error.message
+    });
+  }
+});
+
 // Mark project for review in next meeting
 router.post('/projects/:id/mark-for-review', isAuthenticated, async (req, res) => {
   try {
