@@ -17,8 +17,8 @@ export interface SheetRow {
   startDate: string;
   endDate: string;
   milestone: string;
+  subTasksOwners: string; // Individual sub-tasks within the project (Column J)
   deliverable: string;
-  tasks: string; // Individual tasks within the project (Column K)
   notes: string;
   rowIndex?: number;
 }
@@ -86,8 +86,8 @@ export class GoogleSheetsService {
         startDate: row[6] || '', // Column G: Start
         endDate: row[7] || '', // Column H: End date
         milestone: row[8] || '', // Column I: Milestone
-        deliverable: row[9] || '', // Column J: Deliverable
-        tasks: row[10] || '', // Column K: Tasks within the project
+        subTasksOwners: row[9] || '', // Column J: Sub-Tasks | Owners
+        deliverable: row[10] || '', // Column K: Deliverable
         notes: row[11] || '', // Column L: Notes
         rowIndex: index + 2, // +2 because sheets are 1-indexed and we skip header
       }));
@@ -112,8 +112,8 @@ export class GoogleSheetsService {
         row.startDate, // Column G
         row.endDate, // Column H
         row.milestone, // Column I
-        row.deliverable, // Column J
-        row.tasks, // Column K
+        row.subTasksOwners, // Column J
+        row.deliverable, // Column K
         row.notes // Column L
       ]);
 
@@ -154,8 +154,8 @@ export class GoogleSheetsService {
         'Start', // Column G
         'End date', // Column H
         'Milestone', // Column I
-        'Deliverable', // Column J
-        'Tasks', // Column K (Individual tasks within project)
+        'Sub-Tasks | Owners', // Column J (Individual tasks within project)
+        'Deliverable', // Column K
         'Notes' // Column L
       ];
 

@@ -286,6 +286,194 @@ router.post('/sync/export', isAuthenticated, async (req, res) => {
   }
 });
 
+// Project Management Sync Endpoints
+// ===================================
+
+// Get sync status for all projects
+router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
+  try {
+    const { storage } = await import('../storage-wrapper');
+    const projects = await storage.getAllProjects();
+    
+    const syncStats = {
+      total: projects.length,
+      synced: projects.filter(p => p.syncStatus === 'synced').length,
+      unsynced: projects.filter(p => p.syncStatus === 'unsynced' || !p.syncStatus).length,
+      conflicted: projects.filter(p => p.syncStatus === 'conflict').length,
+      lastSync: projects
+        .filter(p => p.lastSyncedAt)
+        .sort((a, b) => new Date(b.lastSyncedAt).getTime() - new Date(a.lastSyncedAt).getTime())[0]?.lastSyncedAt,
+      projects: projects.map(p => ({
+        id: p.id,
+        title: p.title,
+        syncStatus: p.syncStatus || 'unsynced',
+        lastSyncedAt: p.lastSyncedAt,
+        googleSheetRowId: p.googleSheetRowId
+      }))
+    };
+
+    res.json(syncStats);
+  } catch (error) {
+    console.error('Error fetching sync status:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch sync status',
+      message: error.message
+    });
+  }
+});
+
+// Sync projects TO Google Sheets
+router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
+  try {
+    const { getGoogleSheetsSyncService } = await import('../google-sheets-sync');
+    const { storage } = await import('../storage-wrapper');
+    
+    const syncService = getGoogleSheetsSyncService(storage);
+    const result = await syncService.syncToGoogleSheets();
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        synced: result.synced
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error syncing to Google Sheets:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to sync to Google Sheets',
+      message: error.message
+    });
+  }
+});
+
+// Sync projects FROM Google Sheets
+router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
+  try {
+    const { getGoogleSheetsSyncService } = await import('../google-sheets-sync');
+    const { storage } = await import('../storage-wrapper');
+    
+    const syncService = getGoogleSheetsSyncService(storage);
+    const result = await syncService.syncFromGoogleSheets();
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        updated: result.updated,
+        created: result.created
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error syncing from Google Sheets:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to sync from Google Sheets',
+      message: error.message
+    });
+  }
+});
+
+// Bidirectional project sync
+router.post('/projects/sync/bidirectional', isAuthenticated, async (req, res) => {
+  try {
+    const { getGoogleSheetsSyncService } = await import('../google-sheets-sync');
+    const { storage } = await import('../storage-wrapper');
+    
+    const syncService = getGoogleSheetsSyncService(storage);
+    const result = await syncService.bidirectionalSync();
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        details: result.details
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error performing bidirectional sync:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to perform bidirectional sync',
+      message: error.message
+    });
+  }
+});
+
+// Check Google Sheets configuration
+router.get('/projects/config/check', async (req, res) => {
+  try {
+    const requiredEnvVars = [
+      'GOOGLE_PROJECT_ID',
+      'GOOGLE_CLIENT_EMAIL', 
+      'GOOGLE_PRIVATE_KEY',
+      'GOOGLE_SPREADSHEET_ID'
+    ];
+
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    const isConfigured = missingVars.length === 0;
+
+    res.json({
+      configured: isConfigured,
+      missingVariables: missingVars,
+      spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID || null,
+      worksheetName: process.env.GOOGLE_WORKSHEET_NAME || 'Sheet1'
+    });
+  } catch (error) {
+    console.error('Error checking configuration:', error);
+    res.status(500).json({ 
+      configured: false,
+      error: 'Failed to check configuration',
+      message: error.message
+    });
+  }
+});
+
+// Mark project for review in next meeting
+router.post('/projects/:id/mark-for-review', isAuthenticated, async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.id);
+    const { reviewInNextMeeting } = req.body;
+    const { storage } = await import('../storage-wrapper');
+
+    if (isNaN(projectId)) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
+    await storage.updateProject(projectId, { 
+      reviewInNextMeeting: Boolean(reviewInNextMeeting),
+      updatedAt: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      message: `Project ${reviewInNextMeeting ? 'marked' : 'unmarked'} for review in next meeting`
+    });
+  } catch (error) {
+    console.error('Error updating project review status:', error);
+    res.status(500).json({ 
+      error: 'Failed to update project review status',
+      message: error.message
+    });
+  }
+});
+
 // Bidirectional sync between database and Google Sheet
 router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
   try {
