@@ -1952,7 +1952,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-// import { GoogleSheetsStorage } from './google-sheets'; // Disabled to prevent conflict with meeting management system
+// GoogleSheetsStorage removed completely to prevent conflicts with meeting management system
 import { DatabaseStorage } from './database-storage';
 
 // Create storage instance with error handling
@@ -1964,11 +1964,7 @@ try {
     console.log('Using database storage for data persistence...');
     storageInstance = new DatabaseStorage();
   } 
-  // Priority 2: Google Sheets storage disabled to prevent conflict with meeting management system
-  // else if (process.env.GOOGLE_SPREADSHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
-  //   console.log('Database not available, using Google Sheets storage...');
-  //   storageInstance = new GoogleSheetsStorage();
-  // } 
+  // Old Google Sheets storage system completely removed 
   // Fallback: Memory storage (data will not persist across deployments)
   else {
     console.log('No persistent storage configured, using memory storage (data will not persist)');

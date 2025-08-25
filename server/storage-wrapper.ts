@@ -1,6 +1,6 @@
 import type { IStorage } from './storage';
 import { MemStorage } from './storage';
-import { GoogleSheetsStorage } from './google-sheets';
+// Removed GoogleSheetsStorage import - old implementation deleted to prevent conflicts
 import { DatabaseStorage } from './database-storage';
 
 class StorageWrapper implements IStorage {
