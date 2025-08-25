@@ -18,6 +18,7 @@ export interface SheetRow {
   endDate: string;
   milestone: string;
   deliverable: string;
+  tasks: string; // Individual tasks within the project (Column K)
   notes: string;
   rowIndex?: number;
 }
@@ -67,7 +68,7 @@ export class GoogleSheetsService {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A:K`, // A through K columns from your sheet
+        range: `${this.config.worksheetName}!A:L`, // A through L columns (added Tasks column)
       });
 
       const rows = response.data.values || [];
@@ -86,7 +87,8 @@ export class GoogleSheetsService {
         endDate: row[7] || '', // Column H: End date
         milestone: row[8] || '', // Column I: Milestone
         deliverable: row[9] || '', // Column J: Deliverable
-        notes: row[10] || '', // Column K: Notes
+        tasks: row[10] || '', // Column K: Tasks within the project
+        notes: row[11] || '', // Column L: Notes
         rowIndex: index + 2, // +2 because sheets are 1-indexed and we skip header
       }));
     } catch (error) {
@@ -111,18 +113,19 @@ export class GoogleSheetsService {
         row.endDate, // Column H
         row.milestone, // Column I
         row.deliverable, // Column J
-        row.notes // Column K
+        row.tasks, // Column K
+        row.notes // Column L
       ]);
 
       // Clear existing data and write new data
       await this.sheets.spreadsheets.values.clear({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A2:K`,
+        range: `${this.config.worksheetName}!A2:L`,
       });
 
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A2:K`,
+        range: `${this.config.worksheetName}!A2:L`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values
@@ -142,7 +145,7 @@ export class GoogleSheetsService {
   async ensureHeaders(): Promise<void> {
     try {
       const headers = [
-        'Task', // Column A
+        'Task', // Column A (Project title)
         'Status', // Column B (Review Status: P1, P2, etc.)
         'Priority', // Column C
         'Owner', // Column D
@@ -152,12 +155,13 @@ export class GoogleSheetsService {
         'End date', // Column H
         'Milestone', // Column I
         'Deliverable', // Column J
-        'Notes' // Column K
+        'Tasks', // Column K (Individual tasks within project)
+        'Notes' // Column L
       ];
 
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A1:K1`,
+        range: `${this.config.worksheetName}!A1:L1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [headers]
