@@ -506,7 +506,7 @@ export const compiledAgendas = pgTable("compiled_agendas", {
 export const agendaSections = pgTable("agenda_sections", {
   id: serial("id").primaryKey(),
   compiledAgendaId: integer("compiled_agenda_id").notNull(),
-  title: text("title").notNull(), // "Old Business", "New Business", "Committee Reports", etc.
+  title: text("title").notNull(), // "Old Business", "Urgent Items", "Housekeeping", "New Business"
   orderIndex: integer("order_index").notNull(), // For ordering sections
   items: jsonb("items").notNull().default('[]'), // Array of agenda items in this section
 });
