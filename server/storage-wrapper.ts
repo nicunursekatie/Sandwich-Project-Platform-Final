@@ -6,7 +6,7 @@ import { DatabaseStorage } from './database-storage';
 class StorageWrapper implements IStorage {
   private primaryStorage: IStorage;
   private fallbackStorage: IStorage;
-  private useGoogleSheets: boolean = false;
+  private useGoogleSheets: boolean = false; // Disabled to prevent conflict with meeting management Google Sheets system
   private deletedIds: Set<number> = new Set(); // Track deleted items to prevent re-sync
 
   constructor() {
