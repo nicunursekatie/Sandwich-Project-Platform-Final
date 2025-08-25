@@ -115,6 +115,8 @@ export const projects = pgTable("projects", {
   assigneeName: text("assignee_name"),
   assigneeIds: jsonb("assignee_ids").default('[]'), // Array of user IDs for multiple assignees
   assigneeNames: text("assignee_names"), // Comma-separated names for multiple assignees
+  supportPeopleIds: jsonb("support_people_ids").default('[]'), // Array of user IDs for support people
+  supportPeople: text("support_people"), // Support team members - names/emails (Column E in Google Sheets)
   dueDate: text("due_date"), // ISO date string
   startDate: text("start_date"), // ISO date string
   completionDate: text("completion_date"), // ISO date string

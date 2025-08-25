@@ -9,19 +9,17 @@ export interface GoogleSheetsConfig {
 
 export interface SheetRow {
   task: string;
+  reviewStatus: string; // P1, P2, P3, etc. (Column B)
   priority: string;
   owner: string;
-  support: string;
-  status: string;
+  supportPeople: string;
+  status: string; // In progress, Not started, etc. (Column F)
   startDate: string;
   endDate: string;
   milestone: string;
   deliverable: string;
   notes: string;
-  reviewInNextMeeting: boolean;
-  tasksAndOwners: string;
-  lastUpdated: string;
-  appStatus: string;
+  rowIndex?: number;
 }
 
 export class GoogleSheetsService {
@@ -69,7 +67,7 @@ export class GoogleSheetsService {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A:N`, // Adjust range based on columns
+        range: `${this.config.worksheetName}!A:K`, // A through K columns from your sheet
       });
 
       const rows = response.data.values || [];
@@ -78,20 +76,17 @@ export class GoogleSheetsService {
       // Skip header row and parse data
       const dataRows = rows.slice(1);
       return dataRows.map((row: any[], index: number) => ({
-        task: row[0] || '',
-        priority: row[1] || '',
-        owner: row[2] || '',
-        support: row[3] || '',
-        status: row[4] || '',
-        startDate: row[5] || '',
-        endDate: row[6] || '',
-        milestone: row[7] || '',
-        deliverable: row[8] || '',
-        notes: row[9] || '',
-        reviewInNextMeeting: this.parseBoolean(row[10]),
-        tasksAndOwners: row[11] || '',
-        lastUpdated: row[12] || '',
-        appStatus: row[13] || 'unsynced',
+        task: row[0] || '', // Column A: Task
+        reviewStatus: row[1] || '', // Column B: Review Status (P1, P2, etc.)
+        priority: row[2] || '', // Column C: Priority
+        owner: row[3] || '', // Column D: Owner
+        supportPeople: row[4] || '', // Column E: Support people
+        status: row[5] || '', // Column F: Status (actual project status)
+        startDate: row[6] || '', // Column G: Start
+        endDate: row[7] || '', // Column H: End date
+        milestone: row[8] || '', // Column I: Milestone
+        deliverable: row[9] || '', // Column J: Deliverable
+        notes: row[10] || '', // Column K: Notes
         rowIndex: index + 2, // +2 because sheets are 1-indexed and we skip header
       }));
     } catch (error) {
@@ -106,31 +101,28 @@ export class GoogleSheetsService {
   async updateSheet(rows: SheetRow[]): Promise<boolean> {
     try {
       const values = rows.map(row => [
-        row.task,
-        row.priority,
-        row.owner,
-        row.support,
-        row.status,
-        row.startDate,
-        row.endDate,
-        row.milestone,
-        row.deliverable,
-        row.notes,
-        row.reviewInNextMeeting ? 'YES' : 'NO',
-        row.tasksAndOwners,
-        new Date().toISOString(),
-        'synced'
+        row.task, // Column A
+        row.reviewStatus, // Column B
+        row.priority, // Column C
+        row.owner, // Column D
+        row.supportPeople, // Column E
+        row.status, // Column F
+        row.startDate, // Column G
+        row.endDate, // Column H
+        row.milestone, // Column I
+        row.deliverable, // Column J
+        row.notes // Column K
       ]);
 
       // Clear existing data and write new data
       await this.sheets.spreadsheets.values.clear({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A2:N`,
+        range: `${this.config.worksheetName}!A2:K`,
       });
 
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A2:N`,
+        range: `${this.config.worksheetName}!A2:K`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values
@@ -150,25 +142,22 @@ export class GoogleSheetsService {
   async ensureHeaders(): Promise<void> {
     try {
       const headers = [
-        'Task',
-        'Priority', 
-        'Owner',
-        'Support',
-        'Status',
-        'Start Date',
-        'End Date',
-        'Milestone',
-        'Deliverable',
-        'Notes',
-        'Review Next Meeting',
-        'Tasks & Owners',
-        'Last Updated',
-        'App Status'
+        'Task', // Column A
+        'Status', // Column B (Review Status: P1, P2, etc.)
+        'Priority', // Column C
+        'Owner', // Column D
+        'Support people', // Column E
+        'Status', // Column F (Actual project status)
+        'Start', // Column G
+        'End date', // Column H
+        'Milestone', // Column I
+        'Deliverable', // Column J
+        'Notes' // Column K
       ];
 
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A1:N1`,
+        range: `${this.config.worksheetName}!A1:K1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [headers]
