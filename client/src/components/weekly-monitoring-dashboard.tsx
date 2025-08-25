@@ -758,8 +758,9 @@ export default function WeeklyMonitoringDashboard() {
                                 {status.location === 'Dunwoody/PTC' && status.dunwoodyStatus && (
                                   <div className="text-xs">
                                     {status.dunwoodyStatus.complete ? '✓✓' : 
-                                     status.dunwoodyStatus.lisaHiles ? 'L' : 
-                                     status.dunwoodyStatus.stephanieOrMarcy ? 'S/M' : '✗'}
+                                     !status.dunwoodyStatus.lisaHiles && !status.dunwoodyStatus.stephanieOrMarcy ? '✗' :
+                                     !status.dunwoodyStatus.lisaHiles ? 'L' : 
+                                     !status.dunwoodyStatus.stephanieOrMarcy ? 'S/M' : '✗'}
                                   </div>
                                 )}
                               </div>
