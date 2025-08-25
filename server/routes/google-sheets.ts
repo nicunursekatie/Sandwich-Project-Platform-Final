@@ -576,4 +576,62 @@ router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
   }
 });
 
+// Test endpoint using service account JSON directly
+router.post('/test-direct-auth', async (req, res) => {
+  try {
+    const { google } = await import('googleapis');
+    
+    // Use the service account credentials directly (matching your JSON file)
+    const credentials = {
+      type: 'service_account',
+      project_id: 'robust-cycle-454402-s6',
+      private_key_id: '0cd197ef614d36dcf29cb22074c2b02a1a58e945',
+      private_key: `-----BEGIN PRIVATE KEY-----
+MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDE9P7yeKo1LFSw
+MoxRrVpjEHc9S4nts1IUKt+tliStCvINITCN8cZIN6giaVJ+/6dpQB9XlHwpinA0
+BcK2eLeJ+FEsQOzOVb+Pv2y/lsLowfvkx0x+V1NT990PhasJanA50Vx10Q0+fnxP
++1YDltXTrtHsbdLo0Y+L6KFUr5CsS3a65zB0AxeKBgftqWoHt3ru+ldlBkItEEa/
+Jz9yMPoLe9+1w6sP0IPpyK1RRdPtZe7ACSe7a7YX5635V84EVrog93kBeN7du6ZM
+LLMwtFRnbM8B8XV9ECMqIJNBHdYcjkST0iOE0ZvfrB+sFJyVgYo+I4gTGRfMx4DN
+TqvVOJ0zAgMBAAECggEAGMsmlOtvscXk21FhrJ5/9F[...truncated for security...]
+-----END PRIVATE KEY-----`,
+      client_email: 'replit-sheets-access@robust-cycle-454402-s6.iam.gserviceaccount.com',
+      client_id: '105718929942176184562',
+      auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+      token_uri: 'https://oauth2.googleapis.com/token',
+      auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+      client_x509_cert_url: 'https://www.googleapis.com/robot/v1/metadata/x509/replit-sheets-access%40robust-cycle-454402-s6.iam.gserviceaccount.com',
+      universe_domain: 'googleapis.com'
+    };
+
+    const auth = new google.auth.JWT(
+      credentials.client_email,
+      undefined,
+      credentials.private_key,
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
+
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    // Test reading your spreadsheet
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: '1qXUDSvjya2mdXLAaIn9QWKhOwb8RlnyD-mjUcufNnQM',
+      range: 'Sheet1!A1:L10',
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Direct auth test successful',
+      rowCount: response.data.values?.length || 0
+    });
+    
+  } catch (error) {
+    console.error('Direct auth test failed:', error);
+    res.status(400).json({ 
+      success: false, 
+      error: 'Direct auth failed: ' + (error as Error).message 
+    });
+  }
+});
+
 export default router;
