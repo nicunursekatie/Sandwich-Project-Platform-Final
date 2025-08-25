@@ -33,34 +33,79 @@ export class GoogleSheetsService {
 
   private async initializeAuth() {
     try {
+      console.log('🔧 Initializing Google Sheets authentication...');
+      
       // Check for required environment variables
-      if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+      if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_PROJECT_ID) {
         throw new Error('Missing Google service account credentials');
       }
 
-      // Clean up the private key - handle different formats
+      // Create a temporary service account file to avoid OpenSSL issues
+      const fs = await import('fs');
+      const path = await import('path');
+      
       let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+      console.log('🔧 Private key format - length:', privateKey.length);
       
       // Handle escaped newlines
       if (privateKey.includes('\\n')) {
         privateKey = privateKey.replace(/\\n/g, '\n');
+        console.log('🔧 Converted \\n to actual newlines');
       }
       
-      // Ensure proper BEGIN/END format
-      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        throw new Error('Private key does not have proper format');
-      }
+      // Create service account JSON content
+      const serviceAccountContent = JSON.stringify({
+        type: "service_account",
+        project_id: process.env.GOOGLE_PROJECT_ID,
+        private_key_id: "",
+        private_key: privateKey,
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        client_id: "",
+        auth_uri: "https://accounts.google.com/o/oauth2/auth",
+        token_uri: "https://oauth2.googleapis.com/token",
+        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+      }, null, 2);
+      
+      // Write to temp file
+      const tempFilePath = path.join(process.cwd(), 'google-service-account.json');
+      fs.writeFileSync(tempFilePath, serviceAccountContent);
+      console.log('🔧 Created temporary service account file');
 
-      this.auth = new google.auth.JWT(
-        process.env.GOOGLE_CLIENT_EMAIL,
-        undefined,
-        privateKey,
-        ['https://www.googleapis.com/auth/spreadsheets']
-      );
+      // Use file-based authentication (often resolves OpenSSL issues)
+      const auth = new google.auth.GoogleAuth({
+        keyFile: tempFilePath,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+      });
 
-      this.sheets = google.sheets({ version: 'v4', auth: this.auth });
+      const authClient = await auth.getClient();
+      this.auth = authClient as JWT;
+      this.sheets = google.sheets({ version: 'v4', auth: authClient });
+      
+      console.log('✅ Google Sheets file-based authentication successful');
+      
+      // Clean up temp file after successful auth
+      fs.unlinkSync(tempFilePath);
+      console.log('🔧 Cleaned up temporary service account file');
+      
     } catch (error) {
-      console.error('Google Sheets authentication failed:', error);
+      console.error('❌ Google Sheets authentication failed:', error.message);
+      if (error.message.includes('DECODER')) {
+        console.error('💡 This is a Node.js v20 OpenSSL compatibility issue with the private key format');
+        console.error('💡 The private key from your Google Cloud Console may need to be regenerated for Node.js v20+');
+      }
+      
+      // Clean up temp file on error
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const tempFilePath = path.join(process.cwd(), 'google-service-account.json');
+        if (fs.existsSync(tempFilePath)) {
+          fs.unlinkSync(tempFilePath);
+        }
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+      
       throw new Error('Failed to initialize Google Sheets service');
     }
   }
