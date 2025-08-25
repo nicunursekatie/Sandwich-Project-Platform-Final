@@ -188,7 +188,7 @@ export class GoogleSheetsSyncService {
    * Convert project to Google Sheets row format
    */
   private projectToSheetRow(project: Project, projectTasks: any[] = []): SheetRow {
-    return {
+    const sheetRow = {
       task: project.title,
       reviewStatus: this.mapReviewStatus(project.reviewInNextMeeting), // P1, P2, etc.
       priority: this.mapPriority(project.priority),
@@ -202,6 +202,15 @@ export class GoogleSheetsSyncService {
       deliverable: project.deliverables || '',
       notes: project.notes || project.description || ''
     };
+    
+    // Debug logging to verify column mapping
+    console.log(`📊 Project "${project.title}" mapped to:`, {
+      columnA_task: sheetRow.task,
+      columnB_reviewStatus: sheetRow.reviewStatus,
+      columnF_status: sheetRow.status
+    });
+    
+    return sheetRow;
   }
 
   /**

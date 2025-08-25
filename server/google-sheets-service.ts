@@ -165,19 +165,27 @@ export class GoogleSheetsService {
 
       for (const row of rows) {
         const rowData = [
-          row.task, // Column A
-          row.reviewStatus, // Column B
-          row.priority, // Column C
-          row.owner, // Column D
-          row.supportPeople, // Column E
-          row.status, // Column F
-          row.startDate, // Column G
-          row.endDate, // Column H
-          row.milestone, // Column I
-          row.subTasksOwners, // Column J
-          row.deliverable, // Column K
-          row.notes // Column L
+          row.task, // Column A - Task/Project Title
+          row.reviewStatus, // Column B - Review Status (P1, P2, P3) 
+          row.priority, // Column C - Priority
+          row.owner, // Column D - Owner
+          row.supportPeople, // Column E - Support People
+          row.status, // Column F - Status (In progress, Completed, etc.)
+          row.startDate, // Column G - Start Date
+          row.endDate, // Column H - End Date
+          row.milestone, // Column I - Milestone
+          row.subTasksOwners, // Column J - Sub-Tasks | Owners
+          row.deliverable, // Column K - Deliverable
+          row.notes // Column L - Notes
         ];
+
+        // Debug: Log what's actually being written
+        console.log(`🔍 Writing row for "${row.task}":`, {
+          A_task: row.task,
+          B_reviewStatus: row.reviewStatus, 
+          F_status: row.status,
+          fullRowData: rowData
+        });
 
         // Check if this project already exists in the sheet
         const existingRowIndex = existingRowMap.get(row.task.toLowerCase().trim());
