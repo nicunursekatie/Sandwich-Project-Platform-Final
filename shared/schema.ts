@@ -131,6 +131,12 @@ export const projects = pgTable("projects", {
   color: text("color").notNull().default("blue"), // for status indicator
   createdBy: varchar("created_by"), // User ID who created the project
   createdByName: varchar("created_by_name"), // Display name of creator
+  // Google Sheets integration fields
+  reviewInNextMeeting: boolean("review_in_next_meeting").notNull().default(false), // Include in agenda
+  googleSheetRowId: text("google_sheet_row_id"), // Track which sheet row this corresponds to
+  lastSyncedAt: timestamp("last_synced_at"), // When last synced with Google Sheets
+  syncStatus: text("sync_status").default("unsynced"), // "unsynced", "synced", "conflict", "error"
+  tasksAndOwners: text("tasks_and_owners"), // Parsed from Google Sheets format: "Katie: Design, Chris: Review"
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
