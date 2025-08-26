@@ -415,6 +415,18 @@ export default function EnhancedMeetingDashboard() {
   const [newTaskTitle, setNewTaskTitle] = useState<string>('');
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [uploadedFiles, setUploadedFiles] = useState<Record<number, { url: string; name: string }[]>>({});
+  
+  // Meeting edit states
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
+  const [showEditMeetingDialog, setShowEditMeetingDialog] = useState(false);
+  const [editMeetingData, setEditMeetingData] = useState({
+    title: '',
+    date: '',
+    time: '',
+    type: '',
+    location: '',
+    description: ''
+  });
 
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
@@ -651,6 +663,29 @@ export default function EnhancedMeetingDashboard() {
       toast({
         title: "Failed to Schedule Meeting",
         description: error.message || "Failed to schedule the meeting. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update meeting mutation
+  const updateMeetingMutation = useMutation({
+    mutationFn: async (meetingData: { id: number } & typeof editMeetingData) => {
+      return await apiRequest('PATCH', `/api/meetings/${meetingData.id}`, meetingData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Meeting Updated",
+        description: "Meeting details have been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      setShowEditMeetingDialog(false);
+      setEditingMeeting(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Update Meeting",
+        description: error.message || "Failed to update the meeting. Please try again.",
         variant: "destructive",
       });
     },
