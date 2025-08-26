@@ -44,6 +44,7 @@ interface Project {
   description: string;
   status: string;
   priority: string;
+  category?: string;
   dueDate: string;
   assigneeId?: string;
   assigneeName?: string;
@@ -374,6 +375,21 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
       case "low": return "bg-green-500 text-white";
       default: return "bg-gray-500 text-white";
     }
+  }
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'technology': return '💻';
+      case 'events': return '📅';
+      case 'grants': return '💰';
+      case 'outreach': return '🤝';
+      case 'marketing': return '📢';
+      case 'operations': return '⚙️';
+      case 'community': return '👥';
+      case 'fundraising': return '💵';
+      case 'event': return '🎉';
+      default: return '📁';
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -456,6 +472,11 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
           >
             {project.priority}
           </Badge>
+          {project.category && (
+            <Badge className="bg-[#236383] text-white font-roboto px-3 py-1">
+              {getCategoryIcon(project.category)} {project.category}
+            </Badge>
+          )}
         </div>
       </div>
 

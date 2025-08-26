@@ -225,6 +225,21 @@ export default function ProjectsClean() {
       case "low": return "bg-green-500";
       default: return "bg-gray-500";
     }
+  }
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'technology': return '💻';
+      case 'events': return '📅';
+      case 'grants': return '💰';
+      case 'outreach': return '🤝';
+      case 'marketing': return '📢';
+      case 'operations': return '⚙️';
+      case 'community': return '👥';
+      case 'fundraising': return '💵';
+      case 'event': return '🎉';
+      default: return '📁';
+    }
   };
 
   const canEditProject = (user: any, project: Project) => {
@@ -279,6 +294,11 @@ export default function ProjectsClean() {
                 <Badge className="bg-[#FBAD3F] text-white border-[#FBAD3F] text-xs font-roboto">
                   {project.status === 'in_progress' ? 'active' : project.status?.replace('_', ' ') || 'available'}
                 </Badge>
+                {project.category && (
+                  <Badge className="bg-[#236383] text-white text-xs font-roboto">
+                    {getCategoryIcon(project.category)} {project.category}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
