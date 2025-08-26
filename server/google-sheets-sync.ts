@@ -450,3 +450,22 @@ export function getGoogleSheetsSyncService(storage: DatabaseStorage): GoogleShee
   }
   return syncService;
 }
+
+// Helper function to trigger sync from anywhere in the app
+export async function triggerGoogleSheetsSync(): Promise<void> {
+  try {
+    const { storage } = await import('./storage-wrapper');
+    const syncService = getGoogleSheetsSyncService(storage);
+    
+    console.log('🔄 Starting automatic Google Sheets sync...');
+    const result = await syncService.syncToGoogleSheets();
+    
+    if (result.success) {
+      console.log(`✅ Google Sheets sync completed: ${result.message}`);
+    } else {
+      console.error(`❌ Google Sheets sync failed: ${result.message}`);
+    }
+  } catch (error) {
+    console.error('Error during Google Sheets sync trigger:', error);
+  }
+}
