@@ -86,6 +86,8 @@ export default function EnhancedMeetingDashboard() {
     location: '',
     description: ''
   });
+  const [selectedProjectIds, setSelectedProjectIds] = useState<number[]>([]);
+  const [projectDiscussionTopics, setProjectDiscussionTopics] = useState<Record<number, string>>({});
 
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
@@ -95,6 +97,11 @@ export default function EnhancedMeetingDashboard() {
   // Fetch projects for review
   const { data: projectsForReview = [] } = useQuery({
     queryKey: ['/api/projects/for-review'],
+  });
+
+  // Fetch all projects for agenda planning
+  const { data: allProjects = [] } = useQuery({
+    queryKey: ['/api/projects'],
   });
 
   // Fetch compiled agenda for selected meeting
@@ -941,186 +948,207 @@ export default function EnhancedMeetingDashboard() {
       {/* Agenda Planning Tab */}
       {activeTab === 'agenda' && (
         <div className="space-y-6">
+          {/* Header Actions */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Weekly Agenda Planning</h2>
+              <p className="text-gray-600">Select projects and topics for this week's meeting</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Sync Google Sheets
+              </Button>
+              <Button size="sm" className="bg-teal-600 hover:bg-teal-700">
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Add Selected to Agenda
+              </Button>
+            </div>
+          </div>
+
+          {/* Projects Selection Table */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-teal-600" />
-                Agenda Planning & Project Management
+                <Target className="w-5 h-5 text-teal-600" />
+                Google Sheets Projects ({allProjects.length})
               </CardTitle>
               <p className="text-gray-600">
-                Manage agenda items, review Google Sheet projects, and plan what to discuss in upcoming meetings.
+                Select projects to discuss and specify what about each project needs attention
               </p>
             </CardHeader>
-            <CardContent className="space-y-6">
-              
-              {/* Google Sheets Projects Section */}
+            <CardContent>
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-orange-600" />
-                  Projects from Google Sheets
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Projects that need discussion (never discussed or marked for review)
-                </p>
-                
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-blue-800 text-sm mb-2">
-                    <strong>Coming Soon:</strong> Direct integration with your Google Sheets project tracking
-                  </p>
-                  <ul className="text-blue-700 text-sm space-y-1">
-                    <li>• Projects with blank "last discussed" dates will appear here</li>
-                    <li>• Mark projects for next meeting discussion</li>
-                    <li>• Add specific questions or decisions needed</li>
-                    <li>• Track when each project was last discussed</li>
-                  </ul>
-                </div>
+                {allProjects.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <p>No projects found. Sync with Google Sheets to load projects.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {allProjects.map((project: any) => {
+                      const isSelected = selectedProjectIds.includes(project.id);
+                      const lastDiscussed = project.lastDiscussedDate 
+                        ? new Date(project.lastDiscussedDate).toLocaleDateString()
+                        : 'Never discussed';
+                      
+                      return (
+                        <div 
+                          key={project.id}
+                          className={`border rounded-lg p-4 transition-all ${
+                            isSelected 
+                              ? 'border-teal-300 bg-teal-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* Selection Checkbox */}
+                            <div className="pt-1">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedProjectIds([...selectedProjectIds, project.id]);
+                                  } else {
+                                    setSelectedProjectIds(selectedProjectIds.filter(id => id !== project.id));
+                                    const newTopics = { ...projectDiscussionTopics };
+                                    delete newTopics[project.id];
+                                    setProjectDiscussionTopics(newTopics);
+                                  }
+                                }}
+                                className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500"
+                              />
+                            </div>
+
+                            {/* Project Info */}
+                            <div className="flex-1 space-y-3">
+                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                {/* Project Title & Status */}
+                                <div>
+                                  <h4 className="font-medium text-gray-900">{project.title}</h4>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant={project.status === 'completed' ? 'default' : 'secondary'}>
+                                      {project.status}
+                                    </Badge>
+                                    {project.priority && (
+                                      <Badge variant="outline">{project.priority}</Badge>
+                                    )}
+                                  </div>
+                                  {project.description && (
+                                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                      {project.description}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Tasks & Owners */}
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">Tasks & Owners:</p>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {project.tasksAndOwners || project.assigneeName || 'Not assigned'}
+                                  </p>
+                                </div>
+
+                                {/* Last Discussed */}
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">Last Discussed:</p>
+                                  <p className={`text-sm mt-1 ${
+                                    lastDiscussed === 'Never discussed' 
+                                      ? 'text-red-600 font-medium' 
+                                      : 'text-gray-600'
+                                  }`}>
+                                    {lastDiscussed}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Discussion Topic Input (appears when selected) */}
+                              {isSelected && (
+                                <div className="pt-3 border-t border-teal-200">
+                                  <Label className="text-sm font-medium text-gray-700">
+                                    What about this project needs discussion?
+                                  </Label>
+                                  <Textarea
+                                    value={projectDiscussionTopics[project.id] || ''}
+                                    onChange={(e) => setProjectDiscussionTopics({
+                                      ...projectDiscussionTopics,
+                                      [project.id]: e.target.value
+                                    })}
+                                    placeholder="Specific questions, decisions needed, progress updates, blockers to discuss..."
+                                    rows={2}
+                                    className="mt-1"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-
-              <Separator />
-
-              {/* Manual Agenda Items Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-teal-600" />
-                  Submit Agenda Items
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Project-Related Agenda Item */}
-                  <Card className="border-teal-200">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Project-Related Item</CardTitle>
-                      <p className="text-sm text-gray-600">
-                        Submit questions or updates about existing projects
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="project-select">Related Project</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select project..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="website">Website Redesign</SelectItem>
-                            <SelectItem value="events">Volunteer Events</SelectItem>
-                            <SelectItem value="outreach">Community Outreach</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="project-topic">Discussion Topic</Label>
-                        <Input 
-                          placeholder="What about this project needs discussion?"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="project-details">Details/Questions</Label>
-                        <Textarea 
-                          placeholder="Specific questions, decisions needed, progress updates..."
-                          rows={3}
-                        />
-                      </div>
-                      <Button className="w-full bg-teal-600 hover:bg-teal-700">
-                        Add to Agenda
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* General Agenda Item */}
-                  <Card className="border-orange-200">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">General Agenda Item</CardTitle>
-                      <p className="text-sm text-gray-600">
-                        One-off items not related to existing projects
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="general-title">Item Title</Label>
-                        <Input 
-                          placeholder="Brief title for agenda item"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="general-section">Agenda Section</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select section..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="old_business">Old Business</SelectItem>
-                            <SelectItem value="urgent_items">Urgent Items</SelectItem>
-                            <SelectItem value="housekeeping">Housekeeping</SelectItem>
-                            <SelectItem value="new_business">New Business</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="general-description">Description</Label>
-                        <Textarea 
-                          placeholder="What needs to be discussed or decided?"
-                          rows={3}
-                        />
-                      </div>
-                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                        Add to Agenda
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Submitted Agenda Items */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-gray-600" />
-                  Submitted Agenda Items
-                </h3>
-                
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <p className="text-gray-600 text-center italic">
-                    No agenda items submitted yet for the next meeting.
-                  </p>
-                  <p className="text-gray-500 text-sm text-center mt-2">
-                    Items submitted here will be included when compiling the weekly agenda.
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-purple-600" />
-                  Quick Actions
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Button variant="outline" className="h-auto p-4 text-left">
-                    <div>
-                      <div className="font-medium">Create New Project</div>
-                      <div className="text-sm text-gray-600">Add a new project that needs discussion</div>
-                    </div>
-                  </Button>
-                  <Button variant="outline" className="h-auto p-4 text-left">
-                    <div>
-                      <div className="font-medium">Sync Google Sheets</div>
-                      <div className="text-sm text-gray-600">Pull latest projects from spreadsheet</div>
-                    </div>
-                  </Button>
-                  <Button variant="outline" className="h-auto p-4 text-left">
-                    <div>
-                      <div className="font-medium">View All Projects</div>
-                      <div className="text-sm text-gray-600">Go to full project management</div>
-                    </div>
-                  </Button>
-                </div>
-              </div>
-
             </CardContent>
           </Card>
+
+          {/* Quick Add One-off Items */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Add One-off Agenda Item
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                For items not related to existing projects
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <Input placeholder="Item title" className="md:col-span-2" />
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="old_business">Old Business</SelectItem>
+                    <SelectItem value="urgent_items">Urgent Items</SelectItem>
+                    <SelectItem value="housekeeping">Housekeeping</SelectItem>
+                    <SelectItem value="new_business">New Business</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  style={{ backgroundColor: '#FBAD3F' }} 
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#e09d36'} 
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#FBAD3F'}
+                >
+                  Add Item
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Summary */}
+          {selectedProjectIds.length > 0 && (
+            <Card className="border-teal-200 bg-teal-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-teal-900">
+                      {selectedProjectIds.length} project{selectedProjectIds.length !== 1 ? 's' : ''} selected for discussion
+                    </h3>
+                    <p className="text-sm text-teal-700">
+                      These will be added to the next compiled agenda
+                    </p>
+                  </div>
+                  <Button className="bg-teal-600 hover:bg-teal-700">
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Confirm Selection
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>
