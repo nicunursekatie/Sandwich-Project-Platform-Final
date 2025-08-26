@@ -132,13 +132,24 @@ async function startServer() {
     // Set up basic routes BEFORE starting server
     app.use("/attached_assets", express.static("attached_assets"));
 
-    // Health check route - available before full initialization
+    // Health check route - available before full initialization  
     app.get("/health", (_req: Request, res: Response) => {
       res.status(200).json({
         status: "healthy",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || "development",
+      });
+    });
+
+    // Health check route for deployment - API endpoint
+    app.get("/api/health", (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || "development",
+        version: "1.0.0"
       });
     });
 
