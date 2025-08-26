@@ -4,7 +4,9 @@
 The deployment was failing because the package.json build script doesn't include the necessary external dependencies for production builds, specifically `@google-cloud/storage`.
 
 ## Current Status
-✅ Dependencies are correctly installed in package.json
+✅ Dependencies are correctly installed in package.json with proper versions:
+   - @google-cloud/storage@7.7.0
+   - @google-cloud/local-auth@3.0.1
 ✅ Custom build.js script includes all necessary external dependencies  
 ✅ Build process works correctly when using `node build.js`
 
