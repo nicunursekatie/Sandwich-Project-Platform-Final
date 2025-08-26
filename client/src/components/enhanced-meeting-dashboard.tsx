@@ -211,6 +211,10 @@ export default function EnhancedMeetingDashboard() {
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
   const [uploadedFiles, setUploadedFiles] = useState<Record<number, { url: string; name: string }[]>>({});
   
+  // Project agenda states
+  const [minimizedProjects, setMinimizedProjects] = useState<Set<number>>(new Set());
+  const [projectAgendaStatus, setProjectAgendaStatus] = useState<Record<number, 'none' | 'agenda' | 'tabled'>>({});
+  
   // Meeting edit states
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [showEditMeetingDialog, setShowEditMeetingDialog] = useState(false);
@@ -269,6 +273,41 @@ export default function EnhancedMeetingDashboard() {
   const handleUpdateProjectDiscussion = useCallback((projectId: number, updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string }) => {
     updateProjectDiscussionMutation.mutate({ projectId, updates });
   }, [updateProjectDiscussionMutation]);
+
+  // Handler for agenda actions
+  const handleSendToAgenda = useCallback((projectId: number) => {
+    setProjectAgendaStatus(prev => ({ ...prev, [projectId]: 'agenda' }));
+    setMinimizedProjects(prev => new Set([...prev, projectId]));
+    updateProjectDiscussionMutation.mutate({ 
+      projectId, 
+      updates: { reviewInNextMeeting: true } 
+    });
+    toast({
+      title: "Added to Agenda",
+      description: "Project has been added to this week's meeting agenda",
+    });
+  }, [updateProjectDiscussionMutation, toast]);
+
+  const handleTableProject = useCallback((projectId: number) => {
+    setProjectAgendaStatus(prev => ({ ...prev, [projectId]: 'tabled' }));
+    setMinimizedProjects(prev => new Set([...prev, projectId]));
+    updateProjectDiscussionMutation.mutate({ 
+      projectId, 
+      updates: { reviewInNextMeeting: false } 
+    });
+    toast({
+      title: "Tabled for Later",
+      description: "Project has been tabled for a future meeting",
+    });
+  }, [updateProjectDiscussionMutation, toast]);
+
+  const handleExpandProject = useCallback((projectId: number) => {
+    setMinimizedProjects(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(projectId);
+      return newSet;
+    });
+  }, []);
 
   // Helper function to format dates in a user-friendly way
   const formatMeetingDate = (dateString: string) => {
@@ -1277,10 +1316,7 @@ export default function EnhancedMeetingDashboard() {
                 <ExternalLink className="w-4 h-4 mr-2" />
                 {isCompiling ? 'Syncing...' : 'Sync Google Sheets'}
               </Button>
-              <Button size="sm" className="bg-teal-600 hover:bg-teal-700">
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Add Selected to Agenda
-              </Button>
+
             </div>
           </div>
 
@@ -1310,6 +1346,82 @@ export default function EnhancedMeetingDashboard() {
                         ? formatDateForDisplay(project.lastDiscussedDate)
                         : 'Never discussed';
                       
+                      const isMinimized = minimizedProjects.has(project.id);
+                      const agendaStatus = projectAgendaStatus[project.id] || 'none';
+                      
+                      // Minimized view
+                      if (isMinimized) {
+                        return (
+                          <Card 
+                            key={project.id} 
+                            className={`border-2 transition-all ${
+                              agendaStatus === 'agenda' 
+                                ? 'border-green-300 bg-green-50' 
+                                : agendaStatus === 'tabled' 
+                                ? 'border-orange-300 bg-orange-50'
+                                : 'border-gray-200'
+                            }`}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3">
+                                    <h3 className="font-medium text-gray-900">{project.title}</h3>
+                                    <Badge 
+                                      className={`text-xs ${
+                                        agendaStatus === 'agenda' 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : agendaStatus === 'tabled'
+                                          ? 'bg-orange-100 text-orange-800'
+                                          : 'bg-gray-100 text-gray-800'
+                                      }`}
+                                    >
+                                      {agendaStatus === 'agenda' ? '📅 On Agenda' : agendaStatus === 'tabled' ? '⏳ Tabled' : 'Not Scheduled'}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                    <span>
+                                      <strong>Owner:</strong> {project.assigneeName || 'Unassigned'}
+                                    </span>
+                                    {project.supportPeople && (
+                                      <span>
+                                        <strong>Support:</strong> {project.supportPeople}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {(project.meetingDiscussionPoints || project.meetingDecisionItems) && (
+                                    <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                                      {project.meetingDiscussionPoints && (
+                                        <div className="mb-1">
+                                          <strong>Discussion:</strong> {project.meetingDiscussionPoints.slice(0, 100)}
+                                          {project.meetingDiscussionPoints.length > 100 && '...'}
+                                        </div>
+                                      )}
+                                      {project.meetingDecisionItems && (
+                                        <div>
+                                          <strong>Decisions:</strong> {project.meetingDecisionItems.slice(0, 100)}
+                                          {project.meetingDecisionItems.length > 100 && '...'}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleExpandProject(project.id)}
+                                  className="ml-4"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                  Edit
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                      
+                      // Full view
                       return (
                         <Card key={project.id} className="border border-gray-200 hover:border-gray-300">
                           <CardHeader className="pb-4">
@@ -1341,6 +1453,23 @@ export default function EnhancedMeetingDashboard() {
                                     {project.description}
                                   </p>
                                 )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSendToAgenda(project.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  📅 Send to Agenda
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleTableProject(project.id)}
+                                  className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                                >
+                                  ⏳ Table for Later
+                                </Button>
                               </div>
                             </div>
                           </CardHeader>
@@ -1432,43 +1561,56 @@ export default function EnhancedMeetingDashboard() {
                               <ProjectTasksView projectId={project.id} />
                             </div>
 
-                            {/* Discussion Points & Decision Items */}
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Discussion Points
-                                </Label>
-                                <Textarea
-                                  value={project.meetingDiscussionPoints || ''}
-                                  onChange={(e) => handleUpdateProjectDiscussion(project.id, {
-                                    meetingDiscussionPoints: e.target.value
-                                  })}
-                                  placeholder="What aspects of this project need to be discussed? (e.g., progress updates, timeline concerns, resource needs)"
+                            {/* Meeting Discussion Interface - Redesigned for clarity */}
+                            <div className="space-y-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                              <div className="text-center">
+                                <h4 className="font-medium text-blue-900 mb-1">Meeting Discussion Prep</h4>
+                                <p className="text-sm text-blue-700">Only fill out if this project needs team discussion this week</p>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                <div>
+                                  <Label className="text-sm font-semibold text-blue-900 mb-2 block">
+                                    💬 What do we need to talk about?
+                                  </Label>
+                                  <p className="text-xs text-blue-700 mb-2">
+                                    Examples: "Blocked on X", "Need feedback on approach", "Budget concerns", "Timeline slipping"
+                                  </p>
+                                  <Textarea
+                                    value={project.meetingDiscussionPoints || ''}
+                                    onChange={(e) => handleUpdateProjectDiscussion(project.id, {
+                                      meetingDiscussionPoints: e.target.value
+                                    })}
+                                    placeholder="What issue, update, or concern needs the team's input?"
                                   rows={3}
                                   className="text-sm"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                  Specify what needs to be discussed about this project
+                                  Auto-saves as you type
                                 </p>
                               </div>
                               
                               <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Decisions Needed
+                                <Label className="text-sm font-semibold text-blue-900 mb-2 block">
+                                  ✅ What decisions need to be made?
                                 </Label>
+                                <p className="text-xs text-blue-700 mb-2">
+                                  Examples: "Approve budget of $X", "Choose between option A/B", "Assign person Y to task Z"
+                                </p>
                                 <Textarea
                                   value={project.meetingDecisionItems || ''}
                                   onChange={(e) => handleUpdateProjectDiscussion(project.id, {
                                     meetingDecisionItems: e.target.value
                                   })}
-                                  placeholder="What decisions need to be made? (e.g., approve budget increase, assign team members, set deadline)"
+                                  placeholder="What specific choices or approvals does the team need to make?"
                                   rows={3}
                                   className="text-sm"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                  List specific decisions that the team needs to make
+                                  Auto-saves as you type
                                 </p>
                               </div>
+                            </div>
                             </div>
 
                             {/* File Attachments */}
