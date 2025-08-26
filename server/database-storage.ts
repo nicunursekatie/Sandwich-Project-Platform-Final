@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -2401,6 +2401,90 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(wishlistSuggestions.updatedAt))
       .limit(limit);
+    return results;
+  }
+
+  // Meeting Management - Enhanced methods for comprehensive meeting workflow
+  async getMeeting(id: number): Promise<Meeting | undefined> {
+    const [result] = await db.select()
+      .from(meetings)
+      .where(eq(meetings.id, id));
+    return result || undefined;
+  }
+
+  async getAgendaItemsByMeeting(meetingId: number): Promise<AgendaItem[]> {
+    const results = await db.select()
+      .from(agendaItems)
+      .where(eq(agendaItems.meetingId, meetingId))
+      .orderBy(agendaItems.submittedAt);
+    return results;
+  }
+
+  async getProjectsForReview(): Promise<Project[]> {
+    const results = await db.select()
+      .from(projects)
+      .where(and(
+        eq(projects.reviewInNextMeeting, true),
+        ne(projects.status, 'completed'),
+        ne(projects.status, 'archived')
+      ))
+      .orderBy(desc(projects.priority), desc(projects.createdAt));
+    return results;
+  }
+
+  async createCompiledAgenda(agenda: any): Promise<number> {
+    const [result] = await db.insert(compiledAgendas)
+      .values(agenda)
+      .returning({ id: compiledAgendas.id });
+    return result.id;
+  }
+
+  async getCompiledAgenda(id: number): Promise<any | undefined> {
+    const [result] = await db.select()
+      .from(compiledAgendas)
+      .where(eq(compiledAgendas.id, id));
+    return result || undefined;
+  }
+
+  async createAgendaSection(section: any): Promise<number> {
+    const [result] = await db.insert(agendaSections)
+      .values(section)
+      .returning({ id: agendaSections.id });
+    return result.id;
+  }
+
+  async getAgendaSectionsByCompiledAgenda(compiledAgendaId: number): Promise<any[]> {
+    const results = await db.select()
+      .from(agendaSections)
+      .where(eq(agendaSections.compiledAgendaId, compiledAgendaId))
+      .orderBy(agendaSections.orderIndex);
+    return results;
+  }
+
+  async updateMeetingStatus(id: number, status: string): Promise<Meeting | undefined> {
+    const [result] = await db.update(meetings)
+      .set({ status })
+      .where(eq(meetings.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async finalizeCompiledAgenda(id: number, finalizedBy: string): Promise<any | undefined> {
+    const [result] = await db.update(compiledAgendas)
+      .set({ 
+        status: 'finalized',
+        finalizedAt: new Date()
+      })
+      .where(eq(compiledAgendas.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async getCompiledAgendasByMeeting(meetingId: number): Promise<any[]> {
+    const results = await db.select()
+      .from(compiledAgendas)
+      .where(eq(compiledAgendas.meetingId, meetingId))
+      .orderBy(desc(compiledAgendas.compiledAt));
     return results;
   }
 }

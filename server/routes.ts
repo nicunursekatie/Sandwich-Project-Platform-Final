@@ -2894,6 +2894,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced Meeting Management Routes for Comprehensive Meeting System
+
+  // Compile meeting agenda with structured sections: Old Business, Urgent Items, Housekeeping, New Business
+  app.post("/api/meetings/:id/compile-agenda", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'manage_meetings')) {
+        return res.status(403).json({ error: "Insufficient permissions to compile agenda" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      const compiledBy = req.user?.id || 'unknown';
+
+      // Import here to avoid circular dependencies
+      const { MeetingAgendaCompiler } = await import('./meeting-agenda-compiler');
+      const compiler = new MeetingAgendaCompiler(storage);
+
+      const compiledAgenda = await compiler.compileAgenda(meetingId, compiledBy);
+      const compiledAgendaId = await compiler.saveCompiledAgenda(compiledAgenda, compiledBy);
+
+      res.json({
+        success: true,
+        compiledAgendaId,
+        agenda: compiledAgenda,
+        message: "Agenda compiled successfully with all sections: Old Business, Urgent Items, Housekeeping, New Business"
+      });
+    } catch (error) {
+      logger.error("Error compiling meeting agenda:", error);
+      res.status(500).json({ error: "Failed to compile agenda" });
+    }
+  });
+
+  // Get compiled agenda for a meeting
+  app.get("/api/meetings/:id/compiled-agenda", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'access_meetings')) {
+        return res.status(403).json({ error: "Insufficient permissions to view agenda" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      const compiledAgendas = await storage.getCompiledAgendasByMeeting(meetingId);
+
+      if (compiledAgendas.length === 0) {
+        return res.status(404).json({ error: "No compiled agenda found for this meeting" });
+      }
+
+      // Get the most recent compiled agenda with sections
+      const latestAgenda = compiledAgendas[0];
+      const sections = await storage.getAgendaSectionsByCompiledAgenda(latestAgenda.id);
+      
+      res.json({
+        ...latestAgenda,
+        sections: sections.sort((a, b) => a.orderIndex - b.orderIndex)
+      });
+    } catch (error) {
+      logger.error("Error fetching compiled agenda:", error);
+      res.status(500).json({ error: "Failed to fetch compiled agenda" });
+    }
+  });
+
+  // Export meeting agenda to Google Sheets using Christine's format
+  app.post("/api/meetings/:id/export-to-sheets", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'manage_meetings')) {
+        return res.status(403).json({ error: "Insufficient permissions to export to Google Sheets" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      const { sheetId } = req.body; // Optional - if provided, will update existing sheet
+
+      // Import Google Sheets exporter
+      const { GoogleSheetsMeetingExporter } = await import('./google-sheets-meeting-export');
+      const exporter = new GoogleSheetsMeetingExporter(storage);
+
+      const result = await exporter.exportMeetingAgenda(meetingId, sheetId);
+
+      res.json({
+        success: true,
+        ...result,
+        message: "Meeting agenda exported to Google Sheets with precise column mapping"
+      });
+    } catch (error) {
+      logger.error("Error exporting to Google Sheets:", error);
+      res.status(500).json({ 
+        error: "Failed to export to Google Sheets",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Export meeting minutes to Google Sheets
+  app.post("/api/meetings/:id/export-minutes-to-sheets", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'manage_meetings')) {
+        return res.status(403).json({ error: "Insufficient permissions to export to Google Sheets" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      const { sheetId } = req.body; // Optional
+
+      // Import Google Sheets exporter
+      const { GoogleSheetsMeetingExporter } = await import('./google-sheets-meeting-export');
+      const exporter = new GoogleSheetsMeetingExporter(storage);
+
+      const result = await exporter.exportMeetingMinutes(meetingId, sheetId);
+
+      res.json({
+        success: true,
+        ...result,
+        message: "Meeting minutes template exported to Google Sheets successfully"
+      });
+    } catch (error) {
+      logger.error("Error exporting minutes to Google Sheets:", error);
+      res.status(500).json({ 
+        error: "Failed to export minutes to Google Sheets",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Finalize compiled agenda
+  app.patch("/api/compiled-agendas/:id/finalize", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'manage_meetings')) {
+        return res.status(403).json({ error: "Insufficient permissions to finalize agenda" });
+      }
+
+      const compiledAgendaId = parseInt(req.params.id);
+      const finalizedBy = req.user?.id || 'unknown';
+
+      const finalizedAgenda = await storage.finalizeCompiledAgenda(compiledAgendaId, finalizedBy);
+      
+      if (!finalizedAgenda) {
+        return res.status(404).json({ error: "Compiled agenda not found" });
+      }
+
+      res.json({
+        success: true,
+        agenda: finalizedAgenda,
+        message: "Agenda finalized successfully"
+      });
+    } catch (error) {
+      logger.error("Error finalizing agenda:", error);
+      res.status(500).json({ error: "Failed to finalize agenda" });
+    }
+  });
+
+  // Get projects marked for review in next meeting
+  app.get("/api/projects/for-review", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'access_projects')) {
+        return res.status(403).json({ error: "Insufficient permissions to view projects" });
+      }
+
+      const projectsForReview = await storage.getProjectsForReview();
+      
+      res.json(projectsForReview);
+    } catch (error) {
+      logger.error("Error fetching projects for review:", error);
+      res.status(500).json({ error: "Failed to fetch projects for review" });
+    }
+  });
+
   // Drivers API endpoints
   app.get("/api/drivers", isAuthenticated, requirePermission("access_drivers"), async (req, res) => {
     try {
