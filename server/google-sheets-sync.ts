@@ -157,28 +157,62 @@ export class GoogleSheetsSyncService {
   private async syncProjectTasks(projectId: number, subTasksOwners: string): Promise<void> {
     if (!subTasksOwners || typeof subTasksOwners !== 'string') return;
 
-    // Parse tasks from string format (e.g., "• Task 1: Katie, • Task 2: Chris")
+    // Parse tasks from string format (e.g., "• Task 1: Katie (C), • Task 2: Chris (IP)")
     const taskItems = this.parseTasksFromString(subTasksOwners);
     
     // Get existing tasks for this project
     const existingTasks = await this.storage.getProjectTasks(projectId);
     
-    // Clear existing tasks and add new ones
-    // Note: This is a simple approach - could be enhanced to merge/update existing tasks
-    for (const existingTask of existingTasks) {
-      await this.storage.deleteProjectTask(existingTask.id);
+    // Track which tasks we've processed
+    const processedTaskTitles = new Set<string>();
+    
+    // Update existing tasks or create new ones
+    for (const taskItem of taskItems) {
+      processedTaskTitles.add(taskItem.title);
+      
+      // Find existing task with matching title
+      const existingTask = existingTasks.find(task => 
+        task.title.trim().toLowerCase() === taskItem.title.trim().toLowerCase()
+      );
+      
+      if (existingTask) {
+        // Update existing task with new status and assignee
+        const updateData: any = {};
+        
+        if (taskItem.status && taskItem.status !== existingTask.status) {
+          updateData.status = taskItem.status;
+          console.log(`📝 Updating task "${taskItem.title}" status from "${existingTask.status}" to "${taskItem.status}"`);
+        }
+        
+        if (taskItem.assignee && taskItem.assignee !== existingTask.assigneeName) {
+          updateData.assigneeName = taskItem.assignee;
+          updateData.assigneeNames = [taskItem.assignee];
+          console.log(`👤 Updating task "${taskItem.title}" assignee to "${taskItem.assignee}"`);
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+          await this.storage.updateProjectTask(existingTask.id, updateData);
+        }
+      } else {
+        // Create new task
+        console.log(`➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'available'}"`);
+        await this.storage.createProjectTask({
+          projectId,
+          title: taskItem.title,
+          description: taskItem.description || '',
+          status: taskItem.status || 'available',
+          assigneeName: taskItem.assignee || undefined,
+          assigneeNames: taskItem.assignee ? [taskItem.assignee] : []
+        });
+      }
     }
     
-    // Create new tasks from sheet
-    for (const taskItem of taskItems) {
-      await this.storage.createProjectTask({
-        projectId,
-        title: taskItem.title,
-        description: taskItem.description || '',
-        status: 'pending',
-        assigneeName: taskItem.assignee || undefined,
-        assigneeNames: taskItem.assignee ? [taskItem.assignee] : []
-      });
+    // Remove tasks that are no longer in the sheet
+    for (const existingTask of existingTasks) {
+      if (!processedTaskTitles.has(existingTask.title)) {
+        console.log(`🗑️ Removing task "${existingTask.title}" as it's no longer in the sheet`);
+        await this.storage.deleteProjectTask(existingTask.id);
+      }
     }
   }
 
@@ -286,7 +320,16 @@ export class GoogleSheetsSyncService {
     return projectTasks
       .map(task => {
         const assignee = task.assigneeName || (task.assigneeNames && task.assigneeNames[0]);
-        return assignee ? `• ${task.title}: ${assignee}` : `• ${task.title}`;
+        let statusIndicator = '';
+        
+        // Add status indicators
+        if (task.status === 'completed') {
+          statusIndicator = ' (C)';
+        } else if (task.status === 'in_progress') {
+          statusIndicator = ' (IP)';
+        }
+        
+        return assignee ? `• ${task.title}: ${assignee}${statusIndicator}` : `• ${task.title}${statusIndicator}`;
       })
       .join('\n');
   }
@@ -294,10 +337,10 @@ export class GoogleSheetsSyncService {
   /**
    * Parse tasks from sheet string format
    */
-  private parseTasksFromString(subTasksOwners: string): Array<{title: string, assignee?: string, description?: string}> {
+  private parseTasksFromString(subTasksOwners: string): Array<{title: string, assignee?: string, description?: string, status?: string}> {
     if (!subTasksOwners) return [];
     
-    const tasks: Array<{title: string, assignee?: string, description?: string}> = [];
+    const tasks: Array<{title: string, assignee?: string, description?: string, status?: string}> = [];
     
     // Split by bullet points or line breaks
     const lines = subTasksOwners.split(/[•\n]/).filter(line => line.trim());
@@ -306,17 +349,36 @@ export class GoogleSheetsSyncService {
       const trimmed = line.trim();
       if (!trimmed) continue;
       
+      // Extract status indicators first
+      let taskText = trimmed;
+      let status = 'available'; // default status
+      
+      // Look for status indicators at the end: (C), (IP), C, IP
+      const statusMatch = taskText.match(/\s*\(?(C|IP)\)?$/i);
+      if (statusMatch) {
+        const statusCode = statusMatch[1].toUpperCase();
+        if (statusCode === 'C') {
+          status = 'completed';
+        } else if (statusCode === 'IP') {
+          status = 'in_progress';
+        }
+        // Remove status indicator from task text
+        taskText = taskText.replace(/\s*\(?(C|IP)\)?$/i, '').trim();
+      }
+      
       // Look for "Task: Assignee" format
-      const colonMatch = trimmed.match(/^(.+?):\s*(.+)$/);
+      const colonMatch = taskText.match(/^(.+?):\s*(.+)$/);
       if (colonMatch) {
         tasks.push({
           title: colonMatch[1].trim(),
-          assignee: colonMatch[2].trim()
+          assignee: colonMatch[2].trim(),
+          status
         });
       } else {
         // Just a task title
         tasks.push({
-          title: trimmed
+          title: taskText,
+          status
         });
       }
     }
