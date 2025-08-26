@@ -30,13 +30,13 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
   const getStatusColor = () => {
     switch (project.status) {
       case "completed":
-        return "bg-green-100 text-green-800
+        return "bg-green-100 text-green-800";
       case "in-progress":
-        return "bg-blue-100 text-blue-800
+        return "bg-blue-100 text-blue-800";
       case "on-hold":
-        return "bg-yellow-100 text-yellow-800
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return "bg-gray-100 text-gray-800
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -93,21 +93,28 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           )}
           
           {project.assigneeName && (
-            <div className="flex items-center gap-2 text-gray-600"
+            <div className="flex items-center gap-2 text-gray-600">
               <Users className="h-4 w-4" />
-              <span>{project.assigneeName}</span>
+              <span><strong>Owner:</strong> {project.assigneeName}</span>
+            </div>
+          )}
+          
+          {project.supportPeople && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <Users className="h-4 w-4" />
+              <span><strong>Support:</strong> {project.supportPeople}</span>
             </div>
           )}
           
           {project.dueDate && (
-            <div className="flex items-center gap-2 text-gray-600"
+            <div className="flex items-center gap-2 text-gray-600">
               <Calendar className="h-4 w-4" />
               <span>{new Date(project.dueDate).toLocaleDateString()}</span>
             </div>
           )}
           
           {project.estimatedHours && (
-            <div className="flex items-center gap-2 text-gray-600"
+            <div className="flex items-center gap-2 text-gray-600">
               <Clock className="h-4 w-4" />
               <span>{project.estimatedHours}h estimated</span>
               {project.actualHours && (
@@ -119,7 +126,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
         
         {/* Show kudos button for completed projects if assignee is not current user and has valid ID */}
         {project.status === "completed" && project.assigneeName && project.assigneeId && user && (
-          <div className="mt-4 pt-3 border-t border-gray-200"
+          <div className="mt-4 pt-3 border-t border-gray-200">
             <SendKudosButton
               recipientId={project.assigneeId.toString()}
               recipientName={project.assigneeName}
