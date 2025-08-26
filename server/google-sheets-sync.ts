@@ -83,7 +83,6 @@ export class GoogleSheetsSyncService {
           // Update existing project
           await this.storage.updateProject(existingProject.id, {
             ...projectData,
-            lastSyncedAt: new Date().toISOString(),
             syncStatus: 'synced',
             googleSheetRowId: row.rowIndex?.toString()
           });
@@ -97,7 +96,6 @@ export class GoogleSheetsSyncService {
             ...projectData,
             createdBy: 'google-sheets-sync',
             createdByName: 'Google Sheets Import',
-            lastSyncedAt: new Date().toISOString(),
             syncStatus: 'synced',
             googleSheetRowId: row.rowIndex?.toString()
           });
@@ -218,7 +216,7 @@ export class GoogleSheetsSyncService {
    * Convert Google Sheets row to project format
    */
   private sheetRowToProject(row: SheetRow): Partial<Project> {
-    return {
+    const projectData = {
       title: row.task,
       description: row.notes || undefined,
       status: this.mapStatusFromSheet(row.status),
@@ -226,15 +224,24 @@ export class GoogleSheetsSyncService {
       category: row.milestone || 'general',
       assigneeName: row.owner || undefined,
       assigneeNames: row.owner || undefined,
-      supportPeople: row.supportPeople || undefined, // Support people from sheet
+      supportPeople: row.supportPeople || undefined,
       startDate: row.startDate || undefined,
       dueDate: row.endDate || undefined,
       deliverables: row.deliverable || undefined,
       notes: row.notes || undefined,
       reviewInNextMeeting: this.mapReviewStatusFromSheet(row.reviewStatus),
       lastDiscussedDate: this.parseSheetDate(row.lastDiscussedDate),
-      updatedAt: new Date()
     };
+
+    // Filter out empty string values to prevent database type errors
+    const cleanedData: any = {};
+    for (const [key, value] of Object.entries(projectData)) {
+      if (value !== '' && value !== null) {
+        cleanedData[key] = value;
+      }
+    }
+
+    return cleanedData;
   }
 
   /**
@@ -248,6 +255,7 @@ export class GoogleSheetsSyncService {
       const cleaned = dateString.trim();
       
       // Try parsing common formats: MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD
+      // Use Date constructor but adjust for timezone to avoid day-off issues
       const date = new Date(cleaned);
       
       // Check if it's a valid date
@@ -256,8 +264,12 @@ export class GoogleSheetsSyncService {
         return undefined;
       }
       
-      // Return as ISO string for database storage
-      const isoString = date.toISOString().split('T')[0];
+      // Get local date components to avoid timezone offset issues
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const isoString = `${year}-${month}-${day}`;
+      
       console.log(`✅ Parsed date "${dateString}" to: ${isoString}`);
       return isoString;
     } catch (error) {
@@ -321,7 +333,8 @@ export class GoogleSheetsSyncService {
 
   private mapReviewStatusFromSheet(reviewStatus: string): boolean {
     // Any P status means review in next meeting
-    return reviewStatus && reviewStatus.startsWith('P');
+    if (!reviewStatus || reviewStatus.trim() === '') return false;
+    return reviewStatus.trim().startsWith('P');
   }
 
   private mapPriority(priority: string): string {
