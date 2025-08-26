@@ -1106,9 +1106,8 @@ export default function EnhancedMeetingDashboard() {
                     <p>No projects found. Sync with Google Sheets to load projects.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {allProjects.map((project: any) => {
-                      const isSelected = selectedProjectIds.includes(project.id);
                       // Parse date without timezone conversion to avoid day-off issues
                       const lastDiscussed = project.lastDiscussedDate 
                         ? new Date(project.lastDiscussedDate + 'T12:00:00').toLocaleDateString('en-US', {
@@ -1119,209 +1118,171 @@ export default function EnhancedMeetingDashboard() {
                         : 'Never discussed';
                       
                       return (
-                        <div 
-                          key={project.id}
-                          className={`border rounded-lg p-4 transition-all ${
-                            isSelected 
-                              ? 'border-teal-300 bg-teal-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="flex items-start gap-4">
-                            {/* Selection Checkbox */}
-                            <div className="pt-1">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedProjectIds([...selectedProjectIds, project.id]);
-                                  } else {
-                                    setSelectedProjectIds(selectedProjectIds.filter(id => id !== project.id));
-                                    const newTopics = { ...projectDiscussionTopics };
-                                    delete newTopics[project.id];
-                                    setProjectDiscussionTopics(newTopics);
+                        <Card key={project.id} className="border border-gray-200 hover:border-gray-300">
+                          <CardHeader className="pb-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg text-gray-900">{project.title}</CardTitle>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge 
+                                    {...getStatusBadgeProps(project.status)}
+                                    className={getStatusBadgeProps(project.status).className}
+                                    style={getStatusBadgeProps(project.status).style}
+                                  >
+                                    {formatStatusText(project.status)}
+                                  </Badge>
+                                  {project.priority && (
+                                    <Badge variant="outline">{project.priority}</Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                    Last discussed: {lastDiscussed}
+                                  </Badge>
+                                </div>
+                                {project.description && (
+                                  <p className="text-sm text-gray-600 mt-2">
+                                    {project.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          
+                          <CardContent className="space-y-4">
+                            {/* People Involved */}
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">People Involved</Label>
+                              <div className="flex flex-wrap gap-2">
+                                {(() => {
+                                  const people = [];
+                                  
+                                  // Add owner/assignee
+                                  if (project.assigneeName) {
+                                    people.push({ role: 'Owner', name: project.assigneeName });
                                   }
-                                }}
-                                className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500"
+                                  
+                                  // Add support people from Google Sheets
+                                  if (project.supportPeople) {
+                                    const supportList = project.supportPeople.split(',').map(p => p.trim()).filter(p => p);
+                                    supportList.forEach(person => {
+                                      people.push({ role: 'Support', name: person });
+                                    });
+                                  }
+                                  
+                                  // Add creator if not from Google Sheets sync
+                                  if (project.createdByName && project.createdByName !== 'Google Sheets Import') {
+                                    people.push({ role: 'Creator', name: project.createdByName });
+                                  }
+                                  
+                                  if (people.length === 0) {
+                                    return <span className="text-gray-500 text-sm">Not assigned</span>;
+                                  }
+                                  
+                                  return people.map((person, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded">
+                                      <Badge variant="outline" className="text-xs">
+                                        {person.role}
+                                      </Badge>
+                                      <span className="text-sm">{person.name}</span>
+                                    </div>
+                                  ));
+                                })()}
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-xs h-7"
+                                  onClick={() => {
+                                    setEditingProject(project.id);
+                                    setEditSupportPeople(project.supportPeople || '');
+                                    setShowEditPeopleDialog(true);
+                                  }}
+                                >
+                                  <Users className="w-3 h-3 mr-1" />
+                                  Edit People
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Project Tasks */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <Label className="text-sm font-medium text-gray-700">Project Tasks</Label>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-xs h-7"
+                                  onClick={() => {
+                                    setEditingProject(project.id);
+                                    setShowAddTaskDialog(true);
+                                  }}
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add Task
+                                </Button>
+                              </div>
+                              <ProjectTasksView projectId={project.id} />
+                            </div>
+
+                            {/* Discussion Notes */}
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Meeting Discussion Notes
+                              </Label>
+                              <Textarea
+                                value={projectDiscussionTopics[project.id] || ''}
+                                onChange={(e) => setProjectDiscussionTopics({
+                                  ...projectDiscussionTopics,
+                                  [project.id]: e.target.value
+                                })}
+                                placeholder="What specific questions, decisions, progress updates, or blockers need to be discussed for this project?"
+                                rows={3}
+                                className="text-sm"
                               />
                             </div>
 
-                            {/* Project Info */}
-                            <div className="flex-1 space-y-3">
-                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                {/* Project Title & Status */}
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{project.title}</h4>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Badge 
-                                      {...getStatusBadgeProps(project.status)}
-                                      className={getStatusBadgeProps(project.status).className}
-                                      style={getStatusBadgeProps(project.status).style}
-                                    >
-                                      {formatStatusText(project.status)}
-                                    </Badge>
-                                    {project.priority && (
-                                      <Badge variant="outline">{project.priority}</Badge>
-                                    )}
-                                  </div>
-                                  {project.description && (
-                                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                      {project.description}
-                                    </p>
-                                  )}
-                                </div>
-
-                                {/* People Involved */}
-                                <div>
-                                  <p className="text-sm font-medium text-gray-700">People Involved:</p>
-                                  <div className="text-sm text-gray-600 mt-1 space-y-1">
-                                    {(() => {
-                                      const people = [];
-                                      
-                                      // Add owner/assignee
-                                      if (project.assigneeName) {
-                                        people.push({ role: 'Owner', name: project.assigneeName });
-                                      }
-                                      
-                                      // Add support people from Google Sheets
-                                      if (project.supportPeople) {
-                                        const supportList = project.supportPeople.split(',').map(p => p.trim()).filter(p => p);
-                                        supportList.forEach(person => {
-                                          people.push({ role: 'Support', name: person });
-                                        });
-                                      }
-                                      
-                                      // Add creator if not from Google Sheets sync
-                                      if (project.createdByName && project.createdByName !== 'Google Sheets Import') {
-                                        people.push({ role: 'Creator', name: project.createdByName });
-                                      }
-                                      
-                                      if (people.length === 0) {
-                                        return <span className="text-gray-500">Not assigned</span>;
-                                      }
-                                      
-                                      return people.map((person, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                          <Badge variant="outline" className="text-xs">
-                                            {person.role}
-                                          </Badge>
-                                          <span>{person.name}</span>
-                                        </div>
-                                      ));
-                                    })()}
-                                  </div>
-                                </div>
-
-                                {/* Last Discussed */}
-                                <div>
-                                  <p className="text-sm font-medium text-gray-700">Last Discussed:</p>
-                                  <p className={`text-sm mt-1 ${
-                                    lastDiscussed === 'Never discussed' 
-                                      ? 'text-red-600 font-medium' 
-                                      : 'text-gray-600'
-                                  }`}>
-                                    {lastDiscussed}
-                                  </p>
-                                </div>
+                            {/* File Attachments */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <Label className="text-sm font-medium text-gray-700">Project Files</Label>
+                                <ObjectUploader
+                                  onComplete={(files) => {
+                                    setUploadedFiles(prev => ({
+                                      ...prev,
+                                      [project.id]: [...(prev[project.id] || []), ...files]
+                                    }));
+                                    toast({
+                                      title: "Files uploaded",
+                                      description: `${files.length} file(s) uploaded successfully for ${project.title}`,
+                                    });
+                                  }}
+                                >
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  Upload File
+                                </ObjectUploader>
                               </div>
-
-                              {/* Enhanced Project Details (appears when selected) */}
-                              {isSelected && (
-                                <div className="pt-3 border-t border-teal-200 space-y-4">
-                                  {/* Discussion Topic */}
-                                  <div>
-                                    <Label className="text-sm font-medium text-gray-700">
-                                      What about this project needs discussion?
-                                    </Label>
-                                    <Textarea
-                                      value={projectDiscussionTopics[project.id] || ''}
-                                      onChange={(e) => setProjectDiscussionTopics({
-                                        ...projectDiscussionTopics,
-                                        [project.id]: e.target.value
-                                      })}
-                                      placeholder="Specific questions, decisions needed, progress updates, blockers to discuss..."
-                                      rows={2}
-                                      className="mt-1"
-                                    />
-                                  </div>
-
-                                  {/* Project Tasks */}
-                                  <ProjectTasksView projectId={project.id} />
-
-                                  {/* Quick Actions */}
-                                  <div className="flex flex-wrap gap-2">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      className="text-xs"
-                                      onClick={() => {
-                                        setEditingProject(project.id);
-                                        setEditSupportPeople(project.supportPeople || '');
-                                        setShowEditPeopleDialog(true);
-                                      }}
-                                    >
-                                      <Users className="w-3 h-3 mr-1" />
-                                      Edit People
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      className="text-xs"
-                                      onClick={() => {
-                                        setEditingProject(project.id);
-                                        setShowAddTaskDialog(true);
-                                      }}
-                                    >
-                                      <Plus className="w-3 h-3 mr-1" />
-                                      Add Task
-                                    </Button>
-                                    <ObjectUploader
-                                      onComplete={(files) => {
-                                        setUploadedFiles(prev => ({
-                                          ...prev,
-                                          [project.id]: [...(prev[project.id] || []), ...files]
-                                        }));
-                                        toast({
-                                          title: "Files uploaded",
-                                          description: `${files.length} file(s) uploaded successfully for ${project.title}`,
-                                        });
-                                      }}
-                                    >
-                                      <FileText className="w-3 h-3 mr-1" />
-                                      Upload File
-                                    </ObjectUploader>
-                                  </div>
-
-                                  {/* Uploaded Files List */}
-                                  {uploadedFiles[project.id] && uploadedFiles[project.id].length > 0 && (
-                                    <div className="mt-3">
-                                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                        Attached Files ({uploadedFiles[project.id].length})
-                                      </Label>
-                                      <div className="space-y-1">
-                                        {uploadedFiles[project.id].map((file, idx) => (
-                                          <div key={idx} className="flex items-center gap-2 p-2 bg-blue-50 rounded text-xs">
-                                            <FileText className="w-3 h-3 text-blue-600" />
-                                            <span className="flex-1 text-blue-800">{file.name}</span>
-                                            <Button 
-                                              size="sm" 
-                                              variant="ghost" 
-                                              className="h-6 px-2 text-blue-600 hover:text-blue-800"
-                                              onClick={() => window.open(file.url, '_blank')}
-                                            >
-                                              View
-                                            </Button>
-                                          </div>
-                                        ))}
-                                      </div>
+                              
+                              {uploadedFiles[project.id] && uploadedFiles[project.id].length > 0 ? (
+                                <div className="space-y-2">
+                                  {uploadedFiles[project.id].map((file, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 p-2 bg-blue-50 rounded text-sm border border-blue-200">
+                                      <FileText className="w-4 h-4 text-blue-600" />
+                                      <span className="flex-1 text-blue-800">{file.name}</span>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="h-6 px-2 text-blue-600 hover:text-blue-800"
+                                        onClick={() => window.open(file.url, '_blank')}
+                                      >
+                                        View
+                                      </Button>
                                     </div>
-                                  )}
+                                  ))}
                                 </div>
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">No files attached yet</p>
                               )}
                             </div>
-                          </div>
-                        </div>
+                          </CardContent>
+                        </Card>
                       );
                     })}
                   </div>
