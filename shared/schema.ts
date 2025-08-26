@@ -111,6 +111,7 @@ export const projects = pgTable("projects", {
   status: text("status").notNull(), // 'waiting', 'available', 'in_progress', 'completed'
   priority: text("priority").notNull().default("medium"), // 'low', 'medium', 'high', 'urgent'
   category: text("category").notNull().default("technology"), // 'technology', 'events', 'grants', 'outreach'
+  milestone: text("milestone"), // Project milestone information
   assigneeId: integer("assignee_id"),
   assigneeName: text("assignee_name"),
   assigneeIds: jsonb("assignee_ids").default('[]'), // Array of user IDs for multiple assignees

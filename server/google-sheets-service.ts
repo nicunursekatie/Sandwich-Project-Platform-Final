@@ -16,11 +16,12 @@ export interface SheetRow {
   status: string; // In progress, Not started, etc. (Column F)
   startDate: string;
   endDate: string;
-  milestone: string;
-  subTasksOwners: string; // Individual sub-tasks within the project (Column J)
+  category: string; // Category column (Column I)
+  milestone: string; // Milestone column (Column J)
+  subTasksOwners: string; // Individual sub-tasks within the project (Column K)
   deliverable: string;
   notes: string;
-  lastDiscussedDate: string; // Column M: Last discussed date
+  lastDiscussedDate: string; // Column N: Last discussed date
   rowIndex?: number;
 }
 
@@ -145,13 +146,13 @@ export class GoogleSheetsService {
       
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A:M`, // A through M columns (includes Last Discussed Date)
+        range: `${this.config.worksheetName}!A:N`, // A through N columns (includes Category and Last Discussed Date)
       });
 
       const rows = response.data.values || [];
       if (rows.length === 0) return [];
 
-      // Skip header row and parse data - accounting for existing sheet structure
+      // Skip header row and parse data - accounting for NEW sheet structure with Category
       const dataRows = rows.slice(1);
       return dataRows.map((row: any[], index: number) => ({
         task: row[0] || '', // Column A: Task
@@ -162,11 +163,12 @@ export class GoogleSheetsService {
         status: row[5] || '', // Column F: Status (actual project status)
         startDate: row[6] || '', // Column G: Start
         endDate: row[7] || '', // Column H: End date
-        milestone: row[8] || '', // Column I: Milestone
-        subTasksOwners: row[9] || '', // Column J: Sub-Tasks | Owners
-        deliverable: row[10] || '', // Column K: Deliverable
-        notes: row[11] || '', // Column L: Notes
-        lastDiscussedDate: row[12] || '', // Column M: Last Discussed Date
+        category: row[8] || '', // Column I: Category (NEW - added after end date)
+        milestone: row[9] || '', // Column J: Milestone (shifted from I)
+        subTasksOwners: row[10] || '', // Column K: Sub-Tasks | Owners (shifted from J)
+        deliverable: row[11] || '', // Column L: Deliverable (shifted from K)
+        notes: row[12] || '', // Column M: Notes (shifted from L)
+        lastDiscussedDate: row[13] || '', // Column N: Last Discussed Date (shifted from M)
         rowIndex: index + 2, // +2 because sheets are 1-indexed and we skip header
       }));
     } catch (error) {
@@ -202,11 +204,12 @@ export class GoogleSheetsService {
           row.status, // Column F - Status (In progress, Completed, etc.)
           row.startDate, // Column G - Start Date
           row.endDate, // Column H - End Date
-          row.milestone, // Column I - Milestone
-          row.subTasksOwners, // Column J - Sub-Tasks | Owners
-          row.deliverable, // Column K - Deliverable
-          row.notes, // Column L - Notes
-          row.lastDiscussedDate // Column M - Last Discussed Date
+          row.category, // Column I - Category (NEW - added after end date)
+          row.milestone, // Column J - Milestone (shifted from I)
+          row.subTasksOwners, // Column K - Sub-Tasks | Owners (shifted from J)
+          row.deliverable, // Column L - Deliverable (shifted from K)
+          row.notes, // Column M - Notes (shifted from L)
+          row.lastDiscussedDate // Column N - Last Discussed Date (shifted from M)
         ];
 
         // Column mapping: A=task, B=reviewStatus, C=priority, D=owner, E=supportPeople, F=status
@@ -217,7 +220,7 @@ export class GoogleSheetsService {
         if (existingRowIndex) {
           // Update existing row - FORCE full row update to fix column mapping
           updates.push({
-            range: `${this.config.worksheetName}!A${existingRowIndex}:M${existingRowIndex}`,
+            range: `${this.config.worksheetName}!A${existingRowIndex}:N${existingRowIndex}`,
             values: [rowData]
           });
           console.log(`🔄 Updating existing row ${existingRowIndex} for: "${row.task}"`);
@@ -252,17 +255,17 @@ export class GoogleSheetsService {
         const insertRowStart = lastRowWithData + 1;
         const insertRowEnd = insertRowStart + newRows.length - 1;
         
-        // Insert directly at specific row range in A:M columns
+        // Insert directly at specific row range in A:N columns
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
-          range: `${this.config.worksheetName}!A${insertRowStart}:M${insertRowEnd}`,
+          range: `${this.config.worksheetName}!A${insertRowStart}:N${insertRowEnd}`,
           valueInputOption: 'USER_ENTERED',
           resource: {
             values: newRows
           }
         });
         
-        console.log(`📍 Added ${newRows.length} new rows directly at A${insertRowStart}:M${insertRowEnd}`);
+        console.log(`📍 Added ${newRows.length} new rows directly at A${insertRowStart}:N${insertRowEnd}`);
       }
 
       return true;

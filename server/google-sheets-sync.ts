@@ -234,11 +234,12 @@ export class GoogleSheetsSyncService {
       status: this.mapStatus(project.status),
       startDate: project.startDate || '',
       endDate: project.dueDate || '',
-      milestone: project.category || '',
+      category: project.category || '', // Category column (Column I)
+      milestone: project.milestone || '', // Milestone column (Column J)
       subTasksOwners: this.formatTasksForSheet(projectTasks), // Format sub-tasks
       deliverable: project.deliverables || '',
       notes: project.notes || project.description || '',
-      lastDiscussedDate: project.lastDiscussedDate || '' // Column M
+      lastDiscussedDate: project.lastDiscussedDate || '' // Column N
     };
     
     // Column mapping verified: task→A, reviewStatus→B, status→F
@@ -255,7 +256,8 @@ export class GoogleSheetsSyncService {
       description: row.notes || undefined,
       status: this.mapStatusFromSheet(row.status),
       priority: this.mapPriorityFromSheet(row.priority),
-      category: row.milestone || 'general',
+      category: row.category || 'general', // Category from category column
+      milestone: row.milestone || undefined, // Milestone from milestone column
       assigneeName: row.owner || undefined, // Owner field maps to assigneeName
       supportPeople: row.supportPeople || undefined, // Support people stay separate
       startDate: row.startDate || undefined,
