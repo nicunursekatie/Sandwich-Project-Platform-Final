@@ -1071,12 +1071,45 @@ export default function EnhancedMeetingDashboard() {
                                   )}
                                 </div>
 
-                                {/* Tasks & Owners */}
+                                {/* People Involved */}
                                 <div>
-                                  <p className="text-sm font-medium text-gray-700">Tasks & Owners:</p>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {project.tasksAndOwners || project.assigneeName || 'Not assigned'}
-                                  </p>
+                                  <p className="text-sm font-medium text-gray-700">People Involved:</p>
+                                  <div className="text-sm text-gray-600 mt-1 space-y-1">
+                                    {(() => {
+                                      const people = [];
+                                      
+                                      // Add owner/assignee
+                                      if (project.assigneeName) {
+                                        people.push({ role: 'Owner', name: project.assigneeName });
+                                      }
+                                      
+                                      // Add support people from Google Sheets
+                                      if (project.supportPeople) {
+                                        const supportList = project.supportPeople.split(',').map(p => p.trim()).filter(p => p);
+                                        supportList.forEach(person => {
+                                          people.push({ role: 'Support', name: person });
+                                        });
+                                      }
+                                      
+                                      // Add creator if not from Google Sheets sync
+                                      if (project.createdByName && project.createdByName !== 'Google Sheets Import') {
+                                        people.push({ role: 'Creator', name: project.createdByName });
+                                      }
+                                      
+                                      if (people.length === 0) {
+                                        return <span className="text-gray-500">Not assigned</span>;
+                                      }
+                                      
+                                      return people.map((person, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                          <Badge variant="outline" className="text-xs">
+                                            {person.role}
+                                          </Badge>
+                                          <span>{person.name}</span>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
                                 </div>
 
                                 {/* Last Discussed */}
