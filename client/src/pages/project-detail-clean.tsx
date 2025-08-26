@@ -91,6 +91,38 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
     estimatedHours: 0
   });
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  
+  // Meeting discussion state
+  const [meetingDiscussionPoints, setMeetingDiscussionPoints] = useState('');
+  const [meetingDecisionItems, setMeetingDecisionItems] = useState('');
+
+  // Meeting discussion mutations
+  const saveMeetingNotesMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/projects/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          meetingDiscussionPoints,
+          meetingDecisionItems
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
+      toast({
+        title: "Success",
+        description: "Meeting discussion notes saved successfully",
+      });
+    },
+    onError: (error) => {
+      console.error('Error saving meeting notes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save meeting notes",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch project details
   const { data: project, isLoading: isProjectLoading } = useQuery<Project>({
@@ -111,6 +143,42 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
     },
     enabled: !!id,
   });
+
+  // Initialize meeting discussion fields when project loads
+  React.useEffect(() => {
+    if (project) {
+      setMeetingDiscussionPoints(project.meetingDiscussionPoints || '');
+      setMeetingDecisionItems(project.meetingDecisionItems || '');
+    }
+  }, [project]);
+
+  // Handler for toggling meeting review checkbox
+  const handleToggleMeetingReview = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    try {
+      await apiRequest(`/api/projects/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reviewInNextMeeting: checked }),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
+      toast({
+        title: "Success",
+        description: checked ? "Project marked for meeting discussion" : "Project removed from meeting agenda",
+      });
+    } catch (error) {
+      console.error('Error updating meeting review status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update meeting review status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handler for saving meeting notes
+  const handleSaveMeetingNotes = () => {
+    saveMeetingNotesMutation.mutate();
+  };
 
   // Function to send kudos to all project assignees when project is completed
   const sendKudosForProjectCompletion = async (project: Project, projectTitle: string) => {
@@ -552,6 +620,98 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
             ></div>
           </div>
         </div>
+      </div>
+
+      {/* Meeting Discussion Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+              <MessageSquare className="h-4 w-4 text-orange-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[#236383] font-roboto">Meeting Discussion</h2>
+              <p className="text-sm text-gray-600">Mark this project for discussion in the next meeting</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={project.reviewInNextMeeting || false}
+                onChange={handleToggleMeetingReview}
+                className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Include in next meeting</span>
+            </label>
+          </div>
+        </div>
+
+        {project.reviewInNextMeeting && (
+          <div className="space-y-4 bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <div>
+              <Label htmlFor="discussion-points" className="text-sm font-medium text-gray-700">
+                Discussion Points
+              </Label>
+              <Textarea
+                id="discussion-points"
+                value={meetingDiscussionPoints}
+                onChange={(e) => setMeetingDiscussionPoints(e.target.value)}
+                placeholder="What aspects of this project need to be discussed? (e.g., budget approval, timeline concerns, resource needs)"
+                rows={3}
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Specify what needs to be discussed about this project in the meeting
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="decision-items" className="text-sm font-medium text-gray-700">
+                Decisions Needed
+              </Label>
+              <Textarea
+                id="decision-items"
+                value={meetingDecisionItems}
+                onChange={(e) => setMeetingDecisionItems(e.target.value)}
+                placeholder="What decisions need to be made? (e.g., approve budget increase, assign additional team members, set new deadline)"
+                rows={3}
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                List specific decisions that the team needs to make
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMeetingDiscussionPoints(project.meetingDiscussionPoints || '');
+                  setMeetingDecisionItems(project.meetingDecisionItems || '');
+                }}
+                className="text-gray-600"
+              >
+                Reset
+              </Button>
+              <Button
+                onClick={handleSaveMeetingNotes}
+                disabled={saveMeetingNotesMutation.isPending}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {saveMeetingNotesMutation.isPending ? 'Saving...' : 'Save Discussion Notes'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {project.lastDiscussedDate && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-600">
+              <strong>Last discussed:</strong> {new Date(project.lastDiscussedDate).toLocaleDateString()}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Tasks Section */}

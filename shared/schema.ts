@@ -137,6 +137,8 @@ export const projects = pgTable("projects", {
   // Google Sheets integration fields
   reviewInNextMeeting: boolean("review_in_next_meeting").notNull().default(false), // Include in agenda
   lastDiscussedDate: text("last_discussed_date"), // ISO date string of last meeting where this was discussed
+  meetingDiscussionPoints: text("meeting_discussion_points"), // What needs to be discussed about this project
+  meetingDecisionItems: text("meeting_decision_items"), // What decisions need to be made
   googleSheetRowId: text("google_sheet_row_id"), // Track which sheet row this corresponds to
   lastSyncedAt: timestamp("last_synced_at"), // When last synced with Google Sheets
   syncStatus: text("sync_status").default("unsynced"), // "unsynced", "synced", "conflict", "error"
