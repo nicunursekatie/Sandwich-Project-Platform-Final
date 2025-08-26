@@ -9,6 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   CalendarDays, Clock, Users, FileText, ExternalLink, 
   CheckCircle2, Settings, Download, Cog, Plus,
@@ -73,6 +77,14 @@ export default function EnhancedMeetingDashboard() {
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [showNewMeetingDialog, setShowNewMeetingDialog] = useState(false);
+  const [newMeetingData, setNewMeetingData] = useState({
+    title: '',
+    date: '',
+    time: '',
+    type: 'core_team',
+    location: '',
+    description: ''
+  });
 
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
@@ -277,6 +289,51 @@ export default function EnhancedMeetingDashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  // Create new meeting mutation
+  const createMeetingMutation = useMutation({
+    mutationFn: async (meetingData: typeof newMeetingData) => {
+      return await apiRequest('/api/meetings', {
+        method: 'POST',
+        body: JSON.stringify(meetingData),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Meeting Scheduled",
+        description: "Your new meeting has been scheduled successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      setShowNewMeetingDialog(false);
+      setNewMeetingData({
+        title: '',
+        date: '',
+        time: '',
+        type: 'core_team',
+        location: '',
+        description: ''
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Schedule Meeting",
+        description: error.message || "Failed to schedule the meeting. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateMeeting = () => {
+    if (!newMeetingData.title || !newMeetingData.date) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in the meeting title and date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    createMeetingMutation.mutate(newMeetingData);
   };
 
   // Helper functions for agenda section icons and colors
@@ -751,6 +808,114 @@ export default function EnhancedMeetingDashboard() {
               </button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* New Meeting Dialog */}
+      <Dialog open={showNewMeetingDialog} onOpenChange={setShowNewMeetingDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-teal-600" />
+              Schedule New Meeting
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Meeting Title *</Label>
+              <Input
+                id="title"
+                value={newMeetingData.title}
+                onChange={(e) => setNewMeetingData({ ...newMeetingData, title: e.target.value })}
+                placeholder="Core Team Meeting"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="date">Date *</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={newMeetingData.date}
+                  onChange={(e) => setNewMeetingData({ ...newMeetingData, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="time">Time</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={newMeetingData.time}
+                  onChange={(e) => setNewMeetingData({ ...newMeetingData, time: e.target.value })}
+                  placeholder="TBD"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Meeting Type</Label>
+              <Select 
+                value={newMeetingData.type} 
+                onValueChange={(value) => setNewMeetingData({ ...newMeetingData, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="core_team">Core Team Meeting</SelectItem>
+                  <SelectItem value="committee">Committee Meeting</SelectItem>
+                  <SelectItem value="board">Board Meeting</SelectItem>
+                  <SelectItem value="planning">Planning Session</SelectItem>
+                  <SelectItem value="training">Training Session</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={newMeetingData.location}
+                onChange={(e) => setNewMeetingData({ ...newMeetingData, location: e.target.value })}
+                placeholder="Conference room, Zoom link, etc."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newMeetingData.description}
+                onChange={(e) => setNewMeetingData({ ...newMeetingData, description: e.target.value })}
+                placeholder="Brief description of the meeting purpose..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setShowNewMeetingDialog(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateMeeting}
+                disabled={createMeetingMutation.isPending}
+                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
+              >
+                {createMeetingMutation.isPending ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <CalendarDays className="w-4 h-4" />
+                )}
+                Schedule Meeting
+              </button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
