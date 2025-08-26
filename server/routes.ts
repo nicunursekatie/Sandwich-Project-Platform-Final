@@ -935,18 +935,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log('Project updated successfully:', updatedProject.supportPeople);
 
-        // Auto-sync to Google Sheets if supportPeople was updated
+        // Auto-sync to Google Sheets if supportPeople was updated (async, non-blocking)
         if (updates.supportPeople !== undefined) {
-          console.log('Support people updated, triggering Google Sheets sync...');
-          try {
-            const { getGoogleSheetsSyncService } = await import('./google-sheets-sync');
-            const syncService = getGoogleSheetsSyncService(storage);
-            await syncService.syncToGoogleSheets();
-            console.log('Projects synced to Google Sheets successfully');
-          } catch (syncError) {
-            console.error('Failed to sync to Google Sheets:', syncError);
-            // Don't fail the main update if sync fails
-          }
+          console.log('Support people updated, triggering async Google Sheets sync...');
+          // Run sync in the background without blocking the response
+          setImmediate(async () => {
+            try {
+              const { getGoogleSheetsSyncService } = await import('./google-sheets-sync');
+              const syncService = getGoogleSheetsSyncService(storage);
+              await syncService.syncToGoogleSheets();
+              console.log('Projects synced to Google Sheets successfully (background)');
+            } catch (syncError) {
+              console.error('Failed to sync to Google Sheets (background):', syncError);
+            }
+          });
         }
 
         res.json(updatedProject);
