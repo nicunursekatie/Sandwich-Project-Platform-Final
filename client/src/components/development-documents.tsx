@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, FileText, Eye, ExternalLink, Calculator } from "lucide-react";
+import { Download, FileText, Eye, ExternalLink, Calculator, Share2 } from "lucide-react";
 import { DocumentPreview } from "./document-preview";
+import { useToast } from "@/hooks/use-toast";
 
 interface DevelopmentDocument {
   name: string;
@@ -162,6 +163,7 @@ const getCategoryColor = (category: string) => {
 export function DevelopmentDocuments() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [previewDocument, setPreviewDocument] = useState<DevelopmentDocument | null>(null);
+  const { toast } = useToast();
 
   const categories = ['All', ...Array.from(new Set(developmentDocuments.map(doc => doc.category)))];
   
@@ -185,6 +187,41 @@ export function DevelopmentDocuments() {
 
   const handleOpenInNewTab = (path: string) => {
     window.open(path, '_blank');
+  };
+
+  const handleShare = async (doc: DevelopmentDocument) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: doc.name,
+          text: doc.description || `Check out this tool: ${doc.name}`,
+          url: doc.path,
+        });
+      } catch (error) {
+        // User cancelled the share or error occurred, fallback to clipboard
+        handleCopyLink(doc.path);
+      }
+    } else {
+      // Fallback to clipboard for browsers that don't support Web Share API
+      handleCopyLink(doc.path);
+    }
+  };
+
+  const handleCopyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Link copied!",
+        description: "The inventory calculator link has been copied to your clipboard.",
+      });
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy link to clipboard.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -236,15 +273,26 @@ export function DevelopmentDocuments() {
               {/* Action buttons - fixed to stay within card bounds */}
               <div className="flex flex-col gap-2 mt-auto">
                 {doc.type === 'link' ? (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => handleOpenInNewTab(doc.path)}
-                    className="w-full h-9 text-sm font-medium"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open Tool
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => handleOpenInNewTab(doc.path)}
+                      className="w-full h-9 text-sm font-medium"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open Tool
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleShare(doc)}
+                      className="w-full h-9 text-sm font-medium"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Link
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button

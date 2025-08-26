@@ -1,13 +1,14 @@
 import { useState } from "react";
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, TrendingUp, Calendar, Award, Download, ExternalLink, Sandwich, Eye, BarChart3, Target, Activity, Users, Zap, Clock, Building2, Layers, Calculator } from "lucide-react";
+import { FileText, TrendingUp, Calendar, Award, Download, ExternalLink, Sandwich, Eye, BarChart3, Target, Activity, Users, Zap, Clock, Building2, Layers, Calculator, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
+import { useToast } from "@/hooks/use-toast";
 import { HelpBubble } from "@/components/help-system";
 import { DocumentPreviewModal } from "@/components/document-preview-modal";
 import CollectionFormSelector from "@/components/collection-form-selector";
@@ -27,6 +28,7 @@ interface DashboardOverviewProps {
 export default function DashboardOverview({ onSectionChange }: { onSectionChange?: (section: string) => void }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   
   // Form state
   const [showCollectionForm, setShowCollectionForm] = useState(false);
@@ -55,6 +57,45 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
       documentName: '',
       documentType: ''
     });
+  };
+
+  const handleShareInventoryCalculator = async () => {
+    const url = 'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
+    const title = 'Inventory Calculator';
+    const text = 'Interactive tool for calculating sandwich inventory and planning quantities for collections';
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } catch (error) {
+        // User cancelled the share or error occurred, fallback to clipboard
+        handleCopyLink(url);
+      }
+    } else {
+      // Fallback to clipboard for browsers that don't support Web Share API
+      handleCopyLink(url);
+    }
+  };
+
+  const handleCopyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Link copied!",
+        description: "The inventory calculator link has been copied to your clipboard.",
+      });
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy link to clipboard.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Defer stats loading until after first render for better FCP/LCP
@@ -307,13 +348,33 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mx-4 mt-8">
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}>
+          <div className="bg-white rounded-xl p-4 text-left group shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <Calculator className="w-5 h-5 text-white" />
             </div>
             <h4 className="font-semibold text-[#236383]">Inventory Calculator</h4>
-            <p className="text-sm text-gray-600">Plan quantities</p>
-          </button>
+            <p className="text-sm text-gray-600 mb-3">Plan quantities</p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}
+                className="flex-1 h-8 text-xs"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                Open
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleShareInventoryCalculator}
+                className="flex-1 h-8 text-xs"
+              >
+                <Share2 className="w-3 h-3 mr-1" />
+                Share
+              </Button>
+            </div>
+          </div>
 
           <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('collections')}>
             <div className="w-10 h-10 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
