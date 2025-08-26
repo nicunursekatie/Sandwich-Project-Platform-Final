@@ -934,6 +934,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         console.log('Project updated successfully:', updatedProject.supportPeople);
+
+        // Auto-sync to Google Sheets if supportPeople was updated
+        if (updates.supportPeople !== undefined) {
+          console.log('Support people updated, triggering Google Sheets sync...');
+          try {
+            const { getGoogleSheetsSyncService } = await import('./google-sheets-sync');
+            const syncService = getGoogleSheetsSyncService(storage);
+            await syncService.syncToGoogleSheets();
+            console.log('Projects synced to Google Sheets successfully');
+          } catch (syncError) {
+            console.error('Failed to sync to Google Sheets:', syncError);
+            // Don't fail the main update if sync fails
+          }
+        }
+
         res.json(updatedProject);
       } catch (error) {
         console.error('=== PROJECT PATCH ERROR ===');
