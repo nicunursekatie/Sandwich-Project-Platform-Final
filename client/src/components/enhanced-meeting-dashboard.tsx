@@ -160,7 +160,13 @@ function SupportPeopleSelector({ initialValue, onChange, onCancel, onSave }: Sup
   }, [people, onChange]);
 
   const addSystemUser = (userId: string) => {
+    console.log('=== ADD SYSTEM USER DEBUG ===');
+    console.log('Adding user ID:', userId);
+    console.log('Available users:', users);
+    
     const user = users.find(u => u.id === userId);
+    console.log('Found user:', user);
+    
     if (user && !people.some(p => p.id === userId)) {
       const newPerson: SupportPerson = {
         id: user.id,
@@ -168,22 +174,36 @@ function SupportPeopleSelector({ initialValue, onChange, onCancel, onSave }: Sup
         email: user.email,
         type: 'user'
       };
+      console.log('Adding new person:', newPerson);
+      console.log('Current people before add:', people);
+      
       setPeople([...people, newPerson]);
       setSelectedUserId('');
+    } else {
+      console.log('User already exists or not found');
     }
   };
 
   const addCustomPerson = () => {
+    console.log('=== ADD CUSTOM PERSON DEBUG ===');
+    console.log('Adding custom person - Name:', newPersonName);
+    console.log('Adding custom person - Email:', newPersonEmail);
+    
     if (newPersonName.trim()) {
       const newPerson: SupportPerson = {
         name: newPersonName.trim(),
         email: newPersonEmail.trim() || undefined,
         type: 'custom'
       };
+      console.log('Creating new custom person:', newPerson);
+      console.log('Current people before add:', people);
+      
       setPeople([...people, newPerson]);
       setNewPersonName('');
       setNewPersonEmail('');
       setShowAddForm(false);
+    } else {
+      console.log('Cannot add custom person - name is empty');
     }
   };
 
