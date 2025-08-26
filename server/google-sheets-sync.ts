@@ -67,13 +67,8 @@ export class GoogleSheetsSyncService {
       let updatedCount = 0;
       let createdCount = 0;
       
-      console.log(`📊 Processing ${sheetRows.length} rows from Google Sheets...`);
-      
       for (const row of sheetRows) {
         if (!row.task) continue; // Skip empty rows
-        
-        console.log(`🔍 Processing project: "${row.task}"`);
-        console.log(`📅 Raw lastDiscussedDate from sheet: "${row.lastDiscussedDate}"`)
         
         // Try to find existing project by title or sheet row ID
         const existingProjects = await this.storage.getAllProjects();
@@ -245,7 +240,7 @@ export class GoogleSheetsSyncService {
   /**
    * Parse date from Google Sheets format
    */
-  private parseSheetDate(dateString: string | undefined): Date | undefined {
+  private parseSheetDate(dateString: string | undefined): string | undefined {
     if (!dateString || dateString.trim() === '') return undefined;
     
     try {
@@ -261,8 +256,10 @@ export class GoogleSheetsSyncService {
         return undefined;
       }
       
-      console.log(`✅ Parsed date "${dateString}" to:`, date.toISOString().split('T')[0]);
-      return date;
+      // Return as ISO string for database storage
+      const isoString = date.toISOString().split('T')[0];
+      console.log(`✅ Parsed date "${dateString}" to: ${isoString}`);
+      return isoString;
     } catch (error) {
       console.warn(`⚠️ Failed to parse date "${dateString}":`, error);
       return undefined;
