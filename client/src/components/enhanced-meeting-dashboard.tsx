@@ -13,12 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ObjectUploader } from '@/components/ObjectUploader';
 import { 
   CalendarDays, Clock, Users, FileText, ExternalLink, 
   CheckCircle2, Settings, Download, Cog, Plus,
   FolderOpen, UserCheck, Zap, Home, ChevronRight,
   Calendar, RotateCcw, ArrowLeft, ArrowRight, Grid3X3,
-  AlertCircle, BookOpen, Lightbulb, Target
+  AlertCircle, BookOpen, Lightbulb, Target, Filter,
+  Check, Play, MapPin
 } from 'lucide-react';
 
 interface Meeting {
@@ -68,6 +70,191 @@ interface Project {
   reviewInNextMeeting: boolean;
 }
 
+interface ProjectTask {
+  id: number;
+  title: string;
+  description?: string;
+  status: string;
+  assigneeName?: string;
+  dueDate?: string;
+  priority: string;
+}
+
+// Project Tasks Component
+function ProjectTasksView({ projectId }: { projectId: number }) {
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: [`/api/projects/${projectId}/tasks`],
+  });
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">Loading tasks...</div>;
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <div className="text-sm text-gray-500 text-center py-3">
+        No tasks yet. Add tasks to track project progress.
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+        Project Tasks ({tasks.length})
+      </Label>
+      <div className="space-y-2 max-h-40 overflow-y-auto">
+        {tasks.map((task: ProjectTask) => (
+          <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Badge variant={task.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                  {task.status}
+                </Badge>
+                <span className="font-medium">{task.title}</span>
+              </div>
+              {task.assigneeName && (
+                <div className="text-gray-600 mt-1">Assigned: {task.assigneeName}</div>
+              )}
+            </div>
+            {task.dueDate && (
+              <div className="text-gray-500 text-xs">
+                Due: {new Date(task.dueDate).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Edit People Dialog */}
+      <Dialog open={showEditPeopleDialog} onOpenChange={setShowEditPeopleDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Support People</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="support-people">Support People (comma-separated)</Label>
+              <Textarea
+                id="support-people"
+                value={editSupportPeople}
+                onChange={(e) => setEditSupportPeople(e.target.value)}
+                placeholder="John Doe, Jane Smith, etc."
+                rows={3}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditPeopleDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={async () => {
+                if (editingProject) {
+                  try {
+                    await apiRequest(`/api/projects/${editingProject}`, {
+                      method: 'PATCH',
+                      body: { supportPeople: editSupportPeople }
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+                    toast({
+                      title: "Success",
+                      description: "Support people updated successfully",
+                    });
+                    setShowEditPeopleDialog(false);
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to update support people",
+                      variant: "destructive",
+                    });
+                  }
+                }
+              }}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Task Dialog */}
+      <Dialog open={showAddTaskDialog} onOpenChange={setShowAddTaskDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="task-title">Task Title</Label>
+              <Input
+                id="task-title"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Enter task title"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="task-description">Description (optional)</Label>
+              <Textarea
+                id="task-description"
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                placeholder="Enter task description"
+                rows={3}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setShowAddTaskDialog(false);
+                setNewTaskTitle('');
+                setNewTaskDescription('');
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                disabled={!newTaskTitle.trim()}
+                onClick={async () => {
+                  if (editingProject && newTaskTitle.trim()) {
+                    try {
+                      await apiRequest(`/api/projects/${editingProject}/tasks`, {
+                        method: 'POST',
+                        body: { 
+                          title: newTaskTitle.trim(),
+                          description: newTaskDescription.trim() || null,
+                          status: 'pending',
+                          priority: 'medium'
+                        }
+                      });
+                      queryClient.invalidateQueries({ queryKey: [`/api/projects/${editingProject}/tasks`] });
+                      toast({
+                        title: "Success",
+                        description: "Task added successfully",
+                      });
+                      setShowAddTaskDialog(false);
+                      setNewTaskTitle('');
+                      setNewTaskDescription('');
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to add task",
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                }}
+              >
+                Add Task
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function EnhancedMeetingDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -88,6 +275,15 @@ export default function EnhancedMeetingDashboard() {
   });
   const [selectedProjectIds, setSelectedProjectIds] = useState<number[]>([]);
   const [projectDiscussionTopics, setProjectDiscussionTopics] = useState<Record<number, string>>({});
+  
+  // Enhanced project management states
+  const [editingProject, setEditingProject] = useState<number | null>(null);
+  const [showEditPeopleDialog, setShowEditPeopleDialog] = useState(false);
+  const [showAddTaskDialog, setShowAddTaskDialog] = useState(false);
+  const [editSupportPeople, setEditSupportPeople] = useState<string>('');
+  const [newTaskTitle, setNewTaskTitle] = useState<string>('');
+  const [newTaskDescription, setNewTaskDescription] = useState<string>('');
+  const [uploadedFiles, setUploadedFiles] = useState<Record<number, { url: string; name: string }[]>>({});
 
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
@@ -1125,22 +1321,97 @@ export default function EnhancedMeetingDashboard() {
                                 </div>
                               </div>
 
-                              {/* Discussion Topic Input (appears when selected) */}
+                              {/* Enhanced Project Details (appears when selected) */}
                               {isSelected && (
-                                <div className="pt-3 border-t border-teal-200">
-                                  <Label className="text-sm font-medium text-gray-700">
-                                    What about this project needs discussion?
-                                  </Label>
-                                  <Textarea
-                                    value={projectDiscussionTopics[project.id] || ''}
-                                    onChange={(e) => setProjectDiscussionTopics({
-                                      ...projectDiscussionTopics,
-                                      [project.id]: e.target.value
-                                    })}
-                                    placeholder="Specific questions, decisions needed, progress updates, blockers to discuss..."
-                                    rows={2}
-                                    className="mt-1"
-                                  />
+                                <div className="pt-3 border-t border-teal-200 space-y-4">
+                                  {/* Discussion Topic */}
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">
+                                      What about this project needs discussion?
+                                    </Label>
+                                    <Textarea
+                                      value={projectDiscussionTopics[project.id] || ''}
+                                      onChange={(e) => setProjectDiscussionTopics({
+                                        ...projectDiscussionTopics,
+                                        [project.id]: e.target.value
+                                      })}
+                                      placeholder="Specific questions, decisions needed, progress updates, blockers to discuss..."
+                                      rows={2}
+                                      className="mt-1"
+                                    />
+                                  </div>
+
+                                  {/* Project Tasks */}
+                                  <ProjectTasksView projectId={project.id} />
+
+                                  {/* Quick Actions */}
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="text-xs"
+                                      onClick={() => {
+                                        setEditingProject(project.id);
+                                        setEditSupportPeople(project.supportPeople || '');
+                                        setShowEditPeopleDialog(true);
+                                      }}
+                                    >
+                                      <Users className="w-3 h-3 mr-1" />
+                                      Edit People
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="text-xs"
+                                      onClick={() => {
+                                        setEditingProject(project.id);
+                                        setShowAddTaskDialog(true);
+                                      }}
+                                    >
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      Add Task
+                                    </Button>
+                                    <ObjectUploader
+                                      onComplete={(files) => {
+                                        setUploadedFiles(prev => ({
+                                          ...prev,
+                                          [project.id]: [...(prev[project.id] || []), ...files]
+                                        }));
+                                        toast({
+                                          title: "Files uploaded",
+                                          description: `${files.length} file(s) uploaded successfully for ${project.title}`,
+                                        });
+                                      }}
+                                    >
+                                      <FileText className="w-3 h-3 mr-1" />
+                                      Upload File
+                                    </ObjectUploader>
+                                  </div>
+
+                                  {/* Uploaded Files List */}
+                                  {uploadedFiles[project.id] && uploadedFiles[project.id].length > 0 && (
+                                    <div className="mt-3">
+                                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                        Attached Files ({uploadedFiles[project.id].length})
+                                      </Label>
+                                      <div className="space-y-1">
+                                        {uploadedFiles[project.id].map((file, idx) => (
+                                          <div key={idx} className="flex items-center gap-2 p-2 bg-blue-50 rounded text-xs">
+                                            <FileText className="w-3 h-3 text-blue-600" />
+                                            <span className="flex-1 text-blue-800">{file.name}</span>
+                                            <Button 
+                                              size="sm" 
+                                              variant="ghost" 
+                                              className="h-6 px-2 text-blue-600 hover:text-blue-800"
+                                              onClick={() => window.open(file.url, '_blank')}
+                                            >
+                                              View
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1213,6 +1484,132 @@ export default function EnhancedMeetingDashboard() {
           )}
         </div>
       )}
+
+      {/* Edit People Dialog */}
+      <Dialog open={showEditPeopleDialog} onOpenChange={setShowEditPeopleDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Support People</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="support-people">Support People (comma-separated)</Label>
+              <Textarea
+                id="support-people"
+                value={editSupportPeople}
+                onChange={(e) => setEditSupportPeople(e.target.value)}
+                placeholder="John Doe, Jane Smith, etc."
+                rows={3}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditPeopleDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={async () => {
+                if (editingProject) {
+                  try {
+                    await apiRequest(`/api/projects/${editingProject}`, {
+                      method: 'PATCH',
+                      body: { supportPeople: editSupportPeople }
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+                    toast({
+                      title: "Success",
+                      description: "Support people updated successfully",
+                    });
+                    setShowEditPeopleDialog(false);
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to update support people",
+                      variant: "destructive",
+                    });
+                  }
+                }
+              }}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Task Dialog */}
+      <Dialog open={showAddTaskDialog} onOpenChange={setShowAddTaskDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="task-title">Task Title</Label>
+              <Input
+                id="task-title"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Enter task title"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="task-description">Description (optional)</Label>
+              <Textarea
+                id="task-description"
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                placeholder="Enter task description"
+                rows={3}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setShowAddTaskDialog(false);
+                setNewTaskTitle('');
+                setNewTaskDescription('');
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                disabled={!newTaskTitle.trim()}
+                onClick={async () => {
+                  if (editingProject && newTaskTitle.trim()) {
+                    try {
+                      await apiRequest(`/api/projects/${editingProject}/tasks`, {
+                        method: 'POST',
+                        body: { 
+                          title: newTaskTitle.trim(),
+                          description: newTaskDescription.trim() || null,
+                          status: 'pending',
+                          priority: 'medium'
+                        }
+                      });
+                      queryClient.invalidateQueries({ queryKey: [`/api/projects/${editingProject}/tasks`] });
+                      toast({
+                        title: "Success",
+                        description: "Task added successfully",
+                      });
+                      setShowAddTaskDialog(false);
+                      setNewTaskTitle('');
+                      setNewTaskDescription('');
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to add task",
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                }}
+              >
+                Add Task
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
