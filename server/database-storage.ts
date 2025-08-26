@@ -2314,47 +2314,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getAllUsersActivitySummary(days: number = 30): Promise<{
-    userId: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    totalActions: number;
-    lastActive: Date | null;
-    topSection: string;
-  }[]> {
-    const sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - days);
 
-    const result = await db
-      .select({
-        userId: users.id,
-        email: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        totalActions: sql<number>`count(user_activity_logs.id)`,
-        lastActive: sql<Date>`max(user_activity_logs.created_at)`,
-        topSection: sql<string>`mode() within group (order by user_activity_logs.section)`
-      })
-      .from(users)
-      .leftJoin(userActivityLogs, and(
-        eq(users.id, userActivityLogs.userId),
-        gte(userActivityLogs.createdAt, sinceDate)
-      ))
-      .where(eq(users.isActive, true))
-      .groupBy(users.id, users.email, users.firstName, users.lastName)
-      .orderBy(desc(sql`count(user_activity_logs.id)`));
-
-    return result.map(row => ({
-      userId: row.userId,
-      email: row.email || '',
-      firstName: row.firstName || '',
-      lastName: row.lastName || '',
-      totalActions: row.totalActions || 0,
-      lastActive: row.lastActive,
-      topSection: row.topSection || 'none'
-    }));
-  }
 
   // Wishlist Suggestions
   async getAllWishlistSuggestions(): Promise<WishlistSuggestion[]> {

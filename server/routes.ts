@@ -277,6 +277,20 @@ const projectDataUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint for deployment monitoring
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || "development",
+      dependencies: {
+        googleCloudStorage: "@google-cloud/storage",
+        database: process.env.DATABASE_URL ? "connected" : "not configured"
+      }
+    });
+  });
+
   // Use database-backed session store for deployment persistence
   console.log("Using database-backed session store for deployment persistence");
   const PgSession = connectPg(session);

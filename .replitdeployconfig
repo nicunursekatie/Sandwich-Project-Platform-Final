@@ -1,0 +1,18 @@
+{
+  "deployments": [
+    {
+      "entrypoint": "dist/index.js",
+      "runtime": "nodejs",
+      "nodeVersion": "20",
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "buildCommand": "node build.js",
+      "startCommand": "node dist/index.js",
+      "healthcheck": {
+        "path": "/api/health",
+        "port": 5000
+      }
+    }
+  ]
+}
