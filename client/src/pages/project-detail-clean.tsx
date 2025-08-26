@@ -436,20 +436,36 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
       </div>
 
       {/* Project Info Cards - Clean TSP Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Project Owner */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-6 h-6 bg-[#236383]/10 rounded flex items-center justify-center shrink-0">
               <User className="h-3 w-3 text-[#236383]" />
             </div>
-            <h3 className="text-sm font-semibold text-[#236383] font-roboto">Project Owner</h3>
+            <h3 className="text-sm font-semibold text-[#236383] font-roboto">Owner</h3>
           </div>
           <p className="text-sm text-gray-900 font-roboto font-medium mb-2 leading-tight">
-            {project.assigneeName || 'Christine Cooper Nowicki'}
+            {project.assigneeName || project.createdByName || 'No owner assigned'}
           </p>
           <p className="text-xs text-gray-500 font-roboto">
-            Currently managing this project
+            Project owner
+          </p>
+        </div>
+
+        {/* Support People */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 bg-[#B8860B]/10 rounded flex items-center justify-center shrink-0">
+              <Users className="h-3 w-3 text-[#B8860B]" />
+            </div>
+            <h3 className="text-sm font-semibold text-[#B8860B] font-roboto">Support</h3>
+          </div>
+          <p className="text-sm text-gray-900 font-roboto font-medium mb-2 leading-tight">
+            {project.supportPeople || 'No support assigned'}
+          </p>
+          <p className="text-xs text-gray-500 font-roboto">
+            Supporting this project
           </p>
         </div>
 

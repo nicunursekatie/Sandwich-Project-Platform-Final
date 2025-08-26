@@ -46,6 +46,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Wishlist System**: Amazon wishlist suggestion system fully implemented with database persistence, API endpoints, responsive UI, and admin review functionality with MANAGE_WISHLIST permissions.
 - **Mobile Header Optimization**: Header layout optimized for tablets/iPads ensuring logout button remains accessible even with console open. Uses gap-based spacing and flex-shrink-0 constraints.
 - **Comprehensive Meeting Management**: Full-featured meeting system with automated agenda compilation using required sections ("Old Business", "Urgent Items", "Housekeeping", "New Business"), intelligent project integration, and Google Sheets export with precise column mapping for Christine's proven format. Includes MeetingAgendaCompiler service, GoogleSheetsMeetingExporter, enhanced database methods, complete API endpoints, and sophisticated UI dashboard.
+- **Project Display Consistency**: Both project cards (list view) and project detail views now consistently display Owner and Support roles. Project detail pages include a dedicated Support People card showing all assigned support personnel. Automatic Google Sheets synchronization triggers when support people are updated, ensuring data consistency between the app and Google Sheets project tracker.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
