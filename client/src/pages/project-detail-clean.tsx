@@ -859,8 +859,20 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
                     assigneeName: value,
                     assigneeIds: userIds?.length ? userIds : undefined
                   } : null)}
-                  label="Assigned To"
-                  placeholder="Select or enter person responsible"
+                  label="Project Owner"
+                  placeholder="Select or enter project owner"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-project-support-people">Support People</Label>
+                <Input
+                  id="edit-project-support-people"
+                  value={(editingProject as any)?.supportPeople || ''}
+                  onChange={(e) => setEditingProject(prev => prev ? { 
+                    ...prev, 
+                    supportPeople: e.target.value 
+                  } : null)}
+                  placeholder="Enter support people names (comma separated)"
                 />
               </div>
               <div>

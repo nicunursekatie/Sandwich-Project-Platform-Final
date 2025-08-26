@@ -186,17 +186,17 @@ export class GoogleSheetsSyncService {
    * Convert project to Google Sheets row format
    */
   private projectToSheetRow(project: Project, projectTasks: any[] = []): SheetRow {
-    // Owner = Project creator, Support People = Assignees + Support People
-    const assigneesList = project.assigneeNames || project.assigneeName || '';
-    const supportPeopleList = project.supportPeople || '';
-    const allSupportPeople = [assigneesList, supportPeopleList].filter(Boolean).join(', ');
+    // Owner = Assigned project owner (assigneeName), fallback to creator
+    // Support People = Only the supportPeople field
+    const projectOwner = project.assigneeName || project.createdByName || project.createdBy || '';
+    const supportPeopleOnly = project.supportPeople || '';
 
     const sheetRow = {
       task: project.title,
       reviewStatus: this.mapReviewStatus(project.reviewInNextMeeting), // P1, P2, etc.
       priority: this.mapPriority(project.priority),
-      owner: project.createdByName || project.createdBy || '', // Project creator is the owner
-      supportPeople: allSupportPeople, // Assignees + Support people
+      owner: projectOwner, // Project owner (assignee or creator)
+      supportPeople: supportPeopleOnly, // Only support people
       status: this.mapStatus(project.status),
       startDate: project.startDate || '',
       endDate: project.dueDate || '',
@@ -222,9 +222,8 @@ export class GoogleSheetsSyncService {
       status: this.mapStatusFromSheet(row.status),
       priority: this.mapPriorityFromSheet(row.priority),
       category: row.milestone || 'general',
-      assigneeName: row.owner || undefined,
-      assigneeNames: row.owner || undefined,
-      supportPeople: row.supportPeople || undefined,
+      assigneeName: row.owner || undefined, // Owner field maps to assigneeName
+      supportPeople: row.supportPeople || undefined, // Support people stay separate
       startDate: row.startDate || undefined,
       dueDate: row.endDate || undefined,
       deliverables: row.deliverable || undefined,

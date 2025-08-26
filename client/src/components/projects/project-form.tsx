@@ -15,6 +15,7 @@ interface ProjectFormData {
   category: string;
   assigneeId: number | null;
   assigneeName: string;
+  supportPeople: string;
   dueDate: string;
   startDate: string;
   estimatedHours: string;
@@ -54,6 +55,7 @@ export function ProjectForm({
     category: "general",
     assigneeId: null,
     assigneeName: "",
+    supportPeople: "",
     dueDate: "",
     startDate: "",
     estimatedHours: "",
@@ -156,12 +158,22 @@ export function ProjectForm({
             </div>
             
             <div>
-              <Label htmlFor="assigneeName">Assignee</Label>
+              <Label htmlFor="assigneeName">Project Owner</Label>
               <Input
                 id="assigneeName"
                 value={formData.assigneeName}
                 onChange={(e) => handleInputChange("assigneeName", e.target.value)}
-                placeholder="Enter assignee name"
+                placeholder="Enter project owner name"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="supportPeople">Support People</Label>
+              <Input
+                id="supportPeople"
+                value={formData.supportPeople}
+                onChange={(e) => handleInputChange("supportPeople", e.target.value)}
+                placeholder="Enter support people names (comma separated)"
               />
             </div>
             
