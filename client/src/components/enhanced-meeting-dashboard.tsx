@@ -294,10 +294,7 @@ export default function EnhancedMeetingDashboard() {
   // Create new meeting mutation
   const createMeetingMutation = useMutation({
     mutationFn: async (meetingData: typeof newMeetingData) => {
-      return await apiRequest('/api/meetings', {
-        method: 'POST',
-        body: JSON.stringify(meetingData),
-      });
+      return await apiRequest('POST', '/api/meetings', meetingData);
     },
     onSuccess: () => {
       toast({
