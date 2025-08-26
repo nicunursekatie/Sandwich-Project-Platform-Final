@@ -258,14 +258,27 @@ export class GoogleSheetsService {
         ]);
 
       if (newRows.length > 0) {
-        await this.sheets.spreadsheets.values.append({
+        // Find the last row with data in column A (the actual table)
+        const lastRowResponse = await this.sheets.spreadsheets.values.get({
           spreadsheetId: this.config.spreadsheetId,
-          range: `${this.config.worksheetName}!A:L`,
+          range: `${this.config.worksheetName}!A:A`,
+        });
+        
+        const lastRowWithData = lastRowResponse.data.values?.length || 0;
+        const insertRowStart = lastRowWithData + 1; // Next available row
+        const insertRowEnd = insertRowStart + newRows.length - 1;
+        
+        // Insert directly at specific row range in A:L columns
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: this.config.spreadsheetId,
+          range: `${this.config.worksheetName}!A${insertRowStart}:L${insertRowEnd}`,
           valueInputOption: 'USER_ENTERED',
           resource: {
             values: newRows
           }
         });
+        
+        console.log(`📍 Inserted ${newRows.length} rows directly at A${insertRowStart}:L${insertRowEnd}`);
       }
 
       return {
