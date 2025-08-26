@@ -67,8 +67,13 @@ export class GoogleSheetsSyncService {
       let updatedCount = 0;
       let createdCount = 0;
       
+      console.log(`📊 Processing ${sheetRows.length} rows from Google Sheets...`);
+      
       for (const row of sheetRows) {
         if (!row.task) continue; // Skip empty rows
+        
+        console.log(`🔍 Processing project: "${row.task}"`);
+        console.log(`📅 Raw lastDiscussedDate from sheet: "${row.lastDiscussedDate}"`)
         
         // Try to find existing project by title or sheet row ID
         const existingProjects = await this.storage.getAllProjects();
@@ -232,9 +237,36 @@ export class GoogleSheetsSyncService {
       deliverables: row.deliverable || undefined,
       notes: row.notes || undefined,
       reviewInNextMeeting: this.mapReviewStatusFromSheet(row.reviewStatus),
-      lastDiscussedDate: row.lastDiscussedDate || undefined,
+      lastDiscussedDate: this.parseSheetDate(row.lastDiscussedDate),
       updatedAt: new Date()
     };
+  }
+
+  /**
+   * Parse date from Google Sheets format
+   */
+  private parseSheetDate(dateString: string | undefined): Date | undefined {
+    if (!dateString || dateString.trim() === '') return undefined;
+    
+    try {
+      // Handle various date formats from Google Sheets
+      const cleaned = dateString.trim();
+      
+      // Try parsing common formats: MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD
+      const date = new Date(cleaned);
+      
+      // Check if it's a valid date
+      if (isNaN(date.getTime())) {
+        console.warn(`⚠️ Invalid date format from Google Sheets: "${dateString}"`);
+        return undefined;
+      }
+      
+      console.log(`✅ Parsed date "${dateString}" to:`, date.toISOString().split('T')[0]);
+      return date;
+    } catch (error) {
+      console.warn(`⚠️ Failed to parse date "${dateString}":`, error);
+      return undefined;
+    }
   }
 
   /**
