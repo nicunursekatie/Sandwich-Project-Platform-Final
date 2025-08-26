@@ -188,12 +188,17 @@ export class GoogleSheetsSyncService {
    * Convert project to Google Sheets row format
    */
   private projectToSheetRow(project: Project, projectTasks: any[] = []): SheetRow {
+    // Owner = Project creator, Support People = Assignees + Support People
+    const assigneesList = project.assigneeNames || project.assigneeName || '';
+    const supportPeopleList = project.supportPeople || '';
+    const allSupportPeople = [assigneesList, supportPeopleList].filter(Boolean).join(', ');
+
     const sheetRow = {
       task: project.title,
       reviewStatus: this.mapReviewStatus(project.reviewInNextMeeting), // P1, P2, etc.
       priority: this.mapPriority(project.priority),
-      owner: project.assigneeName || project.assigneeNames || '',
-      supportPeople: project.supportPeople || '', // Support people names/emails
+      owner: project.createdByName || project.createdBy || '', // Project creator is the owner
+      supportPeople: allSupportPeople, // Assignees + Support people
       status: this.mapStatus(project.status),
       startDate: project.startDate || '',
       endDate: project.dueDate || '',

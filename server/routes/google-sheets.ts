@@ -478,12 +478,17 @@ router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
         })
         .join('\n');
 
+      // Owner = Project creator, Support People = Assignees + Support People  
+      const assigneesList = project.assigneeNames || project.assigneeName || '';
+      const supportPeopleList = project.supportPeople || '';
+      const allSupportPeople = [assigneesList, supportPeopleList].filter(Boolean).join(', ');
+
       sheetRows.push({
         task: project.title,
         reviewStatus: project.reviewInNextMeeting ? 'P1' : '',
         priority: project.priority || 'Medium',
-        owner: project.assigneeName || project.assigneeNames || '',
-        supportPeople: project.supportPeople || '',
+        owner: project.createdByName || project.createdBy || '', // Project creator is the owner
+        supportPeople: allSupportPeople, // Assignees + Support people
         status: project.status || 'Not started',
         startDate: project.startDate || '',
         endDate: project.dueDate || '',
