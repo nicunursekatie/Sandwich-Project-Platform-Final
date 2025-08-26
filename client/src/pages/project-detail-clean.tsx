@@ -859,20 +859,21 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
                     assigneeName: value,
                     assigneeIds: userIds?.length ? userIds : undefined
                   } : null)}
-                  label="Project Owner"
+                  label="Project Owner (one person)"
                   placeholder="Select or enter project owner"
+                  multiple={false}
                 />
               </div>
               <div>
-                <Label htmlFor="edit-project-support-people">Support People</Label>
-                <Input
-                  id="edit-project-support-people"
+                <ProjectAssigneeSelector
                   value={(editingProject as any)?.supportPeople || ''}
-                  onChange={(e) => setEditingProject(prev => prev ? { 
+                  onChange={(value, userIds) => setEditingProject(prev => prev ? { 
                     ...prev, 
-                    supportPeople: e.target.value 
+                    supportPeople: value
                   } : null)}
-                  placeholder="Enter support people names (comma separated)"
+                  label="Support People"
+                  placeholder="Select or enter support people"
+                  multiple={true}
                 />
               </div>
               <div>

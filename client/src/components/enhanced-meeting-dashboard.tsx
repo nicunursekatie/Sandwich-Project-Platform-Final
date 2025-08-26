@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ObjectUploader } from '@/components/ObjectUploader';
+import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
 import { 
   CalendarDays, Clock, Users, FileText, ExternalLink, 
   CheckCircle2, Settings, Download, Cog, Plus,
@@ -104,262 +105,7 @@ const getStatusBadgeProps = (status: string) => {
   }
 };
 
-// Support People Selector Component
-interface SupportPerson {
-  id?: string;
-  name: string;
-  email?: string;
-  type: 'user' | 'custom';
-}
 
-interface SupportPeopleSelectorProps {
-  initialValue: string;
-  onChange: (people: SupportPerson[]) => void;
-  onCancel: () => void;
-  onSave: () => Promise<void>;
-}
-
-function SupportPeopleSelector({ initialValue, onChange, onCancel, onSave }: SupportPeopleSelectorProps) {
-  const [people, setPeople] = useState<SupportPerson[]>([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newPersonName, setNewPersonName] = useState('');
-  const [newPersonEmail, setNewPersonEmail] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  
-  // Fetch system users
-  const { data: users = [], isLoading } = useQuery<Array<{id: string, email: string, firstName: string, lastName: string}>>({ 
-    queryKey: ['/api/users'] 
-  });
-
-  // Parse initial value on mount
-  React.useEffect(() => {
-    if (initialValue) {
-      const parsed = initialValue.split(',').map(person => {
-        const trimmed = person.trim();
-        // Check if it's in "Name <email>" format
-        const emailMatch = trimmed.match(/^(.+?)\s*<(.+?)>$/);
-        if (emailMatch) {
-          return {
-            name: emailMatch[1].trim(),
-            email: emailMatch[2].trim(),
-            type: 'custom' as const
-          };
-        }
-        return {
-          name: trimmed,
-          type: 'custom' as const
-        };
-      }).filter(person => person.name);
-      setPeople(parsed);
-    }
-  }, [initialValue]);
-
-  // Update parent when people list changes
-  React.useEffect(() => {
-    onChange(people);
-  }, [people, onChange]);
-
-  const addSystemUser = (userId: string) => {
-    console.log('=== ADD SYSTEM USER DEBUG ===');
-    console.log('Adding user ID:', userId);
-    console.log('Available users:', users);
-    
-    const user = users.find(u => u.id === userId);
-    console.log('Found user:', user);
-    
-    if (user && !people.some(p => p.id === userId)) {
-      const newPerson: SupportPerson = {
-        id: user.id,
-        name: `${user.firstName} ${user.lastName}`.trim(),
-        email: user.email,
-        type: 'user'
-      };
-      console.log('Adding new person:', newPerson);
-      console.log('Current people before add:', people);
-      
-      setPeople([...people, newPerson]);
-      setSelectedUserId('');
-    } else {
-      console.log('User already exists or not found');
-    }
-  };
-
-  const addCustomPerson = () => {
-    console.log('=== ADD CUSTOM PERSON DEBUG ===');
-    console.log('Adding custom person - Name:', newPersonName);
-    console.log('Adding custom person - Email:', newPersonEmail);
-    
-    if (newPersonName.trim()) {
-      const newPerson: SupportPerson = {
-        name: newPersonName.trim(),
-        email: newPersonEmail.trim() || undefined,
-        type: 'custom'
-      };
-      console.log('Creating new custom person:', newPerson);
-      console.log('Current people before add:', people);
-      
-      setPeople([...people, newPerson]);
-      setNewPersonName('');
-      setNewPersonEmail('');
-      setShowAddForm(false);
-    } else {
-      console.log('Cannot add custom person - name is empty');
-    }
-  };
-
-  const removePerson = (index: number) => {
-    console.log('=== REMOVE PERSON DEBUG ===');
-    console.log('Removing person at index:', index);
-    console.log('Current people array:', people);
-    console.log('Person being removed:', people[index]);
-    
-    const newPeople = people.filter((_, i) => i !== index);
-    console.log('New people array after removal:', newPeople);
-    
-    setPeople(newPeople);
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Current Support People */}
-      <div>
-        <Label className="text-sm font-medium text-gray-700 mb-2 block">Current Support People</Label>
-        {people.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">No support people assigned</p>
-        ) : (
-          <div className="space-y-2">
-            {people.map((person, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded border">
-                <div className="flex items-center gap-2">
-                  <Badge variant={person.type === 'user' ? 'default' : 'outline'} className="text-xs">
-                    {person.type === 'user' ? 'Team Member' : 'External'}
-                  </Badge>
-                  <div>
-                    <div className="font-medium text-sm">{person.name}</div>
-                    {person.email && (
-                      <div className="text-xs text-gray-600">{person.email}</div>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => removePerson(index)}
-                  className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Add System User */}
-      <div>
-        <Label className="text-sm font-medium text-gray-700 mb-2 block">Add Team Member</Label>
-        <div className="flex gap-2">
-          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Select a team member..." />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoading ? (
-                <SelectItem value="loading" disabled>Loading users...</SelectItem>
-              ) : (
-                users
-                  .filter(user => !people.some(p => p.id === user.id))
-                  .map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {`${user.firstName} ${user.lastName}`.trim()} ({user.email})
-                    </SelectItem>
-                  ))
-              )}
-            </SelectContent>
-          </Select>
-          <Button
-            size="sm"
-            onClick={() => addSystemUser(selectedUserId)}
-            disabled={!selectedUserId || isLoading}
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Add
-          </Button>
-        </div>
-      </div>
-
-      {/* Add Custom Person */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label className="text-sm font-medium text-gray-700">Add External Person</Label>
-          {!showAddForm && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowAddForm(true)}
-            >
-              <UserPlus className="h-3 w-3 mr-1" />
-              Add External
-            </Button>
-          )}
-        </div>
-        {showAddForm && (
-          <div className="space-y-3 p-3 border rounded bg-gray-50">
-            <div>
-              <Label className="text-xs text-gray-600">Name *</Label>
-              <Input
-                value={newPersonName}
-                onChange={(e) => setNewPersonName(e.target.value)}
-                placeholder="Full name"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-600">Email (optional)</Label>
-              <Input
-                type="email"
-                value={newPersonEmail}
-                onChange={(e) => setNewPersonEmail(e.target.value)}
-                placeholder="email@example.com"
-                className="mt-1"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={addCustomPerson}
-                disabled={!newPersonName.trim()}
-              >
-                Add Person
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setShowAddForm(false);
-                  setNewPersonName('');
-                  setNewPersonEmail('');
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button onClick={onSave}>
-          Save Changes
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 // Project Tasks Component
 function ProjectTasksView({ projectId }: { projectId: number }) {
@@ -1761,21 +1507,20 @@ export default function EnhancedMeetingDashboard() {
               Add team members from the system or enter custom names and emails
             </DialogDescription>
           </DialogHeader>
-          <SupportPeopleSelector 
-            initialValue={editSupportPeople}
-            onChange={(people) => {
-              // Convert back to comma-separated format for backend compatibility
-              const formattedPeople = people.map(person => {
-                if (person.type === 'user') {
-                  return person.name;
-                } else {
-                  return person.email ? `${person.name} <${person.email}>` : person.name;
-                }
-              }).join(', ');
-              setEditSupportPeople(formattedPeople);
+          <ProjectAssigneeSelector
+            value={editSupportPeople}
+            onChange={(value) => {
+              setEditSupportPeople(value);
             }}
-            onCancel={() => setShowEditPeopleDialog(false)}
-            onSave={async () => {
+            label="Support People"
+            placeholder="Select or enter support people"
+            multiple={true}
+          />
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowEditPeopleDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={async () => {
               if (editingProject) {
                 try {
                   console.log('=== SUPPORT PEOPLE UPDATE DEBUG ===');
@@ -1808,8 +1553,10 @@ export default function EnhancedMeetingDashboard() {
                   });
                 }
               }
-            }}
-          />
+            }}>
+              Save Changes
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
