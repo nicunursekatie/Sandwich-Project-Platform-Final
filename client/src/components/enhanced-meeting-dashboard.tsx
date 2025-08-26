@@ -1750,9 +1750,8 @@ export default function EnhancedMeetingDashboard() {
             onSave={async () => {
               if (editingProject) {
                 try {
-                  await apiRequest(`/api/projects/${editingProject}`, {
-                    method: 'PATCH',
-                    body: { supportPeople: editSupportPeople }
+                  await apiRequest('PATCH', `/api/projects/${editingProject}`, {
+                    supportPeople: editSupportPeople
                   });
                   queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
                   toast({
@@ -1761,6 +1760,7 @@ export default function EnhancedMeetingDashboard() {
                   });
                   setShowEditPeopleDialog(false);
                 } catch (error) {
+                  console.error('Support people update error:', error);
                   toast({
                     title: "Error",
                     description: "Failed to update support people",
