@@ -888,11 +888,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const id = parseInt(req.params.id);
         const updates = req.body;
 
+        console.log('=== SERVER PROJECT PATCH DEBUG ===');
+        console.log('Project ID:', id);
+        console.log('Updates received:', updates);
+        console.log('Support People value:', updates.supportPeople);
+        console.log('User:', req.user?.email);
+
         // Get the existing project to check ownership
         const existingProject = await storage.getProject(id);
         if (!existingProject) {
+          console.log('Project not found:', id);
           return res.status(404).json({ message: "Project not found" });
         }
+
+        console.log('Existing project found:', existingProject.title);
+        console.log('Current supportPeople:', existingProject.supportPeople);
 
         // Check permissions - ownership-based or admin
         const canEditAll = req.user?.permissions?.includes('edit_all_projects') || 
@@ -902,7 +912,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const canEditOwn = req.user?.permissions?.includes('edit_own_projects') && 
                           (existingProject.createdBy === req.user.id);
 
+        console.log('Permission check - canEditAll:', canEditAll, 'canEditOwn:', canEditOwn);
+
         if (!canEditAll && !canEditOwn) {
+          console.log('Permission denied for user:', req.user?.email);
           return res.status(403).json({ 
             message: "Permission denied. You can only edit your own projects or need admin privileges." 
           });
@@ -911,14 +924,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Filter out fields that shouldn't be updated directly
         const { createdAt, updatedAt, created_by, created_by_name, ...validUpdates } = updates;
 
+        console.log('Valid updates to apply:', validUpdates);
+
         const updatedProject = await storage.updateProject(id, validUpdates);
 
         if (!updatedProject) {
+          console.log('Failed to update project in storage');
           return res.status(404).json({ message: "Project not found" });
         }
 
+        console.log('Project updated successfully:', updatedProject.supportPeople);
         res.json(updatedProject);
       } catch (error) {
+        console.error('=== PROJECT PATCH ERROR ===');
+        console.error('Error details:', error);
         logger.error("Failed to update project", error);
         res.status(500).json({ message: "Failed to update project" });
       }

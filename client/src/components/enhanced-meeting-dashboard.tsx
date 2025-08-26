@@ -188,7 +188,15 @@ function SupportPeopleSelector({ initialValue, onChange, onCancel, onSave }: Sup
   };
 
   const removePerson = (index: number) => {
-    setPeople(people.filter((_, i) => i !== index));
+    console.log('=== REMOVE PERSON DEBUG ===');
+    console.log('Removing person at index:', index);
+    console.log('Current people array:', people);
+    console.log('Person being removed:', people[index]);
+    
+    const newPeople = people.filter((_, i) => i !== index);
+    console.log('New people array after removal:', newPeople);
+    
+    setPeople(newPeople);
   };
 
   return (
@@ -1750,20 +1758,32 @@ export default function EnhancedMeetingDashboard() {
             onSave={async () => {
               if (editingProject) {
                 try {
-                  await apiRequest('PATCH', `/api/projects/${editingProject}`, {
+                  console.log('=== SUPPORT PEOPLE UPDATE DEBUG ===');
+                  console.log('Project ID:', editingProject);
+                  console.log('Support People Value:', editSupportPeople);
+                  console.log('Support People Length:', editSupportPeople?.length);
+                  
+                  const response = await apiRequest('PATCH', `/api/projects/${editingProject}`, {
                     supportPeople: editSupportPeople
                   });
+                  
+                  console.log('API Response:', response);
                   queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+                  
                   toast({
                     title: "Success",
                     description: "Support people updated successfully",
                   });
                   setShowEditPeopleDialog(false);
                 } catch (error) {
-                  console.error('Support people update error:', error);
+                  console.error('=== SUPPORT PEOPLE ERROR ===');
+                  console.error('Error details:', error);
+                  console.error('Error message:', error?.message);
+                  console.error('Error response:', error?.response);
+                  
                   toast({
                     title: "Error",
-                    description: "Failed to update support people",
+                    description: `Failed to update support people: ${error?.message || 'Unknown error'}`,
                     variant: "destructive",
                   });
                 }
