@@ -19,7 +19,7 @@ import { DocumentsBrowser } from "@/components/documents-browser";
 import BulkDataManager from "@/components/bulk-data-manager";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
 import Development from "@/pages/development";
-import UnifiedMeetings from "@/components/unified-meetings";
+import EnhancedMeetingDashboard from "@/components/enhanced-meeting-dashboard";
 import RoleDemo from "@/pages/role-demo";
 import ProjectsClean from "@/pages/projects-clean";
 import ProjectDetailClean from "@/pages/project-detail-clean";
@@ -250,7 +250,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "profile":
         return <UserProfile />;
       case "meetings":
-        return <UnifiedMeetings />;
+        return <EnhancedMeetingDashboard />;
 
 
       case "toolkit":
