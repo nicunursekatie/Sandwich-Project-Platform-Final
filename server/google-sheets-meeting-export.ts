@@ -160,7 +160,7 @@ export class GoogleSheetsMeetingExporter {
             this.getSupportPeople(item), // E - Support people (for projects)
             this.getPriority(item), // F - Priority
             item.estimatedTime || '5 min', // G - Time estimate
-            item.status || 'pending', // H - Status
+            this.formatStatus(item.status, item.type), // H - Status (properly formatted)
             '', // I - Notes (empty for user input)
             '', // J - Action items (empty for user input)
             '', // K - Follow up (empty for user input)
@@ -177,7 +177,7 @@ export class GoogleSheetsMeetingExporter {
           '', // E
           '', // F
           '', // G
-          '', // H
+          'Not Started', // H - Default status for empty sections
           '', // I
           '', // J
           '', // K
@@ -238,6 +238,84 @@ export class GoogleSheetsMeetingExporter {
       return 'Low';
     }
     return 'Medium';
+  }
+
+  /**
+   * Format status to match Christine's sheet integration requirements
+   * Maps internal status values to: "Completed", "In Progress", "Not Started", or "Blocked"
+   */
+  private formatStatus(status?: string, itemType?: string): string {
+    if (!status) {
+      return 'Not Started';
+    }
+
+    const normalizedStatus = status.toLowerCase();
+    
+    // Map common status values to the required format
+    switch (normalizedStatus) {
+      case 'completed':
+      case 'done':
+      case 'finished':
+      case 'resolved':
+        return 'Completed';
+        
+      case 'in_progress':
+      case 'in progress':
+      case 'active':
+      case 'working':
+      case 'ongoing':
+        return 'In Progress';
+        
+      case 'blocked':
+      case 'stuck':
+      case 'waiting':
+      case 'on_hold':
+      case 'on hold':
+        return 'Blocked';
+        
+      case 'approved':
+        // Approved agenda items are ready to discuss (in progress)
+        return 'In Progress';
+        
+      case 'pending':
+      case 'new':
+      case 'submitted':
+      case 'review':
+      case 'planning':
+        return 'Not Started';
+        
+      case 'rejected':
+      case 'cancelled':
+      case 'deferred':
+      case 'postponed':
+        return 'Blocked';
+        
+      default:
+        // For project reviews, map project statuses
+        if (itemType === 'project_review') {
+          switch (normalizedStatus) {
+            case 'not_started':
+            case 'idea':
+            case 'proposed':
+              return 'Not Started';
+            case 'in_development':
+            case 'testing':
+            case 'review':
+              return 'In Progress';
+            case 'deployed':
+            case 'live':
+              return 'Completed';
+            case 'paused':
+            case 'cancelled':
+              return 'Blocked';
+            default:
+              return 'Not Started';
+          }
+        }
+        
+        // Default fallback
+        return 'Not Started';
+    }
   }
 
   /**
