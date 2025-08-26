@@ -7,8 +7,9 @@
       "env": {
         "NODE_ENV": "production"
       },
-      "buildCommand": "node build.js",
+      "buildCommand": "npm install && node build.js",
       "startCommand": "node dist/index.js",
+      "installCommand": "npm ci",
       "healthcheck": {
         "path": "/api/health",
         "port": 5000

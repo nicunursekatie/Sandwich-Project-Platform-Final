@@ -2,8 +2,29 @@
 
 import { execSync } from 'child_process';
 import { existsSync, rmSync } from 'fs';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 console.log('🚀 Starting custom build process...');
+
+// Verify critical dependencies before build
+console.log('🔍 Verifying Google Cloud dependencies...');
+try {
+  require.resolve('@google-cloud/storage');
+  console.log('✅ @google-cloud/storage found');
+} catch (error) {
+  console.error('❌ @google-cloud/storage missing:', error.message);
+  process.exit(1);
+}
+
+try {
+  require.resolve('@google-cloud/local-auth');
+  console.log('✅ @google-cloud/local-auth found');
+} catch (error) {
+  console.error('❌ @google-cloud/local-auth missing:', error.message);
+  process.exit(1);
+}
 
 // Clean previous build
 if (existsSync('dist')) {
