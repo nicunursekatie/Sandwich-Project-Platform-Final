@@ -105,6 +105,21 @@ const getStatusBadgeProps = (status: string) => {
   }
 };
 
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'technology': return '💻';
+    case 'events': return '📅';
+    case 'grants': return '💰';
+    case 'outreach': return '🤝';
+    case 'marketing': return '📢';
+    case 'operations': return '⚙️';
+    case 'community': return '👥';
+    case 'fundraising': return '💵';
+    case 'event': return '🎉';
+    default: return '📁';
+  }
+};
+
 
 
 // Project Tasks Component
@@ -1282,6 +1297,11 @@ export default function EnhancedMeetingDashboard() {
                                   </Badge>
                                   {project.priority && (
                                     <Badge variant="outline">{project.priority}</Badge>
+                                  )}
+                                  {project.category && (
+                                    <Badge variant="outline" className="text-xs bg-[#236383] text-white">
+                                      {getCategoryIcon(project.category)} {project.category}
+                                    </Badge>
                                   )}
                                   <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
                                     Last discussed: {lastDiscussed}
