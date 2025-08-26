@@ -214,6 +214,7 @@ export default function EnhancedMeetingDashboard() {
   // Project agenda states
   const [minimizedProjects, setMinimizedProjects] = useState<Set<number>>(new Set());
   const [projectAgendaStatus, setProjectAgendaStatus] = useState<Record<number, 'none' | 'agenda' | 'tabled'>>({});
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
   // Meeting edit states
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
@@ -308,6 +309,69 @@ export default function EnhancedMeetingDashboard() {
       return newSet;
     });
   }, []);
+
+  // Handler for finalizing agenda and generating PDF
+  const handleFinalizeAgenda = useCallback(async () => {
+    try {
+      setIsGeneratingPDF(true);
+      
+      // Get agenda projects and tabled projects
+      const agendaProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'agenda');
+      const tabledProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'tabled');
+      
+      // Create agenda data structure
+      const agendaData = {
+        meetingDate: getTodayString(),
+        agendaProjects: agendaProjects.map(p => ({
+          title: p.title,
+          owner: p.assigneeName || 'Unassigned',
+          supportPeople: p.supportPeople || '',
+          discussionPoints: p.meetingDiscussionPoints || '',
+          decisionItems: p.meetingDecisionItems || '',
+          status: p.status,
+          priority: p.priority
+        })),
+        tabledProjects: tabledProjects.map(p => ({
+          title: p.title,
+          owner: p.assigneeName || 'Unassigned',
+          reason: p.meetingDiscussionPoints || 'No reason specified'
+        }))
+      };
+
+      // Call API to generate PDF
+      const response = await apiRequest('POST', '/api/meetings/finalize-agenda-pdf', agendaData);
+      
+      // Download the PDF
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `meeting-agenda-${getTodayString()}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Agenda Finalized",
+        description: `PDF agenda downloaded with ${agendaProjects.length} projects and ${tabledProjects.length} tabled items`,
+      });
+      
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to generate agenda PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  }, [allProjects, projectAgendaStatus, toast]);
+
+  // Calculate agenda summary
+  const agendaSummary = {
+    agendaCount: Object.values(projectAgendaStatus).filter(status => status === 'agenda').length,
+    tabledCount: Object.values(projectAgendaStatus).filter(status => status === 'tabled').length,
+    undecidedCount: allProjects.length - Object.keys(projectAgendaStatus).length
+  };
 
   // Helper function to format dates in a user-friendly way
   const formatMeetingDate = (dateString: string) => {
@@ -1287,7 +1351,7 @@ export default function EnhancedMeetingDashboard() {
               <h2 className="text-xl font-semibold text-gray-900">Weekly Agenda Planning</h2>
               <p className="text-gray-600">Select projects and topics for this week's meeting</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button 
                 variant="outline" 
                 size="sm"
@@ -1317,8 +1381,54 @@ export default function EnhancedMeetingDashboard() {
                 {isCompiling ? 'Syncing...' : 'Sync Google Sheets'}
               </Button>
 
+              {(agendaSummary.agendaCount > 0 || agendaSummary.tabledCount > 0) && (
+                <Button 
+                  size="sm"
+                  onClick={handleFinalizeAgenda}
+                  disabled={isGeneratingPDF}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isGeneratingPDF ? 'Generating...' : 'Finalize Agenda PDF'}
+                </Button>
+              )}
             </div>
           </div>
+
+          {/* Agenda Summary */}
+          {(agendaSummary.agendaCount > 0 || agendaSummary.tabledCount > 0) && (
+            <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-blue-900">Agenda Status</h3>
+                    <div className="flex items-center gap-4 mt-1">
+                      <span className="text-sm text-green-700">
+                        📅 {agendaSummary.agendaCount} for agenda
+                      </span>
+                      <span className="text-sm text-orange-700">
+                        ⏳ {agendaSummary.tabledCount} tabled
+                      </span>
+                      {agendaSummary.undecidedCount > 0 && (
+                        <span className="text-sm text-gray-600">
+                          ❓ {agendaSummary.undecidedCount} undecided
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm"
+                    onClick={handleFinalizeAgenda}
+                    disabled={isGeneratingPDF || agendaSummary.agendaCount === 0}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    {isGeneratingPDF ? 'Generating...' : 'Download Agenda PDF'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Projects Selection Table */}
           <Card>

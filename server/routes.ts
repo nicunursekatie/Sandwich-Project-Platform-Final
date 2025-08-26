@@ -3208,6 +3208,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Finalize and export custom agenda as PDF
+  app.post("/api/meetings/finalize-agenda-pdf", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'manage_meetings')) {
+        return res.status(403).json({ error: "Insufficient permissions to generate agenda PDF" });
+      }
+
+      const agendaData = req.body;
+      
+      // Validate agenda data structure
+      if (!agendaData.meetingDate || !agendaData.agendaProjects) {
+        return res.status(400).json({ error: "Invalid agenda data structure" });
+      }
+
+      // Dynamic import for ES modules
+      const PDFKit = (await import("pdfkit")).default;
+      const doc = new PDFKit({ margin: 50 });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      
+      const pdfBuffer = await new Promise<Buffer>((resolve) => {
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+        // TSP Brand Colors
+        const colors = {
+          orange: '#FBAD3F',
+          navy: '#236383',
+          lightBlue: '#47B3CB',
+          darkGray: '#333333',
+          lightGray: '#666666',
+          white: '#FFFFFF'
+        };
+
+        let yPosition = 50;
+
+        // HEADER WITH TSP BRANDING
+        doc.fontSize(24).fillColor(colors.navy).text('The Sandwich Project', 50, yPosition);
+        doc.fontSize(18).fillColor(colors.orange).text('Meeting Agenda', 50, yPosition + 30);
+        
+        // Meeting date
+        const meetingDate = new Date(agendaData.meetingDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        doc.fontSize(14).fillColor(colors.darkGray)
+           .text(`Meeting Date: ${meetingDate}`, 50, yPosition + 70)
+           .text(`Generated: ${new Date().toLocaleDateString()}`, 50, yPosition + 90);
+
+        yPosition += 140;
+
+        // AGENDA PROJECTS SECTION
+        if (agendaData.agendaProjects.length > 0) {
+          doc.fontSize(16).fillColor(colors.navy).text('AGENDA ITEMS', 50, yPosition);
+          yPosition += 30;
+
+          agendaData.agendaProjects.forEach((project, index) => {
+            // Check if we need a new page
+            if (yPosition > 650) {
+              doc.addPage();
+              yPosition = 50;
+            }
+
+            // Project header
+            doc.fontSize(14).fillColor(colors.navy)
+               .text(`${index + 1}. ${project.title}`, 50, yPosition);
+            yPosition += 20;
+
+            // Owner and support people
+            doc.fontSize(11).fillColor(colors.darkGray);
+            if (project.owner && project.owner !== 'Unassigned') {
+              doc.text(`Owner: ${project.owner}`, 60, yPosition);
+              yPosition += 15;
+            }
+            if (project.supportPeople) {
+              doc.text(`Support: ${project.supportPeople}`, 60, yPosition);
+              yPosition += 15;
+            }
+
+            // Discussion points
+            if (project.discussionPoints) {
+              doc.fontSize(10).fillColor(colors.darkGray)
+                 .text('Discussion Points:', 60, yPosition);
+              yPosition += 12;
+              doc.fontSize(9).fillColor(colors.lightGray)
+                 .text(project.discussionPoints, 70, yPosition, { width: 470 });
+              yPosition += 20;
+            }
+
+            // Decision items
+            if (project.decisionItems) {
+              doc.fontSize(10).fillColor(colors.darkGray)
+                 .text('Decisions Needed:', 60, yPosition);
+              yPosition += 12;
+              doc.fontSize(9).fillColor(colors.lightGray)
+                 .text(project.decisionItems, 70, yPosition, { width: 470 });
+              yPosition += 20;
+            }
+
+            yPosition += 10; // Space between projects
+          });
+        }
+
+        // TABLED PROJECTS SECTION
+        if (agendaData.tabledProjects && agendaData.tabledProjects.length > 0) {
+          // Check if we need a new page
+          if (yPosition > 600) {
+            doc.addPage();
+            yPosition = 50;
+          }
+
+          yPosition += 20;
+          doc.fontSize(16).fillColor(colors.navy).text('TABLED FOR FUTURE MEETINGS', 50, yPosition);
+          yPosition += 30;
+
+          agendaData.tabledProjects.forEach((project, index) => {
+            if (yPosition > 700) {
+              doc.addPage();
+              yPosition = 50;
+            }
+
+            doc.fontSize(12).fillColor(colors.darkGray)
+               .text(`• ${project.title}`, 60, yPosition);
+            yPosition += 15;
+            
+            if (project.owner && project.owner !== 'Unassigned') {
+              doc.fontSize(10).fillColor(colors.lightGray)
+                 .text(`Owner: ${project.owner}`, 70, yPosition);
+              yPosition += 12;
+            }
+            
+            if (project.reason && project.reason !== 'No reason specified') {
+              doc.fontSize(9).fillColor(colors.lightGray)
+                 .text(`Reason: ${project.reason}`, 70, yPosition, { width: 450 });
+              yPosition += 15;
+            }
+            
+            yPosition += 8;
+          });
+        }
+
+        // Footer
+        const pageCount = doc.bufferedPageRange();
+        for (let i = 0; i < pageCount.count; i++) {
+          doc.switchToPage(i);
+          doc.fontSize(8).fillColor(colors.lightGray)
+             .text(`The Sandwich Project • Meeting Agenda • Page ${i + 1} of ${pageCount.count}`, 
+                    50, doc.page.height - 50, { align: 'center', width: doc.page.width - 100 });
+        }
+
+        doc.end();
+      });
+
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="meeting-agenda-${agendaData.meetingDate}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      res.send(pdfBuffer);
+    } catch (error) {
+      logger.error('Finalize agenda PDF error:', error);
+      res.status(500).json({ error: "Failed to generate finalized agenda PDF" });
+    }
+  });
+
   // Get projects marked for review in next meeting
   app.get("/api/projects/for-review", isAuthenticated, async (req: any, res) => {
     try {
