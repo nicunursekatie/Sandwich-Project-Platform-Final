@@ -1012,8 +1012,13 @@ export default function EnhancedMeetingDashboard() {
                   <div className="space-y-3">
                     {allProjects.map((project: any) => {
                       const isSelected = selectedProjectIds.includes(project.id);
+                      // Parse date without timezone conversion to avoid day-off issues
                       const lastDiscussed = project.lastDiscussedDate 
-                        ? new Date(project.lastDiscussedDate).toLocaleDateString()
+                        ? new Date(project.lastDiscussedDate + 'T12:00:00').toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long', 
+                            day: 'numeric'
+                          })
                         : 'Never discussed';
                       
                       return (
