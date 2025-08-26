@@ -22,7 +22,7 @@ import {
   FolderOpen, UserCheck, Zap, Home, ChevronRight,
   Calendar, RotateCcw, ArrowLeft, ArrowRight, Grid3X3,
   AlertCircle, BookOpen, Lightbulb, Target, Filter,
-  Check, Play, MapPin, X, UserPlus, Edit3
+  Check, Play, MapPin, X, UserPlus, Edit3, UserCog
 } from 'lucide-react';
 
 interface Meeting {
@@ -184,8 +184,10 @@ export default function EnhancedMeetingDashboard() {
   // Enhanced project management states
   const [editingProject, setEditingProject] = useState<number | null>(null);
   const [showEditPeopleDialog, setShowEditPeopleDialog] = useState(false);
+  const [showEditOwnerDialog, setShowEditOwnerDialog] = useState(false);
   const [showAddTaskDialog, setShowAddTaskDialog] = useState(false);
   const [editSupportPeople, setEditSupportPeople] = useState<string>('');
+  const [editProjectOwner, setEditProjectOwner] = useState<string>('');
   const [supportPeopleList, setSupportPeopleList] = useState<Array<{id?: string, name: string, email?: string, type: 'user' | 'custom'}>>([]);
   const [newTaskTitle, setNewTaskTitle] = useState<string>('');
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
@@ -1333,19 +1335,34 @@ export default function EnhancedMeetingDashboard() {
                                     </div>
                                   ));
                                 })()}
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="text-xs h-7"
-                                  onClick={() => {
-                                    setEditingProject(project.id);
-                                    setEditSupportPeople(project.supportPeople || '');
-                                    setShowEditPeopleDialog(true);
-                                  }}
-                                >
-                                  <Users className="w-3 h-3 mr-1" />
-                                  Edit People
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs h-7"
+                                    onClick={() => {
+                                      setEditingProject(project.id);
+                                      setEditProjectOwner(project.assigneeName || '');
+                                      setShowEditOwnerDialog(true);
+                                    }}
+                                  >
+                                    <UserCog className="w-3 h-3 mr-1" />
+                                    Edit Owner
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs h-7"
+                                    onClick={() => {
+                                      setEditingProject(project.id);
+                                      setEditSupportPeople(project.supportPeople || '');
+                                      setShowEditPeopleDialog(true);
+                                    }}
+                                  >
+                                    <Users className="w-3 h-3 mr-1" />
+                                    Edit Support
+                                  </Button>
+                                </div>
                               </div>
                             </div>
 
@@ -1498,7 +1515,7 @@ export default function EnhancedMeetingDashboard() {
         </div>
       )}
 
-      {/* Edit People Dialog */}
+      {/* Edit Support People Dialog */}
       <Dialog open={showEditPeopleDialog} onOpenChange={setShowEditPeopleDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1549,6 +1566,67 @@ export default function EnhancedMeetingDashboard() {
                   toast({
                     title: "Error",
                     description: `Failed to update support people: ${error?.message || 'Unknown error'}`,
+                    variant: "destructive",
+                  });
+                }
+              }
+            }}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Owner Dialog */}
+      <Dialog open={showEditOwnerDialog} onOpenChange={setShowEditOwnerDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Project Owner</DialogTitle>
+            <DialogDescription>
+              Assign a single project owner from the system or enter a custom name
+            </DialogDescription>
+          </DialogHeader>
+          <ProjectAssigneeSelector
+            value={editProjectOwner}
+            onChange={(value) => {
+              setEditProjectOwner(value);
+            }}
+            label="Project Owner"
+            placeholder="Select or enter project owner"
+            multiple={false}
+          />
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowEditOwnerDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={async () => {
+              if (editingProject) {
+                try {
+                  console.log('=== PROJECT OWNER UPDATE DEBUG ===');
+                  console.log('Project ID:', editingProject);
+                  console.log('Project Owner Value:', editProjectOwner);
+                  
+                  const response = await apiRequest('PATCH', `/api/projects/${editingProject}`, {
+                    assigneeName: editProjectOwner
+                  });
+                  
+                  console.log('API Response:', response);
+                  queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+                  
+                  toast({
+                    title: "Success",
+                    description: "Project owner updated successfully",
+                  });
+                  setShowEditOwnerDialog(false);
+                } catch (error) {
+                  console.error('=== PROJECT OWNER ERROR ===');
+                  console.error('Error details:', error);
+                  console.error('Error message:', error?.message);
+                  console.error('Error response:', error?.response);
+                  
+                  toast({
+                    title: "Error",
+                    description: `Failed to update project owner: ${error?.message || 'Unknown error'}`,
                     variant: "destructive",
                   });
                 }
