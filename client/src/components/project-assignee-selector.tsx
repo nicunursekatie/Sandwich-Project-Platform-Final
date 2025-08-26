@@ -145,14 +145,9 @@ export function ProjectAssigneeSelector({
                 .filter(user => !selectedUsers.some(selected => selected.id === user.id && selected.isSystemUser))
                 .map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {user.role || 'User'}
-                      </Badge>
-                    </div>
+                    <span className="font-medium">
+                      {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
+                    </span>
                   </SelectItem>
                 ))}
             </SelectContent>
