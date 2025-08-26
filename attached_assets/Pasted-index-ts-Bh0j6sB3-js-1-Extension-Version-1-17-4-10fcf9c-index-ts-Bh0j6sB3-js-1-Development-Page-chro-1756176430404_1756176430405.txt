@@ -1,0 +1,76 @@
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=l5OWp6OEBB9H' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=l5OWp6OEBB9H' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+hook.js:608 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID Error Component Stack
+    at App (App.tsx:139:3)
+overrideMethod @ hook.js:608
+message-notifications.tsx:99 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+dashboard.tsx:72 Current URL location: /dashboard
+dashboard.tsx:94 Dashboard activeSection changed to: dashboard
+useMessaging.ts:242 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+(anonymous) @ useMessaging.ts:242
+hook.js:608 Messaging WebSocket error: Event
+overrideMethod @ hook.js:608
+useMessaging.ts:286 Messaging WebSocket disconnected
+hook.js:608 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+message-notifications.tsx:111 WebSocket connected successfully
+simple-nav.tsx:207 Navigation click: meetings
+dashboard.tsx:509 Dashboard setActiveSection called with: meetings
+dashboard.tsx:94 Dashboard activeSection changed to: meetings
+:5000/api/projects/for-review:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+hook.js:608 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. Error Component Stack
+    at DescriptionWarning (chunk-7MTYHN3L.js?v=6f4566ed:332:29)
+    at chunk-7MTYHN3L.js?v=6f4566ed:236:13
+    at chunk-7MTYHN3L.js?v=6f4566ed:159:58
+    at Presence (chunk-HBQZEAXN.js?v=6f4566ed:24:11)
+    at chunk-7MTYHN3L.js?v=6f4566ed:150:64
+    at chunk-E7TSFT4J.js?v=6f4566ed:79:13
+    at chunk-E7TSFT4J.js?v=6f4566ed:56:13
+    at chunk-J2KA7NLM.js?v=6f4566ed:43:13
+    at chunk-O32TYVV7.js?v=6f4566ed:262:22
+    at Presence (chunk-HBQZEAXN.js?v=6f4566ed:24:11)
+    at Provider (chunk-OXZDJRWN.js?v=6f4566ed:38:15)
+    at DialogPortal (chunk-7MTYHN3L.js?v=6f4566ed:112:11)
+    at _c3 (dialog.tsx:35:6)
+    at Provider (chunk-OXZDJRWN.js?v=6f4566ed:38:15)
+    at Dialog (chunk-7MTYHN3L.js?v=6f4566ed:52:5)
+    at div (<anonymous>)
+    at EnhancedMeetingDashboard (enhanced-meeting-dashboard.tsx:389:20)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at Dashboard (dashboard.tsx:66:37)
+    at Route (wouter.js?v=6f4566ed:206:16)
+    at Switch (wouter.js?v=6f4566ed:262:17)
+    at Router (App.tsx:24:49)
+    at Provider (chunk-OXZDJRWN.js?v=6f4566ed:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=6f4566ed:65:5)
+    at QueryClientProvider (@tanstack_react-query.js?v=6f4566ed:2933:3)
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:139:3)
+overrideMethod @ hook.js:608

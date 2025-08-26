@@ -51,6 +51,7 @@ export interface IStorage {
   deleteProject(id: number): Promise<boolean>;
   getArchivedProjects(): Promise<any[]>;
   archiveProject(id: number, userId?: string, userName?: string): Promise<any>;
+  getProjectsForReview(): Promise<Project[]>;
   
   // Project Tasks
   getProjectTasks(projectId: number): Promise<ProjectTask[]>;
@@ -570,6 +571,27 @@ export class MemStorage implements IStorage {
   async archiveProject(id: number, userId?: string, userName?: string): Promise<boolean> {
     // For MemStorage, just delete the project (simulating archive)
     return this.deleteProject(id);
+  }
+
+  async getProjectsForReview(): Promise<Project[]> {
+    return Array.from(this.projects.values())
+      .filter(project => 
+        project.reviewInNextMeeting === true && 
+        project.status !== 'completed' && 
+        project.status !== 'archived'
+      )
+      .sort((a, b) => {
+        // Sort by priority first, then by creation date
+        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 1;
+        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 1;
+        
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority;
+        }
+        
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
   }
 
   // Project Task methods
