@@ -57,5 +57,12 @@ The application features a consistent brand identity using The Sandwich Project'
 - **PDF Generation**: `pdfkit`
 - **Authentication**: `connect-pg-simple`
 - **File Uploads**: `multer`
-- **Google Integration**: Google Sheets API
+- **Google Integration**: Google Sheets API, `@google-cloud/storage`
 - **Analytics**: Google Analytics (G-9M4XDZGN68)
+
+## Recent Changes
+### August 26, 2025 - Deployment Fix
+- **Issue**: Deployment failed due to missing `@google-cloud/storage` dependency in package.json
+- **Solution**: Added `@google-cloud/storage` dependency to package.json via packager tool
+- **Build Script**: Verified existing build script correctly handles external dependencies with `--packages=external` flag
+- **Status**: Deployment issue resolved, application ready for production deployment
