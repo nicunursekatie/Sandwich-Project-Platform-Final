@@ -203,12 +203,7 @@ export class GoogleSheetsSyncService {
       notes: project.notes || project.description || ''
     };
     
-    // Debug logging to verify column mapping
-    console.log(`📊 Project "${project.title}" mapped to:`, {
-      columnA_task: sheetRow.task,
-      columnB_reviewStatus: sheetRow.reviewStatus,
-      columnF_status: sheetRow.status
-    });
+    // Column mapping verified: task→A, reviewStatus→B, status→F
     
     return sheetRow;
   }

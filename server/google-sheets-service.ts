@@ -123,12 +123,12 @@ export class GoogleSheetsService {
       const rows = response.data.values || [];
       if (rows.length === 0) return [];
 
-      // Skip header row and parse data
+      // Skip header row and parse data - accounting for existing sheet structure
       const dataRows = rows.slice(1);
       return dataRows.map((row: any[], index: number) => ({
         task: row[0] || '', // Column A: Task
         reviewStatus: row[1] || '', // Column B: Review Status (P1, P2, etc.)
-        priority: row[2] || '', // Column C: Priority
+        priority: row[2] || '', // Column C: Priority 
         owner: row[3] || '', // Column D: Owner
         supportPeople: row[4] || '', // Column E: Support people
         status: row[5] || '', // Column F: Status (actual project status)
@@ -179,26 +179,22 @@ export class GoogleSheetsService {
           row.notes // Column L - Notes
         ];
 
-        // Debug: Log what's actually being written
-        console.log(`🔍 Writing row for "${row.task}":`, {
-          A_task: row.task,
-          B_reviewStatus: row.reviewStatus, 
-          F_status: row.status,
-          fullRowData: rowData
-        });
+        // Column mapping: A=task, B=reviewStatus, C=priority, D=owner, E=supportPeople, F=status
 
         // Check if this project already exists in the sheet
         const existingRowIndex = existingRowMap.get(row.task.toLowerCase().trim());
         
         if (existingRowIndex) {
-          // Update existing row
+          // Update existing row - FORCE full row update to fix column mapping
           updates.push({
             range: `${this.config.worksheetName}!A${existingRowIndex}:L${existingRowIndex}`,
             values: [rowData]
           });
+          console.log(`🔄 Updating existing row ${existingRowIndex} for: "${row.task}"`);
         } else {
           // New row to append
           newRows.push(rowData);
+          console.log(`➕ Adding new row for: "${row.task}"`);
         }
       }
 
