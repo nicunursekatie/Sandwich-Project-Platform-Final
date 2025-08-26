@@ -597,20 +597,35 @@ export default function ProjectsClean() {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <ProjectAssigneeSelector
-                label="Assigned To"
-                value={newProject.assigneeName || ''}
-                onChange={(assigneeName, userIds) => {
-                  setNewProject({
-                    ...newProject, 
-                    assigneeName,
-                    assigneeIds: userIds || []
-                  });
-                }}
-                placeholder="Select team members or enter names"
-                multiple={true}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <ProjectAssigneeSelector
+                  label="Project Owner"
+                  value={newProject.assigneeName || ''}
+                  onChange={(assigneeName) => {
+                    setNewProject({
+                      ...newProject, 
+                      assigneeName
+                    });
+                  }}
+                  placeholder="Select or enter project owner"
+                  multiple={false}
+                />
+              </div>
+              <div className="space-y-2">
+                <ProjectAssigneeSelector
+                  label="Support People"
+                  value={newProject.supportPeople || ''}
+                  onChange={(supportPeople) => {
+                    setNewProject({
+                      ...newProject, 
+                      supportPeople
+                    });
+                  }}
+                  placeholder="Select or enter support people"
+                  multiple={true}
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -728,17 +743,30 @@ export default function ProjectsClean() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="md:col-span-1">
                   <ProjectAssigneeSelector
                     value={editingProject.assigneeName || ''}
-                    onChange={(value, userIds) => setEditingProject({
+                    onChange={(value) => setEditingProject({
                       ...editingProject, 
-                      assigneeName: value,
-                      assigneeIds: userIds?.length ? userIds : undefined
+                      assigneeName: value
                     })}
-                    label="Assigned To"
-                    placeholder="Select or enter person responsible"
+                    label="Project Owner"
+                    placeholder="Select or enter project owner"
                     className="font-roboto"
+                    multiple={false}
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <ProjectAssigneeSelector
+                    value={editingProject.supportPeople || ''}
+                    onChange={(value) => setEditingProject({
+                      ...editingProject, 
+                      supportPeople: value
+                    })}
+                    label="Support People"
+                    placeholder="Select or enter support people"
+                    className="font-roboto"
+                    multiple={true}
                   />
                 </div>
                 <div>
