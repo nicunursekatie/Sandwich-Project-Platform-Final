@@ -235,6 +235,50 @@ export default function EnhancedMeetingDashboard() {
     });
   };
 
+  const handleDownloadPDF = async (meeting: Meeting | null) => {
+    if (!meeting) return;
+    
+    try {
+      const response = await fetch(`/api/meetings/${meeting.id}/download-pdf`, {
+        method: 'GET',
+        credentials: 'include', // Include session cookies
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download PDF: ${response.statusText}`);
+      }
+
+      // Get the blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${meeting.title.replace(/[^a-zA-Z0-9\s]/g, '_')}_${meeting.date}.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "PDF Downloaded",
+        description: "Meeting agenda PDF has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast({
+        title: "Download Failed", 
+        description: "Failed to download the meeting agenda PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Helper functions for agenda section icons and colors
   const getSectionIcon = (title: string) => {
     switch (title.toLowerCase()) {
@@ -554,7 +598,10 @@ export default function EnhancedMeetingDashboard() {
                 <p className="text-teal-700 mb-4">
                   View the compiled agenda that was used during this meeting
                 </p>
-                <button className="flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white px-6 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                <button 
+                  onClick={() => handleDownloadPDF(selectedMeeting)}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white px-6 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
                   <Download className="w-4 h-4" />
                   Download Agenda PDF
                 </button>
@@ -673,6 +720,7 @@ export default function EnhancedMeetingDashboard() {
                   Export to Google Sheets
                 </button>
                 <button
+                  onClick={() => handleDownloadPDF(selectedMeeting)}
                   disabled={isExporting}
                   className="flex items-center justify-center gap-2 border border-teal-300 text-teal-600 hover:bg-teal-50 hover:border-teal-400 disabled:border-gray-300 disabled:text-gray-400 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
                 >

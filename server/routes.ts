@@ -3013,6 +3013,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download meeting agenda as PDF
+  app.get("/api/meetings/:id/download-pdf", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!hasPermission(req.user, 'access_meetings')) {
+        return res.status(403).json({ error: "Insufficient permissions to download meeting agenda" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      if (isNaN(meetingId)) {
+        return res.status(400).json({ error: "Invalid meeting ID" });
+      }
+
+      const meeting = await storage.getMeetingById(meetingId);
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+
+      // Get compiled agenda if available (optional for PDF generation)
+      let compiledAgenda = null;
+      try {
+        const compiledAgendas = await storage.getCompiledAgendasByMeeting(meetingId);
+        if (compiledAgendas.length > 0) {
+          const latestAgenda = compiledAgendas[0];
+          const sections = await storage.getAgendaSectionsByCompiledAgenda(latestAgenda.id);
+          compiledAgenda = {
+            ...latestAgenda,
+            sections: sections.sort((a, b) => a.orderIndex - b.orderIndex)
+          };
+        }
+      } catch (error) {
+        logger.warn("Could not fetch compiled agenda for PDF, using basic agenda structure:", error);
+      }
+
+      const { MeetingAgendaPDFGenerator } = await import('./meeting-agenda-pdf-generator');
+      const pdfBuffer = await MeetingAgendaPDFGenerator.generatePDF(meeting, compiledAgenda);
+      
+      // Set appropriate headers for PDF download
+      const filename = `${meeting.title.replace(/[^a-zA-Z0-9\s]/g, '_')}_${meeting.date}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      res.send(pdfBuffer);
+    } catch (error) {
+      logger.error('PDF download error:', error);
+      res.status(500).json({ error: "Failed to generate meeting agenda PDF" });
+    }
+  });
+
   // Finalize compiled agenda
   app.patch("/api/compiled-agendas/:id/finalize", isAuthenticated, async (req: any, res) => {
     try {
