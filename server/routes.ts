@@ -3025,7 +3025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid meeting ID" });
       }
 
-      const meeting = await storage.getMeetingById(meetingId);
+      const meeting = await storage.getMeeting(meetingId);
       if (!meeting) {
         return res.status(404).json({ error: "Meeting not found" });
       }
