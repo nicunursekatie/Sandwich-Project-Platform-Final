@@ -1317,10 +1317,7 @@ export default function EnhancedMeetingDashboard() {
                                     });
                                   }
                                   
-                                  // Add creator if not from Google Sheets sync
-                                  if (project.createdByName && project.createdByName !== 'Google Sheets Import') {
-                                    people.push({ role: 'Creator', name: project.createdByName });
-                                  }
+                                  // Creator is hidden from meeting project lists
                                   
                                   if (people.length === 0) {
                                     return <span className="text-gray-500 text-sm">Not assigned</span>;
