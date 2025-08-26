@@ -125,9 +125,40 @@ export default function EnhancedMeetingDashboard() {
 
   // Helper function to determine if meeting is in the past
   const isPastMeeting = (dateString: string, timeString: string) => {
-    const meetingDateTime = new Date(`${dateString}T${timeString}`);
-    const now = new Date();
-    return meetingDateTime < now;
+    try {
+      // Handle "TBD" time or missing time by using end of day
+      let effectiveTime = timeString;
+      if (!timeString || timeString === 'TBD' || timeString === '') {
+        effectiveTime = '23:59'; // End of day - be conservative
+      }
+      
+      // Ensure time is in HH:MM format
+      if (!effectiveTime.includes(':')) {
+        effectiveTime = '12:00'; // Default to noon if no colon
+      }
+      
+      // Parse the date and time explicitly
+      const [year, month, day] = dateString.split('-').map(Number);
+      const [hours, minutes] = effectiveTime.split(':').map(Number);
+      
+      const meetingDate = new Date(year, month - 1, day, hours, minutes); // month is 0-indexed
+      const now = new Date();
+      const isPast = meetingDate < now;
+      
+      // Debug logging
+      console.log(`🗓️ Meeting: ${dateString} ${timeString} (effective: ${effectiveTime})`);
+      console.log(`📅 Parsed meeting date: ${meetingDate.toLocaleString()}`);
+      console.log(`⏰ Current date: ${now.toLocaleString()}`);
+      console.log(`⏪ Is past: ${isPast}`);
+      
+      return isPast;
+    } catch (error) {
+      console.error('Error parsing meeting date:', error, { dateString, timeString });
+      // If parsing fails, check if the date is clearly in the past
+      const now = new Date();
+      const meetingDate = new Date(dateString);
+      return meetingDate < now;
+    }
   };
 
   // Helper function to get current date range for breadcrumbs
