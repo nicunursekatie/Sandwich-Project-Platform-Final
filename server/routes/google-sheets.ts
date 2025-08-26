@@ -193,8 +193,7 @@ router.post('/:id/test', async (req, res) => {
 router.get('/sync/analyze', async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
-    const { StorageWrapper } = await import('../storage-wrapper');
-    const storage = new StorageWrapper();
+    const { storage } = await import('../storage-wrapper');
     const syncService = new GoogleSheetsSyncService(storage);
     
     const sheetName = req.query.sheet as string || 'Sheet1';
@@ -220,8 +219,7 @@ router.get('/sync/analyze', async (req, res) => {
 router.post('/sync/import', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
-    const { StorageWrapper } = await import('../storage-wrapper');
-    const storage = new StorageWrapper();
+    const { storage } = await import('../storage-wrapper');
     const syncService = new GoogleSheetsSyncService(storage);
     
     const { 
@@ -264,8 +262,7 @@ router.post('/sync/import', isAuthenticated, async (req, res) => {
 router.post('/sync/export', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
-    const { StorageWrapper } = await import('../storage-wrapper');
-    const storage = new StorageWrapper();
+    const { storage } = await import('../storage-wrapper');
     const syncService = new GoogleSheetsSyncService(storage);
     
     const { sheetName = 'Database_Export' } = req.body;
@@ -550,8 +547,7 @@ router.post('/projects/:id/mark-for-review', isAuthenticated, async (req, res) =
 router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
-    const { StorageWrapper } = await import('../storage-wrapper');
-    const storage = new StorageWrapper();
+    const { storage } = await import('../storage-wrapper');
     const syncService = new GoogleSheetsSyncService(storage);
     
     const { 
