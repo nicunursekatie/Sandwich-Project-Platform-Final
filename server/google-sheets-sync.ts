@@ -331,9 +331,12 @@ export class GoogleSheetsSyncService {
     return reviewInNextMeeting ? 'P1' : '';
   }
 
-  private mapReviewStatusFromSheet(reviewStatus: string): boolean {
+  private mapReviewStatusFromSheet(reviewStatus: string | null | undefined): boolean {
+    // Handle null, undefined, or empty values
+    if (!reviewStatus || typeof reviewStatus !== 'string' || reviewStatus.trim() === '') {
+      return false;
+    }
     // Any P status means review in next meeting
-    if (!reviewStatus || reviewStatus.trim() === '') return false;
     return reviewStatus.trim().startsWith('P');
   }
 
