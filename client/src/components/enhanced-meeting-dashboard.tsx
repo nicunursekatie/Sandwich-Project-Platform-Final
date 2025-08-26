@@ -76,6 +76,7 @@ export default function EnhancedMeetingDashboard() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
+  const [activeTab, setActiveTab] = useState<'overview' | 'agenda'>('overview');
   const [showNewMeetingDialog, setShowNewMeetingDialog] = useState(false);
   const [newMeetingData, setNewMeetingData] = useState({
     title: '',
@@ -372,16 +373,6 @@ export default function EnhancedMeetingDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
-        <Home className="w-4 h-4" />
-        <ChevronRight className="w-4 h-4" />
-        <span>Planning & Coordination</span>
-        <ChevronRight className="w-4 h-4" />
-        <span className="font-medium text-teal-600">Meeting Management</span>
-        <ChevronRight className="w-4 h-4" />
-        <span className="text-gray-500">{dateRange.week}</span>
-      </div>
 
       {/* Header */}
       <div className="bg-gradient-to-r from-teal-50 to-orange-50 p-6 rounded-lg border border-teal-200">
@@ -401,6 +392,35 @@ export default function EnhancedMeetingDashboard() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'overview'
+              ? 'bg-white text-teal-700 shadow-sm'
+              : 'text-gray-600 hover:text-teal-700'
+          }`}
+        >
+          <CalendarDays className="w-4 h-4" />
+          Meeting Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('agenda')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'agenda'
+              ? 'bg-white text-teal-700 shadow-sm'
+              : 'text-gray-600 hover:text-teal-700'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          Agenda Planning
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <>
       {/* Projects for Review Alert */}
       {projectsForReview.length > 0 && (
         <Card className="border-orange-200 bg-orange-50">
@@ -915,6 +935,194 @@ export default function EnhancedMeetingDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+        </>
+      )}
+
+      {/* Agenda Planning Tab */}
+      {activeTab === 'agenda' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-teal-600" />
+                Agenda Planning & Project Management
+              </CardTitle>
+              <p className="text-gray-600">
+                Manage agenda items, review Google Sheet projects, and plan what to discuss in upcoming meetings.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              
+              {/* Google Sheets Projects Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-orange-600" />
+                  Projects from Google Sheets
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Projects that need discussion (never discussed or marked for review)
+                </p>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-blue-800 text-sm mb-2">
+                    <strong>Coming Soon:</strong> Direct integration with your Google Sheets project tracking
+                  </p>
+                  <ul className="text-blue-700 text-sm space-y-1">
+                    <li>• Projects with blank "last discussed" dates will appear here</li>
+                    <li>• Mark projects for next meeting discussion</li>
+                    <li>• Add specific questions or decisions needed</li>
+                    <li>• Track when each project was last discussed</li>
+                  </ul>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Manual Agenda Items Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-teal-600" />
+                  Submit Agenda Items
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Project-Related Agenda Item */}
+                  <Card className="border-teal-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Project-Related Item</CardTitle>
+                      <p className="text-sm text-gray-600">
+                        Submit questions or updates about existing projects
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="project-select">Related Project</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select project..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="website">Website Redesign</SelectItem>
+                            <SelectItem value="events">Volunteer Events</SelectItem>
+                            <SelectItem value="outreach">Community Outreach</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="project-topic">Discussion Topic</Label>
+                        <Input 
+                          placeholder="What about this project needs discussion?"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="project-details">Details/Questions</Label>
+                        <Textarea 
+                          placeholder="Specific questions, decisions needed, progress updates..."
+                          rows={3}
+                        />
+                      </div>
+                      <Button className="w-full bg-teal-600 hover:bg-teal-700">
+                        Add to Agenda
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* General Agenda Item */}
+                  <Card className="border-orange-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">General Agenda Item</CardTitle>
+                      <p className="text-sm text-gray-600">
+                        One-off items not related to existing projects
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="general-title">Item Title</Label>
+                        <Input 
+                          placeholder="Brief title for agenda item"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="general-section">Agenda Section</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select section..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="old_business">Old Business</SelectItem>
+                            <SelectItem value="urgent_items">Urgent Items</SelectItem>
+                            <SelectItem value="housekeeping">Housekeeping</SelectItem>
+                            <SelectItem value="new_business">New Business</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="general-description">Description</Label>
+                        <Textarea 
+                          placeholder="What needs to be discussed or decided?"
+                          rows={3}
+                        />
+                      </div>
+                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                        Add to Agenda
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Submitted Agenda Items */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                  Submitted Agenda Items
+                </h3>
+                
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-gray-600 text-center italic">
+                    No agenda items submitted yet for the next meeting.
+                  </p>
+                  <p className="text-gray-500 text-sm text-center mt-2">
+                    Items submitted here will be included when compiling the weekly agenda.
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-purple-600" />
+                  Quick Actions
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Button variant="outline" className="h-auto p-4 text-left">
+                    <div>
+                      <div className="font-medium">Create New Project</div>
+                      <div className="text-sm text-gray-600">Add a new project that needs discussion</div>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="h-auto p-4 text-left">
+                    <div>
+                      <div className="font-medium">Sync Google Sheets</div>
+                      <div className="text-sm text-gray-600">Pull latest projects from spreadsheet</div>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="h-auto p-4 text-left">
+                    <div>
+                      <div className="font-medium">View All Projects</div>
+                      <div className="text-sm text-gray-600">Go to full project management</div>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
