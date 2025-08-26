@@ -336,34 +336,38 @@ export default function EnhancedMeetingDashboard() {
       )}
 
       {/* View Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="sm"
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
             onClick={() => setViewMode('grid')}
-            className="bg-teal-600 hover:bg-teal-700 text-white"
+            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'grid'
+                ? 'bg-white text-teal-700 shadow-sm'
+                : 'text-gray-600 hover:text-teal-700'
+            }`}
           >
-            <Grid3X3 className="w-4 h-4 mr-2" />
-            Grid View
-          </Button>
-          <Button
-            variant={viewMode === 'calendar' ? 'default' : 'outline'}
-            size="sm"
+            <Grid3X3 className="w-4 h-4" />
+            <span className="hidden sm:inline">Grid</span>
+          </button>
+          <button
             onClick={() => setViewMode('calendar')}
-            className="border-teal-300 text-teal-700 hover:bg-teal-50"
+            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'calendar'
+                ? 'bg-white text-teal-700 shadow-sm'
+                : 'text-gray-600 hover:text-teal-700'
+            }`}
           >
-            <Calendar className="w-4 h-4 mr-2" />
-            Calendar View
-          </Button>
+            <Calendar className="w-4 h-4" />
+            <span className="hidden sm:inline">Calendar</span>
+          </button>
         </div>
-        <Button
+        <button
           onClick={() => setShowNewMeetingDialog(true)}
-          className="bg-orange-600 hover:bg-orange-700 text-white"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Schedule Meeting
-        </Button>
+          <Plus className="w-4 h-4" />
+          <span>Schedule Meeting</span>
+        </button>
       </div>
 
       {/* Upcoming Meetings Section */}
@@ -381,13 +385,13 @@ export default function EnhancedMeetingDashboard() {
               <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Upcoming Meetings</h3>
               <p className="text-gray-600 mb-4">Schedule your next team meeting to get started.</p>
-              <Button 
+              <button 
                 onClick={() => setShowNewMeetingDialog(true)}
-                className="bg-teal-600 hover:bg-teal-700 text-white"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-5 h-5" />
                 Schedule First Meeting
-              </Button>
+              </button>
             </CardContent>
           </Card>
         ) : (
@@ -430,28 +434,27 @@ export default function EnhancedMeetingDashboard() {
 
                   <Separator />
 
-                  <div className="space-y-2">
-                    <Button
+                  <div className="space-y-3">
+                    <button
                       onClick={() => setSelectedMeeting(meeting)}
-                      variant="outline"
-                      className="w-full justify-start border-teal-300 text-teal-700 hover:bg-teal-50"
+                      className="w-full flex items-center justify-start gap-3 px-4 py-2.5 border border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300 rounded-lg font-medium transition-all duration-200"
                     >
-                      <FileText className="w-4 h-4 mr-2" />
+                      <FileText className="w-4 h-4" />
                       View Agenda Details
-                    </Button>
+                    </button>
 
-                    <Button
+                    <button
                       onClick={() => handleCompileAgenda(meeting)}
                       disabled={isCompiling}
-                      className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2.5 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed"
                     >
                       {isCompiling ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       ) : (
-                        <Cog className="w-4 h-4 mr-2" />
+                        <Cog className="w-4 h-4" />
                       )}
                       Compile Weekly Agenda
-                    </Button>
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -500,14 +503,13 @@ export default function EnhancedMeetingDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Button
+                  <button
                     onClick={() => setSelectedMeeting(meeting)}
-                    variant="outline"
-                    className="w-full justify-start border-gray-300 text-gray-600 hover:bg-gray-100"
+                    className="w-full flex items-center justify-start gap-3 px-4 py-2.5 border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 rounded-lg font-medium transition-all duration-200"
                   >
-                    <FileText className="w-4 h-4 mr-2" />
+                    <FileText className="w-4 h-4" />
                     View Meeting Documentation
-                  </Button>
+                  </button>
                 </CardContent>
               </Card>
             ))}
@@ -552,10 +554,10 @@ export default function EnhancedMeetingDashboard() {
                 <p className="text-teal-700 mb-4">
                   View the compiled agenda that was used during this meeting
                 </p>
-                <Button className="bg-teal-600 hover:bg-teal-700 text-white">
-                  <Download className="w-4 h-4 mr-2" />
+                <button className="flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white px-6 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                  <Download className="w-4 h-4" />
                   Download Agenda PDF
-                </Button>
+                </button>
               </div>
 
               {/* Meeting Notes Section */}
@@ -657,27 +659,26 @@ export default function EnhancedMeetingDashboard() {
               </div>
 
               {/* Export Actions */}
-              <div className="flex gap-4 pt-4 border-t border-gray-200">
-                <Button
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                <button
                   onClick={() => selectedMeeting && handleExportToSheets(selectedMeeting)}
                   disabled={isExporting}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2.5 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed"
                 >
                   {isExporting ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   ) : (
-                    <ExternalLink className="w-4 h-4 mr-2" />
+                    <ExternalLink className="w-4 h-4" />
                   )}
                   Export to Google Sheets
-                </Button>
-                <Button
+                </button>
+                <button
                   disabled={isExporting}
-                  variant="outline"
-                  className="border-teal-300 text-teal-600 hover:bg-teal-50"
+                  className="flex items-center justify-center gap-2 border border-teal-300 text-teal-600 hover:bg-teal-50 hover:border-teal-400 disabled:border-gray-300 disabled:text-gray-400 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="w-4 h-4" />
                   Export as PDF
-                </Button>
+                </button>
               </div>
             </div>
           ) : (
@@ -688,18 +689,18 @@ export default function EnhancedMeetingDashboard() {
               <p className="text-teal-700 mb-6">
                 Compile the agenda from your Google Sheet projects and submitted agenda items
               </p>
-              <Button
+              <button
                 onClick={() => selectedMeeting && handleCompileAgenda(selectedMeeting)}
                 disabled={isCompiling}
-                className="bg-teal-600 hover:bg-teal-700 text-white"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isCompiling ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 ) : (
-                  <Cog className="w-4 h-4 mr-2" />
+                  <Cog className="w-4 h-4" />
                 )}
                 Compile Weekly Agenda
-              </Button>
+              </button>
             </div>
           )}
         </DialogContent>
