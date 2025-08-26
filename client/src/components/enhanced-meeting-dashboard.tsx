@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -70,6 +70,9 @@ interface Project {
   priority?: string;
   description?: string;
   reviewInNextMeeting: boolean;
+  meetingDiscussionPoints?: string;
+  meetingDecisionItems?: string;
+  supportPeople?: string;
 }
 
 interface ProjectTask {
@@ -240,6 +243,32 @@ export default function EnhancedMeetingDashboard() {
     queryKey: ['/api/meetings', selectedMeeting?.id, 'compiled-agenda'],
     enabled: !!selectedMeeting,
   });
+
+  // Update project discussion mutation
+  const updateProjectDiscussionMutation = useMutation({
+    mutationFn: async ({ projectId, updates }: { projectId: number; updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string } }) => {
+      return await apiRequest(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update project discussion notes.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler for updating project discussion fields with auto-save
+  const handleUpdateProjectDiscussion = useCallback((projectId: number, updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string }) => {
+    updateProjectDiscussionMutation.mutate({ projectId, updates });
+  }, [updateProjectDiscussionMutation]);
 
   // Helper function to format dates in a user-friendly way
   const formatMeetingDate = (dateString: string) => {
@@ -1403,21 +1432,43 @@ export default function EnhancedMeetingDashboard() {
                               <ProjectTasksView projectId={project.id} />
                             </div>
 
-                            {/* Discussion Notes */}
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Meeting Discussion Notes
-                              </Label>
-                              <Textarea
-                                value={projectDiscussionTopics[project.id] || ''}
-                                onChange={(e) => setProjectDiscussionTopics({
-                                  ...projectDiscussionTopics,
-                                  [project.id]: e.target.value
-                                })}
-                                placeholder="What specific questions, decisions, progress updates, or blockers need to be discussed for this project?"
-                                rows={3}
-                                className="text-sm"
-                              />
+                            {/* Discussion Points & Decision Items */}
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Discussion Points
+                                </Label>
+                                <Textarea
+                                  value={project.meetingDiscussionPoints || ''}
+                                  onChange={(e) => handleUpdateProjectDiscussion(project.id, {
+                                    meetingDiscussionPoints: e.target.value
+                                  })}
+                                  placeholder="What aspects of this project need to be discussed? (e.g., progress updates, timeline concerns, resource needs)"
+                                  rows={3}
+                                  className="text-sm"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Specify what needs to be discussed about this project
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Decisions Needed
+                                </Label>
+                                <Textarea
+                                  value={project.meetingDecisionItems || ''}
+                                  onChange={(e) => handleUpdateProjectDiscussion(project.id, {
+                                    meetingDecisionItems: e.target.value
+                                  })}
+                                  placeholder="What decisions need to be made? (e.g., approve budget increase, assign team members, set deadline)"
+                                  rows={3}
+                                  className="text-sm"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  List specific decisions that the team needs to make
+                                </p>
+                              </div>
                             </div>
 
                             {/* File Attachments */}
