@@ -20,7 +20,7 @@ import {
   FolderOpen, UserCheck, Zap, Home, ChevronRight,
   Calendar, RotateCcw, ArrowLeft, ArrowRight, Grid3X3,
   AlertCircle, BookOpen, Lightbulb, Target, Filter,
-  Check, Play, MapPin, X, UserPlus
+  Check, Play, MapPin, X, UserPlus, Edit3
 } from 'lucide-react';
 
 interface Meeting {
@@ -703,6 +703,33 @@ export default function EnhancedMeetingDashboard() {
     createMeetingMutation.mutate(newMeetingData);
   };
 
+  const handleEditMeeting = (meeting: Meeting) => {
+    setEditingMeeting(meeting);
+    setEditMeetingData({
+      title: meeting.title,
+      date: meeting.date,
+      time: meeting.time,
+      type: meeting.type || 'core_team',
+      location: meeting.location || '',
+      description: meeting.description || ''
+    });
+    setShowEditMeetingDialog(true);
+  };
+
+  const handleUpdateMeeting = () => {
+    if (!editMeetingData.title || !editMeetingData.date) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in the meeting title and date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (editingMeeting) {
+      updateMeetingMutation.mutate({ id: editingMeeting.id, ...editMeetingData });
+    }
+  };
+
   // Helper functions for agenda section icons and colors
   const getSectionIcon = (title: string) => {
     switch (title.toLowerCase()) {
@@ -906,9 +933,19 @@ export default function EnhancedMeetingDashboard() {
                         </div>
                       </div>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">
-                      Upcoming
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditMeeting(meeting)}
+                        className="h-7 px-2"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </Button>
+                      <Badge className="bg-green-100 text-green-800">
+                        Upcoming
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1299,6 +1336,114 @@ export default function EnhancedMeetingDashboard() {
                   <CalendarDays className="w-4 h-4" />
                 )}
                 Schedule Meeting
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Meeting Dialog */}
+      <Dialog open={showEditMeetingDialog} onOpenChange={setShowEditMeetingDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-orange-600" />
+              Edit Meeting Details
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Meeting Title *</Label>
+              <Input
+                id="edit-title"
+                value={editMeetingData.title}
+                onChange={(e) => setEditMeetingData({ ...editMeetingData, title: e.target.value })}
+                placeholder="Core Team Meeting"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">Date *</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editMeetingData.date}
+                  onChange={(e) => setEditMeetingData({ ...editMeetingData, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-time">Time</Label>
+                <Input
+                  id="edit-time"
+                  type="time"
+                  value={editMeetingData.time}
+                  onChange={(e) => setEditMeetingData({ ...editMeetingData, time: e.target.value })}
+                  placeholder="TBD"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-type">Meeting Type</Label>
+              <Select 
+                value={editMeetingData.type} 
+                onValueChange={(value) => setEditMeetingData({ ...editMeetingData, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="core_team">Core Team Meeting</SelectItem>
+                  <SelectItem value="committee">Committee Meeting</SelectItem>
+                  <SelectItem value="board">Board Meeting</SelectItem>
+                  <SelectItem value="planning">Planning Session</SelectItem>
+                  <SelectItem value="training">Training Session</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-location">Location</Label>
+              <Input
+                id="edit-location"
+                value={editMeetingData.location}
+                onChange={(e) => setEditMeetingData({ ...editMeetingData, location: e.target.value })}
+                placeholder="Conference room, Zoom link, etc."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editMeetingData.description}
+                onChange={(e) => setEditMeetingData({ ...editMeetingData, description: e.target.value })}
+                placeholder="Brief description of the meeting purpose..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setShowEditMeetingDialog(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateMeeting}
+                disabled={updateMeetingMutation.isPending}
+                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
+              >
+                {updateMeetingMutation.isPending ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                Update Meeting
               </button>
             </div>
           </div>
