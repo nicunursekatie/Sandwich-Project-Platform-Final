@@ -5158,6 +5158,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Task ${taskId} updated successfully`);
+      
+      // Trigger Google Sheets sync after task status change
+      try {
+        const { triggerGoogleSheetsSync } = await import('./google-sheets-sync');
+        console.log('Triggering Google Sheets sync after task status update...');
+        setImmediate(() => {
+          triggerGoogleSheetsSync().catch(error => {
+            console.error('Google Sheets sync failed after task update:', error);
+          });
+        });
+      } catch (syncError) {
+        console.error('Error triggering Google Sheets sync:', syncError);
+        // Don't fail the task update if sync fails
+      }
+      
       res.json(task);
     } catch (error) {
       console.error("Error updating project task:", error);

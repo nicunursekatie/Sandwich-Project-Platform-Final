@@ -202,6 +202,20 @@ router.patch("/projects/:id", isAuthenticated, sanitizeMiddleware, async (req, r
       }
     }
     
+    // Trigger Google Sheets sync after project status change
+    try {
+      const { triggerGoogleSheetsSync } = await import('../google-sheets-sync');
+      console.log('Triggering Google Sheets sync after project status update...');
+      setImmediate(() => {
+        triggerGoogleSheetsSync().catch(error => {
+          console.error('Google Sheets sync failed after project update:', error);
+        });
+      });
+    } catch (syncError) {
+      console.error('Error triggering Google Sheets sync:', syncError);
+      // Don't fail the project update if sync fails
+    }
+    
     res.json(project);
   } catch (error) {
     console.error("Error updating project:", error);
@@ -353,6 +367,21 @@ router.patch("/projects/:projectId/tasks/:taskId", sanitizeMiddleware, async (re
     }
     
     console.log(`Task ${taskId} updated successfully`);
+    
+    // Trigger Google Sheets sync after task status change
+    try {
+      const { triggerGoogleSheetsSync } = await import('../google-sheets-sync');
+      console.log('Triggering Google Sheets sync after task status update...');
+      setImmediate(() => {
+        triggerGoogleSheetsSync().catch(error => {
+          console.error('Google Sheets sync failed after task update:', error);
+        });
+      });
+    } catch (syncError) {
+      console.error('Error triggering Google Sheets sync:', syncError);
+      // Don't fail the task update if sync fails
+    }
+    
     res.json(task);
   } catch (error) {
     console.error("Error updating project task:", error);
