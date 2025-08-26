@@ -314,6 +314,20 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
     }
   };
 
+  const handleTaskStatusChange = (taskId: number, newStatus: string) => {
+    editTaskMutation.mutate({ 
+      taskId, 
+      taskData: { status: newStatus } 
+    });
+    
+    // If marking as completed, check if we should auto-complete the project
+    if (newStatus === 'completed') {
+      setTimeout(() => {
+        checkAndCompleteProject();
+      }, 1000); // Small delay to allow the task update to complete
+    }
+  };
+
   const handleEditProject = () => {
     if (project) {
       setEditingProject(project);
@@ -653,11 +667,34 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
                     </Badge>
                     {user && canEditProject(user, project) && (
                       <>
+                        {task.status !== 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleTaskStatusChange(task.id, 'completed')}
+                            className="text-green-600 hover:text-green-800"
+                            title="Mark as completed"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {task.status !== 'in_progress' && task.status !== 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleTaskStatusChange(task.id, 'in_progress')}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Mark as in progress"
+                          >
+                            <Clock className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditTask(task)}
                           className="text-[#236383] hover:text-[#236383]/80"
+                          title="Edit task"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -666,6 +703,7 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
                           size="sm"
                           onClick={() => handleDeleteTask(task.id)}
                           className="text-red-600 hover:text-red-800"
+                          title="Delete task"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
