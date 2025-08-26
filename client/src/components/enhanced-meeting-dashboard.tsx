@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
   CalendarDays, Clock, Users, FileText, ExternalLink, 
-  CheckCircle2, Settings, Download, Compile, 
+  CheckCircle2, Settings, Download, Cog, 
   FolderOpen, UserCheck, Zap, Home, Plus 
 } from 'lucide-react';
 
@@ -267,7 +267,7 @@ export default function EnhancedMeetingDashboard() {
                     {isCompiling ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     ) : (
-                      <Compile className="w-4 h-4" />
+                      <Cog className="w-4 h-4" />
                     )}
                     Compile
                   </Button>
@@ -407,7 +407,7 @@ export default function EnhancedMeetingDashboard() {
                 {isCompiling ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 ) : (
-                  <Compile className="w-4 h-4 mr-2" />
+                  <Cog className="w-4 h-4 mr-2" />
                 )}
                 Compile Agenda Now
               </Button>
