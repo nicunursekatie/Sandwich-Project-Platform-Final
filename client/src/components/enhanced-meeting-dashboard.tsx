@@ -955,9 +955,33 @@ export default function EnhancedMeetingDashboard() {
               <p className="text-gray-600">Select projects and topics for this week's meeting</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  try {
+                    setIsCompiling(true);
+                    const response = await apiRequest('POST', '/api/google-sheets/projects/sync/from-sheets');
+                    toast({
+                      title: "Sync Complete",
+                      description: response.message || "Successfully synced projects from Google Sheets",
+                    });
+                    // Refresh the projects data
+                    queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+                  } catch (error) {
+                    toast({
+                      title: "Sync Failed",
+                      description: error.message || "Failed to sync from Google Sheets",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsCompiling(false);
+                  }
+                }}
+                disabled={isCompiling}
+              >
                 <ExternalLink className="w-4 h-4 mr-2" />
-                Sync Google Sheets
+                {isCompiling ? 'Syncing...' : 'Sync Google Sheets'}
               </Button>
               <Button size="sm" className="bg-teal-600 hover:bg-teal-700">
                 <CheckCircle2 className="w-4 h-4 mr-2" />
