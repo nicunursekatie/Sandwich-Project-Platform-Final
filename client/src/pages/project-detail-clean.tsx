@@ -102,7 +102,7 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
   });
 
   // Fetch project tasks
-  const { data: tasks = [], isLoading: isTasksLoading } = useQuery<Task[]>({
+  const { data: tasks = [], isLoading: isTasksLoading, refetch: refetchTasks } = useQuery<Task[]>({
     queryKey: ['/api/projects', id, 'tasks'],
     queryFn: async () => {
       const response = await apiRequest('GET', `/api/projects/${id}/tasks`);
@@ -318,14 +318,24 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
     editTaskMutation.mutate({ 
       taskId, 
       taskData: { status: newStatus } 
+    }, {
+      onSuccess: () => {
+        // Immediately invalidate and refetch the tasks
+        queryClient.invalidateQueries({ queryKey: ['/api/projects', id, 'tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
+        queryClient.refetchQueries({ queryKey: ['/api/projects', id, 'tasks'] });
+        
+        // Also manually refetch to ensure immediate UI update
+        refetchTasks();
+        
+        // If marking as completed, check if we should auto-complete the project
+        if (newStatus === 'completed') {
+          setTimeout(() => {
+            checkAndCompleteProject();
+          }, 500); // Reduced delay since cache is now refreshed
+        }
+      }
     });
-    
-    // If marking as completed, check if we should auto-complete the project
-    if (newStatus === 'completed') {
-      setTimeout(() => {
-        checkAndCompleteProject();
-      }, 1000); // Small delay to allow the task update to complete
-    }
   };
 
   const handleEditProject = () => {
