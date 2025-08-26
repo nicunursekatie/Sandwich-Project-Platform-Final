@@ -25,7 +25,8 @@ import {
   AlertCircle,
   Trash2,
   Building2,
-  ArrowRight
+  ArrowRight,
+  Download
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -317,6 +318,35 @@ export default function VolunteerManagement() {
     return matchesSearch && matchesStatus;
   });
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/volunteers/export", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `volunteers-export-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast({ 
+        title: "Export completed successfully",
+        description: `Exported ${filteredVolunteers.length} volunteers to CSV`
+      });
+    } catch (error) {
+      toast({ 
+        title: "Export failed", 
+        description: "Failed to export volunteers data",
+        variant: "destructive" 
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -328,14 +358,24 @@ export default function VolunteerManagement() {
           <h1 className="text-2xl font-bold text-gray-900">Volunteer Management</h1>
           <p className="text-gray-600">Manage volunteer information and coordination</p>
         </div>
-        {canAdd && (
-          <ButtonTooltip explanation="Add a new volunteer to your database. You can track their contact information, skills, and availability for scheduling.">
-            <Button onClick={handleAdd} className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add Volunteer
-            </Button>
-          </ButtonTooltip>
-        )}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleExport}
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+          {canAdd && (
+            <ButtonTooltip explanation="Add a new volunteer to your database. You can track their contact information, skills, and availability for scheduling.">
+              <Button onClick={handleAdd} className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Add Volunteer
+              </Button>
+            </ButtonTooltip>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

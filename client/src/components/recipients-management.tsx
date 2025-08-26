@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Edit, Trash2, Phone, Mail, MapPin, Upload, Search, Filter, X } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Phone, Mail, MapPin, Upload, Search, Filter, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -318,6 +318,35 @@ export default function RecipientsManagement() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/recipients/export", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `recipients-export-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast({ 
+        title: "Export completed successfully",
+        description: `Exported ${filteredRecipients.length} recipients to CSV`
+      });
+    } catch (error) {
+      toast({ 
+        title: "Export failed", 
+        description: "Failed to export recipients data",
+        variant: "destructive" 
+      });
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Loading recipients...</div>;
   }
@@ -332,6 +361,14 @@ export default function RecipientsManagement() {
             Recipients Management
           </h1>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleExport}
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
             <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCelebration, CelebrationToast } from "@/components/celebration-toast";
 import { hasPermission, USER_ROLES, PERMISSIONS, getDefaultPermissionsForRole, getRoleDisplayName } from "@shared/auth-utils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Users, Shield, Settings, Key, Award, Megaphone, Trash2, Bug, Activity } from "lucide-react";
+import { Users, Shield, Settings, Key, Award, Megaphone, Trash2, Bug, Activity, Download } from "lucide-react";
 import AnnouncementManager from "@/components/announcement-manager";
 import AuthDebug from "@/components/auth-debug";
 import EnhancedPermissionsDialog from "@/components/enhanced-permissions-dialog";
@@ -216,6 +216,35 @@ export default function UserManagement() {
     addUserMutation.mutate(newUser);
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/users/export", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `users-export-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast({ 
+        title: "Export completed successfully",
+        description: `Exported ${users.length} users to CSV`
+      });
+    } catch (error) {
+      toast({ 
+        title: "Export failed", 
+        description: "Failed to export users data",
+        variant: "destructive" 
+      });
+    }
+  };
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case USER_ROLES.ADMIN:
@@ -342,13 +371,22 @@ export default function UserManagement() {
                   Manage user roles and permissions for team members
                 </CardDescription>
               </div>
-              <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Users className="h-4 w-4 mr-2" />
-                    Add New User
-                  </Button>
-                </DialogTrigger>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleExport}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </Button>
+                  <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Users className="h-4 w-4 mr-2" />
+                      Add New User
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Add New User</DialogTitle>

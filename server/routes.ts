@@ -3260,6 +3260,277 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export drivers to CSV
+  app.get("/api/drivers/export", isAuthenticated, requirePermission("access_drivers"), async (req, res) => {
+    try {
+      const drivers = await storage.getAllDrivers();
+      
+      // Create CSV headers
+      const headers = [
+        "Name",
+        "Phone", 
+        "Email",
+        "Zone",
+        "Active",
+        "Agreement Signed",
+        "Van Approved",
+        "Home Address",
+        "Availability Notes",
+        "Email Agreement Sent",
+        "Voicemail Left",
+        "Inactive Reason",
+        "Notes",
+        "Created At",
+        "Updated At"
+      ];
+
+      // Create CSV rows
+      const csvRows = [
+        headers.join(","),
+        ...drivers.map((driver: any) => {
+          // Check if driver has signed agreement (look for agreement indicators in notes)
+          const hasSignedAgreement = driver.notes && 
+            (driver.notes.toLowerCase().includes('agreement: yes') ||
+             driver.notes.toLowerCase().includes('agreement signed') ||
+             driver.notes.toLowerCase().includes('agreement received'));
+
+          return [
+            `"${driver.name || ""}"`,
+            `"${driver.phone || ""}"`,
+            `"${driver.email || ""}"`, 
+            `"${driver.zone || ""}"`,
+            driver.isActive ? "Yes" : "No",
+            hasSignedAgreement ? "Yes" : "No",
+            driver.vanApproved ? "Yes" : "No",
+            `"${driver.homeAddress || ""}"`,
+            `"${driver.availabilityNotes || ""}"`,
+            driver.emailAgreementSent ? "Yes" : "No",
+            driver.voicemailLeft ? "Yes" : "No",
+            `"${driver.inactiveReason || ""}"`,
+            `"${driver.notes || ""}"`,
+            `"${driver.createdAt || ""}"`,
+            `"${driver.updatedAt || ""}"`
+          ].join(",");
+        })
+      ];
+
+      const csvContent = csvRows.join("\n");
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="drivers-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      
+      res.send(csvContent);
+    } catch (error) {
+      logger.error("Failed to export drivers", error);
+      res.status(500).json({ message: "Failed to export drivers" });
+    }
+  });
+
+  // Export hosts to CSV
+  app.get("/api/hosts/export", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
+    try {
+      const hosts = await storage.getAllHosts();
+      
+      const headers = [
+        "Name",
+        "Address",
+        "Contact Person",
+        "Contact Phone", 
+        "Contact Email",
+        "Contact Role",
+        "Type",
+        "Status",
+        "Special Instructions",
+        "Capacity",
+        "Notes",
+        "Created At",
+        "Updated At"
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...hosts.map((host: any) => [
+          `"${host.name || ""}"`,
+          `"${host.address || ""}"`,
+          `"${host.contactPersonName || ""}"`,
+          `"${host.contactPersonPhone || ""}"`,
+          `"${host.contactPersonEmail || ""}"`,
+          `"${host.contactPersonRole || ""}"`,
+          `"${host.type || ""}"`,
+          `"${host.status || ""}"`,
+          `"${host.specialInstructions || ""}"`,
+          `"${host.capacity || ""}"`,
+          `"${host.notes || ""}"`,
+          `"${host.createdAt || ""}"`,
+          `"${host.updatedAt || ""}"`
+        ].join(","))
+      ];
+
+      const csvContent = csvRows.join("\n");
+      
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="hosts-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      
+      res.send(csvContent);
+    } catch (error) {
+      logger.error("Failed to export hosts", error);
+      res.status(500).json({ message: "Failed to export hosts" });
+    }
+  });
+
+  // Export recipients to CSV
+  app.get("/api/recipients/export", isAuthenticated, requirePermission("access_recipients"), async (req, res) => {
+    try {
+      const recipients = await storage.getAllRecipients();
+      
+      const headers = [
+        "Name",
+        "Phone",
+        "Email", 
+        "Website",
+        "Address",
+        "Region",
+        "Status",
+        "Contact Person Name",
+        "Contact Person Phone",
+        "Contact Person Email",
+        "Contact Person Role",
+        "Reporting Group",
+        "Estimated Sandwiches",
+        "Sandwich Type",
+        "TSP Contact",
+        "Contract Signed",
+        "Contract Signed Date",
+        "Notes",
+        "Created At",
+        "Updated At"
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...recipients.map((recipient: any) => [
+          `"${recipient.name || ""}"`,
+          `"${recipient.phone || ""}"`,
+          `"${recipient.email || ""}"`,
+          `"${recipient.website || ""}"`,
+          `"${recipient.address || ""}"`,
+          `"${recipient.region || ""}"`,
+          `"${recipient.status || ""}"`,
+          `"${recipient.contactPersonName || ""}"`,
+          `"${recipient.contactPersonPhone || ""}"`,
+          `"${recipient.contactPersonEmail || ""}"`,
+          `"${recipient.contactPersonRole || ""}"`,
+          `"${recipient.reportingGroup || ""}"`,
+          `"${recipient.estimatedSandwiches || ""}"`,
+          `"${recipient.sandwichType || ""}"`,
+          `"${recipient.tspContact || ""}"`,
+          recipient.contractSigned ? "Yes" : "No",
+          `"${recipient.contractSignedDate || ""}"`,
+          `"${recipient.notes || ""}"`,
+          `"${recipient.createdAt || ""}"`,
+          `"${recipient.updatedAt || ""}"`
+        ].join(","))
+      ];
+
+      const csvContent = csvRows.join("\n");
+      
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="recipients-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      
+      res.send(csvContent);
+    } catch (error) {
+      logger.error("Failed to export recipients", error);
+      res.status(500).json({ message: "Failed to export recipients" });
+    }
+  });
+
+  // Export volunteers to CSV
+  app.get("/api/volunteers/export", isAuthenticated, requirePermission("access_volunteers"), async (req, res) => {
+    try {
+      const volunteers = await storage.getAllVolunteers();
+      
+      const headers = [
+        "Name",
+        "Email",
+        "Phone",
+        "Address",
+        "Availability",
+        "Active",
+        "Notes",
+        "Created At",
+        "Updated At"
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...volunteers.map((volunteer: any) => [
+          `"${volunteer.name || ""}"`,
+          `"${volunteer.email || ""}"`,
+          `"${volunteer.phone || ""}"`,
+          `"${volunteer.address || ""}"`,
+          `"${volunteer.availability || ""}"`,
+          volunteer.isActive ? "Yes" : "No",
+          `"${volunteer.notes || ""}"`,
+          `"${volunteer.createdAt || ""}"`,
+          `"${volunteer.updatedAt || ""}"`
+        ].join(","))
+      ];
+
+      const csvContent = csvRows.join("\n");
+      
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="volunteers-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      
+      res.send(csvContent);
+    } catch (error) {
+      logger.error("Failed to export volunteers", error);
+      res.status(500).json({ message: "Failed to export volunteers" });
+    }
+  });
+
+  // Export users to CSV (for user management)
+  app.get("/api/users/export", isAuthenticated, requirePermission("manage_users"), async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      
+      const headers = [
+        "Email",
+        "First Name",
+        "Last Name",
+        "Role",
+        "Active",
+        "Last Login",
+        "Created At",
+        "Permissions Count"
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...users.map((user: any) => [
+          `"${user.email || ""}"`,
+          `"${user.firstName || ""}"`,
+          `"${user.lastName || ""}"`,
+          `"${user.role || ""}"`,
+          user.isActive ? "Yes" : "No",
+          `"${user.lastLoginAt || ""}"`,
+          `"${user.createdAt || ""}"`,
+          `"${Array.isArray(user.permissions) ? user.permissions.length : 0}"`
+        ].join(","))
+      ];
+
+      const csvContent = csvRows.join("\n");
+      
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="users-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      
+      res.send(csvContent);
+    } catch (error) {
+      logger.error("Failed to export users", error);
+      res.status(500).json({ message: "Failed to export users" });
+    }
+  });
+
   // PATCH endpoint for partial driver updates (used by frontend)
   app.patch("/api/drivers/:id", sanitizeMiddleware, async (req, res) => {
     try {
