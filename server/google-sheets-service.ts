@@ -29,7 +29,13 @@ export class GoogleSheetsService {
   private sheets: any;
 
   constructor(private config: GoogleSheetsConfig) {
-    this.initializeAuth();
+    // Don't call async initialization in constructor
+  }
+
+  private async ensureInitialized() {
+    if (!this.sheets) {
+      await this.initializeAuth();
+    }
   }
 
   private async initializeAuth() {
@@ -41,20 +47,41 @@ export class GoogleSheetsService {
         throw new Error('Missing Google service account credentials');
       }
 
-      // Create a temporary service account file to avoid OpenSSL issues
-      const fs = await import('fs');
-      const path = await import('path');
-      
       let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-      console.log('🔧 Private key format - length:', privateKey.length);
       
       // Handle escaped newlines
       if (privateKey.includes('\\n')) {
         privateKey = privateKey.replace(/\\n/g, '\n');
         console.log('🔧 Converted \\n to actual newlines');
       }
+
+      // Try direct JWT authentication first (more compatible with Node.js v20)
+      try {
+        console.log('🔧 Attempting direct JWT authentication...');
+        const auth = new google.auth.JWT(
+          process.env.GOOGLE_CLIENT_EMAIL,
+          undefined,
+          privateKey,
+          ['https://www.googleapis.com/auth/spreadsheets']
+        );
+
+        // Test the authentication
+        await auth.authorize();
+        
+        this.auth = auth as JWT;
+        this.sheets = google.sheets({ version: 'v4', auth });
+        
+        console.log('✅ Google Sheets direct JWT authentication successful');
+        return;
+        
+      } catch (jwtError) {
+        console.log('⚠️ Direct JWT failed, trying file-based auth as fallback:', jwtError.message);
+      }
+
+      // Fallback to file-based authentication if JWT fails
+      const fs = await import('fs');
+      const path = await import('path');
       
-      // Create service account JSON content
       const serviceAccountContent = JSON.stringify({
         type: "service_account",
         project_id: process.env.GOOGLE_PROJECT_ID,
@@ -67,12 +94,10 @@ export class GoogleSheetsService {
         auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
       }, null, 2);
       
-      // Write to temp file
       const tempFilePath = path.join(process.cwd(), 'google-service-account.json');
       fs.writeFileSync(tempFilePath, serviceAccountContent);
       console.log('🔧 Created temporary service account file');
 
-      // Use file-based authentication (often resolves OpenSSL issues)
       const auth = new google.auth.GoogleAuth({
         keyFile: tempFilePath,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
@@ -84,13 +109,13 @@ export class GoogleSheetsService {
       
       console.log('✅ Google Sheets file-based authentication successful');
       
-      // Clean up temp file after successful auth
+      // Clean up temp file
       fs.unlinkSync(tempFilePath);
       console.log('🔧 Cleaned up temporary service account file');
       
     } catch (error) {
       console.error('❌ Google Sheets authentication failed:', error.message);
-      if (error.message.includes('DECODER')) {
+      if (error.message.includes('DECODER') || error.message.includes('OSSL_UNSUPPORTED')) {
         console.error('💡 This is a Node.js v20 OpenSSL compatibility issue with the private key format');
         console.error('💡 The private key from your Google Cloud Console may need to be regenerated for Node.js v20+');
       }
@@ -116,6 +141,8 @@ export class GoogleSheetsService {
    */
   async readSheet(): Promise<SheetRow[]> {
     try {
+      await this.ensureInitialized();
+      
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.config.spreadsheetId,
         range: `${this.config.worksheetName}!A:M`, // A through M columns (includes Last Discussed Date)
