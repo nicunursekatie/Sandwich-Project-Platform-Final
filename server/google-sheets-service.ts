@@ -20,6 +20,7 @@ export interface SheetRow {
   subTasksOwners: string; // Individual sub-tasks within the project (Column J)
   deliverable: string;
   notes: string;
+  lastDiscussedDate: string; // Column M: Last discussed date
   rowIndex?: number;
 }
 
@@ -117,7 +118,7 @@ export class GoogleSheetsService {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A:L`, // A through L columns (added Tasks column)
+        range: `${this.config.worksheetName}!A:M`, // A through M columns (includes Last Discussed Date)
       });
 
       const rows = response.data.values || [];
@@ -138,6 +139,7 @@ export class GoogleSheetsService {
         subTasksOwners: row[9] || '', // Column J: Sub-Tasks | Owners
         deliverable: row[10] || '', // Column K: Deliverable
         notes: row[11] || '', // Column L: Notes
+        lastDiscussedDate: row[12] || '', // Column M: Last Discussed Date
         rowIndex: index + 2, // +2 because sheets are 1-indexed and we skip header
       }));
     } catch (error) {
@@ -176,7 +178,8 @@ export class GoogleSheetsService {
           row.milestone, // Column I - Milestone
           row.subTasksOwners, // Column J - Sub-Tasks | Owners
           row.deliverable, // Column K - Deliverable
-          row.notes // Column L - Notes
+          row.notes, // Column L - Notes
+          row.lastDiscussedDate // Column M - Last Discussed Date
         ];
 
         // Column mapping: A=task, B=reviewStatus, C=priority, D=owner, E=supportPeople, F=status
@@ -187,7 +190,7 @@ export class GoogleSheetsService {
         if (existingRowIndex) {
           // Update existing row - FORCE full row update to fix column mapping
           updates.push({
-            range: `${this.config.worksheetName}!A${existingRowIndex}:L${existingRowIndex}`,
+            range: `${this.config.worksheetName}!A${existingRowIndex}:M${existingRowIndex}`,
             values: [rowData]
           });
           console.log(`🔄 Updating existing row ${existingRowIndex} for: "${row.task}"`);
@@ -222,17 +225,17 @@ export class GoogleSheetsService {
         const insertRowStart = lastRowWithData + 1;
         const insertRowEnd = insertRowStart + newRows.length - 1;
         
-        // Insert directly at specific row range in A:L columns
+        // Insert directly at specific row range in A:M columns
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
-          range: `${this.config.worksheetName}!A${insertRowStart}:L${insertRowEnd}`,
+          range: `${this.config.worksheetName}!A${insertRowStart}:M${insertRowEnd}`,
           valueInputOption: 'USER_ENTERED',
           resource: {
             values: newRows
           }
         });
         
-        console.log(`📍 Added ${newRows.length} new rows directly at A${insertRowStart}:L${insertRowEnd}`);
+        console.log(`📍 Added ${newRows.length} new rows directly at A${insertRowStart}:M${insertRowEnd}`);
       }
 
       return true;
@@ -266,7 +269,8 @@ export class GoogleSheetsService {
           row.milestone,
           row.subTasksOwners,
           row.deliverable,
-          row.notes
+          row.notes,
+          row.lastDiscussedDate
         ]);
 
       if (newRows.length > 0) {
@@ -280,17 +284,17 @@ export class GoogleSheetsService {
         const insertRowStart = lastRowWithData + 1; // Next available row
         const insertRowEnd = insertRowStart + newRows.length - 1;
         
-        // Insert directly at specific row range in A:L columns
+        // Insert directly at specific row range in A:M columns
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
-          range: `${this.config.worksheetName}!A${insertRowStart}:L${insertRowEnd}`,
+          range: `${this.config.worksheetName}!A${insertRowStart}:M${insertRowEnd}`,
           valueInputOption: 'USER_ENTERED',
           resource: {
             values: newRows
           }
         });
         
-        console.log(`📍 Inserted ${newRows.length} rows directly at A${insertRowStart}:L${insertRowEnd}`);
+        console.log(`📍 Inserted ${newRows.length} rows directly at A${insertRowStart}:M${insertRowEnd}`);
       }
 
       return {

@@ -205,7 +205,8 @@ export class GoogleSheetsSyncService {
       milestone: project.category || '',
       subTasksOwners: this.formatTasksForSheet(projectTasks), // Format sub-tasks
       deliverable: project.deliverables || '',
-      notes: project.notes || project.description || ''
+      notes: project.notes || project.description || '',
+      lastDiscussedDate: project.lastDiscussedDate || '' // Column M
     };
     
     // Column mapping verified: task→A, reviewStatus→B, status→F
@@ -231,6 +232,7 @@ export class GoogleSheetsSyncService {
       deliverables: row.deliverable || undefined,
       notes: row.notes || undefined,
       reviewInNextMeeting: this.mapReviewStatusFromSheet(row.reviewStatus),
+      lastDiscussedDate: row.lastDiscussedDate || undefined,
       updatedAt: new Date()
     };
   }
