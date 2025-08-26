@@ -1061,6 +1061,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Project Tasks
+  app.get("/api/projects/:id/tasks", async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
+
+      const tasks = await storage.getProjectTasks(projectId);
+      res.json(tasks);
+    } catch (error) {
+      logger.error("Failed to fetch project tasks", error);
+      res.status(500).json({ message: "Failed to fetch project tasks" });
+    }
+  });
+
+  app.post("/api/projects/:id/tasks", isAuthenticated, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
+
+      const { title, description, status = 'pending', priority = 'medium' } = req.body;
+      
+      if (!title?.trim()) {
+        return res.status(400).json({ message: "Task title is required" });
+      }
+
+      // Check if project exists
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      // Check permissions - user should be able to add tasks to projects they can edit
+      const canEditAll = req.user?.permissions?.includes('edit_all_projects') || 
+                        req.user?.permissions?.includes('manage_projects') ||
+                        req.user?.role === 'admin' || req.user?.role === 'super_admin';
+      
+      const canEditOwn = req.user?.permissions?.includes('edit_own_projects') && 
+                        (project.createdBy === req.user.id);
+
+      if (!canEditAll && !canEditOwn) {
+        return res.status(403).json({ 
+          message: "Permission denied. You can only add tasks to projects you can edit." 
+        });
+      }
+
+      const taskData = {
+        projectId,
+        title: title.trim(),
+        description: description?.trim() || null,
+        status,
+        priority,
+        createdBy: req.user.id,
+        createdByName: req.user.firstName && req.user.lastName 
+          ? `${req.user.firstName} ${req.user.lastName}` 
+          : req.user.email
+      };
+
+      const newTask = await storage.createProjectTask(taskData);
+      res.status(201).json(newTask);
+    } catch (error) {
+      logger.error("Failed to create project task", error);
+      res.status(500).json({ message: "Failed to create project task" });
+    }
+  });
+
   // OLD CONFLICTING ENDPOINT COMPLETELY REMOVED - existing /api/messages at line 6283 handles Gmail folders
 
   app.delete(
