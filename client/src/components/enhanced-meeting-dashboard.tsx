@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient as baseQueryClient } from '@/lib/queryClient';
+import { formatDateForInput, formatDateForDisplay, normalizeDate, isDateInPast, getTodayString, formatTimeForDisplay } from '@/lib/date-utils';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -375,7 +376,7 @@ function ProjectTasksView({ projectId }: { projectId: number }) {
             </div>
             {task.dueDate && (
               <div className="text-gray-500 text-xs">
-                Due: {new Date(task.dueDate).toLocaleDateString()}
+                Due: {formatDateForDisplay(task.dueDate)}
               </div>
             )}
           </div>
@@ -470,48 +471,14 @@ export default function EnhancedMeetingDashboard() {
     }
   };
 
-  // Helper function to format time in a user-friendly way
+  // Helper function to format time in a user-friendly way - using utility
   const formatMeetingTime = (timeString: string) => {
-    if (!timeString || timeString === 'TBD') return 'TBD';
-    
-    const [hours, minutes] = timeString.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours), parseInt(minutes));
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
+    return formatTimeForDisplay(timeString);
   };
 
-  // Helper function to determine if meeting is in the past
+  // Helper function to determine if meeting is in the past - using utility
   const isPastMeeting = (dateString: string, timeString: string) => {
-    try {
-      // Handle "TBD" time or missing time by using end of day
-      let effectiveTime = timeString;
-      if (!timeString || timeString === 'TBD' || timeString === '') {
-        effectiveTime = '23:59'; // End of day - be conservative
-      }
-      
-      // Ensure time is in HH:MM format
-      if (!effectiveTime.includes(':')) {
-        effectiveTime = '12:00'; // Default to noon if no colon
-      }
-      
-      // Parse the date and time explicitly
-      const [year, month, day] = dateString.split('-').map(Number);
-      const [hours, minutes] = effectiveTime.split(':').map(Number);
-      
-      const meetingDate = new Date(year, month - 1, day, hours, minutes); // month is 0-indexed
-      const now = new Date();
-      return meetingDate < now;
-    } catch (error) {
-      console.error('Error parsing meeting date:', error, { dateString, timeString });
-      // If parsing fails, check if the date is clearly in the past
-      const now = new Date();
-      const meetingDate = new Date(dateString);
-      return meetingDate < now;
-    }
+    return isDateInPast(dateString, timeString);
   };
 
   // Helper function to get current date range for breadcrumbs
@@ -707,7 +674,7 @@ export default function EnhancedMeetingDashboard() {
     setEditingMeeting(meeting);
     setEditMeetingData({
       title: meeting.title,
-      date: meeting.date,
+      date: formatDateForInput(meeting.date), // Ensure proper date format for input
       time: meeting.time,
       type: meeting.type || 'core_team',
       location: meeting.location || '',
@@ -1262,7 +1229,7 @@ export default function EnhancedMeetingDashboard() {
                   id="date"
                   type="date"
                   value={newMeetingData.date}
-                  onChange={(e) => setNewMeetingData({ ...newMeetingData, date: e.target.value })}
+                  onChange={(e) => setNewMeetingData({ ...newMeetingData, date: normalizeDate(e.target.value) })}
                 />
               </div>
               <div className="space-y-2">
@@ -1370,7 +1337,7 @@ export default function EnhancedMeetingDashboard() {
                   id="edit-date"
                   type="date"
                   value={editMeetingData.date}
-                  onChange={(e) => setEditMeetingData({ ...editMeetingData, date: e.target.value })}
+                  onChange={(e) => setEditMeetingData({ ...editMeetingData, date: normalizeDate(e.target.value) })}
                 />
               </div>
               <div className="space-y-2">
@@ -1518,13 +1485,9 @@ export default function EnhancedMeetingDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {allProjects.map((project: any) => {
-                      // Parse date without timezone conversion to avoid day-off issues
+                      // Use our date utility to avoid timezone conversion issues
                       const lastDiscussed = project.lastDiscussedDate 
-                        ? new Date(project.lastDiscussedDate + 'T12:00:00').toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long', 
-                            day: 'numeric'
-                          })
+                        ? formatDateForDisplay(project.lastDiscussedDate)
                         : 'Never discussed';
                       
                       return (
