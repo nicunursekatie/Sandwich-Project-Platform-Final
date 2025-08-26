@@ -136,9 +136,13 @@ export default function UserManagement() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest("DELETE", `/api/users/${userId}`);
+      console.log("Attempting to delete user:", userId);
+      const response = await apiRequest("DELETE", `/api/users/${userId}`);
+      console.log("Delete response:", response);
+      return response;
     },
     onSuccess: () => {
+      console.log("User deletion successful");
       // Force a complete refetch of the users list
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       queryClient.refetchQueries({ queryKey: ["/api/users"] });
@@ -148,9 +152,10 @@ export default function UserManagement() {
       });
     },
     onError: (error) => {
+      console.error("User deletion error:", error);
       toast({
         title: "Delete Failed",
-        description: error.message,
+        description: error.message || "An error occurred while deleting the user",
         variant: "destructive",
       });
     },

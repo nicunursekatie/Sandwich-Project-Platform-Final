@@ -315,7 +315,7 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
+  private users: Map<string, User>;
   private projects: Map<number, Project>;
   private projectTasks: Map<number, ProjectTask>;
   private projectComments: Map<number, ProjectComment>;
@@ -469,7 +469,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    this.users.set(Number(userData.id), newUser);
+    this.users.set(userData.id, newUser);
     return newUser;
   }
 
@@ -477,7 +477,7 @@ export class MemStorage implements IStorage {
     const existingUser = await this.getUser(userData.id);
     if (existingUser) {
       const updated: User = { ...existingUser, ...userData, updatedAt: new Date() };
-      this.users.set(Number(userData.id), updated);
+      this.users.set(userData.id, updated);
       return updated;
     } else {
       const newUser: User = {
@@ -492,7 +492,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date()
       };
-      this.users.set(Number(userData.id), newUser);
+      this.users.set(userData.id, newUser);
       return newUser;
     }
   }
@@ -506,7 +506,7 @@ export class MemStorage implements IStorage {
     if (!user) return undefined;
     
     const updated: User = { ...user, ...updates, updatedAt: new Date() };
-    this.users.set(Number(id), updated);
+    this.users.set(id, updated);
     return updated;
   }
 
@@ -514,14 +514,13 @@ export class MemStorage implements IStorage {
     const user = await this.getUser(id);
     if (user) {
       const updated: User = { ...user, passwordHash: password, updatedAt: new Date() };
-      this.users.set(Number(id), updated);
+      this.users.set(id, updated);
     }
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const numericId = Number(id);
-    if (this.users.has(numericId)) {
-      this.users.delete(numericId);
+    if (this.users.has(id)) {
+      this.users.delete(id);
       return true;
     }
     return false;
