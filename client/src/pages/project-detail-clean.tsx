@@ -95,6 +95,10 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
   // Meeting discussion state
   const [meetingDiscussionPoints, setMeetingDiscussionPoints] = useState('');
   const [meetingDecisionItems, setMeetingDecisionItems] = useState('');
+  
+  // Milestone editing state
+  const [isEditingMilestone, setIsEditingMilestone] = useState(false);
+  const [editingMilestone, setEditingMilestone] = useState('');
 
   // Meeting discussion mutations
   const saveMeetingNotesMutation = useMutation({
@@ -119,6 +123,34 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
       toast({
         title: "Error",
         description: "Failed to save meeting notes",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Milestone editing mutations
+  const saveMilestoneMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/projects/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          milestone: editingMilestone
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
+      setIsEditingMilestone(false);
+      toast({
+        title: "Success",
+        description: "Project milestone updated successfully",
+      });
+    },
+    onError: (error) => {
+      console.error('Error saving milestone:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update milestone",
         variant: "destructive",
       });
     },
@@ -151,6 +183,7 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
     if (project) {
       setMeetingDiscussionPoints(project.meetingDiscussionPoints || '');
       setMeetingDecisionItems(project.meetingDecisionItems || '');
+      setEditingMilestone(project.milestone || '');
     }
   }, [project]);
 
@@ -180,6 +213,21 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
   // Handler for saving meeting notes
   const handleSaveMeetingNotes = () => {
     saveMeetingNotesMutation.mutate();
+  };
+
+  // Handler for milestone editing
+  const handleEditMilestone = () => {
+    setIsEditingMilestone(true);
+    setEditingMilestone(project?.milestone || '');
+  };
+
+  const handleSaveMilestone = () => {
+    saveMilestoneMutation.mutate();
+  };
+
+  const handleCancelMilestone = () => {
+    setIsEditingMilestone(false);
+    setEditingMilestone(project?.milestone || '');
   };
 
   // Function to send kudos to all project assignees when project is completed
@@ -624,22 +672,73 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
         </div>
       </div>
 
-      {/* Milestone Section - Show if milestone exists */}
-      {project.milestone && project.milestone.trim() && (
+      {/* Milestone Section - Show if milestone exists or user can edit */}
+      {(project.milestone && project.milestone.trim()) || (user && canEditProject(user, project)) ? (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
-              <Target className="h-4 w-4 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+                <Target className="h-4 w-4 text-white" />
+              </div>
+              <h2 className="text-lg font-semibold text-blue-900 font-roboto">Project Milestone</h2>
             </div>
-            <h2 className="text-lg font-semibold text-blue-900 font-roboto">Project Milestone</h2>
+            {user && canEditProject(user, project) && !isEditingMilestone && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditMilestone}
+                className="flex items-center gap-2 border-blue-300 text-blue-600 hover:bg-blue-600 hover:text-white font-roboto"
+              >
+                <Edit2 className="h-3 w-3" />
+                Edit
+              </Button>
+            )}
           </div>
           <div className="bg-white rounded-lg p-4 border border-blue-200">
-            <p className="text-sm text-blue-900 font-roboto font-medium">
-              {project.milestone}
-            </p>
+            {isEditingMilestone ? (
+              <div className="space-y-4">
+                <Textarea
+                  value={editingMilestone}
+                  onChange={(e) => setEditingMilestone(e.target.value)}
+                  placeholder="Describe the key milestone or objective for this project..."
+                  rows={4}
+                  className="w-full"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelMilestone}
+                    className="text-gray-600"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveMilestone}
+                    disabled={saveMilestoneMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {saveMilestoneMutation.isPending ? 'Saving...' : 'Save Milestone'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {project.milestone && project.milestone.trim() ? (
+                  <p className="text-sm text-blue-900 font-roboto font-medium whitespace-pre-wrap">
+                    {project.milestone}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-500 font-roboto italic">
+                    No milestone set for this project. Click "Edit" to add one.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Meeting Discussion Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
