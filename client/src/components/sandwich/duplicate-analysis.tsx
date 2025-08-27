@@ -63,7 +63,7 @@ export function DuplicateAnalysisDialog({
         
         <div className="space-y-6">
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold">{analysis.totalCollections}</div>
               <div className="text-sm text-gray-600">Collections</div>

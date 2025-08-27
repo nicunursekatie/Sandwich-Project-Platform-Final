@@ -681,7 +681,7 @@ export default function GmailStyleInbox() {
         {/* Message List Panel */}
         <div className={`
           ${isMessageListCollapsed ? 'hidden' : 'flex'} 
-          ${selectedMessage && screenSize === 'desktop' ? 'w-1/3 min-w-[300px] max-w-[400px]' : ''}
+          ${selectedMessage && screenSize === 'desktop' ? 'w-full lg:w-1/3 lg:min-w-[300px] lg:max-w-[400px]' : ''}
           ${selectedMessage && screenSize === 'large-tablet' ? 'w-2/5 min-w-[260px]' : ''}
           ${selectedMessage && (screenSize === 'small-tablet' || screenSize === 'mobile') ? 'flex-1' : ''}
           ${!selectedMessage ? 'flex-1' : ''}

@@ -696,20 +696,20 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
           </div>
           <div className="bg-white rounded-lg p-4 border border-blue-200">
             {isEditingMilestone ? (
-              <div className="space-y-4">
+              <div className="space-y-4 p-2 sm:p-4">
                 <Textarea
                   value={editingMilestone}
                   onChange={(e) => setEditingMilestone(e.target.value)}
                   placeholder="Describe the key milestone or objective for this project..."
                   rows={4}
-                  className="w-full"
+                  className="w-full min-w-0"
                 />
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleCancelMilestone}
-                    className="text-gray-600"
+                    className="text-gray-600 text-xs sm:text-sm px-2 sm:px-3"
                   >
                     Cancel
                   </Button>
@@ -717,7 +717,7 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
                     size="sm"
                     onClick={handleSaveMilestone}
                     disabled={saveMilestoneMutation.isPending}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-3"
                   >
                     {saveMilestoneMutation.isPending ? 'Saving...' : 'Save Milestone'}
                   </Button>

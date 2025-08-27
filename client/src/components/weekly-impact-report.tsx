@@ -359,7 +359,8 @@ export default function WeeklyImpactReport() {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse min-w-[600px]">
+                    <div className="hidden sm:block">
+                      <table className="w-full border-collapse min-w-[600px]">
                       <thead>
                         <tr className="border-b">
                           <th className="text-left p-2 md:p-3 font-semibold text-sm md:text-base">Metric</th>
@@ -407,7 +408,23 @@ export default function WeeklyImpactReport() {
                           <td className="text-center p-3">{formatNumber(reportData.metrics_table.group_collections.four_week_avg)}</td>
                         </tr>
                       </tbody>
-                    </table>
+                      </table>
+                    </div>
+                    
+                    {/* Mobile Card Layout */}
+                    <div className="sm:hidden space-y-3">
+                      {Object.entries(reportData.metrics_table).map(([key, values]) => (
+                        <div key={key} className="bg-gray-50 rounded-lg p-3 border">
+                          <h4 className="font-semibold text-sm mb-2 capitalize">{key.replace(/_/g, ' ')}</h4>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div><span className="text-gray-600">This Week:</span> <strong>{values.this_week}</strong></div>
+                            <div><span className="text-gray-600">Last Week:</span> {values.last_week}</div>
+                            <div><span className="text-gray-600">Change:</span> <span className={values.change >= 0 ? 'text-green-600' : 'text-red-600'}>{values.change >= 0 ? '+' : ''}{values.change}</span></div>
+                            <div><span className="text-gray-600">4-Week Avg:</span> {values.four_week_avg}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

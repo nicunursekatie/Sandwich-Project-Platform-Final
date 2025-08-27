@@ -245,7 +245,7 @@ export default function RecipientChat() {
             
             return (
               <div key={msg.id} className={`flex gap-3 ${isOwnMessage ? 'justify-end' : ''}`}>
-                <div className={`flex gap-3 max-w-[80%] ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex gap-3 max-w-[85%] xs:max-w-[80%] sm:max-w-[75%] ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center">
                       {isOwnMessage ? (

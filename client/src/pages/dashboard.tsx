@@ -381,7 +381,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* Compact user indicator for tablets */}
           {user && (
-            <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 shadow-sm max-w-[180px] md:max-w-none">
+            <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 shadow-sm max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
                 <span className="text-xs font-medium text-teal-800">
                   {(user as any)?.firstName?.charAt(0) || (user as any)?.email?.charAt(0) || 'U'}
@@ -404,14 +404,14 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
           )}
           
           {/* Essential buttons - always visible */}
-          <div className="flex items-center gap-1 relative z-50 flex-shrink-0">
+          <div className="flex items-center gap-0.5 xs:gap-1 relative z-50 flex-shrink-0">
             <button
               onClick={() => {
                 console.log('Messages button clicked');
                 setActiveSection("messages");
                 setIsMobileMenuOpen(false);
               }}
-              className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation ${
+              className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
                 activeSection === "messages"
                   ? "bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm"
                   : "text-teal-600 hover:bg-teal-50 hover:text-teal-800"
@@ -434,7 +434,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
                 window.history.pushState({}, '', '/dashboard?section=profile');
                 setIsMobileMenuOpen(false);
               }}
-              className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation ${
+              className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
                 activeSection === "profile"
                   ? "bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm"
                   : "text-teal-600 hover:bg-teal-50 hover:text-teal-800"
@@ -484,7 +484,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         <div className={`${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 fixed md:relative z-50 ${
-          isSidebarCollapsed ? 'w-16' : 'w-64 sm:w-72'
+          isSidebarCollapsed ? 'w-16' : 'w-56 xs:w-64 sm:w-72'
         } bg-gradient-to-b from-white to-orange-50/30 border-r-2 border-amber-200 shadow-lg flex flex-col transition-all duration-300 ease-in-out h-full`}>
           {/* Collapse Toggle Button */}
           <div className="hidden md:flex justify-end p-2 border-b border-amber-200">
@@ -520,7 +520,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30">
+        <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0">
           {(activeSection === 'gmail-inbox' || activeSection === 'chat') ? (
             // Special full-height layout for inbox and chat
             (<div className="h-full">

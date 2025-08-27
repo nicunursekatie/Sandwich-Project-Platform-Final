@@ -442,7 +442,7 @@ export default function BulkDataManager({
               <div className="space-y-3">
                 {hostCollections?.map((collection: any, index: number) => (
                   <div key={collection.id || index} className="border rounded-lg p-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <span className="font-medium text-gray-600">Date:</span>
                         <div>{collection.collectionDate}</div>

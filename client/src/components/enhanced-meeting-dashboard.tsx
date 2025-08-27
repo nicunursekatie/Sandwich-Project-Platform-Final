@@ -889,7 +889,7 @@ export default function EnhancedMeetingDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingMeetings.map((meeting: Meeting) => (
               <Card key={meeting.id} className="hover:shadow-lg transition-all duration-200 border-teal-200 bg-gradient-to-br from-white to-teal-50">
                 <CardHeader className="pb-3">
@@ -977,7 +977,7 @@ export default function EnhancedMeetingDashboard() {
             </Badge>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pastMeetings.slice(0, 6).map((meeting: Meeting) => (
               <Card key={meeting.id} className="bg-gray-50 border-gray-200 hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">

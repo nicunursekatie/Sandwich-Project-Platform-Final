@@ -165,7 +165,7 @@ export function GoogleSheetsIntegration() {
             <CardTitle>Sheet Analysis Results</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{analysis.totalRows}</div>
                 <div className="text-sm text-gray-600">Total Rows</div>

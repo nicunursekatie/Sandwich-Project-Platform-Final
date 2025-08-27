@@ -195,7 +195,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
             key={item.id}
             variant={isCurrentlyActive ? "default" : "ghost"}
             className={`
-              w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-2 sm:px-3'} text-left h-10 sm:h-11 touch-manipulation relative
+              w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-2 sm:px-3'} text-left h-11 touch-manipulation relative
               ${isCurrentlyActive 
                 ? "bg-[#236383] hover:bg-[#1d5470] text-white shadow-sm border-l-4 border-l-[#FBAD3F]" 
                 : "hover:bg-slate-100 text-slate-700"
@@ -224,7 +224,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
             {unreadCount > 0 && (
               <Badge 
                 variant={isCurrentlyActive ? "secondary" : "destructive"} 
-                className={`${isCollapsed ? 'absolute -top-1 -right-1 h-4 w-4 p-0 text-xs' : 'ml-auto h-4 sm:h-5 px-1 sm:px-1.5 min-w-[16px] sm:min-w-[20px] text-xs'} flex items-center justify-center`}
+                className={`${isCollapsed ? 'absolute -top-1 -right-1 h-4 w-4 p-0 text-xs' : 'ml-auto h-4 sm:h-5 px-1 sm:px-1.5 min-w-[20px] text-xs'} flex items-center justify-center`}
               >
                 {unreadCount > 99 ? '99+' : unreadCount}
               </Badge>
