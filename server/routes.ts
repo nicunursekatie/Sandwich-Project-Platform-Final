@@ -3353,11 +3353,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Footer
-        const pageCount = doc.bufferedPageRange();
-        for (let i = 0; i < pageCount.count; i++) {
+        const pageRange = doc.bufferedPageRange();
+        for (let i = pageRange.start; i < pageRange.start + pageRange.count; i++) {
           doc.switchToPage(i);
           doc.fontSize(8).fillColor(colors.lightGray)
-             .text(`The Sandwich Project • Meeting Agenda • Page ${i + 1} of ${pageCount.count}`, 
+             .text(`The Sandwich Project • Meeting Agenda • Page ${i - pageRange.start + 1} of ${pageRange.count}`, 
                     50, doc.page.height - 50, { align: 'center', width: doc.page.width - 100 });
         }
 
