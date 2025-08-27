@@ -46,6 +46,11 @@ export default function RecipientsManagement() {
     contactPersonPhone: "",
     contactPersonEmail: "",
     contactPersonRole: "",
+    // Second contact person fields
+    secondContactPersonName: "",
+    secondContactPersonPhone: "",
+    secondContactPersonEmail: "",
+    secondContactPersonRole: "",
     // New enhanced fields
     reportingGroup: "",
     estimatedSandwiches: "",
@@ -83,6 +88,8 @@ export default function RecipientsManagement() {
         recipient.region?.toLowerCase().includes(term) ||
         recipient.contactPersonName?.toLowerCase().includes(term) ||
         recipient.contactPersonEmail?.toLowerCase().includes(term) ||
+        (recipient as any).secondContactPersonName?.toLowerCase().includes(term) ||
+        (recipient as any).secondContactPersonEmail?.toLowerCase().includes(term) ||
         recipient.reportingGroup?.toLowerCase().includes(term) ||
         (recipient as any).focusArea?.toLowerCase().includes(term) ||
         (recipient as any).instagramHandle?.toLowerCase().includes(term)
@@ -170,6 +177,10 @@ export default function RecipientsManagement() {
         contactPersonPhone: "",
         contactPersonEmail: "",
         contactPersonRole: "",
+        secondContactPersonName: "",
+        secondContactPersonPhone: "",
+        secondContactPersonEmail: "",
+        secondContactPersonRole: "",
         // Reset new enhanced fields
         reportingGroup: "",
         estimatedSandwiches: "",
@@ -575,6 +586,50 @@ export default function RecipientsManagement() {
                           value={newRecipient.contactPersonEmail}
                           onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonEmail: e.target.value })}
                           placeholder="john@organization.org"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Second Contact Person Section */}
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium text-sm text-slate-700 mb-3">Second Contact Person (Optional)</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="secondContactPersonName">Contact Name</Label>
+                        <Input
+                          id="secondContactPersonName"
+                          value={newRecipient.secondContactPersonName}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonName: e.target.value })}
+                          placeholder="Jane Doe"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="secondContactPersonRole">Role/Title</Label>
+                        <Input
+                          id="secondContactPersonRole"
+                          value={newRecipient.secondContactPersonRole}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonRole: e.target.value })}
+                          placeholder="Assistant Manager, etc."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="secondContactPersonPhone">Contact Phone</Label>
+                        <Input
+                          id="secondContactPersonPhone"
+                          value={newRecipient.secondContactPersonPhone}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonPhone: e.target.value })}
+                          placeholder="(555) 987-6543"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="secondContactPersonEmail">Contact Email</Label>
+                        <Input
+                          id="secondContactPersonEmail"
+                          type="email"
+                          value={newRecipient.secondContactPersonEmail}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonEmail: e.target.value })}
+                          placeholder="jane@organization.org"
                         />
                       </div>
                     </div>
@@ -987,6 +1042,36 @@ export default function RecipientsManagement() {
                 </div>
               )}
 
+              {/* Second Contact Person Information */}
+              {((recipient as any).secondContactPersonName || (recipient as any).secondContactPersonPhone || (recipient as any).secondContactPersonEmail) && (
+                <div className="border-t pt-3 mt-3">
+                  <div className="text-sm font-medium text-slate-700 mb-2">Second Contact Person</div>
+                  {(recipient as any).secondContactPersonName && (
+                    <div className="text-sm text-slate-600 flex items-center gap-2">
+                      <span className="font-medium">Name:</span> 
+                      <span>{(recipient as any).secondContactPersonName}</span>
+                      {(recipient as any).secondContactPersonRole && (
+                        <Badge variant="outline" className="text-xs">
+                          {(recipient as any).secondContactPersonRole}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  {(recipient as any).secondContactPersonPhone && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
+                      <Phone className="w-4 h-4" />
+                      <span>{(recipient as any).secondContactPersonPhone}</span>
+                    </div>
+                  )}
+                  {(recipient as any).secondContactPersonEmail && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
+                      <Mail className="w-4 h-4" />
+                      <span>{(recipient as any).secondContactPersonEmail}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* TSP Contacts - Integrated */}
               <TSPContactManager 
                 recipientId={recipient.id} 
@@ -1132,6 +1217,50 @@ export default function RecipientsManagement() {
                       value={editingRecipient.contactPersonEmail || ""}
                       onChange={(e) => setEditingRecipient({ ...editingRecipient, contactPersonEmail: e.target.value })}
                       placeholder="john@organization.org"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Second Contact Person Section */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium text-sm text-slate-700 mb-3">Second Contact Person (Optional)</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit-secondContactPersonName">Contact Name</Label>
+                    <Input
+                      id="edit-secondContactPersonName"
+                      value={(editingRecipient as any).secondContactPersonName || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, secondContactPersonName: e.target.value })}
+                      placeholder="Jane Doe"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-secondContactPersonRole">Role/Title</Label>
+                    <Input
+                      id="edit-secondContactPersonRole"
+                      value={(editingRecipient as any).secondContactPersonRole || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, secondContactPersonRole: e.target.value })}
+                      placeholder="Assistant Manager, etc."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-secondContactPersonPhone">Contact Phone</Label>
+                    <Input
+                      id="edit-secondContactPersonPhone"
+                      value={(editingRecipient as any).secondContactPersonPhone || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, secondContactPersonPhone: e.target.value })}
+                      placeholder="(555) 987-6543"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-secondContactPersonEmail">Contact Email</Label>
+                    <Input
+                      id="edit-secondContactPersonEmail"
+                      type="email"
+                      value={(editingRecipient as any).secondContactPersonEmail || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, secondContactPersonEmail: e.target.value })}
+                      placeholder="jane@organization.org"
                     />
                   </div>
                 </div>

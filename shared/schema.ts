@@ -630,6 +630,11 @@ export const recipients = pgTable("recipients", {
   contactPersonPhone: text("contact_person_phone"), // Contact person's phone
   contactPersonEmail: text("contact_person_email"), // Contact person's email
   contactPersonRole: text("contact_person_role"), // Their role/title (e.g., "Program Director", "Volunteer Coordinator")
+  // Second contact person fields
+  secondContactPersonName: text("second_contact_person_name"), // Second contact within the organization
+  secondContactPersonPhone: text("second_contact_person_phone"), // Second contact person's phone
+  secondContactPersonEmail: text("second_contact_person_email"), // Second contact person's email
+  secondContactPersonRole: text("second_contact_person_role"), // Second contact person's role/title
   // Enhanced fields for operational tracking
   reportingGroup: text("reporting_group"), // Corresponds to host locations for operational grouping
   estimatedSandwiches: integer("estimated_sandwiches"), // Estimated number of sandwiches needed
