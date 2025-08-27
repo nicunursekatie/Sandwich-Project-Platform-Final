@@ -83,7 +83,8 @@ export default function RecipientsManagement() {
         recipient.region?.toLowerCase().includes(term) ||
         recipient.contactPersonName?.toLowerCase().includes(term) ||
         recipient.contactPersonEmail?.toLowerCase().includes(term) ||
-        recipient.reportingGroup?.toLowerCase().includes(term)
+        recipient.reportingGroup?.toLowerCase().includes(term) ||
+        (recipient as any).focusArea?.toLowerCase().includes(term)
       );
     }
 
@@ -144,6 +145,11 @@ export default function RecipientsManagement() {
     return [...new Set(types)].sort();
   }, [recipients]);
 
+  const uniqueFocusAreas = useMemo(() => {
+    const areas = recipients.map(r => (r as any).focusArea).filter(Boolean);
+    return [...new Set(areas)].sort();
+  }, [recipients]);
+
   const createRecipientMutation = useMutation({
     mutationFn: (recipient: any) => apiRequest('POST', '/api/recipients', recipient),
     onSuccess: () => {
@@ -166,6 +172,7 @@ export default function RecipientsManagement() {
         reportingGroup: "",
         estimatedSandwiches: "",
         sandwichType: "",
+        focusArea: "", // Reset focus area field
         tspContact: "",
         tspContactUserId: "",
         contractSigned: false,
@@ -593,6 +600,15 @@ export default function RecipientsManagement() {
                         />
                       </div>
                       <div>
+                        <Label htmlFor="focusArea">Focus Area</Label>
+                        <Input
+                          id="focusArea"
+                          value={newRecipient.focusArea}
+                          onChange={(e) => setNewRecipient({ ...newRecipient, focusArea: e.target.value })}
+                          placeholder="Group focus (e.g., youth, veterans, seniors, families)"
+                        />
+                      </div>
+                      <div>
                         <Label htmlFor="tspContact">TSP Contact</Label>
                         <Input
                           id="tspContact"
@@ -873,7 +889,7 @@ export default function RecipientsManagement() {
               )}
 
               {/* Enhanced Operational Information */}
-              {(recipient.reportingGroup || recipient.estimatedSandwiches || recipient.sandwichType || recipient.tspContact || recipient.contractSigned) && (
+              {(recipient.reportingGroup || recipient.estimatedSandwiches || recipient.sandwichType || (recipient as any).focusArea || recipient.tspContact || recipient.contractSigned) && (
                 <div className="border-t pt-3 mt-3">
                   <div className="text-sm font-medium text-slate-700 mb-2">Operational Details</div>
                   <div className="grid grid-cols-2 gap-2">
@@ -890,6 +906,11 @@ export default function RecipientsManagement() {
                     {recipient.sandwichType && (
                       <div className="text-sm text-slate-600">
                         <span className="font-medium">Type:</span> {recipient.sandwichType}
+                      </div>
+                    )}
+                    {(recipient as any).focusArea && (
+                      <div className="text-sm text-slate-600">
+                        <span className="font-medium">Focus Area:</span> {(recipient as any).focusArea}
                       </div>
                     )}
 
@@ -1110,6 +1131,15 @@ export default function RecipientsManagement() {
                       value={editingRecipient.sandwichType || ""}
                       onChange={(e) => setEditingRecipient({ ...editingRecipient, sandwichType: e.target.value })}
                       placeholder="Type preferred (e.g., PB&J, Deli, Mixed)"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-focusArea">Focus Area</Label>
+                    <Input
+                      id="edit-focusArea"
+                      value={(editingRecipient as any).focusArea || ""}
+                      onChange={(e) => setEditingRecipient({ ...editingRecipient, focusArea: e.target.value })}
+                      placeholder="Group focus (e.g., youth, veterans, seniors, families)"
                     />
                   </div>
                   <div>
