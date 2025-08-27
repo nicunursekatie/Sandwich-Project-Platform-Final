@@ -919,7 +919,7 @@ export default function RecipientsManagement() {
               )}
 
               {/* Enhanced Operational Information */}
-              {(recipient.reportingGroup || recipient.estimatedSandwiches || (recipient as any).weeklyEstimate || recipient.sandwichType || recipient.tspContact || recipient.contractSigned) && (
+              {(recipient.reportingGroup || (recipient as any).estimatedSandwiches || (recipient as any).weeklyEstimate || (recipient as any).estimated_sandwiches || (recipient as any).weekly_estimate || recipient.sandwichType || recipient.tspContact || recipient.contractSigned) && (
                 <div className="border-t pt-3 mt-3">
                   <div className="text-sm font-medium text-slate-700 mb-2">Operational Details</div>
                   <div className="grid grid-cols-2 gap-2">
@@ -928,9 +928,9 @@ export default function RecipientsManagement() {
                         <span className="font-medium">Reporting Group:</span> {recipient.reportingGroup}
                       </div>
                     )}
-                    {(recipient.estimatedSandwiches || (recipient as any).weeklyEstimate) && (
+                    {((recipient as any).estimatedSandwiches || (recipient as any).weeklyEstimate || (recipient as any).estimated_sandwiches || (recipient as any).weekly_estimate) && (
                       <div className="text-sm text-slate-600">
-                        <span className="font-medium">Weekly Estimate:</span> {recipient.estimatedSandwiches || (recipient as any).weeklyEstimate} sandwiches
+                        <span className="font-medium">Weekly Estimate:</span> {(recipient as any).estimatedSandwiches || (recipient as any).weeklyEstimate || (recipient as any).estimated_sandwiches || (recipient as any).weekly_estimate} sandwiches
                       </div>
                     )}
                     {recipient.sandwichType && (
