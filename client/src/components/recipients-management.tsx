@@ -821,8 +821,15 @@ export default function RecipientsManagement() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg">{recipient.name}</CardTitle>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CardTitle className="text-lg">{recipient.name}</CardTitle>
+                    {(recipient as any).focusArea && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {(recipient as any).focusArea}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Badge variant={recipient.status === "active" ? "default" : "secondary"}>
                       {recipient.status}
                     </Badge>
@@ -889,7 +896,7 @@ export default function RecipientsManagement() {
               )}
 
               {/* Enhanced Operational Information */}
-              {(recipient.reportingGroup || recipient.estimatedSandwiches || recipient.sandwichType || (recipient as any).focusArea || recipient.tspContact || recipient.contractSigned) && (
+              {(recipient.reportingGroup || recipient.estimatedSandwiches || recipient.sandwichType || recipient.tspContact || recipient.contractSigned) && (
                 <div className="border-t pt-3 mt-3">
                   <div className="text-sm font-medium text-slate-700 mb-2">Operational Details</div>
                   <div className="grid grid-cols-2 gap-2">
@@ -906,11 +913,6 @@ export default function RecipientsManagement() {
                     {recipient.sandwichType && (
                       <div className="text-sm text-slate-600">
                         <span className="font-medium">Type:</span> {recipient.sandwichType}
-                      </div>
-                    )}
-                    {(recipient as any).focusArea && (
-                      <div className="text-sm text-slate-600">
-                        <span className="font-medium">Focus Area:</span> {(recipient as any).focusArea}
                       </div>
                     )}
 
