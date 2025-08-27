@@ -338,7 +338,11 @@ export default function ProjectList() {
                         <p className="text-slate-600 mb-3 text-sm leading-relaxed">{project.description}</p>
                       )}
                       <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                        <span className="bg-slate-100 px-2 py-1 rounded">{project.category}</span>
+                        {project.category && project.category !== project.milestone && (
+                          {project.category && project.category !== project.milestone && (
+                      <span className="bg-slate-100 px-2 py-1 rounded">{project.category}</span>
+                    )}
+                        )}
                         <span className="bg-slate-100 px-2 py-1 rounded">{project.priority} priority</span>
                         {project.dueDate && (
                           <span>Due: {new Date(project.dueDate).toLocaleDateString()}</span>
@@ -706,7 +710,9 @@ export default function ProjectList() {
                     <p className="text-slate-600 mb-3 text-sm leading-relaxed">{project.description}</p>
                   )}
                   <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                    <span className="bg-slate-100 px-2 py-1 rounded">{project.category}</span>
+                    {project.category && project.category !== project.milestone && (
+                      <span className="bg-slate-100 px-2 py-1 rounded">{project.category}</span>
+                    )}
                     <span className="bg-slate-100 px-2 py-1 rounded">{project.priority} priority</span>
                     {project.dueDate && (
                       <span>Due: {new Date(project.dueDate).toLocaleDateString()}</span>
@@ -995,7 +1001,9 @@ export default function ProjectList() {
                     <p className="text-slate-600 mb-3 text-sm leading-relaxed">{project.description}</p>
                   )}
                   <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                    <span className="bg-slate-100 px-2 py-1 rounded">{project.category}</span>
+                    {project.category && project.category !== project.milestone && (
+                      <span className="bg-slate-100 px-2 py-1 rounded">{project.category}</span>
+                    )}
                     <span className="bg-slate-100 px-2 py-1 rounded">{project.priority} priority</span>
                     {project.dueDate && (
                       <span>Due: {new Date(project.dueDate).toLocaleDateString()}</span>

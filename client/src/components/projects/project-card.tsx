@@ -85,10 +85,23 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
         )}
         
         <div className="space-y-2 text-sm">
-          {project.category && (
+          {project.category && project.category !== project.milestone && (
             <div className="flex items-center gap-2">
               <span className="font-medium">Category:</span>
               <Badge variant="secondary">{project.category}</Badge>
+            </div>
+          )}
+          
+          {project.milestone && project.milestone !== project.category && (
+            <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-blue-100 text-blue-800 text-xs">
+                  🎯 Milestone
+                </Badge>
+                <span className="text-sm font-medium text-blue-900">
+                  {project.milestone}
+                </span>
+              </div>
             </div>
           )}
           

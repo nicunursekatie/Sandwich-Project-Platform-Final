@@ -540,7 +540,7 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
           >
             {project.priority}
           </Badge>
-          {project.category && (
+          {project.category && project.category !== project.milestone && (
             <Badge className="bg-[#236383] text-white font-roboto px-3 py-1">
               {getCategoryIcon(project.category)} {project.category}
             </Badge>
@@ -621,6 +621,23 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
           </div>
         </div>
       </div>
+
+      {/* Milestone Section - Only show if milestone exists and is different from category */}
+      {project.milestone && project.milestone !== project.category && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+              <Target className="h-4 w-4 text-white" />
+            </div>
+            <h2 className="text-lg font-semibold text-blue-900 font-roboto">Project Milestone</h2>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <p className="text-sm text-blue-900 font-roboto font-medium">
+              {project.milestone}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Meeting Discussion Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
