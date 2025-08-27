@@ -380,7 +380,8 @@ export default function EnhancedMeetingDashboard() {
                 title: task.title,
                 status: task.status,
                 priority: task.priority,
-                description: task.description
+                description: task.description,
+                assignee: task.assigneeName || task.assignee || 'Unassigned'
               }))
             };
           } catch (error) {

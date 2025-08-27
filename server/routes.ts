@@ -3338,6 +3338,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                    .text(`• ${task.title} ${statusIndicator}`, 70, yPosition, { width: 460 });
                 yPosition += 12;
 
+                // Task assignee
+                if (task.assignee && task.assignee !== 'Unassigned') {
+                  doc.fontSize(8).fillColor('#666666')
+                     .text(`Assigned to: ${task.assignee}`, 80, yPosition, { width: 450 });
+                  yPosition += 10;
+                }
+
                 // Task description (if available)
                 if (task.description) {
                   doc.fontSize(8).fillColor('#888888')
