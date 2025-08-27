@@ -50,6 +50,7 @@ export default function RecipientsManagement() {
     reportingGroup: "",
     estimatedSandwiches: "",
     sandwichType: "",
+    focusArea: "", // New field for group focus (youth, veterans, etc.)
     tspContact: "",
     tspContactUserId: "",
     contractSigned: false,
