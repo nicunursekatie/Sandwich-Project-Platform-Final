@@ -120,6 +120,11 @@ export const PERMISSIONS = {
   IMPORT_DATA: "import_data",
   EDIT_DATA: "edit_data", // General data editing permission
 
+  // Document management permissions
+  MANAGE_DOCUMENTS: "manage_documents", // Full document management (create, edit, delete, permissions)
+  VIEW_DOCUMENTS: "view_documents", // View document management interface
+  ACCESS_DOCUMENTS: "access_documents", // Access to specific documents based on permissions
+
   // Message and communication permissions
   SEND_MESSAGES: "send_messages",
   MODERATE_MESSAGES: "moderate_messages",

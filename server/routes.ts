@@ -49,6 +49,9 @@ import {
   insertRecipientSchema,
   insertContactSchema,
   insertAnnouncementSchema,
+  insertDocumentSchema,
+  insertDocumentPermissionSchema,
+  insertDocumentAccessLogSchema,
   drivers,
   volunteers,
   projectTasks,
@@ -59,6 +62,9 @@ import {
   emailMessages,
   users,
   wishlistSuggestions,
+  documents,
+  documentPermissions,
+  documentAccessLogs,
 } from "@shared/schema";
 
 import { getDefaultPermissionsForRole, hasPermission, hasAccessToChat } from "@shared/auth-utils";
@@ -9996,6 +10002,203 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       logger.error("Failed to get wishlist activity", error);
       res.status(500).json({ message: "Failed to get wishlist activity" });
+    }
+  });
+
+  // Document Management API Routes
+  app.get("/api/documents", isAuthenticated, async (req, res) => {
+    try {
+      const documents = await storage.getDocumentsForUser(req.user!.id);
+      res.json(documents);
+    } catch (error) {
+      logger.error("Failed to get documents", error);
+      res.status(500).json({ message: "Failed to get documents" });
+    }
+  });
+
+  app.get("/api/documents/:id", isAuthenticated, async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const hasAccess = await storage.checkUserDocumentAccess(documentId, req.user!.id, 'view');
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const document = await storage.getDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Log access
+      await storage.logDocumentAccess({
+        documentId,
+        userId: req.user!.id,
+        userName: `${req.user!.firstName} ${req.user!.lastName}`.trim(),
+        action: 'view',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || '',
+        sessionId: req.sessionID
+      });
+
+      res.json(document);
+    } catch (error) {
+      logger.error("Failed to get document", error);
+      res.status(500).json({ message: "Failed to get document" });
+    }
+  });
+
+  app.post("/api/documents", isAuthenticated, requirePermission("manage_documents"), async (req, res) => {
+    try {
+      const result = insertDocumentSchema.safeParse({
+        ...req.body,
+        uploadedBy: req.user!.id,
+        uploadedByName: `${req.user!.firstName} ${req.user!.lastName}`.trim()
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid document data", 
+          errors: result.error.issues 
+        });
+      }
+
+      const document = await storage.createDocument(result.data);
+
+      // Log creation
+      await storage.logDocumentAccess({
+        documentId: document.id,
+        userId: req.user!.id,
+        userName: `${req.user!.firstName} ${req.user!.lastName}`.trim(),
+        action: 'upload',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || '',
+        sessionId: req.sessionID
+      });
+
+      res.status(201).json(document);
+    } catch (error) {
+      logger.error("Failed to create document", error);
+      res.status(500).json({ message: "Failed to create document" });
+    }
+  });
+
+  app.put("/api/documents/:id", isAuthenticated, async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const hasAccess = await storage.checkUserDocumentAccess(documentId, req.user!.id, 'edit');
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const document = await storage.updateDocument(documentId, req.body);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      res.json(document);
+    } catch (error) {
+      logger.error("Failed to update document", error);
+      res.status(500).json({ message: "Failed to update document" });
+    }
+  });
+
+  app.delete("/api/documents/:id", isAuthenticated, async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const hasAccess = await storage.checkUserDocumentAccess(documentId, req.user!.id, 'admin');
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const success = await storage.deleteDocument(documentId);
+      if (!success) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Log deletion
+      await storage.logDocumentAccess({
+        documentId,
+        userId: req.user!.id,
+        userName: `${req.user!.firstName} ${req.user!.lastName}`.trim(),
+        action: 'delete',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || '',
+        sessionId: req.sessionID
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Failed to delete document", error);
+      res.status(500).json({ message: "Failed to delete document" });
+    }
+  });
+
+  // Document Permissions API Routes
+  app.get("/api/documents/:id/permissions", isAuthenticated, requirePermission("manage_documents"), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const permissions = await storage.getDocumentPermissions(documentId);
+      res.json(permissions);
+    } catch (error) {
+      logger.error("Failed to get document permissions", error);
+      res.status(500).json({ message: "Failed to get document permissions" });
+    }
+  });
+
+  app.post("/api/documents/:id/permissions", isAuthenticated, requirePermission("manage_documents"), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      
+      const result = insertDocumentPermissionSchema.safeParse({
+        ...req.body,
+        documentId,
+        grantedBy: req.user!.id,
+        grantedByName: `${req.user!.firstName} ${req.user!.lastName}`.trim()
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid permission data", 
+          errors: result.error.issues 
+        });
+      }
+
+      const permission = await storage.grantDocumentPermission(result.data);
+      res.status(201).json(permission);
+    } catch (error) {
+      logger.error("Failed to grant document permission", error);
+      res.status(500).json({ message: "Failed to grant document permission" });
+    }
+  });
+
+  app.delete("/api/documents/:id/permissions/:userId/:permissionType", isAuthenticated, requirePermission("manage_documents"), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const { userId, permissionType } = req.params;
+      
+      const success = await storage.revokeDocumentPermission(documentId, userId, permissionType);
+      if (!success) {
+        return res.status(404).json({ message: "Permission not found" });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Failed to revoke document permission", error);
+      res.status(500).json({ message: "Failed to revoke document permission" });
+    }
+  });
+
+  app.get("/api/documents/:id/access-logs", isAuthenticated, requirePermission("manage_documents"), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const logs = await storage.getDocumentAccessLogs(documentId);
+      res.json(logs);
+    } catch (error) {
+      logger.error("Failed to get document access logs", error);
+      res.status(500).json({ message: "Failed to get document access logs" });
     }
   });
 

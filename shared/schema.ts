@@ -678,6 +678,64 @@ export const projectDocuments = pgTable("project_documents", {
   uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
 });
 
+// General document management system with granular permissions
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  fileName: text("file_name").notNull(),
+  originalName: text("original_name").notNull(),
+  filePath: text("file_path").notNull(), // Storage path
+  fileSize: integer("file_size").notNull(),
+  mimeType: text("mime_type").notNull(),
+  category: text("category").notNull().default("general"), // 'governance', 'operations', 'training', 'confidential', 'general'
+  isActive: boolean("is_active").notNull().default(true),
+  uploadedBy: varchar("uploaded_by").notNull(),
+  uploadedByName: text("uploaded_by_name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  categoryIdx: index("idx_documents_category").on(table.category),
+  uploadedByIdx: index("idx_documents_uploaded_by").on(table.uploadedBy),
+  activeIdx: index("idx_documents_active").on(table.isActive),
+}));
+
+// Document access permissions - granular control over who can access specific documents
+export const documentPermissions = pgTable("document_permissions", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permissionType: text("permission_type").notNull(), // 'view', 'download', 'edit', 'admin'
+  grantedBy: varchar("granted_by").notNull(), // Who granted this permission
+  grantedByName: text("granted_by_name").notNull(),
+  grantedAt: timestamp("granted_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"), // Optional expiration date
+  notes: text("notes"), // Reason for granting permission
+  isActive: boolean("is_active").notNull().default(true),
+}, (table) => ({
+  documentUserIdx: index("idx_document_permissions_doc_user").on(table.documentId, table.userId),
+  userPermissionIdx: index("idx_document_permissions_user").on(table.userId, table.permissionType),
+  documentPermissionIdx: index("idx_document_permissions_doc").on(table.documentId, table.permissionType),
+  uniquePermission: unique().on(table.documentId, table.userId, table.permissionType),
+}));
+
+// Document access log for audit trail
+export const documentAccessLogs = pgTable("document_access_logs", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull(),
+  userName: text("user_name").notNull(),
+  action: text("action").notNull(), // 'view', 'download', 'upload', 'delete', 'share'
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  sessionId: varchar("session_id"),
+  accessedAt: timestamp("accessed_at").notNull().defaultNow(),
+}, (table) => ({
+  documentIdx: index("idx_document_access_doc").on(table.documentId),
+  userIdx: index("idx_document_access_user").on(table.userId),
+  actionTimeIdx: index("idx_document_access_action_time").on(table.action, table.accessedAt),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, updatedAt: true }).extend({
@@ -723,6 +781,9 @@ export const insertRecipientSchema = createInsertSchema(recipients).omit({ id: t
 });
 export const insertRecipientTspContactSchema = createInsertSchema(recipientTspContacts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({ id: true, uploadedAt: true });
+export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertDocumentPermissionSchema = createInsertSchema(documentPermissions).omit({ id: true, grantedAt: true });
+export const insertDocumentAccessLogSchema = createInsertSchema(documentAccessLogs).omit({ id: true, accessedAt: true });
 export const insertProjectTaskSchema = createInsertSchema(projectTasks).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectCommentSchema = createInsertSchema(projectComments).omit({ id: true, createdAt: true });
 export const insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({ id: true, assignedAt: true });
@@ -780,6 +841,12 @@ export type RecipientTspContact = typeof recipientTspContacts.$inferSelect;
 export type InsertRecipientTspContact = z.infer<typeof insertRecipientTspContactSchema>;
 export type ProjectDocument = typeof projectDocuments.$inferSelect;
 export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type DocumentPermission = typeof documentPermissions.$inferSelect;
+export type InsertDocumentPermission = z.infer<typeof insertDocumentPermissionSchema>;
+export type DocumentAccessLog = typeof documentAccessLogs.$inferSelect;
+export type InsertDocumentAccessLog = z.infer<typeof insertDocumentAccessLogSchema>;
 export type ProjectTask = typeof projectTasks.$inferSelect;
 export type InsertProjectTask = z.infer<typeof insertProjectTaskSchema>;
 export type ProjectComment = typeof projectComments.$inferSelect;

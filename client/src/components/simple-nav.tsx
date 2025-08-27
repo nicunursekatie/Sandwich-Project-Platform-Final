@@ -96,6 +96,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
     
     // DOCUMENTATION
+    ...(hasPermission(user, PERMISSIONS.MANAGE_DOCUMENTS) || hasPermission(user, PERMISSIONS.VIEW_DOCUMENTS) ? [{ id: "documents", label: "Document Management", icon: FileText, href: "documents", group: "documentation" }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_DEVELOPMENT) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "documentation" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_GOVERNANCE) ? [{ id: "governance", label: "Governance", icon: Scale, href: "governance", group: "documentation" }] : []),
     

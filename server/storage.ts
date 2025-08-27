@@ -1,5 +1,5 @@
 import { 
-  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses, wishlistSuggestions,
+  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses, wishlistSuggestions, documents, documentPermissions, documentAccessLogs,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -26,7 +26,10 @@ import {
   type SuggestionResponse, type InsertSuggestionResponse,
   type ChatMessageLike, type InsertChatMessageLike,
   type SandwichDistribution, type InsertSandwichDistribution,
-  type WishlistSuggestion, type InsertWishlistSuggestion
+  type WishlistSuggestion, type InsertWishlistSuggestion,
+  type Document, type InsertDocument,
+  type DocumentPermission, type InsertDocumentPermission,
+  type DocumentAccessLog, type InsertDocumentAccessLog
 } from "@shared/schema";
 
 export interface IStorage {
@@ -271,6 +274,26 @@ export interface IStorage {
   deleteChatMessage(id: number): Promise<void>;
   markChannelMessagesAsRead(userId: string, channel: string): Promise<void>;
 
+  // Document Management
+  getAllDocuments(): Promise<Document[]>;
+  getDocument(id: number): Promise<Document | undefined>;
+  getDocumentsForUser(userId: string): Promise<Document[]>; // Get documents user can access
+  createDocument(document: InsertDocument): Promise<Document>;
+  updateDocument(id: number, updates: Partial<Document>): Promise<Document | undefined>;
+  deleteDocument(id: number): Promise<boolean>;
+  
+  // Document Permissions
+  getDocumentPermissions(documentId: number): Promise<DocumentPermission[]>;
+  getUserDocumentPermission(documentId: number, userId: string): Promise<DocumentPermission | undefined>;
+  checkUserDocumentAccess(documentId: number, userId: string, permission: string): Promise<boolean>;
+  grantDocumentPermission(permission: InsertDocumentPermission): Promise<DocumentPermission>;
+  revokeDocumentPermission(documentId: number, userId: string, permissionType: string): Promise<boolean>;
+  updateDocumentPermission(id: number, updates: Partial<DocumentPermission>): Promise<DocumentPermission | undefined>;
+  
+  // Document Access Logging
+  logDocumentAccess(access: InsertDocumentAccessLog): Promise<DocumentAccessLog>;
+  getDocumentAccessLogs(documentId: number): Promise<DocumentAccessLog[]>;
+
   // Shoutout methods
   createShoutoutLog(log: {
     templateName: string;
@@ -341,6 +364,9 @@ export class MemStorage implements IStorage {
   private suggestionResponses: Map<number, SuggestionResponse>;
   private sandwichDistributions: Map<number, SandwichDistribution>;
   private shoutoutLogs: Map<number, any>;
+  private documents: Map<number, Document>;
+  private documentPermissions: Map<number, DocumentPermission>;
+  private documentAccessLogs: Map<number, DocumentAccessLog>;
   private currentIds: {
     user: number;
     project: number;
@@ -366,6 +392,9 @@ export class MemStorage implements IStorage {
     suggestion: number;
     suggestionResponse: number;
     sandwichDistribution: number;
+    document: number;
+    documentPermission: number;
+    documentAccessLog: number;
   };
 
   constructor() {
@@ -396,6 +425,9 @@ export class MemStorage implements IStorage {
     this.sandwichDistributions = new Map();
     this.shoutoutLogs = new Map();
     this.taskCompletions = new Map();
+    this.documents = new Map();
+    this.documentPermissions = new Map();
+    this.documentAccessLogs = new Map();
     this.currentIds = {
       user: 1,
       project: 1,
@@ -421,7 +453,10 @@ export class MemStorage implements IStorage {
       suggestion: 1,
       suggestionResponse: 1,
       sandwichDistribution: 1,
-      shoutoutLog: 1
+      shoutoutLog: 1,
+      document: 1,
+      documentPermission: 1,
+      documentAccessLog: 1
     };
     
     // No sample data - start with clean storage
@@ -1847,6 +1882,130 @@ export class MemStorage implements IStorage {
   async getSandwichDistributionsByRecipient(recipientId: number): Promise<SandwichDistribution[]> {
     const distributions = Array.from(this.sandwichDistributions.values());
     return distributions.filter(d => d.recipientId === recipientId);
+  }
+
+  // Document Management Methods
+  async getAllDocuments(): Promise<Document[]> {
+    return Array.from(this.documents.values()).filter(doc => doc.isActive);
+  }
+
+  async getDocument(id: number): Promise<Document | undefined> {
+    return this.documents.get(id);
+  }
+
+  async getDocumentsForUser(userId: string): Promise<Document[]> {
+    // For memory storage, return all documents (permissions checking would be done in database version)
+    return Array.from(this.documents.values()).filter(doc => doc.isActive);
+  }
+
+  async createDocument(insertDocument: InsertDocument): Promise<Document> {
+    const id = this.currentIds.document++;
+    const now = new Date();
+    const document: Document = {
+      id,
+      ...insertDocument,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.documents.set(id, document);
+    return document;
+  }
+
+  async updateDocument(id: number, updates: Partial<Document>): Promise<Document | undefined> {
+    const document = this.documents.get(id);
+    if (!document) return undefined;
+
+    const updated = {
+      ...document,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.documents.set(id, updated);
+    return updated;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    const document = this.documents.get(id);
+    if (!document) return false;
+    
+    // Soft delete
+    document.isActive = false;
+    document.updatedAt = new Date();
+    this.documents.set(id, document);
+    return true;
+  }
+
+  // Document Permissions Methods
+  async getDocumentPermissions(documentId: number): Promise<DocumentPermission[]> {
+    return Array.from(this.documentPermissions.values()).filter(p => p.documentId === documentId && p.isActive);
+  }
+
+  async getUserDocumentPermission(documentId: number, userId: string): Promise<DocumentPermission | undefined> {
+    return Array.from(this.documentPermissions.values()).find(p => 
+      p.documentId === documentId && p.userId === userId && p.isActive
+    );
+  }
+
+  async checkUserDocumentAccess(documentId: number, userId: string, permission: string): Promise<boolean> {
+    const userPermission = await this.getUserDocumentPermission(documentId, userId);
+    if (!userPermission) return false;
+    
+    // Check if permission type allows the requested action
+    const permissionHierarchy = ['view', 'download', 'edit', 'admin'];
+    const userLevel = permissionHierarchy.indexOf(userPermission.permissionType);
+    const requiredLevel = permissionHierarchy.indexOf(permission);
+    
+    return userLevel >= requiredLevel;
+  }
+
+  async grantDocumentPermission(insertPermission: InsertDocumentPermission): Promise<DocumentPermission> {
+    const id = this.currentIds.documentPermission++;
+    const permission: DocumentPermission = {
+      id,
+      ...insertPermission,
+      grantedAt: new Date(),
+    };
+    this.documentPermissions.set(id, permission);
+    return permission;
+  }
+
+  async revokeDocumentPermission(documentId: number, userId: string, permissionType: string): Promise<boolean> {
+    const permission = Array.from(this.documentPermissions.values()).find(p => 
+      p.documentId === documentId && p.userId === userId && p.permissionType === permissionType && p.isActive
+    );
+    
+    if (!permission) return false;
+    
+    permission.isActive = false;
+    this.documentPermissions.set(permission.id, permission);
+    return true;
+  }
+
+  async updateDocumentPermission(id: number, updates: Partial<DocumentPermission>): Promise<DocumentPermission | undefined> {
+    const permission = this.documentPermissions.get(id);
+    if (!permission) return undefined;
+
+    const updated = { ...permission, ...updates };
+    this.documentPermissions.set(id, updated);
+    return updated;
+  }
+
+  // Document Access Logging Methods
+  async logDocumentAccess(insertAccess: InsertDocumentAccessLog): Promise<DocumentAccessLog> {
+    const id = this.currentIds.documentAccessLog++;
+    const accessLog: DocumentAccessLog = {
+      id,
+      ...insertAccess,
+      accessedAt: new Date(),
+    };
+    this.documentAccessLogs.set(id, accessLog);
+    return accessLog;
+  }
+
+  async getDocumentAccessLogs(documentId: number): Promise<DocumentAccessLog[]> {
+    return Array.from(this.documentAccessLogs.values())
+      .filter(log => log.documentId === documentId)
+      .sort((a, b) => new Date(b.accessedAt).getTime() - new Date(a.accessedAt).getTime());
   }
 }
 

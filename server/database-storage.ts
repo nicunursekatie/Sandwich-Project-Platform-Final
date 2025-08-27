@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions, documents, documentPermissions, documentAccessLogs,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -29,7 +29,10 @@ import {
   type ChatMessageLike, type InsertChatMessageLike,
   type UserActivityLog, type InsertUserActivityLog,
   type SandwichDistribution, type InsertSandwichDistribution,
-  type WishlistSuggestion, type InsertWishlistSuggestion
+  type WishlistSuggestion, type InsertWishlistSuggestion,
+  type Document, type InsertDocument,
+  type DocumentPermission, type InsertDocumentPermission,
+  type DocumentAccessLog, type InsertDocumentAccessLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like } from "drizzle-orm";
@@ -2446,5 +2449,172 @@ export class DatabaseStorage implements IStorage {
       .where(eq(compiledAgendas.meetingId, meetingId))
       .orderBy(desc(compiledAgendas.compiledAt));
     return results;
+  }
+
+  // Document Management Methods
+  async getAllDocuments(): Promise<Document[]> {
+    return await db.select()
+      .from(documents)
+      .where(eq(documents.isActive, true))
+      .orderBy(desc(documents.createdAt));
+  }
+
+  async getDocument(id: number): Promise<Document | undefined> {
+    const [result] = await db.select()
+      .from(documents)
+      .where(and(eq(documents.id, id), eq(documents.isActive, true)));
+    return result || undefined;
+  }
+
+  async getDocumentsForUser(userId: string): Promise<Document[]> {
+    // Get documents that the user has permissions for or that they uploaded
+    const results = await db.select({
+      id: documents.id,
+      title: documents.title,
+      description: documents.description,
+      fileName: documents.fileName,
+      originalName: documents.originalName,
+      filePath: documents.filePath,
+      fileSize: documents.fileSize,
+      mimeType: documents.mimeType,
+      category: documents.category,
+      isActive: documents.isActive,
+      uploadedBy: documents.uploadedBy,
+      uploadedByName: documents.uploadedByName,
+      createdAt: documents.createdAt,
+      updatedAt: documents.updatedAt
+    })
+    .from(documents)
+    .leftJoin(documentPermissions, and(
+      eq(documentPermissions.documentId, documents.id),
+      eq(documentPermissions.userId, userId),
+      eq(documentPermissions.isActive, true)
+    ))
+    .where(and(
+      eq(documents.isActive, true),
+      or(
+        eq(documents.uploadedBy, userId), // User uploaded this document
+        isNotNull(documentPermissions.id) // User has explicit permission
+      )
+    ))
+    .orderBy(desc(documents.createdAt));
+
+    return results;
+  }
+
+  async createDocument(insertDocument: InsertDocument): Promise<Document> {
+    const [result] = await db.insert(documents)
+      .values(insertDocument)
+      .returning();
+    return result;
+  }
+
+  async updateDocument(id: number, updates: Partial<Document>): Promise<Document | undefined> {
+    const [result] = await db.update(documents)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(documents.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    // Soft delete
+    const result = await db.update(documents)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(documents.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Document Permissions Methods
+  async getDocumentPermissions(documentId: number): Promise<DocumentPermission[]> {
+    return await db.select()
+      .from(documentPermissions)
+      .where(and(
+        eq(documentPermissions.documentId, documentId),
+        eq(documentPermissions.isActive, true)
+      ))
+      .orderBy(documentPermissions.grantedAt);
+  }
+
+  async getUserDocumentPermission(documentId: number, userId: string): Promise<DocumentPermission | undefined> {
+    const [result] = await db.select()
+      .from(documentPermissions)
+      .where(and(
+        eq(documentPermissions.documentId, documentId),
+        eq(documentPermissions.userId, userId),
+        eq(documentPermissions.isActive, true)
+      ));
+    return result || undefined;
+  }
+
+  async checkUserDocumentAccess(documentId: number, userId: string, permission: string): Promise<boolean> {
+    // Check if user is the uploader
+    const [document] = await db.select()
+      .from(documents)
+      .where(eq(documents.id, documentId));
+    
+    if (document && document.uploadedBy === userId) {
+      return true; // Uploaders have full access
+    }
+
+    // Check explicit permissions
+    const [userPermission] = await db.select()
+      .from(documentPermissions)
+      .where(and(
+        eq(documentPermissions.documentId, documentId),
+        eq(documentPermissions.userId, userId),
+        eq(documentPermissions.isActive, true)
+      ));
+
+    if (!userPermission) return false;
+
+    // Check if permission type allows the requested action
+    const permissionHierarchy = ['view', 'download', 'edit', 'admin'];
+    const userLevel = permissionHierarchy.indexOf(userPermission.permissionType);
+    const requiredLevel = permissionHierarchy.indexOf(permission);
+    
+    return userLevel >= requiredLevel;
+  }
+
+  async grantDocumentPermission(insertPermission: InsertDocumentPermission): Promise<DocumentPermission> {
+    const [result] = await db.insert(documentPermissions)
+      .values(insertPermission)
+      .returning();
+    return result;
+  }
+
+  async revokeDocumentPermission(documentId: number, userId: string, permissionType: string): Promise<boolean> {
+    const result = await db.update(documentPermissions)
+      .set({ isActive: false })
+      .where(and(
+        eq(documentPermissions.documentId, documentId),
+        eq(documentPermissions.userId, userId),
+        eq(documentPermissions.permissionType, permissionType),
+        eq(documentPermissions.isActive, true)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async updateDocumentPermission(id: number, updates: Partial<DocumentPermission>): Promise<DocumentPermission | undefined> {
+    const [result] = await db.update(documentPermissions)
+      .set(updates)
+      .where(eq(documentPermissions.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  // Document Access Logging Methods
+  async logDocumentAccess(insertAccess: InsertDocumentAccessLog): Promise<DocumentAccessLog> {
+    const [result] = await db.insert(documentAccessLogs)
+      .values(insertAccess)
+      .returning();
+    return result;
+  }
+
+  async getDocumentAccessLogs(documentId: number): Promise<DocumentAccessLog[]> {
+    return await db.select()
+      .from(documentAccessLogs)
+      .where(eq(documentAccessLogs.documentId, documentId))
+      .orderBy(desc(documentAccessLogs.accessedAt));
   }
 }

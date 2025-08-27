@@ -15,6 +15,7 @@ import DriversManagement from "@/components/drivers-management-simple";
 import VolunteerManagement from "@/components/volunteer-management";
 import HostsManagement from "@/components/hosts-management-consolidated";
 import { DocumentsBrowser } from "@/components/documents-browser";
+import DocumentManagement from "@/components/document-management";
 
 import BulkDataManager from "@/components/bulk-data-manager";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
@@ -255,6 +256,10 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
       case "toolkit":
         return <ToolkitTabs />;
+
+      case "documents":
+      case "document-management":
+        return <DocumentManagement />;
 
       case "hosts":
         return <HostsManagement />;
