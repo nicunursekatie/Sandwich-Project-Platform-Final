@@ -132,6 +132,8 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
       return response;
     },
     enabled: !!id,
+    staleTime: 0, // Force fresh data
+    gcTime: 0, // Don't cache
   });
 
   // Fetch project tasks
@@ -622,8 +624,8 @@ export default function ProjectDetailClean({ projectId }: { projectId?: number }
         </div>
       </div>
 
-      {/* Milestone Section - Only show if milestone exists and is different from category */}
-      {project.milestone && project.milestone !== project.category && (
+      {/* Milestone Section - Show if milestone exists */}
+      {project.milestone && project.milestone.trim() && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
