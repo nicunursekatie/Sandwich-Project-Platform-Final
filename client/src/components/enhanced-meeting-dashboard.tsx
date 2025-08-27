@@ -1653,18 +1653,7 @@ export default function EnhancedMeetingDashboard() {
                                     {project.description}
                                   </p>
                                 )}
-                                {project.milestone && project.milestone !== project.category && (
-                                  <div className="mt-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-                                    <div className="flex items-center gap-2">
-                                      <Badge className="bg-blue-100 text-blue-800 text-xs">
-                                        🎯 Milestone
-                                      </Badge>
-                                      <span className="text-sm font-medium text-blue-900">
-                                        {project.milestone}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
+
                               </div>
                               <div className="flex gap-2">
                                 <Button
