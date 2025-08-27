@@ -312,9 +312,10 @@ export default function EnhancedMeetingDashboard() {
     try {
       setIsGeneratingPDF(true);
       
-      // Get agenda projects and tabled projects
-      const agendaProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'agenda');
-      const tabledProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'tabled');
+      // Get agenda projects and tabled projects (excluding completed ones)
+      const activeProjects = allProjects.filter(p => p.status !== 'completed');
+      const agendaProjects = activeProjects.filter(p => projectAgendaStatus[p.id] === 'agenda');
+      const tabledProjects = activeProjects.filter(p => projectAgendaStatus[p.id] === 'tabled');
       
       // Create agenda data structure
       const agendaData = {
@@ -374,11 +375,21 @@ export default function EnhancedMeetingDashboard() {
     }
   }, [allProjects, projectAgendaStatus, toast]);
 
-  // Calculate agenda summary
+  // Calculate agenda summary (only for non-completed projects)
+  const activeProjects = allProjects.filter((project: any) => project.status !== 'completed');
   const agendaSummary = {
-    agendaCount: Object.values(projectAgendaStatus).filter(status => status === 'agenda').length,
-    tabledCount: Object.values(projectAgendaStatus).filter(status => status === 'tabled').length,
-    undecidedCount: allProjects.length - Object.keys(projectAgendaStatus).length
+    agendaCount: Object.entries(projectAgendaStatus).filter(([projectId, status]) => {
+      const project = allProjects.find((p: any) => p.id === parseInt(projectId));
+      return project && project.status !== 'completed' && status === 'agenda';
+    }).length,
+    tabledCount: Object.entries(projectAgendaStatus).filter(([projectId, status]) => {
+      const project = allProjects.find((p: any) => p.id === parseInt(projectId));
+      return project && project.status !== 'completed' && status === 'tabled';
+    }).length,
+    undecidedCount: activeProjects.length - Object.keys(projectAgendaStatus).filter(projectId => {
+      const project = allProjects.find((p: any) => p.id === parseInt(projectId));
+      return project && project.status !== 'completed';
+    }).length
   };
 
   // Helper function to format dates in a user-friendly way
@@ -1439,7 +1450,7 @@ export default function EnhancedMeetingDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-teal-600" />
-                Google Sheets Projects ({allProjects.length})
+                Google Sheets Projects ({allProjects.filter((project: any) => project.status !== 'completed').length})
               </CardTitle>
               <p className="text-gray-600">
                 Select projects to discuss and specify what about each project needs attention
@@ -1454,7 +1465,7 @@ export default function EnhancedMeetingDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {allProjects.map((project: any) => {
+                    {allProjects.filter((project: any) => project.status !== 'completed').map((project: any) => {
                       // Use our date utility to avoid timezone conversion issues
                       const lastDiscussed = project.lastDiscussedDate 
                         ? formatDateForDisplay(project.lastDiscussedDate)
