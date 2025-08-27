@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -216,6 +216,9 @@ export default function EnhancedMeetingDashboard() {
   const [projectAgendaStatus, setProjectAgendaStatus] = useState<Record<number, 'none' | 'agenda' | 'tabled'>>({});
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
+  // Local state for text inputs to ensure responsiveness
+  const [localProjectText, setLocalProjectText] = useState<Record<number, { discussionPoints?: string; decisionItems?: string }>>({});
+  
   // Meeting edit states
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [showEditMeetingDialog, setShowEditMeetingDialog] = useState(false);
@@ -267,10 +270,49 @@ export default function EnhancedMeetingDashboard() {
     },
   });
 
-  // Handler for updating project discussion fields with auto-save
+  // Debounced handlers for auto-save
+  const debouncedUpdateRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
+  
   const handleUpdateProjectDiscussion = useCallback((projectId: number, updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string }) => {
-    updateProjectDiscussionMutation.mutate({ projectId, updates });
+    // Clear existing timeout for this project
+    const existingTimeout = debouncedUpdateRef.current.get(projectId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+    
+    // Set new timeout for debounced update
+    const timeout = setTimeout(() => {
+      updateProjectDiscussionMutation.mutate({ projectId, updates });
+      debouncedUpdateRef.current.delete(projectId);
+    }, 1000); // 1 second debounce
+    
+    debouncedUpdateRef.current.set(projectId, timeout);
   }, [updateProjectDiscussionMutation]);
+
+  // Handler for local text changes (immediate UI update + debounced save)
+  const handleTextChange = useCallback((projectId: number, field: 'discussionPoints' | 'decisionItems', value: string) => {
+    // Update local state immediately
+    setLocalProjectText(prev => ({
+      ...prev,
+      [projectId]: {
+        ...prev[projectId],
+        [field]: value
+      }
+    }));
+    
+    // Trigger debounced save
+    const updates = field === 'discussionPoints' 
+      ? { meetingDiscussionPoints: value }
+      : { meetingDecisionItems: value };
+    
+    handleUpdateProjectDiscussion(projectId, updates);
+  }, [handleUpdateProjectDiscussion]);
+
+  // Helper function to get current text value (local state or project data)
+  const getTextValue = useCallback((projectId: number, field: 'discussionPoints' | 'decisionItems', fallback: string) => {
+    const localValue = localProjectText[projectId]?.[field];
+    return localValue !== undefined ? localValue : fallback;
+  }, [localProjectText]);
 
   // Handler for agenda actions
   const handleSendToAgenda = useCallback((projectId: number) => {
@@ -1702,14 +1744,12 @@ export default function EnhancedMeetingDashboard() {
                                     Examples: "Blocked on X", "Need feedback on approach", "Budget concerns", "Timeline slipping"
                                   </p>
                                   <Textarea
-                                    value={project.meetingDiscussionPoints || ''}
-                                    onChange={(e) => handleUpdateProjectDiscussion(project.id, {
-                                      meetingDiscussionPoints: e.target.value
-                                    })}
+                                    value={getTextValue(project.id, 'discussionPoints', project.meetingDiscussionPoints || '')}
+                                    onChange={(e) => handleTextChange(project.id, 'discussionPoints', e.target.value)}
                                     placeholder="What issue, update, or concern needs the team's input?"
-                                  rows={3}
-                                  className="text-sm"
-                                />
+                                    rows={3}
+                                    className="text-sm"
+                                  />
                                 <p className="text-xs text-gray-500 mt-1">
                                   Auto-saves as you type
                                 </p>
@@ -1723,10 +1763,8 @@ export default function EnhancedMeetingDashboard() {
                                   Examples: "Approve budget of $X", "Choose between option A/B", "Assign person Y to task Z"
                                 </p>
                                 <Textarea
-                                  value={project.meetingDecisionItems || ''}
-                                  onChange={(e) => handleUpdateProjectDiscussion(project.id, {
-                                    meetingDecisionItems: e.target.value
-                                  })}
+                                  value={getTextValue(project.id, 'decisionItems', project.meetingDecisionItems || '')}
+                                  onChange={(e) => handleTextChange(project.id, 'decisionItems', e.target.value)}
                                   placeholder="What specific choices or approvals does the team need to make?"
                                   rows={3}
                                   className="text-sm"
