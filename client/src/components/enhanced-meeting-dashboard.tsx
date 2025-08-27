@@ -251,11 +251,8 @@ export default function EnhancedMeetingDashboard() {
 
   // Update project discussion mutation
   const updateProjectDiscussionMutation = useMutation({
-    mutationFn: async ({ projectId, updates }: { projectId: number; updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string } }) => {
-      return await apiRequest(`/api/projects/${projectId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-      });
+    mutationFn: async ({ projectId, updates }: { projectId: number; updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string; reviewInNextMeeting?: boolean } }) => {
+      return await apiRequest('PATCH', `/api/projects/${projectId}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
@@ -338,11 +335,22 @@ export default function EnhancedMeetingDashboard() {
         }))
       };
 
-      // Call API to generate PDF
-      const response = await apiRequest('POST', '/api/meetings/finalize-agenda-pdf', agendaData);
+      // Call API to generate PDF using fetch directly (for binary response)
+      const response = await fetch('/api/meetings/finalize-agenda-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(agendaData),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate PDF: ${response.statusText}`);
+      }
       
       // Download the PDF
-      const blob = new Blob([response], { type: 'application/pdf' });
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -423,9 +431,7 @@ export default function EnhancedMeetingDashboard() {
   // Compile agenda mutation
   const compileAgendaMutation = useMutation({
     mutationFn: async (meetingId: number) => {
-      return await apiRequest(`/api/meetings/${meetingId}/compile-agenda`, {
-        method: 'POST',
-      });
+      return await apiRequest('POST', `/api/meetings/${meetingId}/compile-agenda`);
     },
     onSuccess: () => {
       toast({
@@ -451,9 +457,7 @@ export default function EnhancedMeetingDashboard() {
   // Export to sheets mutation
   const exportToSheetsMutation = useMutation({
     mutationFn: async (meetingId: number) => {
-      return await apiRequest(`/api/meetings/${meetingId}/export-to-sheets`, {
-        method: 'POST',
-      });
+      return await apiRequest('POST', `/api/meetings/${meetingId}/export-to-sheets`);
     },
     onSuccess: () => {
       toast({
@@ -1999,14 +2003,11 @@ export default function EnhancedMeetingDashboard() {
                 onClick={async () => {
                   if (editingProject && newTaskTitle.trim()) {
                     try {
-                      await apiRequest(`/api/projects/${editingProject}/tasks`, {
-                        method: 'POST',
-                        body: { 
-                          title: newTaskTitle.trim(),
-                          description: newTaskDescription.trim() || null,
-                          status: 'pending',
-                          priority: 'medium'
-                        }
+                      await apiRequest('POST', `/api/projects/${editingProject}/tasks`, { 
+                        title: newTaskTitle.trim(),
+                        description: newTaskDescription.trim() || null,
+                        status: 'pending',
+                        priority: 'medium'
                       });
                       queryClient.invalidateQueries({ queryKey: [`/api/projects/${editingProject}/tasks`] });
                       toast({
