@@ -618,6 +618,7 @@ export const recipients = pgTable("recipients", {
   phone: text("phone").notNull(),
   email: text("email"),
   website: text("website"), // Organization website URL
+  instagramHandle: text("instagram_handle"), // Instagram handle for social media tracking
   address: text("address"), // Actual street address
   region: text("region"), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
   preferences: text("preferences"), // Legacy field - keeping for backward compatibility
