@@ -359,18 +359,50 @@ export default function EnhancedMeetingDashboard() {
       const agendaProjects = activeProjects.filter(p => projectAgendaStatus[p.id] === 'agenda');
       const tabledProjects = activeProjects.filter(p => projectAgendaStatus[p.id] === 'tabled');
       
+      // Fetch tasks for each agenda project
+      const projectsWithTasks = await Promise.all(
+        agendaProjects.map(async (project) => {
+          try {
+            const tasksResponse = await fetch(`/api/projects/${project.id}/tasks`, {
+              credentials: 'include',
+            });
+            const tasks = tasksResponse.ok ? await tasksResponse.json() : [];
+            
+            return {
+              title: project.title,
+              owner: project.assigneeName || 'Unassigned',
+              supportPeople: project.supportPeople || '',
+              discussionPoints: project.meetingDiscussionPoints || '',
+              decisionItems: project.meetingDecisionItems || '',
+              status: project.status,
+              priority: project.priority,
+              tasks: tasks.filter((task: any) => task.status !== 'completed').map((task: any) => ({
+                title: task.title,
+                status: task.status,
+                priority: task.priority,
+                description: task.description
+              }))
+            };
+          } catch (error) {
+            // If task fetching fails, continue without tasks
+            return {
+              title: project.title,
+              owner: project.assigneeName || 'Unassigned',
+              supportPeople: project.supportPeople || '',
+              discussionPoints: project.meetingDiscussionPoints || '',
+              decisionItems: project.meetingDecisionItems || '',
+              status: project.status,
+              priority: project.priority,
+              tasks: []
+            };
+          }
+        })
+      );
+      
       // Create agenda data structure
       const agendaData = {
         meetingDate: getTodayString(),
-        agendaProjects: agendaProjects.map(p => ({
-          title: p.title,
-          owner: p.assigneeName || 'Unassigned',
-          supportPeople: p.supportPeople || '',
-          discussionPoints: p.meetingDiscussionPoints || '',
-          decisionItems: p.meetingDecisionItems || '',
-          status: p.status,
-          priority: p.priority
-        })),
+        agendaProjects: projectsWithTasks,
         tabledProjects: tabledProjects.map(p => ({
           title: p.title,
           owner: p.assigneeName || 'Unassigned',

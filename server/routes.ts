@@ -3310,6 +3310,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
               yPosition += 20;
             }
 
+            // Tasks (if any exist)
+            if (project.tasks && project.tasks.length > 0) {
+              // Check if we need a new page for tasks
+              if (yPosition > 650) {
+                doc.addPage();
+                yPosition = 50;
+              }
+
+              doc.fontSize(10).fillColor(colors.darkGray)
+                 .text('Active Tasks:', 60, yPosition);
+              yPosition += 12;
+
+              project.tasks.forEach((task, taskIndex) => {
+                // Check if we need a new page for individual tasks
+                if (yPosition > 700) {
+                  doc.addPage();
+                  yPosition = 50;
+                }
+
+                // Task status indicator
+                const statusIndicator = task.status === 'in-progress' ? '(IP)' : 
+                                       task.status === 'pending' ? '(P)' : 
+                                       task.status === 'on-hold' ? '(H)' : '';
+
+                doc.fontSize(9).fillColor(colors.lightGray)
+                   .text(`• ${task.title} ${statusIndicator}`, 70, yPosition, { width: 460 });
+                yPosition += 12;
+
+                // Task description (if available)
+                if (task.description) {
+                  doc.fontSize(8).fillColor('#888888')
+                     .text(`${task.description}`, 80, yPosition, { width: 450 });
+                  yPosition += 10;
+                }
+              });
+              yPosition += 10; // Extra space after tasks
+            }
+
             yPosition += 10; // Space between projects
           });
         }
