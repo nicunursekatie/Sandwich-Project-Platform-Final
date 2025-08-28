@@ -52,6 +52,8 @@ import {
   insertDocumentSchema,
   insertDocumentPermissionSchema,
   insertDocumentAccessLogSchema,
+  insertEventRequestSchema,
+  insertOrganizationSchema,
   drivers,
   volunteers,
   projectTasks,
@@ -84,6 +86,7 @@ declare global {
 }
 import dataManagementRoutes from "./routes/data-management";
 import recipientTspContactRoutes from "./routes/recipient-tsp-contacts";
+import eventRequestRoutes from "./routes/event-requests";
 import { checkWeeklySubmissions, sendMissingSubmissionsEmail, runWeeklyMonitoring } from "./weekly-monitoring";
 import { registerPerformanceRoutes } from "./routes/performance";
 import { SearchEngine } from "./search-engine";
@@ -514,6 +517,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Import and register recipient TSP contacts routes
   app.use("/api/recipient-tsp-contacts", recipientTspContactRoutes);
+
+  // Register event request routes
+  app.use("/api/event-requests", eventRequestRoutes);
 
   // Register work log routes
 

@@ -25,6 +25,7 @@ export const PERMISSIONS = {
   ACCESS_DRIVERS: "access_drivers",
   ACCESS_VOLUNTEERS: "access_volunteers", // New volunteer management tab access
   ACCESS_DONATION_TRACKING: "access_donation_tracking", // New distribution tracking access
+  ACCESS_EVENT_REQUESTS: "access_event_requests", // Event planning and organization requests
   ACCESS_COLLECTIONS: "access_collections",
   ACCESS_CHAT: "access_chat",
   ACCESS_MESSAGES: "access_messages",
@@ -52,6 +53,7 @@ export const PERMISSIONS = {
   MANAGE_DRIVERS: "manage_drivers",
   MANAGE_VOLUNTEERS: "manage_volunteers", // Full volunteer management permissions
   MANAGE_DONATION_TRACKING: "manage_donation_tracking", // Create, edit, delete distributions
+  MANAGE_EVENT_REQUESTS: "manage_event_requests", // Create, edit, delete event requests
   MANAGE_DIRECTORY: "manage_directory", // Edit/add contacts in directory
   MANAGE_MEETINGS: "manage_meetings",
   MANAGE_SUGGESTIONS: "manage_suggestions",
@@ -108,6 +110,13 @@ export const PERMISSIONS = {
   ADD_DONATION_TRACKING: "add_donation_tracking", // Add new distribution records
   EDIT_DONATION_TRACKING: "edit_donation_tracking", // Edit distribution records
   DELETE_DONATION_TRACKING: "delete_donation_tracking", // Delete distribution records
+
+  // Granular event request permissions
+  VIEW_EVENT_REQUESTS: "view_event_requests", // View event request information
+  ADD_EVENT_REQUESTS: "add_event_requests", // Add new event requests
+  EDIT_EVENT_REQUESTS: "edit_event_requests", // Edit event request information
+  DELETE_EVENT_REQUESTS: "delete_event_requests", // Delete event requests
+  ASSIGN_EVENT_REQUESTS: "assign_event_requests", // Assign event requests to team members
 
   // Simplified work log permissions - CREATE automatically includes edit/delete own
   CREATE_WORK_LOGS: "create_work_logs", // Create new work logs + automatically edit/delete own work logs
@@ -249,6 +258,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_DRIVERS,
         PERMISSIONS.ACCESS_VOLUNTEERS,
         PERMISSIONS.ACCESS_DONATION_TRACKING,
+        PERMISSIONS.ACCESS_EVENT_REQUESTS,
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
         PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
@@ -273,6 +283,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.MANAGE_VOLUNTEERS,
         PERMISSIONS.MANAGE_USERS, // Core team can manage users
         PERMISSIONS.MANAGE_DONATION_TRACKING,
+        PERMISSIONS.MANAGE_EVENT_REQUESTS,
         // Granular volunteer permissions
         PERMISSIONS.VIEW_VOLUNTEERS,
         PERMISSIONS.ADD_VOLUNTEERS,
@@ -282,6 +293,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ADD_DONATION_TRACKING,
         PERMISSIONS.EDIT_DONATION_TRACKING,
         PERMISSIONS.DELETE_DONATION_TRACKING,
+        // Granular event request permissions
+        PERMISSIONS.VIEW_EVENT_REQUESTS,
+        PERMISSIONS.ADD_EVENT_REQUESTS,
+        PERMISSIONS.EDIT_EVENT_REQUESTS,
+        PERMISSIONS.DELETE_EVENT_REQUESTS,
+        PERMISSIONS.ASSIGN_EVENT_REQUESTS,
         PERMISSIONS.CORE_TEAM_CHAT,
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.ACCESS_PROJECTS,

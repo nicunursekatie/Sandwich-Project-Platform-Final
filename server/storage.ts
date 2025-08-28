@@ -1,5 +1,5 @@
 import { 
-  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses, wishlistSuggestions, documents, documentPermissions, documentAccessLogs,
+  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -29,7 +29,9 @@ import {
   type WishlistSuggestion, type InsertWishlistSuggestion,
   type Document, type InsertDocument,
   type DocumentPermission, type InsertDocumentPermission,
-  type DocumentAccessLog, type InsertDocumentAccessLog
+  type DocumentAccessLog, type InsertDocumentAccessLog,
+  type EventRequest, type InsertEventRequest,
+  type Organization, type InsertOrganization
 } from "@shared/schema";
 
 export interface IStorage {
@@ -335,6 +337,24 @@ export interface IStorage {
   getSandwichDistributionsByWeek(weekEnding: string): Promise<SandwichDistribution[]>;
   getSandwichDistributionsByHost(hostId: number): Promise<SandwichDistribution[]>;
   getSandwichDistributionsByRecipient(recipientId: number): Promise<SandwichDistribution[]>;
+
+  // Event Requests (Event Planning)
+  getAllEventRequests(): Promise<EventRequest[]>;
+  getEventRequest(id: number): Promise<EventRequest | undefined>;
+  createEventRequest(insertEventRequest: InsertEventRequest): Promise<EventRequest>;
+  updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined>;
+  deleteEventRequest(id: number): Promise<boolean>;
+  getEventRequestsByStatus(status: string): Promise<EventRequest[]>;
+  getEventRequestsByOrganization(organizationName: string): Promise<EventRequest[]>;
+  checkOrganizationDuplicates(organizationName: string): Promise<{ exists: boolean; matches: Organization[] }>;
+
+  // Organizations (for duplicate detection)
+  getAllOrganizations(): Promise<Organization[]>;
+  getOrganization(id: number): Promise<Organization | undefined>;
+  createOrganization(insertOrganization: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, updates: Partial<Organization>): Promise<Organization | undefined>;
+  deleteOrganization(id: number): Promise<boolean>;
+  searchOrganizations(query: string): Promise<Organization[]>;
 }
 
 export class MemStorage implements IStorage {

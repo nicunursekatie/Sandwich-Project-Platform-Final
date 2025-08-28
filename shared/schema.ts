@@ -1058,6 +1058,88 @@ export const insertWishlistSuggestionSchema = createInsertSchema(wishlistSuggest
 export type WishlistSuggestion = typeof wishlistSuggestions.$inferSelect;
 export type InsertWishlistSuggestion = z.infer<typeof insertWishlistSuggestionSchema>;
 
+// Event Requests table for tracking organization event planning
+export const eventRequests = pgTable("event_requests", {
+  id: serial("id").primaryKey(),
+  // Submitter information
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone"),
+  
+  // Organization information
+  organizationName: varchar("organization_name").notNull(),
+  department: varchar("department"),
+  
+  // Event details
+  desiredEventDate: timestamp("desired_event_date"),
+  message: text("message"), // Other relevant info about the group
+  
+  // Previous hosting experience
+  previouslyHosted: varchar("previously_hosted").notNull().default("i_dont_know"), // 'yes', 'no', 'i_dont_know'
+  
+  // System tracking
+  status: varchar("status").notNull().default("new"), // 'new', 'contacted', 'in_planning', 'scheduled', 'completed', 'declined'
+  assignedTo: varchar("assigned_to"), // User ID of person handling this request
+  
+  // Duplicate detection flags
+  organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
+  duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates
+  duplicateNotes: text("duplicate_notes"), // Notes about potential matches
+  
+  // Google Sheets integration
+  googleSheetsRowId: varchar("google_sheets_row_id"), // Reference to Google Sheets row
+  lastSyncedAt: timestamp("last_synced_at"), // When this was last synced with Google Sheets
+  
+  // Audit tracking
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: varchar("created_by"), // User ID who created this record (if manually entered)
+}, (table) => ({
+  orgNameIdx: index("idx_event_requests_org_name").on(table.organizationName),
+  statusIdx: index("idx_event_requests_status").on(table.status),
+  emailIdx: index("idx_event_requests_email").on(table.email),
+  desiredDateIdx: index("idx_event_requests_desired_date").on(table.desiredEventDate),
+}));
+
+// Organization tracking for duplicate detection
+export const organizations = pgTable("organizations", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  alternateNames: text("alternate_names").array(), // Array of variations/aliases
+  addresses: text("addresses").array(), // Array of known addresses
+  domains: text("domains").array(), // Array of email domains associated with this org
+  
+  // Event history
+  totalEvents: integer("total_events").notNull().default(0),
+  lastEventDate: timestamp("last_event_date"),
+  
+  // Tracking
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  nameIdx: index("idx_organizations_name").on(table.name),
+}));
+
+export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  duplicateCheckDate: true,
+  lastSyncedAt: true,
+});
+
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type EventRequest = typeof eventRequests.$inferSelect;
+export type InsertEventRequest = z.infer<typeof insertEventRequestSchema>;
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+
 // Google Sheets integration table
 export const googleSheets = pgTable("google_sheets", {
   id: serial("id").primaryKey(),

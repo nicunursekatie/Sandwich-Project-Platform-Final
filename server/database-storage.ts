@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions, documents, documentPermissions, documentAccessLogs,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -32,10 +32,12 @@ import {
   type WishlistSuggestion, type InsertWishlistSuggestion,
   type Document, type InsertDocument,
   type DocumentPermission, type InsertDocumentPermission,
-  type DocumentAccessLog, type InsertDocumentAccessLog
+  type DocumentAccessLog, type InsertDocumentAccessLog,
+  type EventRequest, type InsertEventRequest,
+  type Organization, type InsertOrganization
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like } from "drizzle-orm";
+import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like, ilike } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
@@ -2616,5 +2618,121 @@ export class DatabaseStorage implements IStorage {
       .from(documentAccessLogs)
       .where(eq(documentAccessLogs.documentId, documentId))
       .orderBy(desc(documentAccessLogs.accessedAt));
+  }
+
+  // Event Request Management Methods
+  async getAllEventRequests(): Promise<EventRequest[]> {
+    return await db.select().from(eventRequests).orderBy(desc(eventRequests.createdAt));
+  }
+
+  async getEventRequest(id: number): Promise<EventRequest | undefined> {
+    const [result] = await db.select()
+      .from(eventRequests)
+      .where(eq(eventRequests.id, id));
+    return result || undefined;
+  }
+
+  async createEventRequest(insertEventRequest: InsertEventRequest): Promise<EventRequest> {
+    const [result] = await db.insert(eventRequests)
+      .values({
+        ...insertEventRequest,
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
+  }
+
+  async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
+    const [result] = await db.update(eventRequests)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(eventRequests.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteEventRequest(id: number): Promise<boolean> {
+    const result = await db.delete(eventRequests)
+      .where(eq(eventRequests.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getEventRequestsByStatus(status: string): Promise<EventRequest[]> {
+    return await db.select()
+      .from(eventRequests)
+      .where(eq(eventRequests.status, status))
+      .orderBy(desc(eventRequests.createdAt));
+  }
+
+  async getEventRequestsByOrganization(organizationName: string): Promise<EventRequest[]> {
+    return await db.select()
+      .from(eventRequests)
+      .where(ilike(eventRequests.organizationName, `%${organizationName}%`))
+      .orderBy(desc(eventRequests.createdAt));
+  }
+
+  async checkOrganizationDuplicates(organizationName: string): Promise<{ exists: boolean; matches: Organization[] }> {
+    const matches = await db.select()
+      .from(organizations)
+      .where(or(
+        ilike(organizations.name, `%${organizationName}%`),
+        sql`${organizations.alternateNames} && ARRAY[${organizationName}]::text[]`
+      ));
+    
+    return {
+      exists: matches.length > 0,
+      matches
+    };
+  }
+
+  // Organization Management Methods
+  async getAllOrganizations(): Promise<Organization[]> {
+    return await db.select().from(organizations).orderBy(organizations.name);
+  }
+
+  async getOrganization(id: number): Promise<Organization | undefined> {
+    const [result] = await db.select()
+      .from(organizations)
+      .where(eq(organizations.id, id));
+    return result || undefined;
+  }
+
+  async createOrganization(insertOrganization: InsertOrganization): Promise<Organization> {
+    const [result] = await db.insert(organizations)
+      .values({
+        ...insertOrganization,
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
+  }
+
+  async updateOrganization(id: number, updates: Partial<Organization>): Promise<Organization | undefined> {
+    const [result] = await db.update(organizations)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(organizations.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteOrganization(id: number): Promise<boolean> {
+    const result = await db.delete(organizations)
+      .where(eq(organizations.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async searchOrganizations(query: string): Promise<Organization[]> {
+    return await db.select()
+      .from(organizations)
+      .where(or(
+        ilike(organizations.name, `%${query}%`),
+        sql`${organizations.alternateNames} && ARRAY[${query}]::text[]`
+      ))
+      .orderBy(organizations.name);
   }
 }

@@ -85,6 +85,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.VIEW_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
     { id: "donation-tracking", label: "Distribution Tracking", icon: Route, href: "donation-tracking", group: "operations" },
+    ...(hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS) ? [{ id: "event-requests", label: "Event Requests", icon: Calendar, href: "event-requests", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_WEEKLY_MONITORING) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
     
     // PLANNING & COORDINATION
