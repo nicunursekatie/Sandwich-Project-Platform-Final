@@ -36,11 +36,13 @@ export default function RecipientsManagement() {
   const [importResults, setImportResults] = useState<{ imported: number; skipped: number } | null>(null);
   
   // Collapsible section states
+  const [basicInfoSectionOpen, setBasicInfoSectionOpen] = useState(true);
   const [contactSectionOpen, setContactSectionOpen] = useState(true);
   const [secondContactSectionOpen, setSecondContactSectionOpen] = useState(false);
   const [operationalSectionOpen, setOperationalSectionOpen] = useState(false);
   
   // Edit form collapsible states
+  const [editBasicInfoSectionOpen, setEditBasicInfoSectionOpen] = useState(true);
   const [editContactSectionOpen, setEditContactSectionOpen] = useState(true);
   const [editSecondContactSectionOpen, setEditSecondContactSectionOpen] = useState(false);
   const [editOperationalSectionOpen, setEditOperationalSectionOpen] = useState(false);
@@ -482,82 +484,98 @@ export default function RecipientsManagement() {
                     Add a new recipient to the system for sandwich deliveries.
                   </p>
                   <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name *</Label>
-                    <Input
-                      id="name"
-                      value={newRecipient.name}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, name: e.target.value })}
-                      placeholder="Enter recipient name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      value={newRecipient.phone}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, phone: e.target.value })}
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newRecipient.email}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="website">Website</Label>
-                    <Input
-                      id="website"
-                      type="text"
-                      value={newRecipient.website}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, website: e.target.value })}
-                      placeholder="www.organization.org or https://organization.org"
-                    />
-                  </div>
                   
-                  <div>
-                    <Label htmlFor="instagramHandle">Instagram Handle</Label>
-                    <Input
-                      id="instagramHandle"
-                      type="text"
-                      value={newRecipient.instagramHandle}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, instagramHandle: e.target.value })}
-                      placeholder="@organizationhandle"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Street Address</Label>
-                    <Input
-                      id="address"
-                      value={newRecipient.address}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, address: e.target.value })}
-                      placeholder="123 Main St, City, State 12345"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="region">Region/Area</Label>
-                    <Input
-                      id="region"
-                      value={newRecipient.region}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, region: e.target.value })}
-                      placeholder="Downtown, Sandy Springs, Buckhead, etc."
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="preferences">Preferences</Label>
-                    <Input
-                      id="preferences"
-                      value={newRecipient.preferences}
-                      onChange={(e) => setNewRecipient({ ...newRecipient, preferences: e.target.value })}
-                      placeholder="Dietary restrictions or preferences"
-                    />
-                  </div>
+                  {/* Basic Information Section */}
+                  <Collapsible open={basicInfoSectionOpen} onOpenChange={setBasicInfoSectionOpen}>
+                    <div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                          <h4 className="font-medium text-sm text-slate-700">Basic Information</h4>
+                          {basicInfoSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-3">
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="name">Name *</Label>
+                            <Input
+                              id="name"
+                              value={newRecipient.name}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, name: e.target.value })}
+                              placeholder="Enter recipient name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="phone">Phone Number *</Label>
+                            <Input
+                              id="phone"
+                              value={newRecipient.phone}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, phone: e.target.value })}
+                              placeholder="(555) 123-4567"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              value={newRecipient.email}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, email: e.target.value })}
+                              placeholder="email@example.com"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="website">Website</Label>
+                            <Input
+                              id="website"
+                              type="text"
+                              value={newRecipient.website}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, website: e.target.value })}
+                              placeholder="www.organization.org or https://organization.org"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="instagramHandle">Instagram Handle</Label>
+                            <Input
+                              id="instagramHandle"
+                              type="text"
+                              value={newRecipient.instagramHandle}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, instagramHandle: e.target.value })}
+                              placeholder="@organizationhandle"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="address">Street Address</Label>
+                            <Input
+                              id="address"
+                              value={newRecipient.address}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, address: e.target.value })}
+                              placeholder="123 Main St, City, State 12345"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="region">Region/Area</Label>
+                            <Input
+                              id="region"
+                              value={newRecipient.region}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, region: e.target.value })}
+                              placeholder="Downtown, Sandy Springs, Buckhead, etc."
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="preferences">Preferences</Label>
+                            <Input
+                              id="preferences"
+                              value={newRecipient.preferences}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, preferences: e.target.value })}
+                              placeholder="Dietary restrictions or preferences"
+                            />
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
                   
                   {/* Contact Person Section */}
                   <Collapsible open={contactSectionOpen} onOpenChange={setContactSectionOpen}>
@@ -1146,76 +1164,92 @@ export default function RecipientsManagement() {
               Update recipient information.
             </p>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-name">Name</Label>
-                <Input
-                  id="edit-name"
-                  value={editingRecipient.name}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-phone">Phone</Label>
-                <Input
-                  id="edit-phone"
-                  value={editingRecipient.phone}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, phone: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-email">Email</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={editingRecipient.email || ""}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-website">Website</Label>
-                <Input
-                  id="edit-website"
-                  type="text"
-                  value={(editingRecipient as any).website || ""}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, website: e.target.value })}
-                  placeholder="www.organization.org or https://organization.org"
-                />
-              </div>
               
-              <div>
-                <Label htmlFor="edit-instagramHandle">Instagram Handle</Label>
-                <Input
-                  id="edit-instagramHandle"
-                  type="text"
-                  value={(editingRecipient as any).instagramHandle || ""}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, instagramHandle: e.target.value })}
-                  placeholder="@organizationhandle"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-address">Street Address</Label>
-                <Input
-                  id="edit-address"
-                  value={editingRecipient.address || ""}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, address: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-region">Region/Area</Label>
-                <Input
-                  id="edit-region"
-                  value={editingRecipient.region || ""}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, region: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-preferences">Preferences</Label>
-                <Input
-                  id="edit-preferences"
-                  value={editingRecipient.preferences || ""}
-                  onChange={(e) => setEditingRecipient({ ...editingRecipient, preferences: e.target.value })}
-                />
-              </div>
+              {/* Basic Information Section */}
+              <Collapsible open={editBasicInfoSectionOpen} onOpenChange={setEditBasicInfoSectionOpen}>
+                <div>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                      <h4 className="font-medium text-sm text-slate-700">Basic Information</h4>
+                      {editBasicInfoSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="edit-name">Name</Label>
+                        <Input
+                          id="edit-name"
+                          value={editingRecipient.name}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, name: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-phone">Phone</Label>
+                        <Input
+                          id="edit-phone"
+                          value={editingRecipient.phone}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, phone: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-email">Email</Label>
+                        <Input
+                          id="edit-email"
+                          type="email"
+                          value={editingRecipient.email || ""}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-website">Website</Label>
+                        <Input
+                          id="edit-website"
+                          type="text"
+                          value={(editingRecipient as any).website || ""}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, website: e.target.value })}
+                          placeholder="www.organization.org or https://organization.org"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="edit-instagramHandle">Instagram Handle</Label>
+                        <Input
+                          id="edit-instagramHandle"
+                          type="text"
+                          value={(editingRecipient as any).instagramHandle || ""}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, instagramHandle: e.target.value })}
+                          placeholder="@organizationhandle"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-address">Street Address</Label>
+                        <Input
+                          id="edit-address"
+                          value={editingRecipient.address || ""}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, address: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-region">Region/Area</Label>
+                        <Input
+                          id="edit-region"
+                          value={editingRecipient.region || ""}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, region: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-preferences">Preferences</Label>
+                        <Input
+                          id="edit-preferences"
+                          value={editingRecipient.preferences || ""}
+                          onChange={(e) => setEditingRecipient({ ...editingRecipient, preferences: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
               
               {/* Contact Person Section */}
               <Collapsible open={editContactSectionOpen} onOpenChange={setEditContactSectionOpen}>
