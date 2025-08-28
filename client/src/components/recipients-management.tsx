@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Edit, Trash2, Phone, Mail, MapPin, Upload, Search, Filter, X, Download } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Phone, Mail, MapPin, Upload, Search, Filter, X, Download, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import TSPContactManager from "./tsp-contact-manager";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -33,11 +34,22 @@ export default function RecipientsManagement() {
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResults, setImportResults] = useState<{ imported: number; skipped: number } | null>(null);
+  
+  // Collapsible section states
+  const [contactSectionOpen, setContactSectionOpen] = useState(true);
+  const [secondContactSectionOpen, setSecondContactSectionOpen] = useState(false);
+  const [operationalSectionOpen, setOperationalSectionOpen] = useState(false);
+  
+  // Edit form collapsible states
+  const [editContactSectionOpen, setEditContactSectionOpen] = useState(true);
+  const [editSecondContactSectionOpen, setEditSecondContactSectionOpen] = useState(false);
+  const [editOperationalSectionOpen, setEditOperationalSectionOpen] = useState(false);
   const [newRecipient, setNewRecipient] = useState({
     name: "",
     phone: "",
     email: "",
     website: "",
+    instagramHandle: "",
     address: "",
     region: "",
     preferences: "", // Legacy field - keeping for backward compatibility
@@ -548,97 +560,122 @@ export default function RecipientsManagement() {
                   </div>
                   
                   {/* Contact Person Section */}
-                  <div className="border-t pt-4 mt-4">
-                    <h4 className="font-medium text-sm text-slate-700 mb-3">Contact Person Information</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="contactPersonName">Contact Name</Label>
-                        <Input
-                          id="contactPersonName"
-                          value={newRecipient.contactPersonName}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonName: e.target.value })}
-                          placeholder="John Smith"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="contactPersonRole">Role/Title</Label>
-                        <Input
-                          id="contactPersonRole"
-                          value={newRecipient.contactPersonRole}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonRole: e.target.value })}
-                          placeholder="Program Director, Manager, etc."
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="contactPersonPhone">Contact Phone</Label>
-                        <Input
-                          id="contactPersonPhone"
-                          value={newRecipient.contactPersonPhone}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonPhone: e.target.value })}
-                          placeholder="(555) 123-4567"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="contactPersonEmail">Contact Email</Label>
-                        <Input
-                          id="contactPersonEmail"
-                          type="email"
-                          value={newRecipient.contactPersonEmail}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonEmail: e.target.value })}
-                          placeholder="john@organization.org"
-                        />
-                      </div>
+                  <Collapsible open={contactSectionOpen} onOpenChange={setContactSectionOpen}>
+                    <div className="border-t pt-4 mt-4">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                          <h4 className="font-medium text-sm text-slate-700">Contact Person Information</h4>
+                          {contactSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="contactPersonName">Contact Name</Label>
+                            <Input
+                              id="contactPersonName"
+                              value={newRecipient.contactPersonName}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonName: e.target.value })}
+                              placeholder="John Smith"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="contactPersonRole">Role/Title</Label>
+                            <Input
+                              id="contactPersonRole"
+                              value={newRecipient.contactPersonRole}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonRole: e.target.value })}
+                              placeholder="Program Director, Manager, etc."
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="contactPersonPhone">Contact Phone</Label>
+                            <Input
+                              id="contactPersonPhone"
+                              value={newRecipient.contactPersonPhone}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonPhone: e.target.value })}
+                              placeholder="(555) 123-4567"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="contactPersonEmail">Contact Email</Label>
+                            <Input
+                              id="contactPersonEmail"
+                              type="email"
+                              value={newRecipient.contactPersonEmail}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, contactPersonEmail: e.target.value })}
+                              placeholder="john@organization.org"
+                            />
+                          </div>
+                        </div>
+                      </CollapsibleContent>
                     </div>
-                  </div>
+                  </Collapsible>
 
                   {/* Second Contact Person Section */}
-                  <div className="border-t pt-4 mt-4">
-                    <h4 className="font-medium text-sm text-slate-700 mb-3">Second Contact Person (Optional)</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="secondContactPersonName">Contact Name</Label>
-                        <Input
-                          id="secondContactPersonName"
-                          value={newRecipient.secondContactPersonName}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonName: e.target.value })}
-                          placeholder="Jane Doe"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="secondContactPersonRole">Role/Title</Label>
-                        <Input
-                          id="secondContactPersonRole"
-                          value={newRecipient.secondContactPersonRole}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonRole: e.target.value })}
-                          placeholder="Assistant Manager, etc."
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="secondContactPersonPhone">Contact Phone</Label>
-                        <Input
-                          id="secondContactPersonPhone"
-                          value={newRecipient.secondContactPersonPhone}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonPhone: e.target.value })}
-                          placeholder="(555) 987-6543"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="secondContactPersonEmail">Contact Email</Label>
-                        <Input
-                          id="secondContactPersonEmail"
-                          type="email"
-                          value={newRecipient.secondContactPersonEmail}
-                          onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonEmail: e.target.value })}
-                          placeholder="jane@organization.org"
-                        />
-                      </div>
+                  <Collapsible open={secondContactSectionOpen} onOpenChange={setSecondContactSectionOpen}>
+                    <div className="border-t pt-4 mt-4">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                          <h4 className="font-medium text-sm text-slate-700">Second Contact Person (Optional)</h4>
+                          {secondContactSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="secondContactPersonName">Contact Name</Label>
+                            <Input
+                              id="secondContactPersonName"
+                              value={newRecipient.secondContactPersonName}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonName: e.target.value })}
+                              placeholder="Jane Doe"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="secondContactPersonRole">Role/Title</Label>
+                            <Input
+                              id="secondContactPersonRole"
+                              value={newRecipient.secondContactPersonRole}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonRole: e.target.value })}
+                              placeholder="Assistant Manager, etc."
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="secondContactPersonPhone">Contact Phone</Label>
+                            <Input
+                              id="secondContactPersonPhone"
+                              value={newRecipient.secondContactPersonPhone}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonPhone: e.target.value })}
+                              placeholder="(555) 987-6543"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="secondContactPersonEmail">Contact Email</Label>
+                            <Input
+                              id="secondContactPersonEmail"
+                              type="email"
+                              value={newRecipient.secondContactPersonEmail}
+                              onChange={(e) => setNewRecipient({ ...newRecipient, secondContactPersonEmail: e.target.value })}
+                              placeholder="jane@organization.org"
+                            />
+                          </div>
+                        </div>
+                      </CollapsibleContent>
                     </div>
-                  </div>
+                  </Collapsible>
 
                   {/* Enhanced Operational Fields */}
-                  <div className="border-t pt-4 mt-4">
-                    <h4 className="font-medium text-sm text-slate-700 mb-3">Operational Details</h4>
-                    <div className="grid grid-cols-2 gap-3">
+                  <Collapsible open={operationalSectionOpen} onOpenChange={setOperationalSectionOpen}>
+                    <div className="border-t pt-4 mt-4">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                          <h4 className="font-medium text-sm text-slate-700">Operational Details</h4>
+                          {operationalSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-3">
+                        <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="reportingGroup">Reporting Group</Label>
                         <Input
@@ -708,8 +745,10 @@ export default function RecipientsManagement() {
                           />
                         </div>
                       )}
+                        </div>
+                      </CollapsibleContent>
                     </div>
-                  </div>
+                  </Collapsible>
 
                   <div className="flex justify-end space-x-2 mt-6 pt-4 border-t bg-white sticky bottom-0">
                     <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
@@ -1179,9 +1218,16 @@ export default function RecipientsManagement() {
               </div>
               
               {/* Contact Person Section */}
-              <div className="border-t pt-4 mt-4">
-                <h4 className="font-medium text-sm text-slate-700 mb-3">Contact Person Information</h4>
-                <div className="grid grid-cols-2 gap-3">
+              <Collapsible open={editContactSectionOpen} onOpenChange={setEditContactSectionOpen}>
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                      <h4 className="font-medium text-sm text-slate-700">Contact Person Information</h4>
+                      {editContactSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="edit-contactPersonName">Contact Name</Label>
                     <Input
@@ -1219,13 +1265,22 @@ export default function RecipientsManagement() {
                       placeholder="john@organization.org"
                     />
                   </div>
+                    </div>
+                  </CollapsibleContent>
                 </div>
-              </div>
+              </Collapsible>
 
               {/* Second Contact Person Section */}
-              <div className="border-t pt-4 mt-4">
-                <h4 className="font-medium text-sm text-slate-700 mb-3">Second Contact Person (Optional)</h4>
-                <div className="grid grid-cols-2 gap-3">
+              <Collapsible open={editSecondContactSectionOpen} onOpenChange={setEditSecondContactSectionOpen}>
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                      <h4 className="font-medium text-sm text-slate-700">Second Contact Person (Optional)</h4>
+                      {editSecondContactSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="edit-secondContactPersonName">Contact Name</Label>
                     <Input
@@ -1263,13 +1318,22 @@ export default function RecipientsManagement() {
                       placeholder="jane@organization.org"
                     />
                   </div>
+                    </div>
+                  </CollapsibleContent>
                 </div>
-              </div>
+              </Collapsible>
 
               {/* Enhanced Operational Fields */}
-              <div className="border-t pt-4 mt-4">
-                <h4 className="font-medium text-sm text-slate-700 mb-3">Operational Details</h4>
-                <div className="grid grid-cols-2 gap-3">
+              <Collapsible open={editOperationalSectionOpen} onOpenChange={setEditOperationalSectionOpen}>
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                      <h4 className="font-medium text-sm text-slate-700">Operational Details</h4>
+                      {editOperationalSectionOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="edit-reportingGroup">Reporting Group</Label>
                     <Input
@@ -1343,8 +1407,10 @@ export default function RecipientsManagement() {
                       />
                     </div>
                   )}
+                    </div>
+                  </CollapsibleContent>
                 </div>
-              </div>
+              </Collapsible>
 
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setEditingRecipient(null)}>
