@@ -24,7 +24,7 @@ export const PERMISSIONS = {
   ACCESS_RECIPIENTS: "access_recipients",
   ACCESS_DRIVERS: "access_drivers",
   ACCESS_VOLUNTEERS: "access_volunteers", // New volunteer management tab access
-  ACCESS_DONATION_TRACKING: "access_donation_tracking", // New donation tracking access
+  ACCESS_DONATION_TRACKING: "access_donation_tracking", // New distribution tracking access
   ACCESS_COLLECTIONS: "access_collections",
   ACCESS_CHAT: "access_chat",
   ACCESS_MESSAGES: "access_messages",
@@ -51,7 +51,7 @@ export const PERMISSIONS = {
   MANAGE_RECIPIENTS: "manage_recipients",
   MANAGE_DRIVERS: "manage_drivers",
   MANAGE_VOLUNTEERS: "manage_volunteers", // Full volunteer management permissions
-  MANAGE_DONATION_TRACKING: "manage_donation_tracking", // Create, edit, delete donations
+  MANAGE_DONATION_TRACKING: "manage_donation_tracking", // Create, edit, delete distributions
   MANAGE_DIRECTORY: "manage_directory", // Edit/add contacts in directory
   MANAGE_MEETINGS: "manage_meetings",
   MANAGE_SUGGESTIONS: "manage_suggestions",
@@ -103,11 +103,11 @@ export const PERMISSIONS = {
   EDIT_DRIVERS: "edit_drivers", // Edit driver information
   DELETE_DRIVERS: "delete_drivers", // Delete drivers
 
-  // Granular donation tracking permissions
-  VIEW_DONATION_TRACKING: "view_donation_tracking", // View donation records
-  ADD_DONATION_TRACKING: "add_donation_tracking", // Add new donation records
-  EDIT_DONATION_TRACKING: "edit_donation_tracking", // Edit donation records
-  DELETE_DONATION_TRACKING: "delete_donation_tracking", // Delete donation records
+  // Granular distribution tracking permissions
+  VIEW_DONATION_TRACKING: "view_donation_tracking", // View distribution records
+  ADD_DONATION_TRACKING: "add_donation_tracking", // Add new distribution records
+  EDIT_DONATION_TRACKING: "edit_donation_tracking", // Edit distribution records
+  DELETE_DONATION_TRACKING: "delete_donation_tracking", // Delete distribution records
 
   // Simplified work log permissions - CREATE automatically includes edit/delete own
   CREATE_WORK_LOGS: "create_work_logs", // Create new work logs + automatically edit/delete own work logs
@@ -277,7 +277,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.VIEW_VOLUNTEERS,
         PERMISSIONS.ADD_VOLUNTEERS,
         PERMISSIONS.EDIT_VOLUNTEERS,
-        // Granular donation tracking permissions
+        // Granular distribution tracking permissions
         PERMISSIONS.VIEW_DONATION_TRACKING,
         PERMISSIONS.ADD_DONATION_TRACKING,
         PERMISSIONS.EDIT_DONATION_TRACKING,

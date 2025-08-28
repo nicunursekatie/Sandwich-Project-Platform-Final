@@ -40,7 +40,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **User Activity Tracking**: Comprehensive detailed activity analytics tab in User Management showing login times, user behavior patterns, action tracking, and usage analytics with real-time filtering capabilities. Fixed JSON parsing error in DetailedActivityAnalytics component by removing JSON.parse() calls on metadata field that was already an object. Activity data now properly displays 9,500+ logs with working filters and real-time updates.
 - **Authentication UI**: Modernized login and authentication experience with enhanced landing pages, professional styling, and consistent branding.
 - **Password Reset System**: Complete SendGrid-powered password reset functionality with professional email templates, secure token-based authentication, and environment-aware URL generation.
-- **Donation Tracking**: System for logging sandwich distributions from host locations to recipient organizations.
+- **Distribution Tracking**: System for logging sandwich distributions from host locations to recipient organizations.
 - **Recipients Focus Area Tracking**: Recipients management enhanced with focus area field to track what groups each organization focuses on (youth, veterans, seniors, families). Focus area is displayed in recipient cards, included in edit/new recipient forms, and searchable through the recipient management interface.
 - **Streamlined Navigation**: Contact management is handled directly within each specific section (Hosts, Drivers, Recipients, Volunteers).
 - **Complete Permissions Coverage**: All application components have proper permissions controls, including Weekly Monitoring, Events, SignUp Genius, Development tools, Work Logs, and Toolkit.

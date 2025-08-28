@@ -326,7 +326,7 @@ export interface IStorage {
     topSection: string;
   }[]>;
 
-  // Sandwich Distributions (Donation Tracking)
+  // Sandwich Distributions (Distribution Tracking)
   getAllSandwichDistributions(): Promise<SandwichDistribution[]>;
   getSandwichDistribution(id: number): Promise<SandwichDistribution | undefined>;
   createSandwichDistribution(insertDistribution: InsertSandwichDistribution): Promise<SandwichDistribution>;

@@ -136,7 +136,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     ...(hasPermission(user, PERMISSIONS.ACCESS_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users }] : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_DONATION_TRACKING) ? [{ id: "donation-tracking", label: "Donation Tracking", icon: Truck }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DONATION_TRACKING) ? [{ id: "donation-tracking", label: "Distribution Tracking", icon: Truck }] : []),
     
     // Operations section
     ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList }] : []),

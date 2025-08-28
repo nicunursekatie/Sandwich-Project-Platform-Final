@@ -257,7 +257,7 @@ export default function DonationTracking() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Truck className="h-6 w-6 text-[#236383]" />
-            Donation Tracking
+            Distribution Tracking
           </h1>
           <p className="text-gray-600 mt-1">
             Record sandwich distributions from host locations to recipient organizations
