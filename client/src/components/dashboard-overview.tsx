@@ -424,55 +424,55 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           {/* Documents Grid - Better tablet responsiveness with wider cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {importantDocuments.map((doc, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200">
-                <CardHeader className="pb-4 flex-shrink-0">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200 min-h-[280px] max-h-[320px]">
+                <CardHeader className="pb-3 flex-shrink-0">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
                       <div className="flex-shrink-0">
-                        <FileText className="h-5 w-5 text-red-500" />
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
                       </div>
-                      <CardTitle className="text-lg md:text-xl font-semibold text-gray-900 leading-tight">
+                      <CardTitle className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 leading-tight">
                         {doc.title}
                       </CardTitle>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="text-sm font-medium px-3 py-1 bg-purple-100 text-purple-800">
+                  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                    <Badge className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 bg-purple-100 text-purple-800">
                       {doc.category}
                     </Badge>
-                    <Badge variant="outline" className="text-sm font-medium px-3 py-1">
+                    <Badge variant="outline" className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1">
                       PDF
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0 flex-1 flex flex-col">
-                  <CardDescription className="mb-6 flex-1 text-base leading-relaxed text-gray-600">
+                <CardContent className="pt-0 flex-1 flex flex-col overflow-hidden">
+                  <CardDescription className="mb-3 sm:mb-4 flex-1 text-sm sm:text-base leading-relaxed text-gray-600 overflow-hidden">
                     {doc.description}
                   </CardDescription>
-                  {/* Action buttons - optimized for mobile and tablet touch targets */}
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-auto">
+                  {/* Action buttons - fixed overflow with proper constraints */}
+                  <div className="flex flex-col gap-2 mt-auto flex-shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => openPreviewModal(doc.path, doc.title, 'pdf')}
-                      className="w-full h-9 sm:h-10 text-sm font-medium"
+                      className="w-full h-8 sm:h-9 text-xs sm:text-sm font-medium"
                     >
-                      <Eye className="h-4 w-4 mr-1 sm:mr-2" />
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       Preview
                     </Button>
                     <Button
                       size="sm"
                       variant="default"
                       onClick={() => window.open(doc.path, '_blank')}
-                      className="w-full h-9 sm:h-10 text-sm font-medium"
+                      className="w-full h-8 sm:h-9 text-xs sm:text-sm font-medium"
                     >
-                      <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
+                      <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       Download
                     </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            ))
           </div>
         </div>
 
