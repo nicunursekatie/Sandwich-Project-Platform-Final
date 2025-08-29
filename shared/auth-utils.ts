@@ -12,176 +12,190 @@ export const USER_ROLES = {
   DEMO_USER: "demo_user",
 } as const;
 
-// Granular yet intuitive permission system
+// Clean Resource-Action Permission System
 export const PERMISSIONS = {
-  // Administrative permissions
-  ADMIN_ACCESS: "admin_access",
-  MANAGE_USERS: "manage_users",
-  MANAGE_ANNOUNCEMENTS: "manage_announcements",
+  // ADMINISTRATIVE PERMISSIONS
+  ADMIN_ACCESS: "ADMIN_ACCESS",
+  MANAGE_ANNOUNCEMENTS: "MANAGE_ANNOUNCEMENTS",
 
-  // Main tab access permissions
-  ACCESS_HOSTS: "access_hosts",
-  ACCESS_RECIPIENTS: "access_recipients",
-  ACCESS_DRIVERS: "access_drivers",
-  ACCESS_VOLUNTEERS: "access_volunteers", // New volunteer management tab access
-  ACCESS_DONATION_TRACKING: "access_donation_tracking", // New distribution tracking access
-  ACCESS_EVENT_REQUESTS: "access_event_requests", // Event planning and organization requests
-  ACCESS_COLLECTIONS: "access_collections",
-  ACCESS_CHAT: "access_chat",
-  ACCESS_MESSAGES: "access_messages",
-  ACCESS_TOOLKIT: "access_toolkit",
+  // HOSTS - Host location management  
+  HOSTS_VIEW: "HOSTS_VIEW",
+  HOSTS_ADD: "HOSTS_ADD", 
+  HOSTS_EDIT: "HOSTS_EDIT",
+  HOSTS_DELETE: "HOSTS_DELETE",
 
-  // Operations section permissions
-  ACCESS_MEETINGS: "access_meetings",
-  ACCESS_ANALYTICS: "access_analytics",
-  ACCESS_PROJECTS: "access_projects",
-  ACCESS_ROLE_DEMO: "access_role_demo",
+  // RECIPIENTS - Recipient organization management
+  RECIPIENTS_VIEW: "RECIPIENTS_VIEW",
+  RECIPIENTS_ADD: "RECIPIENTS_ADD",
+  RECIPIENTS_EDIT: "RECIPIENTS_EDIT", 
+  RECIPIENTS_DELETE: "RECIPIENTS_DELETE",
 
-  // Resources section permissions
-  ACCESS_SUGGESTIONS: "access_suggestions",
-  ACCESS_SANDWICH_DATA: "access_sandwich_data",
-  ACCESS_GOVERNANCE: "access_governance",
-  ACCESS_WORK_LOGS: "access_work_logs",
-  ACCESS_WEEKLY_MONITORING: "access_weekly_monitoring",
-  ACCESS_EVENTS: "access_events",
-  ACCESS_SIGNUP_GENIUS: "access_signup_genius",
-  ACCESS_DEVELOPMENT: "access_development",
+  // DRIVERS - Driver management
+  DRIVERS_VIEW: "DRIVERS_VIEW",
+  DRIVERS_ADD: "DRIVERS_ADD",
+  DRIVERS_EDIT: "DRIVERS_EDIT",
+  DRIVERS_DELETE: "DRIVERS_DELETE",
 
-  // Simplified management permissions for each section
-  MANAGE_HOSTS: "manage_hosts",
-  MANAGE_RECIPIENTS: "manage_recipients",
-  MANAGE_DRIVERS: "manage_drivers",
-  MANAGE_VOLUNTEERS: "manage_volunteers", // Full volunteer management permissions
-  MANAGE_DONATION_TRACKING: "manage_donation_tracking", // Create, edit, delete distributions
-  MANAGE_DIRECTORY: "manage_directory", // Edit/add contacts in directory
-  MANAGE_MEETINGS: "manage_meetings",
-  MANAGE_SUGGESTIONS: "manage_suggestions",
-  SUBMIT_SUGGESTIONS: "submit_suggestions",
-  MANAGE_WISHLIST: "manage_wishlist", // Approve/reject wishlist suggestions
-  MANAGE_WEEKLY_MONITORING: "manage_weekly_monitoring", // Send notifications and manage monitoring
-  MANAGE_EVENTS: "manage_events", // Create, edit, delete events
-  MANAGE_SIGNUP_GENIUS: "manage_signup_genius", // Manage SignUp Genius integrations
-  MANAGE_DEVELOPMENT: "manage_development", // Access development tools and logs
+  // USERS - User account management
+  USERS_VIEW: "USERS_VIEW",
+  USERS_ADD: "USERS_ADD", 
+  USERS_EDIT: "USERS_EDIT",
+  USERS_DELETE: "USERS_DELETE",
 
-  // Simplified suggestions permissions - CREATE automatically includes edit/delete own
-  CREATE_SUGGESTIONS: "create_suggestions", // Create new suggestions + automatically edit/delete own suggestions
-  EDIT_ALL_SUGGESTIONS: "edit_all_suggestions", // Edit any suggestion (admin level)
-  DELETE_ALL_SUGGESTIONS: "delete_all_suggestions", // Delete any suggestion (admin level)
+  // COLLECTIONS - Sandwich collection data
+  COLLECTIONS_VIEW: "COLLECTIONS_VIEW",
+  COLLECTIONS_ADD: "COLLECTIONS_ADD",
+  COLLECTIONS_EDIT: "COLLECTIONS_EDIT", 
+  COLLECTIONS_DELETE: "COLLECTIONS_DELETE",
+  COLLECTIONS_WALKTHROUGH: "COLLECTIONS_WALKTHROUGH", // Simplified entry form
 
-  MANAGE_COLLECTIONS: "manage_collections",
+  // PROJECTS - Project management
+  PROJECTS_VIEW: "PROJECTS_VIEW",
+  PROJECTS_ADD: "PROJECTS_ADD",
+  PROJECTS_EDIT: "PROJECTS_EDIT",
+  PROJECTS_DELETE: "PROJECTS_DELETE",
 
-  // Simplified project permissions - CREATE automatically includes edit/delete own + assigned projects
-  CREATE_PROJECTS: "create_projects", // Create new projects + automatically edit/delete own projects + edit assigned projects
-  EDIT_ALL_PROJECTS: "edit_all_projects", // Edit any project regardless of ownership
-  DELETE_ALL_PROJECTS: "delete_all_projects", // Delete any project regardless of ownership
+  // DISTRIBUTIONS - Sandwich distribution tracking 
+  DISTRIBUTIONS_VIEW: "DISTRIBUTIONS_VIEW", 
+  DISTRIBUTIONS_ADD: "DISTRIBUTIONS_ADD",
+  DISTRIBUTIONS_EDIT: "DISTRIBUTIONS_EDIT",
+  DISTRIBUTIONS_DELETE: "DISTRIBUTIONS_DELETE",
 
-  // Simplified collection permissions - CREATE automatically includes edit/delete own
-  CREATE_COLLECTIONS: "create_collections", // Create new collections + automatically edit/delete own collections
-  EDIT_ALL_COLLECTIONS: "edit_all_collections", // Edit any collection regardless of ownership
-  DELETE_ALL_COLLECTIONS: "delete_all_collections", // Delete any collection regardless of ownership
-  USE_COLLECTION_WALKTHROUGH: "use_collection_walkthrough", // Access to simplified walkthrough form
+  // EVENT_REQUESTS - Event planning and requests
+  EVENT_REQUESTS_VIEW: "EVENT_REQUESTS_VIEW",
+  EVENT_REQUESTS_ADD: "EVENT_REQUESTS_ADD", 
+  EVENT_REQUESTS_EDIT: "EVENT_REQUESTS_EDIT",
+  EVENT_REQUESTS_DELETE: "EVENT_REQUESTS_DELETE",
+  EVENT_REQUESTS_SYNC: "EVENT_REQUESTS_SYNC", // Google Sheets sync
 
-  // Granular volunteer management permissions
-  VIEW_VOLUNTEERS: "view_volunteers", // View volunteer information
-  ADD_VOLUNTEERS: "add_volunteers", // Add new volunteers
-  EDIT_VOLUNTEERS: "edit_volunteers", // Edit volunteer information
+  // MESSAGES - Messaging system
+  MESSAGES_VIEW: "MESSAGES_VIEW",
+  MESSAGES_SEND: "MESSAGES_SEND",
+  MESSAGES_EDIT: "MESSAGES_EDIT",
+  MESSAGES_DELETE: "MESSAGES_DELETE",
+  MESSAGES_MODERATE: "MESSAGES_MODERATE",
 
-  // Granular recipient management permissions
-  VIEW_RECIPIENTS: "view_recipients", // View recipient information
-  ADD_RECIPIENTS: "add_recipients", // Add new recipients
-  EDIT_RECIPIENTS: "edit_recipients", // Edit recipient information
-  DELETE_RECIPIENTS: "delete_recipients", // Delete recipients
+  // WORK_LOGS - Work time logging
+  WORK_LOGS_VIEW: "WORK_LOGS_VIEW",
+  WORK_LOGS_ADD: "WORK_LOGS_ADD", 
+  WORK_LOGS_EDIT: "WORK_LOGS_EDIT",
+  WORK_LOGS_DELETE: "WORK_LOGS_DELETE",
+  WORK_LOGS_VIEW_ALL: "WORK_LOGS_VIEW_ALL", // See all users' logs
 
-  // Granular host management permissions
-  VIEW_HOSTS: "view_hosts", // View host information
-  ADD_HOSTS: "add_hosts", // Add new hosts
-  EDIT_HOSTS: "edit_hosts", // Edit host information
-  DELETE_HOSTS: "delete_hosts", // Delete hosts
+  // SUGGESTIONS - Suggestion system  
+  SUGGESTIONS_VIEW: "SUGGESTIONS_VIEW",
+  SUGGESTIONS_ADD: "SUGGESTIONS_ADD",
+  SUGGESTIONS_EDIT: "SUGGESTIONS_EDIT", 
+  SUGGESTIONS_DELETE: "SUGGESTIONS_DELETE",
+  SUGGESTIONS_MANAGE: "SUGGESTIONS_MANAGE", // Respond to suggestions
 
-  // Granular driver management permissions
-  VIEW_DRIVERS: "view_drivers", // View driver information
-  ADD_DRIVERS: "add_drivers", // Add new drivers
-  EDIT_DRIVERS: "edit_drivers", // Edit driver information
-  DELETE_DRIVERS: "delete_drivers", // Delete drivers
+  // CHAT - Chat room access
+  CHAT_GENERAL: "CHAT_GENERAL",
+  CHAT_COMMITTEE: "CHAT_COMMITTEE", 
+  CHAT_HOST: "CHAT_HOST",
+  CHAT_DRIVER: "CHAT_DRIVER",
+  CHAT_RECIPIENT: "CHAT_RECIPIENT",
+  CHAT_CORE_TEAM: "CHAT_CORE_TEAM",
+  CHAT_DIRECT: "CHAT_DIRECT",
+  CHAT_GROUP: "CHAT_GROUP",
 
-  // Granular distribution tracking permissions
-  VIEW_DONATION_TRACKING: "view_donation_tracking", // View distribution records
-  ADD_DONATION_TRACKING: "add_donation_tracking", // Add new distribution records
-  EDIT_DONATION_TRACKING: "edit_donation_tracking", // Edit distribution records
-  DELETE_DONATION_TRACKING: "delete_donation_tracking", // Delete distribution records
+  // KUDOS - Kudos system
+  KUDOS_SEND: "KUDOS_SEND",
+  KUDOS_RECEIVE: "KUDOS_RECEIVE",
+  KUDOS_VIEW: "KUDOS_VIEW",
+  KUDOS_MANAGE: "KUDOS_MANAGE", // Admin management
 
-  // Granular event request permissions
-  VIEW_EVENT_REQUESTS: "view_event_requests", // View event request information
-  ADD_EVENT_REQUESTS: "add_event_requests", // Add new event requests
-  EDIT_EVENT_REQUESTS: "edit_event_requests", // Edit event request information
-  DELETE_EVENT_REQUESTS: "delete_event_requests", // Delete event requests
-  ASSIGN_EVENT_REQUESTS: "assign_event_requests", // Assign event requests to team members
-  MANAGE_EVENT_REQUESTS: "manage_event_requests", // Full event request management including Google Sheets sync
-  VIEW_ORGANIZATIONS_CATALOG: "view_organizations_catalog", // View organizations catalog from event requests
+  // ANALYTICS - Dashboard analytics
+  ANALYTICS_VIEW: "ANALYTICS_VIEW",
 
-  // Simplified work log permissions - CREATE automatically includes edit/delete own
-  CREATE_WORK_LOGS: "create_work_logs", // Create new work logs + automatically edit/delete own work logs
-  VIEW_ALL_WORK_LOGS: "view_all_work_logs",
-  EDIT_ALL_WORK_LOGS: "edit_all_work_logs",
-  DELETE_ALL_WORK_LOGS: "delete_all_work_logs",
+  // MEETINGS - Meeting management
+  MEETINGS_VIEW: "MEETINGS_VIEW",
+  MEETINGS_MANAGE: "MEETINGS_MANAGE",
 
-  // Data action permissions
-  EXPORT_DATA: "export_data",
-  IMPORT_DATA: "import_data",
-  EDIT_DATA: "edit_data", // General data editing permission
+  // DOCUMENTS - Document management
+  DOCUMENTS_VIEW: "DOCUMENTS_VIEW", 
+  DOCUMENTS_MANAGE: "DOCUMENTS_MANAGE",
 
-  // Document management permissions
-  MANAGE_DOCUMENTS: "manage_documents", // Full document management (create, edit, delete, permissions)
-  VIEW_DOCUMENTS: "view_documents", // View document management interface
-  ACCESS_DOCUMENTS: "access_documents", // Access to specific documents based on permissions
+  // DATA - Data import/export
+  DATA_EXPORT: "DATA_EXPORT",
+  DATA_IMPORT: "DATA_IMPORT",
 
-  // Message and communication permissions
-  SEND_MESSAGES: "send_messages",
-  MODERATE_MESSAGES: "moderate_messages",
-  DIRECT_MESSAGES: "direct_messages",
-  GROUP_MESSAGES: "group_messages",
+  // ORGANIZATIONS - Organizations catalog  
+  ORGANIZATIONS_VIEW: "ORGANIZATIONS_VIEW",
 
-  // Chat-specific permissions
-  GENERAL_CHAT: "general_chat",
-  COMMITTEE_CHAT: "committee_chat",
-  HOST_CHAT: "host_chat",
-  DRIVER_CHAT: "driver_chat",
-  RECIPIENT_CHAT: "recipient_chat",
-  CORE_TEAM_CHAT: "core_team_chat",
+  // TOOLKIT - General toolkit access
+  TOOLKIT_ACCESS: "TOOLKIT_ACCESS",
 
-  // Kudos system permissions
-  SEND_KUDOS: "send_kudos", // Can send kudos to other users
-  RECEIVE_KUDOS: "receive_kudos", // Can receive kudos from other users  
-  VIEW_KUDOS: "view_kudos", // Can view kudos in inbox
-  MANAGE_ALL_KUDOS: "manage_all_kudos", // Admin ability to manage all kudos (view, delete)
-
-  // Legacy support for existing components (backwards compatibility)
-  VIEW_VOLUNTEERS_TAB: "access_volunteers", // Legacy support
-  VIEW_DONATION_TRACKING_TAB: "access_donation_tracking", // Legacy support
-  VIEW_COLLECTIONS: "access_collections",
-  VIEW_MEETINGS: "access_meetings",
-  VIEW_ANALYTICS: "access_analytics",
-  VIEW_WEEKLY_MONITORING: "access_weekly_monitoring", // Legacy support
-  VIEW_EVENTS: "access_events", // Legacy support
-  VIEW_SIGNUP_GENIUS: "access_signup_genius", // Legacy support
-  VIEW_DEVELOPMENT: "access_development", // Legacy support
-  VIEW_WORK_LOGS: "access_work_logs", // Legacy support
-  VIEW_TOOLKIT: "access_toolkit", // Legacy support
-  VIEW_PROJECTS: "access_projects",
-  VIEW_ROLE_DEMO: "access_role_demo",
-  VIEW_SUGGESTIONS: "access_suggestions",
-  VIEW_SANDWICH_DATA: "access_sandwich_data",
-  VIEW_GOVERNANCE: "access_governance",
-  VIEW_USERS: "manage_users",
-  VIEW_COMMITTEE: "committee_chat",
-  TOOLKIT_ACCESS: "access_toolkit",
-  EDIT_MEETINGS: "manage_meetings",
-  RESPOND_TO_SUGGESTIONS: "manage_suggestions",
-  // Legacy project permission (deprecated - use CREATE_PROJECTS instead)
-  MANAGE_PROJECTS: "create_projects", // Maps to new CREATE_PROJECTS permission
+  // Legacy support for backwards compatibility
+  ACCESS_HOSTS: "HOSTS_VIEW", // Legacy
+  ACCESS_RECIPIENTS: "RECIPIENTS_VIEW", // Legacy
+  ACCESS_DRIVERS: "DRIVERS_VIEW", // Legacy
+  ACCESS_COLLECTIONS: "COLLECTIONS_VIEW", // Legacy
+  ACCESS_CHAT: "CHAT_GENERAL", // Legacy
+  ACCESS_MESSAGES: "MESSAGES_VIEW", // Legacy
+  ACCESS_PROJECTS: "PROJECTS_VIEW", // Legacy
+  ACCESS_ANALYTICS: "ANALYTICS_VIEW", // Legacy
+  ACCESS_MEETINGS: "MEETINGS_VIEW", // Legacy
+  ACCESS_SUGGESTIONS: "SUGGESTIONS_VIEW", // Legacy
+  ACCESS_WORK_LOGS: "WORK_LOGS_VIEW", // Legacy
+  ACCESS_TOOLKIT: "TOOLKIT_ACCESS", // Legacy
+  MANAGE_USERS: "USERS_EDIT", // Legacy
+  MANAGE_HOSTS: "HOSTS_EDIT", // Legacy
+  MANAGE_RECIPIENTS: "RECIPIENTS_EDIT", // Legacy
+  MANAGE_DRIVERS: "DRIVERS_EDIT", // Legacy
+  MANAGE_COLLECTIONS: "COLLECTIONS_EDIT", // Legacy
+  CREATE_COLLECTIONS: "COLLECTIONS_ADD", // Legacy
+  EDIT_ALL_COLLECTIONS: "COLLECTIONS_EDIT", // Legacy
+  DELETE_ALL_COLLECTIONS: "COLLECTIONS_DELETE", // Legacy
+  USE_COLLECTION_WALKTHROUGH: "COLLECTIONS_WALKTHROUGH", // Legacy
+  CREATE_PROJECTS: "PROJECTS_ADD", // Legacy
+  EDIT_ALL_PROJECTS: "PROJECTS_EDIT", // Legacy
+  DELETE_ALL_PROJECTS: "PROJECTS_DELETE", // Legacy
+  CREATE_SUGGESTIONS: "SUGGESTIONS_ADD", // Legacy
+  EDIT_ALL_SUGGESTIONS: "SUGGESTIONS_EDIT", // Legacy
+  DELETE_ALL_SUGGESTIONS: "SUGGESTIONS_DELETE", // Legacy
+  CREATE_WORK_LOGS: "WORK_LOGS_ADD", // Legacy
+  VIEW_ALL_WORK_LOGS: "WORK_LOGS_VIEW_ALL", // Legacy
+  EDIT_ALL_WORK_LOGS: "WORK_LOGS_EDIT", // Legacy
+  DELETE_ALL_WORK_LOGS: "WORK_LOGS_DELETE", // Legacy
+  SEND_MESSAGES: "MESSAGES_SEND", // Legacy
+  MODERATE_MESSAGES: "MESSAGES_MODERATE", // Legacy
+  DIRECT_MESSAGES: "CHAT_DIRECT", // Legacy
+  GROUP_MESSAGES: "CHAT_GROUP", // Legacy
+  GENERAL_CHAT: "CHAT_GENERAL", // Legacy
+  COMMITTEE_CHAT: "CHAT_COMMITTEE", // Legacy
+  HOST_CHAT: "CHAT_HOST", // Legacy
+  DRIVER_CHAT: "CHAT_DRIVER", // Legacy
+  RECIPIENT_CHAT: "CHAT_RECIPIENT", // Legacy
+  CORE_TEAM_CHAT: "CHAT_CORE_TEAM", // Legacy
+  SEND_KUDOS: "KUDOS_SEND", // Legacy
+  RECEIVE_KUDOS: "KUDOS_RECEIVE", // Legacy
+  VIEW_KUDOS: "KUDOS_VIEW", // Legacy
+  MANAGE_ALL_KUDOS: "KUDOS_MANAGE", // Legacy
+  EXPORT_DATA: "DATA_EXPORT", // Legacy
+  IMPORT_DATA: "DATA_IMPORT", // Legacy
+  EDIT_DATA: "DATA_EXPORT", // Legacy (data editing is export functionality)
+  VIEW_ORGANIZATIONS_CATALOG: "ORGANIZATIONS_VIEW", // Legacy
+  VIEW_EVENT_REQUESTS: "EVENT_REQUESTS_VIEW", // Legacy
+  ADD_EVENT_REQUESTS: "EVENT_REQUESTS_ADD", // Legacy
+  EDIT_EVENT_REQUESTS: "EVENT_REQUESTS_EDIT", // Legacy
+  DELETE_EVENT_REQUESTS: "EVENT_REQUESTS_DELETE", // Legacy
+  MANAGE_EVENT_REQUESTS: "EVENT_REQUESTS_EDIT", // Legacy
+  ASSIGN_EVENT_REQUESTS: "EVENT_REQUESTS_EDIT", // Legacy
+  VIEW_DONATION_TRACKING: "DISTRIBUTIONS_VIEW", // Legacy
+  ADD_DONATION_TRACKING: "DISTRIBUTIONS_ADD", // Legacy
+  EDIT_DONATION_TRACKING: "DISTRIBUTIONS_EDIT", // Legacy
+  DELETE_DONATION_TRACKING: "DISTRIBUTIONS_DELETE", // Legacy
+  MANAGE_DONATION_TRACKING: "DISTRIBUTIONS_EDIT", // Legacy
+  VIEW_DOCUMENTS: "DOCUMENTS_VIEW", // Legacy
+  MANAGE_DOCUMENTS: "DOCUMENTS_MANAGE", // Legacy
+  ACCESS_DOCUMENTS: "DOCUMENTS_VIEW", // Legacy
+  MANAGE_MEETINGS: "MEETINGS_MANAGE", // Legacy
+  MANAGE_SUGGESTIONS: "SUGGESTIONS_MANAGE", // Legacy
 } as const;
 
-// Helper functions for improved project permissions system
+// Note: This application uses individual permission assignment, not role-based defaults
+// The getDefaultPermissionsForRole function is kept for backwards compatibility only
 
 export function getDefaultPermissionsForRole(role: string): string[] {
   switch (role) {
@@ -190,181 +204,152 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.ADMIN:
       return Object.values(PERMISSIONS).filter(
-        (p) => p !== PERMISSIONS.MODERATE_MESSAGES,
+        (p) => p !== PERMISSIONS.MESSAGES_MODERATE,
       );
 
     case USER_ROLES.COMMITTEE_MEMBER:
       return [
-        // Can view these sections but not manage them
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_MEETINGS,
-        PERMISSIONS.ACCESS_ANALYTICS,
-        PERMISSIONS.ACCESS_ROLE_DEMO,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.ACCESS_SANDWICH_DATA,
-        PERMISSIONS.ACCESS_GOVERNANCE,
-        PERMISSIONS.ACCESS_PROJECTS, // Committee members can view projects
-        PERMISSIONS.ACCESS_WORK_LOGS,
-        PERMISSIONS.ACCESS_WEEKLY_MONITORING,
-        PERMISSIONS.ACCESS_EVENTS,
-        PERMISSIONS.ACCESS_DEVELOPMENT,
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.COMMITTEE_CHAT,
-        PERMISSIONS.EXPORT_DATA,
-        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions + edit/delete own
-        PERMISSIONS.SEND_KUDOS,
-        PERMISSIONS.RECEIVE_KUDOS,
-        PERMISSIONS.VIEW_KUDOS
+        // Core access permissions
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.PROJECTS_VIEW,
+        PERMISSIONS.ANALYTICS_VIEW,
+        PERMISSIONS.MEETINGS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        
+        // Basic messaging and chat
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_COMMITTEE,
+        
+        // Can create content
+        PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions + edit/delete own
+        PERMISSIONS.DATA_EXPORT,
+        
+        // Kudos system
+        PERMISSIONS.KUDOS_SEND,
+        PERMISSIONS.KUDOS_RECEIVE,
+        PERMISSIONS.KUDOS_VIEW
       ];
 
     case USER_ROLES.HOST:
       return [
         // Directory access
-        PERMISSIONS.ACCESS_HOSTS,
-        PERMISSIONS.ACCESS_RECIPIENTS,
+        PERMISSIONS.HOSTS_VIEW,
+        PERMISSIONS.RECIPIENTS_VIEW,
         
         // Collections capability
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
-        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.COLLECTIONS_ADD, // Can create collections (automatically can edit/delete own)
+        PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections
         
         // Chat permissions
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.HOST_CHAT,
-        PERMISSIONS.DIRECT_MESSAGES,
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_HOST,
+        PERMISSIONS.CHAT_DIRECT,
         
         // Analytics and other access
-        PERMISSIONS.ACCESS_ANALYTICS,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_EVENTS,
+        PERMISSIONS.ANALYTICS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.TOOLKIT_ACCESS,
         
         // Kudos system
-        PERMISSIONS.SEND_KUDOS,
-        PERMISSIONS.RECEIVE_KUDOS,
-        PERMISSIONS.VIEW_KUDOS
+        PERMISSIONS.KUDOS_SEND,
+        PERMISSIONS.KUDOS_RECEIVE,
+        PERMISSIONS.KUDOS_VIEW
       ];
 
     case USER_ROLES.CORE_TEAM:
       return [
-        // All Host permissions first
-        PERMISSIONS.ACCESS_HOSTS,
-        PERMISSIONS.ACCESS_RECIPIENTS,
-        PERMISSIONS.ACCESS_DRIVERS,
-        PERMISSIONS.ACCESS_VOLUNTEERS,
-        PERMISSIONS.ACCESS_DONATION_TRACKING,
-        PERMISSIONS.ACCESS_EVENT_REQUESTS,
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
-        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.HOST_CHAT,
-        PERMISSIONS.DIRECT_MESSAGES,
-        PERMISSIONS.ACCESS_ANALYTICS,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.SEND_KUDOS,
-        PERMISSIONS.RECEIVE_KUDOS,
-        PERMISSIONS.VIEW_KUDOS,
+        // Core viewing permissions
+        PERMISSIONS.HOSTS_VIEW,
+        PERMISSIONS.RECIPIENTS_VIEW,
+        PERMISSIONS.DRIVERS_VIEW,
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.PROJECTS_VIEW,
+        PERMISSIONS.ANALYTICS_VIEW,
+        PERMISSIONS.MEETINGS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
         
-        // Additional Core Team specific permissions
-        PERMISSIONS.ACCESS_DRIVERS,
-        PERMISSIONS.MANAGE_HOSTS,
-        PERMISSIONS.MANAGE_RECIPIENTS,
-        PERMISSIONS.MANAGE_DRIVERS,
-        PERMISSIONS.MANAGE_VOLUNTEERS,
-        PERMISSIONS.MANAGE_USERS, // Core team can manage users
-        PERMISSIONS.MANAGE_DONATION_TRACKING,
-        PERMISSIONS.MANAGE_EVENT_REQUESTS,
-        // Granular volunteer permissions
-        PERMISSIONS.VIEW_VOLUNTEERS,
-        PERMISSIONS.ADD_VOLUNTEERS,
-        PERMISSIONS.EDIT_VOLUNTEERS,
-        // Granular distribution tracking permissions
-        PERMISSIONS.VIEW_DONATION_TRACKING,
-        PERMISSIONS.ADD_DONATION_TRACKING,
-        PERMISSIONS.EDIT_DONATION_TRACKING,
-        PERMISSIONS.DELETE_DONATION_TRACKING,
-        // Granular event request permissions
-        PERMISSIONS.VIEW_EVENT_REQUESTS,
-        PERMISSIONS.ADD_EVENT_REQUESTS,
-        PERMISSIONS.EDIT_EVENT_REQUESTS,
-        PERMISSIONS.DELETE_EVENT_REQUESTS,
-        PERMISSIONS.ASSIGN_EVENT_REQUESTS,
-        PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
-        PERMISSIONS.CORE_TEAM_CHAT,
-        PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
-        PERMISSIONS.ACCESS_PROJECTS,
-        PERMISSIONS.SEND_MESSAGES,
-        PERMISSIONS.EXPORT_DATA,
-        PERMISSIONS.EDIT_DATA, // Allow core team to edit data including collections
-        PERMISSIONS.MANAGE_SUGGESTIONS,
-        PERMISSIONS.ACCESS_SANDWICH_DATA,
-        PERMISSIONS.ACCESS_WORK_LOGS,
-        PERMISSIONS.ACCESS_WEEKLY_MONITORING,
-        PERMISSIONS.ACCESS_EVENTS,
-        PERMISSIONS.ACCESS_DEVELOPMENT,
-        PERMISSIONS.MANAGE_WEEKLY_MONITORING,
-        PERMISSIONS.MANAGE_EVENTS,
-        PERMISSIONS.MANAGE_DEVELOPMENT
+        // Management permissions
+        PERMISSIONS.HOSTS_EDIT,
+        PERMISSIONS.RECIPIENTS_EDIT,
+        PERMISSIONS.DRIVERS_EDIT,
+        PERMISSIONS.USERS_EDIT, // Core team can manage users
+        PERMISSIONS.DISTRIBUTIONS_EDIT,
+        PERMISSIONS.EVENT_REQUESTS_EDIT,
+        PERMISSIONS.SUGGESTIONS_MANAGE,
+        
+        // Collection permissions
+        PERMISSIONS.COLLECTIONS_ADD,
+        PERMISSIONS.COLLECTIONS_WALKTHROUGH,
+        
+        // Project permissions  
+        PERMISSIONS.PROJECTS_ADD,
+        
+        // Communication
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.MESSAGES_SEND,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_HOST,
+        PERMISSIONS.CHAT_CORE_TEAM,
+        PERMISSIONS.CHAT_DIRECT,
+        
+        // Data and analytics
+        PERMISSIONS.DATA_EXPORT,
+        
+        // Kudos system
+        PERMISSIONS.KUDOS_SEND,
+        PERMISSIONS.KUDOS_RECEIVE,
+        PERMISSIONS.KUDOS_VIEW
       ];
 
     case USER_ROLES.DRIVER:
       return [
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_PROJECTS,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.ACCESS_SANDWICH_DATA,
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.DRIVER_CHAT,
-        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.SEND_KUDOS,
-        PERMISSIONS.RECEIVE_KUDOS,
-        PERMISSIONS.VIEW_KUDOS
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.PROJECTS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DRIVER,
+        PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.KUDOS_SEND,
+        PERMISSIONS.KUDOS_RECEIVE,
+        PERMISSIONS.KUDOS_VIEW
       ];
 
     case USER_ROLES.VOLUNTEER:
       return [
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_PROJECTS,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.CREATE_COLLECTIONS, // Can create collections (automatically can edit/delete own)
-        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections
-        PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
-        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.SEND_KUDOS,
-        PERMISSIONS.RECEIVE_KUDOS,
-        PERMISSIONS.VIEW_KUDOS
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.PROJECTS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.COLLECTIONS_ADD, // Can create collections (automatically can edit/delete own)
+        PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections
+        PERMISSIONS.PROJECTS_ADD, // Can create projects (automatically can edit/delete own)
+        PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.KUDOS_SEND,
+        PERMISSIONS.KUDOS_RECEIVE,
+        PERMISSIONS.KUDOS_VIEW
       ];
 
     case USER_ROLES.RECIPIENT:
       return [
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.RECIPIENT_CHAT,
-        PERMISSIONS.USE_COLLECTION_WALKTHROUGH, // Can use simplified walkthrough for collections (recipients who help with collections)
-        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.RECEIVE_KUDOS, // Recipients can receive kudos but not send them by default
-        PERMISSIONS.VIEW_KUDOS
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_RECIPIENT,
+        PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections (recipients who help with collections)
+        PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.KUDOS_RECEIVE, // Recipients can receive kudos but not send them by default
+        PERMISSIONS.KUDOS_VIEW
       ];
 
     case USER_ROLES.DEMO_USER:
