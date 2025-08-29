@@ -8,13 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
+interface Organization {
+  name: string;
+  contacts: Array<{ name: string; email?: string }>;
+  totalRequests: number;
+  lastRequestDate: string;
+}
+
 interface OrganizationContact {
   organizationName: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  department?: string;
+  contactName: string;
+  email?: string;
   latestRequestDate: string;
   totalRequests: number;
   status: 'new' | 'contacted' | 'completed';
@@ -27,24 +31,37 @@ export default function OrganizationsCatalog() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Fetch organizations data
-  const { data: organizations = [], isLoading, error } = useQuery({
-    queryKey: ['/api/event-requests/organizations-catalog'],
+  const { data: organizationsResponse, isLoading, error } = useQuery({
+    queryKey: ['/api/organizations-catalog'],
     queryFn: async () => {
-      const response = await fetch('/api/event-requests/organizations-catalog');
+      const response = await fetch('/api/organizations-catalog');
       if (!response.ok) throw new Error('Failed to fetch organizations');
-      return response.json() as OrganizationContact[];
+      return response.json();
     }
   });
+  
+  // Extract and flatten organizations from response
+  const rawOrganizations = organizationsResponse?.organizations || [];
+  
+  // Convert to flat structure for easier filtering and display
+  const organizations: OrganizationContact[] = rawOrganizations.flatMap((org: Organization) => 
+    org.contacts.map(contact => ({
+      organizationName: org.name,
+      contactName: contact.name,
+      email: contact.email,
+      latestRequestDate: org.lastRequestDate,
+      totalRequests: org.totalRequests,
+      status: 'new' as const // Default status for now
+    }))
+  );
 
   // Filter and sort organizations
   const filteredOrganizations = organizations
     .filter((org) => {
       const matchesSearch = 
         org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (org.phone && org.phone.includes(searchTerm));
+        org.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesStatus = statusFilter === "all" || org.status === statusFilter;
       
@@ -167,7 +184,7 @@ export default function OrganizationsCatalog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="organizationName">Organization</SelectItem>
-                <SelectItem value="firstName">Contact Name</SelectItem>
+                <SelectItem value="contactName">Contact Name</SelectItem>
                 <SelectItem value="latestRequestDate">Latest Request</SelectItem>
                 <SelectItem value="totalRequests">Total Requests</SelectItem>
               </SelectContent>
@@ -205,7 +222,7 @@ export default function OrganizationsCatalog() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredOrganizations.map((org, index) => (
-            <Card key={`${org.organizationName}-${org.email}-${index}`} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
+            <Card key={`${org.organizationName}-${org.contactName}-${index}`} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -219,30 +236,16 @@ export default function OrganizationsCatalog() {
                       <div className="flex items-center space-x-2">
                         <User className="w-4 h-4" style={{ color: '#236383' }} />
                         <span className="text-base font-semibold" style={{ color: '#236383' }}>
-                          {org.firstName} {org.lastName}
+                          {org.contactName}
                         </span>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <Mail className="w-4 h-4" style={{ color: '#236383' }} />
-                        <span className="text-sm font-medium" style={{ color: '#236383' }}>
-                          {org.email}
-                        </span>
-                      </div>
-                      
-                      {org.phone && (
+                      {org.email && (
                         <div className="flex items-center space-x-2">
-                          <Phone className="w-4 h-4" style={{ color: '#236383' }} />
+                          <Mail className="w-4 h-4" style={{ color: '#236383' }} />
                           <span className="text-sm font-medium" style={{ color: '#236383' }}>
-                            {org.phone}
+                            {org.email}
                           </span>
-                        </div>
-                      )}
-
-                      {org.department && (
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">{org.department}</span>
                         </div>
                       )}
                     </div>

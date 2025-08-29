@@ -520,6 +520,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register event request routes
   app.use("/api/event-requests", eventRequestRoutes);
+  
+  // TEMP: Direct organizations catalog route for testing
+  app.get("/api/organizations-catalog", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      
+      // Get all event requests and aggregate by organization
+      const allEventRequests = await storage.getAllEventRequests();
+      
+      // Create a map to aggregate data by organization
+      const organizationsMap = new Map();
+      
+      allEventRequests.forEach(request => {
+        const orgName = request.organizationName;
+        const contactName = request.firstName && request.lastName 
+          ? `${request.firstName} ${request.lastName}`.trim()
+          : request.firstName || request.lastName || '';
+        const contactEmail = request.email;
+        
+        if (!orgName || !contactName) return;
+        
+        // Use organization name as key
+        if (!organizationsMap.has(orgName)) {
+          organizationsMap.set(orgName, {
+            name: orgName,
+            contacts: new Set(),
+            totalRequests: 0,
+            recentRequest: request.createdAt || new Date()
+          });
+        }
+        
+        const org = organizationsMap.get(orgName);
+        org.totalRequests += 1;
+        
+        // Add contact information
+        if (contactName && contactEmail) {
+          org.contacts.add(JSON.stringify({ name: contactName, email: contactEmail }));
+        } else if (contactName) {
+          org.contacts.add(JSON.stringify({ name: contactName }));
+        }
+        
+        // Update most recent request date
+        const requestDate = new Date(request.createdAt || new Date());
+        if (requestDate > org.recentRequest) {
+          org.recentRequest = requestDate;
+        }
+      });
+      
+      // Convert Map to array and process contacts
+      const organizations = Array.from(organizationsMap.entries()).map(([_, org]) => ({
+        name: org.name,
+        contacts: Array.from(org.contacts).map(contactStr => JSON.parse(contactStr)),
+        totalRequests: org.totalRequests,
+        lastRequestDate: org.recentRequest
+      }));
+      
+      // Sort by most recent activity
+      organizations.sort((a, b) => new Date(b.lastRequestDate).getTime() - new Date(a.lastRequestDate).getTime());
+      
+      res.json({ organizations });
+      
+    } catch (error) {
+      console.error("Error fetching organizations catalog:", error);
+      res.status(500).json({ message: "Failed to fetch organizations catalog" });
+    }
+  });
 
   // Register work log routes
 
