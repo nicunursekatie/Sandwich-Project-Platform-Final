@@ -39,7 +39,7 @@ export default function CollectionFormSelector({ onSuccess, onCancel }: Collecti
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Standard Collection Form</h2>
-          {canUseWalkthrough && (
+{canUseWalkthrough && (
             <Button 
               variant="outline" 
               size="sm"
