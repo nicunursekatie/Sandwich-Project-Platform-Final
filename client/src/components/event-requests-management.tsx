@@ -514,7 +514,7 @@ export default function EventRequestsManagement() {
                         ) : (
                           <>
                             <Clock className="h-4 w-4 mr-1" />
-                            Mark Contacted
+                            Mark Initial Contact Complete
                           </>
                         )}
                       </Button>
