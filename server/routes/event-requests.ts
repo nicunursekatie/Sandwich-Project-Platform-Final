@@ -262,7 +262,7 @@ router.post("/sync/to-sheets", async (req, res) => {
     //   return res.status(403).json({ message: "Authentication required" });
     // }
 
-    const syncService = getEventRequestsGoogleSheetsService(storage);
+    const syncService = getEventRequestsGoogleSheetsService(storage as any);
     if (!syncService) {
       return res.status(500).json({ 
         success: false, 
@@ -271,7 +271,7 @@ router.post("/sync/to-sheets", async (req, res) => {
     }
 
     const result = await syncService.syncToGoogleSheets();
-    logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Synced ${result.synced || 0} event requests to Google Sheets`);
+    await logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Synced ${result.synced || 0} event requests to Google Sheets`);
     
     res.json(result);
   } catch (error) {
@@ -292,7 +292,7 @@ router.post("/sync/from-sheets", async (req, res) => {
     //   return res.status(403).json({ message: "Authentication required" });
     // }
 
-    const syncService = getEventRequestsGoogleSheetsService(storage);
+    const syncService = getEventRequestsGoogleSheetsService(storage as any);
     if (!syncService) {
       return res.status(500).json({ 
         success: false, 
@@ -301,7 +301,7 @@ router.post("/sync/from-sheets", async (req, res) => {
     }
 
     const result = await syncService.syncFromGoogleSheets();
-    logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, 
+    await logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, 
       `Synced from Google Sheets: ${result.created || 0} created, ${result.updated || 0} updated`);
     
     res.json(result);
@@ -323,7 +323,7 @@ router.get("/sync/analyze", async (req, res) => {
     //   return res.status(403).json({ message: "Insufficient permissions" });
     // }
 
-    const syncService = getEventRequestsGoogleSheetsService(storage);
+    const syncService = getEventRequestsGoogleSheetsService(storage as any);
     if (!syncService) {
       return res.status(500).json({ 
         success: false, 
@@ -332,7 +332,7 @@ router.get("/sync/analyze", async (req, res) => {
     }
 
     const analysis = await syncService.analyzeSheetStructure();
-    logActivity(req, res, "EVENT_REQUESTS_VIEW", "Analyzed Event Requests Google Sheet structure");
+    await logActivity(req, res, "EVENT_REQUESTS_VIEW", "Analyzed Event Requests Google Sheet structure");
     
     res.json({
       success: true,
