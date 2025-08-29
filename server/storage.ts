@@ -2161,8 +2161,3 @@ try {
 }
 
 export const storage = storageInstance;
-
-// Function export for backward compatibility
-export function getStorage(): IStorage {
-  return storageInstance;
-}
