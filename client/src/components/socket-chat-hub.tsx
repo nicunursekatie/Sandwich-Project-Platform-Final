@@ -293,8 +293,8 @@ export default function SocketChatHub() {
             .filter(room => {
               const requiredPermission = getRoomPermission(room.id);
               if (!requiredPermission) return true; // Allow access if no specific permission required
-              if (!user?.permissions) return false;
-              const userPermissions = Array.isArray(user.permissions) ? user.permissions : [];
+              if (!user || !(user as any)?.permissions) return false;
+              const userPermissions = Array.isArray((user as any).permissions) ? (user as any).permissions : [];
               return userPermissions.includes(requiredPermission);
             })
             .map((room) => (

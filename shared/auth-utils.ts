@@ -382,8 +382,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_HOSTS,
         PERMISSIONS.ACCESS_RECIPIENTS,
         PERMISSIONS.ACCESS_DRIVERS,
-        PERMISSIONS.ACCESS_VOLUNTEERS,
-        PERMISSIONS.ACCESS_DONATION_TRACKING,
+        PERMISSIONS.USERS_VIEW,
+        PERMISSIONS.DISTRIBUTIONS_VIEW,
         PERMISSIONS.ACCESS_COLLECTIONS,
         PERMISSIONS.ACCESS_CHAT,
         PERMISSIONS.ACCESS_MESSAGES,
@@ -393,10 +393,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.ACCESS_WORK_LOGS,
-        PERMISSIONS.ACCESS_WEEKLY_MONITORING,
-        PERMISSIONS.ACCESS_EVENTS,
-        PERMISSIONS.ACCESS_DEVELOPMENT,
-        PERMISSIONS.ACCESS_SIGNUP_GENIUS,
+        PERMISSIONS.ANALYTICS_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.ADMIN_ACCESS,
+        PERMISSIONS.TOOLKIT_ACCESS,
         
         // Chat permissions (read-only)
         PERMISSIONS.GENERAL_CHAT,
@@ -420,7 +420,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_TOOLKIT,
         PERMISSIONS.ACCESS_PROJECTS,
         PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.ACCESS_SANDWICH_DATA,
+        PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.VIEW_KUDOS // Viewers can only view kudos, not send or receive
       ];
@@ -471,7 +471,7 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 
 // Function to check if user has a specific permission
 export function hasPermission(user: any, permission: string): boolean {
-  if (!user || !user.permissions) return false;
+  if (!user || !user.permissions || !permission) return false;
   
   // Super admins get all permissions automatically
   if (user.role === "super_admin" || user.role === USER_ROLES.SUPER_ADMIN) return true;
