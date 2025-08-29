@@ -495,7 +495,7 @@ export default function EventRequestsManagement() {
                     <div className="text-sm text-gray-500">
                       <div>Submitted: {format(new Date(request.createdAt), "PPp")}</div>
                       {request.status === 'new' && (
-                        <div className="text-orange-600 font-medium">
+                        <div className="font-medium" style={{ color: '#236383' }}>
                           Waiting for contact ({Math.floor((Date.now() - new Date(request.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago)
                         </div>
                       )}
