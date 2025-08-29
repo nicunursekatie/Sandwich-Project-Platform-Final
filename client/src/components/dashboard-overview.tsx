@@ -354,23 +354,23 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             </div>
             <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Inventory Calculator</h4>
             <p className="text-xs sm:text-sm text-gray-600 mb-3 flex-1">Plan quantities for collections</p>
-            <div className="flex flex-col sm:flex-row gap-2 mt-auto">
+            <div className="flex flex-col gap-2 mt-auto">
               <Button
                 size="sm"
                 variant="default"
                 onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}
-                className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
+                className="w-full h-9 sm:h-10 text-sm sm:text-base font-medium"
               >
-                <ExternalLink className="w-3 h-3 mr-1" />
+                <ExternalLink className="w-4 h-4 mr-2" />
                 Open
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleShareInventoryCalculator}
-                className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
+                className="w-full h-9 sm:h-10 text-sm sm:text-base font-medium"
               >
-                <Share2 className="w-3 h-3 mr-1" />
+                <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
             </div>
@@ -446,27 +446,27 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 flex-1 flex flex-col overflow-hidden">
-                  <CardDescription className="mb-3 sm:mb-4 flex-1 text-sm sm:text-base leading-relaxed text-gray-600 overflow-hidden">
+                  <CardDescription className="mb-4 sm:mb-6 flex-1 text-sm sm:text-base leading-relaxed text-gray-600">
                     {doc.description}
                   </CardDescription>
-                  {/* Action buttons - fixed overflow with proper constraints */}
-                  <div className="flex flex-col gap-2 mt-auto flex-shrink-0">
+                  {/* Action buttons - with proper spacing and sizing */}
+                  <div className="flex flex-col gap-2 mt-auto">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => openPreviewModal(doc.path, doc.title, 'pdf')}
-                      className="w-full h-8 sm:h-9 text-xs sm:text-sm font-medium"
+                      className="w-full h-9 sm:h-10 text-sm sm:text-base font-medium"
                     >
-                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <Eye className="h-4 w-4 mr-2" />
                       Preview
                     </Button>
                     <Button
                       size="sm"
                       variant="default"
                       onClick={() => window.open(doc.path, '_blank')}
-                      className="w-full h-8 sm:h-9 text-xs sm:text-sm font-medium"
+                      className="w-full h-9 sm:h-10 text-sm sm:text-base font-medium"
                     >
-                      <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <ExternalLink className="h-4 w-4 mr-2" />
                       Download
                     </Button>
                   </div>
