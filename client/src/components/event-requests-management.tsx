@@ -25,7 +25,7 @@ interface EventRequest {
   desiredEventDate?: string;
   message?: string;
   previouslyHosted: 'yes' | 'no' | 'i_dont_know';
-  status: 'new' | 'contacted' | 'contact_completed' | 'in_planning' | 'scheduled' | 'completed' | 'declined';
+  status: 'new' | 'contact_completed' | 'scheduled' | 'completed' | 'declined';
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
@@ -55,9 +55,7 @@ interface EventRequest {
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
-  contacted: "bg-yellow-100 text-yellow-800",
   contact_completed: "bg-emerald-100 text-emerald-800",
-  in_planning: "bg-purple-100 text-purple-800",
   scheduled: "bg-green-100 text-green-800",
   completed: "bg-gray-100 text-gray-800",
   declined: "bg-red-100 text-red-800"
@@ -65,10 +63,8 @@ const statusColors = {
 
 const statusIcons = {
   new: Clock,
-  contacted: Mail,
   contact_completed: CheckCircle,
-  in_planning: Calendar,
-  scheduled: CheckCircle,
+  scheduled: Calendar,
   completed: CheckCircle,
   declined: XCircle
 };
@@ -81,9 +77,7 @@ const previouslyHostedOptions = [
 
 const statusOptions = [
   { value: "new", label: "New Request" },
-  { value: "contacted", label: "Contacted" },
   { value: "contact_completed", label: "Contact Completed" },
-  { value: "in_planning", label: "In Planning" },
   { value: "scheduled", label: "Scheduled" },
   { value: "completed", label: "Completed" },
   { value: "declined", label: "Declined" }
@@ -761,8 +755,8 @@ export default function EventRequestsManagement() {
                 </Select>
               </div>
 
-              {/* Advanced Planning Fields - Show only for in_planning or scheduled status */}
-              {((currentEditingStatus || selectedRequest.status) === 'in_planning' || (currentEditingStatus || selectedRequest.status) === 'scheduled') && (
+              {/* Advanced Planning Fields - Show for all statuses beyond "new" */}
+              {['contact_completed', 'scheduled', 'completed', 'declined'].includes(currentEditingStatus || selectedRequest.status) && (
                 <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Event Planning</h3>
                   

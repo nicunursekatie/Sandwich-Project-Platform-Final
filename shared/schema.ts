@@ -1079,7 +1079,7 @@ export const eventRequests = pgTable("event_requests", {
   previouslyHosted: varchar("previously_hosted").notNull().default("i_dont_know"), // 'yes', 'no', 'i_dont_know'
   
   // System tracking
-  status: varchar("status").notNull().default("new"), // 'new', 'contacted', 'in_planning', 'scheduled', 'completed', 'declined'
+  status: varchar("status").notNull().default("new"), // 'new', 'contact_completed', 'scheduled', 'completed', 'declined'
   assignedTo: varchar("assigned_to"), // User ID of person handling this request
   
   // Timeline tracking
