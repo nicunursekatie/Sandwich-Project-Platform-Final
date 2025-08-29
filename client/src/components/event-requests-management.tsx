@@ -627,35 +627,29 @@ export default function EventRequestsManagement() {
                         </Button>
                       )}
                       
-                      {/* Super admin only actions */}
-                      {/* Note: For future implementation when user context is available */}
-                      {/* {userPermissions?.includes('super_admin') && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowEditDialog(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm("Are you sure you want to delete this event request?")) {
-                                deleteMutation.mutate(request.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </>
-                      )} */}
+                      {/* Admin actions - small icon buttons */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setCurrentEditingStatus(request.status);
+                          setShowEditDialog(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this event request?")) {
+                            deleteMutation.mutate(request.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
