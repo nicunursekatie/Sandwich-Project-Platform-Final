@@ -1,5 +1,5 @@
 import { GoogleSheetsService, GoogleSheetsConfig } from './google-sheets-service';
-import { DatabaseStorage } from './database-storage';
+import type { IStorage } from './storage';
 import { EventRequest, Organization } from '@shared/schema';
 
 export interface EventRequestSheetRow {
@@ -20,7 +20,7 @@ export interface EventRequestSheetRow {
 }
 
 export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
-  constructor(private storage: DatabaseStorage) {
+  constructor(private storage: IStorage) {
     const config: GoogleSheetsConfig = {
       spreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID!,
       worksheetName: 'Sheet1'
@@ -286,7 +286,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 /**
  * Get the Event Requests Google Sheets service instance
  */
-export function getEventRequestsGoogleSheetsService(storage: DatabaseStorage): EventRequestsGoogleSheetsService | null {
+export function getEventRequestsGoogleSheetsService(storage: IStorage): EventRequestsGoogleSheetsService | null {
   try {
     if (!process.env.EVENT_REQUESTS_SHEET_ID) {
       console.warn('EVENT_REQUESTS_SHEET_ID not configured');

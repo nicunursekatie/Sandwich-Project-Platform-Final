@@ -29,8 +29,8 @@ interface EventRequest {
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
-  createdDate: string; // Field name from API
-  lastUpdated: string; // Field name from API
+  createdAt: string; // Field name from API  
+  updatedAt: string; // Field name from API
   createdBy?: string;
 }
 
@@ -492,7 +492,7 @@ export default function EventRequestsManagement() {
                   )}
                   <div className="flex justify-between items-center pt-3 border-t">
                     <span className="text-sm text-gray-500">
-                      Created: {format(new Date(request.createdDate), "PPp")}
+                      Created: {format(new Date(request.createdAt), "PPp")}
                     </span>
                     <div className="space-x-2">
                       <Button

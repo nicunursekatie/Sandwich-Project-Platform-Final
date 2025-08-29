@@ -1,9 +1,9 @@
 import { getGoogleSheetsService, SheetRow } from './google-sheets-service';
-import { DatabaseStorage } from './database-storage';
+import type { IStorage } from './storage';
 import { Project } from '@shared/schema';
 
 export class GoogleSheetsSyncService {
-  constructor(private storage: DatabaseStorage) {}
+  constructor(private storage: IStorage) {}
 
   /**
    * Sync projects from database to Google Sheets
@@ -446,7 +446,7 @@ export class GoogleSheetsSyncService {
 // Export singleton
 let syncService: GoogleSheetsSyncService | null = null;
 
-export function getGoogleSheetsSyncService(storage: DatabaseStorage): GoogleSheetsSyncService {
+export function getGoogleSheetsSyncService(storage: IStorage): GoogleSheetsSyncService {
   if (!syncService) {
     syncService = new GoogleSheetsSyncService(storage);
   }

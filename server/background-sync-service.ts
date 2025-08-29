@@ -1,4 +1,4 @@
-import { DatabaseStorage } from './database-storage';
+import type { IStorage } from './storage';
 import { GoogleSheetsSyncService } from './google-sheets-sync';
 import { getEventRequestsGoogleSheetsService } from './google-sheets-event-requests-sync';
 
@@ -6,7 +6,7 @@ export class BackgroundSyncService {
   private syncInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
 
-  constructor(private storage: DatabaseStorage) {}
+  constructor(private storage: IStorage) {}
 
   /**
    * Start automatic background sync every 5 minutes
@@ -118,7 +118,7 @@ export class BackgroundSyncService {
 // Global instance
 let backgroundSyncService: BackgroundSyncService | null = null;
 
-export function startBackgroundSync(storage: DatabaseStorage) {
+export function startBackgroundSync(storage: IStorage) {
   if (!backgroundSyncService) {
     backgroundSyncService = new BackgroundSyncService(storage);
   }

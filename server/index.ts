@@ -286,7 +286,8 @@ async function startServer() {
           console.log("✓ Database initialization complete");
 
           // Start automatic background sync for Google Sheets
-          const { storage } = await import("./database-storage");
+          const { getStorage } = await import("./storage");
+          const storage = getStorage();
           startBackgroundSync(storage);
           console.log("✓ Background Google Sheets sync started");
 

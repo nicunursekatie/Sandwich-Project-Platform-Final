@@ -1122,7 +1122,6 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   createdAt: true,
   updatedAt: true,
   duplicateCheckDate: true,
-  lastSyncedAt: true,
 });
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
