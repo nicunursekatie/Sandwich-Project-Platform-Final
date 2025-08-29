@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -136,6 +136,46 @@ export default function EventRequestsManagement() {
     }
   });
 
+  // Google Sheets sync mutations
+  const syncToSheetsMutation = useMutation({
+    mutationFn: () => apiRequest("/api/event-requests/sync/to-sheets", {
+      method: "POST"
+    }),
+    onSuccess: (data: any) => {
+      toast({ 
+        title: "Sync to Google Sheets successful", 
+        description: `${data.synced || 0} event requests synced to Google Sheets`
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error syncing to Google Sheets", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const syncFromSheetsMutation = useMutation({
+    mutationFn: () => apiRequest("/api/event-requests/sync/from-sheets", {
+      method: "POST"
+    }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      toast({ 
+        title: "Sync from Google Sheets successful", 
+        description: `${data.created || 0} created, ${data.updated || 0} updated`
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error syncing from Google Sheets", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
   const filteredRequests = useMemo(() => {
     return eventRequests.filter((request: EventRequest) => {
       const matchesSearch = !searchTerm || 
@@ -204,14 +244,48 @@ export default function EventRequestsManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Event Requests</h1>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Event Request
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+        <div className="flex space-x-2">
+          {/* Google Sheets Integration */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_EVENT_REQUESTS_SHEET_ID || '1GsiY_Nafzt_AYr4lXd-Nc-tKiCcSIc4_FW3lDJWX_ss'}/edit`, '_blank')}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Open Google Sheet
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => syncToSheetsMutation.mutate()}
+            disabled={syncToSheetsMutation.isPending}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            {syncToSheetsMutation.isPending ? "Syncing..." : "Sync to Sheets"}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => syncFromSheetsMutation.mutate()}
+            disabled={syncFromSheetsMutation.isPending}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {syncFromSheetsMutation.isPending ? "Syncing..." : "Sync from Sheets"}
+          </Button>
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Event Request
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Add Dialog moved outside header */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Event Request</DialogTitle>
               <DialogDescription>

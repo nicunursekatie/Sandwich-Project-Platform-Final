@@ -4,6 +4,7 @@ import { storage } from "../storage-wrapper";
 import { insertEventRequestSchema, insertOrganizationSchema } from "@shared/schema";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { createActivityLogger } from "../middleware/activity-logger";
+import { getEventRequestsGoogleSheetsService } from "../google-sheets-event-requests-sync";
 
 const router = Router();
 const logActivity = createActivityLogger("Event Requests");
@@ -203,6 +204,102 @@ router.post("/organizations", async (req, res) => {
     }
     console.error("Error creating organization:", error);
     res.status(500).json({ message: "Failed to create organization" });
+  }
+});
+
+// Google Sheets Sync Routes
+
+// Sync event requests TO Google Sheets
+router.post("/sync/to-sheets", async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
+    const syncService = getEventRequestsGoogleSheetsService(storage);
+    if (!syncService) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Google Sheets service not configured" 
+      });
+    }
+
+    const result = await syncService.syncToGoogleSheets();
+    logActivity(req, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Synced ${result.synced || 0} event requests to Google Sheets`);
+    
+    res.json(result);
+  } catch (error) {
+    console.error("Error syncing event requests to Google Sheets:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to sync to Google Sheets" 
+    });
+  }
+});
+
+// Sync event requests FROM Google Sheets
+router.post("/sync/from-sheets", async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
+    const syncService = getEventRequestsGoogleSheetsService(storage);
+    if (!syncService) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Google Sheets service not configured" 
+      });
+    }
+
+    const result = await syncService.syncFromGoogleSheets();
+    logActivity(req, PERMISSIONS.MANAGE_EVENT_REQUESTS, 
+      `Synced from Google Sheets: ${result.created || 0} created, ${result.updated || 0} updated`);
+    
+    res.json(result);
+  } catch (error) {
+    console.error("Error syncing event requests from Google Sheets:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to sync from Google Sheets" 
+    });
+  }
+});
+
+// Analyze Google Sheets structure
+router.get("/sync/analyze", async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
+    const syncService = getEventRequestsGoogleSheetsService(storage);
+    if (!syncService) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Google Sheets service not configured" 
+      });
+    }
+
+    const analysis = await syncService.analyzeSheetStructure();
+    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, "Analyzed Event Requests Google Sheet structure");
+    
+    res.json({
+      success: true,
+      analysis,
+      sheetUrl: `https://docs.google.com/spreadsheets/d/${process.env.EVENT_REQUESTS_SHEET_ID}/edit`,
+      targetSpreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID
+    });
+  } catch (error) {
+    console.error("Error analyzing Event Requests Google Sheet:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Google Sheets analysis failed. Please check API credentials.",
+      error: error.message 
+    });
   }
 });
 
