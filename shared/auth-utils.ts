@@ -205,6 +205,12 @@ export const PERMISSIONS = {
   ACCESS_DOCUMENTS: "DOCUMENTS_VIEW", // Legacy
   MANAGE_MEETINGS: "MEETINGS_MANAGE", // Legacy
   MANAGE_SUGGESTIONS: "SUGGESTIONS_MANAGE", // Legacy
+  
+  // Missing legacy mappings that navigation uses
+  VIEW_VOLUNTEERS: "USERS_VIEW", // Legacy
+  VIEW_WEEKLY_MONITORING: "ANALYTICS_VIEW", // Legacy  
+  ACCESS_WEEKLY_MONITORING: "ANALYTICS_VIEW", // Legacy
+  VIEW_GOVERNANCE: "DOCUMENTS_VIEW", // Legacy
 } as const;
 
 // Note: This application uses individual permission assignment, not role-based defaults
