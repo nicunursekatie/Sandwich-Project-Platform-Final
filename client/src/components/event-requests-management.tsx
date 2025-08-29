@@ -481,7 +481,7 @@ export default function EventRequestsManagement() {
                   {request.desiredEventDate && (
                     <p className="flex items-center">
                       <Calendar className="w-4 h-4 mr-2" />
-                      <strong>Desired Date:</strong> {format(new Date(request.desiredEventDate), "PPP")}
+                      <strong>Desired Date: </strong>{format(new Date(request.desiredEventDate), "PPP")}
                     </p>
                   )}
                   <p><strong>Previously Hosted:</strong> {
