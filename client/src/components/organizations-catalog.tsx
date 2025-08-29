@@ -252,7 +252,7 @@ export default function OrganizationsCatalog() {
                   </div>
                   <div className="flex flex-col items-end space-y-2">
                     {getStatusBadge(org.status)}
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs bg-[#FBAD3F] text-white hover:bg-[#FBAD3F]/90">
                       {org.totalRequests} request{org.totalRequests !== 1 ? 's' : ''}
                     </Badge>
                   </div>
