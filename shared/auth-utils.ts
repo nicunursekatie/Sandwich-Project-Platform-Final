@@ -471,7 +471,7 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 
 // Function to check if user has a specific permission
 export function hasPermission(user: any, permission: string): boolean {
-  if (!user || !user.permissions || !permission) return false;
+  if (!user || !user.permissions || !permission || typeof permission !== 'string') return false;
   
   // Super admins get all permissions automatically
   if (user.role === "super_admin" || user.role === USER_ROLES.SUPER_ADMIN) return true;

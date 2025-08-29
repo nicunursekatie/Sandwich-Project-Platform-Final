@@ -202,10 +202,10 @@ export default function EventRequestsManagement() {
   const filteredRequests = useMemo(() => {
     return eventRequests.filter((request: EventRequest) => {
       const matchesSearch = !searchTerm || 
-        request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.email.toLowerCase().includes(searchTerm.toLowerCase());
+        request.organizationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.email?.toLowerCase().includes(searchTerm.toLowerCase());
         
       const matchesStatus = statusFilter === "all" || request.status === statusFilter;
       

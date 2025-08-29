@@ -59,9 +59,9 @@ export default function OrganizationsCatalog() {
   const filteredOrganizations = organizations
     .filter((org) => {
       const matchesSearch = 
-        org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase()));
+        org.organizationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        org.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (org.email && org.email?.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesStatus = statusFilter === "all" || org.status === statusFilter;
       
