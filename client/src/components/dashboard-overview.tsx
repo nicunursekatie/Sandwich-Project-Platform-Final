@@ -80,7 +80,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
               height="125"
             />
           </div>
-          <p className="text-base sm:text-lg md:text-xl text-blue-700 font-medium">
+          <p className="text-base sm:text-lg md:text-xl font-medium" style={{ color: '#236383' }}>
             Community Impact Through Coordinated Action
           </p>
         </div>
@@ -90,7 +90,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           <div className="bg-white rounded-xl mx-3 sm:mx-4 md:mx-6 p-4 sm:p-6 shadow-lg">
             <div className="text-center">
               <div className="mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-blue-700 mb-2">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2" style={{ color: '#236383' }}>
                   Record Collection Data
                 </h2>
                 {showCollectionForm && (
@@ -101,13 +101,19 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
                 <Button 
-                  className="bg-orange-400 hover:bg-orange-500 text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
+                  className="text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
+                  style={{ backgroundColor: '#FBAD3F' }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#e09527'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#FBAD3F'}
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
                 >
                   {showCollectionForm ? "Hide Form" : "Enter New Collection Data"}
                 </Button>
                 <Button 
-                  className="bg-white border border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
+                  className="bg-white border font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
+                  style={{ borderColor: '#007E8C', color: '#007E8C' }}
+                  onMouseEnter={(e) => { e.target.style.backgroundColor = '#007E8C'; e.target.style.color = 'white'; }}
+                  onMouseLeave={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = '#007E8C'; }}
                   onClick={() => onSectionChange?.('collections')}
                 >
                   View Collection History
@@ -134,15 +140,15 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         <div className="mx-3 sm:mx-4 md:mx-6 mb-8 sm:mb-12">
           <div className="bg-white rounded-xl p-6 sm:p-8 md:p-12 text-center shadow-lg">
             <div className="mb-3 sm:mb-4">
-              <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-orange-400 tracking-tight">
+              <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight" style={{ color: '#FBAD3F' }}>
                 <AnimatedCounter value={statsData?.completeTotalSandwiches || 0} />
               </h1>
               <div className="flex items-center justify-center gap-3 mt-4">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <p className="text-sm xs:text-base sm:text-lg md:text-xl text-blue-700 font-medium">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#236383' }}></div>
+                <p className="text-sm xs:text-base sm:text-lg md:text-xl font-medium" style={{ color: '#236383' }}>
                   Total sandwiches distributed since 2020
                 </p>
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#236383' }}></div>
               </div>
             </div>
             <div className="text-sm text-gray-600 border-t border-gray-200 pt-6 mt-6">
@@ -154,11 +160,11 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         {/* Simple Documents Section */}
         <div className="bg-white rounded-xl mx-3 sm:mx-4 md:mx-6 mt-6 sm:mt-8 p-4 sm:p-6 shadow-lg">
           <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-400 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FBAD3F' }}>
               <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-blue-700">Important Documents</h2>
+              <h2 className="text-lg sm:text-xl font-semibold" style={{ color: '#236383' }}>Important Documents</h2>
               <p className="text-xs sm:text-sm text-gray-600">Essential organizational resources</p>
             </div>
           </div>
@@ -166,21 +172,21 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md">
               <h3 className="font-semibold mb-2">Key Findings: Peak Collection Weeks</h3>
               <p className="text-sm text-gray-600 mb-3">Comprehensive analysis of peak performance and organizational growth</p>
-              <button className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#1e5470'} onMouseLeave={(e) => e.target.style.backgroundColor = '#236383'}>
                 Download PDF
               </button>
             </div>
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md">
               <h3 className="font-semibold mb-2">Food Safety Guidelines</h3>
               <p className="text-sm text-gray-600 mb-3">Essential safety protocols for volunteers</p>
-              <button className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#1e5470'} onMouseLeave={(e) => e.target.style.backgroundColor = '#236383'}>
                 Download PDF
               </button>
             </div>
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md">
               <h3 className="font-semibold mb-2">Volunteer Driver Agreement</h3>
               <p className="text-sm text-gray-600 mb-3">Required agreement form for volunteer drivers</p>
-              <button className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#1e5470'} onMouseLeave={(e) => e.target.style.backgroundColor = '#236383'}>
                 Download PDF
               </button>
             </div>
