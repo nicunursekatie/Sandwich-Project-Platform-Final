@@ -138,9 +138,7 @@ export default function EventRequestsManagement() {
 
   // Google Sheets sync mutations
   const syncToSheetsMutation = useMutation({
-    mutationFn: () => apiRequest("/api/event-requests/sync/to-sheets", {
-      method: "POST"
-    }),
+    mutationFn: () => apiRequest("POST", "/api/event-requests/sync/to-sheets"),
     onSuccess: (data: any) => {
       toast({ 
         title: "Sync to Google Sheets successful", 
@@ -157,9 +155,7 @@ export default function EventRequestsManagement() {
   });
 
   const syncFromSheetsMutation = useMutation({
-    mutationFn: () => apiRequest("/api/event-requests/sync/from-sheets", {
-      method: "POST"
-    }),
+    mutationFn: () => apiRequest("POST", "/api/event-requests/sync/from-sheets"),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({ 
