@@ -752,6 +752,13 @@ const PERMISSION_CATEGORIES = [
         icon: Settings,
         dangerLevel: "elevated"
       },
+      { 
+        key: PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG, 
+        label: "View organizations catalog", 
+        description: "Access to organizations directory from event requests",
+        icon: Building,
+        dangerLevel: "safe"
+      },
     ]
   },
   {

@@ -118,6 +118,7 @@ export const PERMISSIONS = {
   DELETE_EVENT_REQUESTS: "delete_event_requests", // Delete event requests
   ASSIGN_EVENT_REQUESTS: "assign_event_requests", // Assign event requests to team members
   MANAGE_EVENT_REQUESTS: "manage_event_requests", // Full event request management including Google Sheets sync
+  VIEW_ORGANIZATIONS_CATALOG: "view_organizations_catalog", // View organizations catalog from event requests
 
   // Simplified work log permissions - CREATE automatically includes edit/delete own
   CREATE_WORK_LOGS: "create_work_logs", // Create new work logs + automatically edit/delete own work logs
@@ -300,6 +301,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.EDIT_EVENT_REQUESTS,
         PERMISSIONS.DELETE_EVENT_REQUESTS,
         PERMISSIONS.ASSIGN_EVENT_REQUESTS,
+        PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
         PERMISSIONS.CORE_TEAM_CHAT,
         PERMISSIONS.CREATE_PROJECTS, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.ACCESS_PROJECTS,

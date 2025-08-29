@@ -339,7 +339,12 @@ router.get("/sync/analyze", async (req, res) => {
 router.get("/organizations-catalog", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
+    console.log("🔍 Organizations catalog GET - User debug:", {
+      userExists: !!user,
+      sessionExists: !!req.session,
+      sessionUser: req.session?.user?.email || "none"
+    });
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -384,7 +389,7 @@ router.get("/organizations-catalog", async (req, res) => {
     // Convert map to array
     const organizations = Array.from(organizationMap.values());
     
-    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, `Retrieved organizations catalog: ${organizations.length} organizations`);
+    logActivity(req, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG, `Retrieved organizations catalog: ${organizations.length} organizations`);
     res.json(organizations);
   } catch (error) {
     console.error("Error fetching organizations catalog:", error);
