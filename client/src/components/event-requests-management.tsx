@@ -9,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -51,6 +52,12 @@ interface EventRequest {
   pickupTime?: string;
   additionalRequirements?: string;
   planningNotes?: string;
+  
+  // Event details completion fields
+  toolkitStatus?: string;
+  tspContact?: string;
+  additionalTspContacts?: string;
+  customTspContact?: string;
 }
 
 const statusColors = {
@@ -94,6 +101,7 @@ export default function EventRequestsManagement() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
   const [detailsRequest, setDetailsRequest] = useState<EventRequest | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -319,6 +327,30 @@ export default function EventRequestsManagement() {
         <Icon className="w-3 h-3 mr-1" />
         {option?.label || status}
       </Badge>
+    );
+  };
+
+  const toggleCardExpansion = (requestId: number) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(requestId)) {
+        newSet.delete(requestId);
+      } else {
+        newSet.add(requestId);
+      }
+      return newSet;
+    });
+  };
+
+  const hasAdvancedDetails = (request: EventRequest) => {
+    return !!(
+      (request as any).toolkitStatus ||
+      (request as any).eventStartTime ||
+      (request as any).eventEndTime ||
+      (request as any).pickupTime ||
+      (request as any).tspContact ||
+      (request as any).customTspContact ||
+      (request as any).planningNotes
     );
   };
 
@@ -675,32 +707,91 @@ export default function EventRequestsManagement() {
                         </div>
                       )}
                       
-                      {/* Prominent Toolkit Status Display */}
-                      {(request as any).toolkitStatus && (
-                        <div className="mt-2 p-3 border-l-4 border-teal-500 bg-teal-50 rounded">
-                          <div className="font-semibold text-teal-800 text-sm">
-                            Toolkit Status: {(() => {
-                              const status = (request as any).toolkitStatus;
-                              switch (status) {
-                                case 'not_sent': return '⏳ Not Yet Sent';
-                                case 'sent': return '✓ Sent';
-                                case 'received_confirmed': return '✓✓ Received & Confirmed';
-                                case 'not_needed': return 'N/A - Not Needed';
-                                default: return status;
+                      {/* Advanced Event Details - Collapsible */}
+                      {hasAdvancedDetails(request) && (
+                        <div className="mt-2">
+                          <Collapsible 
+                            open={expandedCards.has(request.id)} 
+                            onOpenChange={() => toggleCardExpansion(request.id)}
+                          >
+                            <CollapsibleTrigger className="flex items-center w-full p-3 border-l-4 border-teal-500 bg-teal-50 rounded hover:bg-teal-100 transition-colors">
+                              <div className="flex-1 text-left">
+                                <div className="font-semibold text-teal-800 text-sm flex items-center">
+                                  📋 Advanced Event Details
+                                  {(request as any).toolkitStatus && (
+                                    <span className="ml-2 text-xs">
+                                      | Toolkit: {(() => {
+                                        const status = (request as any).toolkitStatus;
+                                        switch (status) {
+                                          case 'not_sent': return '⏳ Pending';
+                                          case 'sent': return '✓ Sent';
+                                          case 'received_confirmed': return '✓✓ Confirmed';
+                                          case 'not_needed': return 'N/A';
+                                          default: return status;
+                                        }
+                                      })()}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-teal-600 mt-1">Click to {expandedCards.has(request.id) ? 'collapse' : 'expand'} details</div>
+                              </div>
+                              {expandedCards.has(request.id) ? 
+                                <ChevronUp className="w-4 h-4 text-teal-600" /> : 
+                                <ChevronDown className="w-4 h-4 text-teal-600" />
                               }
-                            })()}
-                          </div>
-                          {(request as any).eventStartTime && (
-                            <div className="text-sm text-teal-700 mt-1">
-                              Event: {(request as any).eventStartTime}
-                              {(request as any).eventEndTime && ` - ${(request as any).eventEndTime}`}
-                            </div>
-                          )}
-                          {(request as any).pickupTime && (
-                            <div className="text-sm text-teal-700">
-                              Pickup: {(request as any).pickupTime}
-                            </div>
-                          )}
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="p-3 border-l-4 border-teal-300 bg-teal-25 rounded-b space-y-2">
+                                {(request as any).toolkitStatus && (
+                                  <div className="text-sm">
+                                    <strong className="text-teal-800">Toolkit Status:</strong> {(() => {
+                                      const status = (request as any).toolkitStatus;
+                                      switch (status) {
+                                        case 'not_sent': return '⏳ Not Yet Sent';
+                                        case 'sent': return '✓ Sent';
+                                        case 'received_confirmed': return '✓✓ Received & Confirmed';
+                                        case 'not_needed': return 'N/A - Not Needed';
+                                        default: return status;
+                                      }
+                                    })()}
+                                  </div>
+                                )}
+                                {((request as any).eventStartTime || (request as any).eventEndTime) && (
+                                  <div className="text-sm">
+                                    <strong className="text-teal-800">Event Time:</strong> {(request as any).eventStartTime}
+                                    {(request as any).eventEndTime && ` - ${(request as any).eventEndTime}`}
+                                  </div>
+                                )}
+                                {(request as any).pickupTime && (
+                                  <div className="text-sm">
+                                    <strong className="text-teal-800">Pickup Time:</strong> {(request as any).pickupTime}
+                                  </div>
+                                )}
+                                {(request as any).tspContact && (
+                                  <div className="text-sm">
+                                    <strong className="text-teal-800">TSP Contact:</strong> {(() => {
+                                      const contact = users.find((user: any) => user.id === (request as any).tspContact);
+                                      return contact 
+                                        ? (contact.firstName && contact.lastName 
+                                            ? `${contact.firstName} ${contact.lastName}` 
+                                            : contact.displayName || contact.email)
+                                        : (request as any).tspContact;
+                                    })()}
+                                  </div>
+                                )}
+                                {(request as any).customTspContact && (
+                                  <div className="text-sm">
+                                    <strong className="text-teal-800">Additional Contact Info:</strong> {(request as any).customTspContact}
+                                  </div>
+                                )}
+                                {(request as any).planningNotes && (
+                                  <div className="text-sm">
+                                    <strong className="text-teal-800">Planning Notes:</strong> {(request as any).planningNotes}
+                                  </div>
+                                )}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
                         </div>
                       )}
                     </div>
@@ -734,15 +825,8 @@ export default function EventRequestsManagement() {
                         </Button>
                       )}
 
-                      {/* Complete Event Details - only for manually entered events without advanced details */}
-                      {request.status !== 'new' && 
-                       !(request as any).toolkitStatus && 
-                       !(request as any).eventStartTime && 
-                       !(request as any).eventEndTime && 
-                       !(request as any).pickupTime && 
-                       !(request as any).tspContact && 
-                       !(request as any).customTspContact && 
-                       !(request as any).planningNotes && (
+                      {/* Event Details Button - Show based on whether advanced details exist */}
+                      {request.status !== 'new' && (
                         <Button
                           variant="default"
                           size="sm"
@@ -753,7 +837,7 @@ export default function EventRequestsManagement() {
                           className="bg-teal-600 hover:bg-teal-700 text-white"
                         >
                           <Calendar className="h-4 w-4 mr-1" />
-                          Complete Event Details
+                          {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
                         </Button>
                       )}
                     </div>
@@ -1172,12 +1256,12 @@ export default function EventRequestsManagement() {
 
                 <div>
                   <Label htmlFor="additionalTspContacts" className="text-sm">Additional TSP Contacts</Label>
-                  <Select name="additionalTspContacts" defaultValue={detailsRequest.additionalTspContacts || ""}>
+                  <Select name="additionalTspContacts" defaultValue={detailsRequest.additionalTspContacts || "none"}>
                     <SelectTrigger>
                       <SelectValue placeholder="Add secondary contact (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {users.map((user: any) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.firstName && user.lastName 
