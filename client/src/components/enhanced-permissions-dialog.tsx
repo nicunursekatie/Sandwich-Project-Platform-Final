@@ -696,6 +696,65 @@ const PERMISSION_CATEGORIES = [
     ]
   },
   {
+    id: "event_requests",
+    label: "🎉 Event Requests",
+    description: "Event planning and organization management",
+    icon: Calendar,
+    color: "bg-purple-50 border-purple-200",
+    iconColor: "text-purple-600",
+    permissions: [
+      { 
+        key: PERMISSIONS.ACCESS_EVENT_REQUESTS, 
+        label: "View event requests", 
+        description: "Access to view event request information",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.VIEW_EVENT_REQUESTS, 
+        label: "View event requests (granular)", 
+        description: "Granular permission to view event request details",
+        icon: Eye,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.ADD_EVENT_REQUESTS, 
+        label: "Create event requests", 
+        description: "Create new event requests for organizations",
+        icon: Plus,
+        dangerLevel: "safe"
+      },
+      { 
+        key: PERMISSIONS.EDIT_EVENT_REQUESTS, 
+        label: "Edit event requests", 
+        description: "Modify existing event request information",
+        icon: Edit,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.DELETE_EVENT_REQUESTS, 
+        label: "Delete event requests", 
+        description: "Remove event requests from the system",
+        icon: Trash2,
+        dangerLevel: "high"
+      },
+      { 
+        key: PERMISSIONS.ASSIGN_EVENT_REQUESTS, 
+        label: "Assign event requests", 
+        description: "Assign event requests to team members",
+        icon: UserCheck,
+        dangerLevel: "elevated"
+      },
+      { 
+        key: PERMISSIONS.MANAGE_EVENT_REQUESTS, 
+        label: "Manage event requests", 
+        description: "Full management of event requests system",
+        icon: Settings,
+        dangerLevel: "elevated"
+      },
+    ]
+  },
+  {
     id: "administration",
     label: "👥 Administration",
     description: "User and system administration",
@@ -801,7 +860,8 @@ const PERMISSION_PRESETS = [
       'GENERAL_CHAT',
       PERMISSIONS.ACCESS_HOSTS,
       PERMISSIONS.ACCESS_RECIPIENTS,
-      PERMISSIONS.ACCESS_DRIVERS
+      PERMISSIONS.ACCESS_DRIVERS,
+      PERMISSIONS.ACCESS_EVENT_REQUESTS
     ]
   },
   {
@@ -815,6 +875,7 @@ const PERMISSION_PRESETS = [
       PERMISSIONS.ACCESS_DRIVERS,
       PERMISSIONS.ACCESS_VOLUNTEERS,
       PERMISSIONS.ACCESS_DONATION_TRACKING,
+      PERMISSIONS.ACCESS_EVENT_REQUESTS,
       PERMISSIONS.ACCESS_COLLECTIONS,
       PERMISSIONS.ACCESS_CHAT,
       PERMISSIONS.ACCESS_MESSAGES,
