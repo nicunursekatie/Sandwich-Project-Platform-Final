@@ -64,7 +64,7 @@ app.use(compression({
     const contentType = res.get('content-type');
     if (!contentType) return false;
     
-    return /text|javascript|json|css|html|xml|svg/.test(contentType) ||
+    return /(text|javascript|json|css|html|xml|svg)/.test(contentType) ||
            contentType.includes('application/json') ||
            contentType.includes('application/javascript') ||
            contentType.includes('text/');
