@@ -700,8 +700,15 @@ export default function EventRequestsManagement() {
                         </Button>
                       )}
 
-                      {/* Complete Event Details - for events beyond "new" phase */}
-                      {request.status !== 'new' && (
+                      {/* Complete Event Details - only for manually entered events without advanced details */}
+                      {request.status !== 'new' && 
+                       !(request as any).toolkitStatus && 
+                       !(request as any).eventStartTime && 
+                       !(request as any).eventEndTime && 
+                       !(request as any).pickupTime && 
+                       !(request as any).tspContact && 
+                       !(request as any).customTspContact && 
+                       !(request as any).planningNotes && (
                         <Button
                           variant="default"
                           size="sm"
