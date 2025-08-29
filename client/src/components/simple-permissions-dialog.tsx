@@ -209,7 +209,7 @@ const PERMISSION_GROUPS = [
     type: "directory",
     permissions: [
       {
-        key: PERMISSIONS.ACCESS_DIRECTORY,
+        key: PERMISSIONS.HOSTS_VIEW,
         label: "Basic Directory Access",
         icon: Phone,
         description: "View basic contact information",
@@ -288,10 +288,34 @@ const PERMISSION_GROUPS = [
         description: "Access recipient-specific chat room",
       },
       {
-        key: PERMISSIONS.COMMITTEE_CHAT,
-        label: "Committee Chat",
+        key: PERMISSIONS.CHAT_GRANTS_COMMITTEE,
+        label: "Grants Committee Chat",
         icon: Users,
-        description: "Access committee chat room",
+        description: "Access grants committee chat",
+      },
+      {
+        key: PERMISSIONS.CHAT_EVENTS_COMMITTEE,
+        label: "Events Committee Chat",
+        icon: Users,
+        description: "Access events committee chat",
+      },
+      {
+        key: PERMISSIONS.CHAT_BOARD,
+        label: "Board Chat",
+        icon: Users,
+        description: "Access board chat",
+      },
+      {
+        key: PERMISSIONS.CHAT_WEB_COMMITTEE,
+        label: "Web Committee Chat",
+        icon: Users,
+        description: "Access web committee chat",
+      },
+      {
+        key: PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT,
+        label: "Volunteer Management Chat",
+        icon: Users,
+        description: "Access volunteer management chat",
       },
       {
         key: PERMISSIONS.CORE_TEAM_CHAT,
@@ -383,13 +407,13 @@ const PERMISSION_GROUPS = [
         description: "Show Analytics in Operations",
       },
       {
-        key: PERMISSIONS.ACCESS_REPORTS,
+        key: PERMISSIONS.ANALYTICS_VIEW,
         label: "Reports Section",
         icon: FileText,
         description: "Show Reports in Operations",
       },
       {
-        key: PERMISSIONS.ACCESS_SANDWICH_DATA,
+        key: PERMISSIONS.COLLECTIONS_VIEW,
         label: "Sandwich Data",
         icon: PieChart,
         description: "Access to sandwich totals data sheet",
@@ -453,7 +477,7 @@ const PERMISSION_GROUPS = [
         description: "Upload bulk data from files",
       },
       {
-        key: PERMISSIONS.SCHEDULE_REPORTS,
+        key: PERMISSIONS.DATA_EXPORT,
         label: "Schedule Reports",
         icon: Calendar,
         description: "Set up automated reporting",
@@ -621,14 +645,14 @@ export function SimplePermissionsDialog({
                   onClick={() => {
                     // Common viewer permissions - view-only access
                     const viewerPermissions = [
-                      PERMISSIONS.ACCESS_DIRECTORY,
+                      PERMISSIONS.HOSTS_VIEW,
                       PERMISSIONS.ACCESS_COLLECTIONS,
                       PERMISSIONS.ACCESS_HOSTS,
                       PERMISSIONS.ACCESS_RECIPIENTS,
                       PERMISSIONS.ACCESS_DRIVERS,
                       PERMISSIONS.ACCESS_PROJECTS,
                       PERMISSIONS.ACCESS_TOOLKIT,
-                      PERMISSIONS.ACCESS_SANDWICH_DATA,
+                      PERMISSIONS.COLLECTIONS_VIEW,
                       PERMISSIONS.GENERAL_CHAT,
                     ];
                     setSelectedPermissions(viewerPermissions);

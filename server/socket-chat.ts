@@ -48,7 +48,11 @@ export function setupSocketChat(httpServer: HttpServer) {
       const availableRooms = [
         { id: "general", name: "General Chat" },
         { id: "core-team", name: "Core Team" },
-        { id: "committee", name: "Committee" },
+        { id: "grants-committee", name: "Grants Committee" },
+        { id: "events-committee", name: "Events Committee" },
+        { id: "board-chat", name: "Board Chat" },
+        { id: "web-committee", name: "Web Committee" },
+        { id: "volunteer-management", name: "Volunteer Management" },
         { id: "host", name: "Host Chat" },
         { id: "driver", name: "Driver Chat" },
         { id: "recipient", name: "Recipient Chat" }
@@ -216,6 +220,7 @@ export function setupSocketChat(httpServer: HttpServer) {
           content: newContent,
           timestamp: new Date(),
           channel: messageToEdit.channel,
+          room: messageToEdit.channel,
           edited: true
         };
 

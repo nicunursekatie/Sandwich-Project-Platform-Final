@@ -29,7 +29,11 @@ const getRoomIcon = (roomId: string) => {
   switch (roomId) {
     case "general": return <Hash className="h-4 w-4" />;
     case "core-team": return <Shield className="h-4 w-4" />;
-    case "committee": return <Users className="h-4 w-4" />;
+    case "grants-committee": return <Users className="h-4 w-4" />;
+    case "events-committee": return <Users className="h-4 w-4" />;
+    case "board-chat": return <Users className="h-4 w-4" />;
+    case "web-committee": return <Users className="h-4 w-4" />;
+    case "volunteer-management": return <Users className="h-4 w-4" />;
     case "host": return <Heart className="h-4 w-4" />;
     case "driver": return <Truck className="h-4 w-4" />;
     case "recipient": return <MessageSquare className="h-4 w-4" />;
@@ -40,12 +44,33 @@ const getRoomIcon = (roomId: string) => {
 const getRoomColor = (roomId: string) => {
   switch (roomId) {
     case "general": return "bg-blue-100 text-blue-800";
-    case "core_team": return "bg-red-100 text-red-800";
-    case "committee": return "bg-purple-100 text-purple-800";
-    case "hosts": return "bg-green-100 text-green-800";
-    case "drivers": return "bg-orange-100 text-orange-800";
-    case "recipients": return "bg-pink-100 text-pink-800";
+    case "core-team": return "bg-red-100 text-red-800";
+    case "grants-committee": return "bg-purple-100 text-purple-800";
+    case "events-committee": return "bg-purple-100 text-purple-800";
+    case "board-chat": return "bg-purple-100 text-purple-800";
+    case "web-committee": return "bg-purple-100 text-purple-800";
+    case "volunteer-management": return "bg-purple-100 text-purple-800";
+    case "host": return "bg-green-100 text-green-800";
+    case "driver": return "bg-orange-100 text-orange-800";
+    case "recipient": return "bg-pink-100 text-pink-800";
     default: return "bg-gray-100 text-gray-800";
+  }
+};
+
+// Helper function to get required permission for each room
+const getRoomPermission = (roomId: string): string | null => {
+  switch (roomId) {
+    case "general": return "CHAT_GENERAL";
+    case "core-team": return "CHAT_CORE_TEAM";
+    case "grants-committee": return "CHAT_GRANTS_COMMITTEE";
+    case "events-committee": return "CHAT_EVENTS_COMMITTEE";
+    case "board-chat": return "CHAT_BOARD";
+    case "web-committee": return "CHAT_WEB_COMMITTEE";
+    case "volunteer-management": return "CHAT_VOLUNTEER_MANAGEMENT";
+    case "host": return "CHAT_HOST";
+    case "driver": return "CHAT_DRIVER";
+    case "recipient": return "CHAT_RECIPIENT";
+    default: return null;
   }
 };
 
@@ -264,7 +289,15 @@ export default function SocketChatHub() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          {rooms.map((room) => (
+          {rooms
+            .filter(room => {
+              const requiredPermission = getRoomPermission(room.id);
+              if (!requiredPermission) return true; // Allow access if no specific permission required
+              if (!user?.permissions) return false;
+              const userPermissions = Array.isArray(user.permissions) ? user.permissions : [];
+              return userPermissions.includes(requiredPermission);
+            })
+            .map((room) => (
             <div key={room.id} className={`rounded border ${
               currentRoom === room.id ? 'bg-[#236383] border-[#236383]' : 'bg-white border-gray-200 hover:border-gray-300'
             } transition-colors`}>
@@ -343,7 +376,11 @@ export default function SocketChatHub() {
                     <p className="text-blue-100 text-sm truncate hidden sm:block">
                       {currentRoom === 'general' && 'Open discussion for all team members'}
                       {currentRoom === 'core-team' && 'Core team coordination'}
-                      {currentRoom === 'committee' && 'Committee discussions'}
+                      {currentRoom === 'grants-committee' && 'Grants and funding discussions'}
+                      {currentRoom === 'events-committee' && 'Event planning and coordination'}
+                      {currentRoom === 'board-chat' && 'Board member governance'}
+                      {currentRoom === 'web-committee' && 'Website and digital strategy'}
+                      {currentRoom === 'volunteer-management' && 'Volunteer coordination'}
                       {currentRoom === 'host' && 'Host coordination'}
                       {currentRoom === 'driver' && 'Driver coordination'}
                       {currentRoom === 'recipient' && 'Recipient communication'}
