@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from './storage';
 import { insertSuggestionSchema, insertSuggestionResponseSchema } from "@shared/schema";
-import { isAuthenticated, requirePermission } from './temp-auth';
+import { isAuthenticated } from './temp-auth';
+import { requirePermission } from './middleware/auth';
 import { PERMISSIONS } from "@shared/auth-utils";
 import { sendSuggestionNotification } from './sendgrid';
 

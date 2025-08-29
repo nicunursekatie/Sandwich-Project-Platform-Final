@@ -6,7 +6,8 @@ import { insertRecipientTspContactSchema } from "@shared/schema";
 import { z } from "zod";
 
 import { PERMISSIONS } from "@shared/auth-utils";
-import { isAuthenticated as requireAuth, requirePermission } from "../temp-auth";
+import { isAuthenticated as requireAuth } from "../temp-auth";
+import { requirePermission } from "../middleware/auth";
 
 const router = Router();
 

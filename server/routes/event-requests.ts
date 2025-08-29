@@ -3,6 +3,8 @@ import { z } from "zod";
 import { storage } from "../storage-wrapper";
 import { insertEventRequestSchema, insertOrganizationSchema } from "@shared/schema";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
+import { requirePermission } from "../middleware/auth";
+import { isAuthenticated } from "../temp-auth";
 import { createActivityLogger } from "../middleware/activity-logger";
 import { getEventRequestsGoogleSheetsService } from "../google-sheets-event-requests-sync";
 
@@ -10,19 +12,8 @@ const router = Router();
 const logActivity = createActivityLogger("Event Requests");
 
 // Get all event requests
-router.get("/", async (req, res) => {
+router.get("/", isAuthenticated, requirePermission(PERMISSIONS.VIEW_EVENT_REQUESTS), async (req, res) => {
   try {
-    const user = req.user;
-    console.log("🔍 Event requests GET - User debug:", {
-      userExists: !!user,
-      sessionExists: !!req.session,
-      sessionUser: req.session?.user?.email || "none"
-    });
-    // Temporarily disable all auth checks for testing
-    // if (!user) {
-    //   return res.status(403).json({ message: "Authentication required" });
-    // }
-
     logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, "Retrieved all event requests");
     const eventRequests = await storage.getAllEventRequests();
     res.json(eventRequests);
@@ -33,12 +24,8 @@ router.get("/", async (req, res) => {
 });
 
 // Get event requests by status
-router.get("/status/:status", async (req, res) => {
+router.get("/status/:status", isAuthenticated, requirePermission(PERMISSIONS.VIEW_EVENT_REQUESTS), async (req, res) => {
   try {
-    const user = req.user;
-    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
 
     const { status } = req.params;
     logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, `Retrieved event requests with status: ${status}`);
@@ -51,12 +38,8 @@ router.get("/status/:status", async (req, res) => {
 });
 
 // Get single event request
-router.get("/:id", async (req, res) => {
+router.get("/:id", isAuthenticated, requirePermission(PERMISSIONS.VIEW_EVENT_REQUESTS), async (req, res) => {
   try {
-    const user = req.user;
-    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
 
     const id = parseInt(req.params.id);
     const eventRequest = await storage.getEventRequest(id);
@@ -74,12 +57,9 @@ router.get("/:id", async (req, res) => {
 });
 
 // Create new event request
-router.post("/", async (req, res) => {
+router.post("/", isAuthenticated, requirePermission(PERMISSIONS.ADD_EVENT_REQUESTS), async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, PERMISSIONS.ADD_EVENT_REQUESTS)) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
 
     const validatedData = insertEventRequestSchema.parse(req.body);
     

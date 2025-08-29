@@ -398,35 +398,3 @@ export const requireRole = (allowedRoles: string[]): RequestHandler => {
   };
 };
 
-// Permission-based authorization middleware
-export const requirePermission = (permission: string): RequestHandler => {
-  return async (req, res, next) => {
-    const user = req.user as any;
-
-    if (!req.isAuthenticated() || !user.claims?.sub) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    try {
-      const dbUser = await storage.getUser(user.claims.sub);
-      if (!dbUser || !dbUser.isActive) {
-        return res.status(401).json({ message: "User account not found or inactive" });
-      }
-
-      const permissions = Array.isArray(dbUser.permissions) ? dbUser.permissions : [];
-
-      // Admin role has all permissions
-      if (dbUser.role === 'admin' || permissions.includes(permission)) {
-        (req as any).currentUser = dbUser;
-        return next();
-      }
-
-      return res.status(403).json({ 
-        message: "Insufficient permissions",
-        required: permission 
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Error checking user permissions" });
-    }
-  };
-};

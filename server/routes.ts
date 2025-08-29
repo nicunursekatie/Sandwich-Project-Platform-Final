@@ -99,73 +99,8 @@ import { BackupManager } from "./operations/backup-manager";
 import { QueryOptimizer } from "./performance/query-optimizer";
 import { db } from "./db";
 import { StreamChat } from "stream-chat";
+import { requirePermission } from "./middleware/auth";
 
-// Permission middleware to check user roles and permissions
-const requirePermission = (permission: string) => {
-  return async (req: any, res: any, next: any) => {
-    try {
-      // Get user from session or req.user (temp auth sets req.user)
-      let user = req.user || req.session?.user;
-
-      if (!user) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      // Always fetch fresh user data from database to ensure permissions are current
-      if (user.email) {
-        try {
-          const freshUser = await storage.getUserByEmail(user.email);
-          if (freshUser) {
-            user = freshUser;
-            req.user = freshUser;
-          }
-        } catch (dbError) {
-          console.error("Database error in requirePermission:", dbError);
-          // Continue with session user if database fails
-        }
-      }
-
-      // Check if user has the required permission
-      const hasPermission = checkUserPermission(user, permission);
-
-      if (!hasPermission) {
-        return res.status(403).json({ message: "Insufficient permissions" });
-      }
-
-      next();
-    } catch (error) {
-      res.status(500).json({ message: "Permission check failed" });
-    }
-  };
-};
-
-// Helper function to check permissions
-const checkUserPermission = (user: any, permission: string): boolean => {
-  // Admin and super_admin have all permissions
-  if (user.role === "admin" || user.role === "super_admin") return true;
-
-  // Check if user has specific permission in permissions array
-  if (user.permissions && Array.isArray(user.permissions)) {
-    return user.permissions.includes(permission);
-  }
-
-  // Fallback role-based permission check
-  if (user.role === "coordinator") {
-    return !["manage_users", "system_admin"].includes(permission);
-  }
-
-  if (user.role === "volunteer") {
-    return ["read_collections", "general_chat", "volunteer_chat"].includes(
-      permission,
-    );
-  }
-
-  if (user.role === "viewer") {
-    return ["read_collections", "read_reports"].includes(permission);
-  }
-
-  return false;
-};
 
 // Configure multer for file uploads
 const upload = multer({
@@ -372,7 +307,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const {
     setupTempAuth,
     isAuthenticated,
-    requirePermission,
     initializeTempAuth,
   } = await import("./temp-auth");
   setupTempAuth(app);
