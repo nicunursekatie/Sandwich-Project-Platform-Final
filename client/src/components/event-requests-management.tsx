@@ -76,9 +76,18 @@ export default function EventRequestsManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: eventRequests = [], isLoading } = useQuery({
+  const { data: eventRequests = [], isLoading, error } = useQuery({
     queryKey: ["/api/event-requests"],
-    queryFn: () => apiRequest("/api/event-requests")
+    queryFn: () => apiRequest("/api/event-requests"),
+    refetchOnMount: true
+  });
+
+  // Debug logging
+  console.log("Event Requests Debug:", {
+    isLoading,
+    error,
+    eventRequestsCount: eventRequests?.length || 0,
+    eventRequests: eventRequests?.slice(0, 2) // Show first 2 for debugging
   });
 
   const createMutation = useMutation({
@@ -421,8 +430,14 @@ export default function EventRequestsManagement() {
       <div className="grid gap-4">
         {isLoading ? (
           <div className="text-center py-8">Loading event requests...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-500">Error loading event requests: {(error as Error)?.message}</div>
         ) : filteredRequests.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No event requests found</div>
+          <div className="text-center py-8 text-gray-500">
+            No event requests found. 
+            <br />
+            <small>Total requests: {eventRequests.length}, Filtered: {filteredRequests.length}</small>
+          </div>
         ) : (
           filteredRequests.map((request: EventRequest) => (
             <Card key={request.id} className="hover:shadow-md transition-shadow">
