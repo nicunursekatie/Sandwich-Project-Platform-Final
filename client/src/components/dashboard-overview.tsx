@@ -177,39 +177,39 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <img 
               src={CMYK_PRINT_TSP_01__2_} 
               alt="The Sandwich Project" 
-              className="w-[250px] md:w-[400px] mb-6 mx-auto" 
+              className="w-[200px] xs:w-[250px] sm:w-[300px] md:w-[400px] mb-4 sm:mb-6 mx-auto" 
               width="400"
               height="125"
             />
           </div>
-          <p className="text-lg md:text-xl text-[#236383] font-medium">
+          <p className="text-base sm:text-lg md:text-xl text-[#236383] font-medium">
             Community Impact Through Coordinated Action
           </p>
         </div>
 
         {/* Collection Call-to-Action */}
         {(hasPermission(user, PERMISSIONS.CREATE_COLLECTIONS) || hasPermission(user, PERMISSIONS.MANAGE_COLLECTIONS)) && (
-          <div className="bg-white rounded-xl mx-4 p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+          <div className="bg-white rounded-xl mx-3 sm:mx-4 md:mx-6 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="text-center">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-[#236383] mb-2">
+              <div className="mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-[#236383] mb-2">
                   Record Collection Data
                 </h2>
                 {showCollectionForm && (
-                  <p className="text-gray-700">
+                  <p className="text-sm sm:text-base text-gray-700">
                     Submit your sandwich contributions to help our community
                   </p>
                 )}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
                 <Button 
-                  className="bg-[#FBAD3F] hover:bg-[#e09a36] text-white font-medium py-4 px-8 rounded-lg transition-colors !text-lg sm:!text-sm min-h-[56px] sm:min-h-[40px]"
+                  className="bg-[#FBAD3F] hover:bg-[#e09a36] text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
                 >
                   {showCollectionForm ? "Hide Form" : "Enter New Collection Data"}
                 </Button>
                 <Button 
-                  className="bg-white border border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white font-medium py-4 px-8 rounded-lg transition-colors shadow-sm !text-lg sm:!text-sm min-h-[56px] sm:min-h-[40px]"
+                  className="bg-white border border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
                   onClick={() => onSectionChange?.('collections')}
                 >
                   View Collection History
@@ -219,7 +219,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
             {/* Embedded Collection Form - Full width on mobile */}
             {showCollectionForm && (
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <CollectionFormSelector 
                   onSuccess={() => {
                     setShowCollectionForm(false);
@@ -234,15 +234,15 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         )}
 
         {/* Hero Impact Section */}
-        <div className="mx-4 mb-12">
-          <div className="bg-white rounded-xl p-12 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-            <div className="mb-4">
-              <h1 className="text-7xl md:text-8xl font-black text-[#FBAD3F] tracking-tight">
+        <div className="mx-3 sm:mx-4 md:mx-6 mb-8 sm:mb-12">
+          <div className="bg-white rounded-xl p-6 sm:p-8 md:p-12 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+            <div className="mb-3 sm:mb-4">
+              <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[#FBAD3F] tracking-tight">
                 <AnimatedCounter value={statsData?.completeTotalSandwiches || 0} />
               </h1>
               <div className="flex items-center justify-center gap-3 mt-4">
                 <div className="w-2 h-2 bg-[#47B3CB] rounded-full"></div>
-                <p className="text-xl text-[#236383] font-medium">
+                <p className="text-sm xs:text-base sm:text-lg md:text-xl text-[#236383] font-medium">
                   Total sandwiches distributed since 2020
                 </p>
                 <div className="w-2 h-2 bg-[#47B3CB] rounded-full"></div>
@@ -255,7 +255,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mx-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mx-3 sm:mx-4 md:mx-6 mb-6 sm:mb-8">
           <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-semibold text-[#236383] uppercase tracking-wide">
@@ -303,51 +303,51 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         </div>
 
         {/* Operational Capacity - Clean Design with Brand Color Accents */}
-        <div className="mx-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-            <h2 className="text-lg font-semibold text-[#646464] mb-6">Operational Capacity</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mx-3 sm:mx-4 md:mx-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+            <h2 className="text-base sm:text-lg font-semibold text-[#646464] mb-4 sm:mb-6">Operational Capacity</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Peak Week - Burgundy accent */}
-              <div className="bg-white rounded-lg p-4 text-center border border-[#A31C41] border-l-4 border-l-[#A31C41] hover:shadow-md transition-shadow">
-                <div className="text-2xl font-bold text-[#A31C41] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#A31C41] border-l-4 border-l-[#A31C41] hover:shadow-md transition-shadow">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#A31C41] mb-1">
                   {organizationalStats.peakWeekRecord}
                 </div>
-                <div className="text-sm text-[#646464] font-medium">Peak Week</div>
-                <div className="text-xs text-[#646464] mt-1">Nov 15, 2023</div>
+                <div className="text-xs sm:text-sm text-[#646464] font-medium">Peak Week</div>
+                <div className="text-xs text-[#646464] mt-0.5 sm:mt-1">Nov 15, 2023</div>
               </div>
               
               {/* Annual Target - Orange accent */}
-              <div className="bg-white rounded-lg p-4 text-center border border-[#FBAD3F] border-l-4 border-l-[#FBAD3F] hover:shadow-md transition-shadow">
-                <div className="text-2xl font-bold text-[#FBAD3F] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#FBAD3F] border-l-4 border-l-[#FBAD3F] hover:shadow-md transition-shadow">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#FBAD3F] mb-1">
                   {organizationalStats.currentAnnualCapacity}
                 </div>
-                <div className="text-sm text-[#646464] font-medium">Annual Target</div>
-                <div className="text-xs text-[#646464] mt-1">Current year</div>
+                <div className="text-xs sm:text-sm text-[#646464] font-medium">Annual Target</div>
+                <div className="text-xs text-[#646464] mt-0.5 sm:mt-1">Current year</div>
               </div>
               
               {/* Weekly Baseline - Light Blue accent */}
-              <div className="bg-white rounded-lg p-4 text-center border border-[#47B3CB] border-l-4 border-l-[#47B3CB] hover:shadow-md transition-shadow">
-                <div className="text-2xl font-bold text-[#47B3CB] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#47B3CB] border-l-4 border-l-[#47B3CB] hover:shadow-md transition-shadow">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#47B3CB] mb-1">
                   {organizationalStats.weeklyBaseline}
                 </div>
-                <div className="text-sm text-[#646464] font-medium">Weekly Baseline</div>
-                <div className="text-xs text-[#646464] mt-1">Regular ops</div>
+                <div className="text-xs sm:text-sm text-[#646464] font-medium">Weekly Baseline</div>
+                <div className="text-xs text-[#646464] mt-0.5 sm:mt-1">Regular ops</div>
               </div>
               
               {/* Surge Capacity - Dark Teal accent */}
-              <div className="bg-white rounded-lg p-4 text-center border border-[#007E8C] border-l-4 border-l-[#007E8C] hover:shadow-md transition-shadow">
-                <div className="text-2xl font-bold text-[#007E8C] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#007E8C] border-l-4 border-l-[#007E8C] hover:shadow-md transition-shadow">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#007E8C] mb-1">
                   {organizationalStats.surgingCapacity}
                 </div>
-                <div className="text-sm text-[#646464] font-medium">Surge Capacity</div>
-                <div className="text-xs text-[#646464] mt-1">Peak mobilization</div>
+                <div className="text-xs sm:text-sm text-[#646464] font-medium">Surge Capacity</div>
+                <div className="text-xs text-[#646464] mt-0.5 sm:mt-1">Peak mobilization</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mx-4 mt-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mx-3 sm:mx-4 md:mx-6 mt-6 sm:mt-8">
           <div className="bg-white rounded-xl p-4 text-left group shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <Calculator className="w-5 h-5 text-white" />
@@ -410,19 +410,19 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         </div>
 
         {/* Important Documents - Using same layout as governance documents */}
-        <div className="bg-white rounded-xl mx-4 mt-8 p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-white" />
+        <div className="bg-white rounded-xl mx-3 sm:mx-4 md:mx-6 mt-6 sm:mt-8 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-[#236383]">Important Documents</h2>
-              <p className="text-sm text-gray-600">Essential organizational resources</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-[#236383]">Important Documents</h2>
+              <p className="text-xs sm:text-sm text-gray-600">Essential organizational resources</p>
             </div>
           </div>
 
           {/* Documents Grid - Better tablet responsiveness with wider cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {importantDocuments.map((doc, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200">
                 <CardHeader className="pb-4 flex-shrink-0">
@@ -449,24 +449,24 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                   <CardDescription className="mb-6 flex-1 text-base leading-relaxed text-gray-600">
                     {doc.description}
                   </CardDescription>
-                  {/* Action buttons - optimized for tablet with larger touch targets */}
-                  <div className="flex flex-col gap-3 mt-auto">
+                  {/* Action buttons - optimized for mobile and tablet touch targets */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-auto">
                     <Button
-                      size="default"
+                      size="sm"
                       variant="outline"
                       onClick={() => openPreviewModal(doc.path, doc.title, 'pdf')}
-                      className="w-full h-11 text-base font-medium"
+                      className="w-full h-9 sm:h-10 text-sm font-medium"
                     >
-                      <Eye className="h-5 w-5 mr-2" />
+                      <Eye className="h-4 w-4 mr-1 sm:mr-2" />
                       Preview
                     </Button>
                     <Button
-                      size="default"
+                      size="sm"
                       variant="default"
                       onClick={() => window.open(doc.path, '_blank')}
-                      className="w-full h-11 text-base font-medium"
+                      className="w-full h-9 sm:h-10 text-sm font-medium"
                     >
-                      <ExternalLink className="h-5 w-5 mr-2" />
+                      <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
                       Download
                     </Button>
                   </div>
@@ -477,7 +477,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
         </div>
 
         {/* Help System */}
-        <div className="mx-4 mt-8">
+        <div className="mx-3 sm:mx-4 md:mx-6 mt-6 sm:mt-8 mb-6">
           <HelpBubble
             title="Dashboard Overview"
             content="This dashboard shows your impact at a glance! These numbers represent real meals provided to community members in your area. Use the forms above to submit new collection data or browse documents for guidance."
@@ -485,7 +485,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             position="top"
             trigger="hover"
           >
-            <div className="text-center text-sm text-gray-500 cursor-help">
+            <div className="text-center text-xs sm:text-sm text-gray-500 cursor-help">
               Need help? Hover here for guidance
             </div>
           </HelpBubble>
