@@ -50,7 +50,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Milestone Display Enhancement**: Milestone badges removed from project cards, with milestone information appearing only in dedicated sections on project detail pages.
 - **Enhanced Meeting Discussion Interface**: Redesigned meeting management tab with individual project actions ("Send to Agenda", "Table for Later"), compact project views, and clear, intuitive discussion fields with auto-save functionality.
 - **Finalize Agenda PDF Export**: Generates professionally formatted meeting agendas with TSP branding, agenda items, and tabled projects section, including agenda status summary.
-- **Event Requests Management System**: Complete event request tracking system with database schema, duplicate detection, status tracking, permissions-based access, CRUD API endpoints, responsive UI, and full Google Sheets integration with automatic 5-minute background sync plus manual sync controls.
+- **Event Requests Management System**: Complete event request tracking system with database schema, duplicate detection, status tracking, permissions-based access, CRUD API endpoints, responsive UI, and full Google Sheets integration with automatic 5-minute background sync plus manual sync controls. Cards feature contact tracking workflow buttons instead of edit/delete functionality for standard users, focusing on operational workflow management.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

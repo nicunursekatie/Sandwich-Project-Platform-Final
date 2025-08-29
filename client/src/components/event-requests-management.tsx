@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink } from "lucide-react";
+import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -82,13 +82,7 @@ export default function EventRequestsManagement() {
     refetchOnMount: true
   });
 
-  // Debug logging
-  console.log("Event Requests Debug:", {
-    isLoading,
-    error,
-    eventRequestsCount: eventRequests?.length || 0,
-    eventRequests: eventRequests?.slice(0, 2) // Show first 2 for debugging
-  });
+  // Remove debug logging since the API is working properly
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests", data),
@@ -501,27 +495,59 @@ export default function EventRequestsManagement() {
                       Created: {format(new Date(request.createdDate), "PPp")}
                     </span>
                     <div className="space-x-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant={request.status === 'contacted' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => {
-                          setSelectedRequest(request);
-                          setShowEditDialog(true);
+                          const newStatus = request.status === 'contacted' ? 'new' : 'contacted';
+                          updateMutation.mutate({
+                            id: request.id,
+                            status: newStatus
+                          });
                         }}
                       >
-                        Edit
+                        {request.status === 'contacted' ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Contacted
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="h-4 w-4 mr-1" />
+                            Mark Contacted
+                          </>
+                        )}
                       </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to delete this event request?")) {
-                            deleteMutation.mutate(request.id);
-                          }
-                        }}
-                      >
-                        Delete
-                      </Button>
+                      
+                      {/* Super admin only actions */}
+                      {/* Note: For future implementation when user context is available */}
+                      {/* {userPermissions?.includes('super_admin') && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowEditDialog(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm("Are you sure you want to delete this event request?")) {
+                                deleteMutation.mutate(request.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </>
+                      )} */}
                     </div>
                   </div>
                 </div>
