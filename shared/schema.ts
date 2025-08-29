@@ -1082,6 +1082,9 @@ export const eventRequests = pgTable("event_requests", {
   status: varchar("status").notNull().default("new"), // 'new', 'contacted', 'in_planning', 'scheduled', 'completed', 'declined'
   assignedTo: varchar("assigned_to"), // User ID of person handling this request
   
+  // Timeline tracking
+  contactedAt: timestamp("contacted_at"), // When initial contact was completed
+  
   // Duplicate detection flags
   organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates

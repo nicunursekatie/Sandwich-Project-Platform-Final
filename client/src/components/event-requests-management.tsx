@@ -29,8 +29,9 @@ interface EventRequest {
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
-  createdAt: string; // Field name from API  
-  updatedAt: string; // Field name from API
+  createdAt: string; // Submission date from Google Sheet
+  updatedAt: string; 
+  contactedAt?: string; // When initial contact was completed
   createdBy?: string;
 }
 
@@ -491,9 +492,24 @@ export default function EventRequestsManagement() {
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-3 border-t">
-                    <span className="text-sm text-gray-500">
-                      Created: {format(new Date(request.createdAt), "PPp")}
-                    </span>
+                    <div className="text-sm text-gray-500">
+                      <div>Submitted: {format(new Date(request.createdAt), "PPp")}</div>
+                      {request.status === 'new' && (
+                        <div className="text-orange-600 font-medium">
+                          Waiting for contact ({Math.floor((Date.now() - new Date(request.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago)
+                        </div>
+                      )}
+                      {request.contactedAt && (
+                        <div className="text-green-600">
+                          Initial contact: {format(new Date(request.contactedAt), "PPp")}
+                          {request.desiredEventDate && (
+                            <span className="ml-2">
+                              ({Math.ceil((new Date(request.desiredEventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days until event)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <div className="space-x-2">
                       <Button
                         variant={request.status === 'contacted' ? 'default' : 'outline'}
@@ -502,7 +518,8 @@ export default function EventRequestsManagement() {
                           const newStatus = request.status === 'contacted' ? 'new' : 'contacted';
                           updateMutation.mutate({
                             id: request.id,
-                            status: newStatus
+                            status: newStatus,
+                            contactedAt: newStatus === 'contacted' ? new Date().toISOString() : null
                           });
                         }}
                       >

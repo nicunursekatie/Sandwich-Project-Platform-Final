@@ -62,6 +62,17 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
+    // Parse the submission date from Google Sheets
+    let submissionDate;
+    if (row.createdDate) {
+      try {
+        submissionDate = new Date(row.createdDate);
+      } catch (error) {
+        console.warn(`Invalid date format in Google Sheets: ${row.createdDate}`);
+        submissionDate = new Date(); // Fallback to current date
+      }
+    }
+
     return {
       organizationName: row.organizationName,
       firstName: firstName,
@@ -74,7 +85,8 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       message: row.message,
       previouslyHosted: row.previouslyHosted,
       organizationExists: row.duplicateCheck === 'Yes',
-      duplicateNotes: row.notes
+      duplicateNotes: row.notes,
+      createdAt: submissionDate // Map Google Sheet submission date to createdAt
     };
   }
 
