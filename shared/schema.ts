@@ -1093,6 +1093,16 @@ export const eventRequests = pgTable("event_requests", {
   hasRefrigeration: boolean("has_refrigeration"), // Whether site has refrigeration
   contactCompletedBy: varchar("contact_completed_by"), // User ID who completed the contact
   
+  // Advanced event planning fields (for scheduled/in_planning status)
+  tspContactAssigned: varchar("tsp_contact_assigned"), // TSP team member assigned to this event
+  toolkitSent: boolean("toolkit_sent").default(false), // Whether toolkit has been sent
+  toolkitSentDate: timestamp("toolkit_sent_date"), // When toolkit was sent
+  eventStartTime: varchar("event_start_time"), // Event start time (stored as string for flexibility)
+  eventEndTime: varchar("event_end_time"), // Event end time
+  pickupTime: varchar("pickup_time"), // Driver pickup time for sandwiches
+  additionalRequirements: text("additional_requirements"), // Special requirements or notes
+  planningNotes: text("planning_notes"), // General planning notes
+  
   // Duplicate detection flags
   organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates

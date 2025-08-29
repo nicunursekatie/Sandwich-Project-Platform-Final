@@ -41,6 +41,16 @@ interface EventRequest {
   estimatedSandwichCount?: number;
   hasRefrigeration?: boolean;
   contactCompletionNotes?: string;
+  
+  // Advanced planning fields (for scheduled/in_planning status)
+  tspContactAssigned?: string;
+  toolkitSent?: boolean;
+  toolkitSentDate?: string;
+  eventStartTime?: string;
+  eventEndTime?: string;
+  pickupTime?: string;
+  additionalRequirements?: string;
+  planningNotes?: string;
 }
 
 const statusColors = {
@@ -84,6 +94,7 @@ export default function EventRequestsManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(null);
+  const [currentEditingStatus, setCurrentEditingStatus] = useState<string>("");
   const [showCompleteContactDialog, setShowCompleteContactDialog] = useState(false);
   const [completingRequest, setCompletingRequest] = useState<EventRequest | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -247,7 +258,15 @@ export default function EventRequestsManagement() {
       desiredEventDate: formData.get("desiredEventDate") ? new Date(formData.get("desiredEventDate") as string) : null,
       message: formData.get("message"),
       previouslyHosted: formData.get("previouslyHosted"),
-      status: formData.get("status")
+      status: formData.get("status"),
+      // Advanced planning fields (optional)
+      tspContactAssigned: formData.get("tspContactAssigned") || undefined,
+      toolkitSent: formData.get("toolkitSent") === "yes",
+      eventStartTime: formData.get("eventStartTime") || undefined,
+      eventEndTime: formData.get("eventEndTime") || undefined,
+      pickupTime: formData.get("pickupTime") || undefined,
+      additionalRequirements: formData.get("additionalRequirements") || undefined,
+      planningNotes: formData.get("planningNotes") || undefined
     };
     updateMutation.mutate(data);
   };
@@ -605,6 +624,7 @@ export default function EventRequestsManagement() {
                           size="sm"
                           onClick={() => {
                             setSelectedRequest(request);
+                            setCurrentEditingStatus(request.status);
                             setShowEditDialog(true);
                           }}
                         >
@@ -723,7 +743,11 @@ export default function EventRequestsManagement() {
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select name="status" defaultValue={selectedRequest.status}>
+                <Select 
+                  name="status" 
+                  defaultValue={selectedRequest.status}
+                  onValueChange={(value) => setCurrentEditingStatus(value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -736,10 +760,89 @@ export default function EventRequestsManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Advanced Planning Fields - Show only for in_planning or scheduled status */}
+              {((currentEditingStatus || selectedRequest.status) === 'in_planning' || (currentEditingStatus || selectedRequest.status) === 'scheduled') && (
+                <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Event Planning</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="tspContactAssigned">TSP Contact Assigned</Label>
+                      <Input 
+                        name="tspContactAssigned" 
+                        placeholder="Team member name"
+                        defaultValue={selectedRequest.tspContactAssigned || ""} 
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="toolkitSent">Toolkit Sent?</Label>
+                      <Select name="toolkitSent" defaultValue={selectedRequest.toolkitSent ? "yes" : "no"}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="eventStartTime">Event Start Time</Label>
+                      <Input 
+                        name="eventStartTime" 
+                        type="time"
+                        defaultValue={selectedRequest.eventStartTime || ""} 
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="eventEndTime">Event End Time</Label>
+                      <Input 
+                        name="eventEndTime" 
+                        type="time"
+                        defaultValue={selectedRequest.eventEndTime || ""} 
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pickupTime">Driver Pickup Time</Label>
+                      <Input 
+                        name="pickupTime" 
+                        type="time"
+                        defaultValue={selectedRequest.pickupTime || ""} 
+                        placeholder="When to pickup sandwiches"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="additionalRequirements">Special Requirements</Label>
+                    <Textarea 
+                      name="additionalRequirements" 
+                      rows={3}
+                      placeholder="Any special dietary requirements, setup needs, etc."
+                      defaultValue={selectedRequest.additionalRequirements || ""} 
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="planningNotes">Planning Notes</Label>
+                    <Textarea 
+                      name="planningNotes" 
+                      rows={3}
+                      placeholder="General notes about event planning..."
+                      defaultValue={selectedRequest.planningNotes || ""} 
+                    />
+                  </div>
+                </div>
+              )}
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => {
                   setShowEditDialog(false);
                   setSelectedRequest(null);
+                  setCurrentEditingStatus("");
                 }}>
                   Cancel
                 </Button>
