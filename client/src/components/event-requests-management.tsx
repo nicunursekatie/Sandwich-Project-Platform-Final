@@ -278,17 +278,17 @@ export default function EventRequestsManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Event Requests</h1>
-        <div className="flex space-x-2">
-          {/* Google Sheets Integration */}
+        <div className="flex flex-wrap gap-2">
+          {/* Google Sheets Integration - Compact on mobile */}
           <Button 
             variant="outline" 
             size="sm"
             onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_EVENT_REQUESTS_SHEET_ID || '1GsiY_Nafzt_AYr4lXd-Nc-tKiCcSIc4_FW3lDJWX_ss'}/edit`, '_blank')}
           >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Open Google Sheet
+            <ExternalLink className="w-4 h-4" />
+            <span className="hidden sm:inline sm:ml-2">Open Google Sheet</span>
           </Button>
           <Button 
             variant="outline" 
@@ -296,8 +296,10 @@ export default function EventRequestsManagement() {
             onClick={() => syncToSheetsMutation.mutate()}
             disabled={syncToSheetsMutation.isPending}
           >
-            <Upload className="w-4 h-4 mr-2" />
-            {syncToSheetsMutation.isPending ? "Syncing..." : "Sync to Sheets"}
+            <Upload className="w-4 h-4" />
+            <span className="hidden sm:inline sm:ml-2">
+              {syncToSheetsMutation.isPending ? "Syncing..." : "Sync to Sheets"}
+            </span>
           </Button>
           <Button 
             variant="outline" 
@@ -305,8 +307,10 @@ export default function EventRequestsManagement() {
             onClick={() => syncFromSheetsMutation.mutate()}
             disabled={syncFromSheetsMutation.isPending}
           >
-            <Download className="w-4 h-4 mr-2" />
-            {syncFromSheetsMutation.isPending ? "Syncing..." : "Sync from Sheets"}
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline sm:ml-2">
+              {syncFromSheetsMutation.isPending ? "Syncing..." : "Sync from Sheets"}
+            </span>
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
