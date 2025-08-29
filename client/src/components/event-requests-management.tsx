@@ -78,7 +78,7 @@ export default function EventRequestsManagement() {
 
   const { data: eventRequests = [], isLoading, error } = useQuery({
     queryKey: ["/api/event-requests"],
-    queryFn: () => apiRequest("/api/event-requests"),
+    queryFn: () => apiRequest("GET", "/api/event-requests"),
     refetchOnMount: true
   });
 
@@ -91,10 +91,7 @@ export default function EventRequestsManagement() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/event-requests", {
-      method: "POST",
-      body: JSON.stringify(data)
-    }),
+    mutationFn: (data: any) => apiRequest("POST", "/api/event-requests", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowAddDialog(false);
@@ -110,10 +107,7 @@ export default function EventRequestsManagement() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) => apiRequest(`/api/event-requests/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data)
-    }),
+    mutationFn: ({ id, ...data }: any) => apiRequest("PUT", `/api/event-requests/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowEditDialog(false);
@@ -130,9 +124,7 @@ export default function EventRequestsManagement() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/event-requests/${id}`, {
-      method: "DELETE"
-    }),
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/event-requests/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({ title: "Event request deleted successfully" });
