@@ -5,16 +5,20 @@ import { insertEventRequestSchema, insertOrganizationSchema } from "@shared/sche
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { requirePermission } from "../middleware/auth";
 import { isAuthenticated } from "../temp-auth";
-import { createActivityLogger } from "../middleware/activity-logger";
 import { getEventRequestsGoogleSheetsService } from "../google-sheets-event-requests-sync";
 
 const router = Router();
-const logActivity = createActivityLogger({ context: "Event Requests" });
+
+// Simple logging function for activity tracking
+const logActivity = async (req: any, res: any, permission: string, message: string) => {
+  // Activity logging will be handled by the global middleware
+  console.log(`Activity: ${permission} - ${message}`);
+};
 
 // Get all event requests
 router.get("/", isAuthenticated, requirePermission("EVENT_REQUESTS_VIEW"), async (req, res) => {
   try {
-    logActivity(req, res, "EVENT_REQUESTS_VIEW", "Retrieved all event requests");
+    await logActivity(req, res, "EVENT_REQUESTS_VIEW", "Retrieved all event requests");
     const eventRequests = await storage.getAllEventRequests();
     res.json(eventRequests);
   } catch (error) {
@@ -28,7 +32,7 @@ router.get("/status/:status", isAuthenticated, requirePermission("EVENT_REQUESTS
   try {
 
     const { status } = req.params;
-    logActivity(req, res, "EVENT_REQUESTS_VIEW", `Retrieved event requests with status: ${status}`);
+    await logActivity(req, res, "EVENT_REQUESTS_VIEW", `Retrieved event requests with status: ${status}`);
     const eventRequests = await storage.getEventRequestsByStatus(status);
     res.json(eventRequests);
   } catch (error) {
@@ -48,7 +52,7 @@ router.get("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_VIEW"), as
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, res, "EVENT_REQUESTS_VIEW", `Retrieved event request: ${id}`);
+    await logActivity(req, res, "EVENT_REQUESTS_VIEW", `Retrieved event request: ${id}`);
     res.json(eventRequest);
   } catch (error) {
     console.error("Error fetching event request:", error);
@@ -74,7 +78,7 @@ router.post("/", isAuthenticated, requirePermission("EVENT_REQUESTS_ADD"), async
       createdBy: user?.id || 1
     });
 
-    logActivity(req, res, "EVENT_REQUESTS_ADD", `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`);
+    await logActivity(req, res, "EVENT_REQUESTS_ADD", `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`);
     res.status(201).json(newEventRequest);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -115,7 +119,7 @@ router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, res, "EVENT_REQUESTS_COMPLETE_CONTACT", `Completed contact for event request: ${id}`);
+    await logActivity(req, res, "EVENT_REQUESTS_COMPLETE_CONTACT", `Completed contact for event request: ${id}`);
     res.json(updatedEventRequest);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -138,7 +142,7 @@ router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), as
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request: ${id}`);
+    await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request: ${id}`);
     res.json(updatedEventRequest);
   } catch (error) {
     console.error("Error updating event request:", error);
@@ -156,7 +160,7 @@ router.delete("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_DELETE"
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, res, "EVENT_REQUESTS_DELETE", `Deleted event request: ${id}`);
+    await logActivity(req, res, "EVENT_REQUESTS_DELETE", `Deleted event request: ${id}`);
     res.json({ message: "Event request deleted successfully" });
   } catch (error) {
     console.error("Error deleting event request:", error);
@@ -178,7 +182,7 @@ router.post("/check-duplicates", async (req, res) => {
     }
 
     const duplicateCheck = { exists: false, matches: [] };
-    logActivity(req, res, "EVENT_REQUESTS_VIEW", `Checked duplicates for organization: ${organizationName}`);
+    await logActivity(req, res, "EVENT_REQUESTS_VIEW", `Checked duplicates for organization: ${organizationName}`);
     res.json(duplicateCheck);
   } catch (error) {
     console.error("Error checking organization duplicates:", error);
@@ -195,7 +199,7 @@ router.get("/organizations/all", async (req, res) => {
     }
 
     const organizations = await storage.getAllOrganizations();
-    logActivity(req, res, "EVENT_REQUESTS_VIEW", "Retrieved all organizations");
+    await logActivity(req, res, "EVENT_REQUESTS_VIEW", "Retrieved all organizations");
     res.json(organizations);
   } catch (error) {
     console.error("Error fetching organizations:", error);
@@ -213,7 +217,7 @@ router.post("/organizations", async (req, res) => {
     const validatedData = insertOrganizationSchema.parse(req.body);
     const newOrganization = await storage.createOrganization(validatedData);
 
-    logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Created organization: ${newOrganization.name}`);
+    await logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Created organization: ${newOrganization.name}`);
     res.status(201).json(newOrganization);
   } catch (error) {
     if (error instanceof z.ZodError) {

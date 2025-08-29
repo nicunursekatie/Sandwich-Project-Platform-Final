@@ -103,6 +103,12 @@ export default function EventRequestsManagement() {
     refetchOnMount: true
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ["/api/users"],
+    queryFn: () => apiRequest("GET", "/api/users"),
+    staleTime: 5 * 60 * 1000 // 5 minutes
+  });
+
   // Remove debug logging since the API is working properly
 
   const createMutation = useMutation({
@@ -750,30 +756,6 @@ export default function EventRequestsManagement() {
                           Complete Event Details
                         </Button>
                       )}
-                      
-                      {/* Admin actions - small icon buttons */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setCurrentEditingStatus(request.status);
-                          setShowEditDialog(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to delete this event request?")) {
-                            deleteMutation.mutate(request.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1167,30 +1149,61 @@ export default function EventRequestsManagement() {
               <div className="space-y-3">
                 <Label>TSP Contact Assignment</Label>
                 <div>
-                  <Label htmlFor="tspContact" className="text-sm">Primary TSP Contact (User)</Label>
-                  <Select name="tspContact" defaultValue={detailsRequest.tspContact}>
+                  <Label htmlFor="tspContact" className="text-sm">Primary TSP Contact</Label>
+                  <Select name="tspContact" defaultValue={detailsRequest.tspContact || ""}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a TSP team member" />
+                      <SelectValue placeholder="Select primary TSP contact" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin User</SelectItem>
-                      <SelectItem value="coordinator">Event Coordinator</SelectItem>
-                      <SelectItem value="volunteer_lead">Volunteer Lead</SelectItem>
-                      <SelectItem value="custom">Use Custom Contact(s) Below</SelectItem>
+                      {users.map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName && user.lastName 
+                            ? `${user.firstName} ${user.lastName}` 
+                            : user.displayName || user.email}
+                          {user.role && user.role !== 'volunteer' && (
+                            <span className="text-xs text-gray-500 ml-2">({user.role})</span>
+                          )}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-600 mt-1">Primary TSP team member for this event</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="additionalTspContacts" className="text-sm">Additional TSP Contacts</Label>
+                  <Select name="additionalTspContacts" defaultValue={detailsRequest.additionalTspContacts || ""}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Add secondary contact (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {users.map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName && user.lastName 
+                            ? `${user.firstName} ${user.lastName}` 
+                            : user.displayName || user.email}
+                          {user.role && user.role !== 'volunteer' && (
+                            <span className="text-xs text-gray-500 ml-2">({user.role})</span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-600 mt-1">Optional secondary TSP contact</p>
                 </div>
                 
                 <div>
                   <Label htmlFor="customTspContact" className="text-sm">
-                    Custom TSP Contact(s)
+                    Custom Contact Information
                   </Label>
                   <Textarea 
                     name="customTspContact" 
-                    rows={2}
+                    rows={3}
                     defaultValue={detailsRequest.customTspContact}
-                    placeholder="Multiple contacts or specific contact info (names, emails, phones)"
+                    placeholder="Add any additional contact details, phone numbers, or special instructions for this event..."
                   />
+                  <p className="text-xs text-gray-600 mt-1">Free text for contact details not covered above</p>
                 </div>
               </div>
 
