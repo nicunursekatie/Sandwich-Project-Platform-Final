@@ -46,11 +46,11 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Comprehensive Meeting Management**: Full-featured meeting system with automated agenda compilation, intelligent project integration, and Google Sheets export. Includes task status controls and Google Sheets task status integration.
 - **Project Display Consistency**: Project cards and detail views consistently display Owner and Support roles. Automatic Google Sheets synchronization triggers when support people are updated.
 - **Seamless Three-System Integration**: Project owner and support people fields are consistently managed across meetings component, projects component, and Google Sheets synchronization, maintaining clear role separation and data integrity.
-- **Complete Bidirectional Google Sheets Integration**: Fully implemented automatic synchronization between app and Google Sheets project tracker for task status changes and meeting updates.
+- **Complete Bidirectional Google Sheets Integration**: Fully implemented automatic synchronization between app and Google Sheets for both project tracker and event requests. Includes automatic 5-minute background sync service plus manual sync controls for immediate updates.
 - **Milestone Display Enhancement**: Milestone badges removed from project cards, with milestone information appearing only in dedicated sections on project detail pages.
 - **Enhanced Meeting Discussion Interface**: Redesigned meeting management tab with individual project actions ("Send to Agenda", "Table for Later"), compact project views, and clear, intuitive discussion fields with auto-save functionality.
 - **Finalize Agenda PDF Export**: Generates professionally formatted meeting agendas with TSP branding, agenda items, and tabled projects section, including agenda status summary.
-- **Event Requests Management System**: Complete event request tracking system with database schema, duplicate detection, status tracking, permissions-based access, CRUD API endpoints, and responsive UI.
+- **Event Requests Management System**: Complete event request tracking system with database schema, duplicate detection, status tracking, permissions-based access, CRUD API endpoints, responsive UI, and full Google Sheets integration with automatic 5-minute background sync plus manual sync controls.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
