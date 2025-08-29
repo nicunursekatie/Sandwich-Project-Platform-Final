@@ -1087,10 +1087,6 @@ export const eventRequests = pgTable("event_requests", {
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates
   duplicateNotes: text("duplicate_notes"), // Notes about potential matches
   
-  // Google Sheets integration
-  googleSheetsRowId: varchar("google_sheets_row_id"), // Reference to Google Sheets row
-  lastSyncedAt: timestamp("last_synced_at"), // When this was last synced with Google Sheets
-  
   // Audit tracking
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
