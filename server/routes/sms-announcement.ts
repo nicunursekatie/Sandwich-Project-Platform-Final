@@ -15,7 +15,7 @@ const sendAnnouncementSchema = z.object({
 /**
  * Send SMS capability announcement to all registered users
  */
-router.post('/send-sms-announcement', isAuthenticated, requirePermission('MANAGE_USERS'), async (req, res) => {
+router.post('/send-sms-announcement', isAuthenticated, requirePermission('USERS_EDIT'), async (req, res) => {
   try {
     const { testMode, testEmail } = sendAnnouncementSchema.parse(req.body);
     const senderUser = req.user;

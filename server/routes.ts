@@ -738,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/users",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req, res) => {
       try {
         const users = await storage.getAllUsers();
@@ -753,7 +753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(
     "/api/users/:id",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req, res) => {
       try {
         const { id } = req.params;
@@ -780,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(
     "/api/users/:id/status",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req, res) => {
       try {
         const { id } = req.params;
@@ -797,7 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/users",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req, res) => {
       try {
         const { email, firstName, lastName, role } = req.body;
@@ -841,7 +841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete(
     "/api/users/:id",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req, res) => {
       try {
         const { id } = req.params;
@@ -857,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(
     "/api/users/:id/password",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req, res) => {
       try {
         const { id } = req.params;
@@ -1048,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put(
     "/api/projects/:id",
-    requirePermission("edit_data"),
+    requirePermission("DATA_EXPORT"),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -1375,7 +1375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete(
     "/api/messages/:id",
-    requirePermission("send_messages"),
+    requirePermission("MESSAGES_SEND"),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -1574,7 +1574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(
     "/api/sandwich-collections",
-    requirePermission("create_collections"),
+    requirePermission("COLLECTIONS_ADD"),
     async (req, res) => {
       try {
         console.log("=== POST /api/sandwich-collections DEBUG ===");
@@ -1660,7 +1660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put(
     "/api/sandwich-collections/:id",
-    requirePermission("edit_all_collections"),
+    requirePermission("COLLECTIONS_EDIT"),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -1683,7 +1683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Fix data corruption in sandwich collections - MUST be before /:id route
   app.patch("/api/sandwich-collections/fix-data-corruption", 
-    requirePermission("edit_all_collections"),
+    requirePermission("COLLECTIONS_EDIT"),
     async (req, res) => {
     try {
       const collections = await storage.getAllSandwichCollections();
@@ -1755,7 +1755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch(
     "/api/sandwich-collections/:id",
-    requirePermission("edit_all_collections"),
+    requirePermission("COLLECTIONS_EDIT"),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -1992,7 +1992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete(
     "/api/sandwich-collections/:id",
-    requirePermission("delete_all_collections"),
+    requirePermission("COLLECTIONS_DELETE"),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -2144,7 +2144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Clean selected suspicious entries from sandwich collections
   app.delete("/api/sandwich-collections/clean-selected", 
-    requirePermission("delete_data"),
+    requirePermission("DATA_EXPORT"),
     async (req, res) => {
     try {
       const { ids } = req.body;
@@ -2177,7 +2177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Clean duplicates from sandwich collections
   app.delete("/api/sandwich-collections/clean-duplicates", 
-    requirePermission("delete_data"),
+    requirePermission("DATA_EXPORT"),
     async (req, res) => {
     try {
       const { mode = "exact" } = req.body; // 'exact', 'suspicious', or 'og-duplicates'
@@ -2279,7 +2279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Batch edit sandwich collections
   app.patch(
     "/api/sandwich-collections/batch-edit",
-    requirePermission("edit_data"),
+    requirePermission("DATA_EXPORT"),
     async (req, res) => {
       try {
         const { ids, updates } = req.body;
@@ -3629,7 +3629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Drivers API endpoints
-  app.get("/api/drivers", isAuthenticated, requirePermission("access_drivers"), async (req, res) => {
+  app.get("/api/drivers", isAuthenticated, requirePermission("DRIVERS_VIEW"), async (req, res) => {
     try {
       const drivers = await storage.getAllDrivers();
       res.json(drivers);
@@ -3639,7 +3639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/drivers/:id", isAuthenticated, requirePermission("access_drivers"), async (req, res) => {
+  app.get("/api/drivers/:id", isAuthenticated, requirePermission("DRIVERS_VIEW"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const driver = await storage.getDriver(id);
@@ -3653,7 +3653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/drivers", isAuthenticated, requirePermission("manage_drivers"), sanitizeMiddleware, async (req, res) => {
+  app.post("/api/drivers", isAuthenticated, requirePermission("DRIVERS_EDIT"), sanitizeMiddleware, async (req, res) => {
     try {
       const result = insertDriverSchema.safeParse(req.body);
       if (!result.success) {
@@ -3667,7 +3667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/drivers/:id", isAuthenticated, requirePermission("manage_drivers"), sanitizeMiddleware, async (req, res) => {
+  app.put("/api/drivers/:id", isAuthenticated, requirePermission("DRIVERS_EDIT"), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
@@ -3700,7 +3700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/drivers/:id", isAuthenticated, requirePermission("manage_drivers"), async (req, res) => {
+  app.delete("/api/drivers/:id", isAuthenticated, requirePermission("DRIVERS_EDIT"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteDriver(id);
@@ -3715,7 +3715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export drivers to CSV
-  app.get("/api/drivers/export", isAuthenticated, requirePermission("access_drivers"), async (req, res) => {
+  app.get("/api/drivers/export", isAuthenticated, requirePermission("DRIVERS_VIEW"), async (req, res) => {
     try {
       const drivers = await storage.getAllDrivers();
       
@@ -3944,7 +3944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export users to CSV (for user management)
-  app.get("/api/users/export", isAuthenticated, requirePermission("manage_users"), async (req, res) => {
+  app.get("/api/users/export", isAuthenticated, requirePermission("USERS_EDIT"), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       
@@ -4305,7 +4305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/hosts", requirePermission("edit_data"), async (req, res) => {
+  app.post("/api/hosts", requirePermission("DATA_EXPORT"), async (req, res) => {
     try {
       const hostData = insertHostSchema.parse(req.body);
       const host = await storage.createHost(hostData);
@@ -4325,7 +4325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put(
     "/api/hosts/:id",
-    requirePermission("edit_data"),
+    requirePermission("DATA_EXPORT"),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -6551,7 +6551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/announcements",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req: any, res) => {
       try {
         console.log("Received announcement data:", req.body);
@@ -6584,7 +6584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(
     "/api/announcements/:id",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req: any, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -6614,7 +6614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete(
     "/api/announcements/:id",
     isAuthenticated,
-    requirePermission("manage_users"),
+    requirePermission("USERS_EDIT"),
     async (req: any, res) => {
       try {
         const id = parseInt(req.params.id);

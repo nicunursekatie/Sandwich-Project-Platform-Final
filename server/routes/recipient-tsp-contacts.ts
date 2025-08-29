@@ -12,7 +12,7 @@ import { requirePermission } from "../middleware/auth";
 const router = Router();
 
 // Get all TSP contacts for a specific recipient
-router.get("/:recipientId", requireAuth, requirePermission(PERMISSIONS.ACCESS_RECIPIENTS), async (req, res) => {
+router.get("/:recipientId", requireAuth, requirePermission("RECIPIENTS_VIEW"), async (req, res) => {
   try {
     const recipientId = parseInt(req.params.recipientId);
     
@@ -48,7 +48,7 @@ router.get("/:recipientId", requireAuth, requirePermission(PERMISSIONS.ACCESS_RE
 });
 
 // Add a new TSP contact
-router.post("/", requireAuth, requirePermission(PERMISSIONS.MANAGE_RECIPIENTS), async (req, res) => {
+router.post("/", requireAuth, requirePermission("RECIPIENTS_EDIT"), async (req, res) => {
   try {
     const validatedData = insertRecipientTspContactSchema.parse(req.body);
 
@@ -93,7 +93,7 @@ router.post("/", requireAuth, requirePermission(PERMISSIONS.MANAGE_RECIPIENTS), 
 });
 
 // Update a TSP contact
-router.patch("/:id", requireAuth, requirePermission(PERMISSIONS.MANAGE_RECIPIENTS), async (req, res) => {
+router.patch("/:id", requireAuth, requirePermission("RECIPIENTS_EDIT"), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const updateData = insertRecipientTspContactSchema.partial().parse(req.body);
@@ -154,7 +154,7 @@ router.patch("/:id", requireAuth, requirePermission(PERMISSIONS.MANAGE_RECIPIENT
 });
 
 // Delete (deactivate) a TSP contact
-router.delete("/:id", requireAuth, requirePermission(PERMISSIONS.MANAGE_RECIPIENTS), async (req, res) => {
+router.delete("/:id", requireAuth, requirePermission("RECIPIENTS_EDIT"), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
 

@@ -8,7 +8,7 @@ import { sendEmail } from '../services/sendgrid';
 const router = Router();
 
 // Test SendGrid configuration endpoint
-router.post('/test', isAuthenticated, requirePermission('MANAGE_USERS'), async (req, res) => {
+router.post('/test', isAuthenticated, requirePermission('USERS_EDIT'), async (req, res) => {
   try {
     console.log('🧪 Testing SendGrid configuration...');
     
@@ -75,7 +75,7 @@ const sendShoutoutSchema = z.object({
 });
 
 // Send shoutout endpoint
-router.post('/send', isAuthenticated, requirePermission('MANAGE_USERS'), async (req, res) => {
+router.post('/send', isAuthenticated, requirePermission('USERS_EDIT'), async (req, res) => {
   try {
     const { subject, message, recipientGroup, templateName } = sendShoutoutSchema.parse(req.body);
     
@@ -244,7 +244,7 @@ router.post('/send', isAuthenticated, requirePermission('MANAGE_USERS'), async (
 });
 
 // Get shoutout history
-router.get('/history', isAuthenticated, requirePermission('MANAGE_USERS'), async (req, res) => {
+router.get('/history', isAuthenticated, requirePermission('USERS_EDIT'), async (req, res) => {
   try {
     const history = await storage.getShoutoutHistory();
     res.json(history);
