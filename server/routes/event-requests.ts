@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage-wrapper";
 import { insertEventRequestSchema, insertOrganizationSchema } from "@shared/schema";
-import { hasPermission } from "@shared/auth-utils";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { createActivityLogger } from "../middleware/activity-logger";
 
 const router = Router();
@@ -12,11 +12,11 @@ const logActivity = createActivityLogger("Event Requests");
 router.get("/", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "VIEW_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
-    logActivity(req, "VIEW_EVENT_REQUESTS", "Retrieved all event requests");
+    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, "Retrieved all event requests");
     const eventRequests = await storage.getAllEventRequests();
     res.json(eventRequests);
   } catch (error) {
@@ -29,12 +29,12 @@ router.get("/", async (req, res) => {
 router.get("/status/:status", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "VIEW_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
     const { status } = req.params;
-    logActivity(req, "VIEW_EVENT_REQUESTS", `Retrieved event requests with status: ${status}`);
+    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, `Retrieved event requests with status: ${status}`);
     const eventRequests = await storage.getEventRequestsByStatus(status);
     res.json(eventRequests);
   } catch (error) {
@@ -47,7 +47,7 @@ router.get("/status/:status", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "VIEW_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -58,7 +58,7 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, "VIEW_EVENT_REQUESTS", `Retrieved event request: ${id}`);
+    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, `Retrieved event request: ${id}`);
     res.json(eventRequest);
   } catch (error) {
     console.error("Error fetching event request:", error);
@@ -70,7 +70,7 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "ADD_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.ADD_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -87,7 +87,7 @@ router.post("/", async (req, res) => {
       createdBy: user.id
     });
 
-    logActivity(req, "ADD_EVENT_REQUESTS", `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`);
+    logActivity(req, PERMISSIONS.ADD_EVENT_REQUESTS, `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`);
     res.status(201).json(newEventRequest);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -102,7 +102,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "EDIT_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.EDIT_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -115,7 +115,7 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, "EDIT_EVENT_REQUESTS", `Updated event request: ${id}`);
+    logActivity(req, PERMISSIONS.EDIT_EVENT_REQUESTS, `Updated event request: ${id}`);
     res.json(updatedEventRequest);
   } catch (error) {
     console.error("Error updating event request:", error);
@@ -127,7 +127,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "DELETE_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.DELETE_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -138,7 +138,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, "DELETE_EVENT_REQUESTS", `Deleted event request: ${id}`);
+    logActivity(req, PERMISSIONS.DELETE_EVENT_REQUESTS, `Deleted event request: ${id}`);
     res.json({ message: "Event request deleted successfully" });
   } catch (error) {
     console.error("Error deleting event request:", error);
@@ -150,7 +150,7 @@ router.delete("/:id", async (req, res) => {
 router.post("/check-duplicates", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "VIEW_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -160,7 +160,7 @@ router.post("/check-duplicates", async (req, res) => {
     }
 
     const duplicateCheck = await storage.checkOrganizationDuplicates(organizationName);
-    logActivity(req, "VIEW_EVENT_REQUESTS", `Checked duplicates for organization: ${organizationName}`);
+    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, `Checked duplicates for organization: ${organizationName}`);
     res.json(duplicateCheck);
   } catch (error) {
     console.error("Error checking organization duplicates:", error);
@@ -172,12 +172,12 @@ router.post("/check-duplicates", async (req, res) => {
 router.get("/organizations/all", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "VIEW_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
     const organizations = await storage.getAllOrganizations();
-    logActivity(req, "VIEW_EVENT_REQUESTS", "Retrieved all organizations");
+    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, "Retrieved all organizations");
     res.json(organizations);
   } catch (error) {
     console.error("Error fetching organizations:", error);
@@ -188,14 +188,14 @@ router.get("/organizations/all", async (req, res) => {
 router.post("/organizations", async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, "MANAGE_EVENT_REQUESTS")) {
+    if (!user || !hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
     const validatedData = insertOrganizationSchema.parse(req.body);
     const newOrganization = await storage.createOrganization(validatedData);
 
-    logActivity(req, "MANAGE_EVENT_REQUESTS", `Created organization: ${newOrganization.name}`);
+    logActivity(req, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Created organization: ${newOrganization.name}`);
     res.status(201).json(newOrganization);
   } catch (error) {
     if (error instanceof z.ZodError) {
