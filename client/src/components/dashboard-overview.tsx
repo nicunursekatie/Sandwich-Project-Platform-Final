@@ -392,12 +392,12 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <p className="text-xs sm:text-sm text-gray-600 flex-1">Deep insights and trends</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 sm:p-5 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col" onClick={() => onSectionChange?.('phone-directory')}>
+          <button className="bg-white rounded-xl p-4 sm:p-5 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col" onClick={() => onSectionChange?.('event-requests')}>
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#007E8C] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Directory</h4>
-            <p className="text-xs sm:text-sm text-gray-600 flex-1">Contact information</p>
+            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Event Requests</h4>
+            <p className="text-xs sm:text-sm text-gray-600 flex-1">Manage event requests</p>
           </button>
 
           <button className="bg-white rounded-xl p-4 sm:p-5 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col" onClick={() => onSectionChange?.('messages')}>
