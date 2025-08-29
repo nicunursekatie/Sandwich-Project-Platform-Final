@@ -643,8 +643,8 @@ export default function EventRequestsManagement() {
                       
                       {/* Prominent Toolkit Status Display */}
                       {(request as any).toolkitStatus && (
-                        <div className="mt-2 p-3 border-l-4 border-orange-500 bg-orange-50 rounded">
-                          <div className="font-semibold text-orange-800 text-sm">
+                        <div className="mt-2 p-3 border-l-4 border-teal-500 bg-teal-50 rounded">
+                          <div className="font-semibold text-teal-800 text-sm">
                             Toolkit Status: {(() => {
                               const status = (request as any).toolkitStatus;
                               switch (status) {
@@ -657,13 +657,13 @@ export default function EventRequestsManagement() {
                             })()}
                           </div>
                           {(request as any).eventStartTime && (
-                            <div className="text-sm text-orange-700 mt-1">
+                            <div className="text-sm text-teal-700 mt-1">
                               Event: {(request as any).eventStartTime}
                               {(request as any).eventEndTime && ` - ${(request as any).eventEndTime}`}
                             </div>
                           )}
                           {(request as any).pickupTime && (
-                            <div className="text-sm text-orange-700">
+                            <div className="text-sm text-teal-700">
                               Pickup: {(request as any).pickupTime}
                             </div>
                           )}
@@ -716,7 +716,7 @@ export default function EventRequestsManagement() {
                             setDetailsRequest(request);
                             setShowEventDetailsDialog(true);
                           }}
-                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                          className="bg-teal-600 hover:bg-teal-700 text-white"
                         >
                           <Calendar className="h-4 w-4 mr-1" />
                           Complete Event Details
@@ -1051,8 +1051,8 @@ export default function EventRequestsManagement() {
             <form onSubmit={handleCompleteEventDetails} className="space-y-6">
               
               {/* Toolkit Status - Most Important */}
-              <div className="border-l-4 border-orange-500 pl-4 bg-orange-50 p-4 rounded">
-                <Label htmlFor="toolkitStatus" className="text-lg font-semibold text-orange-800">
+              <div className="border-l-4 border-teal-500 pl-4 bg-teal-50 p-4 rounded">
+                <Label htmlFor="toolkitStatus" className="text-lg font-semibold text-teal-800">
                   Toolkit Status (REQUIRED) *
                 </Label>
                 <Select name="toolkitStatus" required>
@@ -1191,7 +1191,7 @@ export default function EventRequestsManagement() {
                 <Button 
                   type="submit" 
                   disabled={completeEventDetailsMutation.isPending}
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                  className="bg-teal-600 hover:bg-teal-700 text-white"
                 >
                   {completeEventDetailsMutation.isPending ? "Saving..." : "Save Event Details"}
                 </Button>
