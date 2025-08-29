@@ -53,7 +53,6 @@ export const PERMISSIONS = {
   MANAGE_DRIVERS: "manage_drivers",
   MANAGE_VOLUNTEERS: "manage_volunteers", // Full volunteer management permissions
   MANAGE_DONATION_TRACKING: "manage_donation_tracking", // Create, edit, delete distributions
-  MANAGE_EVENT_REQUESTS: "manage_event_requests", // Create, edit, delete event requests
   MANAGE_DIRECTORY: "manage_directory", // Edit/add contacts in directory
   MANAGE_MEETINGS: "manage_meetings",
   MANAGE_SUGGESTIONS: "manage_suggestions",
