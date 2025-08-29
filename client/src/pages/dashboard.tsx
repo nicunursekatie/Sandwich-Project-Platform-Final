@@ -60,6 +60,7 @@ import DonationTracking from "@/components/donation-tracking";
 import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard";
 import WishlistPage from "@/pages/wishlist";
 import EventRequestsManagement from "@/components/event-requests-management";
+import OrganizationsCatalog from "@/components/organizations-catalog";
 
 import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
 
@@ -272,6 +273,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <VolunteerManagement />;
       case "event-requests":
         return <EventRequestsManagement />;
+      case "organizations-catalog":
+        return <OrganizationsCatalog />;
 
       case "wishlist":
         return <WishlistPage />;

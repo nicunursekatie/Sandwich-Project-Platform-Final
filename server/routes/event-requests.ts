@@ -335,4 +335,61 @@ router.get("/sync/analyze", async (req, res) => {
   }
 });
 
+// Get organizations catalog - aggregated data from event requests
+router.get("/organizations-catalog", async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
+    // Get all event requests and aggregate by organization and contact
+    const allEventRequests = await storage.getAllEventRequests();
+    
+    // Create a map to aggregate organizations and contacts
+    const organizationMap = new Map<string, any>();
+    
+    allEventRequests.forEach((request) => {
+      const key = `${request.organizationName}-${request.email}`;
+      
+      if (organizationMap.has(key)) {
+        const existing = organizationMap.get(key);
+        existing.totalRequests += 1;
+        
+        // Update to latest request date if this one is newer
+        if (new Date(request.createdAt) > new Date(existing.latestRequestDate)) {
+          existing.latestRequestDate = request.createdAt;
+          existing.status = request.status;
+        }
+        
+        // If any request has been contacted, update status
+        if (request.contactedAt && existing.status === 'new') {
+          existing.status = 'contacted';
+        }
+      } else {
+        organizationMap.set(key, {
+          organizationName: request.organizationName,
+          firstName: request.firstName,
+          lastName: request.lastName,
+          email: request.email,
+          phone: request.phone,
+          department: request.department,
+          latestRequestDate: request.createdAt,
+          totalRequests: 1,
+          status: request.contactedAt ? 'contacted' : request.status
+        });
+      }
+    });
+    
+    // Convert map to array
+    const organizations = Array.from(organizationMap.values());
+    
+    logActivity(req, PERMISSIONS.VIEW_EVENT_REQUESTS, `Retrieved organizations catalog: ${organizations.length} organizations`);
+    res.json(organizations);
+  } catch (error) {
+    console.error("Error fetching organizations catalog:", error);
+    res.status(500).json({ message: "Failed to fetch organizations catalog" });
+  }
+});
+
 export default router;
