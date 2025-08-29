@@ -481,7 +481,15 @@ export default function EventRequestsManagement() {
                   {request.desiredEventDate && (
                     <p className="flex items-center">
                       <Calendar className="w-4 h-4 mr-2" />
-                      <strong>Desired Date: </strong>{format(new Date(request.desiredEventDate), "PPP")}
+                      <strong>Desired Date: </strong>
+                      {(() => {
+                        try {
+                          const date = new Date(request.desiredEventDate);
+                          return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPP");
+                        } catch (error) {
+                          return 'Invalid date';
+                        }
+                      })()}
                     </p>
                   )}
                   <p><strong>Previously Hosted:</strong> {
@@ -501,10 +509,24 @@ export default function EventRequestsManagement() {
                   )}
                   <div className="flex justify-between items-center pt-3 border-t">
                     <div className="text-sm text-gray-500">
-                      <div>Submitted: {format(new Date(request.createdAt), "PPp")}</div>
+                      <div>Submitted: {(() => {
+                        try {
+                          const date = new Date(request.createdAt);
+                          return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPp");
+                        } catch (error) {
+                          return 'Invalid date';
+                        }
+                      })()}</div>
                       {request.status === 'new' && (
                         <div className="font-medium" style={{ color: '#236383' }}>
-                          Waiting for contact ({Math.floor((Date.now() - new Date(request.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago)
+                          Waiting for contact ({(() => {
+                            try {
+                              const date = new Date(request.createdAt);
+                              return isNaN(date.getTime()) ? '0' : Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+                            } catch (error) {
+                              return '0';
+                            }
+                          })()} days ago)
                         </div>
                       )}
                       {request.contactedAt && (

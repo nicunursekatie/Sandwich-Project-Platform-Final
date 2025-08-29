@@ -339,15 +339,22 @@ router.get("/sync/analyze", async (req, res) => {
 router.get("/organizations-catalog", async (req, res) => {
   try {
     const user = req.user;
-    console.log("🔍 Organizations catalog GET - User debug:", {
+    console.log("🔍 Organizations catalog GET - Full debug:", {
       userExists: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
       sessionExists: !!req.session,
-      sessionUser: req.session?.user?.email || "none"
+      sessionUser: req.session?.user?.email || "none",
+      userPermissionsCount: user?.permissions?.length || 0,
+      hasViewOrgsPermission: user ? hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG) : false,
+      permissionConstant: PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG
     });
-    // TEMP: Disable auth check for testing
-    // if (!user || !hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)) {
-    //   return res.status(403).json({ message: "Insufficient permissions" });
-    // }
+    
+    if (!user || !hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)) {
+      console.log("❌ Permission check failed for organizations catalog");
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+    console.log("✅ Permission check passed for organizations catalog");
 
     // Get all event requests and aggregate by organization and contact
     const allEventRequests = await storage.getAllEventRequests();
