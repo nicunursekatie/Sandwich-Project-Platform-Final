@@ -117,8 +117,10 @@ const RESOURCE_PERMISSIONS = [
     actions: [
       { action: "VIEW", label: "View collection data", key: "COLLECTIONS_VIEW" },
       { action: "ADD", label: "Submit new collections", key: "COLLECTIONS_ADD" },
-      { action: "EDIT", label: "Edit collection entries", key: "COLLECTIONS_EDIT" },
-      { action: "DELETE", label: "Delete collection data", key: "COLLECTIONS_DELETE" },
+      { action: "EDIT_OWN", label: "Edit own collection entries", key: "COLLECTIONS_EDIT_OWN" },
+      { action: "EDIT_ALL", label: "Edit any collection entries", key: "COLLECTIONS_EDIT_ALL" },
+      { action: "DELETE_OWN", label: "Delete own collection data", key: "COLLECTIONS_DELETE_OWN" },
+      { action: "DELETE_ALL", label: "Delete any collection data", key: "COLLECTIONS_DELETE_ALL" },
       { action: "WALKTHROUGH", label: "Use collection walkthrough tool", key: "COLLECTIONS_WALKTHROUGH" }
     ]
   },
@@ -132,8 +134,10 @@ const RESOURCE_PERMISSIONS = [
     actions: [
       { action: "VIEW", label: "View projects", key: "PROJECTS_VIEW" },
       { action: "ADD", label: "Create new projects", key: "PROJECTS_ADD" },
-      { action: "EDIT", label: "Edit project details", key: "PROJECTS_EDIT" },
-      { action: "DELETE", label: "Delete projects", key: "PROJECTS_DELETE" }
+      { action: "EDIT_OWN", label: "Edit assigned projects", key: "PROJECTS_EDIT_OWN" },
+      { action: "EDIT_ALL", label: "Edit any projects", key: "PROJECTS_EDIT_ALL" },
+      { action: "DELETE_OWN", label: "Delete assigned projects", key: "PROJECTS_DELETE_OWN" },
+      { action: "DELETE_ALL", label: "Delete any projects", key: "PROJECTS_DELETE_ALL" }
     ]
   },
   {
@@ -185,11 +189,13 @@ const RESOURCE_PERMISSIONS = [
     color: "bg-slate-50 border-slate-200",
     iconColor: "text-slate-600",
     actions: [
-      { action: "VIEW", label: "View work logs", key: "WORK_LOGS_VIEW" },
-      { action: "ADD", label: "Create work logs", key: "WORK_LOGS_ADD" },
+      { action: "VIEW", label: "View own work logs", key: "WORK_LOGS_VIEW" },
       { action: "VIEW_ALL", label: "View all volunteer logs", key: "WORK_LOGS_VIEW_ALL" },
-      { action: "EDIT", label: "Edit work logs", key: "WORK_LOGS_EDIT" },
-      { action: "DELETE", label: "Delete work logs", key: "WORK_LOGS_DELETE" }
+      { action: "ADD", label: "Create work logs", key: "WORK_LOGS_ADD" },
+      { action: "EDIT_OWN", label: "Edit own work logs", key: "WORK_LOGS_EDIT_OWN" },
+      { action: "EDIT_ALL", label: "Edit any work logs", key: "WORK_LOGS_EDIT_ALL" },
+      { action: "DELETE_OWN", label: "Delete own work logs", key: "WORK_LOGS_DELETE_OWN" },
+      { action: "DELETE_ALL", label: "Delete any work logs", key: "WORK_LOGS_DELETE_ALL" }
     ]
   },
   {
@@ -242,6 +248,10 @@ const RESOURCE_PERMISSIONS = [
     actions: [
       { action: "VIEW", label: "View suggestions", key: "SUGGESTIONS_VIEW" },
       { action: "ADD", label: "Submit new suggestions", key: "SUGGESTIONS_ADD" },
+      { action: "EDIT_OWN", label: "Edit own suggestions", key: "SUGGESTIONS_EDIT_OWN" },
+      { action: "EDIT_ALL", label: "Edit any suggestions", key: "SUGGESTIONS_EDIT_ALL" },
+      { action: "DELETE_OWN", label: "Delete own suggestions", key: "SUGGESTIONS_DELETE_OWN" },
+      { action: "DELETE_ALL", label: "Delete any suggestions", key: "SUGGESTIONS_DELETE_ALL" },
       { action: "MANAGE", label: "Manage suggestion workflows", key: "SUGGESTIONS_MANAGE" }
     ]
   },
@@ -305,16 +315,16 @@ const PERMISSION_MIGRATION_MAP: Record<string, string> = {
   "access_collections": "COLLECTIONS_VIEW",
   "manage_collections": "COLLECTIONS_EDIT",
   "create_collections": "COLLECTIONS_ADD",
-  "edit_all_collections": "COLLECTIONS_EDIT", 
-  "delete_all_collections": "COLLECTIONS_DELETE",
+  "edit_all_collections": "COLLECTIONS_EDIT_ALL", 
+  "delete_all_collections": "COLLECTIONS_DELETE_ALL",
   "use_collection_walkthrough": "COLLECTIONS_WALKTHROUGH",
 
   // Projects
   "access_projects": "PROJECTS_VIEW",
   "manage_projects": "PROJECTS_EDIT",
   "create_projects": "PROJECTS_ADD",
-  "edit_all_projects": "PROJECTS_EDIT",
-  "delete_all_projects": "PROJECTS_DELETE",
+  "edit_all_projects": "PROJECTS_EDIT_ALL",
+  "delete_all_projects": "PROJECTS_DELETE_ALL",
 
   // Distributions (donation tracking)
   "access_donation_tracking": "DISTRIBUTIONS_VIEW",
@@ -341,8 +351,8 @@ const PERMISSION_MIGRATION_MAP: Record<string, string> = {
   "access_work_logs": "WORK_LOGS_VIEW",
   "create_work_logs": "WORK_LOGS_ADD",
   "view_all_work_logs": "WORK_LOGS_VIEW_ALL",
-  "edit_all_work_logs": "WORK_LOGS_EDIT", 
-  "delete_all_work_logs": "WORK_LOGS_DELETE",
+  "edit_all_work_logs": "WORK_LOGS_EDIT_ALL", 
+  "delete_all_work_logs": "WORK_LOGS_DELETE_ALL",
 
   // Chat permissions
   "access_chat": "CHAT_GENERAL",

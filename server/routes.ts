@@ -99,7 +99,7 @@ import { BackupManager } from "./operations/backup-manager";
 import { QueryOptimizer } from "./performance/query-optimizer";
 import { db } from "./db";
 import { StreamChat } from "stream-chat";
-import { requirePermission } from "./middleware/auth";
+import { requirePermission, requireOwnershipPermission } from "./middleware/auth";
 
 
 // Configure multer for file uploads
@@ -375,16 +375,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "access_collections": "COLLECTIONS_VIEW",
         "manage_collections": "COLLECTIONS_EDIT",
         "create_collections": "COLLECTIONS_ADD",
-        "edit_all_collections": "COLLECTIONS_EDIT", 
-        "delete_all_collections": "COLLECTIONS_DELETE",
+        "edit_all_collections": "COLLECTIONS_EDIT_ALL", 
+        "delete_all_collections": "COLLECTIONS_DELETE_ALL",
         "use_collection_walkthrough": "COLLECTIONS_WALKTHROUGH",
 
         // Projects
         "access_projects": "PROJECTS_VIEW",
         "manage_projects": "PROJECTS_EDIT",
         "create_projects": "PROJECTS_ADD",
-        "edit_all_projects": "PROJECTS_EDIT",
-        "delete_all_projects": "PROJECTS_DELETE",
+        "edit_all_projects": "PROJECTS_EDIT_ALL",
+        "delete_all_projects": "PROJECTS_DELETE_ALL",
 
         // Distributions
         "access_donation_tracking": "DISTRIBUTIONS_VIEW",
@@ -411,8 +411,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "access_work_logs": "WORK_LOGS_VIEW",
         "create_work_logs": "WORK_LOGS_ADD",
         "view_all_work_logs": "WORK_LOGS_VIEW_ALL",
-        "edit_all_work_logs": "WORK_LOGS_EDIT", 
-        "delete_all_work_logs": "WORK_LOGS_DELETE",
+        "edit_all_work_logs": "WORK_LOGS_EDIT_ALL", 
+        "delete_all_work_logs": "WORK_LOGS_DELETE_ALL",
 
         // Chat permissions
         "access_chat": "CHAT_GENERAL",
@@ -1096,11 +1096,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Current supportPeople:', existingProject.supportPeople);
 
         // Check permissions - ownership-based or admin
-        const canEditAll = req.user?.permissions?.includes('edit_all_projects') || 
-                          req.user?.permissions?.includes('manage_projects') ||
+        const canEditAll = req.user?.permissions?.includes('PROJECTS_EDIT_ALL') || 
                           req.user?.role === 'admin' || req.user?.role === 'super_admin';
         
-        const canEditOwn = req.user?.permissions?.includes('edit_own_projects') && 
+        const canEditOwn = req.user?.permissions?.includes('PROJECTS_EDIT_OWN') && 
                           (existingProject.createdBy === req.user.id);
 
         console.log('Permission check - canEditAll:', canEditAll, 'canEditOwn:', canEditOwn);
@@ -1169,11 +1168,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Check permissions - ownership-based or admin
-        const canDeleteAll = req.user?.permissions?.includes('delete_all_projects') || 
-                            req.user?.permissions?.includes('manage_projects') ||
+        const canDeleteAll = req.user?.permissions?.includes('PROJECTS_DELETE_ALL') || 
                             req.user?.role === 'admin' || req.user?.role === 'super_admin';
         
-        const canDeleteOwn = req.user?.permissions?.includes('delete_own_projects') && 
+        const canDeleteOwn = req.user?.permissions?.includes('PROJECTS_DELETE_OWN') && 
                             (existingProject.createdBy === req.user.id);
 
         if (!canDeleteAll && !canDeleteOwn) {
@@ -1660,7 +1658,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put(
     "/api/sandwich-collections/:id",
-    requirePermission("COLLECTIONS_EDIT"),
+    requireOwnershipPermission(
+      "COLLECTIONS_EDIT_OWN", 
+      "COLLECTIONS_EDIT_ALL", 
+      async (req) => {
+        const id = parseInt(req.params.id);
+        const collection = await storage.getSandwichCollectionById(id);
+        return collection?.userId || null;
+      }
+    ),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);
@@ -1683,7 +1689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Fix data corruption in sandwich collections - MUST be before /:id route
   app.patch("/api/sandwich-collections/fix-data-corruption", 
-    requirePermission("COLLECTIONS_EDIT"),
+    requirePermission("COLLECTIONS_EDIT_ALL"),
     async (req, res) => {
     try {
       const collections = await storage.getAllSandwichCollections();
@@ -1755,7 +1761,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch(
     "/api/sandwich-collections/:id",
-    requirePermission("COLLECTIONS_EDIT"),
+    requireOwnershipPermission(
+      "COLLECTIONS_EDIT_OWN", 
+      "COLLECTIONS_EDIT_ALL", 
+      async (req) => {
+        const id = parseInt(req.params.id);
+        const collection = await storage.getSandwichCollectionById(id);
+        return collection?.userId || null;
+      }
+    ),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id);

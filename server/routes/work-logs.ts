@@ -32,6 +32,7 @@ function isSuperAdmin(req: any) {
 
 // Import permission utilities
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
+import { requirePermission, requireOwnershipPermission } from "../middleware/auth";
 
 // Middleware to check if user can log work
 function canLogWork(req: any) {
@@ -51,25 +52,25 @@ router.get("/work-logs", isAuthenticated, async (req, res) => {
     console.log(`[WORK LOGS] User: ${userId}, Email: ${userEmail}, Role: ${userRole}`);
     
     // Check if user has any work log permissions
-    const canCreate = hasPermission(req.user, PERMISSIONS.CREATE_WORK_LOGS);
-    const canViewAll = hasPermission(req.user, PERMISSIONS.VIEW_ALL_WORK_LOGS);
+    const canCreate = hasPermission(req.user, PERMISSIONS.WORK_LOGS_ADD);
+    const canViewAll = hasPermission(req.user, PERMISSIONS.WORK_LOGS_VIEW_ALL);
     const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
     
     console.log(`[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`);
     
-    // User must have at least CREATE_WORK_LOGS permission to access work logs
+    // User must have at least WORK_LOGS_VIEW permission to access work logs
     if (!canCreate && !canViewAll && !isAdmin) {
       return res.status(403).json({ error: "Insufficient permissions to view work logs" });
     }
     
-    // Users with VIEW_ALL_WORK_LOGS or admin roles can see ALL work logs
+    // Users with WORK_LOGS_VIEW_ALL or admin roles can see ALL work logs
     if (canViewAll || isAdmin) {
       console.log(`[WORK LOGS] Admin/ViewAll access - fetching ALL logs`);
       const logs = await db.select().from(workLogs);
       console.log(`[WORK LOGS] Found ${logs.length} total logs:`, logs.map(l => `${l.id}: ${l.userId}`));
       return res.json(logs);
     } else {
-      // Regular users with CREATE_WORK_LOGS can only see their own logs
+      // Regular users with WORK_LOGS_ADD can only see their own logs
       console.log(`[WORK LOGS] Regular user access - fetching logs for ${userId}`);
       const logs = await db.select().from(workLogs).where(eq(workLogs.userId, userId));
       console.log(`[WORK LOGS] Found ${logs.length} logs for user ${userId}:`, logs.map(l => `${l.id}: ${l.description.substring(0, 30)}`));
@@ -82,8 +83,7 @@ router.get("/work-logs", isAuthenticated, async (req, res) => {
 });
 
 // Create a new work log
-router.post("/work-logs", isAuthenticated, async (req, res) => {
-  if (!canLogWork(req)) return res.status(403).json({ error: "Insufficient permissions" });
+router.post("/work-logs", requirePermission("WORK_LOGS_ADD"), async (req, res) => {
   const result = insertWorkLogSchema.safeParse(req.body);
   if (!result.success) return res.status(400).json({ error: result.error.message });
   try {
@@ -102,18 +102,22 @@ router.post("/work-logs", isAuthenticated, async (req, res) => {
 });
 
 // Update a work log (own or any if super admin)
-router.put("/work-logs/:id", isAuthenticated, async (req, res) => {
+router.put("/work-logs/:id", 
+  requireOwnershipPermission(
+    "WORK_LOGS_EDIT_OWN",
+    "WORK_LOGS_EDIT_ALL",
+    async (req) => {
+      const logId = parseInt(req.params.id);
+      const log = await db.select().from(workLogs).where(eq(workLogs.id, logId));
+      return log[0]?.userId || null;
+    }
+  ),
+  async (req, res) => {
   const logId = parseInt(req.params.id);
   if (isNaN(logId)) return res.status(400).json({ error: "Invalid log ID" });
   const result = insertWorkLogSchema.safeParse(req.body);
   if (!result.success) return res.status(400).json({ error: result.error.message });
   try {
-    // Only allow editing own log unless super admin or Marcy
-    const log = await db.select().from(workLogs).where(eq(workLogs.id, logId));
-    if (!log[0]) return res.status(404).json({ error: "Work log not found" });
-    if (!isSuperAdmin(req) && req.user?.email !== 'mdlouza@gmail.com' && log[0].userId !== req.user?.id) {
-      return res.status(403).json({ error: "Insufficient permissions" });
-    }
     const updated = await db.update(workLogs).set({
       description: result.data.description,
       hours: result.data.hours,
@@ -127,26 +131,23 @@ router.put("/work-logs/:id", isAuthenticated, async (req, res) => {
 });
 
 // Delete a work log (own or any if super admin)
-router.delete("/work-logs/:id", isAuthenticated, async (req, res) => {
+router.delete("/work-logs/:id", 
+  requireOwnershipPermission(
+    "WORK_LOGS_DELETE_OWN",
+    "WORK_LOGS_DELETE_ALL", 
+    async (req) => {
+      const logId = parseInt(req.params.id);
+      const log = await db.select().from(workLogs).where(eq(workLogs.id, logId));
+      return log[0]?.userId || null;
+    }
+  ),
+  async (req, res) => {
   const logId = parseInt(req.params.id);
   console.log("[WORK LOGS DELETE] Attempting to delete log ID:", logId);
   
   if (isNaN(logId)) return res.status(400).json({ error: "Invalid log ID" });
   
   try {
-    console.log("[WORK LOGS DELETE] Fetching log for permission check...");
-    const log = await db.select().from(workLogs).where(eq(workLogs.id, logId));
-    console.log("[WORK LOGS DELETE] Found log:", log[0] ? `ID ${log[0].id}, User ${log[0].userId}` : "None");
-    
-    if (!log[0]) return res.status(404).json({ error: "Work log not found" });
-    
-    const hasPermission = isSuperAdmin(req) || req.user?.email === 'mdlouza@gmail.com' || log[0].userId === req.user?.id;
-    console.log("[WORK LOGS DELETE] Permission check:", { hasPermission, userRole: req.user?.role, userEmail: req.user?.email, logUserId: log[0].userId });
-    
-    if (!hasPermission) {
-      return res.status(403).json({ error: "Insufficient permissions" });
-    }
-    
     console.log("[WORK LOGS DELETE] Deleting log...");
     await db.delete(workLogs).where(eq(workLogs.id, logId));
     console.log("[WORK LOGS DELETE] Successfully deleted log ID:", logId);
