@@ -242,7 +242,7 @@ const PERMISSION_CATEGORIES = [
         dangerLevel: "safe"
       },
       { 
-        key: PERMISSIONS.ACCESS_MESSAGES, 
+        key: PERMISSIONS.VIEW_MESSAGES, 
         label: "View messages (granular)", 
         description: "Granular permission to view direct messages",
         icon: Eye,
