@@ -29,8 +29,9 @@ interface EventRequest {
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdDate: string; // Field name from API
+  lastUpdated: string; // Field name from API
+  createdBy?: string;
 }
 
 const statusColors = {
@@ -490,7 +491,7 @@ export default function EventRequestsManagement() {
                   )}
                   <div className="flex justify-between items-center pt-3 border-t">
                     <span className="text-sm text-gray-500">
-                      Created: {format(new Date(request.createdAt), "PPp")}
+                      Created: {format(new Date(request.createdDate), "PPp")}
                     </span>
                     <div className="space-x-2">
                       <Button 
