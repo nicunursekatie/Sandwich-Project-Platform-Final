@@ -243,9 +243,9 @@ export default function SuggestionsPortal() {
 
     // Search filter
     const searchMatch = searchQuery === "" || 
-      suggestion.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      suggestion.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      suggestion.category?.toLowerCase().includes(searchQuery.toLowerCase());
+      suggestion.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      suggestion.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      suggestion.category.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Category filter
     const categoryMatch = selectedCategory === "all" || suggestion.category === selectedCategory;

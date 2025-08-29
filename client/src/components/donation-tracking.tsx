@@ -233,8 +233,8 @@ export default function DonationTracking() {
     const matchesHost = !selectedHost || selectedHost === "all" || dist.hostId.toString() === selectedHost;
     const matchesRecipient = !selectedRecipient || selectedRecipient === "all" || dist.recipientId.toString() === selectedRecipient;
     const matchesSearch = !searchTerm || 
-      dist.hostName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dist.recipientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dist.hostName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dist.recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       dist.notes?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesWeek && matchesHost && matchesRecipient && matchesSearch;
