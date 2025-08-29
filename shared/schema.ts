@@ -1133,6 +1133,13 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   createdAt: true,
   updatedAt: true,
   duplicateCheckDate: true,
+}).extend({
+  // Allow desiredEventDate to be either a Date object or a string that can be converted to a Date
+  desiredEventDate: z.union([
+    z.date(),
+    z.string().transform((str) => str ? new Date(str) : null),
+    z.null()
+  ]).optional(),
 });
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
