@@ -555,8 +555,36 @@ export default function EventRequestsManagement() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-start">
+                  <div className="flex flex-col items-end space-y-2">
                     {getStatusDisplay(request.status)}
+                    
+                    {/* Admin actions - small subtle buttons */}
+                    <div className="flex space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setCurrentEditingStatus(request.status);
+                          setShowEditDialog(true);
+                        }}
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this event request?")) {
+                            deleteMutation.mutate(request.id);
+                          }
+                        }}
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
