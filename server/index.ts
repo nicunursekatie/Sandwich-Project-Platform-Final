@@ -54,7 +54,7 @@ const app = express();
 
 // Enable gzip/brotli compression for performance
 app.use(compression({
-  filter: (req, res) => {
+  filter: (req: Request, res: Response) => {
     // Don't compress if the client doesn't support it
     if (req.headers['x-no-compression']) {
       return false;
@@ -286,8 +286,7 @@ async function startServer() {
           console.log("✓ Database initialization complete");
 
           // Start automatic background sync for Google Sheets
-          const { getStorage } = await import("./storage");
-          const storage = getStorage();
+          const { storage } = await import("./storage");
           startBackgroundSync(storage);
           console.log("✓ Background Google Sheets sync started");
 
