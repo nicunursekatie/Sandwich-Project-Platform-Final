@@ -117,6 +117,7 @@ export const PERMISSIONS = {
   EDIT_EVENT_REQUESTS: "edit_event_requests", // Edit event request information
   DELETE_EVENT_REQUESTS: "delete_event_requests", // Delete event requests
   ASSIGN_EVENT_REQUESTS: "assign_event_requests", // Assign event requests to team members
+  MANAGE_EVENT_REQUESTS: "manage_event_requests", // Full event request management including Google Sheets sync
 
   // Simplified work log permissions - CREATE automatically includes edit/delete own
   CREATE_WORK_LOGS: "create_work_logs", // Create new work logs + automatically edit/delete own work logs
