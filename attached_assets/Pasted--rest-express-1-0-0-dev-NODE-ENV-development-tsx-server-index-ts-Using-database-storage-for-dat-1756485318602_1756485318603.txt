@@ -1,0 +1,65 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+Using database storage for data persistence...
+Database storage initialized
+✅ SendGrid configured successfully
+🚀 Starting The Sandwich Project server...
+Starting server on 0.0.0.0:5000 in development mode
+✓ Socket.IO server initialized on /socket.io/
+Using database-backed session store for deployment persistence
+Temporary authentication system initialized
+✅ Default admin user already exists: admin@sandwich.project
+✅ Found existing user: katielong2316@gmail.com (preserving current role and permissions)
+✅ Assigned katielong2316@gmail.com to Finance Committee only
+✅ Found existing user: kenig.ka@gmail.com (preserving current role and permissions)
+Next automated backup scheduled for: 2025-08-30T02:00:00.000Z
+Backup system initialized with automated daily backups
+✓ API routes registered BEFORE Vite middleware
+✓ Vite development server setup complete AFTER API routes
+✓ Server startup sequence completed successfully
+✓ Server object: EXISTS
+✓ Server is running on http://0.0.0.0:5000
+✓ WebSocket server ready on ws://0.0.0.0:5000/notifications
+✓ Environment: development
+✓ Basic server ready - starting background initialization...
+Checking database initialization...
+DATABASE_URL exists: true
+DATABASE_URL preview: postgresql://neondb_...
+Checking sessions table...
+WebSocket client connected from: 172.31.119.66
+CORS: Request from origin: undefined
+CORS: Allowing all origins (development fallback)
+Sessions table ready
+User admin_1751065261945 identified for notifications
+Table counts - Hosts: 28 Projects: 22 Messages: 92 Collections: 1745 Recipients: 30
+Database ready - no sample data seeded
+Database initialization complete
+✓ Database initialization complete
+✗ Background initialization failed: TypeError: getStorage is not a function
+    at Immediate.<anonymous> (/home/runner/workspace/server/index.ts:290:27)
+Server continues to run with basic functionality...
+[2025-08-29T16:34:37.300Z] INFO: GET /
+CORS: Request from origin: undefined
+CORS: Allowing all origins (development fallback)
+CORS: Request from origin: undefined
+CORS: Allowing all origins (development fallback)
+CORS: Request from origin: https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000
+CORS: Allowing origin: https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000
+CORS: Request from origin: https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000
+CORS: Allowing origin: https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000
+CORS: Request from origin: undefined
+CORS: Allowing all origins (development fallback)
+CORS: Request from origin: https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000
+CORS: Allowing origin: https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000
+[2025-08-29T16:34:40.993Z] INFO: GET /@react-refresh
+4:34:41 PM [vite] Pre-transform error: /home/runner/workspace/client/src/components/dashboard-overview.tsx: Unterminated regular expression. (476:12)
+
+  474 |               </Card>
+  475 |             ))
+> 476 |           </div>
+      |             ^
+  477 |         </div>
+  478 |
+  479 |         {/* Help System */}

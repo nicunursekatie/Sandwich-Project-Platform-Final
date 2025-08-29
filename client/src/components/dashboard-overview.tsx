@@ -60,9 +60,9 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
   };
 
   const handleShareInventoryCalculator = async () => {
-    const url = 'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
-    const title = 'Inventory Calculator';
-    const text = 'Interactive tool for calculating sandwich inventory and planning quantities for collections';
+    const url = "https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html";
+    const title = "Inventory Calculator";
+    const text = "Interactive tool for calculating sandwich inventory and planning quantities for collections";
     
     if (navigator.share) {
       try {
