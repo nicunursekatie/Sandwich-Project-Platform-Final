@@ -85,15 +85,15 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
-    { id: "donation-tracking", label: "Distribution Tracking", icon: Route, href: "donation-tracking", group: "operations" },
-    ...(hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS) ? [{ id: "event-requests", label: "Event Requests", icon: Calendar, href: "event-requests", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG) ? [{ id: "organizations-catalog", label: "Organizations Catalog", icon: Building, href: "organizations-catalog", group: "operations" }] : []),
+    { id: "donation-tracking", label: "Distribution Tracking", icon: Route, href: "donation-tracking", group: "operations" },
     ...(hasPermission(user, PERMISSIONS.ACCESS_WEEKLY_MONITORING) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
     
     // PLANNING & COORDINATION
     ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: Calendar, href: "meetings", group: "planning" }] : []),
     { id: "events", label: "Events", icon: Calendar, href: "events", group: "planning" },
+    ...(hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS) ? [{ id: "event-requests", label: "Event Requests", icon: Calendar, href: "event-requests", group: "planning" }] : []),
     { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
     { id: "wishlist", label: "Amazon Wishlist", icon: Gift, href: "wishlist", group: "planning" },
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
