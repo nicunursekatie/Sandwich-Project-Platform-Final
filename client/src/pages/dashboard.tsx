@@ -129,7 +129,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     // Core section
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "collections", label: "Collections", icon: Sandwich },
-    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "events", label: "Events", icon: Calendar }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_EVENTS) ? [{ id: "events", label: "Events", icon: Calendar }] : []),
     { id: "inventory-calculator", label: "Inventory Calculator", icon: Calculator },
 
     
@@ -137,25 +137,25 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     ...(hasPermission(user, PERMISSIONS.ACCESS_HOSTS) ? [{ id: "hosts", label: "Host Location", icon: Building2 }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users }] : []),
-    ...(hasPermission(user, PERMISSIONS.USERS_VIEW) ? [{ id: "volunteers", label: "Volunteers", icon: Users }] : []),
-    ...(hasPermission(user, PERMISSIONS.DISTRIBUTIONS_VIEW) ? [{ id: "donation-tracking", label: "Distribution Tracking", icon: Truck }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DONATION_TRACKING) ? [{ id: "donation-tracking", label: "Distribution Tracking", icon: Truck }] : []),
     
     // Operations section
-    ...(hasPermission(user, PERMISSIONS.MEETINGS_VIEW) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList }] : []),
-    ...(hasPermission(user, PERMISSIONS.ANALYTICS_VIEW) ? [{ id: "analytics", label: "Analytics", icon: BarChart3 }] : []),
-    ...(hasPermission(user, PERMISSIONS.ANALYTICS_VIEW) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3 }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_WEEKLY_MONITORING) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock }] : []),
 
-    ...(hasPermission(user, PERMISSIONS.PROJECTS_VIEW) ? [{ id: "projects", label: "Projects", icon: ListTodo }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ListTodo }] : []),
     
     // Communication section
     { id: "chat", label: "Chat", icon: MessageCircle },
-    ...(hasPermission(user, PERMISSIONS.CHAT_GRANTS_COMMITTEE) ? [{ id: "committee", label: "Committee", icon: MessageCircle }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_COMMITTEE) ? [{ id: "committee", label: "Committee", icon: MessageCircle }] : []),
 
-    ...(hasPermission(user, PERMISSIONS.SUGGESTIONS_VIEW) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb }] : []),
+    ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb }] : []),
     
     // Resources section
     ...(hasPermission(user, PERMISSIONS.ACCESS_TOOLKIT) ? [{ id: "toolkit", label: "Toolkit", icon: FolderOpen }] : []),
-    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "development", label: "Development", icon: FileText }] : []),
+    ...(hasPermission(user, PERMISSIONS.ACCESS_DEVELOPMENT) ? [{ id: "development", label: "Development", icon: FileText }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ClipboardList }] : []),
     
     // Admin section
