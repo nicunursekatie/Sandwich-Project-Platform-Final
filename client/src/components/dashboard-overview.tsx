@@ -103,8 +103,8 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                 <Button 
                   className="text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
                   style={{ backgroundColor: '#FBAD3F' }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#e09527'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#FBAD3F'}
+                  onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e09527'}
+                  onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#FBAD3F'}
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
                 >
                   {showCollectionForm ? "Hide Form" : "Enter New Collection Data"}
@@ -112,8 +112,8 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                 <Button 
                   className="bg-white border font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-sm sm:text-base min-h-[44px] sm:min-h-[48px]"
                   style={{ borderColor: '#007E8C', color: '#007E8C' }}
-                  onMouseEnter={(e) => { e.target.style.backgroundColor = '#007E8C'; e.target.style.color = 'white'; }}
-                  onMouseLeave={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = '#007E8C'; }}
+                  onMouseEnter={(e) => { (e.target as HTMLElement).style.backgroundColor = '#007E8C'; (e.target as HTMLElement).style.color = 'white'; }}
+                  onMouseLeave={(e) => { (e.target as HTMLElement).style.backgroundColor = 'white'; (e.target as HTMLElement).style.color = '#007E8C'; }}
                   onClick={() => onSectionChange?.('collections')}
                 >
                   View Collection History
@@ -172,21 +172,21 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md">
               <h3 className="font-semibold mb-2">Key Findings: Peak Collection Weeks</h3>
               <p className="text-sm text-gray-600 mb-3">Comprehensive analysis of peak performance and organizational growth</p>
-              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#1e5470'} onMouseLeave={(e) => e.target.style.backgroundColor = '#236383'}>
+              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#1e5470'} onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#236383'}>
                 Download PDF
               </button>
             </div>
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md">
               <h3 className="font-semibold mb-2">Food Safety Guidelines</h3>
               <p className="text-sm text-gray-600 mb-3">Essential safety protocols for volunteers</p>
-              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#1e5470'} onMouseLeave={(e) => e.target.style.backgroundColor = '#236383'}>
+              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#1e5470'} onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#236383'}>
                 Download PDF
               </button>
             </div>
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md">
               <h3 className="font-semibold mb-2">Volunteer Driver Agreement</h3>
               <p className="text-sm text-gray-600 mb-3">Required agreement form for volunteer drivers</p>
-              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#1e5470'} onMouseLeave={(e) => e.target.style.backgroundColor = '#236383'}>
+              <button className="w-full text-white px-4 py-2 rounded transition-colors" style={{ backgroundColor: '#236383' }} onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#1e5470'} onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#236383'}>
                 Download PDF
               </button>
             </div>
