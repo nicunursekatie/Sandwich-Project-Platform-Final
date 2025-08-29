@@ -427,13 +427,13 @@ export default function EventRequestsManagement() {
           </div>
         ) : (
           filteredRequests.map((request: EventRequest) => (
-            <Card key={request.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
+              <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center space-x-3">
-                      <Building className="w-5 h-5 text-blue-600" />
-                      <span>{request.organizationName}</span>
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center space-x-3 text-xl mb-3">
+                      <Building className="w-6 h-6" style={{ color: '#236383' }} />
+                      <span className="text-gray-900">{request.organizationName}</span>
                       {request.organizationExists && (
                         <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                           <AlertTriangle className="w-3 h-3 mr-1" />
@@ -441,26 +441,34 @@ export default function EventRequestsManagement() {
                         </Badge>
                       )}
                     </CardTitle>
-                    <CardDescription>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <span className="flex items-center">
-                          <User className="w-3 h-3 mr-1" />
+                    
+                    {/* Contact Information - Prominent Display */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <User className="w-5 h-5" style={{ color: '#236383' }} />
+                        <span className="text-lg font-semibold" style={{ color: '#236383' }}>
                           {request.firstName} {request.lastName}
                         </span>
-                        <span className="flex items-center">
-                          <Mail className="w-3 h-3 mr-1" />
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Mail className="w-5 h-5" style={{ color: '#236383' }} />
+                        <span className="text-base font-medium" style={{ color: '#236383' }}>
                           {request.email}
                         </span>
-                        {request.phone && (
-                          <span className="flex items-center">
-                            <Phone className="w-3 h-3 mr-1" />
+                      </div>
+                      
+                      {request.phone && (
+                        <div className="flex items-center space-x-2">
+                          <Phone className="w-5 h-5" style={{ color: '#236383' }} />
+                          <span className="text-base font-medium" style={{ color: '#236383' }}>
                             {request.phone}
                           </span>
-                        )}
-                      </div>
-                    </CardDescription>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-start">
                     {getStatusDisplay(request.status)}
                   </div>
                 </div>
