@@ -387,6 +387,8 @@ export class MemStorage implements IStorage {
   private documents: Map<number, Document>;
   private documentPermissions: Map<number, DocumentPermission>;
   private documentAccessLogs: Map<number, DocumentAccessLog>;
+  private eventRequests: Map<number, EventRequest>;
+  private organizations: Map<number, Organization>;
   private currentIds: {
     user: number;
     project: number;
@@ -415,6 +417,8 @@ export class MemStorage implements IStorage {
     document: number;
     documentPermission: number;
     documentAccessLog: number;
+    eventRequest: number;
+    organization: number;
   };
 
   constructor() {
@@ -448,6 +452,8 @@ export class MemStorage implements IStorage {
     this.documents = new Map();
     this.documentPermissions = new Map();
     this.documentAccessLogs = new Map();
+    this.eventRequests = new Map();
+    this.organizations = new Map();
     this.currentIds = {
       user: 1,
       project: 1,
@@ -476,7 +482,9 @@ export class MemStorage implements IStorage {
       shoutoutLog: 1,
       document: 1,
       documentPermission: 1,
-      documentAccessLog: 1
+      documentAccessLog: 1,
+      eventRequest: 1,
+      organization: 1
     };
     
     // No sample data - start with clean storage
@@ -2026,6 +2034,106 @@ export class MemStorage implements IStorage {
     return Array.from(this.documentAccessLogs.values())
       .filter(log => log.documentId === documentId)
       .sort((a, b) => new Date(b.accessedAt).getTime() - new Date(a.accessedAt).getTime());
+  }
+
+  // Event Request methods
+  async getAllEventRequests(): Promise<EventRequest[]> {
+    return Array.from(this.eventRequests.values()).sort((a, b) => 
+      new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
+    );
+  }
+
+  async getEventRequest(id: number): Promise<EventRequest | undefined> {
+    return this.eventRequests.get(id);
+  }
+
+  async createEventRequest(insertEventRequest: InsertEventRequest): Promise<EventRequest> {
+    const id = this.currentIds.eventRequest++;
+    const eventRequest: EventRequest = {
+      ...insertEventRequest,
+      id,
+      createdDate: new Date(),
+      lastUpdated: new Date(),
+      status: insertEventRequest.status || 'new'
+    };
+    this.eventRequests.set(id, eventRequest);
+    return eventRequest;
+  }
+
+  async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
+    const eventRequest = this.eventRequests.get(id);
+    if (!eventRequest) return undefined;
+
+    const updated = { ...eventRequest, ...updates, lastUpdated: new Date() };
+    this.eventRequests.set(id, updated);
+    return updated;
+  }
+
+  async deleteEventRequest(id: number): Promise<boolean> {
+    return this.eventRequests.delete(id);
+  }
+
+  async getEventRequestsByStatus(status: string): Promise<EventRequest[]> {
+    return Array.from(this.eventRequests.values())
+      .filter(request => request.status === status)
+      .sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+  }
+
+  async getEventRequestsByOrganization(organizationName: string): Promise<EventRequest[]> {
+    return Array.from(this.eventRequests.values())
+      .filter(request => request.organizationName.toLowerCase().includes(organizationName.toLowerCase()))
+      .sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+  }
+
+  async checkOrganizationDuplicates(organizationName: string): Promise<{ exists: boolean; matches: Organization[] }> {
+    const matches = Array.from(this.organizations.values())
+      .filter(org => org.name.toLowerCase().includes(organizationName.toLowerCase()));
+    return { exists: matches.length > 0, matches };
+  }
+
+  // Organization methods
+  async getAllOrganizations(): Promise<Organization[]> {
+    return Array.from(this.organizations.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getOrganization(id: number): Promise<Organization | undefined> {
+    return this.organizations.get(id);
+  }
+
+  async createOrganization(insertOrganization: InsertOrganization): Promise<Organization> {
+    const id = this.currentIds.organization++;
+    const organization: Organization = {
+      ...insertOrganization,
+      id,
+      createdDate: new Date(),
+      lastUpdated: new Date()
+    };
+    this.organizations.set(id, organization);
+    return organization;
+  }
+
+  async updateOrganization(id: number, updates: Partial<Organization>): Promise<Organization | undefined> {
+    const organization = this.organizations.get(id);
+    if (!organization) return undefined;
+
+    const updated = { ...organization, ...updates, lastUpdated: new Date() };
+    this.organizations.set(id, updated);
+    return updated;
+  }
+
+  async deleteOrganization(id: number): Promise<boolean> {
+    return this.organizations.delete(id);
+  }
+
+  async searchOrganizations(query: string): Promise<Organization[]> {
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.organizations.values())
+      .filter(org => 
+        org.name.toLowerCase().includes(lowerQuery) ||
+        org.category?.toLowerCase().includes(lowerQuery) ||
+        org.description?.toLowerCase().includes(lowerQuery)
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 }
 

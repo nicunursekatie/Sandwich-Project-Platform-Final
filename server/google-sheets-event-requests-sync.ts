@@ -23,7 +23,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   constructor(private storage: DatabaseStorage) {
     const config: GoogleSheetsConfig = {
       spreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID!,
-      worksheetName: 'Event Requests'
+      worksheetName: 'Sheet1'
     };
     super(config);
   }
@@ -80,34 +80,13 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 
   /**
    * Sync event requests from database to Google Sheets
+   * DISABLED TO PREVENT DATA LOSS - This function was clearing the user's sheet
    */
   async syncToGoogleSheets(): Promise<{ success: boolean; message: string; synced?: number }> {
-    try {
-      await this.ensureInitialized();
-      
-      // Get all event requests from database
-      const eventRequests = await this.storage.getAllEventRequests();
-      
-      // Convert to sheet format
-      const sheetRows: EventRequestSheetRow[] = eventRequests.map(request => 
-        this.eventRequestToSheetRow(request)
-      );
-      
-      // Update the Google Sheet
-      await this.updateEventRequestsSheet(sheetRows);
-      
-      return { 
-        success: true, 
-        message: `Successfully synced ${eventRequests.length} event requests to Google Sheets`,
-        synced: eventRequests.length
-      };
-    } catch (error) {
-      console.error('Error syncing event requests to Google Sheets:', error);
-      return { 
-        success: false, 
-        message: `Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-    }
+    return { 
+      success: false, 
+      message: "TO-SHEETS sync is DISABLED to prevent data loss. Use FROM-SHEETS sync only."
+    };
   }
 
   /**
@@ -171,11 +150,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       throw new Error('Google Sheets service not initialized');
     }
 
-    // Clear existing data (except headers)
-    await this.sheets.spreadsheets.values.clear({
-      spreadsheetId: (this as any).config.spreadsheetId,
-      range: `${(this as any).config.worksheetName}!A2:Z1000`,
-    });
+    // DISABLED: Clear existing data - this was wiping the user's sheet
+    // await this.sheets.spreadsheets.values.clear({
+    //   spreadsheetId: (this as any).config.spreadsheetId,
+    //   range: `${(this as any).config.worksheetName}!A2:Z1000`,
+    // });
 
     if (eventRequests.length === 0) {
       console.log('No event requests to sync');
@@ -244,20 +223,29 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     });
 
     const rows = response.data.values || [];
+    console.log(`📊 Reading ${rows.length} rows from Google Sheets`);
+    if (rows.length > 0) {
+      console.log('📋 First row (headers):', rows[0]);
+      if (rows.length > 1) {
+        console.log('📋 Second row (sample data):', rows[1]);
+      }
+    }
+    
     return rows.map((row: string[], index: number) => ({
-      organizationName: row[0] || '',
-      contactName: row[1] || '',
-      email: row[2] || '',
-      phone: row[3] || '',
-      department: row[4] || '',
-      desiredEventDate: row[5] || '',
-      status: row[6] || 'new',
-      message: row[7] || '',
-      previouslyHosted: row[8] || '',
-      createdDate: row[9] || '',
-      lastUpdated: row[10] || '',
-      duplicateCheck: row[11] || 'No',
-      notes: row[12] || '',
+      // Match the actual Google Sheet structure from the screenshot
+      createdDate: row[0] || '', // Submitted On (A)
+      contactName: row[1] || '', // Name (B)
+      email: row[2] || '', // Email (C)
+      organizationName: row[3] || '', // Group/Organization Name (D)
+      phone: row[4] || '', // Phone (E)
+      desiredEventDate: row[5] || '', // Desired Event Date (F)
+      message: row[6] || '', // Message (G)
+      department: '', // Not in current sheet
+      status: 'new', // Default status
+      previouslyHosted: 'i_dont_know', // Default value
+      lastUpdated: new Date().toISOString(),
+      duplicateCheck: 'No',
+      notes: '',
       rowIndex: index + 2
     }));
   }

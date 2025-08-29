@@ -1310,6 +1310,92 @@ class StorageWrapper implements IStorage {
       () => this.fallbackStorage.getRecentWishlistActivity(limit)
     );
   }
+
+  // Event Request methods
+  async getAllEventRequests() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllEventRequests(),
+      () => this.fallbackStorage.getAllEventRequests()
+    );
+  }
+
+  async getEventRequest(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventRequest(id),
+      () => this.fallbackStorage.getEventRequest(id)
+    );
+  }
+
+  async createEventRequest(insertEventRequest: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createEventRequest(insertEventRequest),
+      () => this.fallbackStorage.createEventRequest(insertEventRequest)
+    );
+  }
+
+  async updateEventRequest(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateEventRequest(id, updates),
+      () => this.fallbackStorage.updateEventRequest(id, updates)
+    );
+  }
+
+  async deleteEventRequest(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteEventRequest(id),
+      () => this.fallbackStorage.deleteEventRequest(id)
+    );
+  }
+
+  async getEventRequestsByStatus(status: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventRequestsByStatus(status),
+      () => this.fallbackStorage.getEventRequestsByStatus(status)
+    );
+  }
+
+  async getEventRequestsByOrganization(organizationName: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventRequestsByOrganization(organizationName),
+      () => this.fallbackStorage.getEventRequestsByOrganization(organizationName)
+    );
+  }
+
+  // Organization methods
+  async getAllOrganizations() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllOrganizations(),
+      () => this.fallbackStorage.getAllOrganizations()
+    );
+  }
+
+  async getOrganization(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getOrganization(id),
+      () => this.fallbackStorage.getOrganization(id)
+    );
+  }
+
+  async createOrganization(insertOrganization: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createOrganization(insertOrganization),
+      () => this.fallbackStorage.createOrganization(insertOrganization)
+    );
+  }
+
+  async updateOrganization(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateOrganization(id, updates),
+      () => this.fallbackStorage.updateOrganization(id, updates)
+    );
+  }
+
+  async deleteOrganization(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteOrganization(id),
+      () => this.fallbackStorage.deleteOrganization(id)
+    );
+  }
 }
 
 export const storage = new StorageWrapper();
