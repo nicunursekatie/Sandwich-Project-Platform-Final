@@ -348,18 +348,18 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mx-3 sm:mx-4 md:mx-6 mt-6 sm:mt-8">
-          <div className="bg-white rounded-xl p-4 text-left group shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
-            <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Calculator className="w-5 h-5 text-white" />
+          <div className="bg-white rounded-xl p-4 sm:p-5 text-left group shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+              <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <h4 className="font-semibold text-[#236383]">Inventory Calculator</h4>
-            <p className="text-sm text-gray-600 mb-3">Plan quantities</p>
-            <div className="flex gap-2">
+            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Inventory Calculator</h4>
+            <p className="text-xs sm:text-sm text-gray-600 mb-3 flex-1">Plan quantities for collections</p>
+            <div className="flex flex-col sm:flex-row gap-2 mt-auto">
               <Button
                 size="sm"
                 variant="default"
                 onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}
-                className="flex-1 h-8 text-xs"
+                className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
               >
                 <ExternalLink className="w-3 h-3 mr-1" />
                 Open
@@ -368,7 +368,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                 size="sm"
                 variant="outline"
                 onClick={handleShareInventoryCalculator}
-                className="flex-1 h-8 text-xs"
+                className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
               >
                 <Share2 className="w-3 h-3 mr-1" />
                 Share
@@ -376,36 +376,36 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
             </div>
           </div>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('collections')}>
-            <div className="w-10 h-10 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-5 h-5 text-white" />
+          <button className="bg-white rounded-xl p-4 sm:p-5 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col" onClick={() => onSectionChange?.('collections')}>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <h4 className="font-semibold text-[#236383]">Collections</h4>
-            <p className="text-sm text-gray-600">View all data</p>
+            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Collections</h4>
+            <p className="text-xs sm:text-sm text-gray-600 flex-1">View all collection data</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('analytics')}>
-            <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <TrendingUp className="w-5 h-5 text-white" />
+          <button className="bg-white rounded-xl p-4 sm:p-5 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col" onClick={() => onSectionChange?.('analytics')}>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <h4 className="font-semibold text-[#236383]">Analytics</h4>
-            <p className="text-sm text-gray-600">Deep insights</p>
+            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Analytics</h4>
+            <p className="text-xs sm:text-sm text-gray-600 flex-1">Deep insights and trends</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('phone-directory')}>
-            <div className="w-10 h-10 bg-[#007E8C] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Users className="w-5 h-5 text-white" />
+          <button className="bg-white rounded-xl p-4 sm:p-5 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col" onClick={() => onSectionChange?.('phone-directory')}>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#007E8C] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <h4 className="font-semibold text-[#236383]">Directory</h4>
-            <p className="text-sm text-gray-600">Contact info</p>
+            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Directory</h4>
+            <p className="text-xs sm:text-sm text-gray-600 flex-1">Contact information</p>
           </button>
 
-          <button className="bg-white rounded-xl p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('messages')}>
-            <div className="w-10 h-10 bg-[#A31C41] rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Calendar className="w-5 h-5 text-white" />
+          <button className="bg-white rounded-xl p-4 sm:p-5 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 min-h-[140px] flex flex-col" onClick={() => onSectionChange?.('messages')}>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#A31C41] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <h4 className="font-semibold text-[#236383]">Messages</h4>
-            <p className="text-sm text-gray-600">Communication</p>
+            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1">Messages</h4>
+            <p className="text-xs sm:text-sm text-gray-600 flex-1">Communication hub</p>
           </button>
         </div>
 
