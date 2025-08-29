@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Send, Users, MessageCircle, ChevronLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,29 +23,34 @@ interface Message {
 
 const committees = [
   { 
-    id: "marketing_committee", 
-    name: "Marketing Committee", 
-    description: "Marketing campaigns and promotions"
+    id: "grants_committee", 
+    name: "Grants Committee", 
+    description: "Grant applications and funding opportunities",
+    permission: "CHAT_GRANTS_COMMITTEE"
   },
   { 
-    id: "grant_committee", 
-    name: "Grant Committee", 
-    description: "Grant applications and funding"
+    id: "events_committee", 
+    name: "Events Committee", 
+    description: "Event planning and coordination",
+    permission: "CHAT_EVENTS_COMMITTEE"
   },
   { 
-    id: "group_events", 
-    name: "Group Events", 
-    description: "Team events and activities"
+    id: "board_chat", 
+    name: "Board Chat", 
+    description: "Board member discussions and governance",
+    permission: "CHAT_BOARD"
   },
   { 
-    id: "finance_committee", 
-    name: "Finance Committee", 
-    description: "Budget and financial planning"
+    id: "web_committee", 
+    name: "Web Committee", 
+    description: "Website development and digital strategy",
+    permission: "CHAT_WEB_COMMITTEE"
   },
   { 
-    id: "operations", 
-    name: "Operations", 
-    description: "Daily operations and logistics"
+    id: "volunteer_management", 
+    name: "Volunteer Management", 
+    description: "Volunteer coordination and support",
+    permission: "CHAT_VOLUNTEER_MANAGEMENT"
   }
 ];
 
@@ -189,6 +194,14 @@ export default function CommitteeChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Filter committees based on user permissions
+  const availableCommittees = useMemo(() => {
+    if (!user || !user.permissions) return [];
+    return committees.filter(committee => 
+      user.permissions.includes(committee.permission)
+    );
+  }, [user]);
+
   if (!selectedCommittee) {
     return (
       <div className="p-6">
@@ -197,8 +210,14 @@ export default function CommitteeChat() {
           Committee Chat
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {committees.map((committee) => (
+        {availableCommittees.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No committee chat access available</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableCommittees.map((committee) => (
             <div
               key={committee.id}
               onClick={() => setSelectedCommittee(committee)}
@@ -213,7 +232,8 @@ export default function CommitteeChat() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     );
   }

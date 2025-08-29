@@ -208,7 +208,11 @@ const RESOURCE_PERMISSIONS = [
     iconColor: "text-emerald-600",
     actions: [
       { action: "GENERAL", label: "General chat channel", key: "CHAT_GENERAL" },
-      { action: "COMMITTEE", label: "Committee chat channels", key: "CHAT_COMMITTEE" },
+      { action: "GRANTS_COMMITTEE", label: "Grants committee chat", key: "CHAT_GRANTS_COMMITTEE" },
+      { action: "EVENTS_COMMITTEE", label: "Events committee chat", key: "CHAT_EVENTS_COMMITTEE" },
+      { action: "BOARD", label: "Board chat access", key: "CHAT_BOARD" },
+      { action: "WEB_COMMITTEE", label: "Web committee chat", key: "CHAT_WEB_COMMITTEE" },
+      { action: "VOLUNTEER_MANAGEMENT", label: "Volunteer management chat", key: "CHAT_VOLUNTEER_MANAGEMENT" },
       { action: "HOST", label: "Host organization channel", key: "CHAT_HOST" },
       { action: "DRIVER", label: "Driver coordination channel", key: "CHAT_DRIVER" },
       { action: "RECIPIENT", label: "Recipient organization channel", key: "CHAT_RECIPIENT" },
