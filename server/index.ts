@@ -48,6 +48,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db-init";
 import { setupSocketChat } from "./socket-chat";
+import { startBackgroundSync } from "./background-sync-service";
 
 const app = express();
 
@@ -283,6 +284,11 @@ async function startServer() {
         try {
           await initializeDatabase();
           console.log("✓ Database initialization complete");
+
+          // Start automatic background sync for Google Sheets
+          const { storage } = await import("./database-storage");
+          startBackgroundSync(storage);
+          console.log("✓ Background Google Sheets sync started");
 
           // Routes already registered during server startup
           console.log(

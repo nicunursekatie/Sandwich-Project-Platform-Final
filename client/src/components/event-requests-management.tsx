@@ -279,13 +279,7 @@ export default function EventRequestsManagement() {
                 Add Event Request
               </Button>
             </DialogTrigger>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Add Dialog moved outside header */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Event Request</DialogTitle>
               <DialogDescription>
@@ -374,6 +368,7 @@ export default function EventRequestsManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
