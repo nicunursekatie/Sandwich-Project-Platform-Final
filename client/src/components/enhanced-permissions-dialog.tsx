@@ -165,7 +165,8 @@ const RESOURCE_PERMISSIONS = [
       { action: "VIEW", label: "View event requests", key: "EVENT_REQUESTS_VIEW" },
       { action: "ADD", label: "Submit new requests", key: "EVENT_REQUESTS_ADD" },
       { action: "EDIT", label: "Edit request details", key: "EVENT_REQUESTS_EDIT" },
-      { action: "DELETE", label: "Delete event requests", key: "EVENT_REQUESTS_DELETE" }
+      { action: "DELETE", label: "Delete event requests", key: "EVENT_REQUESTS_DELETE" },
+      { action: "COMPLETE_CONTACT", label: "Mark primary contact completed", key: "EVENT_REQUESTS_COMPLETE_CONTACT" }
     ]
   },
   {

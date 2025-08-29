@@ -1085,6 +1085,14 @@ export const eventRequests = pgTable("event_requests", {
   // Timeline tracking
   contactedAt: timestamp("contacted_at"), // When initial contact was completed
   
+  // Contact completion details (collected when marking contacted)
+  contactMethod: varchar("contact_method"), // 'phone', 'email', 'video_meeting'
+  contactNotes: text("contact_notes"), // Free text notes from the contact
+  eventAddress: text("event_address"), // Event location address collected
+  plannedSandwiches: integer("planned_sandwiches"), // Number of sandwiches planned
+  hasRefrigeration: boolean("has_refrigeration"), // Whether site has refrigeration
+  contactCompletedBy: varchar("contact_completed_by"), // User ID who completed the contact
+  
   // Duplicate detection flags
   organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates

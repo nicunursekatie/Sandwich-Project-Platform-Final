@@ -25,7 +25,7 @@ interface EventRequest {
   desiredEventDate?: string;
   message?: string;
   previouslyHosted: 'yes' | 'no' | 'i_dont_know';
-  status: 'new' | 'contacted' | 'in_planning' | 'scheduled' | 'completed' | 'declined';
+  status: 'new' | 'contacted' | 'contact_completed' | 'in_planning' | 'scheduled' | 'completed' | 'declined';
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
@@ -33,11 +33,20 @@ interface EventRequest {
   updatedAt: string; 
   contactedAt?: string; // When initial contact was completed
   createdBy?: string;
+  // Contact completion fields
+  contactCompletedAt?: string;
+  completedByUserId?: string;
+  communicationMethod?: string;
+  eventAddress?: string;
+  estimatedSandwichCount?: number;
+  hasRefrigeration?: boolean;
+  contactCompletionNotes?: string;
 }
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
-  contacted: "bg-yellow-100 text-yellow-800", 
+  contacted: "bg-yellow-100 text-yellow-800",
+  contact_completed: "bg-emerald-100 text-emerald-800",
   in_planning: "bg-purple-100 text-purple-800",
   scheduled: "bg-green-100 text-green-800",
   completed: "bg-gray-100 text-gray-800",
@@ -47,6 +56,7 @@ const statusColors = {
 const statusIcons = {
   new: Clock,
   contacted: Mail,
+  contact_completed: CheckCircle,
   in_planning: Calendar,
   scheduled: CheckCircle,
   completed: CheckCircle,
@@ -62,6 +72,7 @@ const previouslyHostedOptions = [
 const statusOptions = [
   { value: "new", label: "New Request" },
   { value: "contacted", label: "Contacted" },
+  { value: "contact_completed", label: "Contact Completed" },
   { value: "in_planning", label: "In Planning" },
   { value: "scheduled", label: "Scheduled" },
   { value: "completed", label: "Completed" },
@@ -73,6 +84,8 @@ export default function EventRequestsManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(null);
+  const [showCompleteContactDialog, setShowCompleteContactDialog] = useState(false);
+  const [completingRequest, setCompletingRequest] = useState<EventRequest | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -127,6 +140,23 @@ export default function EventRequestsManagement() {
     onError: (error: any) => {
       toast({ 
         title: "Error deleting event request", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const completeContactMutation = useMutation({
+    mutationFn: ({ id, ...data }: any) => apiRequest("PATCH", `/api/event-requests/${id}/complete-contact`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      setShowCompleteContactDialog(false);
+      setCompletingRequest(null);
+      toast({ title: "Contact completion recorded successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error recording contact completion", 
         description: error.message,
         variant: "destructive" 
       });
@@ -517,54 +547,71 @@ export default function EventRequestsManagement() {
                           return 'Invalid date';
                         }
                       })()}</div>
-                      {request.status === 'new' && (
-                        <div className="font-medium" style={{ color: '#236383' }}>
-                          Waiting for contact ({(() => {
+                      {request.status === 'new' && !request.contactCompletedAt && (
+                        <div className="font-medium" style={{ color: '#e67e22' }}>
+                          Action needed: {(() => {
                             try {
-                              const date = new Date(request.createdAt);
-                              return isNaN(date.getTime()) ? '0' : Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+                              const submissionDate = new Date(request.createdAt);
+                              const targetDate = new Date(submissionDate.getTime() + (3 * 24 * 60 * 60 * 1000)); // 3 days after submission
+                              const daysUntilTarget = Math.ceil((targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                              if (daysUntilTarget > 0) {
+                                return `Contact within ${daysUntilTarget} day${daysUntilTarget === 1 ? '' : 's'}`;
+                              } else {
+                                const daysOverdue = Math.abs(daysUntilTarget);
+                                return `Contact overdue by ${daysOverdue} day${daysOverdue === 1 ? '' : 's'}`;
+                              }
                             } catch (error) {
-                              return '0';
+                              return 'Contact needed';
                             }
-                          })()} days ago)
+                          })()}
                         </div>
                       )}
-                      {request.contactedAt && (
-                        <div className="text-green-600">
-                          Initial contact: {format(new Date(request.contactedAt), "PPp")}
-                          {request.desiredEventDate && (
-                            <span className="ml-2">
-                              ({Math.ceil((new Date(request.desiredEventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days until event)
-                            </span>
+                      {request.contactCompletedAt && (
+                        <div className="text-green-600 space-y-1">
+                          <div>Contact completed: {format(new Date(request.contactCompletedAt), "PPp")}</div>
+                          {request.communicationMethod && (
+                            <div className="text-sm">Method: {request.communicationMethod}</div>
+                          )}
+                          {request.eventAddress && (
+                            <div className="text-sm">Event location: {request.eventAddress}</div>
+                          )}
+                          {request.estimatedSandwichCount && (
+                            <div className="text-sm">Estimated sandwiches: {request.estimatedSandwichCount}</div>
+                          )}
+                          {typeof request.hasRefrigeration === 'boolean' && (
+                            <div className="text-sm">Refrigeration: {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
                           )}
                         </div>
                       )}
                     </div>
                     <div className="space-x-2">
-                      <Button
-                        variant={request.status === 'contacted' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => {
-                          const newStatus = request.status === 'contacted' ? 'new' : 'contacted';
-                          updateMutation.mutate({
-                            id: request.id,
-                            status: newStatus,
-                            contactedAt: newStatus === 'contacted' ? new Date().toISOString() : null
-                          });
-                        }}
-                      >
-                        {request.status === 'contacted' ? (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Contacted
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="h-4 w-4 mr-1" />
-                            Mark Initial Contact Complete
-                          </>
-                        )}
-                      </Button>
+                      {request.status === 'new' && !request.contactCompletedAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setCompletingRequest(request);
+                            setShowCompleteContactDialog(true);
+                          }}
+                        >
+                          <Clock className="h-4 w-4 mr-1" />
+                          Complete Primary Contact
+                        </Button>
+                      )}
+                      
+                      {request.contactCompletedAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowEditDialog(true);
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          View Event Data
+                        </Button>
+                      )}
                       
                       {/* Super admin only actions */}
                       {/* Note: For future implementation when user context is available */}
@@ -698,6 +745,105 @@ export default function EventRequestsManagement() {
                 </Button>
                 <Button type="submit" disabled={updateMutation.isPending}>
                   {updateMutation.isPending ? "Updating..." : "Update Event Request"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Contact Completion Dialog */}
+      {completingRequest && (
+        <Dialog open={showCompleteContactDialog} onOpenChange={setShowCompleteContactDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Complete Primary Contact</DialogTitle>
+              <DialogDescription>
+                Record details from your contact with {completingRequest.organizationName}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              completeContactMutation.mutate({
+                id: completingRequest.id,
+                communicationMethod: formData.get("communicationMethod"),
+                eventAddress: formData.get("eventAddress") || undefined,
+                estimatedSandwichCount: formData.get("estimatedSandwichCount") ? 
+                  parseInt(formData.get("estimatedSandwichCount") as string) : undefined,
+                hasRefrigeration: formData.get("hasRefrigeration") === "yes" ? true : 
+                  formData.get("hasRefrigeration") === "no" ? false : undefined,
+                notes: formData.get("notes") || undefined
+              });
+            }} className="space-y-4">
+              <div>
+                <Label htmlFor="communicationMethod">How did you contact them? *</Label>
+                <Select name="communicationMethod" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select communication method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="phone">Phone call</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                    <SelectItem value="text">Text message</SelectItem>
+                    <SelectItem value="in_person">In person</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="eventAddress">Event Address (if confirmed)</Label>
+                <Textarea 
+                  name="eventAddress" 
+                  rows={2}
+                  placeholder="Street address, city, state where the event will be held..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="estimatedSandwichCount">Estimated Sandwich Count</Label>
+                  <Input 
+                    name="estimatedSandwichCount" 
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                  <Select name="hasRefrigeration">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select if known" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes - has refrigeration</SelectItem>
+                      <SelectItem value="no">No refrigeration</SelectItem>
+                      <SelectItem value="unknown">Unknown/Not discussed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Additional Notes</Label>
+                <Textarea 
+                  name="notes" 
+                  rows={3}
+                  placeholder="Any important details from your conversation, next steps, concerns, etc."
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => {
+                  setShowCompleteContactDialog(false);
+                  setCompletingRequest(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={completeContactMutation.isPending}>
+                  {completeContactMutation.isPending ? "Recording..." : "Record Contact Completion"}
                 </Button>
               </div>
             </form>

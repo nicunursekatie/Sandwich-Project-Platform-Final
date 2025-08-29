@@ -71,6 +71,7 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_EDIT: "EVENT_REQUESTS_EDIT",
   EVENT_REQUESTS_DELETE: "EVENT_REQUESTS_DELETE",
   EVENT_REQUESTS_SYNC: "EVENT_REQUESTS_SYNC", // Google Sheets sync
+  EVENT_REQUESTS_COMPLETE_CONTACT: "EVENT_REQUESTS_COMPLETE_CONTACT", // Mark primary contact as completed
 
   // MESSAGES - Messaging system
   MESSAGES_VIEW: "MESSAGES_VIEW",
@@ -262,6 +263,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.EVENT_REQUESTS_VIEW,
+        PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
         
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
@@ -289,6 +292,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.USERS_EDIT, // Core team can manage users
         PERMISSIONS.DISTRIBUTIONS_EDIT,
         PERMISSIONS.EVENT_REQUESTS_EDIT,
+        PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
         PERMISSIONS.SUGGESTIONS_MANAGE,
         
         // Collection permissions
