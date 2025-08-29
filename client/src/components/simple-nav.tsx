@@ -78,35 +78,35 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     // COMMUNICATION
     { id: "chat", label: "Team Chat", icon: Hash, href: "chat", group: "communication" },
     { id: "gmail-inbox", label: "Inbox", icon: Inbox, href: "gmail-inbox", group: "communication" },
-    ...(hasPermission(user, PERMISSIONS.VIEW_SUGGESTIONS) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb, href: "suggestions", group: "communication" }] : []),
+    ...(hasPermission(user, PERMISSIONS.SUGGESTIONS_VIEW) ? [{ id: "suggestions", label: "Suggestions", icon: Lightbulb, href: "suggestions", group: "communication" }] : []),
     
     // OPERATIONS (the weekly flow)
-    ...(hasPermission(user, PERMISSIONS.VIEW_HOSTS) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "operations" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG) ? [{ id: "organizations-catalog", label: "Organizations Catalog", icon: Building, href: "organizations-catalog", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.HOSTS_VIEW) ? [{ id: "hosts", label: "Hosts", icon: Building2, href: "hosts", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.DRIVERS_VIEW) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.USERS_VIEW) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW) ? [{ id: "organizations-catalog", label: "Organizations Catalog", icon: Building, href: "organizations-catalog", group: "operations" }] : []),
     { id: "donation-tracking", label: "Distribution Tracking", icon: Route, href: "donation-tracking", group: "operations" },
-    ...(hasPermission(user, PERMISSIONS.ACCESS_WEEKLY_MONITORING) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ANALYTICS_VIEW) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
     
     // PLANNING & COORDINATION
-    ...(hasPermission(user, PERMISSIONS.VIEW_PROJECTS) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: Calendar, href: "meetings", group: "planning" }] : []),
+    ...(hasPermission(user, PERMISSIONS.PROJECTS_VIEW) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
+    ...(hasPermission(user, PERMISSIONS.MEETINGS_VIEW) ? [{ id: "meetings", label: "Meetings", icon: Calendar, href: "meetings", group: "planning" }] : []),
     { id: "events", label: "Events", icon: Calendar, href: "events", group: "planning" },
-    ...(hasPermission(user, PERMISSIONS.VIEW_EVENT_REQUESTS) ? [{ id: "event-requests", label: "Event Requests", icon: Calendar, href: "event-requests", group: "planning" }] : []),
+    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "event-requests", label: "Event Requests", icon: Calendar, href: "event-requests", group: "planning" }] : []),
     { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
     { id: "wishlist", label: "Amazon Wishlist", icon: Gift, href: "wishlist", group: "planning" },
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
     
     // DOCUMENTATION
-    ...(hasPermission(user, PERMISSIONS.MANAGE_DOCUMENTS) || hasPermission(user, PERMISSIONS.VIEW_DOCUMENTS) ? [{ id: "documents", label: "Document Management", icon: FileText, href: "documents", group: "documentation" }] : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_DEVELOPMENT) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "documentation" }] : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_GOVERNANCE) ? [{ id: "governance", label: "Governance", icon: Scale, href: "governance", group: "documentation" }] : []),
+    ...(hasPermission(user, PERMISSIONS.DOCUMENTS_MANAGE) || hasPermission(user, PERMISSIONS.DOCUMENTS_VIEW) ? [{ id: "documents", label: "Document Management", icon: FileText, href: "documents", group: "documentation" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ? [{ id: "admin", label: "Important Documents", icon: FileText, href: "admin", group: "documentation" }] : []),
+    ...(hasPermission(user, PERMISSIONS.DOCUMENTS_VIEW) ? [{ id: "governance", label: "Governance", icon: Scale, href: "governance", group: "documentation" }] : []),
     
     // ADMIN
-    ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3, href: "analytics", group: "admin" }] : []),
-    ...(hasPermission(user, PERMISSIONS.CREATE_WORK_LOGS) ? [{ id: "work-log", label: "Work Log", icon: ListTodo, href: "work-log", group: "admin" }] : []),
-    ...(hasPermission(user, PERMISSIONS.MANAGE_USERS) ? [{ id: "user-management", label: "User Management", icon: Settings, href: "user-management", group: "admin" }] : [])
+    ...(hasPermission(user, PERMISSIONS.ANALYTICS_VIEW) ? [{ id: "analytics", label: "Analytics", icon: BarChart3, href: "analytics", group: "admin" }] : []),
+    ...(hasPermission(user, PERMISSIONS.WORK_LOGS_ADD) ? [{ id: "work-log", label: "Work Log", icon: ListTodo, href: "work-log", group: "admin" }] : []),
+    ...(hasPermission(user, PERMISSIONS.USERS_EDIT) ? [{ id: "user-management", label: "User Management", icon: Settings, href: "user-management", group: "admin" }] : [])
   ];
 
   const isActive = (href: string) => {

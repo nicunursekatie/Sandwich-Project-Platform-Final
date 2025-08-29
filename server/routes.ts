@@ -4968,7 +4968,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (targetType === 'host') {
         // Check if this contact is already assigned as a host contact to prevent duplicates
-        const existingHostContacts = await storage.getAllHostContacts();
+        const existingHostContacts = await storage.getHostContacts();
         const existingAssignment = existingHostContacts.find(hc => 
           hc.email === contact.email && hc.name === contact.name
         );
@@ -5318,7 +5318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             // Check for duplicate contact across the entire system (not just this host)
-            const allHostContacts = await storage.getAllHostContacts();
+            const allHostContacts = await storage.getHostContacts();
             const emailMatch = email ? allHostContacts.find(c => c.email === String(email).trim()) : null;
             const phoneMatch = allHostContacts.find(c => c.phone.replace(/\D/g, "") === cleanPhone);
             
