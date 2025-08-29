@@ -127,13 +127,8 @@ router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_
 });
 
 // Update event request
-router.put("/:id", async (req, res) => {
+router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
   try {
-    const user = req.user;
-    if (!user || !hasPermission(user, PERMISSIONS.EDIT_EVENT_REQUESTS)) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
-
     const id = parseInt(req.params.id);
     const updates = req.body;
 
@@ -143,7 +138,7 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, res, PERMISSIONS.EDIT_EVENT_REQUESTS, `Updated event request: ${id}`);
+    logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request: ${id}`);
     res.json(updatedEventRequest);
   } catch (error) {
     console.error("Error updating event request:", error);
@@ -152,13 +147,8 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete event request
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_DELETE"), async (req, res) => {
   try {
-    const user = req.user;
-    if (!user || !hasPermission(user, PERMISSIONS.DELETE_EVENT_REQUESTS)) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
-
     const id = parseInt(req.params.id);
     const deleted = await storage.deleteEventRequest(id);
     
@@ -166,7 +156,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    logActivity(req, res, PERMISSIONS.DELETE_EVENT_REQUESTS, `Deleted event request: ${id}`);
+    logActivity(req, res, "EVENT_REQUESTS_DELETE", `Deleted event request: ${id}`);
     res.json({ message: "Event request deleted successfully" });
   } catch (error) {
     console.error("Error deleting event request:", error);
