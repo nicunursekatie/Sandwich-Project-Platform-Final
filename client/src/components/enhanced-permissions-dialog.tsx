@@ -453,16 +453,16 @@ export default function EnhancedPermissionsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Manage Permissions for {user.firstName} {user.lastName}</DialogTitle>
           <DialogDescription>
-            Configure granular permissions for {user.email}. Select specific actions each resource.
+            Configure granular permissions for {user.email}. Select specific actions for each resource.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="space-y-4 p-1">
             {RESOURCE_PERMISSIONS.map((resource) => {
               const Icon = resource.icon;
               const resourceState = getResourceState(resource);
