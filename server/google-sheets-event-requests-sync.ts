@@ -12,6 +12,7 @@ export interface EventRequestSheetRow {
   status: string;
   message: string;
   previouslyHosted: string;
+  submittedOn: string; // The actual submission date from Squarespace form
   createdDate: string;
   lastUpdated: string;
   duplicateCheck: string;
@@ -64,13 +65,17 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 
     // Parse the submission date from Google Sheets
     let submissionDate;
-    if (row.createdDate) {
+    if (row.submittedOn) {
       try {
-        submissionDate = new Date(row.createdDate);
+        submissionDate = new Date(row.submittedOn);
+        console.log(`✅ Parsed submission date "${row.submittedOn}" to:`, submissionDate.toISOString());
       } catch (error) {
-        console.warn(`Invalid date format in Google Sheets: ${row.createdDate}`);
+        console.warn(`Invalid submission date format in Google Sheets: ${row.submittedOn}`);
         submissionDate = new Date(); // Fallback to current date
       }
+    } else {
+      console.warn('No submittedOn field found, using current date');
+      submissionDate = new Date();
     }
 
     return {
@@ -245,13 +250,14 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     
     return rows.map((row: string[], index: number) => ({
       // Match the actual Google Sheet structure from the screenshot
-      createdDate: row[0] || '', // Submitted On (A)
+      submittedOn: row[0] || '', // Submitted On (A) - the actual form submission date
       contactName: row[1] || '', // Name (B)
       email: row[2] || '', // Email (C)
       organizationName: row[3] || '', // Group/Organization Name (D)
       phone: row[4] || '', // Phone (E)
       desiredEventDate: row[5] || '', // Desired Event Date (F)
       message: row[6] || '', // Message (G)
+      createdDate: '', // Legacy field, not used for mapping
       department: '', // Not in current sheet
       status: 'new', // Default status
       previouslyHosted: 'i_dont_know', // Default value
