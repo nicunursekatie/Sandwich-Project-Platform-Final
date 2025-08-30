@@ -321,6 +321,25 @@ export default function EventRequestsManagement() {
     }
   });
 
+  // Filter events by tab
+  const requestsEvents = eventRequests.filter((req: EventRequest) => req.status === 'new');
+  const scheduledEvents = eventRequests.filter((req: EventRequest) => req.status === 'contact_completed' || req.status === 'scheduled');
+  const pastEvents = eventRequests.filter((req: EventRequest) => req.status === 'completed' || req.status === 'declined');
+
+  // Get current events based on active tab
+  const getCurrentEvents = () => {
+    switch (activeTab) {
+      case 'requests':
+        return requestsEvents;
+      case 'scheduled':
+        return scheduledEvents;
+      case 'past':
+        return pastEvents;
+      default:
+        return requestsEvents;
+    }
+  };
+
   // Function to render event card for all tabs
   const renderEventCard = (request: EventRequest) => (
     <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
@@ -736,25 +755,6 @@ export default function EventRequestsManagement() {
       (request as any).customTspContact ||
       (request as any).planningNotes
     );
-  };
-
-  // Filter events by tab
-  const requestsEvents = eventRequests.filter((req: EventRequest) => req.status === 'new');
-  const scheduledEvents = eventRequests.filter((req: EventRequest) => req.status === 'contact_completed' || req.status === 'scheduled');
-  const pastEvents = eventRequests.filter((req: EventRequest) => req.status === 'completed' || req.status === 'declined');
-
-  // Get current events based on active tab
-  const getCurrentEvents = () => {
-    switch (activeTab) {
-      case 'requests':
-        return requestsEvents;
-      case 'scheduled':
-        return scheduledEvents;
-      case 'past':
-        return pastEvents;
-      default:
-        return requestsEvents;
-    }
   };
 
   return (
