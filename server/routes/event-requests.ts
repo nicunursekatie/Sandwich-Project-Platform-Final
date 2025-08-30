@@ -240,20 +240,20 @@ router.post(
     try {
       const eventDetailsSchema = z.object({
         id: z.number(),
-        toolkitStatus: z.string().optional(),
-        eventStartTime: z.string().optional(),
-        eventEndTime: z.string().optional(),
-        pickupTime: z.string().optional(),
-        tspContact: z.string().optional(),
-        customTspContact: z.string().optional(),
-        planningNotes: z.string().optional(),
-        eventAddress: z.string().optional(),
-        estimatedSandwichCount: z.number().optional(),
-        sandwichTypes: z.string().optional(),
+        toolkitStatus: z.string().nullable().optional(),
+        eventStartTime: z.string().nullable().optional(),
+        eventEndTime: z.string().nullable().optional(),
+        pickupTime: z.string().nullable().optional(),
+        tspContact: z.string().nullable().optional(),
+        customTspContact: z.string().nullable().optional(),
+        planningNotes: z.string().nullable().optional(),
+        eventAddress: z.string().nullable().optional(),
+        estimatedSandwichCount: z.number().nullable().optional(),
+        sandwichTypes: z.string().nullable().optional(),
         driversArranged: z.boolean().optional(),
-        driverDetails: z.string().optional(),
+        driverDetails: z.string().nullable().optional(),
         speakersNeeded: z.boolean().optional(),
-        speakerDetails: z.string().optional(),
+        speakerDetails: z.string().nullable().optional(),
       });
 
       const validatedData = eventDetailsSchema.parse(req.body);
