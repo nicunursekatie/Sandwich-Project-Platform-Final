@@ -38,13 +38,25 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
       // Skip empty rows
       if (!row || row.length === 0 || !row[0]) continue;
       
-      // Map the data based on the specific column structure:
-      // 0: Date, 1: Group Name, 12: Email Address, 13: Contact Name, 14: Contact Cell Number
+      // Map the data based on the Excel column structure:
+      // 0: Date, 1: Group Name, 2: Day of Week, 3: Event Start time, 4: Event end time
+      // 5: Pick up time, 6: ALL DETAILS, 7: Social Post, 8: Call Made, 9: Estimate # of Sandwiches
+      // 10: Final # of Sandwiches Made, 11: Sent toolkit, 12: Email Address, 13: Contact Name
+      // 14: Contact Cell Number, 15: TSP Contact, 16: Address, 17: Notes
       const eventDate = row[0];
       const organization = row[1]; // Group Name
+      const eventStartTime = row[3]; // Event Start time Optional
+      const eventEndTime = row[4]; // Event end time Optional
+      const pickupTime = row[5]; // Pick up time
+      const allDetails = row[6]; // ALL DETAILS
+      const estimatedSandwichCount = row[10]; // Final # of Sandwiches Made (this is the estimated count)
+      const toolkitSent = row[11]; // Sent toolkit
       const email = row[12]; // Email Address
       const contactName = row[13]; // Contact Name
       const phone = row[14]; // Contact Cell Number
+      const tspContact = row[15]; // TSP Contact
+      const eventAddress = row[16]; // Address
+      const notes = row[17]; // Notes
       
       // Split contact name into first and last name
       let firstName = '';
@@ -79,6 +91,15 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
         }
       }
       
+      // Parse toolkit sent status
+      const toolkitSentStatus = toolkitSent && toolkitSent.toString().toLowerCase() === 'yes';
+      
+      // Parse estimated sandwich count
+      let parsedSandwichCount = null;
+      if (estimatedSandwichCount && !isNaN(parseInt(estimatedSandwichCount.toString()))) {
+        parsedSandwichCount = parseInt(estimatedSandwichCount.toString());
+      }
+      
       // Only add if we have required fields
       if (firstName && organization && email) {
         events.push({
@@ -92,7 +113,18 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
           contactedAt: new Date(), // Mark as contacted since these are scheduled events
           previouslyHosted: 'i_dont_know',
           message: 'Imported from Excel file',
-          createdBy: req.user?.id // Mark who imported this
+          createdBy: req.user?.id, // Mark who imported this
+          // Additional fields from Excel
+          eventStartTime: eventStartTime ? eventStartTime.toString() : null,
+          eventEndTime: eventEndTime ? eventEndTime.toString() : null,
+          pickupTime: pickupTime ? pickupTime.toString() : null,
+          eventAddress: eventAddress ? eventAddress.toString() : null,
+          estimatedSandwichCount: parsedSandwichCount,
+          toolkitSent: toolkitSentStatus,
+          toolkitStatus: toolkitSentStatus ? 'sent' : 'not_sent',
+          additionalRequirements: allDetails ? allDetails.toString() : null,
+          planningNotes: notes ? notes.toString() : null,
+          tspContactAssigned: tspContact ? tspContact.toString() : null
         });
         
         console.log(`✅ Prepared event: ${firstName} ${lastName} from ${organization}`);
