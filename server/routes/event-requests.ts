@@ -281,9 +281,18 @@ router.put(
       console.log("Request ID:", id);
       console.log("Updates received:", JSON.stringify(updates, null, 2));
 
+      // Process date fields to ensure they're proper Date objects
+      const processedUpdates = { ...updates };
+      if (processedUpdates.desiredEventDate) {
+        processedUpdates.desiredEventDate = new Date(processedUpdates.desiredEventDate);
+      }
+      if (processedUpdates.toolkitSentDate) {
+        processedUpdates.toolkitSentDate = new Date(processedUpdates.toolkitSentDate);
+      }
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
-        ...updates,
+        ...processedUpdates,
         updatedAt: new Date(),
       });
 
