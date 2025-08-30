@@ -88,7 +88,8 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
           phone: phone ? phone.toString() : null,
           organizationName: organization,
           desiredEventDate: parsedDate,
-          status: 'new',
+          status: 'contact_completed',
+          contactedAt: new Date(), // Mark as contacted since these are scheduled events
           previouslyHosted: 'i_dont_know',
           message: 'Imported from Excel file',
           createdBy: req.user?.id // Mark who imported this
