@@ -150,82 +150,102 @@ router.post(
 );
 
 // Complete primary contact - comprehensive data collection
-router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_REQUESTS_COMPLETE_CONTACT"), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
+router.patch(
+  "/:id/details",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_EDIT"),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
 
-    const completionDataSchema = z.object({
-      communicationMethod: z.string().min(1, "Communication method required"),
-      eventAddress: z.string().optional(),
-      estimatedSandwichCount: z.number().min(1).optional(),
-      hasRefrigeration: z.boolean().optional(),
-      notes: z.string().optional(),
-    });
+      const completionDataSchema = z.object({
+        communicationMethod: z.string().min(1, "Communication method required"),
+        eventAddress: z.string().optional(),
+        estimatedSandwichCount: z.number().min(1).optional(),
+        hasRefrigeration: z.boolean().optional(),
+        notes: z.string().optional(),
+      });
 
-    const validatedData = completionDataSchema.parse(req.body);
+      const validatedData = completionDataSchema.parse(req.body);
 
-    const updatedEventRequest = await storage.updateEventRequest(id, {
-      contactedAt: new Date(),
-      completedByUserId: req.user?.id,
-      communicationMethod: validatedData.communicationMethod,
-      eventAddress: validatedData.eventAddress,
-      estimatedSandwichCount: validatedData.estimatedSandwichCount,
-      hasRefrigeration: validatedData.hasRefrigeration,
-      contactCompletionNotes: validatedData.notes,
-      status: "contact_completed",
-    });
+      const updatedEventRequest = await storage.updateEventRequest(id, {
+        contactedAt: new Date(),
+        completedByUserId: req.user?.id,
+        communicationMethod: validatedData.communicationMethod,
+        eventAddress: validatedData.eventAddress,
+        estimatedSandwichCount: validatedData.estimatedSandwichCount,
+        hasRefrigeration: validatedData.hasRefrigeration,
+        contactCompletionNotes: validatedData.notes,
+        status: "contact_completed",
+      });
 
-    if (!updatedEventRequest) {
-      return res.status(404).json({ message: "Event request not found" });
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_COMPLETE_CONTACT",
+        `Completed contact for event request: ${id}`,
+      );
+      res.json(updatedEventRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res
+          .status(400)
+          .json({ message: "Invalid completion data", errors: error.errors });
+      }
+      console.error("Error completing contact:", error);
+      res.status(500).json({ message: "Failed to complete contact" });
     }
-
-    await logActivity(
-      req,
-      res,
-      "EVENT_REQUESTS_COMPLETE_CONTACT",
-      `Completed contact for event request: ${id}`,
-    );
-    res.json(updatedEventRequest);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid completion data", errors: error.errors });
-    }
-    console.error("Error completing contact:", error);
-    res.status(500).json({ message: "Failed to complete contact" });
-  }
-});
+  },
+);
 
 // Update event request details - specific endpoint for event details updates
-router.patch("/:id/event-details", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
-  console.log("🚨🚨🚨 EVENT DETAILS PATCH ROUTE HIT! 🚨🚨🚨");
-  try {
-    const id = parseInt(req.params.id);
-    const updates = req.body;
+router.patch(
+  "/:id/event-details",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_EDIT"),
+  async (req, res) => {
+    console.log("🚨🚨🚨 EVENT DETAILS PATCH ROUTE HIT! 🚨🚨🚨");
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
 
-    console.log("=== EVENT REQUEST DETAILS UPDATE ===");
-    console.log("Request ID:", id);
-    console.log("Updates received:", JSON.stringify(updates, null, 2));
+      console.log("=== EVENT REQUEST DETAILS UPDATE ===");
+      console.log("Request ID:", id);
+      console.log("Updates received:", JSON.stringify(updates, null, 2));
 
-    // Always update the updatedAt timestamp
-    const updatedEventRequest = await storage.updateEventRequest(id, {
-      ...updates,
-      updatedAt: new Date()
-    });
-    
-    if (!updatedEventRequest) {
-      return res.status(404).json({ message: "Event request not found" });
+      // Always update the updatedAt timestamp
+      const updatedEventRequest = await storage.updateEventRequest(id, {
+        ...updates,
+        updatedAt: new Date(),
+      });
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      console.log(
+        "Updated event request:",
+        JSON.stringify(updatedEventRequest, null, 2),
+      );
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_EDIT",
+        `Updated event request details: ${id}`,
+      );
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error("Error updating event request details:", error);
+      res
+        .status(500)
+        .json({ message: "Failed to update event request details" });
     }
-
-    console.log("Updated event request:", JSON.stringify(updatedEventRequest, null, 2));
-    await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request details: ${id}`);
-    res.json(updatedEventRequest);
-  } catch (error) {
-    console.error("Error updating event request details:", error);
-    res.status(500).json({ message: "Failed to update event request details" });
-  }
-});
+  },
+);
 
 // Update event request (PUT)
 router.put(
@@ -265,51 +285,6 @@ router.put(
     } catch (error) {
       console.error("Error updating event request:", error);
       res.status(500).json({ message: "Failed to update event request" });
-    }
-  },
-);
-
-// Update event request details - specific endpoint for event details updates
-router.patch(
-  "/:id/details",
-  isAuthenticated,
-  requirePermission("EVENT_REQUESTS_EDIT"),
-  async (req, res) => {
-    console.log("🚨🚨🚨 EVENT DETAILS PATCH ROUTE HIT! 🚨🚨🚨");
-    try {
-      const id = parseInt(req.params.id);
-      const updates = req.body;
-
-      console.log("=== EVENT REQUEST DETAILS UPDATE ===");
-      console.log("Request ID:", id);
-      console.log("Updates received:", JSON.stringify(updates, null, 2));
-
-      // Always update the updatedAt timestamp
-      const updatedEventRequest = await storage.updateEventRequest(id, {
-        ...updates,
-        updatedAt: new Date(),
-      });
-
-      if (!updatedEventRequest) {
-        return res.status(404).json({ message: "Event request not found" });
-      }
-
-      console.log(
-        "Updated event request:",
-        JSON.stringify(updatedEventRequest, null, 2),
-      );
-      await logActivity(
-        req,
-        res,
-        "EVENT_REQUESTS_EDIT",
-        `Updated event request details: ${id}`,
-      );
-      res.json(updatedEventRequest);
-    } catch (error) {
-      console.error("Error updating event request details:", error);
-      res
-        .status(500)
-        .json({ message: "Failed to update event request details" });
     }
   },
 );
