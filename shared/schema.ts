@@ -1114,6 +1114,13 @@ export const eventRequests = pgTable("event_requests", {
   speakersNeeded: boolean("speakers_needed").default(false), // Whether speakers are needed
   speakerDetails: text("speaker_details"), // Who the speakers are
   
+  // Follow-up tracking for completed events
+  followUpOneDayCompleted: boolean("follow_up_one_day_completed").default(false), // 1-day follow-up completed
+  followUpOneDayDate: timestamp("follow_up_one_day_date"), // When 1-day follow-up was completed
+  followUpOneMonthCompleted: boolean("follow_up_one_month_completed").default(false), // 1-month follow-up completed
+  followUpOneMonthDate: timestamp("follow_up_one_month_date"), // When 1-month follow-up was completed
+  followUpNotes: text("follow_up_notes"), // Notes from follow-up communications
+  
   // Duplicate detection flags
   organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates
@@ -1174,6 +1181,12 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   driverDetails: z.string().nullable().optional(),
   speakersNeeded: z.boolean().nullable().optional(),
   speakerDetails: z.string().nullable().optional(),
+  // Follow-up tracking fields
+  followUpOneDayCompleted: z.boolean().nullable().optional(),
+  followUpOneDayDate: z.date().nullable().optional(),
+  followUpOneMonthCompleted: z.boolean().nullable().optional(),
+  followUpOneMonthDate: z.date().nullable().optional(),
+  followUpNotes: z.string().nullable().optional(),
 });
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({

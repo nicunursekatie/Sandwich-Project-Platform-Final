@@ -42,25 +42,140 @@ router.get("/assigned", isAuthenticated, async (req, res) => {
     }
     
     const allEventRequests = await storage.getAllEventRequests();
+    const users = await storage.getAllUsers();
+    const currentUser = users.find((u: any) => u.id === userId);
     
-    // Filter event requests assigned to this user (using assignedTo field from schema)
+    // Filter event requests assigned to this user via multiple assignment methods
     const assignedEvents = allEventRequests.filter((event: any) => {
-      return event.assignedTo === userId;
+      // Method 1: Direct assignment via assignedTo field
+      if (event.assignedTo === userId) return true;
+      
+      // Method 2: TSP contact assignment
+      if (event.tspContact === userId || event.tspContactAssigned === userId) return true;
+      
+      // Method 3: Listed in driver details (check if user's name or email appears in driver details)
+      if (event.driverDetails && currentUser) {
+        const driverText = event.driverDetails.toLowerCase();
+        const userEmail = currentUser.email.toLowerCase();
+        const userName = currentUser.displayName?.toLowerCase() || '';
+        const userFirstName = currentUser.firstName?.toLowerCase() || '';
+        const userLastName = currentUser.lastName?.toLowerCase() || '';
+        
+        if (driverText.includes(userEmail) || 
+            (userName && driverText.includes(userName)) ||
+            (userFirstName && userLastName && 
+             (driverText.includes(userFirstName) || driverText.includes(userLastName)))) {
+          return true;
+        }
+      }
+      
+      // Method 4: Listed in speaker details (check if user's name or email appears in speaker details)
+      if (event.speakerDetails && currentUser) {
+        const speakerText = event.speakerDetails.toLowerCase();
+        const userEmail = currentUser.email.toLowerCase();
+        const userName = currentUser.displayName?.toLowerCase() || '';
+        const userFirstName = currentUser.firstName?.toLowerCase() || '';
+        const userLastName = currentUser.lastName?.toLowerCase() || '';
+        
+        if (speakerText.includes(userEmail) || 
+            (userName && speakerText.includes(userName)) ||
+            (userFirstName && userLastName && 
+             (speakerText.includes(userFirstName) || speakerText.includes(userLastName)))) {
+          return true;
+        }
+      }
+      
+      return false;
+    });
+    
+    // Add follow-up tracking for past events
+    const now = new Date();
+    const eventsWithFollowUp = assignedEvents.map((event: any) => {
+      let followUpNeeded = false;
+      let followUpReason = '';
+      
+      if (event.status === 'completed' && event.desiredEventDate) {
+        try {
+          const eventDate = new Date(event.desiredEventDate);
+          const daysSinceEvent = Math.floor((now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Follow-up needed 1 day after event (if not already done)
+          if (daysSinceEvent === 1 && !event.followUpOneDayCompleted) {
+            followUpNeeded = true;
+            followUpReason = '1-day follow-up needed';
+          }
+          
+          // Follow-up needed 1 month after event (if not already done)
+          if (daysSinceEvent >= 30 && daysSinceEvent <= 32 && !event.followUpOneMonthCompleted) {
+            followUpNeeded = true;
+            followUpReason = '1-month follow-up needed';
+          }
+        } catch (error) {
+          console.error('Error parsing event date for follow-up:', error);
+        }
+      }
+      
+      return {
+        ...event,
+        followUpNeeded,
+        followUpReason,
+        assignmentType: getAssignmentType(event, userId, currentUser)
+      };
     });
     
     await logActivity(
       req,
       res,
       "EVENT_REQUESTS_VIEW", 
-      `Retrieved ${assignedEvents.length} assigned event requests`,
+      `Retrieved ${eventsWithFollowUp.length} assigned event requests`,
     );
     
-    res.json(assignedEvents);
+    res.json(eventsWithFollowUp);
   } catch (error) {
     console.error("Error fetching assigned event requests:", error);
     res.status(500).json({ error: "Failed to fetch assigned event requests" });
   }
 });
+
+// Helper function to determine assignment type
+function getAssignmentType(event: any, userId: string, currentUser: any): string[] {
+  const types: string[] = [];
+  
+  if (event.assignedTo === userId) types.push('Direct Assignment');
+  if (event.tspContact === userId || event.tspContactAssigned === userId) types.push('TSP Contact');
+  
+  if (event.driverDetails && currentUser) {
+    const driverText = event.driverDetails.toLowerCase();
+    const userEmail = currentUser.email.toLowerCase();
+    const userName = currentUser.displayName?.toLowerCase() || '';
+    const userFirstName = currentUser.firstName?.toLowerCase() || '';
+    const userLastName = currentUser.lastName?.toLowerCase() || '';
+    
+    if (driverText.includes(userEmail) || 
+        (userName && driverText.includes(userName)) ||
+        (userFirstName && userLastName && 
+         (driverText.includes(userFirstName) || driverText.includes(userLastName)))) {
+      types.push('Driver');
+    }
+  }
+  
+  if (event.speakerDetails && currentUser) {
+    const speakerText = event.speakerDetails.toLowerCase();
+    const userEmail = currentUser.email.toLowerCase();
+    const userName = currentUser.displayName?.toLowerCase() || '';
+    const userFirstName = currentUser.firstName?.toLowerCase() || '';
+    const userLastName = currentUser.lastName?.toLowerCase() || '';
+    
+    if (speakerText.includes(userEmail) || 
+        (userName && speakerText.includes(userName)) ||
+        (userFirstName && userLastName && 
+         (speakerText.includes(userFirstName) || speakerText.includes(userLastName)))) {
+      types.push('Speaker');
+    }
+  }
+  
+  return types;
+}
 
 // Get all event requests
 router.get(
@@ -691,6 +806,55 @@ router.get("/orgs-catalog-test", async (req, res) => {
   } catch (error) {
     console.error("Error fetching organizations catalog:", error);
     res.status(500).json({ message: "Failed to fetch organizations catalog" });
+  }
+});
+
+// Mark follow-up as completed for an event
+router.patch("/:id/follow-up", isAuthenticated, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { followUpType, notes } = req.body;
+    
+    if (!followUpType || !['one_day', 'one_month'].includes(followUpType)) {
+      return res.status(400).json({ error: "Invalid follow-up type. Must be 'one_day' or 'one_month'" });
+    }
+    
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ error: "User ID required" });
+    }
+    
+    const eventRequest = await storage.getEventRequest(id);
+    if (!eventRequest) {
+      return res.status(404).json({ error: "Event request not found" });
+    }
+    
+    // Prepare update data based on follow-up type
+    const updateData: any = {
+      followUpNotes: notes || eventRequest.followUpNotes
+    };
+    
+    if (followUpType === 'one_day') {
+      updateData.followUpOneDayCompleted = true;
+      updateData.followUpOneDayDate = new Date();
+    } else if (followUpType === 'one_month') {
+      updateData.followUpOneMonthCompleted = true;
+      updateData.followUpOneMonthDate = new Date();
+    }
+    
+    const updatedEventRequest = await storage.updateEventRequest(id, updateData);
+    
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_EDIT",
+      `Marked ${followUpType} follow-up as completed for event: ${eventRequest.organizationName}`,
+    );
+    
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error("Error marking follow-up as completed:", error);
+    res.status(500).json({ error: "Failed to mark follow-up as completed" });
   }
 });
 

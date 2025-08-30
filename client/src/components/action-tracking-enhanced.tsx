@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +80,7 @@ interface EventRequest {
 const ActionTracking = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("projects");
+  const { toast } = useToast();
 
   // Fetch user's assigned projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -89,9 +93,40 @@ const ActionTracking = () => {
   });
 
   // Fetch user's assigned events
-  const { data: events = [] } = useQuery<EventRequest[]>({
+  const { data: events = [], refetch: refetchEvents } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests/assigned'],
   });
+
+  // Mutation for marking follow-ups as complete
+  const followUpMutation = useMutation({
+    mutationFn: async ({ eventId, followUpType, notes }: { 
+      eventId: number; 
+      followUpType: 'one_day' | 'one_month'; 
+      notes?: string;
+    }) => {
+      return apiRequest(`/api/event-requests/${eventId}/follow-up`, 'PATCH', { followUpType, notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests/assigned'] });
+      toast({
+        title: "Follow-up marked complete",
+        description: "The follow-up has been successfully marked as completed.",
+      });
+      refetchEvents();
+    },
+    onError: (error) => {
+      console.error("Error marking follow-up complete:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark follow-up as complete. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleFollowUpComplete = async (eventId: number, followUpType: 'one_day' | 'one_month') => {
+    followUpMutation.mutate({ eventId, followUpType });
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -143,29 +178,41 @@ const ActionTracking = () => {
     event.organizationName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 space-y-4 pb-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Action Items</h1>
-            <p className="text-gray-600 mt-1">Track all your assigned projects, tasks, and event requests</p>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Search className="w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search assignments..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64"
-            />
-          </div>
-        </div>
+  // Priority order for follow-ups
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    // Follow-ups first
+    if (a.followUpNeeded && !b.followUpNeeded) return -1;
+    if (!a.followUpNeeded && b.followUpNeeded) return 1;
+    
+    // Then by event date
+    if (a.desiredEventDate && b.desiredEventDate) {
+      return new Date(a.desiredEventDate).getTime() - new Date(b.desiredEventDate).getTime();
+    }
+    
+    return 0;
+  });
 
+  return (
+    <div className="w-full max-w-6xl mx-auto p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Action Board</h2>
+        <p className="text-gray-600">Track your assigned projects, tasks, and event responsibilities</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search projects, tasks, and events..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="projects" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Projects ({filteredProjects.length})
@@ -174,13 +221,16 @@ const ActionTracking = () => {
             <CheckCircle className="w-4 h-4" />
             Tasks ({filteredTasks.length})
           </TabsTrigger>
-          <TabsTrigger value="events" className="flex items-center gap-2">
+          <TabsTrigger value="events" className="flex items-center gap-2 relative">
             <Calendar className="w-4 h-4" />
-            Events ({filteredEvents.length})
+            Events ({sortedEvents.length})
+            {sortedEvents.some(e => e.followUpNeeded) && (
+              <Bell className="w-3 h-3 text-yellow-600 animate-pulse" />
+            )}
           </TabsTrigger>
         </TabsList>
-        <div className="flex-1 overflow-y-auto space-y-4">
 
+        <div className="mt-6">
         <TabsContent value="projects" className="space-y-4 m-0">
           {filteredProjects.length === 0 ? (
             <Card>
@@ -188,7 +238,7 @@ const ActionTracking = () => {
                 <div className="text-center">
                   <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-lg font-medium">No assigned projects found</p>
-                  <p className="text-sm">Projects you're assigned to or supporting will appear here</p>
+                  <p className="text-sm">Projects assigned to you will appear here</p>
                 </div>
               </CardContent>
             </Card>
@@ -222,7 +272,7 @@ const ActionTracking = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
+                          <FileText className="w-4 h-4" />
                           <span>{project.category}</span>
                         </div>
                         {project.dueDate && (
@@ -233,8 +283,11 @@ const ActionTracking = () => {
                         )}
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{project.progressPercentage}% complete</span>
+                          <span>Created {formatDate(project.createdAt)}</span>
                         </div>
+                      </div>
+                      <div className="text-sm font-medium text-gray-700">
+                        {project.progressPercentage}% complete
                       </div>
                     </div>
                   </CardContent>
@@ -315,20 +368,20 @@ const ActionTracking = () => {
         </TabsContent>
 
         <TabsContent value="events" className="space-y-4 m-0">
-          {filteredEvents.length === 0 ? (
+          {sortedEvents.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12 text-gray-500">
                 <div className="text-center">
                   <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-lg font-medium">No assigned event requests found</p>
-                  <p className="text-sm">Event requests where you are the contact person will appear here</p>
+                  <p className="text-sm">Events where you are assigned as contact, driver, or speaker will appear here</p>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4">
-              {filteredEvents.map((event) => (
-                <Card key={event.id} className="hover:shadow-md transition-shadow">
+              {sortedEvents.map((event) => (
+                <Card key={event.id} className={`hover:shadow-md transition-shadow ${event.followUpNeeded ? 'ring-2 ring-yellow-200' : ''}`}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -408,8 +461,9 @@ const ActionTracking = () => {
                               size="sm"
                               className="bg-yellow-600 hover:bg-yellow-700 text-white"
                               onClick={() => handleFollowUpComplete(event.id, event.followUpReason?.includes('1-day') ? 'one_day' : 'one_month')}
+                              disabled={followUpMutation.isPending}
                             >
-                              Mark Complete
+                              {followUpMutation.isPending ? 'Marking...' : 'Mark Complete'}
                             </Button>
                           </div>
                         </div>
