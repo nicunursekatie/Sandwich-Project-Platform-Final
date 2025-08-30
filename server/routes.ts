@@ -4306,7 +4306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Hosts API endpoints
-  app.get("/api/hosts", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
+  app.get("/api/hosts", isAuthenticated, requirePermission("HOSTS_VIEW"), async (req, res) => {
     try {
       const hosts = await storage.getAllHosts();
       res.json(hosts);
