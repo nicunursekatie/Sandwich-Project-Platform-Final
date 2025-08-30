@@ -67,6 +67,22 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
         lastName = nameParts.slice(1).join(' ') || '';
       }
       
+      // Helper function to convert Excel time decimal to time string
+      const parseExcelTime = (timeValue: any): string | null => {
+        if (!timeValue) return null;
+        
+        if (typeof timeValue === 'number') {
+          // Excel time is stored as fraction of day (0.5 = 12:00 PM)
+          const totalMinutes = Math.round(timeValue * 24 * 60);
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        
+        // If it's already a string, return as-is
+        return timeValue.toString();
+      };
+
       // Parse date
       let parsedDate = null;
       if (eventDate) {
@@ -114,10 +130,10 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
           previouslyHosted: 'i_dont_know',
           message: 'Imported from Excel file',
           createdBy: req.user?.id, // Mark who imported this
-          // Additional fields from Excel
-          eventStartTime: eventStartTime ? eventStartTime.toString() : null,
-          eventEndTime: eventEndTime ? eventEndTime.toString() : null,
-          pickupTime: pickupTime ? pickupTime.toString() : null,
+          // Map all Excel fields to database fields with proper time parsing
+          eventStartTime: parseExcelTime(eventStartTime),
+          eventEndTime: parseExcelTime(eventEndTime),
+          pickupTime: parseExcelTime(pickupTime),
           eventAddress: eventAddress ? eventAddress.toString() : null,
           estimatedSandwichCount: parsedSandwichCount,
           toolkitSent: toolkitSentStatus,
