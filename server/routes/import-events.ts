@@ -150,7 +150,7 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
     for (const event of events) {
       try {
         // Check if event already exists (by email and organization)
-        const existingEvents = await storage.getEventRequests();
+        const existingEvents = await storage.getAllEventRequests();
         const isDuplicate = existingEvents.some(existing => 
           existing.email.toLowerCase() === event.email.toLowerCase() && 
           existing.organizationName.toLowerCase() === event.organizationName.toLowerCase()
