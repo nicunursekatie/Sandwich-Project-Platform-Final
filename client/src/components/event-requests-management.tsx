@@ -54,12 +54,19 @@ const formatEventDate = (dateString: string) => {
     const dayName = format(date, "EEEE"); // Full day name
     const dateFormatted = format(date, "PPP"); // Long date format
     
-    // Color coding based on distance from Wednesday/Thursday
-    // Wednesday = 3, Thursday = 4
-    const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
-    const className = isWedOrThu 
-      ? "text-green-700 font-medium" 
-      : "text-red-700 font-bold";
+    // Color coding based on day of week
+    // Tuesday = 2, Wednesday = 3, Thursday = 4
+    let className = "";
+    if (dayOfWeek === 2) {
+      // Tuesday - normal formatting
+      className = "text-gray-700 font-medium";
+    } else if (dayOfWeek === 3 || dayOfWeek === 4) {
+      // Wednesday/Thursday - preferred days, green
+      className = "text-green-700 font-medium";
+    } else {
+      // Other days (Fri, Sat, Sun, Mon) - dark teal, more prominent
+      className = "text-[#236383] font-bold";
+    }
     
     return {
       text: `${dayName}, ${dateFormatted}`,
