@@ -169,14 +169,14 @@ router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), as
   }
 });
 
-// Update event request (PATCH) - for partial updates like event details
-router.patch("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
-  console.log("🚨🚨🚨 PATCH ROUTE HIT! 🚨🚨🚨");
+// Update event request details - specific endpoint for event details updates
+router.patch("/:id/details", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
+  console.log("🚨🚨🚨 EVENT DETAILS PATCH ROUTE HIT! 🚨🚨🚨");
   try {
     const id = parseInt(req.params.id);
     const updates = req.body;
 
-    console.log("=== EVENT REQUEST UPDATE (PATCH) ===");
+    console.log("=== EVENT REQUEST DETAILS UPDATE ===");
     console.log("Request ID:", id);
     console.log("Updates received:", JSON.stringify(updates, null, 2));
 
@@ -191,11 +191,11 @@ router.patch("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), 
     }
 
     console.log("Updated event request:", JSON.stringify(updatedEventRequest, null, 2));
-    await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request: ${id}`);
+    await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request details: ${id}`);
     res.json(updatedEventRequest);
   } catch (error) {
-    console.error("Error updating event request:", error);
-    res.status(500).json({ message: "Failed to update event request" });
+    console.error("Error updating event request details:", error);
+    res.status(500).json({ message: "Failed to update event request details" });
   }
 });
 
