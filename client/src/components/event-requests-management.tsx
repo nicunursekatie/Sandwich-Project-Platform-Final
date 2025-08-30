@@ -130,7 +130,7 @@ const statusIcons = {
 const previouslyHostedOptions = [
   { value: "yes", label: "Yes" },
   { value: "no", label: "No" },
-  { value: "i_dont_know", label: "I don't know" }
+  { value: "i_dont_know", label: "Unknown" }
 ];
 
 const statusOptions = [
