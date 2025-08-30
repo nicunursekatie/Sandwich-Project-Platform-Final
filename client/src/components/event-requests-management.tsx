@@ -56,11 +56,12 @@ const formatEventDate = (dateString: string) => {
     
     // Color coding based on day of week
     // Tuesday = 2, Wednesday = 3, Thursday = 4
+    const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
     let className = "";
     if (dayOfWeek === 2) {
       // Tuesday - normal formatting
       className = "text-gray-700 font-medium";
-    } else if (dayOfWeek === 3 || dayOfWeek === 4) {
+    } else if (isWedOrThu) {
       // Wednesday/Thursday - preferred days, green
       className = "text-green-700 font-medium";
     } else {
