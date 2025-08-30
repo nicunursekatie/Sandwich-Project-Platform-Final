@@ -1107,6 +1107,13 @@ export const eventRequests = pgTable("event_requests", {
   additionalRequirements: text("additional_requirements"), // Special requirements or notes
   planningNotes: text("planning_notes"), // General planning notes
   
+  // Additional event details
+  sandwichTypes: varchar("sandwich_types"), // Type of sandwiches: 'deli', 'turkey', 'ham', 'pb&j', 'pb&j+deli'
+  driversArranged: boolean("drivers_arranged").default(false), // Whether drivers are arranged
+  driverDetails: text("driver_details"), // Who the drivers are
+  speakersNeeded: boolean("speakers_needed").default(false), // Whether speakers are needed
+  speakerDetails: text("speaker_details"), // Who the speakers are
+  
   // Duplicate detection flags
   organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates

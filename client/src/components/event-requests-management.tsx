@@ -792,7 +792,14 @@ export default function EventRequestsManagement() {
       pickupTime: formData.get("pickupTime") || null,
       tspContact: formData.get("tspContact") || null,
       customTspContact: formData.get("customTspContact") || null,
-      planningNotes: formData.get("planningNotes") || null
+      planningNotes: formData.get("planningNotes") || null,
+      eventAddress: formData.get("eventAddress") || null,
+      estimatedSandwichCount: formData.get("estimatedSandwichCount") ? parseInt(formData.get("estimatedSandwichCount") as string) : null,
+      sandwichTypes: formData.get("sandwichTypes") || null,
+      driversArranged: formData.get("driversArranged") === "true",
+      driverDetails: formData.get("driverDetails") || null,
+      speakersNeeded: formData.get("speakersNeeded") === "true",
+      speakerDetails: formData.get("speakerDetails") || null
     };
 
     completeEventDetailsMutation.mutate(data);
@@ -1249,6 +1256,94 @@ export default function EventRequestsManagement() {
                     name="pickupTime" 
                     type="time" 
                     defaultValue={detailsRequest.pickupTime || ""}
+                  />
+                </div>
+              </div>
+
+              {/* Event Details Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="eventAddress">Event Address</Label>
+                  <Input 
+                    name="eventAddress" 
+                    defaultValue={detailsRequest.eventAddress || ""}
+                    placeholder="Where will the event take place?"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="estimatedSandwichCount">Estimated # of Sandwiches</Label>
+                  <Input 
+                    name="estimatedSandwichCount" 
+                    type="number"
+                    min="1"
+                    defaultValue={detailsRequest.estimatedSandwichCount || ""}
+                    placeholder="How many sandwiches needed?"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="sandwichTypes">Type of Sandwiches</Label>
+                <Select name="sandwichTypes" defaultValue={(detailsRequest as any).sandwichTypes || ""}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sandwich types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="deli">Deli</SelectItem>
+                    <SelectItem value="turkey">Turkey</SelectItem>
+                    <SelectItem value="ham">Ham</SelectItem>
+                    <SelectItem value="pb&j">PB&J</SelectItem>
+                    <SelectItem value="pb&j+deli">PB&J + Deli</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Drivers Section */}
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="driversArranged">Do we have drivers arranged?</Label>
+                  <Select name="driversArranged" defaultValue={(detailsRequest as any).driversArranged ? "true" : "false"}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Are drivers arranged?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Yes</SelectItem>
+                      <SelectItem value="false">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="driverDetails">Driver Details (Who are they?)</Label>
+                  <Textarea 
+                    name="driverDetails" 
+                    rows={2}
+                    defaultValue={(detailsRequest as any).driverDetails || ""}
+                    placeholder="Names and contact info for drivers..."
+                  />
+                </div>
+              </div>
+
+              {/* Speakers Section */}
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="speakersNeeded">Speakers necessary?</Label>
+                  <Select name="speakersNeeded" defaultValue={(detailsRequest as any).speakersNeeded ? "true" : "false"}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Are speakers needed?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Yes</SelectItem>
+                      <SelectItem value="false">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="speakerDetails">Speaker Details (Who are they?)</Label>
+                  <Textarea 
+                    name="speakerDetails" 
+                    rows={2}
+                    defaultValue={(detailsRequest as any).speakerDetails || ""}
+                    placeholder="Names and topics for speakers..."
                   />
                 </div>
               </div>
