@@ -331,7 +331,9 @@ export default function EventRequestsManagement() {
         request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.email.toLowerCase().includes(searchTerm.toLowerCase());
+        request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (request.desiredEventDate && formatEventDate(request.desiredEventDate).text.toLowerCase().includes(searchTerm.toLowerCase()));
         
       return matchesSearch;
     });
@@ -364,6 +366,21 @@ export default function EventRequestsManagement() {
   const renderScheduledEventCard = (request: EventRequest) => (
     <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-teal-500">
       <CardHeader className="pb-3">
+        {/* Prominent Date Display */}
+        {request.desiredEventDate && (
+          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-center space-x-2">
+              <Calendar className="w-5 h-5 text-amber-600" />
+              <span className="text-lg font-bold text-amber-800">
+                {(() => {
+                  const dateInfo = formatEventDate(request.desiredEventDate);
+                  return dateInfo.text;
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
+        
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <CardTitle className="flex items-center space-x-3 text-xl mb-3">
@@ -497,21 +514,6 @@ export default function EventRequestsManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             {request.department && (
               <div><strong>Department:</strong> {request.department}</div>
-            )}
-            {request.desiredEventDate && (
-              <div className="flex items-center">
-                <strong>Desired Date:</strong>
-                <span className="ml-2">
-                  {(() => {
-                    const dateInfo = formatEventDate(request.desiredEventDate);
-                    return (
-                      <span className={dateInfo.className}>
-                        {dateInfo.text}
-                      </span>
-                    );
-                  })()}
-                </span>
-              </div>
             )}
             {typeof request.hasRefrigeration === 'boolean' && (
               <div><strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
@@ -963,7 +965,7 @@ export default function EventRequestsManagement() {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search by organization, name, or email..."
+              placeholder="Search by organization, name, email, or date..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
