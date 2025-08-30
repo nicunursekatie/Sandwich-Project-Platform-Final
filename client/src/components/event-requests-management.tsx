@@ -991,10 +991,10 @@ export default function EventRequestsManagement() {
     const formData = new FormData(e.currentTarget);
     const data = {
       id: completingRequest.id,
-      communicationMethod: formData.get("communicationMethod"),
+      communicationMethod: formData.get("communicationMethod") === "none" ? null : formData.get("communicationMethod"),
       eventAddress: formData.get("eventAddress"),
       estimatedSandwichCount: formData.get("estimatedSandwichCount") ? parseInt(formData.get("estimatedSandwichCount") as string) : null,
-      hasRefrigeration: formData.get("hasRefrigeration") === "true"
+      hasRefrigeration: formData.get("hasRefrigeration") === "none" ? null : formData.get("hasRefrigeration") === "true"
     };
 
     completeContactMutation.mutate(data);
@@ -1461,11 +1461,12 @@ export default function EventRequestsManagement() {
             <form onSubmit={handleCompleteContact} className="space-y-4">
               <div>
                 <Label htmlFor="communicationMethod">Communication Method</Label>
-                <Select name="communicationMethod" defaultValue="">
+                <Select name="communicationMethod" defaultValue="none">
                   <SelectTrigger>
                     <SelectValue placeholder="How did you contact them?" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Select communication method</SelectItem>
                     <SelectItem value="phone">Phone Call</SelectItem>
                     <SelectItem value="email">Email</SelectItem>
                     <SelectItem value="in_person">In Person</SelectItem>
@@ -1484,11 +1485,12 @@ export default function EventRequestsManagement() {
                 </div>
                 <div>
                   <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                  <Select name="hasRefrigeration" defaultValue="">
+                  <Select name="hasRefrigeration" defaultValue="none">
                     <SelectTrigger>
                       <SelectValue placeholder="Is refrigeration available?" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Unknown</SelectItem>
                       <SelectItem value="true">Yes</SelectItem>
                       <SelectItem value="false">No</SelectItem>
                     </SelectContent>
