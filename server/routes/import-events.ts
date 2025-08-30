@@ -90,7 +90,8 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
           desiredEventDate: parsedDate,
           status: 'new',
           previouslyHosted: 'i_dont_know',
-          message: 'Imported from Excel file'
+          message: 'Imported from Excel file',
+          createdBy: req.user?.id // Mark who imported this
         });
         
         console.log(`✅ Prepared event: ${firstName} ${lastName} from ${organization}`);

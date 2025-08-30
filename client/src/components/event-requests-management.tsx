@@ -758,7 +758,7 @@ export default function EventRequestsManagement() {
                   )}
                   <div className="flex justify-between items-center pt-3 border-t">
                     <div className="text-sm text-gray-500">
-                      <div>Submitted: {(() => {
+                      <div>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
                         try {
                           const date = new Date(request.createdAt);
                           return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPp");
