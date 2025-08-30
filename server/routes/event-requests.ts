@@ -288,27 +288,15 @@ router.put(
       const timestampFields = ['desiredEventDate', 'contactedAt', 'toolkitSentDate', 'duplicateCheckDate'];
       timestampFields.forEach(field => {
         if (processedUpdates[field] && typeof processedUpdates[field] === 'string') {
-          console.log(`Converting ${field} from string to Date:`, processedUpdates[field]);
           processedUpdates[field] = new Date(processedUpdates[field]);
         }
       });
 
-      console.log("Final processed updates before database:", JSON.stringify(processedUpdates, null, 2));
-
       // Always update the updatedAt timestamp
-      const finalUpdates = {
+      const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),
-      };
-      
-      console.log("Final updates with updatedAt:", JSON.stringify(finalUpdates, (key, value) => {
-        if (value instanceof Date) {
-          return `Date(${value.toISOString()})`;
-        }
-        return value;
-      }, 2));
-
-      const updatedEventRequest = await storage.updateEventRequest(id, finalUpdates);
+      });
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: "Event request not found" });

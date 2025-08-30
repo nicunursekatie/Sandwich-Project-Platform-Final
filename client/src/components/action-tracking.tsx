@@ -133,24 +133,24 @@ const ActionTracking = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Action Items</h1>
-          <p className="text-gray-600 mt-1">Track all your assigned projects, tasks, and events</p>
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 space-y-4 pb-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">My Action Items</h1>
+            <p className="text-gray-600 mt-1">Track all your assigned projects, tasks, and events</p>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Search className="w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search assignments..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-64"
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-gray-400" />
-          <Input
-            placeholder="Search assignments..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
-          />
-        </div>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="projects" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
@@ -165,8 +165,12 @@ const ActionTracking = () => {
             Events ({filteredEvents.length})
           </TabsTrigger>
         </TabsList>
+      </div>
 
-        <TabsContent value="projects" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto space-y-4">
+
+        <TabsContent value="projects" className="space-y-4 m-0">
           {filteredProjects.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12 text-gray-500">
@@ -229,7 +233,7 @@ const ActionTracking = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="tasks" className="space-y-4">
+        <TabsContent value="tasks" className="space-y-4 m-0">
           {filteredTasks.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12 text-gray-500">
@@ -299,7 +303,7 @@ const ActionTracking = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="events" className="space-y-4">
+        <TabsContent value="events" className="space-y-4 m-0">
           {filteredEvents.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12 text-gray-500">
@@ -368,6 +372,7 @@ const ActionTracking = () => {
             </div>
           )}
         </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
