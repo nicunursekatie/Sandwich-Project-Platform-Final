@@ -1218,12 +1218,12 @@ export default function EventRequestsManagement() {
               {/* Refrigeration */}
               <div>
                 <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                <Select name="hasRefrigeration" defaultValue={detailsRequest.hasRefrigeration ? detailsRequest.hasRefrigeration.toString() : ""}>
+                <Select name="hasRefrigeration" defaultValue={detailsRequest.hasRefrigeration ? detailsRequest.hasRefrigeration.toString() : "none"}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select refrigeration status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Not specified</SelectItem>
+                    <SelectItem value="none">Not specified</SelectItem>
                     <SelectItem value="yes">Yes - Refrigeration Available</SelectItem>
                     <SelectItem value="no">No - No Refrigeration</SelectItem>
                   </SelectContent>
