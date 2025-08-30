@@ -138,7 +138,7 @@ const ActionTracking = () => {
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Action Items</h1>
-            <p className="text-gray-600 mt-1">Track all your assigned projects, tasks, and events</p>
+            <p className="text-gray-600 mt-1">Track all your assigned projects, tasks, and event requests</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Search className="w-4 h-4 text-gray-400" />
@@ -165,7 +165,7 @@ const ActionTracking = () => {
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Events Google Sheet ({filteredEvents.length})
+            Events ({filteredEvents.length})
           </TabsTrigger>
         </TabsList>
         <div className="flex-1 overflow-y-auto space-y-4">
@@ -309,8 +309,8 @@ const ActionTracking = () => {
               <CardContent className="flex items-center justify-center py-12 text-gray-500">
                 <div className="text-center">
                   <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium">No assigned events found</p>
-                  <p className="text-sm">Event requests assigned to you will appear here</p>
+                  <p className="text-lg font-medium">No assigned event requests found</p>
+                  <p className="text-sm">Event requests where you are the contact person will appear here</p>
                 </div>
               </CardContent>
             </Card>
