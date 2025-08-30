@@ -1209,7 +1209,7 @@ export default function EventRequestsManagement() {
                       <SelectValue placeholder="Select team member" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No assignment</SelectItem>
+                      <SelectItem value="none">No assignment</SelectItem>
                       {users.map((user: any) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.firstName && user.lastName 
