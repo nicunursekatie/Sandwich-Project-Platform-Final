@@ -10,9 +10,10 @@ import { getEventRequestsGoogleSheetsService } from "../google-sheets-event-requ
 const router = Router();
 
 // Debug middleware to catch all requests to this router
-router.use("/:id", (req, res, next) => {
-  if (req.method === "PATCH" || req.method === "PUT") {
+router.use((req, res, next) => {
+  if ((req.method === "PATCH" || req.method === "PUT") && req.params.id) {
     console.log(`=== ROUTER DEBUG: ${req.method} ${req.originalUrl} ===`);
+    console.log("Request params:", req.params);
     console.log("Request body:", JSON.stringify(req.body, null, 2));
   }
   next();
@@ -77,12 +78,12 @@ router.post("/", isAuthenticated, requirePermission("EVENT_REQUESTS_ADD"), async
     const validatedData = insertEventRequestSchema.parse(req.body);
     
     // Check for organization duplicates
-    const duplicateCheck = { exists: false, matches: [] };
+    const duplicateCheck = { exists: false, matches: [] as any[] };
     
     const newEventRequest = await storage.createEventRequest({
       ...validatedData,
       organizationExists: duplicateCheck.exists,
-      duplicateNotes: duplicateCheck.exists ? `Potential matches found: ${duplicateCheck.matches.map(m => m.name).join(", ")}` : null,
+      duplicateNotes: duplicateCheck.exists ? `Potential matches found: ${duplicateCheck.matches.map((m: any) => m.name).join(", ")}` : null,
       duplicateCheckDate: new Date(),
       createdBy: user?.id || 1
     });
