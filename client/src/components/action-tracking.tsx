@@ -151,7 +151,10 @@ const ActionTracking = () => {
           </div>
         </div>
 
-        <TabsList className="grid w-full grid-cols-3">
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
           <TabsTrigger value="projects" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Projects ({filteredProjects.length})
@@ -165,9 +168,6 @@ const ActionTracking = () => {
             Events Google Sheet ({filteredEvents.length})
           </TabsTrigger>
         </TabsList>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto space-y-4">
 
         <TabsContent value="projects" className="space-y-4 m-0">
