@@ -185,7 +185,7 @@ export default function EventRequestsManagement() {
   });
 
   const completeEventDetailsMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) => apiRequest("PATCH", `/api/event-requests/${id}/details`, data),
+    mutationFn: ({ id, ...data }: any) => apiRequest("PATCH", `/api/event-requests/${id}/event-details`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowEventDetailsDialog(false);
