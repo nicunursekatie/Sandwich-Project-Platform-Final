@@ -130,13 +130,42 @@ router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_
   }
 });
 
-// Update event request
+// Update event request (PUT)
 router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const updates = req.body;
 
-    console.log("=== EVENT REQUEST UPDATE ===");
+    console.log("=== EVENT REQUEST UPDATE (PUT) ===");
+    console.log("Request ID:", id);
+    console.log("Updates received:", JSON.stringify(updates, null, 2));
+
+    // Always update the updatedAt timestamp
+    const updatedEventRequest = await storage.updateEventRequest(id, {
+      ...updates,
+      updatedAt: new Date()
+    });
+    
+    if (!updatedEventRequest) {
+      return res.status(404).json({ message: "Event request not found" });
+    }
+
+    console.log("Updated event request:", JSON.stringify(updatedEventRequest, null, 2));
+    await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request: ${id}`);
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error("Error updating event request:", error);
+    res.status(500).json({ message: "Failed to update event request" });
+  }
+});
+
+// Update event request (PATCH) - for partial updates like event details
+router.patch("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const updates = req.body;
+
+    console.log("=== EVENT REQUEST UPDATE (PATCH) ===");
     console.log("Request ID:", id);
     console.log("Updates received:", JSON.stringify(updates, null, 2));
 
