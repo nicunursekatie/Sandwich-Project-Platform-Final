@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -729,143 +729,141 @@ export default function EventRequestsManagement() {
   const renderPastEventCard = (request: EventRequest) => (
     <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-gray-500">
       <CardHeader className="pb-3">
-        {/* Prominent Date Display */}
-        {request.desiredEventDate && (
-          <div className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-lg p-3 mb-4">
-            <div className="flex items-center justify-center space-x-2">
-              <Calendar className="w-5 h-5 text-gray-600" />
-              <span className="text-lg font-bold text-gray-700">
-                COMPLETED: {(() => {
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            {/* Organization Name and Event Date */}
+            <CardTitle className="flex items-center space-x-3 text-xl mb-2">
+              <CheckCircle className="w-6 h-6 text-gray-600" />
+              <span className="text-gray-900">{request.organizationName}</span>
+            </CardTitle>
+            
+            {/* Event Date */}
+            {request.desiredEventDate && (
+              <div className="text-lg font-semibold text-gray-700 mb-2">
+                {(() => {
                   const dateInfo = formatEventDate(request.desiredEventDate);
                   return dateInfo.text;
                 })()}
-              </span>
-            </div>
-          </div>
-        )}
-        
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="flex items-center space-x-3 text-xl mb-3">
-              <CheckCircle className="w-6 h-6 text-gray-600" />
-              <span className="text-gray-900">{request.organizationName}</span>
-              {(request as any).toolkitStatus && (
-                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                  Toolkit: {(() => {
-                    const status = (request as any).toolkitStatus;
-                    switch (status) {
-                      case 'not_sent': return '⏳ Pending';
-                      case 'sent': return '✓ Sent';
-                      case 'received_confirmed': return '✓✓ Confirmed';
-                      case 'not_needed': return 'N/A';
-                      default: return status;
-                    }
-                  })()}
-                </Badge>
-              )}
-            </CardTitle>
+              </div>
+            )}
             
-            {/* Contact Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <User className="w-5 h-5 text-gray-600" />
-                  <span className="text-lg font-semibold text-gray-800">
-                    {request.firstName} {request.lastName}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm text-gray-600">{request.email}</span>
-                </div>
-                {request.phone && (
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-600">{request.phone}</span>
-                  </div>
-                )}
+            {/* Event Address (smaller, below other info) */}
+            {request.eventAddress && (
+              <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+                <Building className="w-4 h-4" />
+                <span>{request.eventAddress}</span>
               </div>
-              
-              {/* Event Details */}
-              <div className="space-y-2">
-                {((request as any).eventStartTime || (request as any).eventEndTime) && (
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm font-medium">
-                      Event: {formatTime12Hour((request as any).eventStartTime)}
-                      {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
-                    </span>
-                  </div>
-                )}
-                {(request as any).pickupTime && (
-                  <div className="flex items-center space-x-2">
-                    <Trash2 className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm font-medium">Pickup: {formatTime12Hour((request as any).pickupTime)}</span>
-                  </div>
-                )}
-                {request.eventAddress && (
-                  <div className="flex items-center space-x-2">
-                    <Building className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm font-medium">{request.eventAddress}</span>
-                  </div>
-                )}
-                {request.estimatedSandwichCount && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-600 text-sm">🥪</span>
-                    <span className="text-sm font-medium">{request.estimatedSandwichCount} sandwiches</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
           </div>
           <div className="flex flex-col items-end space-y-2">
-            {getStatusDisplay(request.status)}
+            <Badge variant="secondary" className="text-xs">Event Completed</Badge>
           </div>
         </div>
       </CardHeader>
+      
       <CardContent>
         <div className="space-y-4">
-          {/* TSP Team Information */}
-          {((request as any).tspContact || (request as any).customTspContact) && (
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-800 mb-2">TSP Team Assignment</h4>
-              <div className="space-y-1">
-                {(request as any).tspContact && (
-                  <div className="text-sm">
-                    <strong>Primary Contact:</strong> {(() => {
-                      const contact = users.find((user: any) => user.id === (request as any).tspContact);
-                      return contact 
-                        ? (contact.firstName && contact.lastName 
-                            ? `${contact.firstName} ${contact.lastName}` 
-                            : contact.displayName || contact.email)
-                        : (request as any).tspContact;
-                    })()}
-                  </div>
-                )}
-                {(request as any).customTspContact && (
-                  <div className="text-sm">
-                    <strong>Additional Info:</strong> {(request as any).customTspContact}
-                  </div>
-                )}
+          {/* Prominent Sandwich Count */}
+          {request.estimatedSandwichCount && (
+            <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+              <div className="flex items-center justify-center space-x-3">
+                <span className="text-3xl">🥪</span>
+                <span className="text-2xl font-bold text-orange-800">
+                  {request.estimatedSandwichCount} Sandwiches
+                </span>
               </div>
             </div>
           )}
           
-          {/* Planning Notes */}
-          {(request as any).planningNotes && (
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">Planning Notes</h4>
-              <p className="text-sm text-blue-700">{(request as any).planningNotes}</p>
+          {/* TSP Contact Information */}
+          {((request as any).tspContact || (request as any).customTspContact || (request as any).tspContactAssigned) && (
+            <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
+              <h4 className="font-semibold text-teal-800 mb-2 flex items-center">
+                <UserCheck className="w-4 h-4 mr-2" />
+                TSP Contact
+              </h4>
+              <div className="text-sm text-teal-700">
+                {(() => {
+                  // Check tspContact field first
+                  if ((request as any).tspContact) {
+                    const contact = users.find((user: any) => user.id === (request as any).tspContact);
+                    if (contact) {
+                      return contact.firstName && contact.lastName 
+                        ? `${contact.firstName} ${contact.lastName}` 
+                        : contact.displayName || contact.email;
+                    }
+                  }
+                  
+                  // Check tspContactAssigned field
+                  if ((request as any).tspContactAssigned) {
+                    const contact = users.find((user: any) => user.id === (request as any).tspContactAssigned);
+                    if (contact) {
+                      return contact.firstName && contact.lastName 
+                        ? `${contact.firstName} ${contact.lastName}` 
+                        : contact.displayName || contact.email;
+                    }
+                  }
+                  
+                  // Fall back to custom TSP contact
+                  if ((request as any).customTspContact) {
+                    return (request as any).customTspContact;
+                  }
+                  
+                  return 'Not assigned';
+                })()}
+              </div>
             </div>
           )}
           
-          {/* Event Logistics Summary */}
-          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-            <h4 className="font-semibold text-green-800 mb-2">Event Summary</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          {/* Organization Contact Information */}
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+              <User className="w-4 h-4 mr-2" />
+              Organization Contact
+            </h4>
+            <div className="space-y-1 text-sm text-blue-700">
+              <div><strong>Name:</strong> {request.firstName} {request.lastName}</div>
+              <div><strong>Email:</strong> {request.email}</div>
+              {request.phone && (
+                <div><strong>Phone:</strong> {request.phone}</div>
+              )}
               {request.department && (
                 <div><strong>Department:</strong> {request.department}</div>
               )}
+            </div>
+          </div>
+          
+          {/* Event Summary with all remaining details */}
+          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+            <h4 className="font-semibold text-green-800 mb-2">Event Summary</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-green-700">
+              {/* Event timing */}
+              {((request as any).eventStartTime || (request as any).eventEndTime) && (
+                <div>
+                  <strong>Event Time:</strong> {formatTime12Hour((request as any).eventStartTime)}
+                  {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
+                </div>
+              )}
+              {(request as any).pickupTime && (
+                <div><strong>Pickup Time:</strong> {formatTime12Hour((request as any).pickupTime)}</div>
+              )}
+              
+              {/* Sandwich details */}
+              {(request as any).sandwichTypes && (
+                <div><strong>Sandwich Types:</strong> {(request as any).sandwichTypes}</div>
+              )}
+              
+              {/* Drivers section */}
+              <div>
+                <strong>Drivers:</strong> {(request as any).driverDetails || 'Not specified'}
+              </div>
+              
+              {/* Speakers section */}
+              <div>
+                <strong>Speakers:</strong> {(request as any).speakerDetails || 'Not specified'}
+              </div>
+              
+              {/* Other logistics */}
               {typeof request.hasRefrigeration === 'boolean' && (
                 <div><strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
               )}
@@ -875,21 +873,20 @@ export default function EventRequestsManagement() {
               {(request as any).additionalRequirements && (
                 <div><strong>Special Requirements:</strong> {(request as any).additionalRequirements}</div>
               )}
+              
+              {/* Include original message in event summary if it exists and isn't generic */}
+              {request.message && request.message !== 'Imported from Excel file' && (
+                <div className="col-span-full">
+                  <strong>Event Details:</strong> {request.message}
+                </div>
+              )}
             </div>
           </div>
-          
-          {/* Original Message */}
-          {request.message && request.message !== 'Imported from Excel file' && (
-            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-              <h4 className="font-semibold text-amber-800 mb-2">Original Request</h4>
-              <p className="text-sm text-amber-700">{request.message}</p>
-            </div>
-          )}
           
           {/* Submission Information */}
           <div className="flex justify-between items-center pt-3 border-t text-xs text-gray-500">
             <div>
-              {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
+              {request.message === 'Imported from Excel file' ? 'Imported past event - duplicate organization' : 'Submitted'}: {(() => {
                 try {
                   const date = new Date(request.createdAt);
                   return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPP");
@@ -897,9 +894,6 @@ export default function EventRequestsManagement() {
                   return 'Invalid date';
                 }
               })()}
-            </div>
-            <div className="flex items-center space-x-1">
-              <Badge variant="secondary" className="text-xs">Event Completed</Badge>
             </div>
           </div>
         </div>
