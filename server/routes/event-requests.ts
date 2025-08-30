@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage-wrapper";
-import { insertEventRequestSchema, insertOrganizationSchema } from "@shared/schema";
+import {
+  insertEventRequestSchema,
+  insertOrganizationSchema,
+} from "@shared/schema";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { requirePermission } from "../middleware/auth";
 import { isAuthenticated } from "../temp-auth";
@@ -20,90 +23,137 @@ router.use((req, res, next) => {
 });
 
 // Simple logging function for activity tracking
-const logActivity = async (req: any, res: any, permission: string, message: string) => {
+const logActivity = async (
+  req: any,
+  res: any,
+  permission: string,
+  message: string,
+) => {
   // Activity logging will be handled by the global middleware
   console.log(`Activity: ${permission} - ${message}`);
 };
 
 // Get all event requests
-router.get("/", isAuthenticated, requirePermission("EVENT_REQUESTS_VIEW"), async (req, res) => {
-  try {
-    await logActivity(req, res, "EVENT_REQUESTS_VIEW", "Retrieved all event requests");
-    const eventRequests = await storage.getAllEventRequests();
-    res.json(eventRequests);
-  } catch (error) {
-    console.error("Error fetching event requests:", error);
-    res.status(500).json({ message: "Failed to fetch event requests" });
-  }
-});
+router.get(
+  "/",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_VIEW"),
+  async (req, res) => {
+    try {
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_VIEW",
+        "Retrieved all event requests",
+      );
+      const eventRequests = await storage.getAllEventRequests();
+      res.json(eventRequests);
+    } catch (error) {
+      console.error("Error fetching event requests:", error);
+      res.status(500).json({ message: "Failed to fetch event requests" });
+    }
+  },
+);
 
 // Get event requests by status
-router.get("/status/:status", isAuthenticated, requirePermission("EVENT_REQUESTS_VIEW"), async (req, res) => {
-  try {
-
-    const { status } = req.params;
-    await logActivity(req, res, "EVENT_REQUESTS_VIEW", `Retrieved event requests with status: ${status}`);
-    const eventRequests = await storage.getEventRequestsByStatus(status);
-    res.json(eventRequests);
-  } catch (error) {
-    console.error("Error fetching event requests by status:", error);
-    res.status(500).json({ message: "Failed to fetch event requests" });
-  }
-});
+router.get(
+  "/status/:status",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_VIEW"),
+  async (req, res) => {
+    try {
+      const { status } = req.params;
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_VIEW",
+        `Retrieved event requests with status: ${status}`,
+      );
+      const eventRequests = await storage.getEventRequestsByStatus(status);
+      res.json(eventRequests);
+    } catch (error) {
+      console.error("Error fetching event requests by status:", error);
+      res.status(500).json({ message: "Failed to fetch event requests" });
+    }
+  },
+);
 
 // Get single event request
-router.get("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_VIEW"), async (req, res) => {
-  try {
+router.get(
+  "/:id",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_VIEW"),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const eventRequest = await storage.getEventRequest(id);
 
-    const id = parseInt(req.params.id);
-    const eventRequest = await storage.getEventRequest(id);
-    
-    if (!eventRequest) {
-      return res.status(404).json({ message: "Event request not found" });
+      if (!eventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_VIEW",
+        `Retrieved event request: ${id}`,
+      );
+      res.json(eventRequest);
+    } catch (error) {
+      console.error("Error fetching event request:", error);
+      res.status(500).json({ message: "Failed to fetch event request" });
     }
-
-    await logActivity(req, res, "EVENT_REQUESTS_VIEW", `Retrieved event request: ${id}`);
-    res.json(eventRequest);
-  } catch (error) {
-    console.error("Error fetching event request:", error);
-    res.status(500).json({ message: "Failed to fetch event request" });
-  }
-});
+  },
+);
 
 // Create new event request
-router.post("/", isAuthenticated, requirePermission("EVENT_REQUESTS_ADD"), async (req, res) => {
-  try {
-    const user = req.user;
+router.post(
+  "/",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_ADD"),
+  async (req, res) => {
+    try {
+      const user = req.user;
 
-    const validatedData = insertEventRequestSchema.parse(req.body);
-    
-    // Check for organization duplicates
-    const duplicateCheck = { exists: false, matches: [] as any[] };
-    
-    const newEventRequest = await storage.createEventRequest({
-      ...validatedData,
-      organizationExists: duplicateCheck.exists,
-      duplicateNotes: duplicateCheck.exists ? `Potential matches found: ${duplicateCheck.matches.map((m: any) => m.name).join(", ")}` : null,
-      duplicateCheckDate: new Date(),
-      createdBy: user?.id || 1
-    });
+      const validatedData = insertEventRequestSchema.parse(req.body);
 
-    await logActivity(req, res, "EVENT_REQUESTS_ADD", `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`);
-    res.status(201).json(newEventRequest);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      // Check for organization duplicates
+      const duplicateCheck = { exists: false, matches: [] as any[] };
+
+      const newEventRequest = await storage.createEventRequest({
+        ...validatedData,
+        organizationExists: duplicateCheck.exists,
+        duplicateNotes: duplicateCheck.exists
+          ? `Potential matches found: ${duplicateCheck.matches.map((m: any) => m.name).join(", ")}`
+          : null,
+        duplicateCheckDate: new Date(),
+        createdBy: user?.id || 1,
+      });
+
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_ADD",
+        `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`,
+      );
+      res.status(201).json(newEventRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res
+          .status(400)
+          .json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Error creating event request:", error);
+      res.status(500).json({ message: "Failed to create event request" });
     }
-    console.error("Error creating event request:", error);
-    res.status(500).json({ message: "Failed to create event request" });
-  }
-});
+  },
+);
 
 // Complete primary contact - comprehensive data collection
-router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_REQUESTS_COMPLETE_CONTACT"), async (req, res) => {
+router.patch("/:id/details", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    
+
     const completionDataSchema = z.object({
       communicationMethod: z.string().min(1, "Communication method required"),
       eventAddress: z.string().optional(),
@@ -113,7 +163,7 @@ router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_
     });
 
     const validatedData = completionDataSchema.parse(req.body);
-    
+
     const updatedEventRequest = await storage.updateEventRequest(id, {
       contactedAt: new Date(),
       completedByUserId: req.user?.id,
@@ -122,18 +172,25 @@ router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_
       estimatedSandwichCount: validatedData.estimatedSandwichCount,
       hasRefrigeration: validatedData.hasRefrigeration,
       contactCompletionNotes: validatedData.notes,
-      status: 'contact_completed'
+      status: "contact_completed",
     });
-    
+
     if (!updatedEventRequest) {
       return res.status(404).json({ message: "Event request not found" });
     }
 
-    await logActivity(req, res, "EVENT_REQUESTS_COMPLETE_CONTACT", `Completed contact for event request: ${id}`);
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_COMPLETE_CONTACT",
+      `Completed contact for event request: ${id}`,
+    );
     res.json(updatedEventRequest);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid completion data", errors: error.errors });
+      return res
+        .status(400)
+        .json({ message: "Invalid completion data", errors: error.errors });
     }
     console.error("Error completing contact:", error);
     res.status(500).json({ message: "Failed to complete contact" });
@@ -141,81 +198,119 @@ router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_
 });
 
 // Update event request (PUT)
-router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const updates = req.body;
+router.put(
+  "/:id",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_EDIT"),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
 
-    console.log("=== EVENT REQUEST UPDATE (PUT) ===");
-    console.log("Request ID:", id);
-    console.log("Updates received:", JSON.stringify(updates, null, 2));
+      console.log("=== EVENT REQUEST UPDATE (PUT) ===");
+      console.log("Request ID:", id);
+      console.log("Updates received:", JSON.stringify(updates, null, 2));
 
-    // Always update the updatedAt timestamp
-    const updatedEventRequest = await storage.updateEventRequest(id, {
-      ...updates,
-      updatedAt: new Date()
-    });
-    
-    if (!updatedEventRequest) {
-      return res.status(404).json({ message: "Event request not found" });
+      // Always update the updatedAt timestamp
+      const updatedEventRequest = await storage.updateEventRequest(id, {
+        ...updates,
+        updatedAt: new Date(),
+      });
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      console.log(
+        "Updated event request:",
+        JSON.stringify(updatedEventRequest, null, 2),
+      );
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_EDIT",
+        `Updated event request: ${id}`,
+      );
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error("Error updating event request:", error);
+      res.status(500).json({ message: "Failed to update event request" });
     }
-
-    console.log("Updated event request:", JSON.stringify(updatedEventRequest, null, 2));
-    await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request: ${id}`);
-    res.json(updatedEventRequest);
-  } catch (error) {
-    console.error("Error updating event request:", error);
-    res.status(500).json({ message: "Failed to update event request" });
-  }
-});
+  },
+);
 
 // Update event request details - specific endpoint for event details updates
-router.patch("/:id/details", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
-  console.log("🚨🚨🚨 EVENT DETAILS PATCH ROUTE HIT! 🚨🚨🚨");
-  try {
-    const id = parseInt(req.params.id);
-    const updates = req.body;
+router.patch(
+  "/:id/details",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_EDIT"),
+  async (req, res) => {
+    console.log("🚨🚨🚨 EVENT DETAILS PATCH ROUTE HIT! 🚨🚨🚨");
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
 
-    console.log("=== EVENT REQUEST DETAILS UPDATE ===");
-    console.log("Request ID:", id);
-    console.log("Updates received:", JSON.stringify(updates, null, 2));
+      console.log("=== EVENT REQUEST DETAILS UPDATE ===");
+      console.log("Request ID:", id);
+      console.log("Updates received:", JSON.stringify(updates, null, 2));
 
-    // Always update the updatedAt timestamp
-    const updatedEventRequest = await storage.updateEventRequest(id, {
-      ...updates,
-      updatedAt: new Date()
-    });
-    
-    if (!updatedEventRequest) {
-      return res.status(404).json({ message: "Event request not found" });
+      // Always update the updatedAt timestamp
+      const updatedEventRequest = await storage.updateEventRequest(id, {
+        ...updates,
+        updatedAt: new Date(),
+      });
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      console.log(
+        "Updated event request:",
+        JSON.stringify(updatedEventRequest, null, 2),
+      );
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_EDIT",
+        `Updated event request details: ${id}`,
+      );
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error("Error updating event request details:", error);
+      res
+        .status(500)
+        .json({ message: "Failed to update event request details" });
     }
-
-    console.log("Updated event request:", JSON.stringify(updatedEventRequest, null, 2));
-    await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request details: ${id}`);
-    res.json(updatedEventRequest);
-  } catch (error) {
-    console.error("Error updating event request details:", error);
-    res.status(500).json({ message: "Failed to update event request details" });
-  }
-});
+  },
+);
 
 // Delete event request
-router.delete("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_DELETE"), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const deleted = await storage.deleteEventRequest(id);
-    
-    if (!deleted) {
-      return res.status(404).json({ message: "Event request not found" });
-    }
+router.delete(
+  "/:id",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_DELETE"),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteEventRequest(id);
 
-    await logActivity(req, res, "EVENT_REQUESTS_DELETE", `Deleted event request: ${id}`);
-    res.json({ message: "Event request deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting event request:", error);
-    res.status(500).json({ message: "Failed to delete event request" });
-  }
-});
+      if (!deleted) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_DELETE",
+        `Deleted event request: ${id}`,
+      );
+      res.json({ message: "Event request deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting event request:", error);
+      res.status(500).json({ message: "Failed to delete event request" });
+    }
+  },
+);
 
 // Check organization duplicates
 router.post("/check-duplicates", async (req, res) => {
@@ -231,7 +326,12 @@ router.post("/check-duplicates", async (req, res) => {
     }
 
     const duplicateCheck = { exists: false, matches: [] };
-    await logActivity(req, res, "EVENT_REQUESTS_VIEW", `Checked duplicates for organization: ${organizationName}`);
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_VIEW",
+      `Checked duplicates for organization: ${organizationName}`,
+    );
     res.json(duplicateCheck);
   } catch (error) {
     console.error("Error checking organization duplicates:", error);
@@ -248,7 +348,12 @@ router.get("/organizations/all", async (req, res) => {
     }
 
     const organizations = await storage.getAllOrganizations();
-    await logActivity(req, res, "EVENT_REQUESTS_VIEW", "Retrieved all organizations");
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_VIEW",
+      "Retrieved all organizations",
+    );
     res.json(organizations);
   } catch (error) {
     console.error("Error fetching organizations:", error);
@@ -266,11 +371,18 @@ router.post("/organizations", async (req, res) => {
     const validatedData = insertOrganizationSchema.parse(req.body);
     const newOrganization = await storage.createOrganization(validatedData);
 
-    await logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Created organization: ${newOrganization.name}`);
+    await logActivity(
+      req,
+      res,
+      PERMISSIONS.MANAGE_EVENT_REQUESTS,
+      `Created organization: ${newOrganization.name}`,
+    );
     res.status(201).json(newOrganization);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      return res
+        .status(400)
+        .json({ message: "Invalid input", errors: error.errors });
     }
     console.error("Error creating organization:", error);
     res.status(500).json({ message: "Failed to create organization" });
@@ -282,16 +394,20 @@ router.post("/organizations", async (req, res) => {
 // DEBUG: Test endpoint to check authentication
 router.get("/debug/auth", (req, res) => {
   res.json({
-    user: req.user ? {
-      id: req.user.id,
-      email: req.user.email,
-      role: req.user.role,
-      permissionCount: req.user.permissions?.length || 0
-    } : null,
-    session: req.session?.user ? {
-      email: req.session.user.email,
-      role: req.session.user.role
-    } : null
+    user: req.user
+      ? {
+          id: req.user.id,
+          email: req.user.email,
+          role: req.user.role,
+          permissionCount: req.user.permissions?.length || 0,
+        }
+      : null,
+    session: req.session?.user
+      ? {
+          email: req.session.user.email,
+          role: req.session.user.role,
+        }
+      : null,
   });
 });
 
@@ -303,9 +419,9 @@ router.post("/sync/to-sheets", async (req, res) => {
       userExists: !!user,
       userRole: user?.role,
       userEmail: user?.email,
-      permissionCount: user?.permissions?.length || 0
+      permissionCount: user?.permissions?.length || 0,
     });
-    
+
     // Temporarily disable all auth checks for testing
     // if (!user) {
     //   return res.status(403).json({ message: "Authentication required" });
@@ -313,21 +429,26 @@ router.post("/sync/to-sheets", async (req, res) => {
 
     const syncService = getEventRequestsGoogleSheetsService(storage as any);
     if (!syncService) {
-      return res.status(500).json({ 
-        success: false, 
-        message: "Google Sheets service not configured" 
+      return res.status(500).json({
+        success: false,
+        message: "Google Sheets service not configured",
       });
     }
 
     const result = await syncService.syncToGoogleSheets();
-    await logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, `Synced ${result.synced || 0} event requests to Google Sheets`);
-    
+    await logActivity(
+      req,
+      res,
+      PERMISSIONS.MANAGE_EVENT_REQUESTS,
+      `Synced ${result.synced || 0} event requests to Google Sheets`,
+    );
+
     res.json(result);
   } catch (error) {
     console.error("Error syncing event requests to Google Sheets:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to sync to Google Sheets" 
+    res.status(500).json({
+      success: false,
+      message: "Failed to sync to Google Sheets",
     });
   }
 });
@@ -343,22 +464,26 @@ router.post("/sync/from-sheets", async (req, res) => {
 
     const syncService = getEventRequestsGoogleSheetsService(storage as any);
     if (!syncService) {
-      return res.status(500).json({ 
-        success: false, 
-        message: "Google Sheets service not configured" 
+      return res.status(500).json({
+        success: false,
+        message: "Google Sheets service not configured",
       });
     }
 
     const result = await syncService.syncFromGoogleSheets();
-    await logActivity(req, res, PERMISSIONS.MANAGE_EVENT_REQUESTS, 
-      `Synced from Google Sheets: ${result.created || 0} created, ${result.updated || 0} updated`);
-    
+    await logActivity(
+      req,
+      res,
+      PERMISSIONS.MANAGE_EVENT_REQUESTS,
+      `Synced from Google Sheets: ${result.created || 0} created, ${result.updated || 0} updated`,
+    );
+
     res.json(result);
   } catch (error) {
     console.error("Error syncing event requests from Google Sheets:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to sync from Google Sheets" 
+    res.status(500).json({
+      success: false,
+      message: "Failed to sync from Google Sheets",
     });
   }
 });
@@ -374,27 +499,32 @@ router.get("/sync/analyze", async (req, res) => {
 
     const syncService = getEventRequestsGoogleSheetsService(storage as any);
     if (!syncService) {
-      return res.status(500).json({ 
-        success: false, 
-        message: "Google Sheets service not configured" 
+      return res.status(500).json({
+        success: false,
+        message: "Google Sheets service not configured",
       });
     }
 
     const analysis = await syncService.analyzeSheetStructure();
-    await logActivity(req, res, "EVENT_REQUESTS_VIEW", "Analyzed Event Requests Google Sheet structure");
-    
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_VIEW",
+      "Analyzed Event Requests Google Sheet structure",
+    );
+
     res.json({
       success: true,
       analysis,
       sheetUrl: `https://docs.google.com/spreadsheets/d/${process.env.EVENT_REQUESTS_SHEET_ID}/edit`,
-      targetSpreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID
+      targetSpreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID,
     });
   } catch (error) {
     console.error("Error analyzing Event Requests Google Sheet:", error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Google Sheets analysis failed. Please check API credentials.",
-      error: error instanceof Error ? error.message : "Unknown error" 
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -410,35 +540,39 @@ router.get("/orgs-catalog-test", async (req, res) => {
       sessionExists: !!req.session,
       sessionUser: req.session?.user?.email || "none",
       userPermissionsCount: user?.permissions?.length || 0,
-      hasViewOrgsPermission: user ? hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG) : false,
-      permissionConstant: PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG
+      hasViewOrgsPermission: user
+        ? hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)
+        : false,
+      permissionConstant: PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
     });
-    
+
     // TEMP: Completely bypass auth for testing
     console.log("🔧 TEMP: Bypassing all auth checks for testing");
 
     // Get all event requests and aggregate by organization and contact
     const allEventRequests = await storage.getAllEventRequests();
-    
+
     // Create a map to aggregate organizations and contacts
     const organizationMap = new Map<string, any>();
-    
+
     allEventRequests.forEach((request) => {
       const key = `${request.organizationName}-${request.email}`;
-      
+
       if (organizationMap.has(key)) {
         const existing = organizationMap.get(key);
         existing.totalRequests += 1;
-        
+
         // Update to latest request date if this one is newer
-        if (new Date(request.createdAt) > new Date(existing.latestRequestDate)) {
+        if (
+          new Date(request.createdAt) > new Date(existing.latestRequestDate)
+        ) {
           existing.latestRequestDate = request.createdAt;
           existing.status = request.status;
         }
-        
+
         // If any request has been contacted, update status
-        if (request.contactedAt && existing.status === 'new') {
-          existing.status = 'contacted';
+        if (request.contactedAt && existing.status === "new") {
+          existing.status = "contacted";
         }
       } else {
         organizationMap.set(key, {
@@ -450,15 +584,20 @@ router.get("/orgs-catalog-test", async (req, res) => {
           department: request.department,
           latestRequestDate: request.createdAt,
           totalRequests: 1,
-          status: request.contactedAt ? 'contacted' : request.status
+          status: request.contactedAt ? "contacted" : request.status,
         });
       }
     });
-    
+
     // Convert map to array
     const organizations = Array.from(organizationMap.values());
-    
-    logActivity(req, res, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG, `Retrieved organizations catalog: ${organizations.length} organizations`);
+
+    logActivity(
+      req,
+      res,
+      PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
+      `Retrieved organizations catalog: ${organizations.length} organizations`,
+    );
     res.json(organizations);
   } catch (error) {
     console.error("Error fetching organizations catalog:", error);

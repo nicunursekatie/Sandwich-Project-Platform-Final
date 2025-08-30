@@ -316,6 +316,7 @@ export default function EventRequestsManagement() {
       tspContact: formData.get("tspContact") || undefined,
       customTspContact: formData.get("customTspContact") || undefined
     };
+    console.log("🔥 FORM DATA TO SUBMIT:", JSON.stringify(data, null, 2));
     completeEventDetailsMutation.mutate(data);
   };
 
