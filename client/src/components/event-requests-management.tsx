@@ -156,6 +156,7 @@ const statusOptions = [
 ];
 
 export default function EventRequestsManagement() {
+  const [activeTab, setActiveTab] = useState("requests");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -320,19 +321,318 @@ export default function EventRequestsManagement() {
     }
   });
 
+  // Function to render event card for all tabs
+  const renderEventCard = (request: EventRequest) => (
+    <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="flex items-center space-x-3 text-xl mb-3">
+              <Building className="w-6 h-6" style={{ color: '#236383' }} />
+              <span className="text-gray-900">{request.organizationName}</span>
+              {request.organizationExists && (
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Potential Duplicate
+                </Badge>
+              )}
+            </CardTitle>
+            
+            {/* Contact Information - Prominent Display */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <User className="w-5 h-5" style={{ color: '#236383' }} />
+                <span className="text-lg font-semibold" style={{ color: '#236383' }}>
+                  {request.firstName} {request.lastName}
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Mail className="w-5 h-5" style={{ color: '#236383' }} />
+                <span className="text-base font-medium" style={{ color: '#236383' }}>
+                  {request.email}
+                </span>
+              </div>
+              
+              {request.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-5 h-5" style={{ color: '#236383' }} />
+                  <span className="text-base font-medium" style={{ color: '#236383' }}>
+                    {request.phone}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end space-y-2">
+            {getStatusDisplay(request.status)}
+            
+            {/* Admin actions - small subtle buttons */}
+            <div className="flex space-x-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setCurrentEditingStatus(request.status);
+                  setShowEditDialog(true);
+                }}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (confirm("Are you sure you want to delete this event request?")) {
+                    deleteMutation.mutate(request.id);
+                  }
+                }}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {request.department && (
+            <p><strong>Department:</strong> {request.department}</p>
+          )}
+          {request.desiredEventDate && (
+            <p className="flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
+              <strong>Desired Date: </strong>
+              <span className="ml-2">
+                {(() => {
+                  const dateInfo = formatEventDate(request.desiredEventDate);
+                  return (
+                    <span className={dateInfo.className}>
+                      {dateInfo.text}
+                    </span>
+                  );
+                })()}
+              </span>
+            </p>
+          )}
+          <p><strong>Previously Hosted:</strong> {
+            previouslyHostedOptions.find(opt => opt.value === request.previouslyHosted)?.label
+          }</p>
+          {request.message && (
+            <div>
+              <strong>Additional Information:</strong>
+              <p className="mt-1 text-gray-600">{request.message}</p>
+            </div>
+          )}
+          {request.duplicateNotes && (
+            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+              <p className="text-orange-800"><strong>Duplicate Check Notes:</strong></p>
+              <p className="text-orange-700 text-sm mt-1">{request.duplicateNotes}</p>
+            </div>
+          )}
+          
+          <div className="flex justify-between items-center pt-3 border-t">
+            <div className="text-sm text-gray-500">
+              <div>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
+                try {
+                  const date = new Date(request.createdAt);
+                  return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPp");
+                } catch (error) {
+                  return 'Invalid date';
+                }
+              })()}</div>
+              {request.status === 'new' && !request.contactCompletedAt && (
+                <div className="font-medium" style={{ color: '#e67e22' }}>
+                  Action needed: {(() => {
+                    try {
+                      const submissionDate = new Date(request.createdAt);
+                      const targetDate = new Date(submissionDate.getTime() + (3 * 24 * 60 * 60 * 1000));
+                      const daysUntilTarget = Math.ceil((targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                      if (daysUntilTarget > 0) {
+                        return `Contact within ${daysUntilTarget} day${daysUntilTarget === 1 ? '' : 's'}`;
+                      } else {
+                        const daysOverdue = Math.abs(daysUntilTarget);
+                        return `Contact overdue by ${daysOverdue} day${daysOverdue === 1 ? '' : 's'}`;
+                      }
+                    } catch (error) {
+                      return 'Contact needed';
+                    }
+                  })()}
+                </div>
+              )}
+              {request.contactCompletedAt && (
+                <div className="text-green-600 space-y-1">
+                  <div>Contact completed: {format(new Date(request.contactCompletedAt), "PPp")}</div>
+                  {request.communicationMethod && (
+                    <div className="text-sm">Method: {request.communicationMethod}</div>
+                  )}
+                  {request.eventAddress && (
+                    <div className="text-sm">Event location: {request.eventAddress}</div>
+                  )}
+                  {request.estimatedSandwichCount && (
+                    <div className="text-sm">Estimated sandwiches: {request.estimatedSandwichCount}</div>
+                  )}
+                  {typeof request.hasRefrigeration === 'boolean' && (
+                    <div className="text-sm">Refrigeration: {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
+                  )}
+                </div>
+              )}
+              
+              {/* Advanced Event Details - Collapsible */}
+              {hasAdvancedDetails(request) && (
+                <div className="mt-2">
+                  <Collapsible 
+                    open={expandedCards.has(request.id)} 
+                    onOpenChange={() => toggleCardExpansion(request.id)}
+                  >
+                    <CollapsibleTrigger className="flex items-center w-full p-3 border-l-4 border-teal-500 bg-teal-50 rounded hover:bg-teal-100 transition-colors">
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold text-teal-800 text-sm flex items-center">
+                          📋 Advanced Event Details
+                          {(request as any).toolkitStatus && (
+                            <span className="ml-2 text-xs">
+                              | Toolkit: {(() => {
+                                const status = (request as any).toolkitStatus;
+                                switch (status) {
+                                  case 'not_sent': return '⏳ Pending';
+                                  case 'sent': return '✓ Sent';
+                                  case 'received_confirmed': return '✓✓ Confirmed';
+                                  case 'not_needed': return 'N/A';
+                                  default: return status;
+                                }
+                              })()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-teal-600 mt-1">Click to {expandedCards.has(request.id) ? 'collapse' : 'expand'} details</div>
+                      </div>
+                      {expandedCards.has(request.id) ? 
+                        <ChevronUp className="w-4 h-4 text-teal-600" /> : 
+                        <ChevronDown className="w-4 h-4 text-teal-600" />
+                      }
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="p-3 border-l-4 border-teal-300 bg-teal-25 rounded-b space-y-2">
+                        {(request as any).toolkitStatus && (
+                          <div className="text-sm">
+                            <strong className="text-teal-800">Toolkit Status:</strong> {(() => {
+                              const status = (request as any).toolkitStatus;
+                              switch (status) {
+                                case 'not_sent': return '⏳ Not Yet Sent';
+                                case 'sent': return '✓ Sent';
+                                case 'received_confirmed': return '✓✓ Received & Confirmed';
+                                case 'not_needed': return 'N/A - Not Needed';
+                                default: return status;
+                              }
+                            })()}
+                          </div>
+                        )}
+                        {((request as any).eventStartTime || (request as any).eventEndTime) && (
+                          <div className="text-sm">
+                            <strong className="text-teal-800">Event Time:</strong> {formatTime12Hour((request as any).eventStartTime)}
+                            {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
+                          </div>
+                        )}
+                        {(request as any).pickupTime && (
+                          <div className="text-sm">
+                            <strong className="text-teal-800">Pickup Time:</strong> {formatTime12Hour((request as any).pickupTime)}
+                          </div>
+                        )}
+                        {(request as any).tspContact && (
+                          <div className="text-sm">
+                            <strong className="text-teal-800">TSP Contact:</strong> {(() => {
+                              const contact = users.find((user: any) => user.id === (request as any).tspContact);
+                              return contact 
+                                ? (contact.firstName && contact.lastName 
+                                    ? `${contact.firstName} ${contact.lastName}` 
+                                    : contact.displayName || contact.email)
+                                : (request as any).tspContact;
+                            })()}
+                          </div>
+                        )}
+                        {(request as any).customTspContact && (
+                          <div className="text-sm">
+                            <strong className="text-teal-800">Additional Contact Info:</strong> {(request as any).customTspContact}
+                          </div>
+                        )}
+                        {(request as any).planningNotes && (
+                          <div className="text-sm">
+                            <strong className="text-teal-800">Planning Notes:</strong> {(request as any).planningNotes}
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              )}
+            </div>
+            <div className="space-x-2">
+              {request.status === 'new' && !request.contactCompletedAt && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCompletingRequest(request);
+                    setShowCompleteContactDialog(true);
+                  }}
+                >
+                  <Clock className="h-4 w-4 mr-1" />
+                  Complete Primary Contact
+                </Button>
+              )}
+              
+              {request.contactCompletedAt && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedRequest(request);
+                    setCurrentEditingStatus(request.status);
+                    setShowEditDialog(true);
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  View Event Data
+                </Button>
+              )}
+
+              {/* Event Details Button - Show based on whether advanced details exist */}
+              {request.status !== 'new' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setDetailsRequest(request);
+                    setShowEventDetailsDialog(true);
+                  }}
+                  className="bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   const filteredRequests = useMemo(() => {
-    return eventRequests.filter((request: EventRequest) => {
+    const currentEvents = getCurrentEvents();
+    return currentEvents.filter((request: EventRequest) => {
       const matchesSearch = !searchTerm || 
         request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.email.toLowerCase().includes(searchTerm.toLowerCase());
         
-      const matchesStatus = statusFilter === "all" || request.status === statusFilter;
-      
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [eventRequests, searchTerm, statusFilter]);
+  }, [eventRequests, searchTerm, activeTab]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -438,10 +738,29 @@ export default function EventRequestsManagement() {
     );
   };
 
+  // Filter events by tab
+  const requestsEvents = eventRequests.filter((req: EventRequest) => req.status === 'new');
+  const scheduledEvents = eventRequests.filter((req: EventRequest) => req.status === 'contact_completed' || req.status === 'scheduled');
+  const pastEvents = eventRequests.filter((req: EventRequest) => req.status === 'completed' || req.status === 'declined');
+
+  // Get current events based on active tab
+  const getCurrentEvents = () => {
+    switch (activeTab) {
+      case 'requests':
+        return requestsEvents;
+      case 'scheduled':
+        return scheduledEvents;
+      case 'past':
+        return pastEvents;
+      default:
+        return requestsEvents;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold">Event Requests</h1>
+        <h1 className="text-3xl font-bold">Event Planning</h1>
         <div className="flex flex-wrap gap-2">
           {/* Google Sheets Integration - Compact on mobile */}
           <Button 
@@ -584,367 +903,188 @@ export default function EventRequestsManagement() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex space-x-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search by organization, name, or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      {/* Tab Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="requests" className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            Event Requests ({requestsEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="scheduled" className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Scheduled Events ({scheduledEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="past" className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Past Events ({pastEvents.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="requests" className="space-y-6">
+          {/* Filters for Requests */}
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search requests by organization, name, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
           </div>
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {statusOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        {statusOptions.map(status => {
-          const count = eventRequests.filter((req: EventRequest) => req.status === status.value).length;
-          const Icon = statusIcons[status.value as keyof typeof statusIcons];
-          return (
-            <Card key={status.value}>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <Icon className="w-4 h-4" />
-                  <div>
-                    <p className="text-2xl font-bold">{count}</p>
-                    <p className="text-sm text-gray-600">{status.label}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Event Requests List */}
-      <div className="grid gap-4">
-        {isLoading ? (
-          <div className="text-center py-8">Loading event requests...</div>
-        ) : error ? (
-          <div className="text-center py-8 text-red-500">Error loading event requests: {(error as Error)?.message}</div>
-        ) : filteredRequests.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No event requests found. 
-            <br />
-            <small>Total requests: {eventRequests.length}, Filtered: {filteredRequests.length}</small>
+          {/* Stats for Event Requests */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {statusOptions.filter(status => ['new', 'contacted', 'cancelled'].includes(status.value)).map(status => {
+              const count = eventRequests.filter((req: EventRequest) => req.status === status.value).length;
+              const Icon = statusIcons[status.value as keyof typeof statusIcons];
+              return (
+                <Card key={status.value}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-2">
+                      <Icon className="w-4 h-4" />
+                      <div>
+                        <p className="text-2xl font-bold">{count}</p>
+                        <p className="text-sm text-gray-600">{status.label}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-        ) : (
-          filteredRequests.map((request: EventRequest) => (
-            <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="flex items-center space-x-3 text-xl mb-3">
-                      <Building className="w-6 h-6" style={{ color: '#236383' }} />
-                      <span className="text-gray-900">{request.organizationName}</span>
-                      {request.organizationExists && (
-                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          Potential Duplicate
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    
-                    {/* Contact Information - Prominent Display */}
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <User className="w-5 h-5" style={{ color: '#236383' }} />
-                        <span className="text-lg font-semibold" style={{ color: '#236383' }}>
-                          {request.firstName} {request.lastName}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Mail className="w-5 h-5" style={{ color: '#236383' }} />
-                        <span className="text-base font-medium" style={{ color: '#236383' }}>
-                          {request.email}
-                        </span>
-                      </div>
-                      
-                      {request.phone && (
-                        <div className="flex items-center space-x-2">
-                          <Phone className="w-5 h-5" style={{ color: '#236383' }} />
-                          <span className="text-base font-medium" style={{ color: '#236383' }}>
-                            {request.phone}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    {getStatusDisplay(request.status)}
-                    
-                    {/* Admin actions - small subtle buttons */}
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setCurrentEditingStatus(request.status);
-                          setShowEditDialog(true);
-                        }}
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to delete this event request?")) {
-                            deleteMutation.mutate(request.id);
-                          }
-                        }}
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {request.department && (
-                    <p><strong>Department:</strong> {request.department}</p>
-                  )}
-                  {request.desiredEventDate && (
-                    <p className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <strong>Desired Date: </strong>
-                      <span className="ml-2">
-                        {(() => {
-                          const dateInfo = formatEventDate(request.desiredEventDate);
-                          return (
-                            <span className={dateInfo.className}>
-                              {dateInfo.text}
-                            </span>
-                          );
-                        })()}
-                      </span>
-                    </p>
-                  )}
-                  <p><strong>Previously Hosted:</strong> {
-                    previouslyHostedOptions.find(opt => opt.value === request.previouslyHosted)?.label
-                  }</p>
-                  {request.message && (
-                    <div>
-                      <strong>Additional Information:</strong>
-                      <p className="mt-1 text-gray-600">{request.message}</p>
-                    </div>
-                  )}
-                  {request.duplicateNotes && (
-                    <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                      <p className="text-orange-800"><strong>Duplicate Check Notes:</strong></p>
-                      <p className="text-orange-700 text-sm mt-1">{request.duplicateNotes}</p>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center pt-3 border-t">
-                    <div className="text-sm text-gray-500">
-                      <div>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
-                        try {
-                          const date = new Date(request.createdAt);
-                          return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPp");
-                        } catch (error) {
-                          return 'Invalid date';
-                        }
-                      })()}</div>
-                      {request.status === 'new' && !request.contactCompletedAt && (
-                        <div className="font-medium" style={{ color: '#e67e22' }}>
-                          Action needed: {(() => {
-                            try {
-                              const submissionDate = new Date(request.createdAt);
-                              const targetDate = new Date(submissionDate.getTime() + (3 * 24 * 60 * 60 * 1000)); // 3 days after submission
-                              const daysUntilTarget = Math.ceil((targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                              if (daysUntilTarget > 0) {
-                                return `Contact within ${daysUntilTarget} day${daysUntilTarget === 1 ? '' : 's'}`;
-                              } else {
-                                const daysOverdue = Math.abs(daysUntilTarget);
-                                return `Contact overdue by ${daysOverdue} day${daysOverdue === 1 ? '' : 's'}`;
-                              }
-                            } catch (error) {
-                              return 'Contact needed';
-                            }
-                          })()}
-                        </div>
-                      )}
-                      {request.contactCompletedAt && (
-                        <div className="text-green-600 space-y-1">
-                          <div>Contact completed: {format(new Date(request.contactCompletedAt), "PPp")}</div>
-                          {request.communicationMethod && (
-                            <div className="text-sm">Method: {request.communicationMethod}</div>
-                          )}
-                          {request.eventAddress && (
-                            <div className="text-sm">Event location: {request.eventAddress}</div>
-                          )}
-                          {request.estimatedSandwichCount && (
-                            <div className="text-sm">Estimated sandwiches: {request.estimatedSandwichCount}</div>
-                          )}
-                          {typeof request.hasRefrigeration === 'boolean' && (
-                            <div className="text-sm">Refrigeration: {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Advanced Event Details - Collapsible */}
-                      {hasAdvancedDetails(request) && (
-                        <div className="mt-2">
-                          <Collapsible 
-                            open={expandedCards.has(request.id)} 
-                            onOpenChange={() => toggleCardExpansion(request.id)}
-                          >
-                            <CollapsibleTrigger className="flex items-center w-full p-3 border-l-4 border-teal-500 bg-teal-50 rounded hover:bg-teal-100 transition-colors">
-                              <div className="flex-1 text-left">
-                                <div className="font-semibold text-teal-800 text-sm flex items-center">
-                                  📋 Advanced Event Details
-                                  {(request as any).toolkitStatus && (
-                                    <span className="ml-2 text-xs">
-                                      | Toolkit: {(() => {
-                                        const status = (request as any).toolkitStatus;
-                                        switch (status) {
-                                          case 'not_sent': return '⏳ Pending';
-                                          case 'sent': return '✓ Sent';
-                                          case 'received_confirmed': return '✓✓ Confirmed';
-                                          case 'not_needed': return 'N/A';
-                                          default: return status;
-                                        }
-                                      })()}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-teal-600 mt-1">Click to {expandedCards.has(request.id) ? 'collapse' : 'expand'} details</div>
-                              </div>
-                              {expandedCards.has(request.id) ? 
-                                <ChevronUp className="w-4 h-4 text-teal-600" /> : 
-                                <ChevronDown className="w-4 h-4 text-teal-600" />
-                              }
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="p-3 border-l-4 border-teal-300 bg-teal-25 rounded-b space-y-2">
-                                {(request as any).toolkitStatus && (
-                                  <div className="text-sm">
-                                    <strong className="text-teal-800">Toolkit Status:</strong> {(() => {
-                                      const status = (request as any).toolkitStatus;
-                                      switch (status) {
-                                        case 'not_sent': return '⏳ Not Yet Sent';
-                                        case 'sent': return '✓ Sent';
-                                        case 'received_confirmed': return '✓✓ Received & Confirmed';
-                                        case 'not_needed': return 'N/A - Not Needed';
-                                        default: return status;
-                                      }
-                                    })()}
-                                  </div>
-                                )}
-                                {((request as any).eventStartTime || (request as any).eventEndTime) && (
-                                  <div className="text-sm">
-                                    <strong className="text-teal-800">Event Time:</strong> {formatTime12Hour((request as any).eventStartTime)}
-                                    {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
-                                  </div>
-                                )}
-                                {(request as any).pickupTime && (
-                                  <div className="text-sm">
-                                    <strong className="text-teal-800">Pickup Time:</strong> {formatTime12Hour((request as any).pickupTime)}
-                                  </div>
-                                )}
-                                {(request as any).tspContact && (
-                                  <div className="text-sm">
-                                    <strong className="text-teal-800">TSP Contact:</strong> {(() => {
-                                      const contact = users.find((user: any) => user.id === (request as any).tspContact);
-                                      return contact 
-                                        ? (contact.firstName && contact.lastName 
-                                            ? `${contact.firstName} ${contact.lastName}` 
-                                            : contact.displayName || contact.email)
-                                        : (request as any).tspContact;
-                                    })()}
-                                  </div>
-                                )}
-                                {(request as any).customTspContact && (
-                                  <div className="text-sm">
-                                    <strong className="text-teal-800">Additional Contact Info:</strong> {(request as any).customTspContact}
-                                  </div>
-                                )}
-                                {(request as any).planningNotes && (
-                                  <div className="text-sm">
-                                    <strong className="text-teal-800">Planning Notes:</strong> {(request as any).planningNotes}
-                                  </div>
-                                )}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-x-2">
-                      {request.status === 'new' && !request.contactCompletedAt && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setCompletingRequest(request);
-                            setShowCompleteContactDialog(true);
-                          }}
-                        >
-                          <Clock className="h-4 w-4 mr-1" />
-                          Complete Primary Contact
-                        </Button>
-                      )}
-                      
-                      {request.contactCompletedAt && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setCurrentEditingStatus(request.status);
-                            setShowEditDialog(true);
-                          }}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          View Event Data
-                        </Button>
-                      )}
 
-                      {/* Event Details Button - Show based on whether advanced details exist */}
-                      {request.status !== 'new' && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => {
-                            setDetailsRequest(request);
-                            setShowEventDetailsDialog(true);
-                          }}
-                          className="bg-teal-600 hover:bg-teal-700 text-white"
-                        >
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
-                        </Button>
-                      )}
+          {/* Event Requests List */}
+          <div className="grid gap-4">
+            {isLoading ? (
+              <div className="text-center py-8">Loading event requests...</div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">Error loading event requests: {(error as Error)?.message}</div>
+            ) : filteredRequests.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No event requests found. 
+                <br />
+                <small>Total requests: {requestsEvents.length}, Filtered: {filteredRequests.length}</small>
+              </div>
+            ) : (
+              filteredRequests.map((request: EventRequest) => renderEventCard(request))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="scheduled" className="space-y-6">
+          {/* Filters for Scheduled */}
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search scheduled events by organization, name, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stats for Scheduled Events */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {statusOptions.filter(status => ['scheduled', 'confirmed', 'in_progress'].includes(status.value)).map(status => {
+              const count = eventRequests.filter((req: EventRequest) => req.status === status.value).length;
+              const Icon = statusIcons[status.value as keyof typeof statusIcons];
+              return (
+                <Card key={status.value}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-2">
+                      <Icon className="w-4 h-4" />
+                      <div>
+                        <p className="text-2xl font-bold">{count}</p>
+                        <p className="text-sm text-gray-600">{status.label}</p>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Scheduled Events List */}
+          <div className="grid gap-4">
+            {isLoading ? (
+              <div className="text-center py-8">Loading scheduled events...</div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">Error loading scheduled events: {(error as Error)?.message}</div>
+            ) : filteredRequests.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No scheduled events found. 
+                <br />
+                <small>Total scheduled: {scheduledEvents.length}, Filtered: {filteredRequests.length}</small>
+              </div>
+            ) : (
+              filteredRequests.map((request: EventRequest) => renderEventCard(request))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="past" className="space-y-6">
+          {/* Filters for Past Events */}
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search past events by organization, name, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stats for Past Events */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {statusOptions.filter(status => ['completed', 'cancelled'].includes(status.value)).map(status => {
+              const count = eventRequests.filter((req: EventRequest) => req.status === status.value).length;
+              const Icon = statusIcons[status.value as keyof typeof statusIcons];
+              return (
+                <Card key={status.value}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-2">
+                      <Icon className="w-4 h-4" />
+                      <div>
+                        <p className="text-2xl font-bold">{count}</p>
+                        <p className="text-sm text-gray-600">{status.label}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Past Events List */}
+          <div className="grid gap-4">
+            {isLoading ? (
+              <div className="text-center py-8">Loading past events...</div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">Error loading past events: {(error as Error)?.message}</div>
+            ) : filteredRequests.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No past events found. 
+                <br />
+                <small>Total past: {pastEvents.length}, Filtered: {filteredRequests.length}</small>
+              </div>
+            ) : (
+              filteredRequests.map((request: EventRequest) => renderEventCard(request))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Dialog */}
       {selectedRequest && (
