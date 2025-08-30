@@ -171,6 +171,7 @@ router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), as
 
 // Update event request (PATCH) - for partial updates like event details
 router.patch("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
+  console.log("🚨🚨🚨 PATCH ROUTE HIT! 🚨🚨🚨");
   try {
     const id = parseInt(req.params.id);
     const updates = req.body;
