@@ -281,14 +281,16 @@ router.put(
       console.log("Request ID:", id);
       console.log("Updates received:", JSON.stringify(updates, null, 2));
 
-      // Process date fields to ensure they're proper Date objects
+      // Process ALL date/timestamp fields to ensure they're proper Date objects
       const processedUpdates = { ...updates };
-      if (processedUpdates.desiredEventDate) {
-        processedUpdates.desiredEventDate = new Date(processedUpdates.desiredEventDate);
-      }
-      if (processedUpdates.toolkitSentDate) {
-        processedUpdates.toolkitSentDate = new Date(processedUpdates.toolkitSentDate);
-      }
+      
+      // Convert timestamp fields that might come as strings
+      const timestampFields = ['desiredEventDate', 'contactedAt', 'toolkitSentDate', 'duplicateCheckDate'];
+      timestampFields.forEach(field => {
+        if (processedUpdates[field] && typeof processedUpdates[field] === 'string') {
+          processedUpdates[field] = new Date(processedUpdates[field]);
+        }
+      });
 
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
@@ -313,7 +315,16 @@ router.put(
       res.json(updatedEventRequest);
     } catch (error) {
       console.error("Error updating event request:", error);
-      res.status(500).json({ message: "Failed to update event request" });
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      res.status(500).json({ 
+        message: "Failed to update event request",
+        error: error.message,
+        details: "Check server logs for full error details"
+      });
     }
   },
 );
