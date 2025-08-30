@@ -110,10 +110,25 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: 'No valid events found to import' });
     }
     
-    // Import into database using the storage interface
+    // Check for existing events to prevent duplicates
     const importedEvents = [];
+    const skippedDuplicates = [];
+    
     for (const event of events) {
       try {
+        // Check if event already exists (by email and organization)
+        const existingEvents = await storage.getEventRequests();
+        const isDuplicate = existingEvents.some(existing => 
+          existing.email.toLowerCase() === event.email.toLowerCase() && 
+          existing.organizationName.toLowerCase() === event.organizationName.toLowerCase()
+        );
+        
+        if (isDuplicate) {
+          console.log(`⚠️  Skipping duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`);
+          skippedDuplicates.push(event);
+          continue;
+        }
+        
         const result = await storage.createEventRequest(event);
         importedEvents.push(result);
         console.log(`✅ Imported: ${event.firstName} ${event.lastName} - ${event.organizationName}`);
@@ -123,12 +138,20 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
     }
     
     console.log(`✅ Successfully imported ${importedEvents.length} events!`);
+    if (skippedDuplicates.length > 0) {
+      console.log(`⚠️  Skipped ${skippedDuplicates.length} duplicates`);
+    }
+    
+    const message = skippedDuplicates.length > 0 
+      ? `Successfully imported ${importedEvents.length} events, skipped ${skippedDuplicates.length} duplicates`
+      : `Successfully imported ${importedEvents.length} events out of ${events.length} parsed`;
     
     res.json({
       success: true,
-      message: `Successfully imported ${importedEvents.length} events out of ${events.length} parsed`,
+      message,
       imported: importedEvents.length,
       total: events.length,
+      skipped: skippedDuplicates.length,
       events: importedEvents.map(e => ({
         id: e.id,
         name: `${e.firstName} ${e.lastName}`,
