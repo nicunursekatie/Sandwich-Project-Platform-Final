@@ -162,7 +162,7 @@ const ActionTracking = () => {
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Events ({filteredEvents.length})
+            Events Google Sheet ({filteredEvents.length})
           </TabsTrigger>
         </TabsList>
       </div>
