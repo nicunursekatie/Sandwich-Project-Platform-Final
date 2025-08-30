@@ -33,39 +33,30 @@ const formatTime12Hour = (time24: string): string => {
 const formatEventDate = (dateString: string) => {
   try {
     // Parse as local date to avoid timezone shifts
-    // If dateString is in YYYY-MM-DD format, treat it as local
     let date: Date;
     
     if (dateString.includes('T') || dateString.includes('Z')) {
-      // ISO string with time - parse normally
       date = new Date(dateString);
     } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      // YYYY-MM-DD format - parse as local date
       const [year, month, day] = dateString.split('-').map(Number);
-      date = new Date(year, month - 1, day); // month is 0-indexed
+      date = new Date(year, month - 1, day);
     } else {
-      // Other formats - parse normally
       date = new Date(dateString);
     }
     
     if (isNaN(date.getTime())) return { text: 'Invalid date', className: '' };
     
-    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const dayName = format(date, "EEEE"); // Full day name
-    const dateFormatted = format(date, "PPP"); // Long date format
+    const dayOfWeek = date.getDay();
+    const dayName = format(date, "EEEE");
+    const dateFormatted = format(date, "PPP");
     
-    // Color coding based on day of week
-    // Tuesday = 2, Wednesday = 3, Thursday = 4
     const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
     let className = "";
     if (dayOfWeek === 2) {
-      // Tuesday - normal formatting
       className = "text-gray-700 font-medium";
     } else if (isWedOrThu) {
-      // Wednesday/Thursday - preferred days, green
       className = "text-green-700 font-medium";
     } else {
-      // Other days (Fri, Sat, Sun, Mon) - dark teal, more prominent
       className = "text-[#236383] font-bold";
     }
     
@@ -95,11 +86,10 @@ interface EventRequest {
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
-  createdAt: string; // Submission date from Google Sheet
-  updatedAt: string; 
-  contactedAt?: string; // When initial contact was completed
+  createdAt: string;
+  updatedAt: string;
+  contactedAt?: string;
   createdBy?: string;
-  // Contact completion fields
   contactCompletedAt?: string;
   completedByUserId?: string;
   communicationMethod?: string;
@@ -107,8 +97,6 @@ interface EventRequest {
   estimatedSandwichCount?: number;
   hasRefrigeration?: boolean;
   contactCompletionNotes?: string;
-  
-  // Advanced planning fields (for scheduled/in_planning status)
   tspContactAssigned?: string;
   toolkitSent?: boolean;
   toolkitSentDate?: string;
@@ -117,8 +105,6 @@ interface EventRequest {
   pickupTime?: string;
   additionalRequirements?: string;
   planningNotes?: string;
-  
-  // Event details completion fields
   toolkitStatus?: string;
   tspContact?: string;
   additionalTspContacts?: string;
@@ -180,10 +166,8 @@ export default function EventRequestsManagement() {
   const { data: users = [] } = useQuery({
     queryKey: ["/api/users"],
     queryFn: () => apiRequest("GET", "/api/users"),
-    staleTime: 5 * 60 * 1000 // 5 minutes
+    staleTime: 5 * 60 * 1000
   });
-
-  // Remove debug logging since the API is working properly
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests", data),
@@ -201,7 +185,7 @@ export default function EventRequestsManagement() {
     }
   });
 
-  const updateMutation = useMutation({
+  const editMutation = useMutation({
     mutationFn: ({ id, ...data }: any) => apiRequest("PUT", `/api/event-requests/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
@@ -234,7 +218,7 @@ export default function EventRequestsManagement() {
   });
 
   const completeContactMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) => apiRequest("PATCH", `/api/event-requests/${id}/complete-contact`, data),
+    mutationFn: (data: any) => apiRequest("POST", "/api/event-requests/complete-contact", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowCompleteContactDialog(false);
@@ -243,7 +227,7 @@ export default function EventRequestsManagement() {
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error recording contact completion", 
+        title: "Error completing contact", 
         description: error.message,
         variant: "destructive" 
       });
@@ -251,7 +235,7 @@ export default function EventRequestsManagement() {
   });
 
   const completeEventDetailsMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) => apiRequest("PATCH", `/api/event-requests/${id}/event-details`, data),
+    mutationFn: (data: any) => apiRequest("POST", "/api/event-requests/complete-event-details", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowEventDetailsDialog(false);
@@ -267,13 +251,13 @@ export default function EventRequestsManagement() {
     }
   });
 
-  // Google Sheets sync mutations
   const syncToSheetsMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/event-requests/sync/to-sheets"),
+    mutationFn: () => apiRequest("POST", "/api/import/sync-to-sheets"),
     onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({ 
         title: "Sync to Google Sheets successful", 
-        description: `${data.synced || 0} event requests synced to Google Sheets`
+        description: `Updated ${data.updated} rows in Google Sheets`
       });
     },
     onError: (error: any) => {
@@ -286,12 +270,12 @@ export default function EventRequestsManagement() {
   });
 
   const syncFromSheetsMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/event-requests/sync/from-sheets"),
+    mutationFn: () => apiRequest("POST", "/api/import/sync-from-sheets"),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({ 
         title: "Sync from Google Sheets successful", 
-        description: `${data.created || 0} created, ${data.updated || 0} updated`
+        description: `Processed ${data.total} rows, imported ${data.imported} new events`
       });
     },
     onError: (error: any) => {
@@ -340,8 +324,237 @@ export default function EventRequestsManagement() {
     }
   };
 
-  // Function to render event card for all tabs
-  const renderEventCard = (request: EventRequest) => (
+  const filteredRequests = useMemo(() => {
+    const currentEvents = getCurrentEvents();
+    return currentEvents.filter((request: EventRequest) => {
+      const matchesSearch = !searchTerm || 
+        request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.email.toLowerCase().includes(searchTerm.toLowerCase());
+        
+      return matchesSearch;
+    });
+  }, [eventRequests, searchTerm, activeTab]);
+
+  const getStatusDisplay = (status: string) => {
+    const option = statusOptions.find(opt => opt.value === status);
+    const Icon = statusIcons[status as keyof typeof statusIcons];
+    return (
+      <Badge className={statusColors[status as keyof typeof statusColors]}>
+        <Icon className="w-3 h-3 mr-1" />
+        {option?.label || status}
+      </Badge>
+    );
+  };
+
+  const hasAdvancedDetails = (request: EventRequest) => {
+    return !!(
+      (request as any).toolkitStatus ||
+      (request as any).eventStartTime ||
+      (request as any).eventEndTime ||
+      (request as any).pickupTime ||
+      (request as any).tspContact ||
+      (request as any).customTspContact ||
+      (request as any).planningNotes
+    );
+  };
+
+  // Function to render enhanced scheduled event cards
+  const renderScheduledEventCard = (request: EventRequest) => (
+    <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-teal-500">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="flex items-center space-x-3 text-xl mb-3">
+              <Calendar className="w-6 h-6 text-teal-600" />
+              <span className="text-gray-900">{request.organizationName}</span>
+              {(request as any).toolkitStatus && (
+                <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
+                  Toolkit: {(() => {
+                    const status = (request as any).toolkitStatus;
+                    switch (status) {
+                      case 'not_sent': return '⏳ Pending';
+                      case 'sent': return '✓ Sent';
+                      case 'received_confirmed': return '✓✓ Confirmed';
+                      case 'not_needed': return 'N/A';
+                      default: return status;
+                    }
+                  })()}
+                </Badge>
+              )}
+            </CardTitle>
+            
+            {/* Contact Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <User className="w-5 h-5 text-teal-600" />
+                  <span className="text-lg font-semibold text-teal-800">
+                    {request.firstName} {request.lastName}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Mail className="w-4 h-4 text-teal-600" />
+                  <span className="text-sm text-gray-600">{request.email}</span>
+                </div>
+                {request.phone && (
+                  <div className="flex items-center space-x-2">
+                    <Phone className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm text-gray-600">{request.phone}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Event Details - Prominently displayed */}
+              <div className="space-y-2">
+                {((request as any).eventStartTime || (request as any).eventEndTime) && (
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm font-medium">
+                      Event: {formatTime12Hour((request as any).eventStartTime)}
+                      {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
+                    </span>
+                  </div>
+                )}
+                {(request as any).pickupTime && (
+                  <div className="flex items-center space-x-2">
+                    <Trash2 className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm font-medium">Pickup: {formatTime12Hour((request as any).pickupTime)}</span>
+                  </div>
+                )}
+                {request.eventAddress && (
+                  <div className="flex items-center space-x-2">
+                    <Building className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm font-medium">{request.eventAddress}</span>
+                  </div>
+                )}
+                {request.estimatedSandwichCount && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-teal-600 text-sm">🥪</span>
+                    <span className="text-sm font-medium">{request.estimatedSandwichCount} sandwiches</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-end space-y-2">
+            {getStatusDisplay(request.status)}
+            <div className="flex space-x-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setCurrentEditingStatus(request.status);
+                  setShowEditDialog(true);
+                }}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* TSP Team Information */}
+          {((request as any).tspContact || (request as any).customTspContact) && (
+            <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
+              <h4 className="font-semibold text-teal-800 mb-2">TSP Team Assignment</h4>
+              <div className="space-y-1">
+                {(request as any).tspContact && (
+                  <div className="text-sm">
+                    <strong>Primary Contact:</strong> {(() => {
+                      const contact = users.find((user: any) => user.id === (request as any).tspContact);
+                      return contact 
+                        ? (contact.firstName && contact.lastName 
+                            ? `${contact.firstName} ${contact.lastName}` 
+                            : contact.displayName || contact.email)
+                        : (request as any).tspContact;
+                    })()}
+                  </div>
+                )}
+                {(request as any).customTspContact && (
+                  <div className="text-sm">
+                    <strong>Additional Info:</strong> {(request as any).customTspContact}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Planning Notes */}
+          {(request as any).planningNotes && (
+            <div className="bg-gray-50 p-3 rounded-lg border">
+              <h4 className="font-semibold text-gray-800 mb-2">Planning Notes</h4>
+              <p className="text-sm text-gray-700">{(request as any).planningNotes}</p>
+            </div>
+          )}
+          
+          {/* Basic Event Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            {request.department && (
+              <div><strong>Department:</strong> {request.department}</div>
+            )}
+            {request.desiredEventDate && (
+              <div className="flex items-center">
+                <strong>Desired Date:</strong>
+                <span className="ml-2">
+                  {(() => {
+                    const dateInfo = formatEventDate(request.desiredEventDate);
+                    return (
+                      <span className={dateInfo.className}>
+                        {dateInfo.text}
+                      </span>
+                    );
+                  })()}
+                </span>
+              </div>
+            )}
+            {typeof request.hasRefrigeration === 'boolean' && (
+              <div><strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
+            )}
+            <div><strong>Previously Hosted:</strong> {
+              previouslyHostedOptions.find(opt => opt.value === request.previouslyHosted)?.label
+            }</div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center pt-3 border-t">
+            <div className="text-xs text-gray-500">
+              {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
+                try {
+                  const date = new Date(request.createdAt);
+                  return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPp");
+                } catch (error) {
+                  return 'Invalid date';
+                }
+              })()}
+            </div>
+            <div className="space-x-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setDetailsRequest(request);
+                  setShowEventDetailsDialog(true);
+                }}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                <Calendar className="h-4 w-4 mr-1" />
+                {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Function to render standard event cards (for requests and past events)
+  const renderStandardEventCard = (request: EventRequest) => (
     <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
@@ -357,7 +570,6 @@ export default function EventRequestsManagement() {
               )}
             </CardTitle>
             
-            {/* Contact Information - Prominent Display */}
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <User className="w-5 h-5" style={{ color: '#236383' }} />
@@ -365,14 +577,12 @@ export default function EventRequestsManagement() {
                   {request.firstName} {request.lastName}
                 </span>
               </div>
-              
               <div className="flex items-center space-x-2">
                 <Mail className="w-5 h-5" style={{ color: '#236383' }} />
                 <span className="text-base font-medium" style={{ color: '#236383' }}>
                   {request.email}
                 </span>
               </div>
-              
               {request.phone && (
                 <div className="flex items-center space-x-2">
                   <Phone className="w-5 h-5" style={{ color: '#236383' }} />
@@ -385,8 +595,6 @@ export default function EventRequestsManagement() {
           </div>
           <div className="flex flex-col items-end space-y-2">
             {getStatusDisplay(request.status)}
-            
-            {/* Admin actions - small subtle buttons */}
             <div className="flex space-x-1">
               <Button
                 variant="ghost"
@@ -446,12 +654,6 @@ export default function EventRequestsManagement() {
               <p className="mt-1 text-gray-600">{request.message}</p>
             </div>
           )}
-          {request.duplicateNotes && (
-            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-              <p className="text-orange-800"><strong>Duplicate Check Notes:</strong></p>
-              <p className="text-orange-700 text-sm mt-1">{request.duplicateNotes}</p>
-            </div>
-          )}
           
           <div className="flex justify-between items-center pt-3 border-t">
             <div className="text-sm text-gray-500">
@@ -482,111 +684,6 @@ export default function EventRequestsManagement() {
                   })()}
                 </div>
               )}
-              {request.contactCompletedAt && (
-                <div className="text-green-600 space-y-1">
-                  <div>Contact completed: {format(new Date(request.contactCompletedAt), "PPp")}</div>
-                  {request.communicationMethod && (
-                    <div className="text-sm">Method: {request.communicationMethod}</div>
-                  )}
-                  {request.eventAddress && (
-                    <div className="text-sm">Event location: {request.eventAddress}</div>
-                  )}
-                  {request.estimatedSandwichCount && (
-                    <div className="text-sm">Estimated sandwiches: {request.estimatedSandwichCount}</div>
-                  )}
-                  {typeof request.hasRefrigeration === 'boolean' && (
-                    <div className="text-sm">Refrigeration: {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
-                  )}
-                </div>
-              )}
-              
-              {/* Advanced Event Details - Collapsible */}
-              {hasAdvancedDetails(request) && (
-                <div className="mt-2">
-                  <Collapsible 
-                    open={expandedCards.has(request.id)} 
-                    onOpenChange={() => toggleCardExpansion(request.id)}
-                  >
-                    <CollapsibleTrigger className="flex items-center w-full p-3 border-l-4 border-teal-500 bg-teal-50 rounded hover:bg-teal-100 transition-colors">
-                      <div className="flex-1 text-left">
-                        <div className="font-semibold text-teal-800 text-sm flex items-center">
-                          📋 Advanced Event Details
-                          {(request as any).toolkitStatus && (
-                            <span className="ml-2 text-xs">
-                              | Toolkit: {(() => {
-                                const status = (request as any).toolkitStatus;
-                                switch (status) {
-                                  case 'not_sent': return '⏳ Pending';
-                                  case 'sent': return '✓ Sent';
-                                  case 'received_confirmed': return '✓✓ Confirmed';
-                                  case 'not_needed': return 'N/A';
-                                  default: return status;
-                                }
-                              })()}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-teal-600 mt-1">Click to {expandedCards.has(request.id) ? 'collapse' : 'expand'} details</div>
-                      </div>
-                      {expandedCards.has(request.id) ? 
-                        <ChevronUp className="w-4 h-4 text-teal-600" /> : 
-                        <ChevronDown className="w-4 h-4 text-teal-600" />
-                      }
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="p-3 border-l-4 border-teal-300 bg-teal-25 rounded-b space-y-2">
-                        {(request as any).toolkitStatus && (
-                          <div className="text-sm">
-                            <strong className="text-teal-800">Toolkit Status:</strong> {(() => {
-                              const status = (request as any).toolkitStatus;
-                              switch (status) {
-                                case 'not_sent': return '⏳ Not Yet Sent';
-                                case 'sent': return '✓ Sent';
-                                case 'received_confirmed': return '✓✓ Received & Confirmed';
-                                case 'not_needed': return 'N/A - Not Needed';
-                                default: return status;
-                              }
-                            })()}
-                          </div>
-                        )}
-                        {((request as any).eventStartTime || (request as any).eventEndTime) && (
-                          <div className="text-sm">
-                            <strong className="text-teal-800">Event Time:</strong> {formatTime12Hour((request as any).eventStartTime)}
-                            {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
-                          </div>
-                        )}
-                        {(request as any).pickupTime && (
-                          <div className="text-sm">
-                            <strong className="text-teal-800">Pickup Time:</strong> {formatTime12Hour((request as any).pickupTime)}
-                          </div>
-                        )}
-                        {(request as any).tspContact && (
-                          <div className="text-sm">
-                            <strong className="text-teal-800">TSP Contact:</strong> {(() => {
-                              const contact = users.find((user: any) => user.id === (request as any).tspContact);
-                              return contact 
-                                ? (contact.firstName && contact.lastName 
-                                    ? `${contact.firstName} ${contact.lastName}` 
-                                    : contact.displayName || contact.email)
-                                : (request as any).tspContact;
-                            })()}
-                          </div>
-                        )}
-                        {(request as any).customTspContact && (
-                          <div className="text-sm">
-                            <strong className="text-teal-800">Additional Contact Info:</strong> {(request as any).customTspContact}
-                          </div>
-                        )}
-                        {(request as any).planningNotes && (
-                          <div className="text-sm">
-                            <strong className="text-teal-800">Planning Notes:</strong> {(request as any).planningNotes}
-                          </div>
-                        )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              )}
             </div>
             <div className="space-x-2">
               {request.status === 'new' && !request.contactCompletedAt && (
@@ -603,55 +700,24 @@ export default function EventRequestsManagement() {
                 </Button>
               )}
               
-              {request.contactCompletedAt && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedRequest(request);
-                    setCurrentEditingStatus(request.status);
-                    setShowEditDialog(true);
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  View Event Data
-                </Button>
-              )}
-
-              {/* Event Details Button - Show based on whether advanced details exist */}
-              {request.status !== 'new' && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    setDetailsRequest(request);
-                    setShowEventDetailsDialog(true);
-                  }}
-                  className="bg-teal-600 hover:bg-teal-700 text-white"
-                >
-                  <Calendar className="h-4 w-4 mr-1" />
-                  {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
-                </Button>
-              )}
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setDetailsRequest(request);
+                  setShowEventDetailsDialog(true);
+                }}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                <Calendar className="h-4 w-4 mr-1" />
+                {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
+              </Button>
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
   );
-
-  const filteredRequests = useMemo(() => {
-    const currentEvents = getCurrentEvents();
-    return currentEvents.filter((request: EventRequest) => {
-      const matchesSearch = !searchTerm || 
-        request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.email.toLowerCase().includes(searchTerm.toLowerCase());
-        
-      return matchesSearch;
-    });
-  }, [eventRequests, searchTerm, activeTab]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -688,73 +754,44 @@ export default function EventRequestsManagement() {
       message: formData.get("message"),
       previouslyHosted: formData.get("previouslyHosted"),
       status: formData.get("status"),
-      // Advanced planning fields (optional)
-      tspContactAssigned: formData.get("tspContactAssigned") || undefined,
-      toolkitSent: formData.get("toolkitSent") === "yes",
-      eventStartTime: formData.get("eventStartTime") || undefined,
-      eventEndTime: formData.get("eventEndTime") || undefined,
-      pickupTime: formData.get("pickupTime") || undefined,
-      additionalRequirements: formData.get("additionalRequirements") || undefined,
-      planningNotes: formData.get("planningNotes") || undefined
+      duplicateNotes: formData.get("duplicateNotes")
     };
-    updateMutation.mutate(data);
+    editMutation.mutate(data);
+  };
+
+  const handleCompleteContact = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!completingRequest) return;
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      id: completingRequest.id,
+      communicationMethod: formData.get("communicationMethod"),
+      eventAddress: formData.get("eventAddress"),
+      estimatedSandwichCount: formData.get("estimatedSandwichCount") ? parseInt(formData.get("estimatedSandwichCount") as string) : null,
+      hasRefrigeration: formData.get("hasRefrigeration") === "true"
+    };
+
+    completeContactMutation.mutate(data);
   };
 
   const handleCompleteEventDetails = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!detailsRequest) return;
-    
+
     const formData = new FormData(e.currentTarget);
     const data = {
       id: detailsRequest.id,
       toolkitStatus: formData.get("toolkitStatus"),
-      eventStartTime: formData.get("eventStartTime") || undefined,
-      eventEndTime: formData.get("eventEndTime") || undefined,
-      pickupTime: formData.get("pickupTime") || undefined,
-      eventAddress: formData.get("eventAddress") || undefined,
-      estimatedSandwichCount: formData.get("estimatedSandwichCount") ? parseInt(formData.get("estimatedSandwichCount") as string) : undefined,
-      hasRefrigeration: formData.get("hasRefrigeration") ? formData.get("hasRefrigeration") === "yes" : undefined,
-      planningNotes: formData.get("planningNotes") || undefined,
-      tspContact: formData.get("tspContact") || undefined,
-      customTspContact: formData.get("customTspContact") || undefined
+      eventStartTime: formData.get("eventStartTime") || null,
+      eventEndTime: formData.get("eventEndTime") || null,
+      pickupTime: formData.get("pickupTime") || null,
+      tspContact: formData.get("tspContact") || null,
+      customTspContact: formData.get("customTspContact") || null,
+      planningNotes: formData.get("planningNotes") || null
     };
-    console.log("🔥 FORM DATA TO SUBMIT:", JSON.stringify(data, null, 2));
+
     completeEventDetailsMutation.mutate(data);
-  };
-
-  const getStatusDisplay = (status: string) => {
-    const option = statusOptions.find(opt => opt.value === status);
-    const Icon = statusIcons[status as keyof typeof statusIcons];
-    return (
-      <Badge className={statusColors[status as keyof typeof statusColors]}>
-        <Icon className="w-3 h-3 mr-1" />
-        {option?.label || status}
-      </Badge>
-    );
-  };
-
-  const toggleCardExpansion = (requestId: number) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(requestId)) {
-        newSet.delete(requestId);
-      } else {
-        newSet.add(requestId);
-      }
-      return newSet;
-    });
-  };
-
-  const hasAdvancedDetails = (request: EventRequest) => {
-    return !!(
-      (request as any).toolkitStatus ||
-      (request as any).eventStartTime ||
-      (request as any).eventEndTime ||
-      (request as any).pickupTime ||
-      (request as any).tspContact ||
-      (request as any).customTspContact ||
-      (request as any).planningNotes
-    );
   };
 
   return (
@@ -762,7 +799,6 @@ export default function EventRequestsManagement() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Event Planning</h1>
         <div className="flex flex-wrap gap-2">
-          {/* Google Sheets Integration - Compact on mobile */}
           <Button 
             variant="outline" 
             size="sm"
@@ -812,282 +848,173 @@ export default function EventRequestsManagement() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Event Request</DialogTitle>
-              <DialogDescription>
-                Create a new event request from an organization
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input name="firstName" required />
+              <DialogHeader>
+                <DialogTitle>Add New Event Request</DialogTitle>
+                <DialogDescription>
+                  Create a new event request from an organization
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input name="firstName" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input name="lastName" required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input name="email" type="email" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Phone (Optional)</Label>
+                    <Input name="phone" type="tel" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="organizationName">Organization Name</Label>
+                    <Input name="organizationName" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="department">Department (Optional)</Label>
+                    <Input name="department" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="desiredEventDate">Desired Event Date</Label>
+                    <Input name="desiredEventDate" type="date" />
+                  </div>
+                  <div>
+                    <Label htmlFor="previouslyHosted">Previously Hosted Event?</Label>
+                    <Select name="previouslyHosted" defaultValue="no">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {previouslyHostedOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input name="lastName" required />
+                  <Label htmlFor="message">Additional Information (Optional)</Label>
+                  <Textarea name="message" rows={3} />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input name="email" type="email" required />
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={createMutation.isPending}>
+                    {createMutation.isPending ? "Creating..." : "Create Event Request"}
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="phone">Phone (Optional)</Label>
-                  <Input name="phone" type="tel" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="organizationName">Organization Name</Label>
-                  <Input name="organizationName" required />
-                </div>
-                <div>
-                  <Label htmlFor="department">Department (Optional)</Label>
-                  <Input name="department" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="desiredEventDate">Desired Event Date (Optional)</Label>
-                  <Input name="desiredEventDate" type="date" />
-                </div>
-                <div>
-                  <Label htmlFor="previouslyHosted">Previously Hosted With Us?</Label>
-                  <Select name="previouslyHosted" defaultValue="i_dont_know">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {previouslyHostedOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="message">Additional Information</Label>
-                <Textarea name="message" rows={3} />
-              </div>
-              <div>
-                <Label htmlFor="status">Initial Status</Label>
-                <Select name="status" defaultValue="new">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Event Request"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="requests" className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            Event Requests ({requestsEvents.length})
+          <TabsTrigger value="requests" className="relative">
+            Event Requests
+            <Badge variant="secondary" className="ml-2">
+              {requestsEvents.length}
+            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="scheduled" className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Scheduled Events ({scheduledEvents.length})
+          <TabsTrigger value="scheduled" className="relative">
+            Scheduled Events
+            <Badge variant="secondary" className="ml-2">
+              {scheduledEvents.length}
+            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="past" className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Past Events ({pastEvents.length})
+          <TabsTrigger value="past" className="relative">
+            Past Events
+            <Badge variant="secondary" className="ml-2">
+              {pastEvents.length}
+            </Badge>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="requests" className="space-y-6">
-          {/* Filters for Requests */}
-          <div className="flex space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search requests by organization, name, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <div className="mt-6">
+          {/* Search Bar */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search by organization, name, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Tab Content */}
+          <TabsContent value="requests" className="space-y-4">
+            <div className="text-sm text-gray-600 mb-4">
+              Showing {filteredRequests.length} event request{filteredRequests.length !== 1 ? 's' : ''} that need contact
             </div>
-          </div>
-
-          {/* Stats for Event Requests */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {statusOptions.filter(status => ['new', 'contacted', 'cancelled'].includes(status.value)).map(status => {
-              const count = eventRequests.filter((req: EventRequest) => req.status === status.value).length;
-              const Icon = statusIcons[status.value as keyof typeof statusIcons];
-              return (
-                <Card key={status.value}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Icon className="w-4 h-4" />
-                      <div>
-                        <p className="text-2xl font-bold">{count}</p>
-                        <p className="text-sm text-gray-600">{status.label}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Event Requests List */}
-          <div className="grid gap-4">
-            {isLoading ? (
-              <div className="text-center py-8">Loading event requests...</div>
-            ) : error ? (
-              <div className="text-center py-8 text-red-500">Error loading event requests: {(error as Error)?.message}</div>
-            ) : filteredRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No event requests found. 
-                <br />
-                <small>Total requests: {requestsEvents.length}, Filtered: {filteredRequests.length}</small>
-              </div>
+            {filteredRequests.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-gray-500">No event requests found.</p>
+                </CardContent>
+              </Card>
             ) : (
-              filteredRequests.map((request: EventRequest) => renderEventCard(request))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="scheduled" className="space-y-6">
-          {/* Filters for Scheduled */}
-          <div className="flex space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search scheduled events by organization, name, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="space-y-4">
+                {filteredRequests.map(request => renderStandardEventCard(request))}
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="scheduled" className="space-y-4">
+            <div className="text-sm text-gray-600 mb-4">
+              Showing {filteredRequests.length} scheduled event{filteredRequests.length !== 1 ? 's' : ''}
             </div>
-          </div>
-
-          {/* Stats for Scheduled Events */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {statusOptions.filter(status => ['scheduled', 'confirmed', 'in_progress'].includes(status.value)).map(status => {
-              const count = eventRequests.filter((req: EventRequest) => req.status === status.value).length;
-              const Icon = statusIcons[status.value as keyof typeof statusIcons];
-              return (
-                <Card key={status.value}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Icon className="w-4 h-4" />
-                      <div>
-                        <p className="text-2xl font-bold">{count}</p>
-                        <p className="text-sm text-gray-600">{status.label}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Scheduled Events List */}
-          <div className="grid gap-4">
-            {isLoading ? (
-              <div className="text-center py-8">Loading scheduled events...</div>
-            ) : error ? (
-              <div className="text-center py-8 text-red-500">Error loading scheduled events: {(error as Error)?.message}</div>
-            ) : filteredRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No scheduled events found. 
-                <br />
-                <small>Total scheduled: {scheduledEvents.length}, Filtered: {filteredRequests.length}</small>
-              </div>
+            {filteredRequests.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-gray-500">No scheduled events found.</p>
+                </CardContent>
+              </Card>
             ) : (
-              filteredRequests.map((request: EventRequest) => renderEventCard(request))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="past" className="space-y-6">
-          {/* Filters for Past Events */}
-          <div className="flex space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search past events by organization, name, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="space-y-4">
+                {filteredRequests.map(request => renderScheduledEventCard(request))}
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="past" className="space-y-4">
+            <div className="text-sm text-gray-600 mb-4">
+              Showing {filteredRequests.length} past event{filteredRequests.length !== 1 ? 's' : ''}
             </div>
-          </div>
-
-          {/* Stats for Past Events */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {statusOptions.filter(status => ['completed', 'cancelled'].includes(status.value)).map(status => {
-              const count = eventRequests.filter((req: EventRequest) => req.status === status.value).length;
-              const Icon = statusIcons[status.value as keyof typeof statusIcons];
-              return (
-                <Card key={status.value}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Icon className="w-4 h-4" />
-                      <div>
-                        <p className="text-2xl font-bold">{count}</p>
-                        <p className="text-sm text-gray-600">{status.label}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Past Events List */}
-          <div className="grid gap-4">
-            {isLoading ? (
-              <div className="text-center py-8">Loading past events...</div>
-            ) : error ? (
-              <div className="text-center py-8 text-red-500">Error loading past events: {(error as Error)?.message}</div>
-            ) : filteredRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No past events found. 
-                <br />
-                <small>Total past: {pastEvents.length}, Filtered: {filteredRequests.length}</small>
-              </div>
+            {filteredRequests.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-gray-500">No past events found.</p>
+                </CardContent>
+              </Card>
             ) : (
-              filteredRequests.map((request: EventRequest) => renderEventCard(request))
+              <div className="space-y-4">
+                {filteredRequests.map(request => renderStandardEventCard(request))}
+              </div>
             )}
-          </div>
-        </TabsContent>
+          </TabsContent>
+        </div>
       </Tabs>
 
       {/* Edit Dialog */}
-      {selectedRequest && (
+      {showEditDialog && selectedRequest && (
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -1113,7 +1040,7 @@ export default function EventRequestsManagement() {
                   <Input name="email" type="email" defaultValue={selectedRequest.email} required />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone (Optional)</Label>
+                  <Label htmlFor="phone">Phone</Label>
                   <Input name="phone" type="tel" defaultValue={selectedRequest.phone || ""} />
                 </div>
               </div>
@@ -1123,13 +1050,13 @@ export default function EventRequestsManagement() {
                   <Input name="organizationName" defaultValue={selectedRequest.organizationName} required />
                 </div>
                 <div>
-                  <Label htmlFor="department">Department (Optional)</Label>
+                  <Label htmlFor="department">Department</Label>
                   <Input name="department" defaultValue={selectedRequest.department || ""} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="desiredEventDate">Desired Event Date (Optional)</Label>
+                  <Label htmlFor="desiredEventDate">Desired Event Date</Label>
                   <Input 
                     name="desiredEventDate" 
                     type="date" 
@@ -1137,7 +1064,7 @@ export default function EventRequestsManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="previouslyHosted">Previously Hosted With Us?</Label>
+                  <Label htmlFor="previouslyHosted">Previously Hosted Event?</Label>
                   <Select name="previouslyHosted" defaultValue={selectedRequest.previouslyHosted}>
                     <SelectTrigger>
                       <SelectValue />
@@ -1153,16 +1080,8 @@ export default function EventRequestsManagement() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="message">Additional Information</Label>
-                <Textarea name="message" rows={3} defaultValue={selectedRequest.message || ""} />
-              </div>
-              <div>
                 <Label htmlFor="status">Status</Label>
-                <Select 
-                  name="status" 
-                  defaultValue={selectedRequest.status}
-                  onValueChange={(value) => setCurrentEditingStatus(value)}
-                >
+                <Select name="status" defaultValue={currentEditingStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -1175,94 +1094,20 @@ export default function EventRequestsManagement() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Advanced Planning Fields - Show for all statuses beyond "new" */}
-              {['contact_completed', 'scheduled', 'completed', 'declined'].includes(currentEditingStatus || selectedRequest.status) && (
-                <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Event Planning</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="tspContactAssigned">TSP Contact Assigned</Label>
-                      <Input 
-                        name="tspContactAssigned" 
-                        placeholder="Team member name"
-                        defaultValue={selectedRequest.tspContactAssigned || ""} 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="toolkitSent">Toolkit Sent?</Label>
-                      <Select name="toolkitSent" defaultValue={selectedRequest.toolkitSent ? "yes" : "no"}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="eventStartTime">Event Start Time</Label>
-                      <Input 
-                        name="eventStartTime" 
-                        type="time"
-                        defaultValue={selectedRequest.eventStartTime || ""} 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="eventEndTime">Event End Time</Label>
-                      <Input 
-                        name="eventEndTime" 
-                        type="time"
-                        defaultValue={selectedRequest.eventEndTime || ""} 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pickupTime">Driver Pickup Time</Label>
-                      <Input 
-                        name="pickupTime" 
-                        type="time"
-                        defaultValue={selectedRequest.pickupTime || ""} 
-                        placeholder="When to pickup sandwiches"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="additionalRequirements">Special Requirements</Label>
-                    <Textarea 
-                      name="additionalRequirements" 
-                      rows={3}
-                      placeholder="Any special dietary requirements, setup needs, etc."
-                      defaultValue={selectedRequest.additionalRequirements || ""} 
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="planningNotes">Planning Notes</Label>
-                    <Textarea 
-                      name="planningNotes" 
-                      rows={3}
-                      placeholder="General notes about event planning..."
-                      defaultValue={selectedRequest.planningNotes || ""} 
-                    />
-                  </div>
-                </div>
-              )}
+              <div>
+                <Label htmlFor="message">Additional Information</Label>
+                <Textarea name="message" rows={3} defaultValue={selectedRequest.message || ""} />
+              </div>
+              <div>
+                <Label htmlFor="duplicateNotes">Duplicate Check Notes</Label>
+                <Textarea name="duplicateNotes" rows={2} defaultValue={selectedRequest.duplicateNotes || ""} />
+              </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => {
-                  setShowEditDialog(false);
-                  setSelectedRequest(null);
-                  setCurrentEditingStatus("");
-                }}>
+                <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Updating..." : "Update Event Request"}
+                <Button type="submit" disabled={editMutation.isPending}>
+                  {editMutation.isPending ? "Updating..." : "Update Event Request"}
                 </Button>
               </div>
             </form>
@@ -1270,98 +1115,59 @@ export default function EventRequestsManagement() {
         </Dialog>
       )}
 
-      {/* Contact Completion Dialog */}
-      {completingRequest && (
+      {/* Complete Contact Dialog */}
+      {showCompleteContactDialog && completingRequest && (
         <Dialog open={showCompleteContactDialog} onOpenChange={setShowCompleteContactDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Complete Primary Contact</DialogTitle>
               <DialogDescription>
-                Record details from your contact with {completingRequest.organizationName}
+                Record the initial contact details for {completingRequest.organizationName}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              completeContactMutation.mutate({
-                id: completingRequest.id,
-                communicationMethod: formData.get("communicationMethod"),
-                eventAddress: formData.get("eventAddress") || undefined,
-                estimatedSandwichCount: formData.get("estimatedSandwichCount") ? 
-                  parseInt(formData.get("estimatedSandwichCount") as string) : undefined,
-                hasRefrigeration: formData.get("hasRefrigeration") === "yes" ? true : 
-                  formData.get("hasRefrigeration") === "no" ? false : undefined,
-                notes: formData.get("notes") || undefined
-              });
-            }} className="space-y-4">
+            <form onSubmit={handleCompleteContact} className="space-y-4">
               <div>
-                <Label htmlFor="communicationMethod">How did you contact them? *</Label>
-                <Select name="communicationMethod" required>
+                <Label htmlFor="communicationMethod">Communication Method</Label>
+                <Select name="communicationMethod" defaultValue="">
                   <SelectTrigger>
-                    <SelectValue placeholder="Select communication method" />
+                    <SelectValue placeholder="How did you contact them?" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="phone">Phone call</SelectItem>
+                    <SelectItem value="phone">Phone Call</SelectItem>
                     <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="text">Text message</SelectItem>
-                    <SelectItem value="in_person">In person</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="in_person">In Person</SelectItem>
+                    <SelectItem value="text">Text Message</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
               <div>
-                <Label htmlFor="eventAddress">Event Address (if confirmed)</Label>
-                <Textarea 
-                  name="eventAddress" 
-                  rows={2}
-                  placeholder="Street address, city, state where the event will be held..."
-                />
+                <Label htmlFor="eventAddress">Event Location/Address</Label>
+                <Input name="eventAddress" placeholder="Where will the event take place?" />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="estimatedSandwichCount">Estimated Sandwich Count</Label>
-                  <Input 
-                    name="estimatedSandwichCount" 
-                    type="number"
-                    min="1"
-                    placeholder="e.g. 50"
-                  />
+                  <Input name="estimatedSandwichCount" type="number" min="1" placeholder="How many sandwiches needed?" />
                 </div>
                 <div>
                   <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                  <Select name="hasRefrigeration">
+                  <Select name="hasRefrigeration" defaultValue="">
                     <SelectTrigger>
-                      <SelectValue placeholder="Select if known" />
+                      <SelectValue placeholder="Is refrigeration available?" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="yes">Yes - has refrigeration</SelectItem>
-                      <SelectItem value="no">No refrigeration</SelectItem>
-                      <SelectItem value="unknown">Unknown/Not discussed</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                      <SelectItem value="false">No</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
-              <div>
-                <Label htmlFor="notes">Additional Notes</Label>
-                <Textarea 
-                  name="notes" 
-                  rows={3}
-                  placeholder="Any important details from your conversation, next steps, concerns, etc."
-                />
-              </div>
-
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => {
-                  setShowCompleteContactDialog(false);
-                  setCompletingRequest(null);
-                }}>
+                <Button type="button" variant="outline" onClick={() => setShowCompleteContactDialog(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={completeContactMutation.isPending}>
-                  {completeContactMutation.isPending ? "Recording..." : "Record Contact Completion"}
+                  {completeContactMutation.isPending ? "Saving..." : "Complete Contact"}
                 </Button>
               </div>
             </form>
@@ -1369,167 +1175,90 @@ export default function EventRequestsManagement() {
         </Dialog>
       )}
 
-      {/* Complete Event Details Dialog */}
-      {detailsRequest && (
+      {/* Event Details Dialog */}
+      {showEventDetailsDialog && detailsRequest && (
         <Dialog open={showEventDetailsDialog} onOpenChange={setShowEventDetailsDialog}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
-              <DialogTitle className="text-xl">Complete Event Details</DialogTitle>
+              <DialogTitle>Event Details for {detailsRequest.organizationName}</DialogTitle>
               <DialogDescription>
-                Fill in the comprehensive event planning details for {detailsRequest.organizationName}
+                Complete or update the advanced event planning details
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCompleteEventDetails} className="space-y-6">
-              
-              {/* Toolkit Status - Most Important */}
-              <div className="border-l-4 border-teal-500 pl-4 bg-teal-50 p-4 rounded">
-                <Label htmlFor="toolkitStatus" className="text-lg font-semibold text-teal-800">
-                  Toolkit Status (REQUIRED) *
-                </Label>
-                <Select name="toolkitStatus" required defaultValue={detailsRequest.toolkitStatus || "not_sent"}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select toolkit status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="not_sent">Not Yet Sent</SelectItem>
-                    <SelectItem value="sent">Toolkit Sent ✓</SelectItem>
-                    <SelectItem value="received_confirmed">Received & Confirmed ✓✓</SelectItem>
-                    <SelectItem value="not_needed">Not Needed for This Event</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="toolkitStatus">Toolkit Status</Label>
+                  <Select name="toolkitStatus" defaultValue={detailsRequest.toolkitStatus || ""}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select toolkit status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_sent">Not Yet Sent</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="received_confirmed">Received & Confirmed</SelectItem>
+                      <SelectItem value="not_needed">Not Needed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="tspContact">TSP Team Contact</Label>
+                  <Select name="tspContact" defaultValue={detailsRequest.tspContact || ""}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No assignment</SelectItem>
+                      {users.map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName && user.lastName 
+                            ? `${user.firstName} ${user.lastName}` 
+                            : user.displayName || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* Event Timing */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="eventStartTime">Event Start Time</Label>
                   <Input 
                     name="eventStartTime" 
-                    type="time"
-                    defaultValue={detailsRequest.eventStartTime}
+                    type="time" 
+                    defaultValue={detailsRequest.eventStartTime || ""}
                   />
                 </div>
                 <div>
                   <Label htmlFor="eventEndTime">Event End Time</Label>
                   <Input 
                     name="eventEndTime" 
-                    type="time"
-                    defaultValue={detailsRequest.eventEndTime}
+                    type="time" 
+                    defaultValue={detailsRequest.eventEndTime || ""}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pickupTime">Pickup Time</Label>
+                  <Input 
+                    name="pickupTime" 
+                    type="time" 
+                    defaultValue={detailsRequest.pickupTime || ""}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="pickupTime">Pickup Time</Label>
-                <Input 
-                  name="pickupTime" 
-                  type="time"
-                  defaultValue={detailsRequest.pickupTime}
-                  placeholder="When TSP should pick up sandwiches"
-                />
-              </div>
-
-              {/* Event Location */}
-              <div>
-                <Label htmlFor="eventAddress">Event Address</Label>
+                <Label htmlFor="customTspContact">Additional TSP Contact Info</Label>
                 <Textarea 
-                  name="eventAddress" 
+                  name="customTspContact" 
                   rows={3}
-                  defaultValue={detailsRequest.eventAddress}
-                  placeholder="Full address where the event will take place"
+                  defaultValue={detailsRequest.customTspContact}
+                  placeholder="Add any additional contact details, phone numbers, or special instructions for this event..."
                 />
               </div>
 
-              {/* Sandwich Estimate */}
-              <div>
-                <Label htmlFor="estimatedSandwichCount">Estimated # of Sandwiches</Label>
-                <Input 
-                  name="estimatedSandwichCount" 
-                  type="number"
-                  min="1"
-                  defaultValue={detailsRequest.estimatedSandwichCount}
-                  placeholder="Estimated number of sandwiches needed"
-                />
-              </div>
-
-              {/* Refrigeration */}
-              <div>
-                <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                <Select name="hasRefrigeration" defaultValue={detailsRequest.hasRefrigeration ? detailsRequest.hasRefrigeration.toString() : "none"}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select refrigeration status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not specified</SelectItem>
-                    <SelectItem value="yes">Yes - Refrigeration Available</SelectItem>
-                    <SelectItem value="no">No - No Refrigeration</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* TSP Contact Assignment */}
-              <div className="space-y-3">
-                <Label>TSP Contact Assignment</Label>
-                <div>
-                  <Label htmlFor="tspContact" className="text-sm">Primary TSP Contact</Label>
-                  <Select name="tspContact" defaultValue={detailsRequest.tspContact || ""}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select primary TSP contact" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user: any) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.firstName && user.lastName 
-                            ? `${user.firstName} ${user.lastName}` 
-                            : user.displayName || user.email}
-                          {user.role && user.role !== 'volunteer' && (
-                            <span className="text-xs text-gray-500 ml-2">({user.role})</span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-gray-600 mt-1">Primary TSP team member for this event</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="additionalTspContacts" className="text-sm">Additional TSP Contacts</Label>
-                  <Select name="additionalTspContacts" defaultValue={detailsRequest.additionalTspContacts || "none"}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Add secondary contact (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {users.map((user: any) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.firstName && user.lastName 
-                            ? `${user.firstName} ${user.lastName}` 
-                            : user.displayName || user.email}
-                          {user.role && user.role !== 'volunteer' && (
-                            <span className="text-xs text-gray-500 ml-2">({user.role})</span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-gray-600 mt-1">Optional secondary TSP contact</p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="customTspContact" className="text-sm">
-                    Custom Contact Information
-                  </Label>
-                  <Textarea 
-                    name="customTspContact" 
-                    rows={3}
-                    defaultValue={detailsRequest.customTspContact}
-                    placeholder="Add any additional contact details, phone numbers, or special instructions for this event..."
-                  />
-                  <p className="text-xs text-gray-600 mt-1">Free text for contact details not covered above</p>
-                </div>
-              </div>
-
-              {/* Planning Notes */}
               <div>
                 <Label htmlFor="planningNotes">Planning Notes & Other Important Info</Label>
                 <Textarea 
