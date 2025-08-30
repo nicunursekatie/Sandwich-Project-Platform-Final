@@ -968,7 +968,18 @@ export default function EventRequestsManagement() {
       message: formData.get("message"),
       previouslyHosted: formData.get("previouslyHosted"),
       status: formData.get("status"),
-      duplicateNotes: formData.get("duplicateNotes")
+      duplicateNotes: formData.get("duplicateNotes"),
+      // Event planning fields
+      eventStartTime: formData.get("eventStartTime") || null,
+      eventEndTime: formData.get("eventEndTime") || null,
+      pickupTime: formData.get("pickupTime") || null,
+      sandwichTypes: formData.get("sandwichTypes") || null,
+      driverDetails: formData.get("driverDetails") || null,
+      speakerDetails: formData.get("speakerDetails") || null,
+      additionalRequirements: formData.get("additionalRequirements") || null,
+      // TSP Contact fields
+      tspContact: formData.get("tspContact") || null,
+      customTspContact: formData.get("customTspContact") || null
     };
     editMutation.mutate(data);
   };
@@ -1387,6 +1398,35 @@ export default function EventRequestsManagement() {
                 <Label htmlFor="additionalRequirements">Special Requirements</Label>
                 <Textarea name="additionalRequirements" rows={2} defaultValue={(selectedRequest as any).additionalRequirements || ""} />
               </div>
+              
+              {/* TSP Contact Assignment */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="tspContact">TSP Contact Person</Label>
+                  <Select name="tspContact" defaultValue={(selectedRequest as any).tspContact || ""}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select TSP contact" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No TSP contact assigned</SelectItem>
+                      {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="customTspContact">Custom TSP Contact</Label>
+                  <Input 
+                    name="customTspContact" 
+                    placeholder="Or enter custom contact name"
+                    defaultValue={(selectedRequest as any).customTspContact || ""} 
+                  />
+                </div>
+              </div>
+              
               <div>
                 <Label htmlFor="message">Event Details</Label>
                 <Textarea name="message" rows={3} defaultValue={selectedRequest.message || ""} />
