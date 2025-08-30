@@ -15,6 +15,20 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 
+// Utility function to convert 24-hour time to 12-hour format
+const formatTime12Hour = (time24: string): string => {
+  if (!time24) return '';
+  
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours);
+  
+  if (hour24 === 0) return `12:${minutes} AM`;
+  if (hour24 < 12) return `${hour24}:${minutes} AM`;
+  if (hour24 === 12) return `12:${minutes} PM`;
+  
+  return `${hour24 - 12}:${minutes} PM`;
+};
+
 interface EventRequest {
   id: number;
   firstName: string;
@@ -759,13 +773,13 @@ export default function EventRequestsManagement() {
                                 )}
                                 {((request as any).eventStartTime || (request as any).eventEndTime) && (
                                   <div className="text-sm">
-                                    <strong className="text-teal-800">Event Time:</strong> {(request as any).eventStartTime}
-                                    {(request as any).eventEndTime && ` - ${(request as any).eventEndTime}`}
+                                    <strong className="text-teal-800">Event Time:</strong> {formatTime12Hour((request as any).eventStartTime)}
+                                    {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
                                   </div>
                                 )}
                                 {(request as any).pickupTime && (
                                   <div className="text-sm">
-                                    <strong className="text-teal-800">Pickup Time:</strong> {(request as any).pickupTime}
+                                    <strong className="text-teal-800">Pickup Time:</strong> {formatTime12Hour((request as any).pickupTime)}
                                   </div>
                                 )}
                                 {(request as any).tspContact && (
