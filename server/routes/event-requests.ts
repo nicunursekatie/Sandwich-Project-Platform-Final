@@ -231,6 +231,69 @@ router.patch(
   },
 );
 
+// Complete event details - specific endpoint for comprehensive event planning updates
+router.post(
+  "/complete-event-details",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_EDIT"),
+  async (req, res) => {
+    try {
+      const eventDetailsSchema = z.object({
+        id: z.number(),
+        toolkitStatus: z.string().optional(),
+        eventStartTime: z.string().optional(),
+        eventEndTime: z.string().optional(),
+        pickupTime: z.string().optional(),
+        tspContact: z.string().optional(),
+        customTspContact: z.string().optional(),
+        planningNotes: z.string().optional(),
+        eventAddress: z.string().optional(),
+        estimatedSandwichCount: z.number().optional(),
+        sandwichTypes: z.string().optional(),
+        driversArranged: z.boolean().optional(),
+        driverDetails: z.string().optional(),
+        speakersNeeded: z.boolean().optional(),
+        speakerDetails: z.string().optional(),
+      });
+
+      const validatedData = eventDetailsSchema.parse(req.body);
+      const { id, ...updates } = validatedData;
+
+      console.log("=== COMPLETE EVENT DETAILS ===");
+      console.log("Event ID:", id);
+      console.log("Updates:", JSON.stringify(updates, null, 2));
+
+      const updatedEventRequest = await storage.updateEventRequest(id, {
+        ...updates,
+        status: "event_details_completed",
+        updatedAt: new Date(),
+      });
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      console.log("Successfully updated event details for:", id);
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_EDIT",
+        `Completed event details for: ${id}`,
+      );
+      res.json(updatedEventRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("Validation error:", error.errors);
+        return res
+          .status(400)
+          .json({ message: "Invalid event details data", errors: error.errors });
+      }
+      console.error("Error completing event details:", error);
+      res.status(500).json({ message: "Failed to complete event details" });
+    }
+  },
+);
+
 // Update event request details - specific endpoint for event details updates
 router.patch(
   "/:id/event-details",
