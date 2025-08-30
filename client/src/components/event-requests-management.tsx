@@ -333,7 +333,7 @@ export default function EventRequestsManagement() {
 
   const filteredRequests = useMemo(() => {
     const currentEvents = getCurrentEvents();
-    return currentEvents.filter((request: EventRequest) => {
+    const filtered = currentEvents.filter((request: EventRequest) => {
       const matchesSearch = !searchTerm || 
         request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -344,6 +344,21 @@ export default function EventRequestsManagement() {
         
       return matchesSearch;
     });
+
+    // Sort scheduled events by date (soonest first)
+    if (activeTab === 'scheduled') {
+      return filtered.sort((a, b) => {
+        if (!a.desiredEventDate && !b.desiredEventDate) return 0;
+        if (!a.desiredEventDate) return 1;
+        if (!b.desiredEventDate) return -1;
+        
+        const dateA = new Date(a.desiredEventDate);
+        const dateB = new Date(b.desiredEventDate);
+        return dateA.getTime() - dateB.getTime(); // Ascending order (soonest first)
+      });
+    }
+    
+    return filtered;
   }, [eventRequests, searchTerm, activeTab]);
 
   const getStatusDisplay = (status: string) => {
