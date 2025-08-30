@@ -1161,6 +1161,19 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
     z.string().transform((str) => str ? new Date(str) : null),
     z.null()
   ]).optional(),
+  // Make all the new event planning fields optional and nullable
+  eventStartTime: z.string().nullable().optional(),
+  eventEndTime: z.string().nullable().optional(),
+  pickupTime: z.string().nullable().optional(),
+  customTspContact: z.string().nullable().optional(),
+  planningNotes: z.string().nullable().optional(),
+  eventAddress: z.string().nullable().optional(),
+  estimatedSandwichCount: z.number().nullable().optional(),
+  sandwichTypes: z.string().nullable().optional(),
+  driversArranged: z.boolean().nullable().optional(),
+  driverDetails: z.string().nullable().optional(),
+  speakersNeeded: z.boolean().nullable().optional(),
+  speakerDetails: z.string().nullable().optional(),
 });
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
