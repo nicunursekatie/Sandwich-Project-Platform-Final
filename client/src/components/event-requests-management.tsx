@@ -686,7 +686,8 @@ export default function EventRequestsManagement() {
               )}
             </div>
             <div className="space-x-2">
-              {request.status === 'new' && !request.contactCompletedAt && (
+              {/* Show "Complete Primary Contact" only for new requests in Event Requests tab */}
+              {activeTab === 'requests' && request.status === 'new' && !request.contactCompletedAt && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -700,18 +701,21 @@ export default function EventRequestsManagement() {
                 </Button>
               )}
               
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  setDetailsRequest(request);
-                  setShowEventDetailsDialog(true);
-                }}
-                className="bg-teal-600 hover:bg-teal-700 text-white"
-              >
-                <Calendar className="h-4 w-4 mr-1" />
-                {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
-              </Button>
+              {/* Show "Update Event Details" only for past events tab */}
+              {activeTab === 'past' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setDetailsRequest(request);
+                    setShowEventDetailsDialog(true);
+                  }}
+                  className="bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  View Event Details
+                </Button>
+              )}
             </div>
           </div>
         </div>
