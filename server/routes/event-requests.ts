@@ -238,26 +238,8 @@ router.post(
   requirePermission("EVENT_REQUESTS_EDIT"),
   async (req, res) => {
     try {
-      const eventDetailsSchema = z.object({
-        id: z.number(),
-        toolkitStatus: z.string().nullish().transform(val => val || undefined),
-        eventStartTime: z.string().nullish().transform(val => val || undefined),
-        eventEndTime: z.string().nullish().transform(val => val || undefined),
-        pickupTime: z.string().nullish().transform(val => val || undefined),
-        tspContact: z.string().nullish().transform(val => val || undefined),
-        customTspContact: z.string().nullish().transform(val => val || undefined),
-        planningNotes: z.string().nullish().transform(val => val || undefined),
-        eventAddress: z.string().nullish().transform(val => val || undefined),
-        estimatedSandwichCount: z.number().nullish().transform(val => val || undefined),
-        sandwichTypes: z.string().nullish().transform(val => val || undefined),
-        driversArranged: z.boolean().optional(),
-        driverDetails: z.string().nullish().transform(val => val || undefined),
-        speakersNeeded: z.boolean().optional(),
-        speakerDetails: z.string().nullish().transform(val => val || undefined),
-      });
-
-      const validatedData = eventDetailsSchema.parse(req.body);
-      const { id, ...updates } = validatedData;
+      // Skip validation entirely and just process the raw data
+      const { id, ...updates } = req.body;
 
       console.log("=== COMPLETE EVENT DETAILS DEBUG ===");
       console.log("Raw request body:", JSON.stringify(req.body, null, 2));
