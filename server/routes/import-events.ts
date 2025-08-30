@@ -12,6 +12,117 @@ const router = Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Import past events that are already completed
+router.post("/import-past-events", isAuthenticated, async (req, res) => {
+  try {
+    console.log('Starting past events import...');
+    
+    // Parse events data from request body
+    const { events: eventData } = req.body;
+    
+    if (!eventData || !Array.isArray(eventData)) {
+      return res.status(400).json({ error: 'No event data provided' });
+    }
+    
+    const events = [];
+    
+    for (const eventInfo of eventData) {
+      // Parse the date
+      let parsedDate = null;
+      if (eventInfo.date) {
+        try {
+          parsedDate = new Date(eventInfo.date);
+          if (isNaN(parsedDate.getTime())) {
+            parsedDate = null;
+          }
+        } catch (e) {
+          console.warn(`Could not parse date "${eventInfo.date}"`);
+          parsedDate = null;
+        }
+      }
+      
+      // Split contact name into first and last name
+      let firstName = '';
+      let lastName = '';
+      if (eventInfo.contactName) {
+        const nameParts = eventInfo.contactName.toString().trim().split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+      
+      if (firstName && eventInfo.organizationName && eventInfo.email) {
+        events.push({
+          firstName: firstName,
+          lastName: lastName || '',
+          email: eventInfo.email,
+          phone: eventInfo.phone || null,
+          organizationName: eventInfo.organizationName,
+          desiredEventDate: parsedDate,
+          status: 'completed', // These are past events
+          contactedAt: parsedDate, // Use event date as contacted date
+          previouslyHosted: 'i_dont_know',
+          message: 'Imported past event',
+          createdBy: req.user?.id,
+          eventStartTime: eventInfo.eventStartTime || null,
+          eventEndTime: eventInfo.eventEndTime || null,
+          pickupTime: eventInfo.pickupTime || null,
+          eventAddress: eventInfo.eventAddress || null,
+          estimatedSandwichCount: eventInfo.estimatedSandwichCount || null,
+          toolkitSent: eventInfo.toolkitSent || false,
+          toolkitStatus: eventInfo.toolkitSent ? 'sent' : 'not_sent',
+          additionalRequirements: eventInfo.notes || null,
+          planningNotes: eventInfo.tspContact || null,
+          tspContactAssigned: eventInfo.tspContact || null
+        });
+      }
+    }
+    
+    // Import the events
+    const importedEvents = [];
+    const skippedDuplicates = [];
+    
+    for (const event of events) {
+      try {
+        // Check if event already exists
+        const existingEvents = await storage.getAllEventRequests();
+        const isDuplicate = existingEvents.some(existing => 
+          existing.email.toLowerCase() === event.email.toLowerCase() && 
+          existing.organizationName.toLowerCase() === event.organizationName.toLowerCase()
+        );
+        
+        if (isDuplicate) {
+          console.log(`⚠️  Skipping duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`);
+          skippedDuplicates.push(event);
+          continue;
+        }
+        
+        const result = await storage.createEventRequest(event);
+        importedEvents.push(result);
+        console.log(`✅ Imported past event: ${event.firstName} ${event.lastName} - ${event.organizationName}`);
+      } catch (error) {
+        console.error(`❌ Failed to import: ${event.firstName} ${event.lastName} - ${event.organizationName}`, error);
+      }
+    }
+    
+    console.log(`✅ Successfully imported ${importedEvents.length} past events!`);
+    
+    res.json({
+      success: true,
+      message: `Successfully imported ${importedEvents.length} past events`,
+      imported: importedEvents.length,
+      total: events.length,
+      skipped: skippedDuplicates.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error importing past events:', error);
+    res.status(500).json({ 
+      error: 'Failed to import past events', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 router.post("/import-excel", isAuthenticated, async (req, res) => {
   try {
     console.log('Starting Excel event import...');
