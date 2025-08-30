@@ -13,6 +13,7 @@ interface Organization {
   contacts: Array<{ name: string; email?: string }>;
   totalRequests: number;
   lastRequestDate: string;
+  hasHostedEvent: boolean;
 }
 
 interface OrganizationContact {
@@ -22,6 +23,7 @@ interface OrganizationContact {
   latestRequestDate: string;
   totalRequests: number;
   status: 'new' | 'contacted' | 'completed';
+  hasHostedEvent: boolean;
 }
 
 export default function OrganizationsCatalog() {
@@ -51,7 +53,8 @@ export default function OrganizationsCatalog() {
       email: contact.email,
       latestRequestDate: org.lastRequestDate,
       totalRequests: org.totalRequests,
-      status: 'new' as const // Default status for now
+      status: 'new' as const, // Default status for now
+      hasHostedEvent: org.hasHostedEvent
     }))
   );
 
@@ -264,6 +267,17 @@ export default function OrganizationsCatalog() {
                   <div className="flex items-center text-sm text-gray-500">
                     <Calendar className="w-4 h-4 mr-2" />
                     <span>Latest request: {format(new Date(org.latestRequestDate), "PPP")}</span>
+                  </div>
+                  
+                  {/* Hosted Event Status */}
+                  <div className="pt-2 border-t">
+                    <div className="text-sm">
+                      <strong>Hosted Event with Us?</strong> {
+                        org.hasHostedEvent
+                          ? <span className="text-green-600 font-semibold">Yes</span>
+                          : <span className="text-gray-500">No</span>
+                      }
+                    </div>
                   </div>
                 </div>
               </CardContent>

@@ -664,12 +664,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: orgName,
             contacts: new Set(),
             totalRequests: 0,
-            recentRequest: request.createdAt || new Date()
+            recentRequest: request.createdAt || new Date(),
+            hasHostedEvent: false
           });
         }
         
         const org = organizationsMap.get(orgName);
         org.totalRequests += 1;
+        
+        // Check if this organization has hosted an event (completed status)
+        if (request.status === 'completed') {
+          org.hasHostedEvent = true;
+        }
         
         // Add contact information
         if (contactName && contactEmail) {
@@ -690,7 +696,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: org.name,
         contacts: Array.from(org.contacts).map(contactStr => JSON.parse(contactStr)),
         totalRequests: org.totalRequests,
-        lastRequestDate: org.recentRequest
+        lastRequestDate: org.recentRequest,
+        hasHostedEvent: org.hasHostedEvent
       }));
       
       // Sort by most recent activity

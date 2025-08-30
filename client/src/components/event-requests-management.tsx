@@ -889,9 +889,6 @@ export default function EventRequestsManagement() {
               {typeof request.hasRefrigeration === 'boolean' && (
                 <div><strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
               )}
-              <div><strong>Previously Hosted:</strong> {
-                previouslyHostedOptions.find(opt => opt.value === request.previouslyHosted)?.label
-              }</div>
               {(request as any).additionalRequirements && (
                 <div><strong>Special Requirements:</strong> {(request as any).additionalRequirements}</div>
               )}
