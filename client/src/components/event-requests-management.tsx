@@ -978,7 +978,7 @@ export default function EventRequestsManagement() {
       speakerDetails: formData.get("speakerDetails") || null,
       additionalRequirements: formData.get("additionalRequirements") || null,
       // TSP Contact fields
-      tspContact: formData.get("tspContact") || null,
+      tspContact: formData.get("tspContact") === "none" ? null : formData.get("tspContact") || null,
       customTspContact: formData.get("customTspContact") || null
     };
     editMutation.mutate(data);
@@ -1403,12 +1403,12 @@ export default function EventRequestsManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="tspContact">TSP Contact Person</Label>
-                  <Select name="tspContact" defaultValue={(selectedRequest as any).tspContact || ""}>
+                  <Select name="tspContact" defaultValue={(selectedRequest as any).tspContact || "none"}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select TSP contact" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No TSP contact assigned</SelectItem>
+                      <SelectItem value="none">No TSP contact assigned</SelectItem>
                       {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.firstName} {user.lastName}
