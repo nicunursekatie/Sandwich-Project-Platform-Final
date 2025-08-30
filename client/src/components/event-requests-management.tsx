@@ -563,7 +563,7 @@ export default function EventRequestsManagement() {
               <Building className="w-6 h-6" style={{ color: '#236383' }} />
               <span className="text-gray-900">{request.organizationName}</span>
               {request.organizationExists && (
-                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                <Badge variant="outline" style={{ backgroundColor: '#FEF3C7', color: '#92400E', borderColor: '#FBAD3F' }}>
                   <AlertTriangle className="w-3 h-3 mr-1" />
                   Potential Duplicate
                 </Badge>
@@ -666,7 +666,7 @@ export default function EventRequestsManagement() {
                 }
               })()}</div>
               {request.status === 'new' && !request.contactCompletedAt && (
-                <div className="font-medium" style={{ color: '#e67e22' }}>
+                <div className="font-medium" style={{ color: '#FBAD3F' }}>
                   Action needed: {(() => {
                     try {
                       const submissionDate = new Date(request.createdAt);
