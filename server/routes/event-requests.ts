@@ -247,7 +247,6 @@ router.post(
 
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...updates,
-        status: "event_details_completed",
         updatedAt: new Date(),
       });
 
