@@ -14,6 +14,7 @@ import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, Che
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
+import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24: string): string => {
@@ -166,6 +167,12 @@ export default function EventRequestsManagement() {
   const { data: users = [] } = useQuery({
     queryKey: ["/api/users"],
     queryFn: () => apiRequest("GET", "/api/users"),
+    staleTime: 5 * 60 * 1000
+  });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: () => apiRequest("GET", "/api/auth/me"),
     staleTime: 5 * 60 * 1000
   });
 
@@ -757,6 +764,21 @@ export default function EventRequestsManagement() {
           </div>
           <div className="flex flex-col items-end space-y-2">
             <Badge variant="secondary" className="text-xs">Event Completed</Badge>
+            {/* Edit button for admins */}
+            {hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setShowEditDialog(true);
+                }}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Edit Event
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -1284,7 +1306,79 @@ export default function EventRequestsManagement() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="message">Additional Information</Label>
+                <Label htmlFor="eventAddress">Event Address</Label>
+                <Input name="eventAddress" defaultValue={(selectedRequest as any).eventAddress || ""} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="estimatedSandwichCount">Number of Sandwiches</Label>
+                  <Input 
+                    name="estimatedSandwichCount" 
+                    type="number" 
+                    defaultValue={selectedRequest.estimatedSandwichCount || ""} 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                  <Select name="hasRefrigeration" defaultValue={selectedRequest.hasRefrigeration?.toString() || ""}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Yes</SelectItem>
+                      <SelectItem value="false">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="eventStartTime">Event Start Time</Label>
+                  <Input 
+                    name="eventStartTime" 
+                    type="time" 
+                    defaultValue={(selectedRequest as any).eventStartTime || ""} 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="eventEndTime">Event End Time</Label>
+                  <Input 
+                    name="eventEndTime" 
+                    type="time" 
+                    defaultValue={(selectedRequest as any).eventEndTime || ""} 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="pickupTime">Pickup Time</Label>
+                  <Input 
+                    name="pickupTime" 
+                    type="time" 
+                    defaultValue={(selectedRequest as any).pickupTime || ""} 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sandwichTypes">Sandwich Types</Label>
+                  <Input name="sandwichTypes" defaultValue={(selectedRequest as any).sandwichTypes || ""} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="driverDetails">Drivers</Label>
+                  <Input name="driverDetails" defaultValue={(selectedRequest as any).driverDetails || ""} />
+                </div>
+                <div>
+                  <Label htmlFor="speakerDetails">Speakers</Label>
+                  <Input name="speakerDetails" defaultValue={(selectedRequest as any).speakerDetails || ""} />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="additionalRequirements">Special Requirements</Label>
+                <Textarea name="additionalRequirements" rows={2} defaultValue={(selectedRequest as any).additionalRequirements || ""} />
+              </div>
+              <div>
+                <Label htmlFor="message">Event Details</Label>
                 <Textarea name="message" rows={3} defaultValue={selectedRequest.message || ""} />
               </div>
               <div>
