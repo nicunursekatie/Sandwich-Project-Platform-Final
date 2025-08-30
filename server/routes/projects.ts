@@ -49,6 +49,79 @@ function canCreateProjects(req: any) {
   return hasPermission(user, PERMISSIONS.CREATE_PROJECTS);
 }
 
+// Get projects assigned to the current user
+router.get("/projects/assigned", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ error: "User ID required" });
+    }
+    
+    const allProjects = await storage.getAllProjects();
+    
+    // Filter projects where user is assigned or supporting
+    const assignedProjects = allProjects.filter((project: any) => {
+      // Handle JSON stored arrays (projects table uses jsonb)
+      const assigneeIds = Array.isArray(project.assigneeIds) ? project.assigneeIds : 
+                         (project.assigneeIds ? JSON.parse(project.assigneeIds) : []);
+      const supportPeopleIds = Array.isArray(project.supportPeopleIds) ? project.supportPeopleIds : 
+                              (project.supportPeopleIds ? JSON.parse(project.supportPeopleIds) : []);
+      
+      return assigneeIds.includes(userId) || supportPeopleIds.includes(userId);
+    });
+    
+    res.json(assignedProjects);
+  } catch (error) {
+    console.error("Error fetching assigned projects:", error);
+    res.status(500).json({ error: "Failed to fetch assigned projects" });
+  }
+});
+
+// Get tasks assigned to the current user
+router.get("/tasks/assigned", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ error: "User ID required" });
+    }
+    
+    const allProjects = await storage.getAllProjects();
+    const assignedTasks: any[] = [];
+    
+    // Get all tasks for each project and filter by user assignment
+    for (const project of allProjects) {
+      try {
+        const projectTasks = await storage.getProjectTasks(project.id);
+        const userTasks = projectTasks.filter((task: any) => {
+          // Handle text array format (project_tasks table uses text[])
+          const assigneeIds = Array.isArray(task.assigneeIds) ? task.assigneeIds : 
+                             (task.assigneeIds ? task.assigneeIds.split(',') : []);
+          return assigneeIds.includes(userId);
+        });
+        
+        // Add project context to each task
+        userTasks.forEach((task: any) => {
+          assignedTasks.push({
+            ...task,
+            project: {
+              title: project.title,
+              category: project.category
+            }
+          });
+        });
+      } catch (taskError) {
+        console.error(`Error fetching tasks for project ${project.id}:`, taskError);
+        // Continue with other projects if one fails
+      }
+    }
+    
+    res.json(assignedTasks);
+  } catch (error) {
+    console.error("Error fetching assigned tasks:", error);
+    res.status(500).json({ error: "Failed to fetch assigned tasks" });
+  }
+});
+
 // Project management routes
 router.get("/projects", async (req, res) => {
   try {

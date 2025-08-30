@@ -33,6 +33,35 @@ const logActivity = async (
   console.log(`Activity: ${permission} - ${message}`);
 };
 
+// Get event requests assigned to the current user
+router.get("/assigned", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ error: "User ID required" });
+    }
+    
+    const allEventRequests = await storage.getAllEventRequests();
+    
+    // Filter event requests assigned to this user (using assignedTo field from schema)
+    const assignedEvents = allEventRequests.filter((event: any) => {
+      return event.assignedTo === userId;
+    });
+    
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_VIEW", 
+      `Retrieved ${assignedEvents.length} assigned event requests`,
+    );
+    
+    res.json(assignedEvents);
+  } catch (error) {
+    console.error("Error fetching assigned event requests:", error);
+    res.status(500).json({ error: "Failed to fetch assigned event requests" });
+  }
+});
+
 // Get all event requests
 router.get(
   "/",

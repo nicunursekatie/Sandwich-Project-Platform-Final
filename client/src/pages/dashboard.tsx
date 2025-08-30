@@ -61,6 +61,7 @@ import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard"
 import WishlistPage from "@/pages/wishlist";
 import EventRequestsManagement from "@/components/event-requests-management";
 import OrganizationsCatalog from "@/components/organizations-catalog";
+import ActionTracking from "@/components/action-tracking";
 
 import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
 
@@ -275,6 +276,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <EventRequestsManagement />;
       case "organizations-catalog":
         return <OrganizationsCatalog />;
+      case "action-tracking":
+        return <ActionTracking />;
 
       case "wishlist":
         return <WishlistPage />;
