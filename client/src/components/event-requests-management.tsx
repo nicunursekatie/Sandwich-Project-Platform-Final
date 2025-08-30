@@ -29,6 +29,34 @@ const formatTime12Hour = (time24: string): string => {
   return `${hour24 - 12}:${minutes} PM`;
 };
 
+// Enhanced date formatting with day-of-week and color coding
+const formatEventDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return { text: 'Invalid date', className: '' };
+    
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const dayName = format(date, "EEEE"); // Full day name
+    const dateFormatted = format(date, "PPP"); // Long date format
+    
+    // Color coding based on distance from Wednesday/Thursday
+    // Wednesday = 3, Thursday = 4
+    const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
+    const className = isWedOrThu 
+      ? "text-green-700 font-medium" 
+      : "text-red-700 font-bold";
+    
+    return {
+      text: `${dayName}, ${dateFormatted}`,
+      className,
+      dayName,
+      isWedOrThu
+    };
+  } catch (error) {
+    return { text: 'Invalid date', className: '' };
+  }
+};
+
 interface EventRequest {
   id: number;
   firstName: string;
@@ -650,14 +678,16 @@ export default function EventRequestsManagement() {
                     <p className="flex items-center">
                       <Calendar className="w-4 h-4 mr-2" />
                       <strong>Desired Date: </strong>
-                      {(() => {
-                        try {
-                          const date = new Date(request.desiredEventDate);
-                          return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPP");
-                        } catch (error) {
-                          return 'Invalid date';
-                        }
-                      })()}
+                      <span className="ml-2">
+                        {(() => {
+                          const dateInfo = formatEventDate(request.desiredEventDate);
+                          return (
+                            <span className={dateInfo.className}>
+                              {dateInfo.text}
+                            </span>
+                          );
+                        })()}
+                      </span>
                     </p>
                   )}
                   <p><strong>Previously Hosted:</strong> {
