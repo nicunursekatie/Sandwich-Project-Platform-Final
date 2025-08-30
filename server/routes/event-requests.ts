@@ -240,26 +240,27 @@ router.post(
     try {
       const eventDetailsSchema = z.object({
         id: z.number(),
-        toolkitStatus: z.string().nullable().optional(),
-        eventStartTime: z.string().nullable().optional(),
-        eventEndTime: z.string().nullable().optional(),
-        pickupTime: z.string().nullable().optional(),
-        tspContact: z.string().nullable().optional(),
-        customTspContact: z.string().nullable().optional(),
-        planningNotes: z.string().nullable().optional(),
-        eventAddress: z.string().nullable().optional(),
-        estimatedSandwichCount: z.number().nullable().optional(),
-        sandwichTypes: z.string().nullable().optional(),
+        toolkitStatus: z.string().nullish().transform(val => val || undefined),
+        eventStartTime: z.string().nullish().transform(val => val || undefined),
+        eventEndTime: z.string().nullish().transform(val => val || undefined),
+        pickupTime: z.string().nullish().transform(val => val || undefined),
+        tspContact: z.string().nullish().transform(val => val || undefined),
+        customTspContact: z.string().nullish().transform(val => val || undefined),
+        planningNotes: z.string().nullish().transform(val => val || undefined),
+        eventAddress: z.string().nullish().transform(val => val || undefined),
+        estimatedSandwichCount: z.number().nullish().transform(val => val || undefined),
+        sandwichTypes: z.string().nullish().transform(val => val || undefined),
         driversArranged: z.boolean().optional(),
-        driverDetails: z.string().nullable().optional(),
+        driverDetails: z.string().nullish().transform(val => val || undefined),
         speakersNeeded: z.boolean().optional(),
-        speakerDetails: z.string().nullable().optional(),
+        speakerDetails: z.string().nullish().transform(val => val || undefined),
       });
 
       const validatedData = eventDetailsSchema.parse(req.body);
       const { id, ...updates } = validatedData;
 
-      console.log("=== COMPLETE EVENT DETAILS ===");
+      console.log("=== COMPLETE EVENT DETAILS DEBUG ===");
+      console.log("Raw request body:", JSON.stringify(req.body, null, 2));
       console.log("Event ID:", id);
       console.log("Updates:", JSON.stringify(updates, null, 2));
 
