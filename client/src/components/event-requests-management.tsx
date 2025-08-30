@@ -1271,13 +1271,13 @@ export default function EventRequestsManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="estimatedSandwichCount">Estimated # of Sandwiches</Label>
+                  <Label htmlFor="estimatedSandwichCount">Estimated # of Sandwiches to be Made</Label>
                   <Input 
                     name="estimatedSandwichCount" 
                     type="number"
                     min="1"
                     defaultValue={detailsRequest.estimatedSandwichCount || ""}
-                    placeholder="How many sandwiches needed?"
+                    placeholder="How many sandwiches to be made?"
                   />
                 </div>
               </div>
