@@ -1149,7 +1149,7 @@ export default function EventRequestsManagement() {
                 <Label htmlFor="toolkitStatus" className="text-lg font-semibold text-teal-800">
                   Toolkit Status (REQUIRED) *
                 </Label>
-                <Select name="toolkitStatus" required>
+                <Select name="toolkitStatus" required defaultValue={detailsRequest.toolkitStatus || "not_sent"}>
                   <SelectTrigger className="mt-2">
                     <SelectValue placeholder="Select toolkit status" />
                   </SelectTrigger>
@@ -1218,13 +1218,14 @@ export default function EventRequestsManagement() {
               {/* Refrigeration */}
               <div>
                 <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                <Select name="hasRefrigeration" defaultValue={detailsRequest.hasRefrigeration?.toString()}>
+                <Select name="hasRefrigeration" defaultValue={detailsRequest.hasRefrigeration ? detailsRequest.hasRefrigeration.toString() : ""}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select refrigeration status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="true">Yes - Refrigeration Available</SelectItem>
-                    <SelectItem value="false">No - No Refrigeration</SelectItem>
+                    <SelectItem value="">Not specified</SelectItem>
+                    <SelectItem value="yes">Yes - Refrigeration Available</SelectItem>
+                    <SelectItem value="no">No - No Refrigeration</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
