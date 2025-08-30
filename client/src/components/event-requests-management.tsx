@@ -301,6 +301,24 @@ export default function EventRequestsManagement() {
     }
   });
 
+  const importExcelMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/import/import-excel"),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      toast({ 
+        title: "Excel import successful", 
+        description: `Successfully imported ${data.imported} events out of ${data.total} parsed`
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error importing Excel file", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
   const filteredRequests = useMemo(() => {
     return eventRequests.filter((request: EventRequest) => {
       const matchesSearch = !searchTerm || 
@@ -453,6 +471,17 @@ export default function EventRequestsManagement() {
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline sm:ml-2">
               {syncFromSheetsMutation.isPending ? "Syncing..." : "Sync from Sheets"}
+            </span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => importExcelMutation.mutate()}
+            disabled={importExcelMutation.isPending}
+          >
+            <Upload className="w-4 h-4" />
+            <span className="hidden sm:inline sm:ml-2">
+              {importExcelMutation.isPending ? "Importing..." : "Import Excel"}
             </span>
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

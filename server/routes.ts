@@ -87,6 +87,7 @@ declare global {
 import dataManagementRoutes from "./routes/data-management";
 import recipientTspContactRoutes from "./routes/recipient-tsp-contacts";
 import eventRequestRoutes from "./routes/event-requests";
+import importEventsRoutes from "./routes/import-events";
 import { checkWeeklySubmissions, sendMissingSubmissionsEmail, runWeeklyMonitoring } from "./weekly-monitoring";
 import { registerPerformanceRoutes } from "./routes/performance";
 import { SearchEngine } from "./search-engine";
@@ -633,6 +634,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register event request routes
   app.use("/api/event-requests", eventRequestRoutes);
+  
+  // Register import events routes
+  app.use("/api/import", importEventsRoutes);
   
   // TEMP: Direct organizations catalog route for testing
   app.get("/api/organizations-catalog", isAuthenticated, async (req, res) => {
