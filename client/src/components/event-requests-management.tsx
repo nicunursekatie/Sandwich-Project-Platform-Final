@@ -725,6 +725,188 @@ export default function EventRequestsManagement() {
     </Card>
   );
 
+  // Function to render comprehensive past event cards with all details
+  const renderPastEventCard = (request: EventRequest) => (
+    <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-gray-500">
+      <CardHeader className="pb-3">
+        {/* Prominent Date Display */}
+        {request.desiredEventDate && (
+          <div className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-center space-x-2">
+              <Calendar className="w-5 h-5 text-gray-600" />
+              <span className="text-lg font-bold text-gray-700">
+                COMPLETED: {(() => {
+                  const dateInfo = formatEventDate(request.desiredEventDate);
+                  return dateInfo.text;
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="flex items-center space-x-3 text-xl mb-3">
+              <CheckCircle className="w-6 h-6 text-gray-600" />
+              <span className="text-gray-900">{request.organizationName}</span>
+              {(request as any).toolkitStatus && (
+                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                  Toolkit: {(() => {
+                    const status = (request as any).toolkitStatus;
+                    switch (status) {
+                      case 'not_sent': return '⏳ Pending';
+                      case 'sent': return '✓ Sent';
+                      case 'received_confirmed': return '✓✓ Confirmed';
+                      case 'not_needed': return 'N/A';
+                      default: return status;
+                    }
+                  })()}
+                </Badge>
+              )}
+            </CardTitle>
+            
+            {/* Contact Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <User className="w-5 h-5 text-gray-600" />
+                  <span className="text-lg font-semibold text-gray-800">
+                    {request.firstName} {request.lastName}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Mail className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm text-gray-600">{request.email}</span>
+                </div>
+                {request.phone && (
+                  <div className="flex items-center space-x-2">
+                    <Phone className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">{request.phone}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Event Details */}
+              <div className="space-y-2">
+                {((request as any).eventStartTime || (request as any).eventEndTime) && (
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium">
+                      Event: {formatTime12Hour((request as any).eventStartTime)}
+                      {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
+                    </span>
+                  </div>
+                )}
+                {(request as any).pickupTime && (
+                  <div className="flex items-center space-x-2">
+                    <Trash2 className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium">Pickup: {formatTime12Hour((request as any).pickupTime)}</span>
+                  </div>
+                )}
+                {request.eventAddress && (
+                  <div className="flex items-center space-x-2">
+                    <Building className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium">{request.eventAddress}</span>
+                  </div>
+                )}
+                {request.estimatedSandwichCount && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600 text-sm">🥪</span>
+                    <span className="text-sm font-medium">{request.estimatedSandwichCount} sandwiches</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-end space-y-2">
+            {getStatusDisplay(request.status)}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* TSP Team Information */}
+          {((request as any).tspContact || (request as any).customTspContact) && (
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <h4 className="font-semibold text-gray-800 mb-2">TSP Team Assignment</h4>
+              <div className="space-y-1">
+                {(request as any).tspContact && (
+                  <div className="text-sm">
+                    <strong>Primary Contact:</strong> {(() => {
+                      const contact = users.find((user: any) => user.id === (request as any).tspContact);
+                      return contact 
+                        ? (contact.firstName && contact.lastName 
+                            ? `${contact.firstName} ${contact.lastName}` 
+                            : contact.displayName || contact.email)
+                        : (request as any).tspContact;
+                    })()}
+                  </div>
+                )}
+                {(request as any).customTspContact && (
+                  <div className="text-sm">
+                    <strong>Additional Info:</strong> {(request as any).customTspContact}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Planning Notes */}
+          {(request as any).planningNotes && (
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-2">Planning Notes</h4>
+              <p className="text-sm text-blue-700">{(request as any).planningNotes}</p>
+            </div>
+          )}
+          
+          {/* Event Logistics Summary */}
+          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+            <h4 className="font-semibold text-green-800 mb-2">Event Summary</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              {request.department && (
+                <div><strong>Department:</strong> {request.department}</div>
+              )}
+              {typeof request.hasRefrigeration === 'boolean' && (
+                <div><strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
+              )}
+              <div><strong>Previously Hosted:</strong> {
+                previouslyHostedOptions.find(opt => opt.value === request.previouslyHosted)?.label
+              }</div>
+              {(request as any).additionalRequirements && (
+                <div><strong>Special Requirements:</strong> {(request as any).additionalRequirements}</div>
+              )}
+            </div>
+          </div>
+          
+          {/* Original Message */}
+          {request.message && request.message !== 'Imported from Excel file' && (
+            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+              <h4 className="font-semibold text-amber-800 mb-2">Original Request</h4>
+              <p className="text-sm text-amber-700">{request.message}</p>
+            </div>
+          )}
+          
+          {/* Submission Information */}
+          <div className="flex justify-between items-center pt-3 border-t text-xs text-gray-500">
+            <div>
+              {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
+                try {
+                  const date = new Date(request.createdAt);
+                  return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPP");
+                } catch (error) {
+                  return 'Invalid date';
+                }
+              })()}
+            </div>
+            <div className="flex items-center space-x-1">
+              <Badge variant="secondary" className="text-xs">Event Completed</Badge>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -1019,7 +1201,7 @@ export default function EventRequestsManagement() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {filteredRequests.map((request: EventRequest) => renderStandardEventCard(request))}
+                {filteredRequests.map((request: EventRequest) => renderPastEventCard(request))}
               </div>
             )}
           </TabsContent>
