@@ -32,7 +32,22 @@ const formatTime12Hour = (time24: string): string => {
 // Enhanced date formatting with day-of-week and color coding
 const formatEventDate = (dateString: string) => {
   try {
-    const date = new Date(dateString);
+    // Parse as local date to avoid timezone shifts
+    // If dateString is in YYYY-MM-DD format, treat it as local
+    let date: Date;
+    
+    if (dateString.includes('T') || dateString.includes('Z')) {
+      // ISO string with time - parse normally
+      date = new Date(dateString);
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // YYYY-MM-DD format - parse as local date
+      const [year, month, day] = dateString.split('-').map(Number);
+      date = new Date(year, month - 1, day); // month is 0-indexed
+    } else {
+      // Other formats - parse normally
+      date = new Date(dateString);
+    }
+    
     if (isNaN(date.getTime())) return { text: 'Invalid date', className: '' };
     
     const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
