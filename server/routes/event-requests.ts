@@ -241,8 +241,7 @@ router.post(
       // Skip validation entirely and just process the raw data
       const { id, ...updates } = req.body;
 
-      console.log("=== COMPLETE EVENT DETAILS DEBUG ===");
-      console.log("Raw request body:", JSON.stringify(req.body, null, 2));
+      console.log("=== COMPLETE EVENT DETAILS ===");
       console.log("Event ID:", id);
       console.log("Updates:", JSON.stringify(updates, null, 2));
 
