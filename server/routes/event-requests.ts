@@ -105,7 +105,7 @@ router.patch("/:id/complete-contact", isAuthenticated, requirePermission("EVENT_
     const validatedData = completionDataSchema.parse(req.body);
     
     const updatedEventRequest = await storage.updateEventRequest(id, {
-      contactCompletedAt: new Date().toISOString(),
+      contactedAt: new Date(),
       completedByUserId: req.user?.id,
       communicationMethod: validatedData.communicationMethod,
       eventAddress: validatedData.eventAddress,
@@ -136,7 +136,11 @@ router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), as
     const id = parseInt(req.params.id);
     const updates = req.body;
 
-    const updatedEventRequest = await storage.updateEventRequest(id, updates);
+    // Always update the updatedAt timestamp
+    const updatedEventRequest = await storage.updateEventRequest(id, {
+      ...updates,
+      updatedAt: new Date()
+    });
     
     if (!updatedEventRequest) {
       return res.status(404).json({ message: "Event request not found" });

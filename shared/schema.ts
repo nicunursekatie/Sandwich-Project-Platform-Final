@@ -1086,17 +1086,21 @@ export const eventRequests = pgTable("event_requests", {
   contactedAt: timestamp("contacted_at"), // When initial contact was completed
   
   // Contact completion details (collected when marking contacted)
-  contactMethod: varchar("contact_method"), // 'phone', 'email', 'video_meeting'
-  contactNotes: text("contact_notes"), // Free text notes from the contact
+  communicationMethod: varchar("communication_method"), // 'phone', 'email', 'video_meeting'
+  contactCompletionNotes: text("contact_completion_notes"), // Free text notes from the contact
   eventAddress: text("event_address"), // Event location address collected
-  plannedSandwiches: integer("planned_sandwiches"), // Number of sandwiches planned
+  estimatedSandwichCount: integer("estimated_sandwich_count"), // Number of sandwiches planned
   hasRefrigeration: boolean("has_refrigeration"), // Whether site has refrigeration
-  contactCompletedBy: varchar("contact_completed_by"), // User ID who completed the contact
+  completedByUserId: varchar("completed_by_user_id"), // User ID who completed the contact
   
   // Advanced event planning fields (for scheduled/in_planning status)
   tspContactAssigned: varchar("tsp_contact_assigned"), // TSP team member assigned to this event
+  tspContact: varchar("tsp_contact"), // Primary TSP contact for the event
+  additionalTspContacts: text("additional_tsp_contacts"), // Additional TSP contacts
+  customTspContact: text("custom_tsp_contact"), // Custom TSP contact information
   toolkitSent: boolean("toolkit_sent").default(false), // Whether toolkit has been sent
   toolkitSentDate: timestamp("toolkit_sent_date"), // When toolkit was sent
+  toolkitStatus: varchar("toolkit_status").default("not_sent"), // 'not_sent', 'sent', 'received_confirmed', 'not_needed'
   eventStartTime: varchar("event_start_time"), // Event start time (stored as string for flexibility)
   eventEndTime: varchar("event_end_time"), // Event end time
   pickupTime: varchar("pickup_time"), // Driver pickup time for sandwiches
