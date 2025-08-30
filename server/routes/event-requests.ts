@@ -136,6 +136,10 @@ router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), as
     const id = parseInt(req.params.id);
     const updates = req.body;
 
+    console.log("=== EVENT REQUEST UPDATE ===");
+    console.log("Request ID:", id);
+    console.log("Updates received:", JSON.stringify(updates, null, 2));
+
     // Always update the updatedAt timestamp
     const updatedEventRequest = await storage.updateEventRequest(id, {
       ...updates,
@@ -146,6 +150,7 @@ router.put("/:id", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), as
       return res.status(404).json({ message: "Event request not found" });
     }
 
+    console.log("Updated event request:", JSON.stringify(updatedEventRequest, null, 2));
     await logActivity(req, res, "EVENT_REQUESTS_EDIT", `Updated event request: ${id}`);
     res.json(updatedEventRequest);
   } catch (error) {
