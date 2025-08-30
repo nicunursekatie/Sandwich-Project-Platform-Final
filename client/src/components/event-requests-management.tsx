@@ -976,7 +976,7 @@ export default function EventRequestsManagement() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {filteredRequests.map(request => renderStandardEventCard(request))}
+                {filteredRequests.map((request: EventRequest) => renderStandardEventCard(request))}
               </div>
             )}
           </TabsContent>
@@ -993,7 +993,7 @@ export default function EventRequestsManagement() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {filteredRequests.map(request => renderScheduledEventCard(request))}
+                {filteredRequests.map((request: EventRequest) => renderScheduledEventCard(request))}
               </div>
             )}
           </TabsContent>
@@ -1010,7 +1010,7 @@ export default function EventRequestsManagement() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {filteredRequests.map(request => renderStandardEventCard(request))}
+                {filteredRequests.map((request: EventRequest) => renderStandardEventCard(request))}
               </div>
             )}
           </TabsContent>
