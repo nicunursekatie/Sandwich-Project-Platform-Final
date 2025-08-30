@@ -4306,7 +4306,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Hosts API endpoints
-  app.get("/api/hosts", isAuthenticated, requirePermission("HOSTS_VIEW"), async (req, res) => {
+  app.get("/api/hosts", isAuthenticated, (req, res, next) => {
+    // Allow access if user can view hosts OR create collections (since they need hosts for collection forms)
+    if (req.user && (
+      req.user.permissions.includes("HOSTS_VIEW") || 
+      req.user.permissions.includes("COLLECTIONS_ADD")
+    )) {
+      next();
+    } else {
+      return res.status(403).json({ message: "Access denied" });
+    }
+  }, async (req, res) => {
     try {
       const hosts = await storage.getAllHosts();
       res.json(hosts);
