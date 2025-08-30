@@ -208,14 +208,9 @@ router.patch(
   isAuthenticated,
   requirePermission("EVENT_REQUESTS_EDIT"),
   async (req, res) => {
-    console.log("🚨🚨🚨 EVENT DETAILS PATCH ROUTE HIT! 🚨🚨🚨");
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-
-      console.log("=== EVENT REQUEST DETAILS UPDATE ===");
-      console.log("Request ID:", id);
-      console.log("Updates received:", JSON.stringify(updates, null, 2));
 
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
@@ -227,10 +222,6 @@ router.patch(
         return res.status(404).json({ message: "Event request not found" });
       }
 
-      console.log(
-        "Updated event request:",
-        JSON.stringify(updatedEventRequest, null, 2),
-      );
       await logActivity(
         req,
         res,
