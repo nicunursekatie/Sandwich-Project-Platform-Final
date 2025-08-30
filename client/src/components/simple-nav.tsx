@@ -93,7 +93,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     { id: "action-tracking", label: "My Actions", icon: ListTodo, href: "action-tracking", group: "planning" },
     ...(hasPermission(user, PERMISSIONS.PROJECTS_VIEW) ? [{ id: "projects", label: "Projects", icon: ClipboardList, href: "projects", group: "planning" }] : []),
     ...(hasPermission(user, PERMISSIONS.MEETINGS_VIEW) ? [{ id: "meetings", label: "Meetings", icon: Calendar, href: "meetings", group: "planning" }] : []),
-    { id: "events", label: "Events", icon: Calendar, href: "events", group: "planning" },
+    { id: "events", label: "Events Google Sheet", icon: Calendar, href: "events", group: "planning" },
     ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "event-requests", label: "Event Requests", icon: Calendar, href: "event-requests", group: "planning" }] : []),
     { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
     { id: "wishlist", label: "Amazon Wishlist", icon: Gift, href: "wishlist", group: "planning" },
