@@ -765,20 +765,18 @@ export default function EventRequestsManagement() {
           <div className="flex flex-col items-end space-y-2">
             <Badge variant="secondary" className="text-xs">Event Completed</Badge>
             {/* Edit button for admins */}
-            {hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedRequest(request);
-                  setShowEditDialog(true);
-                }}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Edit Event
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedRequest(request);
+                setShowEditDialog(true);
+              }}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Edit Event
+            </Button>
           </div>
         </div>
       </CardHeader>
