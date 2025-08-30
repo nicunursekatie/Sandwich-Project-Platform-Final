@@ -9,6 +9,15 @@ import { getEventRequestsGoogleSheetsService } from "../google-sheets-event-requ
 
 const router = Router();
 
+// Debug middleware to catch all requests to this router
+router.use("/:id", (req, res, next) => {
+  if (req.method === "PATCH" || req.method === "PUT") {
+    console.log(`=== ROUTER DEBUG: ${req.method} ${req.originalUrl} ===`);
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
 // Simple logging function for activity tracking
 const logActivity = async (req: any, res: any, permission: string, message: string) => {
   // Activity logging will be handled by the global middleware
