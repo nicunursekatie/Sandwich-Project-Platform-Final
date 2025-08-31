@@ -1104,9 +1104,6 @@ export default function EventRequestsManagement() {
                 {request.organizationName}
                 {request.department && <span className="text-sm text-gray-600 ml-2">- {request.department}</span>}
               </span>
-              <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
-                {getOrganizationEventCount(request.organizationName)} {getOrganizationEventCount(request.organizationName) === 1 ? 'event' : 'events'} completed
-              </Badge>
             </CardTitle>
             
             {/* Event Date */}
