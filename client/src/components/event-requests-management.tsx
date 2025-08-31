@@ -268,18 +268,40 @@ export default function EventRequestsManagement() {
 
   const editMutation = useMutation({
     mutationFn: ({ id, ...data }: any) => apiRequest("PUT", `/api/event-requests/${id}`, data),
+    onMutate: async ({ id, ...updatedData }) => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ["/api/event-requests"] });
+      
+      // Snapshot previous value
+      const previousEvents = queryClient.getQueryData(["/api/event-requests"]);
+      
+      // Optimistically update to new value
+      queryClient.setQueryData(["/api/event-requests"], (old: any) => {
+        if (!old) return old;
+        return old.map((event: any) => 
+          event.id === id ? { ...event, ...updatedData } : event
+        );
+      });
+      
+      return { previousEvents };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowEditDialog(false);
       setSelectedRequest(null);
       toast({ title: "Event request updated successfully" });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context: any) => {
+      // Rollback on error
+      queryClient.setQueryData(["/api/event-requests"], context?.previousEvents);
       toast({ 
         title: "Error updating event request", 
         description: error.message,
         variant: "destructive" 
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
     }
   });
 
@@ -300,11 +322,35 @@ export default function EventRequestsManagement() {
 
   const completeContactMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests/complete-contact", data),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/event-requests"] });
+      const previousEvents = queryClient.getQueryData(["/api/event-requests"]);
+      
+      // Optimistically update the event status
+      queryClient.setQueryData(["/api/event-requests"], (old: any) => {
+        if (!old) return old;
+        return old.map((event: any) => 
+          event.id === data.eventId ? { ...event, status: 'contact_completed' } : event
+        );
+      });
+      
+      return { previousEvents };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowCompleteContactDialog(false);
       setCompletingRequest(null);
       toast({ title: "Contact completion recorded successfully" });
+    },
+    onError: (error: any, variables, context: any) => {
+      queryClient.setQueryData(["/api/event-requests"], context?.previousEvents);
+      toast({ 
+        title: "Error recording contact completion", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
     },
     onError: (error: any) => {
       toast({ 
@@ -317,11 +363,41 @@ export default function EventRequestsManagement() {
 
   const completeEventDetailsMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests/complete-event-details", data),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/event-requests"] });
+      const previousEvents = queryClient.getQueryData(["/api/event-requests"]);
+      
+      // Optimistically update the event with new details
+      queryClient.setQueryData(["/api/event-requests"], (old: any) => {
+        if (!old) return old;
+        return old.map((event: any) => 
+          event.id === data.eventId ? { 
+            ...event, 
+            status: 'completed',
+            actualEventDate: data.actualEventDate,
+            actualAttendeeCount: data.actualAttendeeCount,
+            notes: data.notes
+          } : event
+        );
+      });
+      
+      return { previousEvents };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowEventDetailsDialog(false);
       setDetailsRequest(null);
       toast({ title: "Event details saved successfully" });
+    },
+    onError: (error: any, variables, context: any) => {
+      queryClient.setQueryData(["/api/event-requests"], context?.previousEvents);
+      toast({ 
+        title: "Error saving event details", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
     },
     onError: (error: any) => {
       toast({ 
