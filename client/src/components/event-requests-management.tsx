@@ -1045,7 +1045,7 @@ export default function EventRequestsManagement() {
           {/* Submission Information */}
           <div className="flex justify-between items-center pt-3 border-t text-xs text-gray-500">
             <div>
-              {request.message === 'Imported from Excel file' ? 'Imported past event - duplicate organization' : 'Submitted'}: {(() => {
+              {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
                 try {
                   const date = new Date(request.createdAt);
                   return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
