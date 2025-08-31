@@ -181,16 +181,37 @@ export default function EventRequestsManagement() {
   });
 
   const { data: users = [] } = useQuery({
-    queryKey: ["/api/users"],
-    queryFn: () => apiRequest("GET", "/api/users"),
+    queryKey: ["/api/users/for-assignments"],
+    queryFn: () => apiRequest("GET", "/api/users/for-assignments"),
     staleTime: 5 * 60 * 1000
   });
 
+  // Get current user for fallback when users array is restricted
   const { data: currentUser } = useQuery({
     queryKey: ["/api/auth/me"],
-    queryFn: () => apiRequest("GET", "/api/auth/me"),
     staleTime: 5 * 60 * 1000
   });
+
+  // Helper function to resolve user names with proper fallback
+  const getUserDisplayName = (userId: string) => {
+    // First try to find in users array
+    const user = users.find((u: any) => u.id === userId);
+    if (user) {
+      return user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.displayName || user.email;
+    }
+    
+    // If not found and it's the current user, use current user data
+    if (currentUser && currentUser.id === userId) {
+      return currentUser.firstName && currentUser.lastName
+        ? `${currentUser.firstName} ${currentUser.lastName}`
+        : currentUser.displayName || currentUser.email;
+    }
+    
+    // If still not found, return a user-friendly fallback instead of raw ID
+    return "TSP Team Member";
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests", data),
@@ -521,14 +542,7 @@ export default function EventRequestsManagement() {
               <div className="space-y-1">
                 {(request as any).tspContact && (
                   <div className="text-sm">
-                    <strong>Primary Contact:</strong> {(() => {
-                      const contact = users.find((user: any) => user.id === (request as any).tspContact);
-                      return contact 
-                        ? (contact.firstName && contact.lastName 
-                            ? `${contact.firstName} ${contact.lastName}` 
-                            : contact.displayName || contact.email)
-                        : (request as any).tspContact;
-                    })()}
+                    <strong>Primary Contact:</strong> {getUserDisplayName((request as any).tspContact)}
                   </div>
                 )}
                 {(request as any).customTspContact && (
