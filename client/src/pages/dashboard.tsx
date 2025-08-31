@@ -141,6 +141,10 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     ...(hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users }] : []),
     ...(hasPermission(user, PERMISSIONS.ACCESS_DONATION_TRACKING) ? [{ id: "donation-tracking", label: "Distribution Tracking", icon: Truck }] : []),
     
+    // Event Planning section
+    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "event-requests", label: "Event Planning", icon: Calendar }] : []),
+    ...(hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW) ? [{ id: "organizations-catalog", label: "Organizations Catalog", icon: Building2 }] : []),
+    
     // Operations section
     ...(hasPermission(user, PERMISSIONS.VIEW_MEETINGS) ? [{ id: "meetings", label: "Meetings", icon: ClipboardList }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ? [{ id: "analytics", label: "Analytics", icon: BarChart3 }] : []),

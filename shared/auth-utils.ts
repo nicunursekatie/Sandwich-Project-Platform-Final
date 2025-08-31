@@ -278,6 +278,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
+        PERMISSIONS.ORGANIZATIONS_VIEW,
         
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
@@ -347,6 +348,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_DRIVER,
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.EVENT_REQUESTS_VIEW,
+        PERMISSIONS.ORGANIZATIONS_VIEW,
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
         PERMISSIONS.KUDOS_VIEW
@@ -364,6 +367,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections
         PERMISSIONS.PROJECTS_ADD, // Can create projects (automatically can edit/delete own)
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.EVENT_REQUESTS_VIEW,
+        PERMISSIONS.ORGANIZATIONS_VIEW,
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
         PERMISSIONS.KUDOS_VIEW
@@ -378,6 +383,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CHAT_RECIPIENT,
         PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections (recipients who help with collections)
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.EVENT_REQUESTS_VIEW,
+        PERMISSIONS.ORGANIZATIONS_VIEW,
         PERMISSIONS.KUDOS_RECEIVE, // Recipients can receive kudos but not send them by default
         PERMISSIONS.KUDOS_VIEW
       ];
@@ -428,7 +435,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.ACCESS_SUGGESTIONS,
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.VIEW_KUDOS // Viewers can only view kudos, not send or receive
+        PERMISSIONS.VIEW_KUDOS, // Viewers can only view kudos, not send or receive
+        PERMISSIONS.EVENT_REQUESTS_VIEW,
+        PERMISSIONS.ORGANIZATIONS_VIEW
       ];
 
     case USER_ROLES.WORK_LOGGER:
