@@ -42,6 +42,11 @@ const formatEventDate = (dateString: string) => {
       // Extract just the date part and create at noon to avoid timezone issues
       const dateOnly = dateString.split(' ')[0];
       date = new Date(dateOnly + 'T12:00:00');
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+      // ISO format with midnight time (e.g., "2025-09-03T00:00:00.000Z")
+      // Extract just the date part and create at noon to avoid timezone issues
+      const dateOnly = dateString.split('T')[0];
+      date = new Date(dateOnly + 'T12:00:00');
     } else if (dateString.includes('T') || dateString.includes('Z')) {
       date = new Date(dateString);
     } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
