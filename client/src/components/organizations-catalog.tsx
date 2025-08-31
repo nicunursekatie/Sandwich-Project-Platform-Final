@@ -28,6 +28,7 @@ interface OrganizationContact {
   organizationName: string;
   contactName: string;
   email?: string;
+  department?: string;
   latestRequestDate: string;
   totalRequests: number;
   status: 'new' | 'contacted' | 'completed' | 'scheduled' | 'past';
@@ -268,7 +269,10 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                   <div className="flex-1">
                     <CardTitle className="flex items-center space-x-3 text-lg mb-3">
                       <Building className="w-5 h-5" style={{ color: '#236383' }} />
-                      <span className="text-gray-900">{org.organizationName}</span>
+                      <span className="text-gray-900">
+                        {org.organizationName}
+                        {org.department && <span className="text-sm text-gray-600 ml-2">- {org.department}</span>}
+                      </span>
                     </CardTitle>
                     
                     {/* Contact Information - Prominent Display */}

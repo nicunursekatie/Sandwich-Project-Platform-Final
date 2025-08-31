@@ -595,7 +595,10 @@ export default function EventRequestsManagement() {
           <div className="flex-1">
             <CardTitle className="flex items-center space-x-3 text-xl mb-3">
               <Calendar className="w-6 h-6 text-teal-600" />
-              <span className="text-gray-900">{request.organizationName}</span>
+              <span className="text-gray-900">
+                {request.organizationName}
+                {request.department && <span className="text-sm text-gray-600 ml-2">- {request.department}</span>}
+              </span>
               {(request as any).toolkitStatus && (
                 <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
                   Toolkit: {(() => {
@@ -768,7 +771,10 @@ export default function EventRequestsManagement() {
           <div className="flex-1">
             <CardTitle className="flex items-center space-x-3 text-xl mb-3">
               <Building className="w-6 h-6" style={{ color: '#236383' }} />
-              <span className="text-gray-900">{request.organizationName}</span>
+              <span className="text-gray-900">
+                {request.organizationName}
+                {request.department && <span className="text-sm text-gray-600 ml-2">- {request.department}</span>}
+              </span>
               {request.organizationExists && (
                 <Badge variant="outline" style={{ backgroundColor: '#FEF3C7', color: '#92400E', borderColor: '#FBAD3F' }}>
                   <AlertTriangle className="w-3 h-3 mr-1" />

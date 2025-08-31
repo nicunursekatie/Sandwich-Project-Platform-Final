@@ -667,6 +667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             organizationName: orgName,
             contactName: contactName,
             email: contactEmail,
+            department: request.department,
             requests: [],
             latestStatus: 'new',
             latestRequestDate: request.createdAt || new Date(),
@@ -681,6 +682,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const requestDate = new Date(request.createdAt || new Date());
         if (requestDate >= contact.latestRequestDate) {
           contact.latestRequestDate = requestDate;
+          // Update department from most recent request
+          if (request.department) {
+            contact.department = request.department;
+          }
           
           // Determine status: check if scheduled (future event) or completed/past
           if (request.status === 'completed') {
