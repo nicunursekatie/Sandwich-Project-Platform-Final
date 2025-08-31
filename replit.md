@@ -64,6 +64,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **ISO Midnight Format Fix**: Resolved critical issue where ISO format dates ending with "Z" (like "2025-09-03T00:00:00.000Z") were displaying as previous day due to UTC midnight conversion to local timezone. Implemented specific regex pattern to extract date part and add noon time for timezone-safe parsing.
 - **Collection Table Date Display**: Fixed collectionDate and submittedAt fields to use timezone-safe parsing preventing date shifting issues.
 - **Projects Components Date Display**: Applied timezone-safe parsing to project due dates in project cards and project lists to prevent incorrect date display.
+- **Event Status Classification Fix**: Fixed Event Planning tabs to properly categorize declined events - declined events are now excluded from Past Events tab (which shows completed events) and properly displayed in Event Requests tab for tracking purposes. This prevents declined events from being misrepresented as completed events.
 
 ### Key Technical Learning Points
 - Database timestamps in format "YYYY-MM-DD HH:MM:SS" require careful parsing to avoid timezone conversion.

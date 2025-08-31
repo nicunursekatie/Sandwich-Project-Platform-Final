@@ -347,7 +347,8 @@ export default function EventRequestsManagement() {
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
   
   const requestsEvents = eventRequests.filter((req: EventRequest) => {
-    if (!req.desiredEventDate) return req.status === 'new';
+    // Include new requests and declined events for tracking
+    if (!req.desiredEventDate) return req.status === 'new' || req.status === 'declined';
     // Use the same timezone-safe parsing as formatEventDate function
     let eventDate: Date;
     const dateString = req.desiredEventDate;
@@ -361,7 +362,8 @@ export default function EventRequestsManagement() {
       eventDate = new Date(dateString);
     }
     eventDate.setHours(0, 0, 0, 0);
-    return eventDate >= today && req.status === 'new';
+    // Show new future events and all declined events (regardless of date)
+    return (eventDate >= today && req.status === 'new') || req.status === 'declined';
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
@@ -383,7 +385,10 @@ export default function EventRequestsManagement() {
   });
   
   const pastEvents = eventRequests.filter((req: EventRequest) => {
-    if (!req.desiredEventDate) return req.status === 'completed' || req.status === 'declined';
+    // Exclude declined events from past events display
+    if (req.status === 'declined') return false;
+    
+    if (!req.desiredEventDate) return req.status === 'completed';
     // Use the same timezone-safe parsing as formatEventDate function
     let eventDate: Date;
     const dateString = req.desiredEventDate;
@@ -397,7 +402,8 @@ export default function EventRequestsManagement() {
       eventDate = new Date(dateString);
     }
     eventDate.setHours(0, 0, 0, 0);
-    return eventDate < today; // Show all events with past dates regardless of status
+    // Show past events that are completed or contact_completed, but not declined
+    return eventDate < today && (req.status === 'completed' || req.status === 'contact_completed');
   });
 
   // Get current events based on active tab
@@ -1318,7 +1324,7 @@ export default function EventRequestsManagement() {
           {/* Tab Content */}
           <TabsContent value="requests" className="space-y-4">
             <div className="text-sm text-gray-600 mb-4">
-              Showing {filteredRequests.length} event request{filteredRequests.length !== 1 ? 's' : ''} that need contact
+              Showing {filteredRequests.length} event request{filteredRequests.length !== 1 ? 's' : ''} (new requests needing contact + declined events)
             </div>
             {filteredRequests.length === 0 ? (
               <Card>
