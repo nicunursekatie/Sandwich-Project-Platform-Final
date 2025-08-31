@@ -866,7 +866,16 @@ export default function EventRequestsManagement() {
             <div className="text-xs text-gray-500">
               {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
                 try {
-                  const date = new Date(request.createdAt);
+                  // Parse timestamp safely to preserve the original time
+                  let date: Date;
+                  if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                    // Database timestamp format: "2025-08-27 06:26:14"
+                    // Treat as-is without timezone conversion
+                    const [datePart, timePart] = request.createdAt.split(' ');
+                    date = new Date(datePart + 'T' + timePart);
+                  } else {
+                    date = new Date(request.createdAt);
+                  }
                   return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
                 } catch (error) {
                   return 'Invalid date';
@@ -1002,7 +1011,16 @@ export default function EventRequestsManagement() {
             <div className="text-sm text-gray-500">
               <div>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
                 try {
-                  const date = new Date(request.createdAt);
+                  // Parse timestamp safely to preserve the original time
+                  let date: Date;
+                  if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                    // Database timestamp format: "2025-08-27 06:26:14"
+                    // Treat as-is without timezone conversion
+                    const [datePart, timePart] = request.createdAt.split(' ');
+                    date = new Date(datePart + 'T' + timePart);
+                  } else {
+                    date = new Date(request.createdAt);
+                  }
                   return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
                 } catch (error) {
                   return 'Invalid date';
@@ -1012,7 +1030,14 @@ export default function EventRequestsManagement() {
                 <div className="font-medium" style={{ color: '#FBAD3F' }}>
                   Action needed: {(() => {
                     try {
-                      const submissionDate = new Date(request.createdAt);
+                      // Parse timestamp safely to preserve the original time
+                      let submissionDate: Date;
+                      if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                        const [datePart, timePart] = request.createdAt.split(' ');
+                        submissionDate = new Date(datePart + 'T' + timePart);
+                      } else {
+                        submissionDate = new Date(request.createdAt);
+                      }
                       const targetDate = new Date(submissionDate.getTime() + (3 * 24 * 60 * 60 * 1000));
                       const daysUntilTarget = Math.ceil((targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                       if (daysUntilTarget > 0) {
@@ -1260,7 +1285,16 @@ export default function EventRequestsManagement() {
             <div>
               {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
                 try {
-                  const date = new Date(request.createdAt);
+                  // Parse timestamp safely to preserve the original time
+                  let date: Date;
+                  if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                    // Database timestamp format: "2025-08-27 06:26:14"
+                    // Treat as-is without timezone conversion
+                    const [datePart, timePart] = request.createdAt.split(' ');
+                    date = new Date(datePart + 'T' + timePart);
+                  } else {
+                    date = new Date(request.createdAt);
+                  }
                   return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                 } catch (error) {
                   return 'Invalid date';
