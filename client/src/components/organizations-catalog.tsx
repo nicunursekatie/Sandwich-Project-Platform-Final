@@ -291,8 +291,18 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                       <Calendar className="w-4 h-4 mr-2" />
                       <span>Event date: {(() => {
                         try {
-                          // Handle both timestamp and date formats
-                          const date = new Date(org.eventDate);
+                          // Handle timezone-safe parsing for database timestamps
+                          let date: Date;
+                          if (org.eventDate.includes('T') || org.eventDate.includes('Z')) {
+                            date = new Date(org.eventDate);
+                          } else if (org.eventDate.match(/^\d{4}-\d{2}-\d{2}/)) {
+                            // For YYYY-MM-DD format or timestamp, add noon to prevent timezone shift
+                            const dateOnly = org.eventDate.split(' ')[0]; // Extract date part
+                            date = new Date(dateOnly + 'T12:00:00');
+                          } else {
+                            date = new Date(org.eventDate);
+                          }
+                          
                           if (isNaN(date.getTime())) return 'Invalid date';
                           return date.toLocaleDateString('en-US', {
                             year: 'numeric',
