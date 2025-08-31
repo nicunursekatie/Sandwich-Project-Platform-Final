@@ -189,6 +189,13 @@ export default function EventRequestsManagement() {
     staleTime: 5 * 60 * 1000
   });
 
+  // Query for organization event counts (completed events only)
+  const { data: organizationCounts = {} } = useQuery({
+    queryKey: ["/api/event-requests/organization-counts"],
+    queryFn: () => apiRequest("GET", "/api/event-requests/organization-counts"),
+    staleTime: 2 * 60 * 1000 // Cache for 2 minutes
+  });
+
   // Helper function to get user display name
   const getUserDisplayName = (userId: string | null | undefined) => {
     if (!userId) return "Not specified";
@@ -197,6 +204,11 @@ export default function EventRequestsManagement() {
     return user.firstName && user.lastName 
       ? `${user.firstName} ${user.lastName}` 
       : user.displayName || user.email;
+  };
+
+  // Helper function to get organization event count
+  const getOrganizationEventCount = (organizationName: string) => {
+    return organizationCounts[organizationName.trim()] || 0;
   };
 
   // Get current user for fallback when users array is restricted
@@ -869,6 +881,9 @@ export default function EventRequestsManagement() {
             <CardTitle className="flex items-center space-x-3 text-xl mb-2">
               <CheckCircle className="w-6 h-6 text-gray-600" />
               <span className="text-gray-900">{request.organizationName}</span>
+              <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
+                {getOrganizationEventCount(request.organizationName)} {getOrganizationEventCount(request.organizationName) === 1 ? 'event' : 'events'} completed
+              </Badge>
             </CardTitle>
             
             {/* Event Date */}

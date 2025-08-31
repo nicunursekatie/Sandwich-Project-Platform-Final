@@ -890,4 +890,42 @@ router.patch("/:id/follow-up", isAuthenticated, async (req, res) => {
   }
 });
 
+// Get organization event counts (completed events only)
+router.get("/organization-counts", isAuthenticated, async (req, res) => {
+  try {
+    if (!hasPermission(req.user!, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+
+    const allEventRequests = await storage.getAllEventRequests();
+    
+    // Count completed events by organization
+    const organizationCounts = new Map();
+    
+    allEventRequests.forEach((event: any) => {
+      // Only count completed events
+      if (event.status === 'completed' && event.organizationName) {
+        const orgName = event.organizationName.trim();
+        const currentCount = organizationCounts.get(orgName) || 0;
+        organizationCounts.set(orgName, currentCount + 1);
+      }
+    });
+
+    // Convert to object for easier consumption
+    const countsObject = Object.fromEntries(organizationCounts);
+
+    logActivity(
+      req,
+      res,
+      PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
+      `Retrieved event counts for ${organizationCounts.size} organizations`,
+    );
+    
+    res.json(countsObject);
+  } catch (error) {
+    console.error("Error fetching organization event counts:", error);
+    res.status(500).json({ message: "Failed to fetch organization event counts" });
+  }
+});
+
 export default router;
