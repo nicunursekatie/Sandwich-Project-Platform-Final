@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { format } from "date-fns";
+import { formatDateForDisplay } from "@/lib/date-utils";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 // Utility function to convert 24-hour time to 12-hour format
@@ -33,23 +33,16 @@ const formatTime12Hour = (time24: string): string => {
 // Enhanced date formatting with day-of-week and color coding
 const formatEventDate = (dateString: string) => {
   try {
-    // Parse as local date to avoid timezone shifts
-    let date: Date;
+    if (!dateString) return { text: 'No date provided', className: 'text-gray-500' };
     
-    if (dateString.includes('T') || dateString.includes('Z')) {
-      date = new Date(dateString);
-    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = dateString.split('-').map(Number);
-      date = new Date(year, month - 1, day);
-    } else {
-      date = new Date(dateString);
-    }
+    // Use timezone-safe date parsing (add T12:00:00 to prevent timezone shift)
+    const date = new Date(dateString + 'T12:00:00');
     
     if (isNaN(date.getTime())) return { text: 'Invalid date', className: '' };
     
     const dayOfWeek = date.getDay();
-    const dayName = format(date, "EEEE");
-    const dateFormatted = format(date, "PPP");
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateFormatted = formatDateForDisplay(dateString);
     
     const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
     let className = "";
@@ -62,7 +55,7 @@ const formatEventDate = (dateString: string) => {
     }
     
     return {
-      text: `${dayName}, ${dateFormatted}`,
+      text: dateFormatted,
       className,
       dayName,
       isWedOrThu
@@ -551,7 +544,7 @@ export default function EventRequestsManagement() {
               {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
                 try {
                   const date = new Date(request.createdAt);
-                  return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPp");
+                  return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
                 } catch (error) {
                   return 'Invalid date';
                 }
@@ -684,7 +677,7 @@ export default function EventRequestsManagement() {
               <div>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
                 try {
                   const date = new Date(request.createdAt);
-                  return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPp");
+                  return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
                 } catch (error) {
                   return 'Invalid date';
                 }
@@ -921,7 +914,7 @@ export default function EventRequestsManagement() {
               {request.message === 'Imported from Excel file' ? 'Imported past event - duplicate organization' : 'Submitted'}: {(() => {
                 try {
                   const date = new Date(request.createdAt);
-                  return isNaN(date.getTime()) ? 'Invalid date' : format(date, "PPP");
+                  return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                 } catch (error) {
                   return 'Invalid date';
                 }

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin, ExternalLink } from "lucide-react";
-import { format } from "date-fns";
+import { formatDateForDisplay } from "@/lib/date-utils";
 
 interface Organization {
   name: string;
@@ -289,7 +289,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                   {org.eventDate ? (
                     <div className="flex items-center text-sm font-medium" style={{ color: '#FBAD3F' }}>
                       <Calendar className="w-4 h-4 mr-2" />
-                      <span>Event date: {format(new Date(org.eventDate), "PPP")}</span>
+                      <span>Event date: {formatDateForDisplay(org.eventDate)}</span>
                     </div>
                   ) : (
                     <div className="flex items-center text-sm text-gray-500">
