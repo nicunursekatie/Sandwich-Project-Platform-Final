@@ -355,6 +355,21 @@ router.patch(
         status: "contact_completed",
       });
 
+      // Update Google Sheets with the new status
+      try {
+        const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
+        if (googleSheetsService && updatedEventRequest) {
+          const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+          await googleSheetsService.updateEventRequestStatus(
+            updatedEventRequest.organizationName,
+            contactName,
+            "contact_completed"
+          );
+        }
+      } catch (error) {
+        console.warn('Failed to update Google Sheets status:', error);
+      }
+
       if (!updatedEventRequest) {
         return res.status(404).json({ message: "Event request not found" });
       }
@@ -440,6 +455,23 @@ router.patch(
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: "Event request not found" });
+      }
+
+      // Update Google Sheets if status was changed
+      if (updates.status) {
+        try {
+          const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
+          if (googleSheetsService) {
+            const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+            await googleSheetsService.updateEventRequestStatus(
+              updatedEventRequest.organizationName,
+              contactName,
+              updates.status
+            );
+          }
+        } catch (error) {
+          console.warn('Failed to update Google Sheets status:', error);
+        }
       }
 
       await logActivity(

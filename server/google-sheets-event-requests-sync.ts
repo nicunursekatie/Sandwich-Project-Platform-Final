@@ -96,6 +96,60 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
+   * Update a specific event request's status in Google Sheets
+   */
+  async updateEventRequestStatus(organizationName: string, contactName: string, newStatus: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.ensureInitialized();
+      
+      // Read current sheet to find the row
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: (this as any).config.spreadsheetId,
+        range: `${(this as any).config.worksheetName}!A2:H1000`,
+      });
+
+      const rows = response.data.values || [];
+      
+      // Find the matching row (case-insensitive)
+      const rowIndex = rows.findIndex(row => {
+        const sheetOrgName = row[3] || ''; // Organization Name is column D (index 3)
+        const sheetContactName = row[1] || ''; // Contact Name is column B (index 1)
+        
+        return sheetOrgName.toLowerCase() === organizationName.toLowerCase() && 
+               sheetContactName.toLowerCase() === contactName.toLowerCase();
+      });
+
+      if (rowIndex === -1) {
+        return { 
+          success: false, 
+          message: `Event request not found in Google Sheets: ${organizationName} - ${contactName}`
+        };
+      }
+
+      // Update the status in column H (index 7)
+      const actualRowNumber = rowIndex + 2; // +2 because: +1 for header row, +1 for 1-based indexing
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: (this as any).config.spreadsheetId,
+        range: `${(this as any).config.worksheetName}!H${actualRowNumber}`,
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: [[newStatus]] },
+      });
+
+      console.log(`✅ Updated Google Sheets status for ${organizationName} - ${contactName} to: ${newStatus}`);
+      return { 
+        success: true, 
+        message: `Updated status to ${newStatus} in Google Sheets`
+      };
+    } catch (error) {
+      console.error('Error updating Google Sheets status:', error);
+      return { 
+        success: false, 
+        message: `Failed to update Google Sheets: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
    * Sync event requests from database to Google Sheets
    * DISABLED TO PREVENT DATA LOSS - This function was clearing the user's sheet
    */
@@ -146,10 +200,9 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         const eventRequestData = this.sheetRowToEventRequest(row);
         
         if (existingRequest) {
-          // Update existing
-          console.log(`📝 Updating existing event request: ${row.organizationName} - ${row.contactName}`);
-          await this.storage.updateEventRequest(existingRequest.id, eventRequestData);
-          updatedCount++;
+          // SKIP updating existing requests - let the app be the authoritative source
+          console.log(`⏭️ Skipping existing event request (app is authoritative): ${row.organizationName} - ${row.contactName}`);
+          // Do not update existing requests to preserve user changes
         } else {
           // Create new
           console.log(`✨ Creating new event request: ${row.organizationName} - ${row.contactName}`);
@@ -274,9 +327,9 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       phone: row[4] || '', // Phone (E)
       desiredEventDate: row[5] || '', // Desired Event Date (F)
       message: row[6] || '', // Message (G)
+      status: row[7] || 'new', // Status (H) - read from your new status column, default to 'new'
       createdDate: '', // Legacy field, not used for mapping
       department: '', // Not in current sheet
-      status: 'new', // Default status
       previouslyHosted: 'i_dont_know', // Default value
       lastUpdated: new Date().toISOString(),
       duplicateCheck: 'No',
