@@ -206,7 +206,11 @@ export default function EventRequestsManagement() {
   // Debug organization counts API
   console.log('🔍 Organization Counts API Debug:', {
     organizationCounts,
-    countsError,
+    countsError: countsError ? {
+      message: countsError.message,
+      status: countsError.status,
+      statusText: countsError.statusText
+    } : null,
     countsLoading,
     hasData: Object.keys(organizationCounts).length > 0
   });
@@ -458,7 +462,8 @@ export default function EventRequestsManagement() {
     }
     
     // Show past events that are completed or contact_completed, but not declined
-    return eventDate < today && (req.status === 'completed' || req.status === 'contact_completed');
+    // Include events from today and earlier (eventDate <= today)
+    return eventDate <= today && (req.status === 'completed' || req.status === 'contact_completed');
   });
 
   // Get current events based on active tab
