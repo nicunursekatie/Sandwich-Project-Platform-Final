@@ -289,7 +289,20 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                   {org.eventDate ? (
                     <div className="flex items-center text-sm font-medium" style={{ color: '#FBAD3F' }}>
                       <Calendar className="w-4 h-4 mr-2" />
-                      <span>Event date: {formatDateForDisplay(org.eventDate)}</span>
+                      <span>Event date: {(() => {
+                        try {
+                          // Handle both timestamp and date formats
+                          const date = new Date(org.eventDate);
+                          if (isNaN(date.getTime())) return 'Invalid date';
+                          return date.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          });
+                        } catch {
+                          return 'Invalid date';
+                        }
+                      })()}</span>
                     </div>
                   ) : (
                     <div className="flex items-center text-sm text-gray-500">
