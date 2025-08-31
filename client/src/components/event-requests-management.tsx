@@ -455,9 +455,9 @@ export default function EventRequestsManagement() {
         rawDate: req.desiredEventDate,
         eventDate: eventDate.toISOString(),
         today: today.toISOString(),
-        dateComparison: eventDate < today,
+        dateComparison: eventDate <= today,
         statusMatch: req.status === 'completed' || req.status === 'contact_completed',
-        shouldShow: eventDate < today && (req.status === 'completed' || req.status === 'contact_completed')
+        shouldShow: eventDate <= today && (req.status === 'completed' || req.status === 'contact_completed')
       });
     }
     

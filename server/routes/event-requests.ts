@@ -931,12 +931,12 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
     const countsObject = Object.fromEntries(organizationCounts);
     console.log('📈 Final organization counts:', countsObject);
 
-    logActivity(
-      req,
-      res,
-      PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
-      `Retrieved event counts for ${organizationCounts.size} organizations`,
-    );
+    // logActivity(
+    //   req,
+    //   res,
+    //   PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
+    //   `Retrieved event counts for ${organizationCounts.size} organizations`,
+    // );
     
     res.json(countsObject);
   } catch (error) {
