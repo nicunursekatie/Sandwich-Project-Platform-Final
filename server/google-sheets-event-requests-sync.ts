@@ -122,20 +122,37 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       for (const row of sheetRows) {
         if (!row.organizationName) continue; // Skip empty rows
         
-        // Try to find existing event request by organization name and email
+        // Try to find existing event request by organization name and contact name (case-insensitive)
         const existingRequests = await this.storage.getAllEventRequests();
-        const existingRequest = existingRequests.find(r => 
-          r.organizationName === row.organizationName && r.email === row.email
-        );
+        const nameParts = row.contactName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        const existingRequest = existingRequests.find(r => {
+          // Match by organization name and contact name (case-insensitive)
+          const orgMatch = r.organizationName?.toLowerCase() === row.organizationName?.toLowerCase();
+          const nameMatch = (
+            r.firstName?.toLowerCase() === firstName.toLowerCase() && 
+            r.lastName?.toLowerCase() === lastName.toLowerCase()
+          );
+          
+          // Also match by email if both have emails
+          const emailMatch = r.email && row.email && 
+            r.email.toLowerCase() === row.email.toLowerCase();
+          
+          return orgMatch && (nameMatch || emailMatch);
+        });
         
         const eventRequestData = this.sheetRowToEventRequest(row);
         
         if (existingRequest) {
           // Update existing
+          console.log(`📝 Updating existing event request: ${row.organizationName} - ${row.contactName}`);
           await this.storage.updateEventRequest(existingRequest.id, eventRequestData);
           updatedCount++;
         } else {
           // Create new
+          console.log(`✨ Creating new event request: ${row.organizationName} - ${row.contactName}`);
           await this.storage.createEventRequest({
             ...eventRequestData,
             createdBy: 'google_sheets_sync'
