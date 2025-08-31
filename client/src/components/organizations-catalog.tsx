@@ -64,7 +64,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
   const organizations: OrganizationContact[] = rawOrganizations.flatMap((org: Organization) => 
     org.departments.map(contact => ({
       organizationName: org.name,
-      contactName: contact.name,
+      contactName: contact.contactName,
       email: contact.email,
       department: contact.department,
       latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
