@@ -285,11 +285,16 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
               
               <CardContent>
                 <div className="space-y-2">
-                  {/* Event Date - Show if available */}
-                  {org.eventDate && (
+                  {/* Event Date - Show for all events */}
+                  {org.eventDate ? (
                     <div className="flex items-center text-sm font-medium" style={{ color: '#FBAD3F' }}>
                       <Calendar className="w-4 h-4 mr-2" />
                       <span>Event date: {format(new Date(org.eventDate), "PPP")}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>Event date: Not specified</span>
                     </div>
                   )}
                   
