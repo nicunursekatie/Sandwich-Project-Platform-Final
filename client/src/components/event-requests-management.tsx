@@ -350,9 +350,29 @@ export default function EventRequestsManagement() {
   });
 
   // Filter events by tab
-  const requestsEvents = eventRequests.filter((req: EventRequest) => req.status === 'new');
-  const scheduledEvents = eventRequests.filter((req: EventRequest) => req.status === 'contact_completed' || req.status === 'scheduled');
-  const pastEvents = eventRequests.filter((req: EventRequest) => req.status === 'completed' || req.status === 'declined');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
+  
+  const requestsEvents = eventRequests.filter((req: EventRequest) => {
+    if (!req.desiredEventDate) return req.status === 'new';
+    const eventDate = new Date(req.desiredEventDate);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate >= today && req.status === 'new';
+  });
+  
+  const scheduledEvents = eventRequests.filter((req: EventRequest) => {
+    if (!req.desiredEventDate) return req.status === 'contact_completed' || req.status === 'scheduled';
+    const eventDate = new Date(req.desiredEventDate);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate >= today && (req.status === 'contact_completed' || req.status === 'scheduled');
+  });
+  
+  const pastEvents = eventRequests.filter((req: EventRequest) => {
+    if (!req.desiredEventDate) return req.status === 'completed' || req.status === 'declined';
+    const eventDate = new Date(req.desiredEventDate);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate < today; // Show all events with past dates regardless of status
+  });
 
   // Get current events based on active tab
   const getCurrentEvents = () => {
