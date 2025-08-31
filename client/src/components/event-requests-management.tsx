@@ -447,19 +447,6 @@ export default function EventRequestsManagement() {
     }
     eventDate.setHours(0, 0, 0, 0);
     
-    // Debug logging for Volunteer Emory and Christ the King
-    if (req.organizationName === 'Volunteer Emory' || req.organizationName === 'Christ the King School (August)') {
-      console.log('🔍 Past Events Filter Debug:', {
-        organization: req.organizationName,
-        status: req.status,
-        rawDate: req.desiredEventDate,
-        eventDate: eventDate.toISOString(),
-        today: today.toISOString(),
-        dateComparison: eventDate <= today,
-        statusMatch: req.status === 'completed' || req.status === 'contact_completed',
-        shouldShow: eventDate <= today && (req.status === 'completed' || req.status === 'contact_completed')
-      });
-    }
     
     // Show past events that are completed or contact_completed, but not declined
     // Include events from today and earlier (eventDate <= today)
@@ -1375,20 +1362,20 @@ export default function EventRequestsManagement() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="requests" className="relative">
+        <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-3">
+          <TabsTrigger value="requests" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
             Event Requests
             <Badge variant="secondary" className="ml-2">
               {requestsEvents.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="scheduled" className="relative">
+          <TabsTrigger value="scheduled" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
             Scheduled Events
             <Badge variant="secondary" className="ml-2">
               {scheduledEvents.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="past" className="relative">
+          <TabsTrigger value="past" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
             Past Events
             <Badge variant="secondary" className="ml-2">
               {pastEvents.length}
