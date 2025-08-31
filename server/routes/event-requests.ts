@@ -53,6 +53,22 @@ router.get("/assigned", isAuthenticated, async (req, res) => {
       // Method 2: TSP contact assignment
       if (event.tspContact === userId || event.tspContactAssigned === userId) return true;
       
+      // Method 2b: Additional TSP contacts (check if user email or name appears in additional contacts)
+      if (event.additionalTspContacts && currentUser) {
+        const additionalContacts = event.additionalTspContacts.toLowerCase();
+        const userEmail = currentUser.email.toLowerCase();
+        const userName = currentUser.displayName?.toLowerCase() || '';
+        const userFirstName = currentUser.firstName?.toLowerCase() || '';
+        const userLastName = currentUser.lastName?.toLowerCase() || '';
+        
+        if (additionalContacts.includes(userEmail) || 
+            (userName && additionalContacts.includes(userName)) ||
+            (userFirstName && userLastName && 
+             (additionalContacts.includes(userFirstName) || additionalContacts.includes(userLastName)))) {
+          return true;
+        }
+      }
+      
       // Method 3: Listed in driver details (check if user's name or email appears in driver details)
       if (event.driverDetails && currentUser) {
         const driverText = event.driverDetails.toLowerCase();
@@ -143,6 +159,22 @@ function getAssignmentType(event: any, userId: string, currentUser: any): string
   
   if (event.assignedTo === userId) types.push('Direct Assignment');
   if (event.tspContact === userId || event.tspContactAssigned === userId) types.push('TSP Contact');
+  
+  // Check additional TSP contacts
+  if (event.additionalTspContacts && currentUser) {
+    const additionalContacts = event.additionalTspContacts.toLowerCase();
+    const userEmail = currentUser.email.toLowerCase();
+    const userName = currentUser.displayName?.toLowerCase() || '';
+    const userFirstName = currentUser.firstName?.toLowerCase() || '';
+    const userLastName = currentUser.lastName?.toLowerCase() || '';
+    
+    if (additionalContacts.includes(userEmail) || 
+        (userName && additionalContacts.includes(userName)) ||
+        (userFirstName && userLastName && 
+         (additionalContacts.includes(userFirstName) || additionalContacts.includes(userLastName)))) {
+      types.push('TSP Contact');
+    }
+  }
   
   if (event.driverDetails && currentUser) {
     const driverText = event.driverDetails.toLowerCase();

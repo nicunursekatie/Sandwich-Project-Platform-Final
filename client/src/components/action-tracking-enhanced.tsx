@@ -76,6 +76,14 @@ interface EventRequest {
   speakerDetails?: string;
   tspContact?: string;
   tspContactAssigned?: string;
+  additionalTspContacts?: string;
+  customTspContact?: string;
+  eventAddress?: string;
+  estimatedSandwichCount?: number;
+  eventStartTime?: string;
+  eventEndTime?: string;
+  pickupTime?: string;
+  sandwichTypes?: string;
 }
 
 const ActionTracking = () => {

@@ -1009,6 +1009,8 @@ export default function EventRequestsManagement() {
       additionalRequirements: formData.get("additionalRequirements") || null,
       // TSP Contact fields
       tspContact: formData.get("tspContact") === "none" ? null : formData.get("tspContact") || null,
+      tspContactAssigned: formData.get("tspContactAssigned") === "none" ? null : formData.get("tspContactAssigned") || null,
+      additionalTspContacts: formData.get("additionalTspContacts") || null,
       customTspContact: formData.get("customTspContact") || null
     };
     editMutation.mutate(data);
@@ -1430,28 +1432,65 @@ export default function EventRequestsManagement() {
               </div>
               
               {/* TSP Contact Assignment */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="tspContact">TSP Contact Person</Label>
-                  <Select name="tspContact" defaultValue={(selectedRequest as any).tspContact || "none"}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select TSP contact" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No TSP contact assigned</SelectItem>
-                      {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.firstName} {user.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <Label className="text-base font-semibold">TSP Contact Assignments</Label>
+                <p className="text-sm text-gray-600 mb-3">Assign one or more TSP team members to this event. Selected users will see this event in their "My Actions" page.</p>
+                
+                {/* Primary TSP Contact */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor="tspContact">Primary TSP Contact</Label>
+                    <Select name="tspContact" defaultValue={(selectedRequest as any).tspContact || "none"}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select primary contact" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No primary contact</SelectItem>
+                        {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="tspContactAssigned">Secondary Contact</Label>
+                    <Select name="tspContactAssigned" defaultValue={(selectedRequest as any).tspContactAssigned || "none"}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select secondary contact" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No secondary contact</SelectItem>
+                        {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="customTspContact">Custom TSP Contact</Label>
+
+                {/* Additional TSP Contacts */}
+                <div className="space-y-3">
+                  <Label htmlFor="additionalTspContacts">Additional TSP Contacts</Label>
+                  <p className="text-xs text-gray-500">Enter additional team member names or contact information, separated by commas</p>
+                  <Textarea 
+                    name="additionalTspContacts" 
+                    placeholder="Enter additional contacts (e.g., John Smith, jane@email.com, Sarah Johnson)"
+                    rows={2}
+                    defaultValue={(selectedRequest as any).additionalTspContacts || ""} 
+                  />
+                </div>
+
+                {/* Custom Contact Info */}
+                <div className="mt-4">
+                  <Label htmlFor="customTspContact">Custom Contact Information</Label>
+                  <p className="text-xs text-gray-500">Enter external contact details or special instructions</p>
                   <Input 
                     name="customTspContact" 
-                    placeholder="Or enter custom contact name"
+                    placeholder="External contact name or special instructions"
                     defaultValue={(selectedRequest as any).customTspContact || ""} 
                   />
                 </div>
