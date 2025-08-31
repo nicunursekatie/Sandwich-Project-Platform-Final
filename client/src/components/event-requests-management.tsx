@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck } from "lucide-react";
+import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 // Removed formatDateForDisplay import as we now use toLocaleDateString directly
@@ -174,8 +174,15 @@ export default function EventRequestsManagement() {
   const [detailsRequest, setDetailsRequest] = useState<EventRequest | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [pastEventsSortOrder, setPastEventsSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [pastEventsPage, setPastEventsPage] = useState(1);
+  const [pastEventsPerPage] = useState(10);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Reset pagination when search term changes
+  useEffect(() => {
+    setPastEventsPage(1);
+  }, [searchTerm]);
 
   const { data: eventRequests = [], isLoading, error } = useQuery({
     queryKey: ["/api/event-requests"],
@@ -489,6 +496,30 @@ export default function EventRequestsManagement() {
     
     return filtered;
   }, [eventRequests, searchTerm, activeTab, pastEventsSortOrder]);
+
+  // Paginated past events for display
+  const paginatedPastEvents = useMemo(() => {
+    if (activeTab !== 'past') return filteredRequests;
+    
+    const startIndex = (pastEventsPage - 1) * pastEventsPerPage;
+    const endIndex = startIndex + pastEventsPerPage;
+    return filteredRequests.slice(startIndex, endIndex);
+  }, [filteredRequests, activeTab, pastEventsPage, pastEventsPerPage]);
+
+  // Pagination calculations for past events
+  const pastEventsPagination = useMemo(() => {
+    if (activeTab !== 'past') return { totalPages: 1, currentPage: 1, totalItems: 0 };
+    
+    const totalItems = filteredRequests.length;
+    const totalPages = Math.ceil(totalItems / pastEventsPerPage);
+    return {
+      totalPages,
+      currentPage: pastEventsPage,
+      totalItems,
+      startItem: totalItems === 0 ? 0 : (pastEventsPage - 1) * pastEventsPerPage + 1,
+      endItem: Math.min(pastEventsPage * pastEventsPerPage, totalItems)
+    };
+  }, [filteredRequests, activeTab, pastEventsPage, pastEventsPerPage]);
 
   const getStatusDisplay = (status: string) => {
     const option = statusOptions.find(opt => opt.value === status);
@@ -1374,7 +1405,13 @@ export default function EventRequestsManagement() {
           <TabsContent value="past" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm text-gray-600">
-                Showing {filteredRequests.length} past event{filteredRequests.length !== 1 ? 's' : ''}
+                {pastEventsPagination.totalItems > 0 ? (
+                  <>
+                    Showing {pastEventsPagination.startItem}-{pastEventsPagination.endItem} of {pastEventsPagination.totalItems} past event{pastEventsPagination.totalItems !== 1 ? 's' : ''}
+                  </>
+                ) : (
+                  'No past events found'
+                )}
               </div>
               <Button
                 variant="outline"
@@ -1391,16 +1428,64 @@ export default function EventRequestsManagement() {
                 )}
               </Button>
             </div>
-            {filteredRequests.length === 0 ? (
+            
+            {paginatedPastEvents.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
                   <p className="text-gray-500">No past events found.</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
-                {filteredRequests.map((request: EventRequest) => renderPastEventCard(request))}
-              </div>
+              <>
+                <div className="space-y-4">
+                  {paginatedPastEvents.map((request: EventRequest) => renderPastEventCard(request))}
+                </div>
+                
+                {/* Pagination Controls */}
+                {pastEventsPagination.totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-6 p-4 bg-gray-50 rounded-lg">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPastEventsPage(Math.max(1, pastEventsPage - 1))}
+                      disabled={pastEventsPage === 1}
+                      className="flex items-center gap-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Page</span>
+                      <div className="flex space-x-1">
+                        {Array.from({ length: pastEventsPagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+                          <Button
+                            key={pageNum}
+                            variant={pageNum === pastEventsPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPastEventsPage(pageNum)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600">of {pastEventsPagination.totalPages}</span>
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPastEventsPage(Math.min(pastEventsPagination.totalPages, pastEventsPage + 1))}
+                      disabled={pastEventsPage === pastEventsPagination.totalPages}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </div>
