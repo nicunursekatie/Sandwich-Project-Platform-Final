@@ -99,7 +99,21 @@ const ActionTracking = () => {
 
   const navigateToEventPlanning = (eventId?: number) => {
     if (eventId) {
-      setLocation(`/dashboard?section=event-requests&tab=scheduled&eventId=${eventId}`);
+      // Find the event to determine which tab to navigate to
+      const event = events.find(e => e.id === eventId);
+      let tab = 'requests'; // default
+      
+      if (event) {
+        if (event.status === 'completed') {
+          tab = 'past';
+        } else if (event.status === 'scheduled') {
+          tab = 'scheduled';
+        } else {
+          tab = 'requests'; // new, contact_completed, etc.
+        }
+      }
+      
+      setLocation(`/dashboard?section=event-requests&tab=${tab}&eventId=${eventId}`);
     } else {
       setLocation(`/dashboard?section=event-requests`);
     }

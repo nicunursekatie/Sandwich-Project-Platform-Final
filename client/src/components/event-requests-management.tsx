@@ -167,6 +167,7 @@ export default function EventRequestsManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(null);
+  const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
   const [currentEditingStatus, setCurrentEditingStatus] = useState<string>("");
   const [showCompleteContactDialog, setShowCompleteContactDialog] = useState(false);
   const [completingRequest, setCompletingRequest] = useState<EventRequest | null>(null);
@@ -185,6 +186,29 @@ export default function EventRequestsManagement() {
   const [pastSortBy, setPastSortBy] = useState<'date' | 'organization'>('date');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Handle URL parameters for tab and event highlighting
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    const eventIdParam = urlParams.get('eventId');
+    
+    // Set the active tab based on URL parameter
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+    
+    // Highlight specific event if provided
+    if (eventIdParam) {
+      const eventId = parseInt(eventIdParam);
+      setHighlightedEventId(eventId);
+      
+      // Clear highlight after 3 seconds
+      setTimeout(() => {
+        setHighlightedEventId(null);
+      }, 3000);
+    }
+  }, []);
 
   // Reset pagination when search term changes
   useEffect(() => {
@@ -689,7 +713,7 @@ export default function EventRequestsManagement() {
 
   // Function to render enhanced scheduled event cards
   const renderScheduledEventCard = (request: EventRequest) => (
-    <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-teal-500">
+    <Card key={request.id} className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-teal-500 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-yellow-50' : ''}`}>
       <CardHeader className="pb-3">
         {/* Prominent Date Display */}
         {request.desiredEventDate && (
@@ -889,7 +913,7 @@ export default function EventRequestsManagement() {
 
   // Function to render standard event cards (for requests and past events)
   const renderStandardEventCard = (request: EventRequest) => (
-    <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
+    <Card key={request.id} className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383] ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-yellow-50' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -1078,7 +1102,7 @@ export default function EventRequestsManagement() {
 
   // Function to render comprehensive past event cards with all details
   const renderPastEventCard = (request: EventRequest) => (
-    <Card key={request.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-gray-500">
+    <Card key={request.id} className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-gray-500 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-yellow-50' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">
