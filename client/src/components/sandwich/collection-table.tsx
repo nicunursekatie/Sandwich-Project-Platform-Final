@@ -196,7 +196,25 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="font-medium">
-                        {new Date(collection.collectionDate).toLocaleDateString()}
+                        {(() => {
+                          // Timezone-safe date parsing to prevent day shifting
+                          const dateStr = collection.collectionDate;
+                          if (!dateStr) return 'No date';
+                          
+                          let date: Date;
+                          if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                            // ISO midnight format - extract date part to avoid timezone shift
+                            const dateOnly = dateStr.split('T')[0];
+                            date = new Date(dateOnly + 'T12:00:00');
+                          } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            // Date-only format
+                            date = new Date(dateStr + 'T12:00:00');
+                          } else {
+                            date = new Date(dateStr);
+                          }
+                          
+                          return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+                        })()}
                       </span>
                     </div>
                   </td>
@@ -242,7 +260,25 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                   </td>
                   
                   <td className="p-3 text-sm text-gray-600"
-                    {new Date(collection.submittedAt).toLocaleDateString()}
+                    {(() => {
+                      // Timezone-safe date parsing to prevent day shifting
+                      const dateStr = collection.submittedAt;
+                      if (!dateStr) return 'No date';
+                      
+                      let date: Date;
+                      if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                        // ISO midnight format - extract date part to avoid timezone shift
+                        const dateOnly = dateStr.split('T')[0];
+                        date = new Date(dateOnly + 'T12:00:00');
+                      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        // Date-only format
+                        date = new Date(dateStr + 'T12:00:00');
+                      } else {
+                        date = new Date(dateStr);
+                      }
+                      
+                      return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+                    })()}
                   </td>
                   
                   <td className="p-3">

@@ -360,7 +360,20 @@ export default function ProjectsClean() {
           
           <div className="flex items-center gap-1 flex-shrink-0">
             <Calendar className="w-4 h-4 text-[#FBAD3F]" />
-            <span>{project.dueDate ? new Date(project.dueDate).toLocaleDateString() : 'No date'}</span>
+            <span>{project.dueDate ? (() => {
+              // Timezone-safe date parsing
+              const dateStr = project.dueDate;
+              let date: Date;
+              if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                const dateOnly = dateStr.split('T')[0];
+                date = new Date(dateOnly + 'T12:00:00');
+              } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                date = new Date(dateStr + 'T12:00:00');
+              } else {
+                date = new Date(dateStr);
+              }
+              return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+            })() : 'No date'}</span>
           </div>
         </div>
 

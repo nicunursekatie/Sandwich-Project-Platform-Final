@@ -61,12 +61,17 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Google Sheets Sync Enhancement**: Improved duplicate detection logic to prevent case-sensitive duplicates (e.g., "KERRI GARFINKLE" vs "Kerri Garfinkle") by implementing case-insensitive matching for organization names and contact names.
 - **Database Field Mapping**: Corrected organizations catalog API to properly use `desiredEventDate` field from database instead of non-existent `eventDate` field.
 - **Date Parsing Standardization**: Implemented consistent timezone-safe date parsing across all components using `T12:00:00` injection to prevent UTC conversion issues.
+- **ISO Midnight Format Fix**: Resolved critical issue where ISO format dates ending with "Z" (like "2025-09-03T00:00:00.000Z") were displaying as previous day due to UTC midnight conversion to local timezone. Implemented specific regex pattern to extract date part and add noon time for timezone-safe parsing.
+- **Collection Table Date Display**: Fixed collectionDate and submittedAt fields to use timezone-safe parsing preventing date shifting issues.
+- **Projects Components Date Display**: Applied timezone-safe parsing to project due dates in project cards and project lists to prevent incorrect date display.
 
 ### Key Technical Learning Points
 - Database timestamps in format "YYYY-MM-DD HH:MM:SS" require careful parsing to avoid timezone conversion.
 - Google Sheets sync duplicate detection must account for case variations and missing email fields.
 - Event requests API field mappings must align with actual database schema column names.
 - Frontend date parsing should use regex pattern matching to handle different timestamp formats consistently.
+- **ISO Midnight Conversion Issue**: ISO format dates with "Z" timezone suffix and midnight time (00:00:00) get converted to previous day in local timezone. Solution: Extract date part using `.split('T')[0]` and add `T12:00:00` for safe noon-time parsing.
+- **Timezone-Safe Date Parsing Pattern**: Use regex `/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/` to identify problematic ISO midnight formats requiring date extraction.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

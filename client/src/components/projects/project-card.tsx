@@ -111,7 +111,20 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           {project.dueDate && (
             <div className="flex items-center gap-2 text-gray-600">
               <Calendar className="h-4 w-4" />
-              <span>{new Date(project.dueDate).toLocaleDateString()}</span>
+              <span>{(() => {
+                // Timezone-safe date parsing
+                const dateStr = project.dueDate;
+                let date: Date;
+                if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                  const dateOnly = dateStr.split('T')[0];
+                  date = new Date(dateOnly + 'T12:00:00');
+                } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                  date = new Date(dateStr + 'T12:00:00');
+                } else {
+                  date = new Date(dateStr);
+                }
+                return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+              })()}</span>
             </div>
           )}
           
