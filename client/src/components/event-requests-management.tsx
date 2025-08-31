@@ -125,6 +125,8 @@ interface EventRequest {
   toolkitStatus?: string;
   tspContact?: string;
   additionalTspContacts?: string;
+  additionalContact1?: string;
+  additionalContact2?: string;
   customTspContact?: string;
 }
 
@@ -186,32 +188,22 @@ export default function EventRequestsManagement() {
     staleTime: 5 * 60 * 1000
   });
 
+  // Helper function to get user display name
+  const getUserDisplayName = (userId: string | null | undefined) => {
+    if (!userId) return "Not specified";
+    const user = users.find((u: any) => u.id === userId);
+    if (!user) return "User not found";
+    return user.firstName && user.lastName 
+      ? `${user.firstName} ${user.lastName}` 
+      : user.displayName || user.email;
+  };
+
   // Get current user for fallback when users array is restricted
   const { data: currentUser } = useQuery({
     queryKey: ["/api/auth/me"],
     staleTime: 5 * 60 * 1000
   });
 
-  // Helper function to resolve user names with proper fallback
-  const getUserDisplayName = (userId: string) => {
-    // First try to find in users array
-    const user = users.find((u: any) => u.id === userId);
-    if (user) {
-      return user.firstName && user.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user.displayName || user.email;
-    }
-    
-    // If not found and it's the current user, use current user data
-    if (currentUser && currentUser.id === userId) {
-      return currentUser.firstName && currentUser.lastName
-        ? `${currentUser.firstName} ${currentUser.lastName}`
-        : currentUser.displayName || currentUser.email;
-    }
-    
-    // If still not found, return a user-friendly fallback instead of raw ID
-    return "TSP Team Member";
-  };
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests", data),
@@ -896,41 +888,54 @@ export default function EventRequestsManagement() {
           )}
           
           {/* TSP Contact Information */}
-          {((request as any).tspContact || (request as any).customTspContact || (request as any).tspContactAssigned) && (
+          {((request as any).tspContact || (request as any).customTspContact || (request as any).tspContactAssigned || (request as any).additionalTspContacts || (request as any).additionalContact1 || (request as any).additionalContact2) && (
             <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
               <h4 className="font-semibold text-teal-800 mb-2 flex items-center">
                 <UserCheck className="w-4 h-4 mr-2" />
-                TSP Contact
+                TSP Team Assignment
               </h4>
-              <div className="text-sm text-teal-700">
-                {(() => {
-                  // Check tspContact field first
-                  if ((request as any).tspContact) {
-                    const contact = users.find((user: any) => user.id === (request as any).tspContact);
-                    if (contact) {
-                      return contact.firstName && contact.lastName 
-                        ? `${contact.firstName} ${contact.lastName}` 
-                        : contact.displayName || contact.email;
-                    }
-                  }
-                  
-                  // Check tspContactAssigned field
-                  if ((request as any).tspContactAssigned) {
-                    const contact = users.find((user: any) => user.id === (request as any).tspContactAssigned);
-                    if (contact) {
-                      return contact.firstName && contact.lastName 
-                        ? `${contact.firstName} ${contact.lastName}` 
-                        : contact.displayName || contact.email;
-                    }
-                  }
-                  
-                  // Fall back to custom TSP contact
-                  if ((request as any).customTspContact) {
-                    return (request as any).customTspContact;
-                  }
-                  
-                  return 'Not assigned';
-                })()}
+              <div className="space-y-1 text-sm text-teal-700">
+                {/* Primary Contact */}
+                {(request as any).tspContact && (
+                  <div>
+                    <strong>Primary Contact:</strong> {getUserDisplayName((request as any).tspContact)}
+                  </div>
+                )}
+                
+                {/* Secondary Contact */}
+                {(request as any).tspContactAssigned && (
+                  <div>
+                    <strong>Secondary Contact:</strong> {getUserDisplayName((request as any).tspContactAssigned)}
+                  </div>
+                )}
+                
+                {/* Third Contact */}
+                {(request as any).additionalContact1 && (
+                  <div>
+                    <strong>Third Contact:</strong> {getUserDisplayName((request as any).additionalContact1)}
+                  </div>
+                )}
+                
+                {/* Fourth Contact */}
+                {(request as any).additionalContact2 && (
+                  <div>
+                    <strong>Fourth Contact:</strong> {getUserDisplayName((request as any).additionalContact2)}
+                  </div>
+                )}
+                
+                {/* Legacy Additional Contacts */}
+                {(request as any).additionalTspContacts && (
+                  <div>
+                    <strong>Additional Contacts:</strong> {(request as any).additionalTspContacts}
+                  </div>
+                )}
+                
+                {/* Custom TSP Contact */}
+                {(request as any).customTspContact && (
+                  <div>
+                    <strong>Custom Contact:</strong> {(request as any).customTspContact}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1067,7 +1072,8 @@ export default function EventRequestsManagement() {
       // TSP Contact fields
       tspContact: formData.get("tspContact") === "none" ? null : formData.get("tspContact") || null,
       tspContactAssigned: formData.get("tspContactAssigned") === "none" ? null : formData.get("tspContactAssigned") || null,
-      additionalTspContacts: formData.get("additionalTspContacts") || null,
+      additionalContact1: formData.get("additionalContact1") === "none" ? null : formData.get("additionalContact1") || null,
+      additionalContact2: formData.get("additionalContact2") === "none" ? null : formData.get("additionalContact2") || null,
       customTspContact: formData.get("customTspContact") || null
     };
     editMutation.mutate(data);
@@ -1532,13 +1538,41 @@ export default function EventRequestsManagement() {
                 {/* Additional TSP Contacts */}
                 <div className="space-y-3">
                   <Label htmlFor="additionalTspContacts">Additional TSP Contacts</Label>
-                  <p className="text-xs text-gray-500">Enter additional team member names or contact information, separated by commas</p>
-                  <Textarea 
-                    name="additionalTspContacts" 
-                    placeholder="Enter additional contacts (e.g., John Smith, jane@email.com, Sarah Johnson)"
-                    rows={2}
-                    defaultValue={(selectedRequest as any).additionalTspContacts || ""} 
-                  />
+                  <p className="text-xs text-gray-500">Select additional team members for this event</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="additionalContact1">Third Contact</Label>
+                      <Select name="additionalContact1" defaultValue={(selectedRequest as any).additionalContact1 || "none"}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select third contact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No third contact</SelectItem>
+                          {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="additionalContact2">Fourth Contact</Label>
+                      <Select name="additionalContact2" defaultValue={(selectedRequest as any).additionalContact2 || "none"}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select fourth contact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No fourth contact</SelectItem>
+                          {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Custom Contact Info */}

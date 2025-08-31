@@ -1096,7 +1096,9 @@ export const eventRequests = pgTable("event_requests", {
   // Advanced event planning fields (for scheduled/in_planning status)
   tspContactAssigned: varchar("tsp_contact_assigned"), // TSP team member assigned to this event
   tspContact: varchar("tsp_contact"), // Primary TSP contact for the event
-  additionalTspContacts: text("additional_tsp_contacts"), // Additional TSP contacts
+  additionalTspContacts: text("additional_tsp_contacts"), // Additional TSP contacts (legacy field)
+  additionalContact1: varchar("additional_contact_1"), // Third TSP contact (user ID)
+  additionalContact2: varchar("additional_contact_2"), // Fourth TSP contact (user ID)
   customTspContact: text("custom_tsp_contact"), // Custom TSP contact information
   toolkitSent: boolean("toolkit_sent").default(false), // Whether toolkit has been sent
   toolkitSentDate: timestamp("toolkit_sent_date"), // When toolkit was sent
@@ -1173,6 +1175,8 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   eventEndTime: z.string().nullable().optional(),
   pickupTime: z.string().nullable().optional(),
   customTspContact: z.string().nullable().optional(),
+  additionalContact1: z.string().nullable().optional(),
+  additionalContact2: z.string().nullable().optional(),
   planningNotes: z.string().nullable().optional(),
   eventAddress: z.string().nullable().optional(),
   estimatedSandwichCount: z.number().nullable().optional(),
