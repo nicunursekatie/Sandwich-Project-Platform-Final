@@ -215,7 +215,20 @@ export default function EventRequestsManagement() {
 
   // Helper function to get organization event count
   const getOrganizationEventCount = (organizationName: string) => {
-    return organizationCounts[organizationName.trim()] || 0;
+    const trimmedName = organizationName.trim();
+    const count = organizationCounts[trimmedName] || 0;
+    
+    // Debug logging for the specific organization we're looking at
+    if (trimmedName === 'Christ the King School (August)') {
+      console.log('🔍 Debug - Christ the King School count:', {
+        trimmedName,
+        organizationCounts,
+        count,
+        hasData: Object.keys(organizationCounts).length > 0
+      });
+    }
+    
+    return count;
   };
 
   // Get current user for fallback when users array is restricted
