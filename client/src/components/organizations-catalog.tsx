@@ -340,10 +340,8 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <CardTitle className="flex items-center space-x-2 text-lg mb-3">
-                            {org.department ? (
+                            {org.department && (
                               <span className="text-gray-900 font-semibold">{org.department}</span>
-                            ) : (
-                              <span className="text-gray-900">Main Contact</span>
                             )}
                           </CardTitle>
                     
@@ -426,6 +424,17 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                           : <span className="text-gray-500">No</span>
                       }
                     </div>
+                    
+                    {/* Sandwich Count for Completed Events */}
+                    {org.totalSandwiches > 0 && (
+                      <div className="text-sm mb-3 bg-orange-50 p-2 rounded-lg border border-orange-200">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-orange-600">🥪</span>
+                          <strong className="text-orange-800">Sandwiches Made:</strong>
+                          <span className="text-orange-800 font-semibold">{org.totalSandwiches}</span>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* View Event Details Button */}
                     <Button 

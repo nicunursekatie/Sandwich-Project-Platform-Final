@@ -671,7 +671,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requests: [],
             latestStatus: 'new',
             latestRequestDate: request.createdAt || new Date(),
-            hasHostedEvent: false
+            hasHostedEvent: false,
+            totalSandwiches: 0
           });
         }
         
@@ -691,6 +692,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (request.status === 'completed') {
             contact.latestStatus = 'completed';
             contact.hasHostedEvent = true;
+            // Add sandwich count for completed events
+            if (request.estimatedSandwichCount) {
+              contact.totalSandwiches += request.estimatedSandwichCount;
+            }
           } else if (request.status === 'scheduled') {
             // Check if the scheduled event is in the future or past
             const eventDate = request.desiredEventDate ? new Date(request.desiredEventDate) : null;
@@ -715,16 +720,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             contacts: [],
             totalRequests: 0,
             recentRequest: request.createdAt || new Date(),
-            hasHostedEvent: false
+            hasHostedEvent: false,
+            totalSandwiches: 0
           });
         }
         
         const org = organizationsMap.get(orgName);
         org.totalRequests += 1;
         
-        // Check if this organization has hosted an event
+        // Check if this organization has hosted an event and add sandwich counts
         if (request.status === 'completed' || (request.status === 'scheduled' && request.desiredEventDate && new Date(request.desiredEventDate) <= new Date())) {
           org.hasHostedEvent = true;
+          // Add sandwich count for completed events
+          if (request.status === 'completed' && request.estimatedSandwichCount) {
+            org.totalSandwiches += request.estimatedSandwichCount;
+          }
         }
         
         // Update most recent request date
@@ -755,7 +765,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               latestRequestDate: contact.latestRequestDate,
               totalRequests: contact.requests.length,
               hasHostedEvent: contact.hasHostedEvent,
-              eventDate: latestEventWithDate?.desiredEventDate || null
+              eventDate: latestEventWithDate?.desiredEventDate || null,
+              totalSandwiches: contact.totalSandwiches
             });
           }
         }
@@ -767,7 +778,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contacts: org.contacts,
         totalRequests: org.totalRequests,
         lastRequestDate: org.recentRequest,
-        hasHostedEvent: org.hasHostedEvent
+        hasHostedEvent: org.hasHostedEvent,
+        totalSandwiches: org.totalSandwiches
       }));
       
       // Sort by most recent activity
