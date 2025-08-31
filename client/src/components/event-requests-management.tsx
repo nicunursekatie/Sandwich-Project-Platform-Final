@@ -467,8 +467,8 @@ export default function EventRequestsManagement() {
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
   
   const requestsEvents = eventRequests.filter((req: EventRequest) => {
-    // Include new requests and declined events for tracking
-    if (!req.desiredEventDate) return req.status === 'new' || req.status === 'declined';
+    // Include only new requests (no declined events)
+    if (!req.desiredEventDate) return req.status === 'new';
     // Use the same timezone-safe parsing as formatEventDate function
     let eventDate: Date;
     const dateString = req.desiredEventDate;
@@ -482,8 +482,8 @@ export default function EventRequestsManagement() {
       eventDate = new Date(dateString);
     }
     eventDate.setHours(0, 0, 0, 0);
-    // Show new future events and all declined events (regardless of date)
-    return (eventDate >= today && req.status === 'new') || req.status === 'declined';
+    // Show only new future events
+    return (eventDate >= today && req.status === 'new');
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
@@ -505,26 +505,7 @@ export default function EventRequestsManagement() {
   });
   
   const pastEvents = eventRequests.filter((req: EventRequest) => {
-    // Exclude declined events from past events display
-    if (req.status === 'declined') return false;
-    
-    if (!req.desiredEventDate) return req.status === 'completed';
-    // Use the same timezone-safe parsing as formatEventDate function
-    let eventDate: Date;
-    const dateString = req.desiredEventDate;
-    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-      const dateOnly = dateString.split(' ')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-      const dateOnly = dateString.split('T')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else {
-      eventDate = new Date(dateString);
-    }
-    eventDate.setHours(0, 0, 0, 0);
-    
-    
-    // Show past events that are completed, contact_completed, or declined
+    // Show past events: completed, contact_completed, and declined events
     // Status-based filtering only (regardless of date)
     return req.status === 'completed' || req.status === 'contact_completed' || req.status === 'declined';
   });
@@ -1480,7 +1461,7 @@ export default function EventRequestsManagement() {
           {/* Tab Content */}
           <TabsContent value="requests" className="space-y-4">
             <div className="text-sm text-gray-600 mb-4">
-              Showing {filteredRequests.length} event request{filteredRequests.length !== 1 ? 's' : ''} (new requests needing contact + declined events)
+              Showing {filteredRequests.length} new event request{filteredRequests.length !== 1 ? 's' : ''} needing contact
             </div>
             {filteredRequests.length === 0 ? (
               <Card>

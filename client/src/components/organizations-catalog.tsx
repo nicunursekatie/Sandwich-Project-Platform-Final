@@ -76,6 +76,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
       organizationName: org.name,
       contactName: contact.name,
       email: contact.email,
+      department: contact.department,
       latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
       totalRequests: contact.totalRequests || 1,
       status: contact.status || 'new',
@@ -89,38 +90,94 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
     return organizationCounts[organizationName.trim()] || 0;
   };
 
-  // Filter and sort organizations
+  // Filter organizations first
   const filteredOrganizations = organizations
     .filter((org) => {
       const matchesSearch = 
         org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         org.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase()));
+        (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (org.department && org.department.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesStatus = statusFilter === "all" || org.status === statusFilter;
       
       return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      const aValue = a[sortBy as keyof OrganizationContact];
-      const bValue = b[sortBy as keyof OrganizationContact];
+    });
+
+  // Group organizations by organization name
+  interface OrganizationGroup {
+    organizationName: string;
+    departments: OrganizationContact[];
+    totalRequests: number;
+    totalDepartments: number;
+    hasHostedEvent: boolean;
+    latestRequestDate: string;
+  }
+
+  const organizationGroups: OrganizationGroup[] = filteredOrganizations
+    .reduce((groups: Map<string, OrganizationGroup>, org) => {
+      const orgName = org.organizationName;
       
+      if (!groups.has(orgName)) {
+        groups.set(orgName, {
+          organizationName: orgName,
+          departments: [],
+          totalRequests: 0,
+          totalDepartments: 0,
+          hasHostedEvent: false,
+          latestRequestDate: org.latestRequestDate
+        });
+      }
+      
+      const group = groups.get(orgName)!;
+      group.departments.push(org);
+      group.totalRequests += org.totalRequests;
+      group.hasHostedEvent = group.hasHostedEvent || org.hasHostedEvent;
+      
+      // Update latest request date
+      if (new Date(org.latestRequestDate) > new Date(group.latestRequestDate)) {
+        group.latestRequestDate = org.latestRequestDate;
+      }
+      
+      return groups;
+    }, new Map())
+    .values();
+
+  // Sort groups by organization name or latest request date
+  const sortedGroups = Array.from(organizationGroups).sort((a, b) => {
+    if (sortBy === 'organizationName') {
+      return sortOrder === "desc" 
+        ? b.organizationName.localeCompare(a.organizationName)
+        : a.organizationName.localeCompare(b.organizationName);
+    }
+    
+    // Default sort by latest request date
+    const aDate = new Date(a.latestRequestDate).getTime();
+    const bDate = new Date(b.latestRequestDate).getTime();
+    return sortOrder === "desc" ? bDate - aDate : aDate - bDate;
+  });
+
+  // Sort departments within each group
+  sortedGroups.forEach(group => {
+    group.departments.sort((a, b) => {
       if (sortBy === 'eventDate') {
-        // Handle null/undefined event dates - put them at the end
         const aDate = a.eventDate ? new Date(a.eventDate).getTime() : (sortOrder === "desc" ? -Infinity : Infinity);
         const bDate = b.eventDate ? new Date(b.eventDate).getTime() : (sortOrder === "desc" ? -Infinity : Infinity);
         return sortOrder === "desc" ? bDate - aDate : aDate - bDate;
       }
       
       if (sortBy === 'totalRequests') {
-        return sortOrder === "desc" ? (bValue as number) - (aValue as number) : (aValue as number) - (bValue as number);
+        return sortOrder === "desc" ? b.totalRequests - a.totalRequests : a.totalRequests - b.totalRequests;
       }
       
-      // String sorting
-      const aStr = String(aValue).toLowerCase();
-      const bStr = String(bValue).toLowerCase();
-      return sortOrder === "desc" ? bStr.localeCompare(aStr) : aStr.localeCompare(bStr);
+      // Sort by contact name or department
+      const aValue = a.department || a.contactName;
+      const bValue = b.department || b.contactName;
+      return sortOrder === "desc" ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
     });
+    
+    group.totalDepartments = group.departments.length;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -244,13 +301,13 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         {/* Results Summary */}
         <div className="mt-4 pt-3 border-t">
           <small className="text-gray-600">
-            Showing {filteredOrganizations.length} of {organizations.length} organizations
+            Showing {sortedGroups.length} organizations with {filteredOrganizations.length} departments/contacts
           </small>
         </div>
       </div>
 
       {/* Organizations Grid */}
-      {filteredOrganizations.length === 0 ? (
+      {sortedGroups.length === 0 ? (
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No organizations found</p>
@@ -261,19 +318,48 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredOrganizations.map((org, index) => (
-            <Card key={`${org.organizationName}-${org.contactName}-${index}`} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="flex items-center space-x-3 text-lg mb-3">
-                      <Building className="w-5 h-5" style={{ color: '#236383' }} />
-                      <span className="text-gray-900">
-                        {org.organizationName}
-                        {org.department && <span className="text-sm text-gray-600 ml-2">- {org.department}</span>}
-                      </span>
-                    </CardTitle>
+        <div className="space-y-8">
+          {sortedGroups.map((group, groupIndex) => (
+            <div key={`${group.organizationName}-${groupIndex}`} className="bg-gray-50 rounded-lg border p-6">
+              {/* Organization Header */}
+              <div className="mb-6 pb-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Building className="w-6 h-6" style={{ color: '#236383' }} />
+                    <h2 className="text-xl font-bold text-gray-900">{group.organizationName}</h2>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <span className="flex items-center space-x-1">
+                      <Users className="w-4 h-4" />
+                      <span>{group.totalDepartments} {group.totalDepartments === 1 ? 'contact' : 'departments'}</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{group.totalRequests} total requests</span>
+                    </span>
+                    {group.hasHostedEvent && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        ✓ Has hosted events
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Department Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {group.departments.map((org, index) => (
+                  <Card key={`${org.organizationName}-${org.contactName}-${index}`} className="hover:shadow-md transition-all duration-200 border-l-4 border-l-[#e67e22] bg-white">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <CardTitle className="flex items-center space-x-2 text-lg mb-3">
+                            {org.department ? (
+                              <span className="text-gray-900 font-semibold">{org.department}</span>
+                            ) : (
+                              <span className="text-gray-900">Main Contact</span>
+                            )}
+                          </CardTitle>
                     
                     {/* Contact Information - Prominent Display */}
                     <div className="space-y-2">
@@ -371,10 +457,13 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
