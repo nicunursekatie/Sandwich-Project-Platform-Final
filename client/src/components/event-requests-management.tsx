@@ -163,6 +163,7 @@ const statusOptions = [
 export default function EventRequestsManagement() {
   const [activeTab, setActiveTab] = useState("requests");
   const [searchTerm, setSearchTerm] = useState("");
+  const [globalSearch, setGlobalSearch] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(null);
@@ -567,7 +568,8 @@ export default function EventRequestsManagement() {
   };
 
   const filteredRequests = useMemo(() => {
-    const currentEvents = getCurrentEvents();
+    // If global search is enabled and there's a search term, search all events
+    const currentEvents = globalSearch && searchTerm ? eventRequests : getCurrentEvents();
     const filtered = currentEvents.filter((request: EventRequest) => {
       const matchesSearch = !searchTerm || 
         request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -653,7 +655,7 @@ export default function EventRequestsManagement() {
     }
     
     return filtered;
-  }, [eventRequests, searchTerm, activeTab, pastEventsSortOrder, requestsSortBy, requestsSortOrder, scheduledSortBy, scheduledSortOrder, pastSortBy]);
+  }, [eventRequests, searchTerm, activeTab, globalSearch, pastEventsSortOrder, requestsSortBy, requestsSortOrder, scheduledSortBy, scheduledSortOrder, pastSortBy]);
 
   // Paginated past events for display
   const paginatedPastEvents = useMemo(() => {
@@ -1555,21 +1557,44 @@ export default function EventRequestsManagement() {
 
         <div className="mt-6">
           {/* Search Bar */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search by organization, name, email, or date..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="mb-6 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder={globalSearch ? "Search across all events..." : "Search within current tab..."}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="globalSearch"
+                checked={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.checked)}
+                className="rounded border-gray-300 focus:ring-teal-500"
+              />
+              <label htmlFor="globalSearch" className="text-sm text-gray-600 cursor-pointer">
+                Search across all events (not just current tab)
+              </label>
+            </div>
+            {globalSearch && searchTerm && (
+              <div className="text-sm text-teal-600 bg-teal-50 p-2 rounded">
+                Global search active - showing results from all events regardless of tab
+              </div>
+            )}
           </div>
 
           {/* Tab Content */}
           <TabsContent value="requests" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm text-gray-600">
-                Showing {filteredRequests.length} new event request{filteredRequests.length !== 1 ? 's' : ''} needing contact
+                {globalSearch && searchTerm ? (
+                  `Showing ${filteredRequests.length} event${filteredRequests.length !== 1 ? 's' : ''} from global search`
+                ) : (
+                  `Showing ${filteredRequests.length} new event request${filteredRequests.length !== 1 ? 's' : ''} needing contact`
+                )}
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -1626,7 +1651,11 @@ export default function EventRequestsManagement() {
           <TabsContent value="scheduled" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm text-gray-600">
-                Showing {filteredRequests.length} scheduled event{filteredRequests.length !== 1 ? 's' : ''}
+                {globalSearch && searchTerm ? (
+                  `Showing ${filteredRequests.length} event${filteredRequests.length !== 1 ? 's' : ''} from global search`
+                ) : (
+                  `Showing ${filteredRequests.length} scheduled event${filteredRequests.length !== 1 ? 's' : ''}`
+                )}
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -1683,7 +1712,9 @@ export default function EventRequestsManagement() {
           <TabsContent value="past" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm text-gray-600">
-                {pastEventsPagination.totalItems > 0 ? (
+                {globalSearch && searchTerm ? (
+                  `Showing ${filteredRequests.length} event${filteredRequests.length !== 1 ? 's' : ''} from global search`
+                ) : pastEventsPagination.totalItems > 0 ? (
                   <>
                     Showing {pastEventsPagination.startItem}-{pastEventsPagination.endItem} of {pastEventsPagination.totalItems} past event{pastEventsPagination.totalItems !== 1 ? 's' : ''}
                   </>
