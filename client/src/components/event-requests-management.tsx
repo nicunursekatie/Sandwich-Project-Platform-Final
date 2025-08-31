@@ -1859,18 +1859,17 @@ export default function EventRequestsManagement() {
                 </div>
                 <div>
                   <Label htmlFor="previouslyHosted">Previously Hosted Event?</Label>
-                  <Select name="previouslyHosted" defaultValue={selectedRequest.previouslyHosted}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {previouslyHostedOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    name="previouslyHosted" 
+                    defaultValue={selectedRequest.previouslyHosted}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {previouslyHostedOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
@@ -1902,15 +1901,15 @@ export default function EventRequestsManagement() {
                 </div>
                 <div>
                   <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                  <Select name="hasRefrigeration" defaultValue={selectedRequest.hasRefrigeration?.toString() || ""}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    name="hasRefrigeration" 
+                    defaultValue={selectedRequest.hasRefrigeration?.toString() || ""}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select option</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1969,35 +1968,33 @@ export default function EventRequestsManagement() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <Label htmlFor="tspContact">Primary TSP Contact</Label>
-                    <Select name="tspContact" defaultValue={(selectedRequest as any).tspContact || "none"}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select primary contact" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No primary contact</SelectItem>
-                        {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select 
+                      name="tspContact" 
+                      defaultValue={(selectedRequest as any).tspContact || "none"}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="none">No primary contact</option>
+                      {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                        <option key={user.id} value={user.id}>
+                          {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <Label htmlFor="tspContactAssigned">Secondary Contact</Label>
-                    <Select name="tspContactAssigned" defaultValue={(selectedRequest as any).tspContactAssigned || "none"}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select secondary contact" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No secondary contact</SelectItem>
-                        {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select 
+                      name="tspContactAssigned" 
+                      defaultValue={(selectedRequest as any).tspContactAssigned || "none"}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="none">No secondary contact</option>
+                      {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                        <option key={user.id} value={user.id}>
+                          {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -2008,35 +2005,33 @@ export default function EventRequestsManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="additionalContact1">Third Contact</Label>
-                      <Select name="additionalContact1" defaultValue={(selectedRequest as any).additionalContact1 || "none"}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select third contact" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No third contact</SelectItem>
-                          {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <select 
+                        name="additionalContact1" 
+                        defaultValue={(selectedRequest as any).additionalContact1 || "none"}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="none">No third contact</option>
+                        {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <Label htmlFor="additionalContact2">Fourth Contact</Label>
-                      <Select name="additionalContact2" defaultValue={(selectedRequest as any).additionalContact2 || "none"}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select fourth contact" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No fourth contact</SelectItem>
-                          {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <select 
+                        name="additionalContact2" 
+                        defaultValue={(selectedRequest as any).additionalContact2 || "none"}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="none">No fourth contact</option>
+                        {users.filter((user: any) => user.role !== 'recipient').map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -2150,36 +2145,36 @@ export default function EventRequestsManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="toolkitStatus">Toolkit Status</Label>
-                  <Select name="toolkitStatus" defaultValue={detailsRequest.toolkitStatus || ""}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select toolkit status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not_sent">Not Yet Sent</SelectItem>
-                      <SelectItem value="sent">Sent</SelectItem>
-                      <SelectItem value="received_confirmed">Received & Confirmed</SelectItem>
-                      <SelectItem value="not_needed">Not Needed</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    name="toolkitStatus" 
+                    defaultValue={detailsRequest.toolkitStatus || ""}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select toolkit status</option>
+                    <option value="not_sent">Not Yet Sent</option>
+                    <option value="sent">Sent</option>
+                    <option value="received_confirmed">Received & Confirmed</option>
+                    <option value="not_needed">Not Needed</option>
+                  </select>
                 </div>
 
                 <div>
                   <Label htmlFor="tspContact">TSP Team Contact</Label>
-                  <Select name="tspContact" defaultValue={detailsRequest.tspContact || ""}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select team member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No assignment</SelectItem>
-                      {users.map((user: any) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.firstName && user.lastName 
-                            ? `${user.firstName} ${user.lastName}` 
-                            : user.displayName || user.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    name="tspContact" 
+                    defaultValue={detailsRequest.tspContact || ""}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select team member</option>
+                    <option value="none">No assignment</option>
+                    {users.map((user: any) => (
+                      <option key={user.id} value={user.id}>
+                        {user.firstName && user.lastName 
+                          ? `${user.firstName} ${user.lastName}` 
+                          : user.displayName || user.email}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -2234,33 +2229,33 @@ export default function EventRequestsManagement() {
 
               <div>
                 <Label htmlFor="sandwichTypes">Type of Sandwiches</Label>
-                <Select name="sandwichTypes" defaultValue={(detailsRequest as any).sandwichTypes || ""}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select sandwich types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="deli">Deli</SelectItem>
-                    <SelectItem value="turkey">Turkey</SelectItem>
-                    <SelectItem value="ham">Ham</SelectItem>
-                    <SelectItem value="pb&j">PB&J</SelectItem>
-                    <SelectItem value="pb&j+deli">PB&J + Deli</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select 
+                  name="sandwichTypes" 
+                  defaultValue={(detailsRequest as any).sandwichTypes || ""}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="">Select sandwich types</option>
+                  <option value="deli">Deli</option>
+                  <option value="turkey">Turkey</option>
+                  <option value="ham">Ham</option>
+                  <option value="pb&j">PB&J</option>
+                  <option value="pb&j+deli">PB&J + Deli</option>
+                </select>
               </div>
 
               {/* Drivers Section */}
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="driversArranged">Do we have drivers arranged?</Label>
-                  <Select name="driversArranged" defaultValue={(detailsRequest as any).driversArranged ? "true" : "false"}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Are drivers arranged?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    name="driversArranged" 
+                    defaultValue={(detailsRequest as any).driversArranged ? "true" : "false"}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Are drivers arranged?</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="driverDetails">Driver Details (Who are they?)</Label>
@@ -2277,15 +2272,15 @@ export default function EventRequestsManagement() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="speakersNeeded">Speakers necessary?</Label>
-                  <Select name="speakersNeeded" defaultValue={(detailsRequest as any).speakersNeeded ? "true" : "false"}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Are speakers needed?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    name="speakersNeeded" 
+                    defaultValue={(detailsRequest as any).speakersNeeded ? "true" : "false"}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Are speakers needed?</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="speakerDetails">Speaker Details (Who are they?)</Label>
