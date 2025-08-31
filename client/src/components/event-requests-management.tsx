@@ -505,8 +505,30 @@ export default function EventRequestsManagement() {
   });
   
   const pastEvents = eventRequests.filter((req: EventRequest) => {
-    // Show past events: completed, contact_completed, and declined events
-    // Status-based filtering only (regardless of date)
+    // DATE is the primary filter - only show events with past dates
+    if (!req.desiredEventDate) {
+      // No date specified - only include if status suggests it's truly done
+      return req.status === 'completed' || req.status === 'declined';
+    }
+    
+    // Parse the event date using timezone-safe logic
+    let eventDate: Date;
+    const dateString = req.desiredEventDate;
+    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      const dateOnly = dateString.split(' ')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+      const dateOnly = dateString.split('T')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else {
+      eventDate = new Date(dateString);
+    }
+    eventDate.setHours(0, 0, 0, 0);
+    
+    // PRIMARY FILTER: Event date must be in the past
+    if (eventDate >= today) return false;
+    
+    // SECONDARY FILTER: Must have a relevant status
     return req.status === 'completed' || req.status === 'contact_completed' || req.status === 'declined';
   });
 
