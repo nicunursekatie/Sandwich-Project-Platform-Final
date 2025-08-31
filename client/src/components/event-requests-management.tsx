@@ -37,19 +37,19 @@ const formatEventDate = (dateString: string) => {
     
     // Parse the date string safely - handle database timestamps, YYYY-MM-DD, and ISO dates
     let date: Date;
-    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
       // Database timestamp format: "2025-09-03 00:00:00"
       // Extract just the date part and create at noon to avoid timezone issues
       const dateOnly = dateString.split(' ')[0];
       date = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
       // ISO format with midnight time (e.g., "2025-09-03T00:00:00.000Z")
       // Extract just the date part and create at noon to avoid timezone issues
       const dateOnly = dateString.split('T')[0];
       date = new Date(dateOnly + 'T12:00:00');
     } else if (dateString.includes('T') || dateString.includes('Z')) {
       date = new Date(dateString);
-    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       // For YYYY-MM-DD format, add noon to prevent timezone shift
       date = new Date(dateString + 'T12:00:00');
     } else {
@@ -483,10 +483,10 @@ export default function EventRequestsManagement() {
     // Use the same timezone-safe parsing as formatEventDate function
     let eventDate: Date;
     const dateString = req.desiredEventDate;
-    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
       const dateOnly = dateString.split(' ')[0];
       eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
       const dateOnly = dateString.split('T')[0];
       eventDate = new Date(dateOnly + 'T12:00:00');
     } else {
@@ -512,10 +512,10 @@ export default function EventRequestsManagement() {
     // Use the same timezone-safe parsing as formatEventDate function
     let eventDate: Date;
     const dateString = req.desiredEventDate;
-    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
       const dateOnly = dateString.split(' ')[0];
       eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
       const dateOnly = dateString.split('T')[0];
       eventDate = new Date(dateOnly + 'T12:00:00');
     } else {
@@ -535,10 +535,10 @@ export default function EventRequestsManagement() {
     // Parse the event date using timezone-safe logic
     let eventDate: Date;
     const dateString = req.desiredEventDate;
-    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
       const dateOnly = dateString.split(' ')[0];
       eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
       const dateOnly = dateString.split('T')[0];
       eventDate = new Date(dateOnly + 'T12:00:00');
     } else {
@@ -576,7 +576,7 @@ export default function EventRequestsManagement() {
         request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (request.desiredEventDate && typeof request.desiredEventDate === 'string' && request.desiredEventDate.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (request.desiredEventDate && formatEventDate(request.desiredEventDate).text.toLowerCase().includes(searchTerm.toLowerCase()));
         
       return matchesSearch;
@@ -587,10 +587,10 @@ export default function EventRequestsManagement() {
       if (!req.desiredEventDate) return new Date(0); // Fallback date for events without dates
       
       const dateString = req.desiredEventDate;
-      if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
         const dateOnly = dateString.split(' ')[0];
         return new Date(dateOnly + 'T12:00:00');
-      } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+      } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
         const dateOnly = dateString.split('T')[0];
         return new Date(dateOnly + 'T12:00:00');
       }
