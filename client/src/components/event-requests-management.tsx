@@ -449,8 +449,8 @@ export default function EventRequestsManagement() {
     
     
     // Show past events that are completed, contact_completed, or declined
-    // Include events from today and earlier (eventDate <= today)
-    return eventDate <= today && (req.status === 'completed' || req.status === 'contact_completed' || req.status === 'declined');
+    // Status-based filtering only (regardless of date)
+    return req.status === 'completed' || req.status === 'contact_completed' || req.status === 'declined';
   });
 
   // Get current events based on active tab
