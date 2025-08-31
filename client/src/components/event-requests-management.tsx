@@ -355,21 +355,54 @@ export default function EventRequestsManagement() {
   
   const requestsEvents = eventRequests.filter((req: EventRequest) => {
     if (!req.desiredEventDate) return req.status === 'new';
-    const eventDate = new Date(req.desiredEventDate);
+    // Use the same timezone-safe parsing as formatEventDate function
+    let eventDate: Date;
+    const dateString = req.desiredEventDate;
+    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      const dateOnly = dateString.split(' ')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+      const dateOnly = dateString.split('T')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else {
+      eventDate = new Date(dateString);
+    }
     eventDate.setHours(0, 0, 0, 0);
     return eventDate >= today && req.status === 'new';
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
     if (!req.desiredEventDate) return req.status === 'contact_completed' || req.status === 'scheduled';
-    const eventDate = new Date(req.desiredEventDate);
+    // Use the same timezone-safe parsing as formatEventDate function
+    let eventDate: Date;
+    const dateString = req.desiredEventDate;
+    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      const dateOnly = dateString.split(' ')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+      const dateOnly = dateString.split('T')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else {
+      eventDate = new Date(dateString);
+    }
     eventDate.setHours(0, 0, 0, 0);
     return eventDate >= today && (req.status === 'contact_completed' || req.status === 'scheduled');
   });
   
   const pastEvents = eventRequests.filter((req: EventRequest) => {
     if (!req.desiredEventDate) return req.status === 'completed' || req.status === 'declined';
-    const eventDate = new Date(req.desiredEventDate);
+    // Use the same timezone-safe parsing as formatEventDate function
+    let eventDate: Date;
+    const dateString = req.desiredEventDate;
+    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      const dateOnly = dateString.split(' ')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+      const dateOnly = dateString.split('T')[0];
+      eventDate = new Date(dateOnly + 'T12:00:00');
+    } else {
+      eventDate = new Date(dateString);
+    }
     eventDate.setHours(0, 0, 0, 0);
     return eventDate < today; // Show all events with past dates regardless of status
   });
