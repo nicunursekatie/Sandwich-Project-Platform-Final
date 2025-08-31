@@ -201,8 +201,12 @@ const ActionTracking = () => {
     event.organizationName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Priority order for follow-ups
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
+  // Separate active events from completed events
+  const activeEvents = filteredEvents.filter(event => event.status !== 'completed');
+  const completedEvents = filteredEvents.filter(event => event.status === 'completed');
+
+  // Priority order for active events (follow-ups first)
+  const sortedActiveEvents = [...activeEvents].sort((a, b) => {
     // Follow-ups first
     if (a.followUpNeeded && !b.followUpNeeded) return -1;
     if (!a.followUpNeeded && b.followUpNeeded) return 1;
@@ -212,6 +216,14 @@ const ActionTracking = () => {
       return new Date(a.desiredEventDate).getTime() - new Date(b.desiredEventDate).getTime();
     }
     
+    return 0;
+  });
+
+  // Sort completed events by event date (most recent first)
+  const sortedCompletedEvents = [...completedEvents].sort((a, b) => {
+    if (a.desiredEventDate && b.desiredEventDate) {
+      return new Date(b.desiredEventDate).getTime() - new Date(a.desiredEventDate).getTime();
+    }
     return 0;
   });
 
@@ -235,7 +247,7 @@ const ActionTracking = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="projects" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Projects ({filteredProjects.length})
@@ -246,10 +258,14 @@ const ActionTracking = () => {
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2 relative">
             <Calendar className="w-4 h-4" />
-            Events ({sortedEvents.length})
-            {sortedEvents.some(e => e.followUpNeeded) && (
+            Active Events ({sortedActiveEvents.length})
+            {sortedActiveEvents.some(e => e.followUpNeeded) && (
               <Bell className="w-3 h-3 text-yellow-600 animate-pulse" />
             )}
+          </TabsTrigger>
+          <TabsTrigger value="completed-events" className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Completed Events ({sortedCompletedEvents.length})
           </TabsTrigger>
         </TabsList>
 
@@ -391,19 +407,19 @@ const ActionTracking = () => {
         </TabsContent>
 
         <TabsContent value="events" className="space-y-4 m-0">
-          {sortedEvents.length === 0 ? (
+          {sortedActiveEvents.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12 text-gray-500">
                 <div className="text-center">
                   <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium">No assigned event requests found</p>
-                  <p className="text-sm">Events where you are assigned as contact, driver, or speaker will appear here</p>
+                  <p className="text-lg font-medium">No active event requests found</p>
+                  <p className="text-sm">Active events where you are assigned as contact, driver, or speaker will appear here</p>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4">
-              {sortedEvents.map((event) => (
+              {sortedActiveEvents.map((event) => (
                 <Card key={event.id} className={`hover:shadow-md transition-shadow cursor-pointer ${event.followUpNeeded ? 'ring-2 ring-yellow-200' : ''}`} onClick={() => navigateToEventPlanning(event.id)}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
@@ -494,6 +510,89 @@ const ActionTracking = () => {
                           </div>
                         </div>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="completed-events" className="space-y-4 m-0">
+          {sortedCompletedEvents.length === 0 ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12 text-gray-500">
+                <div className="text-center">
+                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg font-medium">No completed events found</p>
+                  <p className="text-sm">Completed events where you were assigned as contact, driver, or speaker will appear here</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {sortedCompletedEvents.map((event) => (
+                <Card key={event.id} className="hover:shadow-md transition-shadow cursor-pointer opacity-75" onClick={() => navigateToEventPlanning(event.id)}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-semibold text-gray-700">
+                          {event.firstName} {event.lastName}
+                        </CardTitle>
+                        <p className="text-sm text-gray-500 mt-1">
+                          <Building className="w-4 h-4 inline mr-1" />
+                          {event.organizationName}
+                        </p>
+                        {event.assignmentType && event.assignmentType.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {event.assignmentType.map((type, index) => (
+                              <Badge key={index} variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                                {type === 'TSP Contact' && <UserCheck className="w-3 h-3 mr-1" />}
+                                {type === 'Driver' && <Car className="w-3 h-3 mr-1" />}
+                                {type === 'Speaker' && <Mic className="w-3 h-3 mr-1" />}
+                                {type === 'Direct Assignment' && <User className="w-3 h-3 mr-1" />}
+                                {type}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Badge className="bg-green-100 text-green-800">
+                          Completed
+                        </Badge>
+                        {event.contactedAt && (
+                          <Badge className="bg-gray-100 text-gray-600">
+                            Contacted
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        {event.desiredEventDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>Event {formatDate(event.desiredEventDate)}</span>
+                          </div>
+                        )}
+                        {event.communicationMethod && (
+                          <div className="flex items-center gap-1">
+                            {event.communicationMethod.includes('email') ? (
+                              <Mail className="w-4 h-4" />
+                            ) : (
+                              <Phone className="w-4 h-4" />
+                            )}
+                            <span>{event.communicationMethod}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>Created {formatDate(event.createdAt)}</span>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
