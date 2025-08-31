@@ -128,7 +128,7 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
     console.log('Starting Excel event import...');
     
     // Read the Excel file
-    const filePath = path.join(__dirname, '..', '..', 'attached_assets', 'Events April-June_1756609951967.xlsx');
+    const filePath = path.join(__dirname, '..', '..', 'attached_assets', 'Events January - May_1756610094691.xlsx');
     console.log('Reading file:', filePath);
     
     const workbook = XLSX.readFile(filePath);
