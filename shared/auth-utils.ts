@@ -305,8 +305,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.DRIVERS_EDIT,
         PERMISSIONS.USERS_EDIT, // Core team can manage users
         PERMISSIONS.DISTRIBUTIONS_EDIT,
+        PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.EVENT_REQUESTS_EDIT,
         PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
+        PERMISSIONS.ORGANIZATIONS_VIEW,
         PERMISSIONS.SUGGESTIONS_MANAGE,
         
         // Collection permissions

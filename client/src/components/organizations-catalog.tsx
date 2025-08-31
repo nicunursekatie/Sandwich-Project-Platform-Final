@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin, ExternalLink } from "lucide-react";
+import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDateForDisplay } from "@/lib/date-utils";
 
 interface Organization {
@@ -45,6 +45,8 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
   const [sortBy, setSortBy] = useState("eventDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
 
   // Fetch organizations data
   const { data: organizationsResponse, isLoading, error } = useQuery({
@@ -164,6 +166,18 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
     
     group.totalDepartments = group.departments.length;
   });
+
+  // Pagination logic
+  const totalItems = sortedGroups.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedGroups = sortedGroups.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, sortBy, sortOrder]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -289,15 +303,29 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         </div>
 
         {/* Results Summary */}
-        <div className="mt-4 pt-3 border-t">
+        <div className="mt-4 pt-3 border-t flex justify-between items-center">
           <small className="text-gray-600">
-            Showing {sortedGroups.length} organizations with {filteredOrganizations.length} departments/contacts
+            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} organizations with {filteredOrganizations.length} departments/contacts
           </small>
+          <div className="flex items-center gap-2">
+            <small className="text-gray-600">Items per page:</small>
+            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+              <SelectTrigger className="w-20 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6">6</SelectItem>
+                <SelectItem value="12">12</SelectItem>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="48">48</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {/* Organizations Grid */}
-      {sortedGroups.length === 0 ? (
+      {totalItems === 0 ? (
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No organizations found</p>
@@ -309,7 +337,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         </div>
       ) : (
         <div className="space-y-8">
-          {sortedGroups.map((group, groupIndex) => (
+          {paginatedGroups.map((group, groupIndex) => (
             <div key={`${group.organizationName}-${groupIndex}`} className="bg-gray-50 rounded-lg border p-6">
               {/* Organization Header */}
               <div className="mb-6 pb-4 border-b border-gray-200">
@@ -460,6 +488,66 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
             ))}
           </div>
         )}
-      </div>
-    );
-  }
+
+      {/* Pagination Controls */}
+      {totalItems > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white rounded-lg border p-4 shadow-sm mt-6">
+          <div className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="h-8"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="h-8 w-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="h-8"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
