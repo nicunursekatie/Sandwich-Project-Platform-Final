@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +82,20 @@ const ActionTracking = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("projects");
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  // Navigation functions
+  const navigateToProject = (projectId: number) => {
+    setLocation(`/dashboard?section=projects&view=detail&id=${projectId}`);
+  };
+
+  const navigateToEventPlanning = (eventId?: number) => {
+    if (eventId) {
+      setLocation(`/dashboard?section=event-requests&tab=scheduled&eventId=${eventId}`);
+    } else {
+      setLocation(`/dashboard?section=event-requests`);
+    }
+  };
 
   // Fetch user's assigned projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -245,7 +260,7 @@ const ActionTracking = () => {
           ) : (
             <div className="grid gap-4">
               {filteredProjects.map((project) => (
-                <Card key={project.id} className="hover:shadow-md transition-shadow">
+                <Card key={project.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateToProject(project.id)}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -311,7 +326,7 @@ const ActionTracking = () => {
           ) : (
             <div className="grid gap-4">
               {filteredTasks.map((task) => (
-                <Card key={task.id} className="hover:shadow-md transition-shadow">
+                <Card key={task.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateToProject(task.projectId)}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -381,7 +396,7 @@ const ActionTracking = () => {
           ) : (
             <div className="grid gap-4">
               {sortedEvents.map((event) => (
-                <Card key={event.id} className={`hover:shadow-md transition-shadow ${event.followUpNeeded ? 'ring-2 ring-yellow-200' : ''}`}>
+                <Card key={event.id} className={`hover:shadow-md transition-shadow cursor-pointer ${event.followUpNeeded ? 'ring-2 ring-yellow-200' : ''}`} onClick={() => navigateToEventPlanning(event.id)}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -460,7 +475,10 @@ const ActionTracking = () => {
                             <Button
                               size="sm"
                               className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                              onClick={() => handleFollowUpComplete(event.id, event.followUpReason?.includes('1-day') ? 'one_day' : 'one_month')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFollowUpComplete(event.id, event.followUpReason?.includes('1-day') ? 'one_day' : 'one_month');
+                              }}
                               disabled={followUpMutation.isPending}
                             >
                               {followUpMutation.isPending ? 'Marking...' : 'Mark Complete'}
