@@ -646,8 +646,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all event requests and aggregate by organization
       const allEventRequests = await storage.getAllEventRequests();
       
-      // Create a map to aggregate data by organization
+      // Create a map to aggregate data by organization and contact
       const organizationsMap = new Map();
+      const contactsMap = new Map(); // Track individual contact details
       
       allEventRequests.forEach(request => {
         const orgName = request.organizationName;
@@ -658,11 +659,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!orgName || !contactName) return;
         
-        // Use organization name as key
+        const contactKey = `${orgName}-${contactName}-${contactEmail || 'no-email'}`;
+        
+        // Track individual contacts with their event details
+        if (!contactsMap.has(contactKey)) {
+          contactsMap.set(contactKey, {
+            organizationName: orgName,
+            contactName: contactName,
+            email: contactEmail,
+            requests: [],
+            latestStatus: 'new',
+            latestRequestDate: request.createdAt || new Date(),
+            hasHostedEvent: false
+          });
+        }
+        
+        const contact = contactsMap.get(contactKey);
+        contact.requests.push(request);
+        
+        // Determine contact status based on latest event request
+        const requestDate = new Date(request.createdAt || new Date());
+        if (requestDate >= contact.latestRequestDate) {
+          contact.latestRequestDate = requestDate;
+          
+          // Determine status: check if scheduled (future event) or completed/past
+          if (request.status === 'completed') {
+            contact.latestStatus = 'completed';
+            contact.hasHostedEvent = true;
+          } else if (request.status === 'scheduled') {
+            // Check if the scheduled event is in the future or past
+            const eventDate = request.eventDate ? new Date(request.eventDate) : null;
+            const now = new Date();
+            if (eventDate && eventDate > now) {
+              contact.latestStatus = 'scheduled'; // Upcoming event
+            } else if (eventDate && eventDate <= now) {
+              contact.latestStatus = 'past'; // Past scheduled event
+              contact.hasHostedEvent = true;
+            } else {
+              contact.latestStatus = 'scheduled'; // Scheduled but no date specified
+            }
+          } else {
+            contact.latestStatus = request.status || 'new';
+          }
+        }
+        
+        // Use organization name as key for aggregation
         if (!organizationsMap.has(orgName)) {
           organizationsMap.set(orgName, {
             name: orgName,
-            contacts: new Set(),
+            contacts: [],
             totalRequests: 0,
             recentRequest: request.createdAt || new Date(),
             hasHostedEvent: false
@@ -672,29 +717,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const org = organizationsMap.get(orgName);
         org.totalRequests += 1;
         
-        // Check if this organization has hosted an event (completed status)
-        if (request.status === 'completed') {
+        // Check if this organization has hosted an event
+        if (request.status === 'completed' || (request.status === 'scheduled' && request.eventDate && new Date(request.eventDate) <= new Date())) {
           org.hasHostedEvent = true;
         }
         
-        // Add contact information
-        if (contactName && contactEmail) {
-          org.contacts.add(JSON.stringify({ name: contactName, email: contactEmail }));
-        } else if (contactName) {
-          org.contacts.add(JSON.stringify({ name: contactName }));
-        }
-        
         // Update most recent request date
-        const requestDate = new Date(request.createdAt || new Date());
-        if (requestDate > org.recentRequest) {
-          org.recentRequest = requestDate;
+        const requestDate2 = new Date(request.createdAt || new Date());
+        if (requestDate2 > org.recentRequest) {
+          org.recentRequest = requestDate2;
         }
       });
       
-      // Convert Map to array and process contacts
+      // Group contacts by organization and include status information
+      contactsMap.forEach((contact) => {
+        const org = organizationsMap.get(contact.organizationName);
+        if (org) {
+          // Check if this contact is already added (avoid duplicates)
+          const existingContact = org.contacts.find(c => 
+            c.name === contact.contactName && c.email === contact.email
+          );
+          if (!existingContact) {
+            org.contacts.push({
+              name: contact.contactName,
+              email: contact.email,
+              status: contact.latestStatus,
+              latestRequestDate: contact.latestRequestDate,
+              totalRequests: contact.requests.length,
+              hasHostedEvent: contact.hasHostedEvent
+            });
+          }
+        }
+      });
+      
+      // Convert Map to array and process
       const organizations = Array.from(organizationsMap.entries()).map(([_, org]) => ({
         name: org.name,
-        contacts: Array.from(org.contacts).map(contactStr => JSON.parse(contactStr)),
+        contacts: org.contacts,
         totalRequests: org.totalRequests,
         lastRequestDate: org.recentRequest,
         hasHostedEvent: org.hasHostedEvent

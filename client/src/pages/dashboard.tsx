@@ -275,7 +275,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "event-requests":
         return <EventRequestsManagement />;
       case "organizations-catalog":
-        return <OrganizationsCatalog />;
+        return <OrganizationsCatalog onNavigateToEventPlanning={() => setActiveSection("event-requests")} />;
       case "action-tracking":
         return <ActionTracking />;
 

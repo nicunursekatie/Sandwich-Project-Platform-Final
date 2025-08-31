@@ -5,12 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin } from "lucide-react";
+import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 
 interface Organization {
   name: string;
-  contacts: Array<{ name: string; email?: string }>;
+  contacts: Array<{ 
+    name: string; 
+    email?: string;
+    status?: string;
+    latestRequestDate?: string;
+    totalRequests?: number;
+    hasHostedEvent?: boolean;
+  }>;
   totalRequests: number;
   lastRequestDate: string;
   hasHostedEvent: boolean;
@@ -22,11 +29,15 @@ interface OrganizationContact {
   email?: string;
   latestRequestDate: string;
   totalRequests: number;
-  status: 'new' | 'contacted' | 'completed';
+  status: 'new' | 'contacted' | 'completed' | 'scheduled' | 'past';
   hasHostedEvent: boolean;
 }
 
-export default function OrganizationsCatalog() {
+interface OrganizationsCatalogProps {
+  onNavigateToEventPlanning?: () => void;
+}
+
+export default function OrganizationsCatalog({ onNavigateToEventPlanning }: OrganizationsCatalogProps = {}) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("latestRequestDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -51,10 +62,10 @@ export default function OrganizationsCatalog() {
       organizationName: org.name,
       contactName: contact.name,
       email: contact.email,
-      latestRequestDate: org.lastRequestDate,
-      totalRequests: org.totalRequests,
-      status: 'new' as const, // Default status for now
-      hasHostedEvent: org.hasHostedEvent
+      latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
+      totalRequests: contact.totalRequests || 1,
+      status: contact.status || 'new',
+      hasHostedEvent: contact.hasHostedEvent || org.hasHostedEvent
     }))
   );
 
@@ -96,8 +107,12 @@ export default function OrganizationsCatalog() {
         return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">New Request</Badge>;
       case 'contacted':
         return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Contacted</Badge>;
+      case 'scheduled':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Upcoming Event</Badge>;
       case 'completed':
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
+      case 'past':
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Past Event</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -174,7 +189,9 @@ export default function OrganizationsCatalog() {
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="new">New Requests</SelectItem>
                 <SelectItem value="contacted">Contacted</SelectItem>
+                <SelectItem value="scheduled">Upcoming Events</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="past">Past Events</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -271,13 +288,24 @@ export default function OrganizationsCatalog() {
                   
                   {/* Hosted Event Status */}
                   <div className="pt-2 border-t">
-                    <div className="text-sm">
+                    <div className="text-sm mb-3">
                       <strong>Hosted Event with Us?</strong> {
                         org.hasHostedEvent
                           ? <span className="text-green-600 font-semibold">Yes</span>
                           : <span className="text-gray-500">No</span>
                       }
                     </div>
+                    
+                    {/* View Event Details Button */}
+                    <Button 
+                      onClick={() => onNavigateToEventPlanning?.()}
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full text-sm bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white border-[#FBAD3F] hover:border-[#FBAD3F]/90"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Event Details
+                    </Button>
                   </div>
                 </div>
               </CardContent>
