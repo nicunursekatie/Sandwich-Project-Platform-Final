@@ -94,6 +94,13 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         return sortOrder === "desc" ? bDate - aDate : aDate - bDate;
       }
       
+      if (sortBy === 'eventDate') {
+        // Handle null/undefined event dates - put them at the end
+        const aDate = a.eventDate ? new Date(a.eventDate).getTime() : (sortOrder === "desc" ? -Infinity : Infinity);
+        const bDate = b.eventDate ? new Date(b.eventDate).getTime() : (sortOrder === "desc" ? -Infinity : Infinity);
+        return sortOrder === "desc" ? bDate - aDate : aDate - bDate;
+      }
+      
       if (sortBy === 'totalRequests') {
         return sortOrder === "desc" ? (bValue as number) - (aValue as number) : (aValue as number) - (bValue as number);
       }
@@ -209,6 +216,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                 <SelectItem value="organizationName">Organization</SelectItem>
                 <SelectItem value="contactName">Contact Name</SelectItem>
                 <SelectItem value="latestRequestDate">Latest Request</SelectItem>
+                <SelectItem value="eventDate">Event Date</SelectItem>
                 <SelectItem value="totalRequests">Total Requests</SelectItem>
               </SelectContent>
             </Select>
