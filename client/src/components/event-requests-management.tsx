@@ -567,9 +567,11 @@ export default function EventRequestsManagement() {
             {request.department && (
               <div><strong>Department:</strong> {request.department}</div>
             )}
-            {typeof request.hasRefrigeration === 'boolean' && (
-              <div><strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
-            )}
+            <div><strong>Refrigeration:</strong> {
+              request.hasRefrigeration === true ? 'Available' : 
+              request.hasRefrigeration === false ? 'Not available' : 
+              'Not specified'
+            }</div>
             <div><strong>Previously Hosted:</strong> {
               previouslyHostedOptions.find(opt => opt.value === request.previouslyHosted)?.label
             }</div>
@@ -929,9 +931,11 @@ export default function EventRequestsManagement() {
               </div>
               
               {/* Other logistics */}
-              {typeof request.hasRefrigeration === 'boolean' && (
-                <div><strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Available' : 'Not available'}</div>
-              )}
+              <div><strong>Refrigeration:</strong> {
+                request.hasRefrigeration === true ? 'Available' : 
+                request.hasRefrigeration === false ? 'Not available' : 
+                'Not specified'
+              }</div>
               {(request as any).additionalRequirements && (
                 <div><strong>Special Requirements:</strong> {(request as any).additionalRequirements}</div>
               )}
