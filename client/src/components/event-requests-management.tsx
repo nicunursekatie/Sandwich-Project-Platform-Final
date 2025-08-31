@@ -467,8 +467,12 @@ export default function EventRequestsManagement() {
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
   
   const requestsEvents = eventRequests.filter((req: EventRequest) => {
-    // Include only new requests (no declined events)
-    if (!req.desiredEventDate) return req.status === 'new';
+    // Include new requests AND any future events not handled by other tabs
+    if (!req.desiredEventDate) {
+      // No date specified - only include new requests or unknown status
+      return req.status === 'new' || !req.status;
+    }
+    
     // Use the same timezone-safe parsing as formatEventDate function
     let eventDate: Date;
     const dateString = req.desiredEventDate;
@@ -482,8 +486,18 @@ export default function EventRequestsManagement() {
       eventDate = new Date(dateString);
     }
     eventDate.setHours(0, 0, 0, 0);
-    // Show only new future events
-    return (eventDate >= today && req.status === 'new');
+    
+    // Show future events that are 'new' OR don't have a recognized status
+    if (eventDate >= today) {
+      return req.status === 'new' || 
+             !req.status || 
+             (req.status !== 'contact_completed' && 
+              req.status !== 'scheduled' && 
+              req.status !== 'completed' && 
+              req.status !== 'declined');
+    }
+    
+    return false;
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
