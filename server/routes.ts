@@ -689,8 +689,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Determine status: check if scheduled (future event) or completed/past
-          if (request.status === 'completed') {
-            contact.latestStatus = 'completed';
+          if (request.status === 'completed' || request.status === 'contact_completed') {
+            contact.latestStatus = request.status;
             contact.hasHostedEvent = true;
             // Add sandwich count for completed events
             if (request.estimatedSandwichCount) {

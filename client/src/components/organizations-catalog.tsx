@@ -171,14 +171,18 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">New Request</Badge>;
       case 'contacted':
         return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Contacted</Badge>;
+      case 'contact_completed':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Event Complete</Badge>;
       case 'scheduled':
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Upcoming Event</Badge>;
       case 'completed':
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
       case 'past':
         return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Past Event</Badge>;
+      case 'declined':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Declined</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return null; // Remove confusing "Unknown" badges
     }
   };
 
