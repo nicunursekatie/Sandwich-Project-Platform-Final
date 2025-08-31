@@ -35,9 +35,14 @@ const formatEventDate = (dateString: string) => {
   try {
     if (!dateString) return { text: 'No date provided', className: 'text-gray-500' };
     
-    // Parse the date string safely - handle both YYYY-MM-DD and full ISO dates
+    // Parse the date string safely - handle database timestamps, YYYY-MM-DD, and ISO dates
     let date: Date;
-    if (dateString.includes('T') || dateString.includes('Z')) {
+    if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      // Database timestamp format: "2025-09-03 00:00:00"
+      // Extract just the date part and create at noon to avoid timezone issues
+      const dateOnly = dateString.split(' ')[0];
+      date = new Date(dateOnly + 'T12:00:00');
+    } else if (dateString.includes('T') || dateString.includes('Z')) {
       date = new Date(dateString);
     } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       // For YYYY-MM-DD format, add noon to prevent timezone shift
