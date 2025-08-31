@@ -688,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             contact.hasHostedEvent = true;
           } else if (request.status === 'scheduled') {
             // Check if the scheduled event is in the future or past
-            const eventDate = request.eventDate ? new Date(request.eventDate) : null;
+            const eventDate = request.desiredEventDate ? new Date(request.desiredEventDate) : null;
             const now = new Date();
             if (eventDate && eventDate > now) {
               contact.latestStatus = 'scheduled'; // Upcoming event
@@ -718,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         org.totalRequests += 1;
         
         // Check if this organization has hosted an event
-        if (request.status === 'completed' || (request.status === 'scheduled' && request.eventDate && new Date(request.eventDate) <= new Date())) {
+        if (request.status === 'completed' || (request.status === 'scheduled' && request.desiredEventDate && new Date(request.desiredEventDate) <= new Date())) {
           org.hasHostedEvent = true;
         }
         
@@ -740,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!existingContact) {
             // Find the latest event with an event date
             const latestEventWithDate = contact.requests
-              .filter(req => req.eventDate)
+              .filter(req => req.desiredEventDate)
               .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0];
             
             org.contacts.push({
@@ -750,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               latestRequestDate: contact.latestRequestDate,
               totalRequests: contact.requests.length,
               hasHostedEvent: contact.hasHostedEvent,
-              eventDate: latestEventWithDate?.eventDate || null
+              eventDate: latestEventWithDate?.desiredEventDate || null
             });
           }
         }
