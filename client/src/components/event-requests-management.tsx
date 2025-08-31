@@ -1075,7 +1075,10 @@ export default function EventRequestsManagement() {
             {/* Organization Name and Event Date */}
             <CardTitle className="flex items-center space-x-3 text-xl mb-2">
               <CheckCircle className="w-6 h-6 text-gray-600" />
-              <span className="text-gray-900">{request.organizationName}</span>
+              <span className="text-gray-900">
+                {request.organizationName}
+                {request.department && <span className="text-sm text-gray-600 ml-2">- {request.department}</span>}
+              </span>
               <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
                 {getOrganizationEventCount(request.organizationName)} {getOrganizationEventCount(request.organizationName) === 1 ? 'event' : 'events'} completed
               </Badge>
