@@ -56,16 +56,6 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
     }
   });
 
-  // Query for organization event counts (completed events only)
-  const { data: organizationCounts = {} } = useQuery({
-    queryKey: ["/api/event-requests/organization-counts"],
-    queryFn: async () => {
-      const response = await fetch("/api/event-requests/organization-counts");
-      if (!response.ok) throw new Error('Failed to fetch organization counts');
-      return response.json();
-    },
-    staleTime: 2 * 60 * 1000 // Cache for 2 minutes
-  });
   
   // Extract and flatten organizations from response
   const rawOrganizations = organizationsResponse?.organizations || [];
@@ -85,10 +75,6 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
     }))
   );
 
-  // Helper function to get organization event count (completed events only)
-  const getOrganizationEventCount = (organizationName: string) => {
-    return organizationCounts[organizationName.trim()] || 0;
-  };
 
   // Filter organizations first
   const filteredOrganizations = organizations
@@ -384,9 +370,6 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                     {getStatusBadge(org.status)}
                     <Badge variant="secondary" className="text-xs bg-[#FBAD3F] text-white hover:bg-[#FBAD3F]/90">
                       {org.totalRequests} request{org.totalRequests !== 1 ? 's' : ''}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                      {getOrganizationEventCount(org.organizationName)} {getOrganizationEventCount(org.organizationName) === 1 ? 'event' : 'events'} completed
                     </Badge>
                   </div>
                 </div>
