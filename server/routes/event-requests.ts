@@ -893,11 +893,15 @@ router.patch("/:id/follow-up", isAuthenticated, async (req, res) => {
 // Get organization event counts (completed events only)
 router.get("/organization-counts", isAuthenticated, async (req, res) => {
   try {
+    console.log('🔍 Organization Counts API called by user:', req.user?.email);
+    
     if (!hasPermission(req.user!, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)) {
+      console.log('❌ Insufficient permissions for organization counts');
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 
     const allEventRequests = await storage.getAllEventRequests();
+    console.log('📊 Total event requests retrieved:', allEventRequests.length);
     
     // Count completed events by organization
     const organizationCounts = new Map();
@@ -908,11 +912,21 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
         const orgName = event.organizationName.trim();
         const currentCount = organizationCounts.get(orgName) || 0;
         organizationCounts.set(orgName, currentCount + 1);
+        
+        // Debug specific organizations
+        if (orgName === 'Volunteer Emory' || orgName === 'Christ the King School (August)') {
+          console.log('🔍 Counting completed event:', {
+            organization: orgName,
+            status: event.status,
+            newCount: currentCount + 1
+          });
+        }
       }
     });
 
     // Convert to object for easier consumption
     const countsObject = Object.fromEntries(organizationCounts);
+    console.log('📈 Final organization counts:', countsObject);
 
     logActivity(
       req,

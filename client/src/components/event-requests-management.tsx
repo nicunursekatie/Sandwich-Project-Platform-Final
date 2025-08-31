@@ -197,10 +197,18 @@ export default function EventRequestsManagement() {
   });
 
   // Query for organization event counts (completed events only)
-  const { data: organizationCounts = {} } = useQuery({
+  const { data: organizationCounts = {}, error: countsError, isLoading: countsLoading } = useQuery({
     queryKey: ["/api/event-requests/organization-counts"],
     queryFn: () => apiRequest("GET", "/api/event-requests/organization-counts"),
     staleTime: 2 * 60 * 1000 // Cache for 2 minutes
+  });
+
+  // Debug organization counts API
+  console.log('🔍 Organization Counts API Debug:', {
+    organizationCounts,
+    countsError,
+    countsLoading,
+    hasData: Object.keys(organizationCounts).length > 0
   });
 
   // Helper function to get user display name
@@ -434,6 +442,21 @@ export default function EventRequestsManagement() {
       eventDate = new Date(dateString);
     }
     eventDate.setHours(0, 0, 0, 0);
+    
+    // Debug logging for Volunteer Emory and Christ the King
+    if (req.organizationName === 'Volunteer Emory' || req.organizationName === 'Christ the King School (August)') {
+      console.log('🔍 Past Events Filter Debug:', {
+        organization: req.organizationName,
+        status: req.status,
+        rawDate: req.desiredEventDate,
+        eventDate: eventDate.toISOString(),
+        today: today.toISOString(),
+        dateComparison: eventDate < today,
+        statusMatch: req.status === 'completed' || req.status === 'contact_completed',
+        shouldShow: eventDate < today && (req.status === 'completed' || req.status === 'contact_completed')
+      });
+    }
+    
     // Show past events that are completed or contact_completed, but not declined
     return eventDate < today && (req.status === 'completed' || req.status === 'contact_completed');
   });
