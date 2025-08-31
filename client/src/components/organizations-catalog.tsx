@@ -293,13 +293,17 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                         try {
                           // Handle timezone-safe parsing for database timestamps
                           let date: Date;
-                          if (org.eventDate.includes('T') || org.eventDate.includes('Z')) {
-                            date = new Date(org.eventDate);
-                          } else if (org.eventDate.match(/^\d{4}-\d{2}-\d{2}/)) {
-                            // For YYYY-MM-DD format or timestamp, add noon to prevent timezone shift
-                            const dateOnly = org.eventDate.split(' ')[0]; // Extract date part
+                          
+                          if (org.eventDate.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                            // Database timestamp format: "2025-08-27 00:00:00"
+                            // Extract just the date part and create at noon to avoid timezone issues
+                            const dateOnly = org.eventDate.split(' ')[0];
                             date = new Date(dateOnly + 'T12:00:00');
+                          } else if (org.eventDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            // Pure date format: "2025-08-27"
+                            date = new Date(org.eventDate + 'T12:00:00');
                           } else {
+                            // ISO format or other - use as is
                             date = new Date(org.eventDate);
                           }
                           
