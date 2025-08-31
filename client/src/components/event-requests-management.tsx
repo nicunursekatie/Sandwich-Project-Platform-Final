@@ -407,6 +407,15 @@ export default function EventRequestsManagement() {
               <span className="text-lg font-bold text-amber-800">
                 {(() => {
                   const dateInfo = formatEventDate(request.desiredEventDate);
+                  // Debug logging for Roswell Presbyterian
+                  if (request.organizationName.toLowerCase().includes('roswell')) {
+                    console.log('🔍 ROSWELL DEBUG:', {
+                      organizationName: request.organizationName,
+                      rawDate: request.desiredEventDate,
+                      formattedResult: dateInfo.text,
+                      timestamp: new Date().toISOString()
+                    });
+                  }
                   return dateInfo.text;
                 })()}
               </span>
