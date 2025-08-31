@@ -173,6 +173,7 @@ export default function EventRequestsManagement() {
   const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
   const [detailsRequest, setDetailsRequest] = useState<EventRequest | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [pastEventsSortOrder, setPastEventsSortOrder] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -440,8 +441,36 @@ export default function EventRequestsManagement() {
       });
     }
     
+    // Sort past events by date (configurable ascending/descending)
+    if (activeTab === 'past') {
+      return filtered.sort((a, b) => {
+        if (!a.desiredEventDate && !b.desiredEventDate) return 0;
+        if (!a.desiredEventDate) return 1;
+        if (!b.desiredEventDate) return -1;
+        
+        const getEventDate = (req: EventRequest) => {
+          const dateString = req.desiredEventDate;
+          if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+            const dateOnly = dateString.split(' ')[0];
+            return new Date(dateOnly + 'T12:00:00');
+          } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+            const dateOnly = dateString.split('T')[0];
+            return new Date(dateOnly + 'T12:00:00');
+          }
+          return new Date(dateString);
+        };
+        
+        const dateA = getEventDate(a);
+        const dateB = getEventDate(b);
+        
+        return pastEventsSortOrder === 'desc' 
+          ? dateB.getTime() - dateA.getTime() // Newest first
+          : dateA.getTime() - dateB.getTime(); // Oldest first
+      });
+    }
+    
     return filtered;
-  }, [eventRequests, searchTerm, activeTab]);
+  }, [eventRequests, searchTerm, activeTab, pastEventsSortOrder]);
 
   const getStatusDisplay = (status: string) => {
     const option = statusOptions.find(opt => opt.value === status);
@@ -1322,8 +1351,24 @@ export default function EventRequestsManagement() {
           </TabsContent>
 
           <TabsContent value="past" className="space-y-4">
-            <div className="text-sm text-gray-600 mb-4">
-              Showing {filteredRequests.length} past event{filteredRequests.length !== 1 ? 's' : ''}
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-600">
+                Showing {filteredRequests.length} past event{filteredRequests.length !== 1 ? 's' : ''}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPastEventsSortOrder(pastEventsSortOrder === 'desc' ? 'asc' : 'desc')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                {pastEventsSortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
+                {pastEventsSortOrder === 'desc' ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronUp className="h-4 w-4" />
+                )}
+              </Button>
             </div>
             {filteredRequests.length === 0 ? (
               <Card>
