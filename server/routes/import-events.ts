@@ -128,7 +128,7 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
     console.log('Starting Excel event import...');
     
     // Read the Excel file
-    const filePath = path.join(__dirname, '..', '..', 'attached_assets', 'Events Since July_1756608820460.xlsx');
+    const filePath = path.join(__dirname, '..', '..', 'attached_assets', 'Events April-June_1756609951967.xlsx');
     console.log('Reading file:', filePath);
     
     const workbook = XLSX.readFile(filePath);
@@ -149,25 +149,25 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
       // Skip empty rows
       if (!row || row.length === 0 || !row[0]) continue;
       
-      // Map the data based on the Excel column structure:
-      // 0: Date, 1: Group Name, 2: Day of Week, 3: Event Start time, 4: Event end time
-      // 5: Pick up time, 6: ALL DETAILS, 7: Social Post, 8: Call Made, 9: Estimate # of Sandwiches
-      // 10: Final # of Sandwiches Made, 11: Sent toolkit, 12: Email Address, 13: Contact Name
-      // 14: Contact Cell Number, 15: TSP Contact, 16: Address, 17: Notes
+      // Map the data based on the April-June Excel column structure:
+      // 0: Date, 1: Event Start time Optional, 2: Event end time Optional, 3: Pick up time
+      // 4: ALL DETAILS, 5: Social Post, 6: Call Made, 7: Group Name, 8: Estimate/Final # sandwiches made
+      // 9: Day of Week, 10: Sent toolkit, 11: Email Address, 12: Contact Name
+      // 13: Contact Cell Number, 14: TSP Contact, 15: Address, 16: Notes
       const eventDate = row[0];
-      const organization = row[1]; // Group Name
-      const eventStartTime = row[3]; // Event Start time Optional
-      const eventEndTime = row[4]; // Event end time Optional
-      const pickupTime = row[5]; // Pick up time
-      const allDetails = row[6]; // ALL DETAILS
-      const estimatedSandwichCount = row[10]; // Final # of Sandwiches Made (this is the estimated count)
-      const toolkitSent = row[11]; // Sent toolkit
-      const email = row[12]; // Email Address
-      const contactName = row[13]; // Contact Name
-      const phone = row[14]; // Contact Cell Number
-      const tspContact = row[15]; // TSP Contact
-      const eventAddress = row[16]; // Address
-      const notes = row[17]; // Notes
+      const eventStartTime = row[1]; // Event Start time Optional
+      const eventEndTime = row[2]; // Event end time Optional
+      const pickupTime = row[3]; // Pick up time
+      const allDetails = row[4]; // ALL DETAILS
+      const organization = row[7]; // Group Name
+      const estimatedSandwichCount = row[8]; // Estimate/Final # sandwiches made
+      const toolkitSent = row[10]; // Sent toolkit
+      const email = row[11]; // Email Address
+      const contactName = row[12]; // Contact Name
+      const phone = row[13]; // Contact Cell Number
+      const tspContact = row[14]; // TSP Contact
+      const eventAddress = row[15]; // Address
+      const notes = row[16]; // Notes
       
       // Split contact name into first and last name
       let firstName = '';
