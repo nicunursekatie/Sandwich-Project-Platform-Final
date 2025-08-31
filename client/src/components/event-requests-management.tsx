@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDateForDisplay } from "@/lib/date-utils";
+// Removed formatDateForDisplay import as we now use toLocaleDateString directly
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 // Utility function to convert 24-hour time to 12-hour format
@@ -35,14 +35,27 @@ const formatEventDate = (dateString: string) => {
   try {
     if (!dateString) return { text: 'No date provided', className: 'text-gray-500' };
     
-    // Use timezone-safe date parsing (add T12:00:00 to prevent timezone shift)
-    const date = new Date(dateString + 'T12:00:00');
+    // Parse the date string safely - handle both YYYY-MM-DD and full ISO dates
+    let date: Date;
+    if (dateString.includes('T') || dateString.includes('Z')) {
+      date = new Date(dateString);
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // For YYYY-MM-DD format, add noon to prevent timezone shift
+      date = new Date(dateString + 'T12:00:00');
+    } else {
+      date = new Date(dateString);
+    }
     
     if (isNaN(date.getTime())) return { text: 'Invalid date', className: '' };
     
     const dayOfWeek = date.getDay();
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateFormatted = formatDateForDisplay(dateString);
+    const dateFormatted = date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
     
     const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
     let className = "";
