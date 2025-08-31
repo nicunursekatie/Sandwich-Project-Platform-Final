@@ -210,17 +210,7 @@ export default function EventRequestsManagement() {
     staleTime: 2 * 60 * 1000 // Cache for 2 minutes
   });
 
-  // Debug organization counts API
-  console.log('🔍 Organization Counts API Debug:', {
-    organizationCounts,
-    countsError: countsError ? {
-      message: countsError.message,
-      status: countsError.status,
-      statusText: countsError.statusText
-    } : null,
-    countsLoading,
-    hasData: Object.keys(organizationCounts).length > 0
-  });
+  // Organization counts debug logging (removed for production)
 
   // Helper function to get user display name
   const getUserDisplayName = (userId: string | null | undefined) => {
@@ -237,15 +227,7 @@ export default function EventRequestsManagement() {
     const trimmedName = organizationName.trim();
     const count = organizationCounts[trimmedName] || 0;
     
-    // Debug logging for the specific organization we're looking at
-    if (trimmedName === 'Christ the King School (August)') {
-      console.log('🔍 Debug - Christ the King School count:', {
-        trimmedName,
-        organizationCounts,
-        count,
-        hasData: Object.keys(organizationCounts).length > 0
-      });
-    }
+    // Debug logging removed for production
     
     return count;
   };
