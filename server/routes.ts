@@ -738,13 +738,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             c.name === contact.contactName && c.email === contact.email
           );
           if (!existingContact) {
+            // Find the latest event with an event date
+            const latestEventWithDate = contact.requests
+              .filter(req => req.eventDate)
+              .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0];
+            
             org.contacts.push({
               name: contact.contactName,
               email: contact.email,
               status: contact.latestStatus,
               latestRequestDate: contact.latestRequestDate,
               totalRequests: contact.requests.length,
-              hasHostedEvent: contact.hasHostedEvent
+              hasHostedEvent: contact.hasHostedEvent,
+              eventDate: latestEventWithDate?.eventDate || null
             });
           }
         }

@@ -17,6 +17,7 @@ interface Organization {
     latestRequestDate?: string;
     totalRequests?: number;
     hasHostedEvent?: boolean;
+    eventDate?: string | null;
   }>;
   totalRequests: number;
   lastRequestDate: string;
@@ -31,6 +32,7 @@ interface OrganizationContact {
   totalRequests: number;
   status: 'new' | 'contacted' | 'completed' | 'scheduled' | 'past';
   hasHostedEvent: boolean;
+  eventDate?: string | null;
 }
 
 interface OrganizationsCatalogProps {
@@ -65,7 +67,8 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
       latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
       totalRequests: contact.totalRequests || 1,
       status: contact.status || 'new',
-      hasHostedEvent: contact.hasHostedEvent || org.hasHostedEvent
+      hasHostedEvent: contact.hasHostedEvent || org.hasHostedEvent,
+      eventDate: contact.eventDate || null
     }))
   );
 
@@ -285,6 +288,14 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                     <Calendar className="w-4 h-4 mr-2" />
                     <span>Latest request: {format(new Date(org.latestRequestDate), "PPP")}</span>
                   </div>
+                  
+                  {/* Event Date - Show if available */}
+                  {org.eventDate && (
+                    <div className="flex items-center text-sm font-medium" style={{ color: '#FBAD3F' }}>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>Event date: {format(new Date(org.eventDate), "PPP")}</span>
+                    </div>
+                  )}
                   
                   {/* Hosted Event Status */}
                   <div className="pt-2 border-t">
