@@ -176,6 +176,12 @@ export default function EventRequestsManagement() {
   const [pastEventsSortOrder, setPastEventsSortOrder] = useState<'asc' | 'desc'>('desc');
   const [pastEventsPage, setPastEventsPage] = useState(1);
   const [pastEventsPerPage] = useState(10);
+  // Sorting state for all tabs
+  const [requestsSortBy, setRequestsSortBy] = useState<'date' | 'organization'>('date');
+  const [requestsSortOrder, setRequestsSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [scheduledSortBy, setScheduledSortBy] = useState<'date' | 'organization'>('date');
+  const [scheduledSortOrder, setScheduledSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [pastSortBy, setPastSortBy] = useState<'date' | 'organization'>('date');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -574,49 +580,80 @@ export default function EventRequestsManagement() {
       return matchesSearch;
     });
 
-    // Sort scheduled events by date (soonest first)
-    if (activeTab === 'scheduled') {
+    // Sorting function for safe date parsing
+    const getEventDate = (req: EventRequest) => {
+      if (!req.desiredEventDate) return new Date(0); // Fallback date for events without dates
+      
+      const dateString = req.desiredEventDate;
+      if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+        const dateOnly = dateString.split(' ')[0];
+        return new Date(dateOnly + 'T12:00:00');
+      } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+        const dateOnly = dateString.split('T')[0];
+        return new Date(dateOnly + 'T12:00:00');
+      }
+      return new Date(dateString);
+    };
+    
+    // Sort requests events
+    if (activeTab === 'requests') {
       return filtered.sort((a, b) => {
-        if (!a.desiredEventDate && !b.desiredEventDate) return 0;
-        if (!a.desiredEventDate) return 1;
-        if (!b.desiredEventDate) return -1;
-        
-        const dateA = new Date(a.desiredEventDate);
-        const dateB = new Date(b.desiredEventDate);
-        return dateA.getTime() - dateB.getTime(); // Ascending order (soonest first)
+        if (requestsSortBy === 'organization') {
+          const orgA = a.organizationName.toLowerCase();
+          const orgB = b.organizationName.toLowerCase();
+          const comparison = orgA.localeCompare(orgB);
+          return requestsSortOrder === 'desc' ? -comparison : comparison;
+        } else {
+          // Sort by date
+          const dateA = getEventDate(a);
+          const dateB = getEventDate(b);
+          return requestsSortOrder === 'desc' 
+            ? dateB.getTime() - dateA.getTime()
+            : dateA.getTime() - dateB.getTime();
+        }
       });
     }
     
-    // Sort past events by date (configurable ascending/descending)
+    // Sort scheduled events
+    if (activeTab === 'scheduled') {
+      return filtered.sort((a, b) => {
+        if (scheduledSortBy === 'organization') {
+          const orgA = a.organizationName.toLowerCase();
+          const orgB = b.organizationName.toLowerCase();
+          const comparison = orgA.localeCompare(orgB);
+          return scheduledSortOrder === 'desc' ? -comparison : comparison;
+        } else {
+          // Sort by date
+          const dateA = getEventDate(a);
+          const dateB = getEventDate(b);
+          return scheduledSortOrder === 'desc' 
+            ? dateB.getTime() - dateA.getTime()
+            : dateA.getTime() - dateB.getTime();
+        }
+      });
+    }
+    
+    // Sort past events
     if (activeTab === 'past') {
       return filtered.sort((a, b) => {
-        if (!a.desiredEventDate && !b.desiredEventDate) return 0;
-        if (!a.desiredEventDate) return 1;
-        if (!b.desiredEventDate) return -1;
-        
-        const getEventDate = (req: EventRequest) => {
-          const dateString = req.desiredEventDate;
-          if (dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-            const dateOnly = dateString.split(' ')[0];
-            return new Date(dateOnly + 'T12:00:00');
-          } else if (dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-            const dateOnly = dateString.split('T')[0];
-            return new Date(dateOnly + 'T12:00:00');
-          }
-          return new Date(dateString);
-        };
-        
-        const dateA = getEventDate(a);
-        const dateB = getEventDate(b);
-        
-        return pastEventsSortOrder === 'desc' 
-          ? dateB.getTime() - dateA.getTime() // Newest first
-          : dateA.getTime() - dateB.getTime(); // Oldest first
+        if (pastSortBy === 'organization') {
+          const orgA = a.organizationName.toLowerCase();
+          const orgB = b.organizationName.toLowerCase();
+          const comparison = orgA.localeCompare(orgB);
+          return pastEventsSortOrder === 'desc' ? -comparison : comparison;
+        } else {
+          // Sort by date
+          const dateA = getEventDate(a);
+          const dateB = getEventDate(b);
+          return pastEventsSortOrder === 'desc' 
+            ? dateB.getTime() - dateA.getTime()
+            : dateA.getTime() - dateB.getTime();
+        }
       });
     }
     
     return filtered;
-  }, [eventRequests, searchTerm, activeTab, pastEventsSortOrder]);
+  }, [eventRequests, searchTerm, activeTab, pastEventsSortOrder, requestsSortBy, requestsSortOrder, scheduledSortBy, scheduledSortOrder, pastSortBy]);
 
   // Paginated past events for display
   const paginatedPastEvents = useMemo(() => {
@@ -1496,8 +1533,48 @@ export default function EventRequestsManagement() {
 
           {/* Tab Content */}
           <TabsContent value="requests" className="space-y-4">
-            <div className="text-sm text-gray-600 mb-4">
-              Showing {filteredRequests.length} new event request{filteredRequests.length !== 1 ? 's' : ''} needing contact
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-600">
+                Showing {filteredRequests.length} new event request{filteredRequests.length !== 1 ? 's' : ''} needing contact
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRequestsSortBy(requestsSortBy === 'date' ? 'organization' : 'date')}
+                  className="flex items-center gap-2"
+                >
+                  {requestsSortBy === 'date' ? (
+                    <>
+                      <Calendar className="h-4 w-4" />
+                      Date
+                    </>
+                  ) : (
+                    <>
+                      <Building className="h-4 w-4" />
+                      Organization
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRequestsSortOrder(requestsSortOrder === 'desc' ? 'asc' : 'desc')}
+                  className="flex items-center gap-2"
+                >
+                  {requestsSortOrder === 'desc' ? (
+                    <>
+                      Newest First
+                      <ChevronDown className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Oldest First
+                      <ChevronUp className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
             {filteredRequests.length === 0 ? (
               <Card>
@@ -1513,8 +1590,48 @@ export default function EventRequestsManagement() {
           </TabsContent>
 
           <TabsContent value="scheduled" className="space-y-4">
-            <div className="text-sm text-gray-600 mb-4">
-              Showing {filteredRequests.length} scheduled event{filteredRequests.length !== 1 ? 's' : ''}
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-600">
+                Showing {filteredRequests.length} scheduled event{filteredRequests.length !== 1 ? 's' : ''}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setScheduledSortBy(scheduledSortBy === 'date' ? 'organization' : 'date')}
+                  className="flex items-center gap-2"
+                >
+                  {scheduledSortBy === 'date' ? (
+                    <>
+                      <Calendar className="h-4 w-4" />
+                      Date
+                    </>
+                  ) : (
+                    <>
+                      <Building className="h-4 w-4" />
+                      Organization
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setScheduledSortOrder(scheduledSortOrder === 'desc' ? 'asc' : 'desc')}
+                  className="flex items-center gap-2"
+                >
+                  {scheduledSortOrder === 'desc' ? (
+                    <>
+                      Newest First
+                      <ChevronDown className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Oldest First
+                      <ChevronUp className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
             {filteredRequests.length === 0 ? (
               <Card>
@@ -1540,20 +1657,44 @@ export default function EventRequestsManagement() {
                   'No past events found'
                 )}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPastEventsSortOrder(pastEventsSortOrder === 'desc' ? 'asc' : 'desc')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                {pastEventsSortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
-                {pastEventsSortOrder === 'desc' ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronUp className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPastSortBy(pastSortBy === 'date' ? 'organization' : 'date')}
+                  className="flex items-center gap-2"
+                >
+                  {pastSortBy === 'date' ? (
+                    <>
+                      <Calendar className="h-4 w-4" />
+                      Date
+                    </>
+                  ) : (
+                    <>
+                      <Building className="h-4 w-4" />
+                      Organization
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPastEventsSortOrder(pastEventsSortOrder === 'desc' ? 'asc' : 'desc')}
+                  className="flex items-center gap-2"
+                >
+                  {pastEventsSortOrder === 'desc' ? (
+                    <>
+                      Newest First
+                      <ChevronDown className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Oldest First
+                      <ChevronUp className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
             
             {paginatedPastEvents.length === 0 ? (
