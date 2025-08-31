@@ -447,6 +447,19 @@ export default function EventRequestsManagement() {
     }
     eventDate.setHours(0, 0, 0, 0);
     
+    // Debug logging for Volunteer Emory issue
+    if (req.organizationName.includes('Emory') || req.organizationName.includes('Volunteer')) {
+      console.log('🔍 Emory Event Debug:', {
+        organization: req.organizationName,
+        status: req.status,
+        rawDate: req.desiredEventDate,
+        eventDate: eventDate.toISOString(),
+        today: today.toISOString(),
+        dateComparison: eventDate <= today,
+        statusMatch: req.status === 'completed' || req.status === 'contact_completed',
+        shouldShow: eventDate <= today && (req.status === 'completed' || req.status === 'contact_completed')
+      });
+    }
     
     // Show past events that are completed or contact_completed, but not declined
     // Include events from today and earlier (eventDate <= today)
