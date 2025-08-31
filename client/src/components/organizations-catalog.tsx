@@ -41,7 +41,7 @@ interface OrganizationsCatalogProps {
 
 export default function OrganizationsCatalog({ onNavigateToEventPlanning }: OrganizationsCatalogProps = {}) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("latestRequestDate");
+  const [sortBy, setSortBy] = useState("eventDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -87,12 +87,6 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
     .sort((a, b) => {
       const aValue = a[sortBy as keyof OrganizationContact];
       const bValue = b[sortBy as keyof OrganizationContact];
-      
-      if (sortBy === 'latestRequestDate') {
-        const aDate = new Date(aValue as string).getTime();
-        const bDate = new Date(bValue as string).getTime();
-        return sortOrder === "desc" ? bDate - aDate : aDate - bDate;
-      }
       
       if (sortBy === 'eventDate') {
         // Handle null/undefined event dates - put them at the end
@@ -215,7 +209,6 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
               <SelectContent>
                 <SelectItem value="organizationName">Organization</SelectItem>
                 <SelectItem value="contactName">Contact Name</SelectItem>
-                <SelectItem value="latestRequestDate">Latest Request</SelectItem>
                 <SelectItem value="eventDate">Event Date</SelectItem>
                 <SelectItem value="totalRequests">Total Requests</SelectItem>
               </SelectContent>
