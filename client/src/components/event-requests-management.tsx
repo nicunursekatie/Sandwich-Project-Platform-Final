@@ -486,7 +486,8 @@ export default function EventRequestsManagement() {
               req.status !== 'declined');
     }
     
-    return false;
+    // Also show past events with 'new' status so they can be processed
+    return req.status === 'new';
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
