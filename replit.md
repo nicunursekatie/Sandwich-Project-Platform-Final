@@ -30,7 +30,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Messaging & Notifications**: Multi-layered communication system featuring a Gmail-style email interface, committee-specific messaging, and real-time Socket.IO chat with @mentions, autocomplete, persistent like functionality, and email notifications. Dashboard bell notifications provide timely updates.
 - **Drivers Management**: Fully functional drivers management component with agreement tracking, CRUD operations, permissions, and input validation.
 - **Operational Tools**: Includes a project management system, meeting management, work logs, user feedback portal, analytics dashboards with PDF/CSV report generation, and a toolkit for important documents.
-- **Data Integrity**: Ensured through automated audit logging, Zod validation, and timezone-safe date handling.
+- **Data Integrity**: Ensured through automated audit logging, Zod validation, and timezone-safe date handling. Critical timezone fixes implemented across all date displays to prevent date shifting issues (August 31, 2025).
 - **Form Validation & Data Conversion**: Critical data type mismatches resolved with automatic conversion handling in backend schemas.
 - **Collection Walkthrough Tool**: Permissions-based data entry system with a standard form and a step-by-step walkthrough, assigning collection dates to the most recent Wednesday.
 - **Kudos System**: Integrated into the Gmail-style inbox with read tracking and archiving.
@@ -50,7 +50,23 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Milestone Display Enhancement**: Milestone badges removed from project cards, with milestone information appearing only in dedicated sections on project detail pages.
 - **Enhanced Meeting Discussion Interface**: Redesigned meeting management tab with individual project actions ("Send to Agenda", "Table for Later"), compact project views, and clear, intuitive discussion fields with auto-save functionality.
 - **Finalize Agenda PDF Export**: Generates professionally formatted meeting agendas with TSP branding, agenda items, and tabled projects section, including agenda status summary.
-- **Event Requests Management System**: Complete event request tracking system with database schema, duplicate detection, status tracking, permissions-based access, CRUD API endpoints, responsive UI, and full Google Sheets integration with automatic 5-minute background sync plus manual sync controls. Cards feature contact tracking workflow buttons instead of edit/delete functionality for standard users, focusing on operational workflow management.
+- **Event Requests Management System**: Complete event request tracking system with database schema, duplicate detection, status tracking, permissions-based access, CRUD API endpoints, responsive UI, and full Google Sheets integration with automatic 5-minute background sync plus manual sync controls. Cards feature contact tracking workflow buttons instead of edit/delete functionality for standard users, focusing on operational workflow management. Enhanced Google Sheets sync with improved duplicate detection using case-insensitive matching for organization and contact names (August 31, 2025).
+
+## Recent Technical Fixes & Improvements
+
+### August 31, 2025 - Timezone and Date Display Fixes
+- **Critical Timezone Bug Resolution**: Fixed application-wide timezone conversion issues that were causing dates to display one day earlier than intended (e.g., showing August 26 instead of August 27).
+- **Organizations Catalog Date Display**: Resolved "Not specified" event date issue by fixing API field name mismatch (`eventDate` vs `desiredEventDate`) and implementing proper timezone-safe date parsing for database timestamps.
+- **Event Planning Tab**: Fixed "Invalid date" displays throughout the Event Planning component by replacing problematic date-fns format calls with timezone-safe native JavaScript date formatting.
+- **Google Sheets Sync Enhancement**: Improved duplicate detection logic to prevent case-sensitive duplicates (e.g., "KERRI GARFINKLE" vs "Kerri Garfinkle") by implementing case-insensitive matching for organization names and contact names.
+- **Database Field Mapping**: Corrected organizations catalog API to properly use `desiredEventDate` field from database instead of non-existent `eventDate` field.
+- **Date Parsing Standardization**: Implemented consistent timezone-safe date parsing across all components using `T12:00:00` injection to prevent UTC conversion issues.
+
+### Key Technical Learning Points
+- Database timestamps in format "YYYY-MM-DD HH:MM:SS" require careful parsing to avoid timezone conversion.
+- Google Sheets sync duplicate detection must account for case variations and missing email fields.
+- Event requests API field mappings must align with actual database schema column names.
+- Frontend date parsing should use regex pattern matching to handle different timestamp formats consistently.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
