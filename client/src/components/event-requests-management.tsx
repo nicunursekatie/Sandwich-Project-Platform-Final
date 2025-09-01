@@ -366,13 +366,6 @@ export default function EventRequestsManagement() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Error completing contact", 
-        description: error.message,
-        variant: "destructive" 
-      });
     }
   });
 
@@ -413,13 +406,6 @@ export default function EventRequestsManagement() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Error saving event details", 
-        description: error.message,
-        variant: "destructive" 
-      });
     }
   });
 
@@ -608,7 +594,7 @@ export default function EventRequestsManagement() {
     
     // Sort requests events
     if (activeTab === 'requests') {
-      return filtered.sort((a, b) => {
+      return filtered.sort((a: any, b: any) => {
         if (requestsSortBy === 'organization') {
           const orgA = a.organizationName.toLowerCase();
           const orgB = b.organizationName.toLowerCase();
@@ -627,7 +613,7 @@ export default function EventRequestsManagement() {
     
     // Sort scheduled events
     if (activeTab === 'scheduled') {
-      return filtered.sort((a, b) => {
+      return filtered.sort((a: any, b: any) => {
         if (scheduledSortBy === 'organization') {
           const orgA = a.organizationName.toLowerCase();
           const orgB = b.organizationName.toLowerCase();
@@ -646,7 +632,7 @@ export default function EventRequestsManagement() {
     
     // Sort past events
     if (activeTab === 'past') {
-      return filtered.sort((a, b) => {
+      return filtered.sort((a: any, b: any) => {
         if (pastSortBy === 'organization') {
           const orgA = a.organizationName.toLowerCase();
           const orgB = b.organizationName.toLowerCase();
@@ -1356,7 +1342,13 @@ export default function EventRequestsManagement() {
       eventEndTime: formData.get("eventEndTime") || null,
       pickupTime: formData.get("pickupTime") || null,
       sandwichTypes: formData.get("sandwichTypes") || null,
+      // Driver fields
+      driversArranged: formData.get("driversArranged") === "true",
       driverDetails: formData.get("driverDetails") || null,
+      driverPickupTime: formData.get("driverPickupTime") || null,
+      driverNotes: formData.get("driverNotes") || null,
+      // Speaker fields
+      speakersNeeded: formData.get("speakersNeeded") === "true",
       speakerDetails: formData.get("speakerDetails") || null,
       additionalRequirements: formData.get("additionalRequirements") || null,
       // TSP Contact fields
@@ -2005,14 +1997,75 @@ export default function EventRequestsManagement() {
                   <Input name="sandwichTypes" defaultValue={(selectedRequest as any).sandwichTypes || ""} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="driverDetails">Drivers</Label>
-                  <Input name="driverDetails" defaultValue={(selectedRequest as any).driverDetails || ""} />
+              {/* Drivers Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Drivers</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="driversArranged">Drivers Arranged?</Label>
+                    <select 
+                      name="driversArranged" 
+                      defaultValue={(selectedRequest as any).driversArranged ? "true" : "false"}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Are drivers arranged?</option>
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="driverPickupTime">Driver Pickup Time</Label>
+                    <Input 
+                      name="driverPickupTime" 
+                      type="time"
+                      defaultValue={(selectedRequest as any).driverPickupTime || ""} 
+                      placeholder="When should drivers pick up?"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="speakerDetails">Speakers</Label>
-                  <Input name="speakerDetails" defaultValue={(selectedRequest as any).speakerDetails || ""} />
+                  <Label htmlFor="driverDetails">Driver Details</Label>
+                  <Textarea 
+                    name="driverDetails" 
+                    rows={2}
+                    defaultValue={(selectedRequest as any).driverDetails || ""} 
+                    placeholder="Names of drivers, contact info, special instructions..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="driverNotes">Driver Notes</Label>
+                  <Textarea 
+                    name="driverNotes" 
+                    rows={2}
+                    defaultValue={(selectedRequest as any).driverNotes || ""} 
+                    placeholder="Special instructions for drivers..."
+                  />
+                </div>
+              </div>
+
+              {/* Speakers Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Speakers</h3>
+                <div>
+                  <Label htmlFor="speakersNeeded">Speakers Necessary?</Label>
+                  <select 
+                    name="speakersNeeded" 
+                    defaultValue={(selectedRequest as any).speakersNeeded ? "true" : "false"}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Are speakers needed?</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="speakerDetails">Speaker Details</Label>
+                  <Textarea 
+                    name="speakerDetails" 
+                    rows={2}
+                    defaultValue={(selectedRequest as any).speakerDetails || ""} 
+                    placeholder="Names and topics for speakers..."
+                  />
                 </div>
               </div>
               <div>
