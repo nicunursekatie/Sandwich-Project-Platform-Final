@@ -4,6 +4,7 @@ import { storage } from "../storage-wrapper";
 import {
   insertEventRequestSchema,
   insertOrganizationSchema,
+  insertEventVolunteerSchema,
 } from "@shared/schema";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { requirePermission } from "../middleware/auth";
@@ -1102,6 +1103,169 @@ router.patch("/:id/drivers", isAuthenticated, async (req, res) => {
   } catch (error) {
     console.error("Error updating driver assignments:", error);
     res.status(500).json({ error: "Failed to update driver assignments" });
+  }
+});
+
+// Event Volunteers Routes
+
+// Get all event volunteers for a specific event
+router.get("/:eventId/volunteers", isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.eventId);
+    
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: "Valid event ID required" });
+    }
+    
+    const volunteers = await storage.getEventVolunteersByEventId(eventId);
+    
+    console.log(`Retrieved ${volunteers.length} volunteers for event ${eventId}`);
+    res.json(volunteers);
+  } catch (error) {
+    console.error("Error fetching event volunteers:", error);
+    res.status(500).json({ error: "Failed to fetch event volunteers" });
+  }
+});
+
+// Sign up a user as a volunteer for an event
+router.post("/:eventId/volunteers", isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.eventId);
+    const userId = req.user?.id;
+    
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: "Valid event ID required" });
+    }
+    
+    if (!userId) {
+      return res.status(400).json({ error: "User authentication required" });
+    }
+    
+    // Validate request body against schema
+    const volunteerData = insertEventVolunteerSchema.parse({
+      ...req.body,
+      eventRequestId: eventId,
+      volunteerUserId: userId
+    });
+    
+    // Check if user is already signed up for this event with the same role
+    const existingVolunteers = await storage.getEventVolunteersByEventId(eventId);
+    const alreadySignedUp = existingVolunteers.find(v => 
+      v.volunteerUserId === userId && v.role === volunteerData.role
+    );
+    
+    if (alreadySignedUp) {
+      return res.status(400).json({ 
+        error: `You are already signed up as a ${volunteerData.role} for this event` 
+      });
+    }
+    
+    const newVolunteer = await storage.createEventVolunteer(volunteerData);
+    
+    await logActivity(
+      req,
+      res,
+      "volunteer_signup",
+      `Signed up as ${volunteerData.role} for event: ${eventId}`
+    );
+    
+    res.status(201).json(newVolunteer);
+  } catch (error) {
+    console.error("Error creating event volunteer signup:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid volunteer data", details: error.errors });
+    }
+    res.status(500).json({ error: "Failed to sign up for event" });
+  }
+});
+
+// Update volunteer status or assignment
+router.patch("/volunteers/:volunteerId", isAuthenticated, async (req, res) => {
+  try {
+    const volunteerId = parseInt(req.params.volunteerId);
+    
+    if (!volunteerId || isNaN(volunteerId)) {
+      return res.status(400).json({ error: "Valid volunteer ID required" });
+    }
+    
+    const updates = req.body;
+    
+    const updatedVolunteer = await storage.updateEventVolunteer(volunteerId, updates);
+    
+    if (!updatedVolunteer) {
+      return res.status(404).json({ error: "Volunteer assignment not found" });
+    }
+    
+    await logActivity(
+      req,
+      res,
+      "volunteer_update",
+      `Updated volunteer assignment: ${volunteerId}`
+    );
+    
+    res.json(updatedVolunteer);
+  } catch (error) {
+    console.error("Error updating event volunteer:", error);
+    res.status(500).json({ error: "Failed to update volunteer assignment" });
+  }
+});
+
+// Remove volunteer from event
+router.delete("/volunteers/:volunteerId", isAuthenticated, async (req, res) => {
+  try {
+    const volunteerId = parseInt(req.params.volunteerId);
+    
+    if (!volunteerId || isNaN(volunteerId)) {
+      return res.status(400).json({ error: "Valid volunteer ID required" });
+    }
+    
+    const deleted = await storage.deleteEventVolunteer(volunteerId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: "Volunteer assignment not found" });
+    }
+    
+    await logActivity(
+      req,
+      res,
+      "volunteer_removal",
+      `Removed volunteer assignment: ${volunteerId}`
+    );
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error removing event volunteer:", error);
+    res.status(500).json({ error: "Failed to remove volunteer assignment" });
+  }
+});
+
+// Get all volunteer signups for the current user
+router.get("/my-volunteers", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "User authentication required" });
+    }
+    
+    const userVolunteers = await storage.getEventVolunteersByUserId(userId);
+    
+    // Enrich with event details
+    const enrichedVolunteers = await Promise.all(
+      userVolunteers.map(async (volunteer) => {
+        const eventRequest = await storage.getEventRequestById(volunteer.eventRequestId);
+        return {
+          ...volunteer,
+          eventRequest
+        };
+      })
+    );
+    
+    console.log(`Retrieved ${userVolunteers.length} volunteer signups for user ${userId}`);
+    res.json(enrichedVolunteers);
+  } catch (error) {
+    console.error("Error fetching user volunteers:", error);
+    res.status(500).json({ error: "Failed to fetch volunteer signups" });
   }
 });
 

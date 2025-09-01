@@ -1,5 +1,5 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations,
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations, eventVolunteers,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -34,7 +34,8 @@ import {
   type DocumentPermission, type InsertDocumentPermission,
   type DocumentAccessLog, type InsertDocumentAccessLog,
   type EventRequest, type InsertEventRequest,
-  type Organization, type InsertOrganization
+  type Organization, type InsertOrganization,
+  type EventVolunteer, type InsertEventVolunteer
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like, ilike } from "drizzle-orm";
@@ -2734,5 +2735,53 @@ export class DatabaseStorage implements IStorage {
         sql`${organizations.alternateNames} && ARRAY[${query}]::text[]`
       ))
       .orderBy(organizations.name);
+  }
+
+  // Event volunteers methods
+  async getAllEventVolunteers(): Promise<EventVolunteer[]> {
+    return await db.select()
+      .from(eventVolunteers)
+      .orderBy(desc(eventVolunteers.signedUpAt));
+  }
+
+  async getEventVolunteersByEventId(eventRequestId: number): Promise<EventVolunteer[]> {
+    return await db.select()
+      .from(eventVolunteers)
+      .where(eq(eventVolunteers.eventRequestId, eventRequestId))
+      .orderBy(eventVolunteers.role, eventVolunteers.signedUpAt);
+  }
+
+  async getEventVolunteersByUserId(userId: string): Promise<EventVolunteer[]> {
+    return await db.select()
+      .from(eventVolunteers)
+      .where(eq(eventVolunteers.volunteerUserId, userId))
+      .orderBy(desc(eventVolunteers.signedUpAt));
+  }
+
+  async createEventVolunteer(volunteer: InsertEventVolunteer): Promise<EventVolunteer> {
+    const [result] = await db.insert(eventVolunteers)
+      .values({
+        ...volunteer,
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
+  }
+
+  async updateEventVolunteer(id: number, updates: Partial<EventVolunteer>): Promise<EventVolunteer | undefined> {
+    const [result] = await db.update(eventVolunteers)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(eventVolunteers.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteEventVolunteer(id: number): Promise<boolean> {
+    const result = await db.delete(eventVolunteers)
+      .where(eq(eventVolunteers.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }

@@ -1,5 +1,5 @@
 import { 
-  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations,
+  users, projects, projectTasks, projectComments, taskCompletions, messages, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, sandwichDistributions, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, notifications, committees, committeeMemberships, announcements, suggestions, suggestionResponses, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations, eventVolunteers,
   type User, type InsertUser, type UpsertUser,
   type Project, type InsertProject,
   type ProjectTask, type InsertProjectTask,
@@ -31,7 +31,8 @@ import {
   type DocumentPermission, type InsertDocumentPermission,
   type DocumentAccessLog, type InsertDocumentAccessLog,
   type EventRequest, type InsertEventRequest,
-  type Organization, type InsertOrganization
+  type Organization, type InsertOrganization,
+  type EventVolunteer, type InsertEventVolunteer
 } from "@shared/schema";
 
 export interface IStorage {
@@ -355,6 +356,14 @@ export interface IStorage {
   updateOrganization(id: number, updates: Partial<Organization>): Promise<Organization | undefined>;
   deleteOrganization(id: number): Promise<boolean>;
   searchOrganizations(query: string): Promise<Organization[]>;
+
+  // Event volunteers
+  getAllEventVolunteers(): Promise<EventVolunteer[]>;
+  getEventVolunteersByEventId(eventRequestId: number): Promise<EventVolunteer[]>;
+  getEventVolunteersByUserId(userId: string): Promise<EventVolunteer[]>;
+  createEventVolunteer(volunteer: InsertEventVolunteer): Promise<EventVolunteer>;
+  updateEventVolunteer(id: number, updates: Partial<EventVolunteer>): Promise<EventVolunteer | undefined>;
+  deleteEventVolunteer(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -389,6 +398,7 @@ export class MemStorage implements IStorage {
   private documentAccessLogs: Map<number, DocumentAccessLog>;
   private eventRequests: Map<number, EventRequest>;
   private organizations: Map<number, Organization>;
+  private eventVolunteers: Map<number, EventVolunteer>;
   private currentIds: {
     user: number;
     project: number;
@@ -419,6 +429,7 @@ export class MemStorage implements IStorage {
     documentAccessLog: number;
     eventRequest: number;
     organization: number;
+    eventVolunteer: number;
   };
 
   constructor() {
@@ -454,6 +465,7 @@ export class MemStorage implements IStorage {
     this.documentAccessLogs = new Map();
     this.eventRequests = new Map();
     this.organizations = new Map();
+    this.eventVolunteers = new Map();
     this.currentIds = {
       user: 1,
       project: 1,
@@ -484,7 +496,8 @@ export class MemStorage implements IStorage {
       documentPermission: 1,
       documentAccessLog: 1,
       eventRequest: 1,
-      organization: 1
+      organization: 1,
+      eventVolunteer: 1
     };
     
     // No sample data - start with clean storage
@@ -2134,6 +2147,56 @@ export class MemStorage implements IStorage {
         org.description?.toLowerCase().includes(lowerQuery)
       )
       .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Event volunteers methods
+  async getAllEventVolunteers(): Promise<EventVolunteer[]> {
+    return Array.from(this.eventVolunteers.values())
+      .sort((a, b) => new Date(b.signedUpAt).getTime() - new Date(a.signedUpAt).getTime());
+  }
+
+  async getEventVolunteersByEventId(eventRequestId: number): Promise<EventVolunteer[]> {
+    return Array.from(this.eventVolunteers.values())
+      .filter(volunteer => volunteer.eventRequestId === eventRequestId)
+      .sort((a, b) => a.role.localeCompare(b.role));
+  }
+
+  async getEventVolunteersByUserId(userId: string): Promise<EventVolunteer[]> {
+    return Array.from(this.eventVolunteers.values())
+      .filter(volunteer => volunteer.volunteerUserId === userId)
+      .sort((a, b) => new Date(b.signedUpAt).getTime() - new Date(a.signedUpAt).getTime());
+  }
+
+  async createEventVolunteer(volunteer: InsertEventVolunteer): Promise<EventVolunteer> {
+    const id = this.currentIds.eventVolunteer++;
+    const now = new Date();
+    const newVolunteer: EventVolunteer = {
+      id,
+      ...volunteer,
+      signedUpAt: now,
+      createdAt: now,
+      updatedAt: now,
+      confirmedAt: null
+    };
+    this.eventVolunteers.set(id, newVolunteer);
+    return newVolunteer;
+  }
+
+  async updateEventVolunteer(id: number, updates: Partial<EventVolunteer>): Promise<EventVolunteer | undefined> {
+    const existing = this.eventVolunteers.get(id);
+    if (!existing) return undefined;
+    
+    const updated: EventVolunteer = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.eventVolunteers.set(id, updated);
+    return updated;
+  }
+
+  async deleteEventVolunteer(id: number): Promise<boolean> {
+    return this.eventVolunteers.delete(id);
   }
 }
 

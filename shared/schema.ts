@@ -1161,6 +1161,28 @@ export const organizations = pgTable("organizations", {
   nameIdx: index("idx_organizations_name").on(table.name),
 }));
 
+// Event volunteers table for managing volunteer assignments to events
+export const eventVolunteers = pgTable("event_volunteers", {
+  id: serial("id").primaryKey(),
+  eventRequestId: integer("event_request_id").notNull(), // Reference to event_requests.id
+  volunteerUserId: varchar("volunteer_user_id"), // Reference to users.id for registered users
+  volunteerName: varchar("volunteer_name"), // Name for non-registered volunteers  
+  volunteerEmail: varchar("volunteer_email"), // Email for non-registered volunteers
+  volunteerPhone: varchar("volunteer_phone"), // Phone for non-registered volunteers
+  role: varchar("role").notNull(), // 'driver', 'speaker', 'general'
+  status: varchar("status").notNull().default("pending"), // 'pending', 'confirmed', 'declined', 'assigned'
+  notes: text("notes"), // Special notes or requirements
+  assignedBy: varchar("assigned_by"), // User ID who assigned this volunteer
+  signedUpAt: timestamp("signed_up_at").defaultNow().notNull(),
+  confirmedAt: timestamp("confirmed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  eventIdIdx: index("idx_event_volunteers_event_id").on(table.eventRequestId),
+  volunteerIdx: index("idx_event_volunteers_volunteer").on(table.volunteerUserId),
+  roleStatusIdx: index("idx_event_volunteers_role_status").on(table.role, table.status),
+}));
+
 export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   id: true,
   createdAt: true,
@@ -1420,3 +1442,15 @@ export type StreamMessage = typeof streamMessages.$inferSelect;
 export type InsertStreamMessage = z.infer<typeof insertStreamMessageSchema>;
 export type StreamThread = typeof streamThreads.$inferSelect;
 export type InsertStreamThread = z.infer<typeof insertStreamThreadSchema>;
+
+// Event volunteers schema types
+export const insertEventVolunteerSchema = createInsertSchema(eventVolunteers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  signedUpAt: true,
+  confirmedAt: true
+});
+
+export type EventVolunteer = typeof eventVolunteers.$inferSelect;
+export type InsertEventVolunteer = z.infer<typeof insertEventVolunteerSchema>;

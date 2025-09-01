@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 // Removed formatDateForDisplay import as we now use toLocaleDateString directly
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { DriverSelection } from "./driver-selection";
+import EventVolunteerSignup from "./event-volunteer-signup";
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24: string): string => {
@@ -1345,7 +1346,6 @@ export default function EventRequestsManagement() {
       // Driver fields
       driversArranged: formData.get("driversArranged") === "true",
       driverDetails: formData.get("driverDetails") || null,
-      driverPickupTime: formData.get("driverPickupTime") || null,
       driverNotes: formData.get("driverNotes") || null,
       // Speaker fields
       speakersNeeded: formData.get("speakersNeeded") === "true",
@@ -2000,28 +2000,17 @@ export default function EventRequestsManagement() {
               {/* Drivers Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Drivers</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="driversArranged">Drivers Arranged?</Label>
-                    <select 
-                      name="driversArranged" 
-                      defaultValue={(selectedRequest as any).driversArranged ? "true" : "false"}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="">Are drivers arranged?</option>
-                      <option value="true">Yes</option>
-                      <option value="false">No</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="driverPickupTime">Driver Pickup Time</Label>
-                    <Input 
-                      name="driverPickupTime" 
-                      type="time"
-                      defaultValue={(selectedRequest as any).driverPickupTime || ""} 
-                      placeholder="When should drivers pick up?"
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="driversArranged">Drivers Arranged?</Label>
+                  <select 
+                    name="driversArranged" 
+                    defaultValue={(selectedRequest as any).driversArranged ? "true" : "false"}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Are drivers arranged?</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="driverDetails">Driver Details</Label>
@@ -2562,6 +2551,15 @@ export default function EventRequestsManagement() {
                   rows={4}
                   defaultValue={detailsRequest.planningNotes}
                   placeholder="Special requirements, logistics notes, follow-up tasks, or any other pertinent information for this event"
+                />
+              </div>
+
+              {/* Volunteer Signup Section */}
+              <div className="border-t pt-6">
+                <EventVolunteerSignup 
+                  eventId={detailsRequest.id}
+                  eventTitle={detailsRequest.organizationName}
+                  eventDate={detailsRequest.desiredEventDate}
                 />
               </div>
 

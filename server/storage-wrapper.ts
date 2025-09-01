@@ -1396,6 +1396,63 @@ class StorageWrapper implements IStorage {
       () => this.fallbackStorage.deleteOrganization(id)
     );
   }
+
+  async searchOrganizations(query: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.searchOrganizations(query),
+      () => this.fallbackStorage.searchOrganizations(query)
+    );
+  }
+
+  // Event volunteer methods
+  async getAllEventVolunteers() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllEventVolunteers(),
+      () => this.fallbackStorage.getAllEventVolunteers()
+    );
+  }
+
+  async getEventVolunteersByEventId(eventRequestId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventVolunteersByEventId(eventRequestId),
+      () => this.fallbackStorage.getEventVolunteersByEventId(eventRequestId)
+    );
+  }
+
+  async getEventVolunteersByUserId(userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventVolunteersByUserId(userId),
+      () => this.fallbackStorage.getEventVolunteersByUserId(userId)
+    );
+  }
+
+  async createEventVolunteer(volunteer: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createEventVolunteer(volunteer),
+      () => this.fallbackStorage.createEventVolunteer(volunteer)
+    );
+  }
+
+  async updateEventVolunteer(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateEventVolunteer(id, updates),
+      () => this.fallbackStorage.updateEventVolunteer(id, updates)
+    );
+  }
+
+  async deleteEventVolunteer(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteEventVolunteer(id),
+      () => this.fallbackStorage.deleteEventVolunteer(id)
+    );
+  }
+
+  async getEventRequestById(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getEventRequest(id),
+      () => this.fallbackStorage.getEventRequest(id)
+    );
+  }
 }
 
 export const storage = new StorageWrapper();
