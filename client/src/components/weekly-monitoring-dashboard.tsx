@@ -193,26 +193,27 @@ export default function WeeklyMonitoringDashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Clock className="h-6 w-6 text-[#236383]" />
-            Weekly Submission Monitoring
+    <div className="max-w-6xl mx-auto p-2 sm:p-4 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383] flex-shrink-0" />
+            <span className="truncate">Weekly Submission Monitoring</span>
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
             Track which host locations submit their sandwich counts each week
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:gap-2">
           <Button
             onClick={() => testEmailMutation.mutate()}
             variant="outline"
             disabled={testEmailMutation.isPending}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
           >
-            <Mail className="h-4 w-4" />
-            {testEmailMutation.isPending ? "Sending..." : "Test Email"}
+            <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">{testEmailMutation.isPending ? "Sending..." : "Test Email"}</span>
+            <span className="sm:hidden">{testEmailMutation.isPending ? "Send..." : "Email"}</span>
           </Button>
           
           {smsConfig?.isConfigured && (
@@ -230,10 +231,11 @@ export default function WeeklyMonitoringDashboard() {
               }}
               variant="outline"
               disabled={sendSMSRemindersMutation.isPending || !submissionStatus.some(s => !s.hasSubmitted)}
-              className="flex items-center gap-2 text-green-700 border-green-200 hover:bg-green-50"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-green-700 border-green-200 hover:bg-green-50 px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
             >
-              <MessageSquare className="h-4 w-4" />
-              {sendSMSRemindersMutation.isPending ? "Sending SMS..." : "Send SMS Reminders"}
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden lg:inline">{sendSMSRemindersMutation.isPending ? "Sending SMS..." : "Send SMS Reminders"}</span>
+              <span className="lg:hidden">{sendSMSRemindersMutation.isPending ? "SMS..." : "SMS All"}</span>
             </Button>
           )}
           
@@ -241,28 +243,30 @@ export default function WeeklyMonitoringDashboard() {
             onClick={() => setShowSMSTest(!showSMSTest)}
             variant="outline"
             disabled={!smsConfig?.isConfigured}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
           >
-            <Smartphone className="h-4 w-4" />
-            Test SMS
+            <Smartphone className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Test SMS</span>
+            <span className="sm:hidden">Test</span>
           </Button>
           
           <Button
             onClick={() => setShowAnnouncementPanel(!showAnnouncementPanel)}
             variant="outline"
-            className="flex items-center gap-2"
+            className="hidden sm:flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
           >
-            <Send className="h-4 w-4" />
-            SMS Announcement
+            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span>SMS Announcement</span>
           </Button>
           
           <Button
             onClick={() => selectedWeek === 0 ? manualCheckMutation.mutate() : checkWeekMutation.mutate(selectedWeek)}
             disabled={manualCheckMutation.isPending || checkWeekMutation.isPending}
-            className="flex items-center gap-2 bg-[#236383] hover:bg-[#1d5470]"
+            className="flex items-center gap-1 sm:gap-2 bg-[#236383] hover:bg-[#1d5470] text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
           >
-            <RefreshCw className={`h-4 w-4 ${(manualCheckMutation.isPending || checkWeekMutation.isPending) ? 'animate-spin' : ''}`} />
-            {(manualCheckMutation.isPending || checkWeekMutation.isPending) ? "Checking..." : `Check ${getWeekLabel(selectedWeek)}`}
+            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${(manualCheckMutation.isPending || checkWeekMutation.isPending) ? 'animate-spin' : ''}`} />
+            <span className="hidden lg:inline">{(manualCheckMutation.isPending || checkWeekMutation.isPending) ? "Checking..." : `Check ${getWeekLabel(selectedWeek)}`}</span>
+            <span className="lg:hidden">{(manualCheckMutation.isPending || checkWeekMutation.isPending) ? "Check..." : "Check"}</span>
           </Button>
         </div>
       </div>

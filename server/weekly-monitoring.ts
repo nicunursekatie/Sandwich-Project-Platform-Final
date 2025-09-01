@@ -1,6 +1,6 @@
 import { MailService } from '@sendgrid/mail';
 import { db } from './db';
-import { sandwichCollections, hosts } from '@shared/schema';
+import { sandwichCollections, hosts, hostContacts } from '@shared/schema';
 import { eq, sql, and, gte, lte, like, or } from 'drizzle-orm';
 
 if (!process.env.SENDGRID_API_KEY) {
@@ -517,24 +517,50 @@ export async function sendEmailReminder(location: string, appUrl?: string): Prom
 
   try {
     // Get host contact information for this location
-    const hostContacts = await db.select()
+    // First find the host by name
+    const hostRecord = await db.select()
       .from(hosts)
-      .where(eq(hosts.locationName, location));
+      .where(eq(hosts.name, location))
+      .limit(1);
 
-    if (hostContacts.length === 0) {
+    if (hostRecord.length === 0) {
       return {
         success: false,
-        message: `No host contact found for location: ${location}`
+        message: `No host found for location: ${location}`
       };
     }
 
-    const host = hostContacts[0];
-    const contactEmail = host.email;
+    // Then get the primary contact for this host
+    const contacts = await db.select()
+      .from(hostContacts)
+      .where(and(
+        eq(hostContacts.hostId, hostRecord[0].id),
+        eq(hostContacts.isPrimary, true)
+      ))
+      .limit(1);
 
+    // If no primary contact, get any contact with an email
+    let contact = contacts[0];
+    if (!contact) {
+      const allContacts = await db.select()
+        .from(hostContacts)
+        .where(eq(hostContacts.hostId, hostRecord[0].id));
+      
+      contact = allContacts.find(c => c.email) || allContacts[0];
+    }
+
+    if (!contact) {
+      return {
+        success: false,
+        message: `No contact person found for location: ${location}`
+      };
+    }
+
+    const contactEmail = contact.email;
     if (!contactEmail) {
       return {
         success: false,
-        message: `No email address found for ${location}`
+        message: `No email address found for ${location} contact: ${contact.name}`
       };
     }
 
@@ -544,7 +570,7 @@ export async function sendEmailReminder(location: string, appUrl?: string): Prom
 
     const emailSubject = `🥪 Friendly Reminder: Weekly Sandwich Collection Numbers`;
     
-    const emailText = `Hi ${host.contactPerson || 'there'}!
+    const emailText = `Hi ${contact.name || 'there'}!
 
 Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet (${weekLabel}).
 
@@ -568,7 +594,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
           </div>
           
           <div style="margin-bottom: 25px;">
-            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hi ${host.contactPerson || 'there'}!</p>
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hi ${contact.name || 'there'}!</p>
             
             <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet.</p>
             
@@ -607,7 +633,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     
     return {
       success: true,
-      message: `Email reminder sent successfully to ${host.contactPerson || location} at ${contactEmail}`
+      message: `Email reminder sent successfully to ${contact.name || location} at ${contactEmail}`
     };
 
   } catch (error) {
