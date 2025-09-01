@@ -222,6 +222,14 @@ export default function EventRequestsManagement() {
     refetchOnMount: true
   });
 
+  // Debug logging
+  console.log('DEBUG: Event requests query state:', { 
+    isLoading, 
+    error: error?.message, 
+    dataLength: eventRequests.length,
+    sampleData: eventRequests.slice(0, 2)
+  });
+
   const { data: users = [] } = useQuery({
     queryKey: ["/api/users/for-assignments"],
     queryFn: () => apiRequest("GET", "/api/users/for-assignments"),
@@ -1422,6 +1430,28 @@ export default function EventRequestsManagement() {
 
     completeEventDetailsMutation.mutate(data);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8">
+          <p>Loading event requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8 text-red-600">
+          <p>Error loading event requests: {(error as any)?.message || 'Unknown error'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
