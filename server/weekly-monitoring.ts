@@ -26,7 +26,7 @@ const EXPECTED_HOST_LOCATIONS = [
 
 // Admin email to receive notifications
 const ADMIN_EMAIL = 'katielong2316@gmail.com';
-const FROM_EMAIL = 'notifications@sandwich-project.org'; // Update with your verified sender
+const FROM_EMAIL = 'katielong2316@gmail.com'; // Using verified sender for reliable delivery
 
 interface WeeklySubmissionStatus {
   location: string;
