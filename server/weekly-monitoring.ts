@@ -102,6 +102,38 @@ export function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
 }
 
 /**
+ * Get the most recent Wednesday's date (for collection date reference)
+ */
+export function getPreviousWednesday(): Date {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 3 = Wednesday
+  
+  // Calculate days to go back to reach Wednesday
+  let daysBack;
+  if (dayOfWeek === 0) { // Sunday
+    daysBack = 4; // Go back to previous Wednesday
+  } else if (dayOfWeek === 1) { // Monday
+    daysBack = 5; // Go back to previous Wednesday
+  } else if (dayOfWeek === 2) { // Tuesday
+    daysBack = 6; // Go back to previous Wednesday
+  } else if (dayOfWeek === 3) { // Wednesday
+    daysBack = 0; // Today is Wednesday
+  } else if (dayOfWeek === 4) { // Thursday
+    daysBack = 1; // Yesterday was Wednesday
+  } else if (dayOfWeek === 5) { // Friday
+    daysBack = 2; // Two days ago was Wednesday
+  } else { // Saturday (dayOfWeek === 6)
+    daysBack = 3; // Three days ago was Wednesday
+  }
+  
+  const wednesday = new Date(now);
+  wednesday.setDate(now.getDate() - daysBack);
+  wednesday.setHours(0, 0, 0, 0);
+  
+  return wednesday;
+}
+
+/**
  * Check Dunwoody special requirements: need both Lisa Hiles AND either Stephanie or Marcy
  */
 function checkDunwoodyStatus(submissions: any[], location: string): any {
@@ -565,14 +597,19 @@ export async function sendEmailReminder(location: string, appUrl?: string): Prom
     }
 
     const loginUrl = appUrl || 'https://sandwich-project.replit.app';
-    const { startDate, endDate } = getCurrentWeekRange();
-    const weekLabel = `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+    const previousWednesday = getPreviousWednesday();
+    const weekLabel = previousWednesday.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
 
     const emailSubject = `🥪 Friendly Reminder: Weekly Sandwich Collection Numbers`;
     
     const emailText = `Hi ${contact.name || 'there'}!
 
-Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet (${weekLabel}).
+Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for ${weekLabel} yet.
 
 When you have a moment, could you please log in to our app and submit your numbers? It only takes a minute and really helps us track our community impact.
 
@@ -599,7 +636,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
             <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet.</p>
             
             <div style="background: #e3f2fd; border-left: 4px solid #236383; padding: 15px; margin: 20px 0; border-radius: 4px;">
-              <p style="margin: 0; font-weight: 600; color: #236383;">Week Period: ${weekLabel}</p>
+              <p style="margin: 0; font-weight: 600; color: #236383;">Collection Date: ${weekLabel}</p>
               <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">Location: ${location}</p>
             </div>
             
