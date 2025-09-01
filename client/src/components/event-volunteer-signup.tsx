@@ -71,7 +71,10 @@ export default function EventVolunteerSignup({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showSignupDialog, setShowSignupDialog] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [signupRole, setSignupRole] = useState<'driver' | 'speaker'>('driver');
+  const [assignRole, setAssignRole] = useState<'driver' | 'speaker'>('driver');
+  const [selectedDriverId, setSelectedDriverId] = useState<string>("");
   const [volunteerName, setVolunteerName] = useState((user as any)?.firstName && (user as any)?.lastName ? `${(user as any).firstName} ${(user as any).lastName}` : "");
   const [volunteerEmail, setVolunteerEmail] = useState((user as any)?.email || "");
 
@@ -79,6 +82,12 @@ export default function EventVolunteerSignup({
   const { data: volunteers = [], isLoading } = useQuery({
     queryKey: ['/api/event-requests/volunteers', eventId],
     queryFn: () => apiRequest('GET', `/api/event-requests/volunteers/${eventId}`)
+  });
+
+  // Fetch available drivers for manual assignment
+  const { data: availableDrivers = [] } = useQuery({
+    queryKey: ['/api/event-requests/drivers/available'],
+    queryFn: () => apiRequest('GET', '/api/event-requests/drivers/available')
   });
 
   // Sign up mutation
@@ -144,6 +153,32 @@ export default function EventVolunteerSignup({
     signupMutation.mutate(data);
   };
 
+  const handleAssign = () => {
+    if (!selectedDriverId) {
+      toast({ title: "Please select a driver", variant: "destructive" });
+      return;
+    }
+
+    const selectedDriver = availableDrivers.find((d: any) => d.id.toString() === selectedDriverId);
+    if (!selectedDriver) {
+      toast({ title: "Driver not found", variant: "destructive" });
+      return;
+    }
+
+    const data = {
+      eventRequestId: eventId,
+      role: assignRole,
+      volunteerUserId: null, // Manual assignment, not user signup
+      volunteerName: selectedDriver.name,
+      volunteerEmail: selectedDriver.email || null,
+      status: 'confirmed'
+    };
+
+    signupMutation.mutate(data);
+    setShowAssignDialog(false);
+    setSelectedDriverId("");
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -192,58 +227,109 @@ export default function EventVolunteerSignup({
               ))}
               
               {availableDriverSpots > 0 && (
-                <Dialog open={showSignupDialog && signupRole === 'driver'} onOpenChange={(open) => {
-                  if (open) {
-                    setSignupRole('driver');
-                    setShowSignupDialog(true);
-                  } else {
-                    setShowSignupDialog(false);
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Sign Up as Driver
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Sign Up as Driver</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="volunteerName">Your Name</Label>
-                        <Input
-                          id="volunteerName"
-                          value={volunteerName}
-                          onChange={(e) => setVolunteerName(e.target.value)}
-                          placeholder="Enter your name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="volunteerEmail">Email (optional)</Label>
-                        <Input
-                          id="volunteerEmail"
-                          type="email"
-                          value={volunteerEmail}
-                          onChange={(e) => setVolunteerEmail(e.target.value)}
-                          placeholder="Enter your email"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowSignupDialog(false)}>
-                        Cancel
+                <div className="grid grid-cols-2 gap-2">
+                  <Dialog open={showSignupDialog && signupRole === 'driver'} onOpenChange={(open) => {
+                    if (open) {
+                      setSignupRole('driver');
+                      setShowSignupDialog(true);
+                    } else {
+                      setShowSignupDialog(false);
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Sign Up as Driver
                       </Button>
-                      <Button 
-                        onClick={handleSignup}
-                        disabled={signupMutation.isPending}
-                      >
-                        {signupMutation.isPending ? "Signing up..." : "Sign Up"}
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Sign Up as Driver</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="volunteerName">Your Name</Label>
+                          <Input
+                            id="volunteerName"
+                            value={volunteerName}
+                            onChange={(e) => setVolunteerName(e.target.value)}
+                            placeholder="Enter your name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="volunteerEmail">Email (optional)</Label>
+                          <Input
+                            id="volunteerEmail"
+                            type="email"
+                            value={volunteerEmail}
+                            onChange={(e) => setVolunteerEmail(e.target.value)}
+                            placeholder="Enter your email"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowSignupDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleSignup}
+                          disabled={signupMutation.isPending}
+                        >
+                          {signupMutation.isPending ? "Signing up..." : "Sign Up"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog open={showAssignDialog && assignRole === 'driver'} onOpenChange={(open) => {
+                    if (open) {
+                      setAssignRole('driver');
+                      setShowAssignDialog(true);
+                    } else {
+                      setShowAssignDialog(false);
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Assign Driver
                       </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Assign Driver</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="driverSelect">Select Driver</Label>
+                          <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a driver..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableDrivers.map((driver: any) => (
+                                <SelectItem key={driver.id} value={driver.id.toString()}>
+                                  {driver.name} {driver.email && `(${driver.email})`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleAssign}
+                          disabled={signupMutation.isPending}
+                        >
+                          {signupMutation.isPending ? "Assigning..." : "Assign Driver"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
           </div>
@@ -287,20 +373,21 @@ export default function EventVolunteerSignup({
               ))}
               
               {availableSpeakerSpots > 0 && (
-                <Dialog open={showSignupDialog && signupRole === 'speaker'} onOpenChange={(open) => {
-                  if (open) {
-                    setSignupRole('speaker');
-                    setShowSignupDialog(true);
-                  } else {
-                    setShowSignupDialog(false);
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Sign Up as Speaker
-                    </Button>
-                  </DialogTrigger>
+                <div className="grid grid-cols-2 gap-2">
+                  <Dialog open={showSignupDialog && signupRole === 'speaker'} onOpenChange={(open) => {
+                    if (open) {
+                      setSignupRole('speaker');
+                      setShowSignupDialog(true);
+                    } else {
+                      setShowSignupDialog(false);
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Sign Up as Speaker
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Sign Up as Speaker</DialogTitle>
@@ -337,8 +424,58 @@ export default function EventVolunteerSignup({
                         {signupMutation.isPending ? "Signing up..." : "Sign Up"}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog open={showAssignDialog && assignRole === 'speaker'} onOpenChange={(open) => {
+                    if (open) {
+                      setAssignRole('speaker');
+                      setShowAssignDialog(true);
+                    } else {
+                      setShowAssignDialog(false);
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Assign Speaker
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Assign Speaker</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="speakerSelect">Select Person</Label>
+                          <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a person..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableDrivers.map((driver: any) => (
+                                <SelectItem key={driver.id} value={driver.id.toString()}>
+                                  {driver.name} {driver.email && `(${driver.email})`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleAssign}
+                          disabled={signupMutation.isPending}
+                        >
+                          {signupMutation.isPending ? "Assigning..." : "Assign Speaker"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
           </div>
