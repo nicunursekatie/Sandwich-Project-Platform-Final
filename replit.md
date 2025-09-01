@@ -66,6 +66,13 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Projects Components Date Display**: Applied timezone-safe parsing to project due dates in project cards and project lists to prevent incorrect date display.
 - **Event Status Classification Fix**: Fixed Event Planning tabs to properly categorize declined events - declined events are now excluded from Past Events tab (which shows completed events) and properly displayed in Event Requests tab for tracking purposes. This prevents declined events from being misrepresented as completed events.
 
+### September 1, 2025 - Event Planning Database Schema Fix
+- **Missing Database Columns Resolution**: Fixed Event Planning page loading issue caused by missing database columns in event_requests table. Added three critical columns using SQL ALTER TABLE commands:
+  - `assigned_driver_ids` (text array) - for tracking driver assignments to events
+  - `driver_pickup_time` (varchar) - for scheduling driver pickup times
+  - `driver_notes` (text) - for special driver instructions and notes
+- **Schema Synchronization Issue**: Database schema was out of sync with application code, causing all Event Planning API calls to fail. Direct SQL column additions resolved the synchronization issue without requiring complex Drizzle migrations.
+
 ### Key Technical Learning Points
 - Database timestamps in format "YYYY-MM-DD HH:MM:SS" require careful parsing to avoid timezone conversion.
 - Google Sheets sync duplicate detection must account for case variations and missing email fields.
@@ -73,6 +80,7 @@ The application features a consistent brand identity using The Sandwich Project'
 - Frontend date parsing should use regex pattern matching to handle different timestamp formats consistently.
 - **ISO Midnight Conversion Issue**: ISO format dates with "Z" timezone suffix and midnight time (00:00:00) get converted to previous day in local timezone. Solution: Extract date part using `.split('T')[0]` and add `T12:00:00` for safe noon-time parsing.
 - **Timezone-Safe Date Parsing Pattern**: Use regex `/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/` to identify problematic ISO midnight formats requiring date extraction.
+- **Database Schema Synchronization**: When Drizzle schema differs from actual database structure, use direct SQL ALTER TABLE commands to add missing columns rather than complex migration processes.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
