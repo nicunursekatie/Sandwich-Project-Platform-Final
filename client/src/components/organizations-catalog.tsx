@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin, ExternalLink, ChevronLeft, ChevronRight, Clock, CheckCircle } from "lucide-react";
 import { formatDateForDisplay } from "@/lib/date-utils";
 
 interface Organization {
@@ -47,6 +48,8 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [selectedOrganization, setSelectedOrganization] = useState<OrganizationContact | null>(null);
+  const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
 
   // Fetch organizations data
   const { data: organizationsResponse, isLoading, error } = useQuery({
@@ -470,7 +473,10 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                     
                     {/* View Event Details Button */}
                     <Button 
-                      onClick={() => onNavigateToEventPlanning?.()}
+                      onClick={() => {
+                        setSelectedOrganization(org);
+                        setShowEventDetailsDialog(true);
+                      }}
                       variant="outline" 
                       size="sm" 
                       className="w-full text-sm bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white border-[#FBAD3F] hover:border-[#FBAD3F]/90"
@@ -547,6 +553,191 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Event Details Dialog */}
+      {showEventDetailsDialog && selectedOrganization && (
+        <Dialog open={showEventDetailsDialog} onOpenChange={setShowEventDetailsDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-3">
+                <Building className="w-6 h-6" style={{ color: '#236383' }} />
+                <span>{selectedOrganization.organizationName}</span>
+                {selectedOrganization.department && (
+                  <span className="text-gray-600">- {selectedOrganization.department}</span>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                Comprehensive event and contact information
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Contact Information */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+                  <User className="w-5 h-5 mr-2" style={{ color: '#236383' }} />
+                  Primary Contact
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Contact Name</label>
+                    <p className="text-lg font-semibold" style={{ color: '#236383' }}>
+                      {selectedOrganization.contactName}
+                    </p>
+                  </div>
+                  {selectedOrganization.email && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Email Address</label>
+                      <p className="text-base font-medium" style={{ color: '#236383' }}>
+                        {selectedOrganization.email}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Event Status & Information */}
+              <div className="bg-white p-4 rounded-lg border">
+                <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+                  <Calendar className="w-5 h-5 mr-2" style={{ color: '#236383' }} />
+                  Event Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Current Status</label>
+                    <div className="mt-1">
+                      {(() => {
+                        const statusConfig = {
+                          'new': { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'New Request' },
+                          'contacted': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Contact Made' },
+                          'scheduled': { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Event Scheduled' },
+                          'completed': { color: 'bg-green-100 text-green-800 border-green-200', label: 'Event Completed' },
+                          'past': { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Past Event' }
+                        };
+                        const config = statusConfig[selectedOrganization.status as keyof typeof statusConfig] || statusConfig.new;
+                        return (
+                          <Badge className={`${config.color} border`}>
+                            {config.label}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Total Requests</label>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {selectedOrganization.totalRequests} request{selectedOrganization.totalRequests !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Hosted Events</label>
+                    <div className="flex items-center space-x-2 mt-1">
+                      {selectedOrganization.hasHostedEvent ? (
+                        <>
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <span className="text-green-600 font-semibold">Yes</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-5 h-5 text-gray-400" />
+                          <span className="text-gray-500">Not yet</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Date */}
+                {selectedOrganization.eventDate && (
+                  <div className="mt-4 pt-4 border-t">
+                    <label className="text-sm font-medium text-gray-600">Event Date</label>
+                    <p className="text-lg font-semibold" style={{ color: '#FBAD3F' }}>
+                      {(() => {
+                        try {
+                          let date: Date;
+                          if (selectedOrganization.eventDate!.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                            const dateOnly = selectedOrganization.eventDate!.split(' ')[0];
+                            date = new Date(dateOnly + 'T12:00:00');
+                          } else if (selectedOrganization.eventDate!.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            date = new Date(selectedOrganization.eventDate + 'T12:00:00');
+                          } else if (selectedOrganization.eventDate!.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                            const dateOnly = selectedOrganization.eventDate!.split('T')[0];
+                            date = new Date(dateOnly + 'T12:00:00');
+                          } else {
+                            date = new Date(selectedOrganization.eventDate!);
+                          }
+                          return date.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          });
+                        } catch {
+                          return selectedOrganization.eventDate;
+                        }
+                      })()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Activity */}
+              <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                <h3 className="font-semibold text-teal-800 mb-3 flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
+                  Recent Activity
+                </h3>
+                <div>
+                  <label className="text-sm font-medium text-teal-700">Latest Request Date</label>
+                  <p className="text-base font-medium text-teal-800">
+                    {(() => {
+                      try {
+                        let date: Date;
+                        if (selectedOrganization.latestRequestDate.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                          const [datePart, timePart] = selectedOrganization.latestRequestDate.split(' ');
+                          date = new Date(datePart + 'T' + timePart);
+                        } else {
+                          date = new Date(selectedOrganization.latestRequestDate);
+                        }
+                        return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        });
+                      } catch (error) {
+                        return selectedOrganization.latestRequestDate;
+                      }
+                    })()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowEventDetailsDialog(false)}
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowEventDetailsDialog(false);
+                    onNavigateToEventPlanning?.();
+                  }}
+                  className="bg-[#236383] hover:bg-[#236383]/90 text-white"
+                >
+                  Go to Event Planning
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
