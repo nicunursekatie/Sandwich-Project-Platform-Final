@@ -346,7 +346,7 @@ export default function EventRequestsManagement() {
       queryClient.setQueryData(["/api/event-requests"], (old: any) => {
         if (!old) return old;
         return old.map((event: any) => 
-          event.id === data.eventId ? { ...event, status: 'contact_completed' } : event
+          event.id === data.id ? { ...event, status: 'contact_completed' } : event
         );
       });
       
