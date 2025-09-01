@@ -1343,13 +1343,10 @@ export default function EventRequestsManagement() {
       eventEndTime: formData.get("eventEndTime") || null,
       pickupTime: formData.get("pickupTime") || null,
       sandwichTypes: formData.get("sandwichTypes") || null,
-      // Driver fields
-      driversArranged: formData.get("driversArranged") === "true",
-      driverDetails: formData.get("driverDetails") || null,
-      driverNotes: formData.get("driverNotes") || null,
-      // Speaker fields
-      speakersNeeded: formData.get("speakersNeeded") === "true",
-      speakerDetails: formData.get("speakerDetails") || null,
+      // Driver and speaker requirements
+      driversNeeded: formData.get("driversNeeded") ? parseInt(formData.get("driversNeeded") as string) : 0,
+      speakersNeeded: formData.get("speakersNeeded") ? parseInt(formData.get("speakersNeeded") as string) : 0,
+      volunteerNotes: formData.get("volunteerNotes") || null,
       additionalRequirements: formData.get("additionalRequirements") || null,
       // TSP Contact fields
       tspContact: formData.get("tspContact") === "none" ? null : formData.get("tspContact") || null,
@@ -1380,10 +1377,9 @@ export default function EventRequestsManagement() {
       tspContact: formData.get("tspContact") || null,
       customTspContact: formData.get("customTspContact") || null,
       sandwichTypes: formData.get("sandwichTypes") || null,
-      driversArranged: formData.get("driversArranged") === "true",
-      driverDetails: formData.get("driverDetails") || null,
-      speakersNeeded: formData.get("speakersNeeded") === "true",
-      speakerDetails: formData.get("speakerDetails") || null,
+      driversNeeded: formData.get("driversNeeded") ? parseInt(formData.get("driversNeeded") as string) : 0,
+      speakersNeeded: formData.get("speakersNeeded") ? parseInt(formData.get("speakersNeeded") as string) : 0,
+      volunteerNotes: formData.get("volunteerNotes") || null,
       planningNotes: formData.get("planningNotes") || null
     };
 
@@ -1407,10 +1403,9 @@ export default function EventRequestsManagement() {
       eventAddress: formData.get("eventAddress") || null,
       estimatedSandwichCount: formData.get("estimatedSandwichCount") ? parseInt(formData.get("estimatedSandwichCount") as string) : null,
       sandwichTypes: formData.get("sandwichTypes") || null,
-      driversArranged: formData.get("driversArranged") === "true",
-      driverDetails: formData.get("driverDetails") || null,
-      speakersNeeded: formData.get("speakersNeeded") === "true",
-      speakerDetails: formData.get("speakerDetails") || null
+      driversNeeded: formData.get("driversNeeded") ? parseInt(formData.get("driversNeeded") as string) : 0,
+      speakersNeeded: formData.get("speakersNeeded") ? parseInt(formData.get("speakersNeeded") as string) : 0,
+      volunteerNotes: formData.get("volunteerNotes") || null
     };
 
     completeEventDetailsMutation.mutate(data);
@@ -2001,33 +1996,13 @@ export default function EventRequestsManagement() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Drivers</h3>
                 <div>
-                  <Label htmlFor="driversArranged">Drivers Arranged?</Label>
-                  <select 
-                    name="driversArranged" 
-                    defaultValue={(selectedRequest as any).driversArranged ? "true" : "false"}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Are drivers arranged?</option>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="driverDetails">Driver Details</Label>
-                  <Textarea 
-                    name="driverDetails" 
-                    rows={2}
-                    defaultValue={(selectedRequest as any).driverDetails || ""} 
-                    placeholder="Names of drivers, contact info, special instructions..."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="driverNotes">Driver Notes</Label>
-                  <Textarea 
-                    name="driverNotes" 
-                    rows={2}
-                    defaultValue={(selectedRequest as any).driverNotes || ""} 
-                    placeholder="Special instructions for drivers..."
+                  <Label htmlFor="driversNeeded">How Many Drivers Needed?</Label>
+                  <Input 
+                    name="driversNeeded" 
+                    type="number"
+                    min="0"
+                    defaultValue={(selectedRequest as any).driversNeeded || 0}
+                    placeholder="Number of drivers needed"
                   />
                 </div>
               </div>
@@ -2036,24 +2011,13 @@ export default function EventRequestsManagement() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Speakers</h3>
                 <div>
-                  <Label htmlFor="speakersNeeded">Speakers Necessary?</Label>
-                  <select 
+                  <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
+                  <Input 
                     name="speakersNeeded" 
-                    defaultValue={(selectedRequest as any).speakersNeeded ? "true" : "false"}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Are speakers needed?</option>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="speakerDetails">Speaker Details</Label>
-                  <Textarea 
-                    name="speakerDetails" 
-                    rows={2}
-                    defaultValue={(selectedRequest as any).speakerDetails || ""} 
-                    placeholder="Names and topics for speakers..."
+                    type="number"
+                    min="0"
+                    defaultValue={(selectedRequest as any).speakersNeeded || 0}
+                    placeholder="Number of speakers needed"
                   />
                 </div>
               </div>
@@ -2310,30 +2274,24 @@ export default function EventRequestsManagement() {
               {/* Drivers and Speakers */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="driversArranged" className="flex items-center space-x-2">
-                    <span>Drivers Arranged? (optional)</span>
-                  </Label>
-                  <Select name="driversArranged" defaultValue="false">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Are drivers arranged?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="false">No</SelectItem>
-                      <SelectItem value="true">Yes</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="driversNeeded">Drivers Needed (optional)</Label>
+                  <Input 
+                    name="driversNeeded" 
+                    type="number"
+                    min="0"
+                    defaultValue="0"
+                    placeholder="Number of drivers needed"
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="speakersNeeded">Speakers Needed? (optional)</Label>
-                  <Select name="speakersNeeded" defaultValue="false">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Do they need speakers?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="false">No</SelectItem>
-                      <SelectItem value="true">Yes</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="speakersNeeded">Speakers Needed (optional)</Label>
+                  <Input 
+                    name="speakersNeeded" 
+                    type="number"
+                    min="0"
+                    defaultValue="0"
+                    placeholder="Number of speakers needed"
+                  />
                 </div>
               </div>
 
@@ -2512,24 +2470,13 @@ export default function EventRequestsManagement() {
               {/* Speakers Section */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="speakersNeeded">Speakers necessary?</Label>
-                  <select 
+                  <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
+                  <Input 
                     name="speakersNeeded" 
-                    defaultValue={(detailsRequest as any).speakersNeeded ? "true" : "false"}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Are speakers needed?</option>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="speakerDetails">Speaker Details (Who are they?)</Label>
-                  <Textarea 
-                    name="speakerDetails" 
-                    rows={2}
-                    defaultValue={(detailsRequest as any).speakerDetails || ""}
-                    placeholder="Names and topics for speakers..."
+                    type="number"
+                    min="0"
+                    defaultValue={(detailsRequest as any).speakersNeeded || 0}
+                    placeholder="Number of speakers needed"
                   />
                 </div>
               </div>
@@ -2559,7 +2506,8 @@ export default function EventRequestsManagement() {
                 <EventVolunteerSignup 
                   eventId={detailsRequest.id}
                   eventTitle={detailsRequest.organizationName}
-                  eventDate={detailsRequest.desiredEventDate}
+                  driversNeeded={(detailsRequest as any).driversNeeded || 0}
+                  speakersNeeded={(detailsRequest as any).speakersNeeded || 0}
                 />
               </div>
 
