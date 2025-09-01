@@ -839,7 +839,7 @@ export default function WeeklyMonitoringDashboard() {
                 >
                   {location}
                   {location === 'Dunwoody/PTC' && (
-                    <Crown className="h-3 w-3 inline ml-1" />
+                    <Info className="h-3 w-3 inline ml-1" />
                   )}
                 </div>
               ))}
