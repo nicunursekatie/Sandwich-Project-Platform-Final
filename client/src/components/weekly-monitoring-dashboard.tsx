@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Crown, MessageSquare, Smartphone, Settings, Send } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Info, MessageSquare, Smartphone, Settings, Send } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -814,7 +814,7 @@ export default function WeeklyMonitoringDashboard() {
       {/* Expected Locations */}
       <Card>
         <CardHeader>
-          <CardTitle>Expected Weekly Locations & Special Requirements</CardTitle>
+          <CardTitle>Expected Weekly Locations</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -844,20 +844,20 @@ export default function WeeklyMonitoringDashboard() {
                 </div>
               ))}
             </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-              <h4 className="font-medium text-purple-800 flex items-center gap-2">
-                <Crown className="h-4 w-4" />
-                Special Requirements - Dunwoody/PTC
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h4 className="font-medium text-blue-800 flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Dunwoody/PTC Submission Process
               </h4>
-              <p className="text-sm text-purple-700 mt-1">
-                Dunwoody requires TWO separate entries to be considered complete:
+              <p className="text-sm text-blue-700 mt-1">
+                Dunwoody operates with two separate data sources:
               </p>
-              <ul className="text-sm text-purple-700 mt-2 space-y-1">
-                <li>• <strong>Lisa Hiles</strong> entry (required)</li>
-                <li>• <strong>Stephanie OR Marcy</strong> entry (required)</li>
+              <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                <li>• <strong>Lisa Hiles</strong> entry</li>
+                <li>• <strong>Stephanie OR Marcy</strong> entry</li>
               </ul>
-              <p className="text-xs text-purple-600 mt-2">
-                Both entries must be submitted for Dunwoody to show as "Submitted" in the monitoring system.
+              <p className="text-xs text-blue-600 mt-2">
+                Both entries are needed for complete weekly data from this location.
               </p>
             </div>
             <p className="text-sm text-gray-600">
