@@ -242,7 +242,7 @@ router.post("/import-historical", isAuthenticated, async (req, res) => {
           additionalRequirements: deliveryLocation ? `Delivery location: ${deliveryLocation}` : null
         });
         
-        console.log(`✅ Prepared historical event: ${firstName} ${lastName} from ${groupName}`);
+        console.log(`✅ Prepared historical event: ${firstName} ${lastName} from ${groupName} (${email})`);
       } else {
         console.log(`⚠️  Skipping historical row ${i + 1} - missing required fields:`, {
           firstName: !!firstName,
@@ -253,6 +253,13 @@ router.post("/import-historical", isAuthenticated, async (req, res) => {
     }
     
     console.log(`\nPrepared ${events.length} historical events for import`);
+    
+    if (events.length > 0) {
+      console.log('First 3 prepared events:');
+      events.slice(0, 3).forEach((event, idx) => {
+        console.log(`  ${idx + 1}. ${event.firstName} ${event.lastName} - ${event.organizationName} (${event.email})`);
+      });
+    }
     
     if (events.length === 0) {
       return res.status(400).json({ error: 'No valid historical events found to import' });
@@ -272,7 +279,7 @@ router.post("/import-historical", isAuthenticated, async (req, res) => {
         );
         
         if (isDuplicate) {
-          console.log(`⚠️  Skipping historical duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`);
+          console.log(`⚠️  Skipping historical duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName} (${event.email})`);
           skippedDuplicates.push(event);
           continue;
         }
