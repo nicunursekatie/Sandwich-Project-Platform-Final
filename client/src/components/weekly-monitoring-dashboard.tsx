@@ -135,6 +135,12 @@ export default function WeeklyMonitoringDashboard() {
     mutationFn: () => apiRequest('POST', '/api/monitoring/test-email'),
   });
 
+  // Email reminder mutations
+  const sendSingleEmailMutation = useMutation({
+    mutationFn: (data: { location: string; appUrl?: string }) => 
+      apiRequest('POST', `/api/monitoring/send-email-reminder/${encodeURIComponent(data.location)}`, { appUrl: data.appUrl }),
+  });
+
   const getStatusColor = (hasSubmitted: boolean) => {
     return hasSubmitted 
       ? "bg-green-100 text-green-800 border-green-200" 
@@ -618,20 +624,40 @@ export default function WeeklyMonitoringDashboard() {
                           {status.hasSubmitted ? "Submitted" : "Missing"}
                         </Badge>
                         
-                        {!status.hasSubmitted && smsConfig?.isConfigured && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => sendSingleSMSMutation.mutate({ 
-                              location: status.location,
-                              appUrl: window.location.origin 
-                            })}
-                            disabled={sendSingleSMSMutation.isPending}
-                            className="flex items-center gap-1 text-xs px-2 py-1 h-7"
-                          >
-                            <MessageSquare className="h-3 w-3" />
-                            {sendSingleSMSMutation.isPending ? "Sending..." : "SMS"}
-                          </Button>
+                        {!status.hasSubmitted && (
+                          <div className="flex items-center gap-1">
+                            {/* Email Reminder Button */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => sendSingleEmailMutation.mutate({ 
+                                location: status.location,
+                                appUrl: window.location.origin 
+                              })}
+                              disabled={sendSingleEmailMutation.isPending}
+                              className="flex items-center gap-1 text-xs px-2 py-1 h-7 text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <Mail className="h-3 w-3" />
+                              {sendSingleEmailMutation.isPending ? "Sending..." : "Email"}
+                            </Button>
+                            
+                            {/* SMS Button (only if configured) */}
+                            {smsConfig?.isConfigured && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => sendSingleSMSMutation.mutate({ 
+                                  location: status.location,
+                                  appUrl: window.location.origin 
+                                })}
+                                disabled={sendSingleSMSMutation.isPending}
+                                className="flex items-center gap-1 text-xs px-2 py-1 h-7"
+                              >
+                                <MessageSquare className="h-3 w-3" />
+                                {sendSingleSMSMutation.isPending ? "Sending..." : "SMS"}
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

@@ -7911,6 +7911,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email Reminder Routes
+  app.post("/api/monitoring/send-email-reminder/:location", isAuthenticated, async (req, res) => {
+    try {
+      const location = decodeURIComponent(req.params.location);
+      const { appUrl } = req.body;
+      const { sendEmailReminder } = await import('./weekly-monitoring');
+      
+      const result = await sendEmailReminder(location, appUrl);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error sending email reminder:', error);
+      res.status(500).json({ error: 'Failed to send email reminder' });
+    }
+  });
+
   // SMS user routes
   app.get("/api/users/sms-status", isAuthenticated, async (req, res) => {
     try {

@@ -503,3 +503,118 @@ export function scheduleWeeklyMonitoring(): NodeJS.Timeout[] {
   
   return intervals;
 }
+
+/**
+ * Send friendly email reminder to a specific host location
+ */
+export async function sendEmailReminder(location: string, appUrl?: string): Promise<{success: boolean, message: string}> {
+  if (!process.env.SENDGRID_API_KEY) {
+    return {
+      success: false,
+      message: 'Email service not configured (SENDGRID_API_KEY missing)'
+    };
+  }
+
+  try {
+    // Get host contact information for this location
+    const hostContacts = await db.select()
+      .from(hosts)
+      .where(eq(hosts.locationName, location));
+
+    if (hostContacts.length === 0) {
+      return {
+        success: false,
+        message: `No host contact found for location: ${location}`
+      };
+    }
+
+    const host = hostContacts[0];
+    const contactEmail = host.email;
+
+    if (!contactEmail) {
+      return {
+        success: false,
+        message: `No email address found for ${location}`
+      };
+    }
+
+    const loginUrl = appUrl || 'https://sandwich-project.replit.app';
+    const { startDate, endDate } = getCurrentWeekRange();
+    const weekLabel = `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+
+    const emailSubject = `🥪 Friendly Reminder: Weekly Sandwich Collection Numbers`;
+    
+    const emailText = `Hi ${host.contactPerson || 'there'}!
+
+Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet (${weekLabel}).
+
+When you have a moment, could you please log in to our app and submit your numbers? It only takes a minute and really helps us track our community impact.
+
+Login here: ${loginUrl}
+
+Thanks so much for all you do for The Sandwich Project! Your location makes such a difference in our community.
+
+Best regards,
+The Sandwich Project Team
+
+P.S. If you've already submitted or have any questions, feel free to reach out to us!`;
+
+    const emailHtml = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #236383; margin: 0; font-size: 24px;">🥪 The Sandwich Project</h1>
+            <p style="color: #6c757d; margin: 10px 0 0 0; font-size: 16px;">Friendly Weekly Reminder</p>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hi ${host.contactPerson || 'there'}!</p>
+            
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet.</p>
+            
+            <div style="background: #e3f2fd; border-left: 4px solid #236383; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; font-weight: 600; color: #236383;">Week Period: ${weekLabel}</p>
+              <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">Location: ${location}</p>
+            </div>
+            
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">When you have a moment, could you please log in to our app and submit your numbers? It only takes a minute and really helps us track our community impact.</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${loginUrl}" style="background: #236383; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">Login to Submit Numbers</a>
+          </div>
+          
+          <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+            <p style="margin: 0 0 10px 0; font-size: 16px; line-height: 1.5;">Thanks so much for all you do for The Sandwich Project! Your location makes such a difference in our community.</p>
+            
+            <p style="margin: 0 0 10px 0; font-size: 16px; line-height: 1.5; font-weight: 600;">Best regards,<br>The Sandwich Project Team</p>
+            
+            <p style="margin: 0; font-size: 14px; color: #6c757d; font-style: italic;">P.S. If you've already submitted or have any questions, feel free to reach out to us!</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    await mailService.send({
+      to: contactEmail,
+      from: FROM_EMAIL,
+      subject: emailSubject,
+      text: emailText,
+      html: emailHtml
+    });
+
+    console.log(`✅ Email reminder sent successfully to ${location} (${contactEmail})`);
+    
+    return {
+      success: true,
+      message: `Email reminder sent successfully to ${host.contactPerson || location} at ${contactEmail}`
+    };
+
+  } catch (error) {
+    console.error(`❌ Failed to send email reminder to ${location}:`, error);
+    return {
+      success: false,
+      message: `Failed to send email reminder: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+}
