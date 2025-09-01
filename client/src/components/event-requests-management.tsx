@@ -1375,8 +1375,8 @@ export default function EventRequestsManagement() {
     const formData = new FormData(e.currentTarget);
     const data = {
       id: completingRequest.id,
-      communicationMethod: formData.get("communicationMethod") === "none" ? null : formData.get("communicationMethod"),
-      eventAddress: formData.get("eventAddress"),
+      communicationMethod: formData.get("communicationMethod") || null,
+      eventAddress: formData.get("eventAddress") || null,
       estimatedSandwichCount: formData.get("estimatedSandwichCount") ? parseInt(formData.get("estimatedSandwichCount") as string) : null,
       hasRefrigeration: formData.get("hasRefrigeration") === "none" ? null : formData.get("hasRefrigeration") === "true",
       status: formData.get("status") || "contact_completed",
@@ -2121,12 +2121,12 @@ export default function EventRequestsManagement() {
               {/* Communication Method */}
               <div>
                 <Label htmlFor="communicationMethod">Communication Method</Label>
-                <Select name="communicationMethod" defaultValue="none">
+                <Select name="communicationMethod" defaultValue="">
                   <SelectTrigger>
-                    <SelectValue placeholder="How did you contact them?" />
+                    <SelectValue placeholder="How did you contact them? (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Select communication method</SelectItem>
+                    <SelectItem value="">Not specified</SelectItem>
                     <SelectItem value="phone">Phone Call</SelectItem>
                     <SelectItem value="email">Email</SelectItem>
                     <SelectItem value="in_person">In Person</SelectItem>
@@ -2138,19 +2138,19 @@ export default function EventRequestsManagement() {
               {/* Basic Event Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="eventAddress">Event Location/Address</Label>
+                  <Label htmlFor="eventAddress">Event Location/Address (optional)</Label>
                   <Input name="eventAddress" placeholder="Where will the event take place?" />
                 </div>
                 <div>
-                  <Label htmlFor="estimatedSandwichCount">Estimated Sandwich Count</Label>
-                  <Input name="estimatedSandwichCount" type="number" min="1" placeholder="How many sandwiches needed?" />
+                  <Label htmlFor="estimatedSandwichCount">Estimated Sandwich Count (optional)</Label>
+                  <Input name="estimatedSandwichCount" type="number" min="0" placeholder="How many sandwiches needed?" />
                 </div>
               </div>
 
               {/* Event Status and Toolkit */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="status">Event Status</Label>
+                  <Label htmlFor="status">Event Status (optional)</Label>
                   <Select name="status" defaultValue="contact_completed">
                     <SelectTrigger>
                       <SelectValue placeholder="Set event status" />
@@ -2163,7 +2163,7 @@ export default function EventRequestsManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="toolkitStatus">Toolkit Status</Label>
+                  <Label htmlFor="toolkitStatus">Toolkit Status (optional)</Label>
                   <Select name="toolkitStatus" defaultValue="">
                     <SelectTrigger>
                       <SelectValue placeholder="Select toolkit status" />
@@ -2182,15 +2182,15 @@ export default function EventRequestsManagement() {
               {/* Event Times */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="eventStartTime">Event Start Time</Label>
+                  <Label htmlFor="eventStartTime">Event Start Time (optional)</Label>
                   <Input name="eventStartTime" type="time" />
                 </div>
                 <div>
-                  <Label htmlFor="eventEndTime">Event End Time</Label>
+                  <Label htmlFor="eventEndTime">Event End Time (optional)</Label>
                   <Input name="eventEndTime" type="time" />
                 </div>
                 <div>
-                  <Label htmlFor="pickupTime">Pickup Time</Label>
+                  <Label htmlFor="pickupTime">Pickup Time (optional)</Label>
                   <Input name="pickupTime" type="time" />
                 </div>
               </div>
@@ -2198,11 +2198,11 @@ export default function EventRequestsManagement() {
               {/* Food Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="sandwichTypes">Sandwich Types/Preferences</Label>
+                  <Label htmlFor="sandwichTypes">Sandwich Types/Preferences (optional)</Label>
                   <Input name="sandwichTypes" placeholder="Any specific sandwich preferences?" />
                 </div>
                 <div>
-                  <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                  <Label htmlFor="hasRefrigeration">Refrigeration Available? (optional)</Label>
                   <Select name="hasRefrigeration" defaultValue="none">
                     <SelectTrigger>
                       <SelectValue placeholder="Is refrigeration available?" />
@@ -2219,7 +2219,7 @@ export default function EventRequestsManagement() {
               {/* TSP Contact Assignment */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="tspContact">TSP Team Contact</Label>
+                  <Label htmlFor="tspContact">TSP Team Contact (optional)</Label>
                   <Select name="tspContact" defaultValue="">
                     <SelectTrigger>
                       <SelectValue placeholder="Assign team member" />
@@ -2237,7 +2237,7 @@ export default function EventRequestsManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="customTspContact">Custom Contact (if not in list)</Label>
+                  <Label htmlFor="customTspContact">Custom Contact (optional)</Label>
                   <Input name="customTspContact" placeholder="External contact name or special instructions" />
                 </div>
               </div>
@@ -2246,7 +2246,7 @@ export default function EventRequestsManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="driversArranged" className="flex items-center space-x-2">
-                    <span>Drivers Arranged?</span>
+                    <span>Drivers Arranged? (optional)</span>
                   </Label>
                   <Select name="driversArranged" defaultValue="false">
                     <SelectTrigger>
@@ -2259,7 +2259,7 @@ export default function EventRequestsManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="speakersNeeded">Speakers Needed?</Label>
+                  <Label htmlFor="speakersNeeded">Speakers Needed? (optional)</Label>
                   <Select name="speakersNeeded" defaultValue="false">
                     <SelectTrigger>
                       <SelectValue placeholder="Do they need speakers?" />
@@ -2274,17 +2274,17 @@ export default function EventRequestsManagement() {
 
               {/* Additional Details */}
               <div>
-                <Label htmlFor="driverDetails">Driver Details/Notes</Label>
+                <Label htmlFor="driverDetails">Driver Details/Notes (optional)</Label>
                 <Textarea name="driverDetails" rows={2} placeholder="Driver arrangements, pickup instructions, or notes" />
               </div>
 
               <div>
-                <Label htmlFor="speakerDetails">Speaker Details/Notes</Label>
+                <Label htmlFor="speakerDetails">Speaker Details/Notes (optional)</Label>
                 <Textarea name="speakerDetails" rows={2} placeholder="Speaker requirements or details" />
               </div>
 
               <div>
-                <Label htmlFor="sandwichTypes">Sandwich Types</Label>
+                <Label htmlFor="sandwichTypes">Sandwich Types (optional)</Label>
                 <Select name="sandwichTypes" defaultValue="">
                   <SelectTrigger>
                     <SelectValue placeholder="Select sandwich types" />
@@ -2302,7 +2302,7 @@ export default function EventRequestsManagement() {
               </div>
 
               <div>
-                <Label htmlFor="planningNotes">Additional Planning Notes</Label>
+                <Label htmlFor="planningNotes">Additional Planning Notes (optional)</Label>
                 <Textarea name="planningNotes" rows={3} placeholder="Any additional planning notes or requirements" />
               </div>
               <div className="flex justify-end space-x-2">
