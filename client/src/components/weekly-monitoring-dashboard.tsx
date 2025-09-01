@@ -313,7 +313,7 @@ export default function WeeklyMonitoringDashboard() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
+                <Calendar className="h-5 w-5 text-teal-600" />
                 <div>
                   <p className="text-sm text-gray-600">Current Week</p>
                   <p className="text-lg font-semibold">{stats.currentWeek}</p>
@@ -351,7 +351,7 @@ export default function WeeklyMonitoringDashboard() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-purple-600" />
+                <Clock className="h-5 w-5 text-teal-600" />
                 <div>
                   <p className="text-sm text-gray-600">Next Check</p>
                   <p className="text-sm font-semibold">{stats.nextScheduledCheck}</p>
@@ -414,7 +414,7 @@ export default function WeeklyMonitoringDashboard() {
                       placeholder="Phone number (e.g., +1234567890)"
                       value={testPhoneNumber}
                       onChange={(e) => setTestPhoneNumber(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                     <Button
                       onClick={() => testSMSMutation.mutate({ 
@@ -477,9 +477,9 @@ export default function WeeklyMonitoringDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">What this announcement does:</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
+              <div className="bg-teal-50 p-4 rounded-lg">
+                <h4 className="font-medium text-teal-900 mb-2">What this announcement does:</h4>
+                <ul className="text-sm text-teal-800 space-y-1">
                   <li>• Sends an email to all registered app users</li>
                   <li>• Explains the new SMS reminder feature</li>
                   <li>• Includes a link for users to opt-in to SMS notifications</li>
@@ -524,7 +524,7 @@ export default function WeeklyMonitoringDashboard() {
                           href={sendAnnouncementMutation.data.smsOptInUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="text-teal-600 hover:underline"
                         >
                           {sendAnnouncementMutation.data.smsOptInUrl}
                         </a>
@@ -639,7 +639,7 @@ export default function WeeklyMonitoringDashboard() {
                                 appUrl: window.location.origin 
                               })}
                               disabled={sendSingleEmailMutation.isPending}
-                              className="flex items-center gap-1 text-xs px-2 py-1 h-7 text-blue-600 border-blue-200 hover:bg-blue-50"
+                              className="flex items-center gap-1 text-xs px-2 py-1 h-7 text-teal-600 border-teal-200 hover:bg-teal-50"
                             >
                               <Mail className="h-3 w-3" />
                               {sendSingleEmailMutation.isPending ? "Sending..." : "Email"}
@@ -833,7 +833,7 @@ export default function WeeklyMonitoringDashboard() {
                   key={location}
                   className={`p-2 rounded-lg text-sm text-center ${
                     location === 'Dunwoody/PTC' 
-                      ? 'bg-purple-50 border border-purple-200 text-purple-800'
+                      ? 'bg-teal-50 border border-teal-200 text-teal-800'
                       : 'bg-gray-50'
                   }`}
                 >
@@ -844,19 +844,19 @@ export default function WeeklyMonitoringDashboard() {
                 </div>
               ))}
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <h4 className="font-medium text-blue-800 flex items-center gap-2">
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+              <h4 className="font-medium text-teal-800 flex items-center gap-2">
                 <Info className="h-4 w-4" />
                 Dunwoody/PTC Submission Process
               </h4>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-teal-700 mt-1">
                 Dunwoody operates with two separate data sources:
               </p>
-              <ul className="text-sm text-blue-700 mt-2 space-y-1">
+              <ul className="text-sm text-teal-700 mt-2 space-y-1">
                 <li>• <strong>Lisa Hiles</strong> entry</li>
                 <li>• <strong>Stephanie OR Marcy</strong> entry</li>
               </ul>
-              <p className="text-xs text-blue-600 mt-2">
+              <p className="text-xs text-teal-600 mt-2">
                 Both entries are needed for complete weekly data from this location.
               </p>
             </div>
