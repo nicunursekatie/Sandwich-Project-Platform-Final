@@ -596,7 +596,7 @@ export async function sendEmailReminder(location: string, appUrl?: string): Prom
       };
     }
 
-    const loginUrl = appUrl || 'https://sandwich-project.replit.app';
+    const loginUrl = appUrl || `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}`;
     const previousWednesday = getPreviousWednesday();
     const weekLabel = previousWednesday.toLocaleDateString('en-US', { 
       weekday: 'long',
