@@ -77,15 +77,15 @@ export default function EventVolunteerSignup({
 
   // Fetch existing volunteers for this event
   const { data: volunteers = [], isLoading } = useQuery({
-    queryKey: ['/api/event-volunteers', eventId],
-    queryFn: () => apiRequest('GET', `/api/event-volunteers/${eventId}`)
+    queryKey: ['/api/event-requests/volunteers', eventId],
+    queryFn: () => apiRequest('GET', `/api/event-requests/volunteers/${eventId}`)
   });
 
   // Sign up mutation
   const signupMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/event-volunteers', data),
+    mutationFn: (data: any) => apiRequest('POST', '/api/event-requests/volunteers', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-volunteers', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests/volunteers', eventId] });
       setShowSignupDialog(false);
       setVolunteerName((user as any)?.firstName && (user as any)?.lastName ? `${(user as any).firstName} ${(user as any).lastName}` : "");
       setVolunteerEmail((user as any)?.email || "");
@@ -102,9 +102,9 @@ export default function EventVolunteerSignup({
 
   // Remove volunteer mutation
   const removeMutation = useMutation({
-    mutationFn: (volunteerId: number) => apiRequest('DELETE', `/api/event-volunteers/${volunteerId}`),
+    mutationFn: (volunteerId: number) => apiRequest('DELETE', `/api/event-requests/volunteers/${volunteerId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-volunteers', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests/volunteers', eventId] });
       toast({ title: "Volunteer removed successfully" });
     },
     onError: (error: any) => {
