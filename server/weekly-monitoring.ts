@@ -230,7 +230,7 @@ export async function checkWeeklySubmissions(weeksAgo: number = 0): Promise<Week
       
       const submittedBy = locationSubmissions
         .map(sub => sub.submittedBy)
-        .filter(Boolean)
+        .filter((name): name is string => Boolean(name))
         .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
 
       statusResults.push({
@@ -548,6 +548,35 @@ export async function sendEmailReminder(location: string, appUrl?: string): Prom
   }
 
   try {
+    // Special handling for Dunwoody - check current status and target only missing submitters
+    if (location === 'Dunwoody/PTC') {
+      const currentStatus = await checkWeeklySubmissions(0);
+      const dunwoodyStatus = currentStatus.find(s => s.location === 'Dunwoody/PTC')?.dunwoodyStatus;
+      
+      if (dunwoodyStatus) {
+        // If Lisa has submitted but Stephanie/Marcy haven't, target only Stephanie/Marcy
+        if (dunwoodyStatus.lisaHiles && !dunwoodyStatus.stephanieOrMarcy) {
+          return await sendDunwoodyTargetedEmail(['stephanie', 'marcy'], appUrl);
+        }
+        // If Stephanie/Marcy submitted but Lisa hasn't, target only Lisa
+        else if (!dunwoodyStatus.lisaHiles && dunwoodyStatus.stephanieOrMarcy) {
+          return await sendDunwoodyTargetedEmail(['lisa'], appUrl);
+        }
+        // If neither submitted, target all
+        else if (!dunwoodyStatus.lisaHiles && !dunwoodyStatus.stephanieOrMarcy) {
+          return await sendDunwoodyTargetedEmail(['lisa', 'stephanie', 'marcy'], appUrl);
+        }
+        // If both submitted, no email needed
+        else {
+          return {
+            success: true,
+            message: 'Both Dunwoody submissions already received - no reminder needed'
+          };
+        }
+      }
+    }
+
+    // Standard logic for other locations
     // Get host contact information for this location
     // First find the host by name
     const hostRecord = await db.select()
@@ -678,6 +707,166 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     return {
       success: false,
       message: `Failed to send email reminder: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+}
+
+/**
+ * Send targeted email to specific Dunwoody submitters based on who's missing
+ */
+async function sendDunwoodyTargetedEmail(targetGroups: string[], appUrl?: string): Promise<{success: boolean, message: string}> {
+  if (!process.env.SENDGRID_API_KEY) {
+    return {
+      success: false,
+      message: 'Email service not configured (SENDGRID_API_KEY missing)'
+    };
+  }
+
+  try {
+    // Get all Dunwoody contacts
+    const hostRecord = await db.select()
+      .from(hosts)
+      .where(eq(hosts.name, 'Dunwoody/PTC'))
+      .limit(1);
+
+    if (hostRecord.length === 0) {
+      return {
+        success: false,
+        message: 'No Dunwoody/PTC host found'
+      };
+    }
+
+    const allContacts = await db.select()
+      .from(hostContacts)
+      .where(eq(hostContacts.hostId, hostRecord[0].id));
+
+    // Find contacts based on target groups
+    const targetContacts = [];
+    
+    for (const group of targetGroups) {
+      if (group === 'lisa') {
+        const lisaContact = allContacts.find(c => 
+          c.name?.toLowerCase().includes('lisa') && 
+          c.name?.toLowerCase().includes('hiles') &&
+          c.email
+        );
+        if (lisaContact) targetContacts.push(lisaContact);
+      } else if (group === 'stephanie') {
+        const stephanieContact = allContacts.find(c => 
+          c.name?.toLowerCase().includes('stephanie') && c.email
+        );
+        if (stephanieContact) targetContacts.push(stephanieContact);
+      } else if (group === 'marcy') {
+        const marcyContact = allContacts.find(c => 
+          c.name?.toLowerCase().includes('marcy') && c.email
+        );
+        if (marcyContact) targetContacts.push(marcyContact);
+      }
+    }
+
+    // If no specific contacts found, fall back to primary contact
+    if (targetContacts.length === 0) {
+      const primaryContact = allContacts.find(c => c.isPrimary && c.email) || 
+                            allContacts.find(c => c.email);
+      if (primaryContact) targetContacts.push(primaryContact);
+    }
+
+    if (targetContacts.length === 0) {
+      return {
+        success: false,
+        message: 'No email contacts found for targeted Dunwoody reminder'
+      };
+    }
+
+    const loginUrl = appUrl || 'https://sandwich-project-platform-final-katielong2316.replit.app/';
+    const previousWednesday = getPreviousWednesday();
+    const weekLabel = previousWednesday.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+
+    // Send email to each target contact
+    const emailPromises = targetContacts.map(async (contact) => {
+      const emailSubject = `🥪 Friendly Reminder: Weekly Sandwich Collection Numbers`;
+      
+      const emailText = `Hi ${contact.name || 'there'}!
+
+Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for ${weekLabel} yet.
+
+When you have a moment, could you please log in to our app and submit your numbers? It only takes a minute and really helps us track our community impact.
+
+Login here: ${loginUrl}
+
+Thanks so much for all you do for The Sandwich Project! Your location makes such a difference in our community.
+
+Best regards,
+The Sandwich Project Team
+
+P.S. If you've already submitted or have any questions, feel free to reach out to us!`;
+
+      const emailHtml = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+          <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #236383; margin: 0; font-size: 24px;">🥪 The Sandwich Project</h1>
+              <p style="color: #6c757d; margin: 10px 0 0 0; font-size: 16px;">Friendly Weekly Reminder</p>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+              <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hi ${contact.name || 'there'}!</p>
+              
+              <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet.</p>
+              
+              <div style="background: #e3f2fd; border-left: 4px solid #236383; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; font-weight: 600; color: #236383;">Collection Date: ${weekLabel}</p>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">Location: Dunwoody/PTC</p>
+              </div>
+              
+              <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">When you have a moment, could you please log in to our app and submit your numbers? It only takes a minute and really helps us track our community impact.</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background: #236383; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">Login to Submit Numbers</a>
+            </div>
+            
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0 0 10px 0; font-size: 16px; line-height: 1.5;">Thanks so much for all you do for The Sandwich Project! Your location makes such a difference in our community.</p>
+              
+              <p style="margin: 0 0 10px 0; font-size: 16px; line-height: 1.5; font-weight: 600;">Best regards,<br>The Sandwich Project Team</p>
+              
+              <p style="margin: 0; font-size: 14px; color: #6c757d; font-style: italic;">P.S. If you've already submitted or have any questions, feel free to reach out to us!</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      return await mailService.send({
+        to: contact.email!,
+        from: FROM_EMAIL,
+        subject: emailSubject,
+        text: emailText,
+        html: emailHtml
+      });
+    });
+
+    await Promise.all(emailPromises);
+
+    const contactNames = targetContacts.map(c => c.name).join(', ');
+    console.log(`✅ Targeted Dunwoody email sent successfully to: ${contactNames}`);
+    
+    return {
+      success: true,
+      message: `Targeted email sent successfully to: ${contactNames}`
+    };
+
+  } catch (error) {
+    console.log(`❌ Failed to send targeted Dunwoody email:`, error);
+    
+    return {
+      success: false,
+      message: `Failed to send targeted email: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }
