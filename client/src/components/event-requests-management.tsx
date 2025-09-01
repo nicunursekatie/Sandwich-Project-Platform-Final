@@ -222,13 +222,6 @@ export default function EventRequestsManagement() {
     refetchOnMount: true
   });
 
-  // Debug logging
-  console.log('DEBUG: Event requests query state:', { 
-    isLoading, 
-    error: error?.message, 
-    dataLength: eventRequests.length,
-    sampleData: eventRequests.slice(0, 2)
-  });
 
   const { data: users = [] } = useQuery({
     queryKey: ["/api/users/for-assignments"],
