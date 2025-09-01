@@ -2319,7 +2319,7 @@ export default function EventRequestsManagement() {
                     <SelectValue placeholder="How did you contact them? (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Not specified</SelectItem>
+                    <SelectItem value="not_specified">Not specified</SelectItem>
                     <SelectItem value="phone">Phone Call</SelectItem>
                     <SelectItem value="email">Email</SelectItem>
                     <SelectItem value="in_person">In Person</SelectItem>
@@ -2362,7 +2362,7 @@ export default function EventRequestsManagement() {
                       <SelectValue placeholder="Select toolkit status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Not Set</SelectItem>
+                      <SelectItem value="not_set">Not Set</SelectItem>
                       <SelectItem value="not_sent">Not Yet Sent</SelectItem>
                       <SelectItem value="sent">Sent</SelectItem>
                       <SelectItem value="received_confirmed">Received & Confirmed</SelectItem>
@@ -2418,7 +2418,7 @@ export default function EventRequestsManagement() {
                       <SelectValue placeholder="Assign team member" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No assignment</SelectItem>
+                      <SelectItem value="no_assignment">No assignment</SelectItem>
                       {users.map((user: any) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.firstName && user.lastName 
@@ -2477,7 +2477,7 @@ export default function EventRequestsManagement() {
                     <SelectValue placeholder="Select sandwich types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Not specified</SelectItem>
+                    <SelectItem value="not_specified">Not specified</SelectItem>
                     <SelectItem value="deli">Deli</SelectItem>
                     <SelectItem value="turkey">Turkey</SelectItem>
                     <SelectItem value="ham">Ham</SelectItem>
