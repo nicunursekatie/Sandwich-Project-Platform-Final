@@ -220,6 +220,17 @@ router.post("/import-historical", isAuthenticated, async (req, res) => {
         }
       }
       
+      // Debug the mapping for first few rows
+      if (i <= 5) {
+        console.log(`🔍 Row ${i + 1} debug:`, {
+          firstName,
+          lastName,
+          groupName,
+          email,
+          rawRow: row.slice(0, 10)
+        });
+      }
+      
       // Only add if we have required fields
       if (firstName && groupName && email) {
         events.push({
