@@ -307,7 +307,7 @@ export default function EventVolunteerSignup({
                               <SelectValue placeholder="Choose a driver..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {availableDrivers.map((driver: any) => (
+                              {availableDrivers.filter((driver: any) => driver.id && driver.name).map((driver: any) => (
                                 <SelectItem key={driver.id} value={driver.id.toString()}>
                                   {driver.name} {driver.email && `(${driver.email})`}
                                 </SelectItem>
@@ -453,7 +453,7 @@ export default function EventVolunteerSignup({
                               <SelectValue placeholder="Choose a person..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {availableDrivers.map((driver: any) => (
+                              {availableDrivers.filter((driver: any) => driver.id && driver.name).map((driver: any) => (
                                 <SelectItem key={driver.id} value={driver.id.toString()}>
                                   {driver.name} {driver.email && `(${driver.email})`}
                                 </SelectItem>
