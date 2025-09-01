@@ -834,7 +834,7 @@ export default function WeeklyMonitoringDashboard() {
                   className={`p-2 rounded-lg text-sm text-center ${
                     location === 'Dunwoody/PTC' 
                       ? 'bg-teal-50 border border-teal-200 text-teal-800'
-                      : 'bg-gray-50'
+                      : 'bg-teal-50/50 border border-teal-100 text-teal-600'
                   }`}
                 >
                   {location}
