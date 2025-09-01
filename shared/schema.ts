@@ -1112,7 +1112,10 @@ export const eventRequests = pgTable("event_requests", {
   // Additional event details
   sandwichTypes: varchar("sandwich_types"), // Type of sandwiches: 'deli', 'turkey', 'ham', 'pb&j', 'pb&j+deli'
   driversArranged: boolean("drivers_arranged").default(false), // Whether drivers are arranged
-  driverDetails: text("driver_details"), // Who the drivers are
+  driverDetails: text("driver_details"), // Who the drivers are (legacy text field)
+  assignedDriverIds: text("assigned_driver_ids").array(), // Array of driver IDs assigned to this event
+  driverPickupTime: varchar("driver_pickup_time"), // Specific pickup time for drivers
+  driverNotes: text("driver_notes"), // Special notes or instructions for drivers
   speakersNeeded: boolean("speakers_needed").default(false), // Whether speakers are needed
   speakerDetails: text("speaker_details"), // Who the speakers are
   

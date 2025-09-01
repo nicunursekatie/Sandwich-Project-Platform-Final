@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 // Removed formatDateForDisplay import as we now use toLocaleDateString directly
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
+import { DriverSelection } from "./driver-selection";
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24: string): string => {
@@ -2267,30 +2268,19 @@ export default function EventRequestsManagement() {
                 </select>
               </div>
 
-              {/* Drivers Section */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="driversArranged">Do we have drivers arranged?</Label>
-                  <select 
-                    name="driversArranged" 
-                    defaultValue={(detailsRequest as any).driversArranged ? "true" : "false"}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Are drivers arranged?</option>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="driverDetails">Driver Details (Who are they?)</Label>
-                  <Textarea 
-                    name="driverDetails" 
-                    rows={2}
-                    defaultValue={(detailsRequest as any).driverDetails || ""}
-                    placeholder="Names and contact info for drivers..."
-                  />
-                </div>
-              </div>
+              {/* Drivers Section - Enhanced with Database Integration */}
+              <DriverSelection
+                eventId={detailsRequest.id}
+                currentDrivers={(detailsRequest as any).assignedDriverIds || []}
+                currentDriverDetails={(detailsRequest as any).driverDetails}
+                currentDriversArranged={(detailsRequest as any).driversArranged}
+                currentDriverPickupTime={(detailsRequest as any).driverPickupTime}
+                currentDriverNotes={(detailsRequest as any).driverNotes}
+                onDriversUpdate={() => {
+                  // Refresh the event requests data to show updated information
+                  queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+                }}
+              />
 
               {/* Speakers Section */}
               <div className="space-y-4">

@@ -980,4 +980,72 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
   }
 });
 
+// Get available drivers for event assignment
+router.get("/drivers/available", isAuthenticated, async (req, res) => {
+  try {
+    const allDrivers = await storage.getAllDrivers();
+    
+    // Filter to only active drivers
+    const availableDrivers = allDrivers
+      .filter((driver: any) => driver.isActive)
+      .map((driver: any) => ({
+        id: driver.id,
+        name: driver.name,
+        email: driver.email,
+        phone: driver.phone,
+        availability: driver.availability,
+        availabilityNotes: driver.availabilityNotes,
+        hostLocation: driver.hostLocation,
+        routeDescription: driver.routeDescription,
+        vanApproved: driver.vanApproved,
+        vehicleType: driver.vehicleType
+      }));
+    
+    console.log(`Found ${availableDrivers.length} available drivers`);
+    res.json(availableDrivers);
+  } catch (error) {
+    console.error("Error fetching available drivers:", error);
+    res.status(500).json({ error: "Failed to fetch available drivers" });
+  }
+});
+
+// Update driver assignments for an event
+router.patch("/:id/drivers", isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+    const { assignedDriverIds, driverPickupTime, driverNotes, driversArranged } = req.body;
+    
+    // Validate that the event exists first
+    const existingEvent = await storage.getEventRequestById(eventId);
+    if (!existingEvent) {
+      return res.status(404).json({ error: "Event request not found" });
+    }
+    
+    // Update the event with driver assignments
+    const updateData = {
+      assignedDriverIds: assignedDriverIds || [],
+      driverPickupTime: driverPickupTime || null,
+      driverNotes: driverNotes || null,
+      driversArranged: driversArranged !== undefined ? driversArranged : (assignedDriverIds && assignedDriverIds.length > 0)
+    };
+    
+    const updatedEvent = await storage.updateEventRequest(eventId, updateData);
+    
+    console.log(`Updated driver assignments for event ${eventId}:`, updateData);
+    
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      "update_event_drivers",
+      `Updated driver assignments for event: ${existingEvent.organizationName}`
+    );
+    
+    res.json(updatedEvent);
+  } catch (error) {
+    console.error("Error updating driver assignments:", error);
+    res.status(500).json({ error: "Failed to update driver assignments" });
+  }
+});
+
 export default router;
