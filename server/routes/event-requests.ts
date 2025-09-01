@@ -396,6 +396,63 @@ router.patch(
   },
 );
 
+// Complete contact with comprehensive event details - single step workflow
+router.post(
+  "/complete-contact",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_EDIT"),
+  async (req, res) => {
+    try {
+      const { id, ...updates } = req.body;
+
+      console.log("=== COMPLETE CONTACT WITH DETAILS ===");
+      console.log("Event ID:", id);
+      console.log("Updates:", JSON.stringify(updates, null, 2));
+
+      const updatedEventRequest = await storage.updateEventRequest(id, {
+        ...updates,
+        contactedAt: new Date(),
+        completedByUserId: req.user?.id,
+        contactCompletedAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      // Update Google Sheets with the new status if status was provided
+      if (updates.status) {
+        try {
+          const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
+          if (googleSheetsService) {
+            const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+            await googleSheetsService.updateEventRequestStatus(
+              updatedEventRequest.organizationName,
+              contactName,
+              updates.status
+            );
+          }
+        } catch (error) {
+          console.warn('Failed to update Google Sheets status:', error);
+        }
+      }
+
+      console.log("Successfully completed contact with details for:", id);
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_COMPLETE_CONTACT",
+        `Completed contact with comprehensive details for event request: ${id}`,
+      );
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error("Error completing contact:", error);
+      res.status(500).json({ message: "Failed to complete contact" });
+    }
+  },
+);
+
 // Complete event details - specific endpoint for comprehensive event planning updates
 router.post(
   "/complete-event-details",

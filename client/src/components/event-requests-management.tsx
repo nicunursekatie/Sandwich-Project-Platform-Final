@@ -1378,7 +1378,20 @@ export default function EventRequestsManagement() {
       communicationMethod: formData.get("communicationMethod") === "none" ? null : formData.get("communicationMethod"),
       eventAddress: formData.get("eventAddress"),
       estimatedSandwichCount: formData.get("estimatedSandwichCount") ? parseInt(formData.get("estimatedSandwichCount") as string) : null,
-      hasRefrigeration: formData.get("hasRefrigeration") === "none" ? null : formData.get("hasRefrigeration") === "true"
+      hasRefrigeration: formData.get("hasRefrigeration") === "none" ? null : formData.get("hasRefrigeration") === "true",
+      status: formData.get("status") || "contact_completed",
+      toolkitStatus: formData.get("toolkitStatus") || null,
+      eventStartTime: formData.get("eventStartTime") || null,
+      eventEndTime: formData.get("eventEndTime") || null,
+      pickupTime: formData.get("pickupTime") || null,
+      tspContact: formData.get("tspContact") || null,
+      customTspContact: formData.get("customTspContact") || null,
+      sandwichTypes: formData.get("sandwichTypes") || null,
+      driversArranged: formData.get("driversArranged") === "true",
+      driverDetails: formData.get("driverDetails") || null,
+      speakersNeeded: formData.get("speakersNeeded") === "true",
+      speakerDetails: formData.get("speakerDetails") || null,
+      planningNotes: formData.get("planningNotes") || null
     };
 
     completeContactMutation.mutate(data);
@@ -2097,14 +2110,15 @@ export default function EventRequestsManagement() {
       {/* Complete Contact Dialog */}
       {showCompleteContactDialog && completingRequest && (
         <Dialog open={showCompleteContactDialog} onOpenChange={setShowCompleteContactDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
-              <DialogTitle>Complete Primary Contact</DialogTitle>
+              <DialogTitle>Complete Contact & Event Details</DialogTitle>
               <DialogDescription>
-                Record the initial contact details for {completingRequest.organizationName}
+                Record contact details and comprehensive event planning information for {completingRequest.organizationName}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCompleteContact} className="space-y-4">
+            <form onSubmit={handleCompleteContact} className="space-y-6">
+              {/* Communication Method */}
               <div>
                 <Label htmlFor="communicationMethod">Communication Method</Label>
                 <Select name="communicationMethod" defaultValue="none">
@@ -2120,14 +2134,72 @@ export default function EventRequestsManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="eventAddress">Event Location/Address</Label>
-                <Input name="eventAddress" placeholder="Where will the event take place?" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* Basic Event Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="eventAddress">Event Location/Address</Label>
+                  <Input name="eventAddress" placeholder="Where will the event take place?" />
+                </div>
                 <div>
                   <Label htmlFor="estimatedSandwichCount">Estimated Sandwich Count</Label>
                   <Input name="estimatedSandwichCount" type="number" min="1" placeholder="How many sandwiches needed?" />
+                </div>
+              </div>
+
+              {/* Event Status and Toolkit */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="status">Event Status</Label>
+                  <Select name="status" defaultValue="contact_completed">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Set event status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="contact_completed">Contact Completed</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="declined">Declined</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="toolkitStatus">Toolkit Status</Label>
+                  <Select name="toolkitStatus" defaultValue="">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select toolkit status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Not Set</SelectItem>
+                      <SelectItem value="not_sent">Not Yet Sent</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="received_confirmed">Received & Confirmed</SelectItem>
+                      <SelectItem value="not_needed">Not Needed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Event Times */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="eventStartTime">Event Start Time</Label>
+                  <Input name="eventStartTime" type="time" />
+                </div>
+                <div>
+                  <Label htmlFor="eventEndTime">Event End Time</Label>
+                  <Input name="eventEndTime" type="time" />
+                </div>
+                <div>
+                  <Label htmlFor="pickupTime">Pickup Time</Label>
+                  <Input name="pickupTime" type="time" />
+                </div>
+              </div>
+
+              {/* Food Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="sandwichTypes">Sandwich Types/Preferences</Label>
+                  <Input name="sandwichTypes" placeholder="Any specific sandwich preferences?" />
                 </div>
                 <div>
                   <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
@@ -2143,12 +2215,102 @@ export default function EventRequestsManagement() {
                   </Select>
                 </div>
               </div>
+
+              {/* TSP Contact Assignment */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="tspContact">TSP Team Contact</Label>
+                  <Select name="tspContact" defaultValue="">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Assign team member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No assignment</SelectItem>
+                      {users.map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName && user.lastName 
+                            ? `${user.firstName} ${user.lastName}` 
+                            : user.displayName || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="customTspContact">Custom Contact (if not in list)</Label>
+                  <Input name="customTspContact" placeholder="External contact name or special instructions" />
+                </div>
+              </div>
+
+              {/* Drivers and Speakers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="driversArranged" className="flex items-center space-x-2">
+                    <span>Drivers Arranged?</span>
+                  </Label>
+                  <Select name="driversArranged" defaultValue="false">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Are drivers arranged?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="false">No</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="speakersNeeded">Speakers Needed?</Label>
+                  <Select name="speakersNeeded" defaultValue="false">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Do they need speakers?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="false">No</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Additional Details */}
+              <div>
+                <Label htmlFor="driverDetails">Driver Details/Notes</Label>
+                <Textarea name="driverDetails" rows={2} placeholder="Driver arrangements, pickup instructions, or notes" />
+              </div>
+
+              <div>
+                <Label htmlFor="speakerDetails">Speaker Details/Notes</Label>
+                <Textarea name="speakerDetails" rows={2} placeholder="Speaker requirements or details" />
+              </div>
+
+              <div>
+                <Label htmlFor="sandwichTypes">Sandwich Types</Label>
+                <Select name="sandwichTypes" defaultValue="">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sandwich types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Not specified</SelectItem>
+                    <SelectItem value="deli">Deli</SelectItem>
+                    <SelectItem value="turkey">Turkey</SelectItem>
+                    <SelectItem value="ham">Ham</SelectItem>
+                    <SelectItem value="pbj">PB&J</SelectItem>
+                    <SelectItem value="mixed">Mixed</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="planningNotes">Additional Planning Notes</Label>
+                <Textarea name="planningNotes" rows={3} placeholder="Any additional planning notes or requirements" />
+              </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setShowCompleteContactDialog(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={completeContactMutation.isPending}>
-                  {completeContactMutation.isPending ? "Saving..." : "Complete Contact"}
+                  {completeContactMutation.isPending ? "Saving..." : "Complete Contact & Event Details"}
                 </Button>
               </div>
             </form>
