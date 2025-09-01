@@ -62,6 +62,8 @@ export default function WeeklyMonitoringDashboard() {
   const [showSMSTest, setShowSMSTest] = useState(false);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
   const [showAnnouncementPanel, setShowAnnouncementPanel] = useState(false);
+  const [emailingSingleLocation, setEmailingSingleLocation] = useState<string | null>(null);
+  const [smsingLocation, setSmsingLocation] = useState<string | null>(null);
   
   // Get monitoring status for selected week
   const { data: submissionStatus = [], isLoading: statusLoading, error: statusError } = useQuery({
@@ -111,6 +113,12 @@ export default function WeeklyMonitoringDashboard() {
   const sendSingleSMSMutation = useMutation({
     mutationFn: (data: { location: string; appUrl?: string }) => 
       apiRequest('POST', `/api/monitoring/send-sms-reminder/${encodeURIComponent(data.location)}`, { appUrl: data.appUrl }),
+    onMutate: (data) => {
+      setSmsingLocation(data.location);
+    },
+    onSettled: () => {
+      setSmsingLocation(null);
+    },
   });
   
   const testSMSMutation = useMutation({
@@ -139,6 +147,12 @@ export default function WeeklyMonitoringDashboard() {
   const sendSingleEmailMutation = useMutation({
     mutationFn: (data: { location: string; appUrl?: string }) => 
       apiRequest('POST', `/api/monitoring/send-email-reminder/${encodeURIComponent(data.location)}`, { appUrl: data.appUrl }),
+    onMutate: (data) => {
+      setEmailingSingleLocation(data.location);
+    },
+    onSettled: () => {
+      setEmailingSingleLocation(null);
+    },
   });
 
   const getStatusColor = (hasSubmitted: boolean) => {
@@ -638,11 +652,11 @@ export default function WeeklyMonitoringDashboard() {
                                 location: status.location,
                                 appUrl: window.location.origin 
                               })}
-                              disabled={sendSingleEmailMutation.isPending}
+                              disabled={emailingSingleLocation === status.location}
                               className="flex items-center gap-1 text-xs px-2 py-1 h-7 text-teal-600 border-teal-200 hover:bg-teal-50"
                             >
                               <Mail className="h-3 w-3" />
-                              {sendSingleEmailMutation.isPending ? "Sending..." : "Email"}
+                              {emailingSingleLocation === status.location ? "Sending..." : "Email"}
                             </Button>
                             
                             {/* SMS Button (only if configured) */}
@@ -654,11 +668,11 @@ export default function WeeklyMonitoringDashboard() {
                                   location: status.location,
                                   appUrl: window.location.origin 
                                 })}
-                                disabled={sendSingleSMSMutation.isPending}
+                                disabled={smsingLocation === status.location}
                                 className="flex items-center gap-1 text-xs px-2 py-1 h-7"
                               >
                                 <MessageSquare className="h-3 w-3" />
-                                {sendSingleSMSMutation.isPending ? "Sending..." : "SMS"}
+                                {smsingLocation === status.location ? "Sending..." : "SMS"}
                               </Button>
                             )}
                           </div>
