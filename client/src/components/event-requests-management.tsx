@@ -464,6 +464,24 @@ export default function EventRequestsManagement() {
     }
   });
 
+  const importHistoricalMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/import/import-historical"),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      toast({ 
+        title: "Historical import successful", 
+        description: `Successfully imported ${data.imported} historical events from 2024`
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error importing historical events", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
   // Filter events by tab
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
@@ -1477,6 +1495,18 @@ export default function EventRequestsManagement() {
             <Upload className="w-4 h-4" />
             <span className="hidden sm:inline sm:ml-2">
               {importExcelMutation.isPending ? "Importing..." : "Import Excel"}
+            </span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => importHistoricalMutation.mutate()}
+            disabled={importHistoricalMutation.isPending}
+            title="Import historical 2024 events"
+          >
+            <Upload className="w-4 h-4" />
+            <span className="hidden sm:inline sm:ml-2">
+              {importHistoricalMutation.isPending ? "Importing..." : "Import 2024 Data"}
             </span>
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

@@ -123,6 +123,192 @@ router.post("/import-past-events", isAuthenticated, async (req, res) => {
   }
 });
 
+// Import historical 2024 events from attached Excel/CSV file
+router.post("/import-historical", isAuthenticated, async (req, res) => {
+  try {
+    console.log('Starting historical 2024 event import...');
+    
+    // Read the 2024 historical data file
+    const filePath = path.join(__dirname, '..', '..', 'attached_assets', '2024 Groups_1756753446666.xlsx');
+    console.log('Reading historical file:', filePath);
+    
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON with proper headers
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+    
+    console.log('Historical headers:', data[0]);
+    console.log(`Total historical rows: ${data.length}`);
+    
+    // Skip header row and process data
+    const events = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      
+      // Skip empty rows
+      if (!row || row.length === 0 || !row[0]) continue;
+      
+      // Map 2024 data structure:
+      // 0: Time (date), 1: Social Post, 2: Group Name, 3: Estimate/Final # sandwiches made,
+      // 4: Day of Week, 5: Sent toolkit, 6: Email Address, 7: Contact Name,
+      // 8: Contact Cell Number, 9: TSP Contact, 10: TSP Volunteer speaking/picking up,
+      // 11: Where are sandwiches going?, 12: Notes
+      const eventDateStr = row[0]; // Time
+      const groupName = row[2]; // Group Name
+      const sandwichCount = row[3]; // Estimate/Final # sandwiches made
+      const toolkitSent = row[5]; // Sent toolkit
+      const email = row[6]; // Email Address
+      const contactName = row[7]; // Contact Name
+      const phone = row[8]; // Contact Cell Number
+      const tspContact = row[9]; // TSP Contact
+      const deliveryLocation = row[11]; // Where are sandwiches going?
+      const notes = row[12]; // Notes
+      
+      // Parse MM/DD/YYYY date format
+      let parsedDate = null;
+      if (eventDateStr) {
+        try {
+          if (typeof eventDateStr === 'number') {
+            // Excel numeric date
+            const excelEpoch = new Date(1899, 11, 30);
+            parsedDate = new Date(excelEpoch.getTime() + eventDateStr * 24 * 60 * 60 * 1000);
+          } else {
+            // Handle MM/DD/YYYY string format
+            const dateStr = eventDateStr.toString().trim();
+            const dateMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (dateMatch) {
+              const [, month, day, year] = dateMatch;
+              parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } else {
+              parsedDate = new Date(dateStr);
+            }
+          }
+          
+          if (isNaN(parsedDate.getTime())) {
+            parsedDate = null;
+          }
+        } catch (e) {
+          console.warn(`Could not parse historical date "${eventDateStr}" for row ${i + 1}`);
+          parsedDate = null;
+        }
+      }
+      
+      // Split contact name into first and last name
+      let firstName = '';
+      let lastName = '';
+      if (contactName) {
+        const nameParts = contactName.toString().trim().split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+      
+      // Parse toolkit sent status
+      const toolkitSentStatus = toolkitSent && toolkitSent.toString().toLowerCase() === 'yes';
+      
+      // Parse estimated sandwich count
+      let parsedSandwichCount = null;
+      if (sandwichCount) {
+        const countStr = sandwichCount.toString().replace(/[^\d]/g, ''); // Remove non-digits
+        if (countStr && !isNaN(parseInt(countStr))) {
+          parsedSandwichCount = parseInt(countStr);
+        }
+      }
+      
+      // Only add if we have required fields
+      if (firstName && groupName && email) {
+        events.push({
+          firstName: firstName,
+          lastName: lastName || '',
+          email: email.toString(),
+          phone: phone ? phone.toString() : null,
+          organizationName: groupName.toString(),
+          desiredEventDate: parsedDate,
+          status: 'completed', // Historical events are completed
+          contactedAt: parsedDate, // Use event date as contacted date
+          previouslyHosted: 'yes', // These are past hosts
+          message: 'Imported historical 2024 event',
+          createdBy: req.user?.id,
+          estimatedSandwichCount: parsedSandwichCount,
+          toolkitSent: toolkitSentStatus,
+          toolkitStatus: toolkitSentStatus ? 'sent' : 'not_sent',
+          planningNotes: notes ? notes.toString() : null,
+          tspContactAssigned: tspContact ? tspContact.toString() : null,
+          additionalRequirements: deliveryLocation ? `Delivery location: ${deliveryLocation}` : null
+        });
+        
+        console.log(`✅ Prepared historical event: ${firstName} ${lastName} from ${groupName}`);
+      } else {
+        console.log(`⚠️  Skipping historical row ${i + 1} - missing required fields:`, {
+          firstName: !!firstName,
+          groupName: !!groupName,
+          email: !!email
+        });
+      }
+    }
+    
+    console.log(`\nPrepared ${events.length} historical events for import`);
+    
+    if (events.length === 0) {
+      return res.status(400).json({ error: 'No valid historical events found to import' });
+    }
+    
+    // Import with duplicate checking
+    const importedEvents = [];
+    const skippedDuplicates = [];
+    
+    for (const event of events) {
+      try {
+        // Check if event already exists (by email and organization)
+        const existingEvents = await storage.getAllEventRequests();
+        const isDuplicate = existingEvents.some(existing => 
+          existing.email.toLowerCase() === event.email.toLowerCase() && 
+          existing.organizationName.toLowerCase() === event.organizationName.toLowerCase()
+        );
+        
+        if (isDuplicate) {
+          console.log(`⚠️  Skipping historical duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`);
+          skippedDuplicates.push(event);
+          continue;
+        }
+        
+        const result = await storage.createEventRequest(event);
+        importedEvents.push(result);
+        console.log(`✅ Imported historical: ${event.firstName} ${event.lastName} - ${event.organizationName}`);
+      } catch (error) {
+        console.error(`❌ Failed to import historical: ${event.firstName} ${event.lastName} - ${event.organizationName}`, error);
+      }
+    }
+    
+    console.log(`✅ Successfully imported ${importedEvents.length} historical events!`);
+    if (skippedDuplicates.length > 0) {
+      console.log(`⚠️  Skipped ${skippedDuplicates.length} historical duplicates`);
+    }
+    
+    res.json({
+      success: true,
+      message: `Successfully imported ${importedEvents.length} historical events from 2024`,
+      imported: importedEvents.length,
+      total: events.length,
+      skipped: skippedDuplicates.length,
+      events: importedEvents.map(e => ({
+        id: e.id,
+        name: `${e.firstName} ${e.lastName}`,
+        organization: e.organizationName,
+        email: e.email
+      }))
+    });
+    
+  } catch (error) {
+    console.error('❌ Error importing historical events:', error);
+    res.status(500).json({ 
+      error: 'Failed to import historical events', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 router.post("/import-excel", isAuthenticated, async (req, res) => {
   try {
     console.log('Starting Excel event import...');

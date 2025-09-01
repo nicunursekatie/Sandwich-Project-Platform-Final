@@ -302,7 +302,7 @@ export default function EventVolunteerSignup({
                       <div className="space-y-4">
                         <div>
                           <Label htmlFor="driverSelect">Select Driver</Label>
-                          <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+                          <Select value={selectedDriverId || ""} onValueChange={setSelectedDriverId}>
                             <SelectTrigger>
                               <SelectValue placeholder="Choose a driver..." />
                             </SelectTrigger>
@@ -448,7 +448,7 @@ export default function EventVolunteerSignup({
                       <div className="space-y-4">
                         <div>
                           <Label htmlFor="speakerSelect">Select Person</Label>
-                          <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+                          <Select value={selectedDriverId || ""} onValueChange={setSelectedDriverId}>
                             <SelectTrigger>
                               <SelectValue placeholder="Choose a person..." />
                             </SelectTrigger>
