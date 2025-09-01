@@ -13,6 +13,30 @@ import { getEventRequestsGoogleSheetsService } from "../google-sheets-event-requ
 
 const router = Router();
 
+// Get complete event details by organization and contact
+router.get("/details/:organizationName/:contactName", isAuthenticated, async (req, res) => {
+  try {
+    const { organizationName, contactName } = req.params;
+    
+    // Get event request matching the organization and contact
+    const allEventRequests = await storage.getAllEventRequests();
+    const eventRequest = allEventRequests.find((request: any) => 
+      request.organizationName === organizationName && 
+      (request.firstName + ' ' + request.lastName) === contactName
+    );
+
+    if (!eventRequest) {
+      return res.status(404).json({ error: "Event request not found" });
+    }
+
+    // Return complete event details
+    res.json(eventRequest);
+  } catch (error) {
+    console.error("Error fetching event details:", error);
+    res.status(500).json({ error: "Failed to fetch event details" });
+  }
+});
+
 // Debug middleware to catch all requests to this router
 router.use((req, res, next) => {
   if ((req.method === "PATCH" || req.method === "PUT") && req.params.id) {

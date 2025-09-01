@@ -50,6 +50,8 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [selectedOrganization, setSelectedOrganization] = useState<OrganizationContact | null>(null);
   const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
+  const [eventDetails, setEventDetails] = useState<any>(null);
+  const [loadingEventDetails, setLoadingEventDetails] = useState(false);
 
   // Fetch organizations data
   const { data: organizationsResponse, isLoading, error } = useQuery({
@@ -60,6 +62,24 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
       return response.json();
     }
   });
+
+  // Function to fetch complete event details
+  const fetchEventDetails = async (organization: OrganizationContact) => {
+    setLoadingEventDetails(true);
+    try {
+      const response = await fetch(`/api/event-requests/details/${encodeURIComponent(organization.organizationName)}/${encodeURIComponent(organization.contactName)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch event details');
+      }
+      const details = await response.json();
+      setEventDetails(details);
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+      setEventDetails(null);
+    } finally {
+      setLoadingEventDetails(false);
+    }
+  };
 
   
   // Extract and flatten organizations from response
@@ -475,7 +495,9 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                     <Button 
                       onClick={() => {
                         setSelectedOrganization(org);
+                        setEventDetails(null); // Reset previous details
                         setShowEventDetailsDialog(true);
+                        fetchEventDetails(org); // Fetch complete details
                       }}
                       variant="outline" 
                       size="sm" 
@@ -573,149 +595,231 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Contact Information */}
-              <div className="bg-gray-50 p-4 rounded-lg border">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                  <User className="w-5 h-5 mr-2" style={{ color: '#236383' }} />
-                  Primary Contact
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Contact Name</label>
-                    <p className="text-lg font-semibold" style={{ color: '#236383' }}>
-                      {selectedOrganization.contactName}
-                    </p>
-                  </div>
-                  {selectedOrganization.email && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Email Address</label>
-                      <p className="text-base font-medium" style={{ color: '#236383' }}>
-                        {selectedOrganization.email}
-                      </p>
-                    </div>
-                  )}
+              {loadingEventDetails ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#236383]"></div>
+                  <span className="ml-3 text-gray-600">Loading event details...</span>
                 </div>
-              </div>
-
-              {/* Event Status & Information */}
-              <div className="bg-white p-4 rounded-lg border">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2" style={{ color: '#236383' }} />
-                  Event Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Current Status</label>
-                    <div className="mt-1">
-                      {(() => {
-                        const statusConfig = {
-                          'new': { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'New Request' },
-                          'contacted': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Contact Made' },
-                          'scheduled': { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Event Scheduled' },
-                          'completed': { color: 'bg-green-100 text-green-800 border-green-200', label: 'Event Completed' },
-                          'past': { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Past Event' }
-                        };
-                        const config = statusConfig[selectedOrganization.status as keyof typeof statusConfig] || statusConfig.new;
-                        return (
-                          <Badge className={`${config.color} border`}>
-                            {config.label}
-                          </Badge>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Total Requests</label>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {selectedOrganization.totalRequests} request{selectedOrganization.totalRequests !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Hosted Events</label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      {selectedOrganization.hasHostedEvent ? (
-                        <>
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <span className="text-green-600 font-semibold">Yes</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="w-5 h-5 text-gray-400" />
-                          <span className="text-gray-500">Not yet</span>
-                        </>
+              ) : eventDetails ? (
+                <>
+                  {/* Contact Information */}
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+                      <User className="w-5 h-5 mr-2" style={{ color: '#236383' }} />
+                      Contact Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Contact Name</label>
+                        <p className="text-lg font-semibold" style={{ color: '#236383' }}>
+                          {eventDetails.firstName} {eventDetails.lastName}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Email Address</label>
+                        <p className="text-base font-medium" style={{ color: '#236383' }}>
+                          {eventDetails.email}
+                        </p>
+                      </div>
+                      {eventDetails.phone && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Phone Number</label>
+                          <p className="text-base font-medium text-gray-700">
+                            {eventDetails.phone}
+                          </p>
+                        </div>
+                      )}
+                      {eventDetails.department && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Department</label>
+                          <p className="text-base font-medium text-gray-700">
+                            {eventDetails.department}
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
 
-                {/* Event Date */}
-                {selectedOrganization.eventDate && (
-                  <div className="mt-4 pt-4 border-t">
-                    <label className="text-sm font-medium text-gray-600">Event Date</label>
-                    <p className="text-lg font-semibold" style={{ color: '#FBAD3F' }}>
-                      {(() => {
-                        try {
-                          let date: Date;
-                          if (selectedOrganization.eventDate!.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                            const dateOnly = selectedOrganization.eventDate!.split(' ')[0];
-                            date = new Date(dateOnly + 'T12:00:00');
-                          } else if (selectedOrganization.eventDate!.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                            date = new Date(selectedOrganization.eventDate + 'T12:00:00');
-                          } else if (selectedOrganization.eventDate!.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-                            const dateOnly = selectedOrganization.eventDate!.split('T')[0];
-                            date = new Date(dateOnly + 'T12:00:00');
-                          } else {
-                            date = new Date(selectedOrganization.eventDate!);
-                          }
-                          return date.toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          });
-                        } catch {
-                          return selectedOrganization.eventDate;
-                        }
-                      })()}
-                    </p>
+                  {/* Event Planning Details */}
+                  <div className="bg-white p-4 rounded-lg border">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+                      <Calendar className="w-5 h-5 mr-2" style={{ color: '#236383' }} />
+                      Event Planning Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Current Status</label>
+                        <div className="mt-1">
+                          {(() => {
+                            const statusConfig = {
+                              'new': { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'New Request' },
+                              'contacted': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Contact Made' },
+                              'scheduled': { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Event Scheduled' },
+                              'completed': { color: 'bg-green-100 text-green-800 border-green-200', label: 'Event Completed' },
+                              'past': { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Past Event' }
+                            };
+                            const config = statusConfig[eventDetails.status as keyof typeof statusConfig] || statusConfig.new;
+                            return (
+                              <Badge className={`${config.color} border`}>
+                                {config.label}
+                              </Badge>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {eventDetails.desiredEventDate && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Event Date</label>
+                          <p className="text-base font-semibold" style={{ color: '#FBAD3F' }}>
+                            {(() => {
+                              try {
+                                const date = new Date(eventDetails.desiredEventDate);
+                                return date.toLocaleDateString('en-US', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                });
+                              } catch {
+                                return eventDetails.desiredEventDate;
+                              }
+                            })()}
+                          </p>
+                        </div>
+                      )}
+
+                      {eventDetails.estimatedSandwichCount && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Estimated Sandwiches</label>
+                          <p className="text-lg font-semibold text-orange-600">
+                            {eventDetails.estimatedSandwichCount} sandwiches
+                          </p>
+                        </div>
+                      )}
+
+                      {eventDetails.sandwichesMade && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Sandwiches Made</label>
+                          <p className="text-lg font-semibold text-green-600">
+                            {eventDetails.sandwichesMade} sandwiches
+                          </p>
+                        </div>
+                      )}
+
+                      {eventDetails.eventStartTime && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Event Start Time</label>
+                          <p className="text-base font-medium text-gray-700">
+                            {eventDetails.eventStartTime}
+                          </p>
+                        </div>
+                      )}
+
+                      {eventDetails.eventEndTime && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Event End Time</label>
+                          <p className="text-base font-medium text-gray-700">
+                            {eventDetails.eventEndTime}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {eventDetails.eventAddress && (
+                      <div className="mt-4 pt-4 border-t">
+                        <label className="text-sm font-medium text-gray-600">Event Address</label>
+                        <p className="text-base font-medium text-gray-700">
+                          {eventDetails.eventAddress}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Recent Activity */}
-              <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-                <h3 className="font-semibold text-teal-800 mb-3 flex items-center">
-                  <Clock className="w-5 h-5 mr-2" />
-                  Recent Activity
-                </h3>
-                <div>
-                  <label className="text-sm font-medium text-teal-700">Latest Request Date</label>
-                  <p className="text-base font-medium text-teal-800">
-                    {(() => {
-                      try {
-                        let date: Date;
-                        if (selectedOrganization.latestRequestDate.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                          const [datePart, timePart] = selectedOrganization.latestRequestDate.split(' ');
-                          date = new Date(datePart + 'T' + timePart);
-                        } else {
-                          date = new Date(selectedOrganization.latestRequestDate);
-                        }
-                        return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'short', 
-                          day: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit'
-                        });
-                      } catch (error) {
-                        return selectedOrganization.latestRequestDate;
-                      }
-                    })()}
-                  </p>
+                  {/* Additional Details */}
+                  {(eventDetails.message || eventDetails.planningNotes || eventDetails.contactCompletionNotes) && (
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h3 className="font-semibold text-blue-800 mb-3">Additional Information</h3>
+                      {eventDetails.message && (
+                        <div className="mb-3">
+                          <label className="text-sm font-medium text-blue-700">Original Message</label>
+                          <p className="text-sm text-blue-800 bg-white p-2 rounded border">
+                            {eventDetails.message}
+                          </p>
+                        </div>
+                      )}
+                      {eventDetails.planningNotes && (
+                        <div className="mb-3">
+                          <label className="text-sm font-medium text-blue-700">Planning Notes</label>
+                          <p className="text-sm text-blue-800 bg-white p-2 rounded border">
+                            {eventDetails.planningNotes}
+                          </p>
+                        </div>
+                      )}
+                      {eventDetails.contactCompletionNotes && (
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Contact Notes</label>
+                          <p className="text-sm text-blue-800 bg-white p-2 rounded border">
+                            {eventDetails.contactCompletionNotes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Event History */}
+                  <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                    <h3 className="font-semibold text-teal-800 mb-3 flex items-center">
+                      <Clock className="w-5 h-5 mr-2" />
+                      Event History
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-teal-700">Request Submitted</label>
+                        <p className="text-base font-medium text-teal-800">
+                          {(() => {
+                            try {
+                              const date = new Date(eventDetails.createdAt);
+                              return date.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit'
+                              });
+                            } catch (error) {
+                              return 'Unknown';
+                            }
+                          })()}
+                        </p>
+                      </div>
+                      
+                      {eventDetails.hasHostedEvent !== undefined && (
+                        <div>
+                          <label className="text-sm font-medium text-teal-700">Previously Hosted Events</label>
+                          <div className="flex items-center space-x-2 mt-1">
+                            {eventDetails.hasHostedEvent ? (
+                              <>
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                                <span className="text-green-600 font-semibold">Yes</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-5 h-5 text-gray-400" />
+                                <span className="text-gray-500">First time</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">No detailed event information available</p>
                 </div>
-              </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex justify-between items-center pt-4 border-t">
@@ -725,7 +829,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                 >
                   Close
                 </Button>
-                {(selectedOrganization.status === 'new' || selectedOrganization.status === 'scheduled') && (
+                {eventDetails && (eventDetails.status === 'new' || eventDetails.status === 'scheduled') && (
                   <Button 
                     onClick={() => {
                       setShowEventDetailsDialog(false);
