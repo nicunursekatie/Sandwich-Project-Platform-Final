@@ -147,24 +147,28 @@ router.post("/import-historical", isAuthenticated, async (req, res) => {
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       
-      // Skip empty rows
-      if (!row || row.length === 0 || !row[0]) continue;
+      // Skip empty rows or rows without meaningful data
+      if (!row || row.length === 0) continue;
+      
+      // Skip header row and rows that look like headers
+      const possibleGroupName = row[3];
+      if (!possibleGroupName || possibleGroupName.toString().toLowerCase().includes('group name')) continue;
       
       // Map 2024 data structure:
-      // 0: Time (date), 1: Social Post, 2: Group Name, 3: Estimate/Final # sandwiches made,
-      // 4: Day of Week, 5: Sent toolkit, 6: Email Address, 7: Contact Name,
-      // 8: Contact Cell Number, 9: TSP Contact, 10: TSP Volunteer speaking/picking up,
-      // 11: Where are sandwiches going?, 12: Notes
-      const eventDateStr = row[0]; // Time
-      const groupName = row[2]; // Group Name
-      const sandwichCount = row[3]; // Estimate/Final # sandwiches made
-      const toolkitSent = row[5]; // Sent toolkit
-      const email = row[6]; // Email Address
-      const contactName = row[7]; // Contact Name
-      const phone = row[8]; // Contact Cell Number
-      const tspContact = row[9]; // TSP Contact
-      const deliveryLocation = row[11]; // Where are sandwiches going?
-      const notes = row[12]; // Notes
+      // 0: (empty or date), 1: Time, 2: Social Post, 3: Group Name, 4: Estimate/Final # sandwiches made,
+      // 5: Day of Week, 6: Sent toolkit, 7: Email Address, 8: Contact Name,
+      // 9: Contact Cell Number, 10: TSP Contact, 11: TSP Volunteer speaking/picking up,
+      // 12: volunteer picking up or delivering, 13: Where are sandwiches going?, 14: Notes
+      const eventDateStr = row[0] || row[1]; // Date could be in column 0 or 1
+      const groupName = row[3]; // Group Name
+      const sandwichCount = row[4]; // Estimate/Final # sandwiches made
+      const toolkitSent = row[6]; // Sent toolkit
+      const email = row[7]; // Email Address
+      const contactName = row[8]; // Contact Name
+      const phone = row[9]; // Contact Cell Number
+      const tspContact = row[10]; // TSP Contact
+      const deliveryLocation = row[13]; // Where are sandwiches going?
+      const notes = row[14]; // Notes
       
       // Parse MM/DD/YYYY date format
       let parsedDate = null;
