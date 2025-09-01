@@ -1837,46 +1837,180 @@ export default function EventRequestsManagement() {
                 
                 {/* Pagination Controls */}
                 {pastEventsPagination.totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-6 p-4 bg-gray-50 rounded-lg">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPastEventsPage(Math.max(1, pastEventsPage - 1))}
-                      disabled={pastEventsPage === 1}
-                      className="flex items-center gap-2"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Previous
-                    </Button>
-                    
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">Page</span>
-                      <div className="flex space-x-1">
-                        {Array.from({ length: pastEventsPagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
-                          <Button
-                            key={pageNum}
-                            variant={pageNum === pastEventsPage ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setPastEventsPage(pageNum)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {pageNum}
-                          </Button>
-                        ))}
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    {/* Mobile-first design with responsive layout */}
+                    <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                      {/* Previous button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPastEventsPage(Math.max(1, pastEventsPage - 1))}
+                        disabled={pastEventsPage === 1}
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      
+                      {/* Page info - responsive layout */}
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className="text-sm text-gray-600 hidden sm:inline">Page</span>
+                        
+                        {/* Smart pagination - show fewer numbers on mobile */}
+                        <div className="flex space-x-1">
+                          {(() => {
+                            const currentPage = pastEventsPage;
+                            const totalPages = pastEventsPagination.totalPages;
+                            const isMobile = window.innerWidth < 640; // Tailwind's sm breakpoint
+                            const maxVisible = isMobile ? 3 : 5; // Show fewer on mobile
+                            
+                            if (totalPages <= maxVisible) {
+                              // Show all pages if we have few enough
+                              return Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                <Button
+                                  key={pageNum}
+                                  variant={pageNum === currentPage ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setPastEventsPage(pageNum)}
+                                  className="w-8 h-8 p-0 text-xs"
+                                >
+                                  {pageNum}
+                                </Button>
+                              ));
+                            } else {
+                              // Smart truncation for many pages
+                              const pages = [];
+                              const showEllipsis = totalPages > maxVisible;
+                              
+                              if (currentPage <= 3) {
+                                // Near beginning
+                                for (let i = 1; i <= Math.min(maxVisible - 1, totalPages); i++) {
+                                  pages.push(
+                                    <Button
+                                      key={i}
+                                      variant={i === currentPage ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => setPastEventsPage(i)}
+                                      className="w-8 h-8 p-0 text-xs"
+                                    >
+                                      {i}
+                                    </Button>
+                                  );
+                                }
+                                if (showEllipsis && totalPages > maxVisible) {
+                                  pages.push(<span key="ellipsis1" className="text-gray-400 text-xs">...</span>);
+                                  pages.push(
+                                    <Button
+                                      key={totalPages}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setPastEventsPage(totalPages)}
+                                      className="w-8 h-8 p-0 text-xs"
+                                    >
+                                      {totalPages}
+                                    </Button>
+                                  );
+                                }
+                              } else if (currentPage >= totalPages - 2) {
+                                // Near end
+                                pages.push(
+                                  <Button
+                                    key={1}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPastEventsPage(1)}
+                                    className="w-8 h-8 p-0 text-xs"
+                                  >
+                                    1
+                                  </Button>
+                                );
+                                if (showEllipsis) {
+                                  pages.push(<span key="ellipsis2" className="text-gray-400 text-xs">...</span>);
+                                }
+                                for (let i = Math.max(totalPages - maxVisible + 2, 2); i <= totalPages; i++) {
+                                  pages.push(
+                                    <Button
+                                      key={i}
+                                      variant={i === currentPage ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => setPastEventsPage(i)}
+                                      className="w-8 h-8 p-0 text-xs"
+                                    >
+                                      {i}
+                                    </Button>
+                                  );
+                                }
+                              } else {
+                                // In middle
+                                pages.push(
+                                  <Button
+                                    key={1}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPastEventsPage(1)}
+                                    className="w-8 h-8 p-0 text-xs"
+                                  >
+                                    1
+                                  </Button>
+                                );
+                                if (currentPage > 3) {
+                                  pages.push(<span key="ellipsis3" className="text-gray-400 text-xs">...</span>);
+                                }
+                                
+                                const start = Math.max(2, currentPage - 1);
+                                const end = Math.min(totalPages - 1, currentPage + 1);
+                                for (let i = start; i <= end; i++) {
+                                  pages.push(
+                                    <Button
+                                      key={i}
+                                      variant={i === currentPage ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => setPastEventsPage(i)}
+                                      className="w-8 h-8 p-0 text-xs"
+                                    >
+                                      {i}
+                                    </Button>
+                                  );
+                                }
+                                
+                                if (currentPage < totalPages - 2) {
+                                  pages.push(<span key="ellipsis4" className="text-gray-400 text-xs">...</span>);
+                                }
+                                pages.push(
+                                  <Button
+                                    key={totalPages}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPastEventsPage(totalPages)}
+                                    className="w-8 h-8 p-0 text-xs"
+                                  >
+                                    {totalPages}
+                                  </Button>
+                                );
+                              }
+                              return pages;
+                            }
+                          })()}
+                        </div>
+                        
+                        <span className="text-sm text-gray-600">
+                          <span className="hidden sm:inline">of {pastEventsPagination.totalPages}</span>
+                          <span className="sm:hidden">{pastEventsPage}/{pastEventsPagination.totalPages}</span>
+                        </span>
                       </div>
-                      <span className="text-sm text-gray-600">of {pastEventsPagination.totalPages}</span>
+                      
+                      {/* Next button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPastEventsPage(Math.min(pastEventsPagination.totalPages, pastEventsPage + 1))}
+                        disabled={pastEventsPage === pastEventsPagination.totalPages}
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPastEventsPage(Math.min(pastEventsPagination.totalPages, pastEventsPage + 1))}
-                      disabled={pastEventsPage === pastEventsPagination.totalPages}
-                      className="flex items-center gap-2"
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
                   </div>
                 )}
               </>
