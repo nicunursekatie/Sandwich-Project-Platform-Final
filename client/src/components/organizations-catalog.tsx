@@ -725,15 +725,17 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                 >
                   Close
                 </Button>
-                <Button 
-                  onClick={() => {
-                    setShowEventDetailsDialog(false);
-                    onNavigateToEventPlanning?.();
-                  }}
-                  className="bg-[#236383] hover:bg-[#236383]/90 text-white"
-                >
-                  Go to Event Planning
-                </Button>
+                {(selectedOrganization.status === 'new' || selectedOrganization.status === 'scheduled') && (
+                  <Button 
+                    onClick={() => {
+                      setShowEventDetailsDialog(false);
+                      onNavigateToEventPlanning?.();
+                    }}
+                    className="bg-[#236383] hover:bg-[#236383]/90 text-white"
+                  >
+                    Go to Event Planning
+                  </Button>
+                )}
               </div>
             </div>
           </DialogContent>
