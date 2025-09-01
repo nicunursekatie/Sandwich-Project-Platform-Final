@@ -584,7 +584,7 @@ export default function WeeklyMonitoringDashboard() {
                   {submissionStatus.map((status: WeeklySubmissionStatus) => (
                     <div
                       key={status.location}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow gap-3"
                     >
                       <div className="flex items-center gap-3">
                         <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
@@ -620,7 +620,7 @@ export default function WeeklyMonitoringDashboard() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 sm:flex-shrink-0">
                         <Badge 
                           className={`${getStatusColor(status.hasSubmitted)} flex items-center gap-1`}
                         >
