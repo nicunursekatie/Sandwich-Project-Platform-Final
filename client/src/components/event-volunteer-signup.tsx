@@ -120,8 +120,8 @@ export default function EventVolunteerSignup({
     return <div className="text-center py-4">Loading volunteers...</div>;
   }
 
-  const driverVolunteers = volunteers.filter((v: EventVolunteer) => v.role === 'driver' && v.status !== 'cancelled');
-  const speakerVolunteers = volunteers.filter((v: EventVolunteer) => v.role === 'speaker' && v.status !== 'cancelled');
+  const driverVolunteers = (volunteers || []).filter((v: EventVolunteer) => v.role === 'driver' && v.status !== 'cancelled');
+  const speakerVolunteers = (volunteers || []).filter((v: EventVolunteer) => v.role === 'speaker' && v.status !== 'cancelled');
 
   const availableDriverSpots = Math.max(0, driversNeeded - driverVolunteers.length);
   const availableSpeakerSpots = Math.max(0, speakersNeeded - speakerVolunteers.length);
