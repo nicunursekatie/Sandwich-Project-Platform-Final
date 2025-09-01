@@ -85,7 +85,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.DRIVERS_VIEW) ? [{ id: "drivers", label: "Drivers", icon: Car, href: "drivers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.USERS_VIEW) ? [{ id: "volunteers", label: "Volunteers", icon: Users, href: "volunteers", group: "operations" }] : []),
     ...(hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW) ? [{ id: "recipients", label: "Recipients", icon: Users, href: "recipients", group: "operations" }] : []),
-    ...(hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW) ? [{ id: "organizations-catalog", label: "Organizations Catalog", icon: Building, href: "organizations-catalog", group: "operations" }] : []),
+    ...(hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW) ? [{ id: "groups-catalog", label: "Groups Catalog", icon: Building, href: "groups-catalog", group: "operations" }] : []),
     { id: "donation-tracking", label: "Distribution Tracking", icon: Route, href: "donation-tracking", group: "operations" },
     ...(hasPermission(user, PERMISSIONS.ANALYTICS_VIEW) ? [{ id: "weekly-monitoring", label: "Weekly Monitoring", icon: Clock, href: "weekly-monitoring", group: "operations" }] : []),
     

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Building, User, Mail, Phone, Calendar, Search, Filter, Users, MapPin, ExternalLink, ChevronLeft, ChevronRight, Clock, CheckCircle } from "lucide-react";
 import { formatDateForDisplay } from "@/lib/date-utils";
 
-interface Organization {
+interface Group {
   name: string;
   contacts: Array<{ 
     name: string; 
@@ -37,11 +37,11 @@ interface OrganizationContact {
   eventDate?: string | null;
 }
 
-interface OrganizationsCatalogProps {
+interface GroupCatalogProps {
   onNavigateToEventPlanning?: () => void;
 }
 
-export default function OrganizationsCatalog({ onNavigateToEventPlanning }: OrganizationsCatalogProps = {}) {
+export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalogProps = {}) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("eventDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -53,12 +53,12 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
   const [eventDetails, setEventDetails] = useState<any>(null);
   const [loadingEventDetails, setLoadingEventDetails] = useState(false);
 
-  // Fetch organizations data
-  const { data: organizationsResponse, isLoading, error } = useQuery({
-    queryKey: ['/api/organizations-catalog'],
+  // Fetch groups data
+  const { data: groupsResponse, isLoading, error } = useQuery({
+    queryKey: ['/api/groups-catalog'],
     queryFn: async () => {
-      const response = await fetch('/api/organizations-catalog');
-      if (!response.ok) throw new Error('Failed to fetch organizations');
+      const response = await fetch('/api/groups-catalog');
+      if (!response.ok) throw new Error('Failed to fetch groups');
       return response.json();
     }
   });
@@ -82,11 +82,11 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
   };
 
   
-  // Extract and flatten organizations from response
-  const rawOrganizations = organizationsResponse?.organizations || [];
+  // Extract and flatten groups from response
+  const rawGroups = groupsResponse?.groups || [];
   
   // Convert to flat structure for easier filtering and display
-  const organizations: OrganizationContact[] = rawOrganizations.flatMap((org: Organization) => 
+  const groups: OrganizationContact[] = rawGroups.flatMap((org: Group) => 
     org.departments.map(contact => ({
       organizationName: org.name,
       contactName: contact.contactName,
@@ -101,8 +101,8 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
   );
 
 
-  // Filter organizations first
-  const filteredOrganizations = organizations
+  // Filter groups first
+  const filteredGroups = groups
     .filter((org) => {
       const matchesSearch = 
         org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,9 +115,9 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
       return matchesSearch && matchesStatus;
     });
 
-  // Group organizations by organization name
-  interface OrganizationGroup {
-    organizationName: string;
+  // Group entries by group name
+  interface GroupInfo {
+    groupName: string;
     departments: OrganizationContact[];
     totalRequests: number;
     totalDepartments: number;
@@ -125,13 +125,13 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
     latestRequestDate: string;
   }
 
-  const organizationGroups: OrganizationGroup[] = filteredOrganizations
-    .reduce((groups: Map<string, OrganizationGroup>, org) => {
+  const groupInfo: GroupInfo[] = filteredGroups
+    .reduce((groups: Map<string, GroupInfo>, org) => {
       const orgName = org.organizationName;
       
       if (!groups.has(orgName)) {
         groups.set(orgName, {
-          organizationName: orgName,
+          groupName: orgName,
           departments: [],
           totalRequests: 0,
           totalDepartments: 0,
@@ -155,11 +155,11 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
     .values();
 
   // Sort groups by organization name or latest request date
-  const sortedGroups = Array.from(organizationGroups).sort((a, b) => {
-    if (sortBy === 'organizationName') {
+  const sortedGroups = Array.from(groupInfo).sort((a, b) => {
+    if (sortBy === 'groupName') {
       return sortOrder === "desc" 
-        ? b.organizationName.localeCompare(a.organizationName)
-        : a.organizationName.localeCompare(b.organizationName);
+        ? b.groupName.localeCompare(a.groupName)
+        : a.groupName.localeCompare(b.groupName);
     }
     
     // Default sort by latest request date
@@ -231,7 +231,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
             <Building className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Organizations Catalog</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
             <p className="text-gray-600">Loading organization contacts...</p>
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
           <Building className="w-6 h-6 text-blue-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Organizations Catalog</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
           <p className="text-gray-600">Directory of all organizations we've worked with from event requests</p>
         </div>
       </div>
@@ -308,7 +308,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="organizationName">Organization</SelectItem>
+                <SelectItem value="groupName">Group</SelectItem>
                 <SelectItem value="contactName">Contact Name</SelectItem>
                 <SelectItem value="eventDate">Event Date</SelectItem>
                 <SelectItem value="totalRequests">Total Requests</SelectItem>
@@ -328,7 +328,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         {/* Results Summary */}
         <div className="mt-4 pt-3 border-t flex justify-between items-center">
           <small className="text-gray-600">
-            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} organizations with {filteredOrganizations.length} departments/contacts
+            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} groups with {filteredGroups.length} departments/contacts
           </small>
           <div className="flex items-center gap-2">
             <small className="text-gray-600">Items per page:</small>
@@ -347,11 +347,11 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         </div>
       </div>
 
-      {/* Organizations Grid */}
+      {/* Groups Grid */}
       {totalItems === 0 ? (
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No organizations found</p>
+          <p className="text-gray-600">No groups found</p>
           <p className="text-sm text-gray-500 mt-2">
             {searchTerm || statusFilter !== "all" 
               ? "Try adjusting your search or filters" 
@@ -362,7 +362,7 @@ export default function OrganizationsCatalog({ onNavigateToEventPlanning }: Orga
         <div className="space-y-8">
           {paginatedGroups.map((group, groupIndex) => (
             <div key={`${group.organizationName}-${groupIndex}`} className="bg-gray-50 rounded-lg border p-6">
-              {/* Organization Header */}
+              {/* Group Header */}
               <div className="mb-6 pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">

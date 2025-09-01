@@ -639,7 +639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/import", importEventsRoutes);
   
   // TEMP: Direct organizations catalog route for testing
-  app.get("/api/organizations-catalog", isAuthenticated, async (req, res) => {
+  app.get("/api/groups-catalog", isAuthenticated, async (req, res) => {
     try {
       const user = req.user;
       
@@ -775,7 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return bLatest - aLatest;
       });
       
-      res.json({ organizations });
+      res.json({ groups: organizations });
       
     } catch (error) {
       console.error("Error fetching organizations catalog:", error);
