@@ -638,13 +638,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register import events routes
   app.use("/api/import", importEventsRoutes);
   
-  // TEMP: Direct organizations catalog route for testing
+  // Groups Catalog: Complete directory of all organizations (current requests + historical hosts)
   app.get("/api/groups-catalog", isAuthenticated, async (req, res) => {
     try {
       const user = req.user;
       
       // Get all event requests and aggregate by organization + department
       const allEventRequests = await storage.getAllEventRequests();
+      
+      // Get all historical host organizations from sandwich collections
+      const allCollections = await storage.getAllSandwichCollections();
       
       // Create a map to aggregate data by organization and department
       const departmentsMap = new Map();
@@ -728,6 +731,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (request.desiredEventDate) {
             dept.eventDate = request.desiredEventDate;
           }
+        }
+      });
+      
+      // Add historical host organizations from sandwich collections
+      const historicalGroups = new Set();
+      allCollections.forEach(collection => {
+        // Add group1_name if it exists and looks like an organization
+        if (collection.group1Name && 
+            collection.group1Name !== 'Group' && 
+            collection.group1Name !== 'Groups' && 
+            collection.group1Name !== 'Unnamed Groups' &&
+            collection.group1Name.trim()) {
+          historicalGroups.add(collection.group1Name.trim());
+        }
+        
+        // Add group2_name if it exists and looks like an organization
+        if (collection.group2Name && 
+            collection.group2Name !== 'Group' && 
+            collection.group2Name !== 'Groups' && 
+            collection.group2Name !== 'Unnamed Groups' &&
+            collection.group2Name.trim()) {
+          historicalGroups.add(collection.group2Name.trim());
+        }
+      });
+      
+      // Add historical groups to departments map if not already present
+      historicalGroups.forEach(groupName => {
+        const departmentKey = `${groupName}|`; // Empty department for historical entries
+        
+        if (!departmentsMap.has(departmentKey)) {
+          departmentsMap.set(departmentKey, {
+            organizationName: groupName,
+            department: '',
+            contacts: [],
+            totalRequests: 0,
+            latestStatus: 'past',
+            latestRequestDate: new Date('2020-01-01'), // Historical placeholder
+            hasHostedEvent: true,
+            totalSandwiches: 0,
+            eventDate: null
+          });
+        } else {
+          // Update existing entry to show it has hosted events
+          const dept = departmentsMap.get(departmentKey);
+          dept.hasHostedEvent = true;
         }
       });
       
