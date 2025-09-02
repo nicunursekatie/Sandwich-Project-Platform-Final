@@ -194,14 +194,14 @@ export default function AnalyticsDashboard() {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={analyticsData.trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#236383" opacity={0.2} />
                   <XAxis 
                     dataKey="month" 
-                    stroke="#646464"
+                    stroke="#236383"
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke="#646464"
+                    stroke="#236383"
                     fontSize={12}
                     tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                   />
@@ -239,28 +239,28 @@ export default function AnalyticsDashboard() {
           </div>
           <CardContent className="p-6">
             <div className="space-y-4">
-              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Host Expansion</h4>
-                <p className="text-sm text-gray-600 mb-2">
+              <div className="bg-[#FBAD3F]/10 p-4 rounded-lg border border-[#FBAD3F]/30">
+                <h4 className="font-semibold text-[#236383] mb-2">Host Expansion</h4>
+                <p className="text-sm text-[#646464] mb-2">
                   {analyticsData.activeLocations} active locations - Target +5 new hosts this month
                 </p>
-                <Badge className="bg-orange-100 text-orange-700">Special campaign needed</Badge>
+                <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F]">Special campaign needed</Badge>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Capacity Building</h4>
-                <p className="text-sm text-gray-600 mb-2">
+              <div className="bg-[#236383]/10 p-4 rounded-lg border border-[#236383]/30">
+                <h4 className="font-semibold text-[#236383] mb-2">Capacity Building</h4>
+                <p className="text-sm text-[#646464] mb-2">
                   Weekly avg: {analyticsData.avgWeekly.toLocaleString()} - Support volunteer recruitment
                 </p>
-                <Badge className="bg-blue-100 text-blue-700">→ Target 10K/week</Badge>
+                <Badge className="bg-[#236383]/20 text-[#236383]">→ Target 10K/week</Badge>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Milestone Push</h4>
-                <p className="text-sm text-gray-600 mb-2">
+              <div className="bg-[#007E8C]/10 p-4 rounded-lg border border-[#007E8C]/30">
+                <h4 className="font-semibold text-[#236383] mb-2">Milestone Push</h4>
+                <p className="text-sm text-[#646464] mb-2">
                   {(2000000 - analyticsData.totalSandwiches).toLocaleString()} to 2M goal
                 </p>
-                <Badge className="bg-green-100 text-green-700">146,936 to 2M goal</Badge>
+                <Badge className="bg-[#007E8C]/20 text-[#007E8C]">146,936 to 2M goal</Badge>
               </div>
             </div>
           </CardContent>
@@ -280,17 +280,17 @@ export default function AnalyticsDashboard() {
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.topHosts} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#236383" opacity={0.2} />
                 <XAxis 
                   type="number"
-                  stroke="#646464"
+                  stroke="#236383"
                   fontSize={12}
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                 />
                 <YAxis 
                   type="category"
                   dataKey="name" 
-                  stroke="#646464"
+                  stroke="#236383"
                   fontSize={11}
                   width={120}
                 />
