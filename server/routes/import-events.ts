@@ -31,7 +31,14 @@ router.post("/import-past-events", isAuthenticated, async (req, res) => {
       let parsedDate = null;
       if (eventInfo.date) {
         try {
-          parsedDate = new Date(eventInfo.date);
+          // TIMEZONE SAFE: Parse as local date by adding noon time
+          const dateStr = eventInfo.date.toString().trim();
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            parsedDate = new Date(dateStr + 'T12:00:00');
+          } else {
+            const tempDate = new Date(dateStr);
+            parsedDate = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
+          }
           if (isNaN(parsedDate.getTime())) {
             parsedDate = null;
           }
@@ -175,18 +182,26 @@ router.post("/import-historical", isAuthenticated, async (req, res) => {
       if (eventDateStr) {
         try {
           if (typeof eventDateStr === 'number') {
-            // Excel numeric date
+            // Excel numeric date - TIMEZONE SAFE
             const excelEpoch = new Date(1899, 11, 30);
-            parsedDate = new Date(excelEpoch.getTime() + eventDateStr * 24 * 60 * 60 * 1000);
+            const tempDate = new Date(excelEpoch.getTime() + eventDateStr * 24 * 60 * 60 * 1000);
+            // Create local date to avoid timezone shift
+            parsedDate = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
           } else {
-            // Handle MM/DD/YYYY string format
+            // Handle MM/DD/YYYY string format - TIMEZONE SAFE
             const dateStr = eventDateStr.toString().trim();
             const dateMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
             if (dateMatch) {
               const [, month, day, year] = dateMatch;
+              // Use local date constructor to avoid timezone issues
               parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // YYYY-MM-DD format - add noon time
+              parsedDate = new Date(dateStr + 'T12:00:00');
             } else {
-              parsedDate = new Date(dateStr);
+              // Fallback: parse and convert to local date
+              const tempDate = new Date(dateStr);
+              parsedDate = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
             }
           }
           
@@ -406,14 +421,24 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
       let parsedDate = null;
       if (eventDate) {
         try {
-          // Handle Excel date formats
+          // Handle Excel date formats - TIMEZONE SAFE
           if (typeof eventDate === 'number') {
             // Excel numeric date
             const excelEpoch = new Date(1899, 11, 30);
-            parsedDate = new Date(excelEpoch.getTime() + eventDate * 24 * 60 * 60 * 1000);
+            const tempDate = new Date(excelEpoch.getTime() + eventDate * 24 * 60 * 60 * 1000);
+            // Create local date to avoid timezone shift
+            parsedDate = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
           } else {
-            // String date
-            parsedDate = new Date(eventDate);
+            // String date - parse as local date
+            const dateStr = eventDate.toString().trim();
+            if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // Already in YYYY-MM-DD format - add noon time
+              parsedDate = new Date(dateStr + 'T12:00:00');
+            } else {
+              // Try to parse and convert to local date
+              const tempDate = new Date(dateStr);
+              parsedDate = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
+            }
           }
           
           // Validate date
