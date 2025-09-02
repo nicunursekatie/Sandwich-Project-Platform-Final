@@ -795,7 +795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const org = organizationsMap.get(orgName);
         org.departments.push({
           department: dept.department,
-          contactName: dept.contacts[0]?.name || '',
+          contactName: dept.contacts[0]?.name || 'Historical Organization',
           email: dept.contacts[0]?.email || '',
           phone: dept.contacts[0]?.phone || '',
           allContacts: dept.contacts,
