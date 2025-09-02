@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Download, Eye, ExternalLink } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Download, Eye, ExternalLink, FileImage, Palette, ImageIcon } from 'lucide-react';
 import { DocumentPreview } from '@/components/document-preview';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface AdminDocument {
   id: string;
@@ -76,6 +78,60 @@ const adminDocuments: AdminDocument[] = [
 
 const categories = ['All', 'Legal & Tax', 'Governance', 'Forms'];
 
+// Logo files information
+const logoFiles = [
+  {
+    id: 1,
+    name: "CMYK Print Logo",
+    filename: "CMYK_PRINT_TSP-01-01.jpg",
+    description: "High-quality CMYK version for professional printing",
+    type: "JPEG",
+    usage: "Print materials, brochures, professional documents",
+    bgColor: "white",
+    icon: <Palette className="h-5 w-5" />
+  },
+  {
+    id: 2,
+    name: "Main Transparent Logo",
+    filename: "TSP_transparent.png",
+    description: "Primary logo with transparent background",
+    type: "PNG",
+    usage: "Web, presentations, overlays on any background",
+    bgColor: "#f8f9fa",
+    icon: <ImageIcon className="h-5 w-5" />
+  },
+  {
+    id: 3,
+    name: "Reverse Transparent Logo",
+    filename: "TSP_reverse_transparent.png", 
+    description: "Inverted colors for dark backgrounds",
+    type: "PNG",
+    usage: "Dark backgrounds, night mode interfaces",
+    bgColor: "#2d3748",
+    icon: <Eye className="h-5 w-5" />
+  },
+  {
+    id: 4,
+    name: "Sandwich Logo",
+    filename: "sandwich logo.png",
+    description: "Simple sandwich icon logo",
+    type: "PNG", 
+    usage: "Icons, favicons, small applications",
+    bgColor: "white",
+    icon: <FileImage className="h-5 w-5" />
+  },
+  {
+    id: 5,
+    name: "Transparent Logo (Copy)",
+    filename: "Copy of TSP_transparent.png",
+    description: "Backup copy of transparent logo",
+    type: "PNG",
+    usage: "Backup version for web and digital use",
+    bgColor: "#f8f9fa",
+    icon: <ImageIcon className="h-5 w-5" />
+  }
+];
+
 export default function ImportantDocuments() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [previewDocument, setPreviewDocument] = useState<AdminDocument | null>(null);
@@ -97,6 +153,27 @@ export default function ImportantDocuments() {
     setPreviewDocument(doc);
   };
 
+  const handleLogoDownload = async (filename: string, displayName: string) => {
+    try {
+      const response = await fetch(`/public-objects/LOGOS/${filename}`);
+      if (!response.ok) throw new Error('Logo not found');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download logo. Please try again.');
+    }
+  };
+
   const getImportanceBadge = (importance: string) => {
     switch (importance) {
       case 'critical':
@@ -113,15 +190,28 @@ export default function ImportantDocuments() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Important Documents
+            Important Documents & Logos
           </h1>
           <p className="text-gray-600 mb-6">
-            Key documents for The Sandwich Project, including our nonprofit paperwork and bylaws.
+            Key documents, forms, and official logos for The Sandwich Project.
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="mb-6 flex flex-wrap gap-2">
+        <Tabs defaultValue="documents" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Documents
+            </TabsTrigger>
+            <TabsTrigger value="logos" className="flex items-center gap-2">
+              <FileImage className="h-4 w-4" />
+              Logos & Branding
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="documents" className="space-y-6">
+            {/* Category Filter */}
+            <div className="mb-6 flex flex-wrap gap-2">
           {categories.map((category) => (
             <Button
               key={category}
@@ -131,11 +221,11 @@ export default function ImportantDocuments() {
             >
               {category}
             </Button>
-          ))}
-        </div>
+              ))}
+            </div>
 
-        {/* Documents Grid - Better tablet responsiveness with wider cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
+            {/* Documents Grid - Better tablet responsiveness with wider cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
           {filteredDocuments.map((doc) => (
             <Card key={doc.id} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200">
               <CardHeader className="pb-4 flex-shrink-0">
@@ -186,8 +276,134 @@ export default function ImportantDocuments() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="logos" className="space-y-6">
+            {/* Usage Guidelines */}
+            <Card className="border-[#236383]/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[#236383] text-lg">Usage Guidelines</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-[#646464] text-sm">
+                  • Use these logos to represent The Sandwich Project in official communications
+                </p>
+                <p className="text-[#646464] text-sm">
+                  • Maintain proper spacing and don't modify colors or proportions
+                </p>
+                <p className="text-[#646464] text-sm">
+                  • For print materials, use the CMYK version for best color accuracy
+                </p>
+                <p className="text-[#646464] text-sm">
+                  • Use transparent versions when overlaying on colored backgrounds
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Logo Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {logoFiles.map((logo) => (
+                <Card key={logo.id} className="border-[#236383]/20 hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-[#236383] text-lg flex items-center gap-2">
+                      {logo.icon}
+                      {logo.name}
+                    </CardTitle>
+                    <Badge variant="secondary" className="w-fit">
+                      {logo.type}
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Logo Preview */}
+                    <div 
+                      className="w-full h-32 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden"
+                      style={{ backgroundColor: logo.bgColor }}
+                    >
+                      <img 
+                        src={`/public-objects/LOGOS/${logo.filename}`}
+                        alt={logo.name}
+                        className="max-w-full max-h-full object-contain p-2"
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEg0NFY0NEgyMFYyMFoiIGZpbGw9IiNkMWQ1ZGIiLz4KPC9zdmc+';
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm text-[#646464]">
+                        {logo.description}
+                      </p>
+                      <p className="text-xs text-[#646464] font-medium">
+                        Best for: {logo.usage}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Preview
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle className="text-[#236383]">{logo.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div 
+                              className="w-full h-64 rounded-lg border border-gray-200 flex items-center justify-center"
+                              style={{ backgroundColor: logo.bgColor }}
+                            >
+                              <img 
+                                src={`/public-objects/LOGOS/${logo.filename}`}
+                                alt={logo.name}
+                                className="max-w-full max-h-full object-contain p-4"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <strong className="text-[#236383]">File Type:</strong> {logo.type}
+                              </div>
+                              <div>
+                                <strong className="text-[#236383]">Filename:</strong> {logo.filename}
+                              </div>
+                              <div className="col-span-2">
+                                <strong className="text-[#236383]">Usage:</strong> {logo.usage}
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => handleLogoDownload(logo.filename, logo.name)}
+                              className="w-full bg-[#236383] hover:bg-[#1a4e66]"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download {logo.name}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      <Button
+                        onClick={() => handleLogoDownload(logo.filename, logo.name)}
+                        size="sm"
+                        className="flex-1 bg-[#236383] hover:bg-[#1a4e66]"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Document Preview Modal */}
         {previewDocument && (
