@@ -135,6 +135,7 @@ export function getPreviousWednesday(): Date {
 
 /**
  * Check Dunwoody special requirements: need both Lisa Hiles AND either Stephanie or Marcy
+ * Also accepts entries from admin accounts (katielong2316@gmail.com, kenig.ka@gmail.com, admin@sandwich.project)
  */
 function checkDunwoodyStatus(submissions: any[], location: string): any {
   const dunwoodySubmissions = submissions.filter(sub => 
@@ -149,16 +150,28 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     };
   }
   
+  // Admin emails that can submit for any location
+  const adminEmails = ['katielong2316@gmail.com', 'kenig.ka@gmail.com', 'admin@sandwich.project'];
+  
   // Check for Lisa Hiles
   const lisaSubmission = dunwoodySubmissions.some(sub => 
     sub.submittedBy?.toLowerCase().includes('lisa') && 
     sub.submittedBy?.toLowerCase().includes('hiles')
   );
   
-  // Check for Stephanie or Marcy
+  // Check for Stephanie or Marcy OR admin accounts
   const stephanieOrMarcySubmission = dunwoodySubmissions.some(sub => {
     const submitter = sub.submittedBy?.toLowerCase() || '';
-    return submitter.includes('stephanie') || submitter.includes('marcy');
+    
+    // Check for Stephanie or Marcy
+    const isStephanieOrMarcy = submitter.includes('stephanie') || submitter.includes('marcy');
+    
+    // Check if submitted by an admin account
+    const isAdminSubmission = adminEmails.some(email => 
+      submitter.includes(email.toLowerCase())
+    );
+    
+    return isStephanieOrMarcy || isAdminSubmission;
   });
   
   return {
