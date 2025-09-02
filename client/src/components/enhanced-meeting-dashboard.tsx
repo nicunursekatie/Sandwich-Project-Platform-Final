@@ -221,6 +221,9 @@ export default function EnhancedMeetingDashboard() {
   // Local state for text inputs to ensure responsiveness
   const [localProjectText, setLocalProjectText] = useState<Record<number, { discussionPoints?: string; decisionItems?: string }>>({});
   
+  // Reset confirmation dialog state
+  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  
   // Meeting edit states
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [showEditMeetingDialog, setShowEditMeetingDialog] = useState(false);
@@ -336,6 +339,107 @@ export default function EnhancedMeetingDashboard() {
         description: error?.message || "Failed to convert meeting notes into tasks",
         variant: "destructive",
       });
+    },
+  });
+
+  // Comprehensive reset for next week's agenda planning
+  const resetAgendaPlanningMutation = useMutation({
+    mutationFn: async () => {
+      // Step 1: Create tasks from any remaining notes
+      const projectsWithNotes = allProjects.filter((project: any) => 
+        (project.meetingDiscussionPoints?.trim() || project.meetingDecisionItems?.trim()) && 
+        (projectAgendaStatus[project.id] === 'agenda' || projectAgendaStatus[project.id] === 'tabled')
+      );
+
+      if (projectsWithNotes.length > 0) {
+        const taskPromises = projectsWithNotes.map(async (project: any) => {
+          const tasks = [];
+          
+          // Create task from discussion points
+          if (project.meetingDiscussionPoints?.trim()) {
+            tasks.push({
+              title: `Follow up on: ${project.title}`,
+              description: `Meeting Discussion Notes: ${project.meetingDiscussionPoints.trim()}`,
+              assigneeName: project.assigneeName || 'Unassigned',
+              priority: 'medium',
+              status: 'pending',
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 7 days from now
+            });
+          }
+
+          // Create task from decision items
+          if (project.meetingDecisionItems?.trim()) {
+            tasks.push({
+              title: `Action item: ${project.title}`,
+              description: `Meeting Decisions to Implement: ${project.meetingDecisionItems.trim()}`,
+              assigneeName: project.assigneeName || 'Unassigned',
+              priority: 'high',
+              status: 'pending',
+              dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 3 days for decisions
+            });
+          }
+
+          // Create tasks for this project
+          if (tasks.length > 0) {
+            const taskResults = await Promise.all(
+              tasks.map(task => apiRequest('POST', `/api/projects/${project.id}/tasks`, task))
+            );
+            return { projectTitle: project.title, tasksCreated: taskResults.length };
+          }
+          return { projectTitle: project.title, tasksCreated: 0 };
+        });
+
+        await Promise.all(taskPromises);
+      }
+
+      // Step 2: Clear all meeting discussion points and decision items
+      const clearNotesPromises = allProjects
+        .filter((project: any) => project.meetingDiscussionPoints?.trim() || project.meetingDecisionItems?.trim())
+        .map(async (project: any) => {
+          return apiRequest('PATCH', `/api/projects/${project.id}`, {
+            meetingDiscussionPoints: '',
+            meetingDecisionItems: '',
+            reviewInNextMeeting: false
+          });
+        });
+
+      if (clearNotesPromises.length > 0) {
+        await Promise.all(clearNotesPromises);
+      }
+
+      // Step 3: Refresh projects from Google Sheets to get any updates made during the week
+      await apiRequest('POST', '/api/google-sheets/projects/sync/from-sheets');
+
+      return {
+        notesProcessed: projectsWithNotes.length,
+        notesCleared: clearNotesPromises.length
+      };
+    },
+    onSuccess: (results) => {
+      // Step 4: Reset all local states
+      setProjectAgendaStatus({});
+      setMinimizedProjects(new Set());
+      setLocalProjectText({});
+      
+      // Refresh projects data
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      
+      toast({
+        title: "Agenda Planning Reset Complete!",
+        description: `✓ ${results.notesProcessed} projects converted to tasks\n✓ ${results.notesCleared} project notes cleared\n✓ Projects refreshed from Google Sheets\n✓ Ready for next week's planning`,
+        duration: 8000,
+      });
+      
+      setShowResetConfirmDialog(false);
+    },
+    onError: (error: any) => {
+      console.error('Failed to reset agenda planning:', error);
+      toast({
+        title: "Reset Failed",
+        description: error?.message || "Failed to complete agenda planning reset",
+        variant: "destructive",
+      });
+      setShowResetConfirmDialog(false);
     },
   });
 
@@ -1584,6 +1688,17 @@ export default function EnhancedMeetingDashboard() {
                 {isCompiling ? 'Syncing...' : 'Sync Google Sheets'}
               </Button>
 
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowResetConfirmDialog(true)}
+                disabled={resetAgendaPlanningMutation.isPending}
+                className="border-orange-300 text-orange-700 hover:bg-orange-50"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset for Next Week
+              </Button>
+
               {(agendaSummary.agendaCount > 0 || agendaSummary.tabledCount > 0) && (
                 <Button 
                   size="sm"
@@ -2373,6 +2488,82 @@ export default function EnhancedMeetingDashboard() {
                 Add Task
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Confirmation Dialog */}
+      <Dialog open={showResetConfirmDialog} onOpenChange={setShowResetConfirmDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-700">
+              <AlertCircle className="w-5 h-5" />
+              Reset Agenda Planning for Next Week?
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p className="text-gray-700">
+                  <strong>This action will permanently:</strong>
+                </p>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-orange-800">
+                      <strong>Convert all discussion and decision notes to tasks</strong> (if they haven't been already)
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <X className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-orange-800">
+                      <strong>Clear all text boxes</strong> in discussion points and decision items
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <RotateCcw className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-orange-800">
+                      <strong>Reset all project selections</strong> (agenda/tabled status)
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <ExternalLink className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-orange-800">
+                      <strong>Refresh projects list</strong> from Google Sheets with any updates made during the week
+                    </span>
+                  </div>
+                </div>
+                <p className="text-gray-600 text-sm">
+                  This prepares the agenda planning interface for next week's meeting. 
+                  <strong> Make sure you've finalized this week's agenda first!</strong>
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex gap-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowResetConfirmDialog(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => resetAgendaPlanningMutation.mutate()}
+              disabled={resetAgendaPlanningMutation.isPending}
+              className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {resetAgendaPlanningMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Resetting...
+                </div>
+              ) : (
+                <>
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Yes, Reset for Next Week
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
