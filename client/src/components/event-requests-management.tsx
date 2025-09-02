@@ -763,7 +763,7 @@ export default function EventRequestsManagement() {
     const lightweightFields = ['phone', 'email', 'planningNotes'];
     
     // Critical fields that require admin permissions
-    const criticalFields = ['eventDate', 'eventStartTime', 'eventEndTime', 'eventAddress', 'estimatedSandwichCount', 'contact'];
+    const criticalFields = ['eventDate', 'eventStartTime', 'eventEndTime', 'eventAddress', 'estimatedSandwichCount', 'contact', 'hasRefrigeration'];
     
     if (lightweightFields.includes(field)) {
       return hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS);
