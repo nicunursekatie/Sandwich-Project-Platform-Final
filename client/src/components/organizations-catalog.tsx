@@ -362,13 +362,13 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
       ) : (
         <div className="space-y-8">
           {paginatedGroups.map((group, groupIndex) => (
-            <div key={`${group.organizationName}-${groupIndex}`} className="bg-gray-50 rounded-lg border p-6">
+            <div key={`${group.name}-${groupIndex}`} className="bg-gray-50 rounded-lg border p-6">
               {/* Group Header */}
               <div className="mb-6 pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Building className="w-6 h-6" style={{ color: '#236383' }} />
-                    <h2 className="text-xl font-bold text-gray-900">{group.organizationName}</h2>
+                    <h2 className="text-xl font-bold text-gray-900">{group.name}</h2>
                   </div>
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <span className="flex items-center space-x-1">
