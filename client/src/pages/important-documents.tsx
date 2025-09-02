@@ -346,24 +346,22 @@ export default function ImportantDocuments() {
                 <CardDescription className="mb-10 flex-1 text-lg leading-relaxed text-gray-600 font-medium">
                   {doc.description}
                 </CardDescription>
-                {/* Action buttons - Premium design */}
-                <div className="flex flex-col gap-5 mt-auto">
+                {/* Action buttons - Smaller, more subtle design */}
+                <div className="flex flex-col gap-3 mt-auto">
                   <Button
-                    size="lg"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => handlePreview(doc)}
-                    className="w-full h-12 text-base font-semibold border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white transition-all duration-200 ease-in-out rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(35,99,131,0.15)] hover:scale-[1.02] hover:-translate-y-0.5"
+                    className="w-full h-10 text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-2 px-3"
                   >
-                    <Eye className="h-5 w-5 mr-3" />
+                    <Eye className="h-4 w-4 mr-2" />
                     Preview
                   </Button>
                   <Button
-                    size="lg"
                     variant="default"
                     onClick={() => handleDownload(doc)}
-                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-[#236383] to-[#1a4e66] hover:from-[#1a4e66] hover:to-[#0f3a52] text-white transition-all duration-200 ease-in-out rounded-lg shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.15)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.35),0_4px_8px_rgba(35,99,131,0.2)] transform hover:scale-[1.02] hover:-translate-y-0.5"
+                    className="w-full h-10 text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
                   >
-                    <Download className="h-5 w-5 mr-3" />
+                    <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>
                 </div>
@@ -418,13 +416,12 @@ export default function ImportantDocuments() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-4">
+                    <div className="grid grid-cols-2 gap-3 pt-4">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
-                            variant="outline"
-                            size="lg"
-                            className="h-11 font-semibold border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white transition-all duration-200 ease-in-out rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(35,99,131,0.15)] hover:scale-[1.02] hover:-translate-y-0.5"
+                            variant="ghost"
+                            className="h-9 text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-2 px-3"
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             Preview
@@ -469,8 +466,7 @@ export default function ImportantDocuments() {
 
                       <Button
                         onClick={() => handleLogoDownload(logo.filename, logo.name)}
-                        size="lg"
-                        className="h-11 font-semibold bg-gradient-to-r from-[#236383] to-[#1a4e66] hover:from-[#1a4e66] hover:to-[#0f3a52] text-white transition-all duration-200 ease-in-out rounded-lg shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.15)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.35),0_4px_8px_rgba(35,99,131,0.2)] transform hover:scale-[1.02] hover:-translate-y-0.5"
+                        className="h-9 text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
                       >
                         <Download className="h-4 w-4 mr-1" />
                         Download
@@ -478,9 +474,8 @@ export default function ImportantDocuments() {
                       
                       <Button
                         onClick={() => handleLogoShare(logo.filename, logo.name)}
-                        size="lg"
                         variant="outline"
-                        className="h-11 font-semibold border-2 border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white transition-all duration-200 ease-in-out rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(251,173,63,0.15)] hover:scale-[1.02] hover:-translate-y-0.5"
+                        className="h-9 text-sm font-medium border border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
                       >
                         <Share2 className="h-4 w-4 mr-1" />
                         Share
@@ -488,9 +483,8 @@ export default function ImportantDocuments() {
                       
                       <Button
                         onClick={() => handleLogoCopy(logo.filename, logo.name)}
-                        size="lg"
                         variant="outline"
-                        className="h-11 font-semibold border-2 border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 ease-in-out rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:scale-[1.02] hover:-translate-y-0.5"
+                        className="h-9 text-sm font-medium border border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
                       >
                         <Copy className="h-4 w-4 mr-1" />
                         Copy
