@@ -395,9 +395,10 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <CardTitle className="flex items-center space-x-2 text-lg mb-3">
+                          <CardTitle className="flex flex-col space-y-1 text-lg mb-3">
+                            <span className="text-gray-900 font-bold">{org.organizationName}</span>
                             {org.department && (
-                              <span className="text-gray-900 font-semibold">{org.department}</span>
+                              <span className="text-gray-600 font-medium text-base">{org.department}</span>
                             )}
                           </CardTitle>
                     
