@@ -217,7 +217,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
       case 'past':
         return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Past Event</Badge>;
       case 'declined':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Declined</Badge>;
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 border-2">Event Postponed</Badge>;
       default:
         return null; // Remove confusing "Unknown" badges
     }
@@ -296,6 +296,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                 <SelectItem value="contacted">Contacted</SelectItem>
                 <SelectItem value="scheduled">Upcoming Events</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="declined">Postponed Events</SelectItem>
                 <SelectItem value="past">Past Events</SelectItem>
               </SelectContent>
             </Select>
@@ -390,7 +391,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
               {/* Department Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {group.departments.map((org, index) => (
-                  <Card key={`${org.organizationName}-${org.contactName}-${index}`} className="hover:shadow-md transition-all duration-200 border-l-4 border-l-[#e67e22] bg-white">
+                  <Card key={`${org.organizationName}-${org.contactName}-${index}`} className={`hover:shadow-md transition-all duration-200 border-l-4 bg-white ${org.status === 'declined' ? 'border-l-red-400 border-2 border-red-200' : 'border-l-[#e67e22]'}`}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">

@@ -137,7 +137,7 @@ const statusColors = {
   contact_completed: "bg-emerald-100 text-emerald-800",
   scheduled: "bg-orange-100 text-orange-800",
   completed: "bg-gray-100 text-gray-800",
-  declined: "bg-red-100 text-red-800"
+  declined: "bg-red-100 text-red-800 border-2 border-red-300"
 };
 
 const statusIcons = {
@@ -159,7 +159,7 @@ const statusOptions = [
   { value: "contact_completed", label: "Contact Completed" },
   { value: "scheduled", label: "Scheduled" },
   { value: "completed", label: "Completed" },
-  { value: "declined", label: "Declined" }
+  { value: "declined", label: "Event Postponed" }
 ];
 
 export default function EventRequestsManagement() {
