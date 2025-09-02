@@ -4327,18 +4327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get agenda items
-  app.get("/api/agenda-items", async (req, res) => {
-    try {
-      const items = await storage.getAllAgendaItems();
-      res.json(items);
-    } catch (error) {
-      logger.error("Failed to get agenda items", error);
-      res.status(500).json({ message: "Failed to get agenda items" });
-    }
-  });
-
-  // Get all meetings
+  // Get all meetings - this endpoint was missing
   app.get("/api/meetings", async (req, res) => {
     try {
       const meetings = await storage.getAllMeetings();
@@ -4346,51 +4335,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       logger.error("Failed to get meetings", error);
       res.status(500).json({ message: "Failed to get meetings" });
-    }
-  });
-
-  // Get meetings by type
-  app.get("/api/meetings/type/:type", async (req, res) => {
-    try {
-      const { type } = req.params;
-      const meetings = await storage.getMeetingsByType(type);
-      res.json(meetings);
-    } catch (error) {
-      logger.error("Failed to get meetings by type", error);
-      res.status(500).json({ message: "Failed to get meetings by type" });
-    }
-  });
-
-  app.post("/api/meetings/:id/upload-agenda", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-
-      // Update the meeting with the uploaded agenda
-      const updatedMeeting = await storage.updateMeetingAgenda(
-        id,
-        "Final agenda uploaded - agenda.docx",
-      );
-
-      if (!updatedMeeting) {
-        res.status(404).json({ message: "Meeting not found" });
-        return;
-      }
-
-      logger.info("Agenda file uploaded for meeting", {
-        method: req.method,
-        url: req.url,
-        ip: req.ip,
-      });
-
-      res.json({
-        success: true,
-        message: "Agenda file uploaded successfully",
-        filename: "agenda.docx",
-        meeting: updatedMeeting,
-      });
-    } catch (error) {
-      logger.error("Failed to upload agenda file", error);
-      res.status(500).json({ message: "Failed to upload agenda file" });
     }
   });
 
