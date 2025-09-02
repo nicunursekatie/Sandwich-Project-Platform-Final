@@ -596,35 +596,6 @@ export default function GmailStyleInbox() {
   console.log('🎨 About to render GmailStyleInbox main UI');
   console.log('📊 Component state:', { activeFolder, selectedMessage: !!selectedMessage, messageCount: messages.length });
 
-  // TEMPORARY DEBUG: Simple test UI to verify rendering works
-  return (
-    <div className="w-full h-full bg-red-200 p-8">
-      <h1 className="text-2xl font-bold text-red-800 mb-4">INBOX DEBUG MODE</h1>
-      <div className="bg-white p-4 rounded shadow">
-        <p><strong>User:</strong> {(user as any)?.email}</p>
-        <p><strong>Active Folder:</strong> {activeFolder}</p>
-        <p><strong>Messages Count:</strong> {messages.length}</p>
-        <p><strong>Screen Size:</strong> {screenSize}</p>
-        <div className="mt-4">
-          <strong>Messages:</strong>
-          {messages.length > 0 ? (
-            <ul className="mt-2">
-              {messages.map((msg: any, idx: number) => (
-                <li key={idx} className="py-1 border-b">
-                  {msg.subject || 'No Subject'} - From: {msg.senderName}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2 text-gray-500">No messages found</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  // ORIGINAL UI (commented out for debugging)
-  /*
   return (
     <div className="flex h-full bg-white relative min-w-0 max-w-full overflow-hidden">
       {/* Mobile/Tablet Overlay for Sidebar - when sidebar is open as overlay */}
