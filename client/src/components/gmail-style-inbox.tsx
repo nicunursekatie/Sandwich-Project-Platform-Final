@@ -596,8 +596,7 @@ export default function GmailStyleInbox() {
   console.log('🎨 About to render GmailStyleInbox main UI');
   console.log('📊 Component state:', { activeFolder, selectedMessage: !!selectedMessage, messageCount: messages.length });
 
-  try {
-    return (
+  return (
     <div className="flex h-full bg-white relative min-w-0 max-w-full overflow-hidden">
       {/* Mobile/Tablet Overlay for Sidebar - when sidebar is open as overlay */}
       {!isSidebarCollapsed && (screenSize === 'mobile' || screenSize === 'small-tablet') && (
@@ -1392,17 +1391,4 @@ export default function GmailStyleInbox() {
       </Dialog>
     </div>
   );
-  } catch (error) {
-    console.error('🔥 Error rendering GmailStyleInbox:', error);
-    return (
-      <div className="flex h-full items-center justify-center bg-white">
-        <div className="text-center text-red-600">
-          <p>Error loading inbox: {error instanceof Error ? error.message : 'Unknown error'}</p>
-          <button onClick={() => window.location.reload()} className="mt-2 text-blue-600 underline">
-            Reload page
-          </button>
-        </div>
-      </div>
-    );
-  }
 }
