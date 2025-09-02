@@ -1,0 +1,1154 @@
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+index-DKdJhlkp.js:853 Connecting to WebSocket at: wss://sandwich-project-platform-final-katielong2316.replit.app/notifications
+index-DKdJhlkp.js:899 Current URL location: /dashboard
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: dashboard
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:850 Messaging WebSocket connected
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:850 Messaging WebSocket disconnected
+index-DKdJhlkp.js:850 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+j.onclose @ index-DKdJhlkp.js:850
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:48  GET https://sandwich-project-platform-final-katielong2316.replit.app/api/message-notifications/unread-counts 401 (Unauthorized)
+(anonymous) @ index-DKdJhlkp.js:48
+i @ index-DKdJhlkp.js:48
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+setInterval
+yS @ index-DKdJhlkp.js:48
+bS @ index-DKdJhlkp.js:48
+onQueryUpdate @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+yL @ index-DKdJhlkp.js:40
+N @ index-DKdJhlkp.js:25
+D @ index-DKdJhlkp.js:25
+index-DKdJhlkp.js:48  GET https://sandwich-project-platform-final-katielong2316.replit.app/api/emails/unread-count 401 (Unauthorized)
+xe @ index-DKdJhlkp.js:48
+queryFn @ index-DKdJhlkp.js:850
+i @ index-DKdJhlkp.js:48
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+setInterval
+yS @ index-DKdJhlkp.js:48
+bS @ index-DKdJhlkp.js:48
+onQueryUpdate @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+yL @ index-DKdJhlkp.js:40
+N @ index-DKdJhlkp.js:25
+D @ index-DKdJhlkp.js:25
+index-DKdJhlkp.js:850 Failed to fetch Gmail unread count: Error: AUTH_EXPIRED
+    at r$ (index-DKdJhlkp.js:48:43806)
+    at async xe (index-DKdJhlkp.js:48:44015)
+    at async queryFn (index-DKdJhlkp.js:850:164274)
+overrideMethod @ hook.js:608
+queryFn @ index-DKdJhlkp.js:850
+await in queryFn
+i @ index-DKdJhlkp.js:48
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+setInterval
+yS @ index-DKdJhlkp.js:48
+bS @ index-DKdJhlkp.js:48
+onQueryUpdate @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+yL @ index-DKdJhlkp.js:40
+N @ index-DKdJhlkp.js:25
+D @ index-DKdJhlkp.js:25
+index-DKdJhlkp.js:48  GET https://sandwich-project-platform-final-katielong2316.replit.app/api/message-notifications/unread-counts 401 (Unauthorized)
+xe @ index-DKdJhlkp.js:48
+queryFn @ index-DKdJhlkp.js:850
+i @ index-DKdJhlkp.js:48
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+setInterval
+yS @ index-DKdJhlkp.js:48
+bS @ index-DKdJhlkp.js:48
+onQueryUpdate @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+yL @ index-DKdJhlkp.js:40
+N @ index-DKdJhlkp.js:25
+D @ index-DKdJhlkp.js:25
+index-DKdJhlkp.js:850 Failed to fetch unread counts: Error: AUTH_EXPIRED
+    at r$ (index-DKdJhlkp.js:48:43806)
+    at async xe (index-DKdJhlkp.js:48:44015)
+    at async queryFn (index-DKdJhlkp.js:850:156495)
+overrideMethod @ hook.js:608
+queryFn @ index-DKdJhlkp.js:850
+await in queryFn
+i @ index-DKdJhlkp.js:48
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+setInterval
+yS @ index-DKdJhlkp.js:48
+bS @ index-DKdJhlkp.js:48
+onQueryUpdate @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+yL @ index-DKdJhlkp.js:40
+N @ index-DKdJhlkp.js:25
+D @ index-DKdJhlkp.js:25
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 Navigation click: user-management
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: user-management
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: user-management
+index-DKdJhlkp.js:853 Connecting to WebSocket at: wss://sandwich-project-platform-final-katielong2316.replit.app/notifications
+index-DKdJhlkp.js:853 WebSocket connection closed: 1000 Component unmounting
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:850 Messaging WebSocket connected
+index-DKdJhlkp.js:853 Navigation click: user-management
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: user-management
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:850 Messaging WebSocket disconnected
+index-DKdJhlkp.js:850 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+j.onclose @ index-DKdJhlkp.js:850
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 Navigation click: drivers
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: drivers
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: drivers
+index-DKdJhlkp.js:853 Navigation click: hosts
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: hosts
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: hosts
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:853 Navigation click: volunteers
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: volunteers
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: volunteers
+index-DKdJhlkp.js:853 Navigation click: drivers
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: drivers
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: drivers
+index-DKdJhlkp.js:853 Navigation click: hosts
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: hosts
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: hosts
+index-DKdJhlkp.js:853 WebSocket connection closed: 1006 
+index-DKdJhlkp.js:853 Navigation click: projects
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: projects
+index-DKdJhlkp.js:899 Rendering ProjectsClean component
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: projects
+index-DKdJhlkp.js:899 Rendering ProjectsClean component
+index-DKdJhlkp.js:853 WebSocket connected successfully
+index-DKdJhlkp.js:804 🎯 Project card clicked: 45 Updateing TSP website
+index-DKdJhlkp.js:804 🚀 setLocation called with: /projects/45
+index-DKdJhlkp.js:899 Rendering ProjectsClean component
+index-DKdJhlkp.js:899 Current URL location: /projects/45
+index-DKdJhlkp.js:899 Setting activeSection to project ID: project-45
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: project-45
+index-DKdJhlkp.js:37 The specified value "9/6/2025" does not conform to the required format, "yyyy-MM-dd".
+set @ index-DKdJhlkp.js:37
+TN @ index-DKdJhlkp.js:37
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:37 The specified value "9/6/2025" does not conform to the required format, "yyyy-MM-dd".
+set @ index-DKdJhlkp.js:37
+TN @ index-DKdJhlkp.js:37
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+La @ index-DKdJhlkp.js:40
+gL @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:853 Navigation click: user-management
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: user-management
+index-DKdJhlkp.js:899 Current URL location: /dashboard
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: user-management
+index-DKdJhlkp.js:853 Navigation click: event-requests
+index-DKdJhlkp.js:899 Dashboard setActiveSection called with: event-requests
+index-DKdJhlkp.js:899 Dashboard activeSection changed to: event-requests
+index-DKdJhlkp.js:48  GET https://sandwich-project-platform-final-katielong2316.replit.app/api/auth/me 404 (Not Found)
+(anonymous) @ index-DKdJhlkp.js:48
+i @ index-DKdJhlkp.js:48
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:40 Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934)
+overrideMethod @ hook.js:608
+JN @ index-DKdJhlkp.js:40
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:673 Error caught by boundary: Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934) {componentStack: '\n    at div\n    at oe (https://sandwich-project-pl…6.replit.app/assets/index-DKdJhlkp.js:899:168372)'}
+overrideMethod @ hook.js:608
+componentDidCatch @ index-DKdJhlkp.js:673
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:40 Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934)
+overrideMethod @ hook.js:608
+JN @ index-DKdJhlkp.js:40
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:673 Error caught by boundary: Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934) {componentStack: '\n    at div\n    at oe (https://sandwich-project-pl…6.replit.app/assets/index-DKdJhlkp.js:899:168372)'}
+overrideMethod @ hook.js:608
+componentDidCatch @ index-DKdJhlkp.js:673
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:40 Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934)
+overrideMethod @ hook.js:608
+JN @ index-DKdJhlkp.js:40
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:673 Error caught by boundary: Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934) {componentStack: '\n    at div\n    at oe (https://sandwich-project-pl…6.replit.app/assets/index-DKdJhlkp.js:899:168372)'}
+overrideMethod @ hook.js:608
+componentDidCatch @ index-DKdJhlkp.js:673
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:40 Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934)
+overrideMethod @ hook.js:608
+JN @ index-DKdJhlkp.js:40
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:673 Error caught by boundary: Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qg (index-DKdJhlkp.js:40:49412)
+    at h (index-DKdJhlkp.js:38:7892)
+    at v (index-DKdJhlkp.js:38:9269)
+    at y (index-DKdJhlkp.js:38:11347)
+    at mr (index-DKdJhlkp.js:40:1475)
+    at CL (index-DKdJhlkp.js:40:45767)
+    at wL (index-DKdJhlkp.js:40:39790)
+    at _G (index-DKdJhlkp.js:40:39718)
+    at Iv (index-DKdJhlkp.js:40:39570)
+    at uS (index-DKdJhlkp.js:40:35934) {componentStack: '\n    at div\n    at oe (https://sandwich-project-pl…6.replit.app/assets/index-DKdJhlkp.js:899:168372)'}
+overrideMethod @ hook.js:608
+componentDidCatch @ index-DKdJhlkp.js:673
+i.componentDidCatch.n.callback @ index-DKdJhlkp.js:40
+LA @ index-DKdJhlkp.js:38
+JA @ index-DKdJhlkp.js:40
+vL @ index-DKdJhlkp.js:40
+CG @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+setTimeout
+CK @ index-DKdJhlkp.js:48
+o @ index-DKdJhlkp.js:48
+batch @ index-DKdJhlkp.js:48
+Ji @ index-DKdJhlkp.js:48
+setData @ index-DKdJhlkp.js:48
+onSuccess @ index-DKdJhlkp.js:48
+h @ index-DKdJhlkp.js:48
+Promise.then
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:48  GET https://sandwich-project-platform-final-katielong2316.replit.app/api/event-requests/organization-counts 400 (Bad Request)
+xe @ index-DKdJhlkp.js:48
+queryFn @ index-DKdJhlkp.js:899
+i @ index-DKdJhlkp.js:48
+v @ index-DKdJhlkp.js:48
+start @ index-DKdJhlkp.js:48
+fetch @ index-DKdJhlkp.js:48
+Gm @ index-DKdJhlkp.js:48
+onSubscribe @ index-DKdJhlkp.js:48
+subscribe @ index-DKdJhlkp.js:48
+(anonymous) @ index-DKdJhlkp.js:48
+BR @ index-DKdJhlkp.js:38
+F0 @ index-DKdJhlkp.js:40
+Su @ index-DKdJhlkp.js:40
+kG @ index-DKdJhlkp.js:40
+Nc @ index-DKdJhlkp.js:40
+nk @ index-DKdJhlkp.js:40
+ic @ index-DKdJhlkp.js:38
+(anonymous) @ index-DKdJhlkp.js:40
+index-DKdJhlkp.js:853 WebSocket connection closed: 1000 Component unmounting
