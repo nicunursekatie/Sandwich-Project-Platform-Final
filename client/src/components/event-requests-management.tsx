@@ -134,10 +134,10 @@ interface EventRequest {
 
 const statusColors = {
   new: "bg-teal-100 text-teal-800",
-  contact_completed: "bg-emerald-100 text-emerald-800",
-  scheduled: "bg-orange-100 text-orange-800",
+  contact_completed: "bg-orange-100 text-orange-800",
+  scheduled: "bg-yellow-100 text-yellow-800",
   completed: "bg-gray-100 text-gray-800",
-  declined: "bg-red-100 text-red-800 border-2 border-red-300"
+  declined: "bg-rose-100 text-white border-2 font-bold shadow-lg"
 };
 
 const statusIcons = {
@@ -159,7 +159,7 @@ const statusOptions = [
   { value: "contact_completed", label: "Contact Completed" },
   { value: "scheduled", label: "Scheduled" },
   { value: "completed", label: "Completed" },
-  { value: "declined", label: "Event Postponed" }
+  { value: "declined", label: "🚫 EVENT POSTPONED" }
 ];
 
 export default function EventRequestsManagement() {
@@ -698,6 +698,16 @@ export default function EventRequestsManagement() {
   const getStatusDisplay = (status: string) => {
     const option = statusOptions.find(opt => opt.value === status);
     const Icon = statusIcons[status as keyof typeof statusIcons];
+    
+    if (status === 'declined') {
+      return (
+        <Badge className="bg-rose-100 text-white border-2 font-bold shadow-lg" style={{backgroundColor: '#A31C41', borderColor: '#A31C41'}}>
+          <Icon className="w-3 h-3 mr-1" />
+          {option?.label || status}
+        </Badge>
+      );
+    }
+    
     return (
       <Badge className={statusColors[status as keyof typeof statusColors]}>
         <Icon className="w-3 h-3 mr-1" />

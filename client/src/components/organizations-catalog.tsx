@@ -217,7 +217,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
       case 'past':
         return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Past Event</Badge>;
       case 'declined':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 border-2">Event Postponed</Badge>;
+        return <Badge variant="outline" className="bg-rose-100 text-white border-2 font-bold shadow-lg" style={{backgroundColor: '#A31C41', borderColor: '#A31C41'}}>🚫 EVENT POSTPONED</Badge>;
       default:
         return null; // Remove confusing "Unknown" badges
     }
@@ -391,7 +391,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
               {/* Department Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {group.departments.map((org, index) => (
-                  <Card key={`${org.organizationName}-${org.contactName}-${index}`} className={`hover:shadow-md transition-all duration-200 border-l-4 bg-white ${org.status === 'declined' ? 'border-l-red-400 border-2 border-red-200' : 'border-l-[#e67e22]'}`}>
+                  <Card key={`${org.organizationName}-${org.contactName}-${index}`} className={`hover:shadow-md transition-all duration-200 border-l-4 ${org.status === 'declined' ? 'bg-rose-50 border-l-4 border-2 shadow-lg' : 'bg-white border-l-[#FBAD3F]'}`} style={org.status === 'declined' ? {borderLeftColor: '#A31C41', borderColor: '#A31C41'} : {}}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">

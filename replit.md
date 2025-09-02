@@ -19,7 +19,13 @@ Desktop Chat UX: Desktop users require proper scrolling behavior without nested 
 - **Backend**: Express.js (TypeScript), Drizzle ORM, PostgreSQL (Neon serverless), Session-based authentication (connect-pg-simple), Replit Auth.
 
 ### UI/UX Decisions
-The application features a consistent brand identity using The Sandwich Project's color palette (teal primary, orange secondary, burgundy accent) and Roboto typography. UI elements prioritize clarity with well-defined button labels and interface text. The design is responsive, adapting for mobile and tablet views with features like hamburger menus and compact forms. Visual hierarchy is established through card-based dashboards and clear sectioning. Form elements are enhanced with focus states and subtle hover effects for improved user interaction.
+The application features a consistent brand identity using The Sandwich Project's official color palette:
+- **Teal Primary**: #236383 (main brand color)
+- **Orange Secondary**: #FBAD3F (secondary brand color) 
+- **Burgundy Accent**: #A31C41 (accent color, used for warnings/postponed events)
+- **Teal Muted**: #007E8C (supporting color)
+
+Typography uses Roboto font family. UI elements prioritize clarity with well-defined button labels and interface text. The design is responsive, adapting for mobile and tablet views with features like hamburger menus and compact forms. Visual hierarchy is established through card-based dashboards and clear sectioning. Form elements are enhanced with focus states and subtle hover effects for improved user interaction.
 
 ### Technical Implementations
 - **Data Models**: Comprehensive management of Sandwich Collections, Hosts, Recipients, Projects, Users (with role-based access), and Audit Logs.
