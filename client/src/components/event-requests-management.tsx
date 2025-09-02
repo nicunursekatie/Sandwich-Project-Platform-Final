@@ -646,57 +646,19 @@ export default function EventRequestsManagement() {
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
   
   const requestsEvents = eventRequests.filter((req: EventRequest) => {
-    // Include new requests AND any future events not handled by other tabs
-    if (!req.desiredEventDate) {
-      // No date specified - only include new requests or unknown status
-      return req.status === 'new' || !req.status;
-    }
-    
-    // Use the same timezone-safe parsing as formatEventDate function
-    let eventDate: Date;
-    const dateString = req.desiredEventDate;
-    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-      const dateOnly = dateString.split(' ')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-      const dateOnly = dateString.split('T')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else {
-      eventDate = new Date(dateString);
-    }
-    eventDate.setHours(0, 0, 0, 0);
-    
-    // Show future events that are 'new' OR don't have a recognized status
-    if (eventDate >= today) {
-      return req.status === 'new' || 
-             !req.status || 
-             (req.status !== 'followed_up' && 
-              req.status !== 'in_process' && 
-              req.status !== 'scheduled' && 
-              req.status !== 'completed' && 
-              req.status !== 'declined');
-    }
-    
-    // Also show past events with 'new' status so they can be processed
-    return req.status === 'new';
+    return req.status === 'new' || !req.status;
+  });
+  
+  const followedUpEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'followed_up';
+  });
+  
+  const inProcessEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'in_process';
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
-    if (!req.desiredEventDate) return req.status === 'followed_up' || req.status === 'in_process' || req.status === 'scheduled';
-    // Use the same timezone-safe parsing as formatEventDate function
-    let eventDate: Date;
-    const dateString = req.desiredEventDate;
-    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-      const dateOnly = dateString.split(' ')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-      const dateOnly = dateString.split('T')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else {
-      eventDate = new Date(dateString);
-    }
-    eventDate.setHours(0, 0, 0, 0);
-    return eventDate >= today && (req.status === 'followed_up' || req.status === 'in_process' || req.status === 'scheduled');
+    return req.status === 'scheduled';
   });
   
   const pastEvents = eventRequests.filter((req: EventRequest) => {
@@ -732,6 +694,10 @@ export default function EventRequestsManagement() {
     switch (activeTab) {
       case 'requests':
         return requestsEvents;
+      case 'followed_up':
+        return followedUpEvents;
+      case 'in_process':
+        return inProcessEvents;
       case 'scheduled':
         return scheduledEvents;
       case 'past':
@@ -779,8 +745,8 @@ export default function EventRequestsManagement() {
       return new Date(dateString);
     };
     
-    // Sort requests events
-    if (activeTab === 'requests') {
+    // Sort events based on tab
+    if (activeTab === 'requests' || activeTab === 'followed_up' || activeTab === 'in_process') {
       return filtered.sort((a: any, b: any) => {
         if (requestsSortBy === 'organization') {
           const orgA = a.organizationName.toLowerCase();
@@ -2773,15 +2739,27 @@ export default function EventRequestsManagement() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-4">
           <TabsTrigger value="requests" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
-            Event Requests
+            New Requests
             <Badge variant="secondary" className="ml-2">
               {requestsEvents.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="scheduled" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
-            Scheduled Events
+          <TabsTrigger value="followed_up" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
+            Followed Up
             <Badge variant="secondary" className="ml-2">
-              {scheduledEvents.length}
+              {eventRequests.filter((req: EventRequest) => req.status === 'followed_up').length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="in_process" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
+            In Process
+            <Badge variant="secondary" className="ml-2">
+              {eventRequests.filter((req: EventRequest) => req.status === 'in_process').length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="scheduled" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
+            Scheduled
+            <Badge variant="secondary" className="ml-2">
+              {eventRequests.filter((req: EventRequest) => req.status === 'scheduled').length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="forecast" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
@@ -2901,6 +2879,52 @@ export default function EventRequestsManagement() {
             ) : (
               <div className="space-y-4">
                 {filteredRequests.map((request: EventRequest) => renderStandardEventCard(request))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="followed_up" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-600">
+                {globalSearch && searchTerm ? (
+                  `Showing ${filteredRequests.length} event${filteredRequests.length !== 1 ? 's' : ''} from global search`
+                ) : (
+                  `Showing ${filteredRequests.length} followed up event${filteredRequests.length !== 1 ? 's' : ''}`
+                )}
+              </div>
+            </div>
+            {filteredRequests.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-gray-500">No followed up events found.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filteredRequests.map((request: EventRequest) => renderStandardEventCard(request))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="in_process" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-600">
+                {globalSearch && searchTerm ? (
+                  `Showing ${filteredRequests.length} event${filteredRequests.length !== 1 ? 's' : ''} from global search`
+                ) : (
+                  `Showing ${filteredRequests.length} in process event${filteredRequests.length !== 1 ? 's' : ''}`
+                )}
+              </div>
+            </div>
+            {filteredRequests.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-gray-500">No in process events found.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filteredRequests.map((request: EventRequest) => renderScheduledEventCard(request))}
               </div>
             )}
           </TabsContent>
