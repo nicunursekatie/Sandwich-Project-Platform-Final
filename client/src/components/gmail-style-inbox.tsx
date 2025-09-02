@@ -1296,10 +1296,10 @@ export default function GmailStyleInbox() {
                       const nameB = `${b.firstName} ${b.lastName}`.trim().toLowerCase();
                       return nameA.localeCompare(nameB);
                     })
-                    .map((user) => (
+                    .map((teamUser) => (
                     <SelectItem 
-                      key={user.id} 
-                      value={user.id} 
+                      key={teamUser.id} 
+                      value={teamUser.id} 
                       className="py-2 px-3 hover:bg-amber-50 focus:bg-amber-50 data-[highlighted]:bg-amber-50"
                       style={{ 
                         color: '#1f2937', 
@@ -1310,10 +1310,10 @@ export default function GmailStyleInbox() {
                       <div className="flex items-center gap-2" style={{ color: '#1f2937' }}>
                         <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                         <span style={{ color: '#1f2937', fontWeight: '600' }}>
-                          {user.firstName} {user.lastName}
+                          {teamUser.firstName} {teamUser.lastName}
                         </span>
                         <span style={{ color: '#6b7280', fontSize: '12px' }}>
-                          ({user.email})
+                          ({teamUser.email})
                         </span>
                       </div>
                     </SelectItem>
