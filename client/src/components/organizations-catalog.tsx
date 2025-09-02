@@ -32,9 +32,10 @@ interface OrganizationContact {
   department?: string;
   latestRequestDate: string;
   totalRequests: number;
-  status: 'new' | 'contacted' | 'completed' | 'scheduled' | 'past';
+  status: 'new' | 'contacted' | 'completed' | 'scheduled' | 'past' | 'declined' | 'contact_completed';
   hasHostedEvent: boolean;
   eventDate?: string | null;
+  totalSandwiches?: number;
 }
 
 interface GroupCatalogProps {
@@ -86,17 +87,18 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
   const rawGroups = groupsResponse?.groups || [];
   
   // Convert to flat structure and separate active vs historical organizations
-  const allOrganizations: OrganizationContact[] = rawGroups.flatMap((org: Group) => 
-    org.departments.map(contact => ({
+  const allOrganizations: OrganizationContact[] = rawGroups.flatMap((org: any) => 
+    (org.departments || org.contacts || []).map((contact: any) => ({
       organizationName: org.name,
-      contactName: contact.contactName,
+      contactName: contact.contactName || contact.name,
       email: contact.email,
       department: contact.department,
       latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
       totalRequests: contact.totalRequests || 1,
       status: contact.status || 'new',
       hasHostedEvent: contact.hasHostedEvent || org.hasHostedEvent,
-      eventDate: contact.eventDate || null
+      eventDate: contact.eventDate || null,
+      totalSandwiches: contact.totalSandwiches || 0
     }))
   );
 
@@ -249,6 +251,27 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, sortBy, sortOrder]);
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'new':
+        return 'New Request';
+      case 'contacted':
+        return 'Contacted';
+      case 'contact_completed':
+        return 'Event Complete';
+      case 'scheduled':
+        return 'Upcoming Event';
+      case 'completed':
+        return 'Completed';
+      case 'past':
+        return 'Past Event';
+      case 'declined':
+        return 'Event Postponed';
+      default:
+        return 'Unknown';
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -422,13 +445,13 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
               
               <div className="space-y-6">
                 {paginatedActiveGroups.map((group, groupIndex) => (
-            <div key={`${group.name}-${groupIndex}`} className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div key={`${group.groupName}-${groupIndex}`} className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm">
               {/* Group Header */}
               <div className="mb-6 pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Building className="w-6 h-6" style={{ color: '#236383' }} />
-                    <h2 className="text-xl font-bold text-gray-900">{group.name}</h2>
+                    <h2 className="text-xl font-bold text-gray-900">{group.groupName}</h2>
                   </div>
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <span className="flex items-center space-x-1">
