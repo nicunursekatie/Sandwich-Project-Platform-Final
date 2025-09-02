@@ -597,10 +597,7 @@ export default function GmailStyleInbox() {
   console.log('📊 Component state:', { activeFolder, selectedMessage: !!selectedMessage, messageCount: messages.length });
 
   return (
-    <div className="flex h-full bg-red-500 relative min-w-0 max-w-full overflow-visible" style={{ minHeight: '100vh', border: '5px solid blue', zIndex: 99999, position: 'relative' }}>
-      <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black p-8 z-50" style={{ fontSize: '32px', fontWeight: 'bold', border: '3px solid black' }}>
-        INBOX IS HERE! Messages: {messages.length}, Screen: {screenSize}
-      </div>
+    <div className="flex h-full bg-white relative min-w-0 max-w-full overflow-hidden">
       {/* Mobile/Tablet Overlay for Sidebar - when sidebar is open as overlay */}
       {!isSidebarCollapsed && (screenSize === 'mobile' || screenSize === 'small-tablet') && (
         <div 
@@ -609,9 +606,9 @@ export default function GmailStyleInbox() {
         />
       )}
       
-      {/* Sidebar - Folders (Inbox, Drafts, etc.) */}
+      {/* Sidebar - Folders (Inbox, Drafts, etc.) - Only show if not collapsed OR if we're not on mobile */}
       <div className={`
-        ${isSidebarCollapsed ? 'hidden' : 'flex'} 
+        ${isSidebarCollapsed && (screenSize === 'mobile' || screenSize === 'small-tablet') ? 'hidden' : 'flex'} 
         ${screenSize === 'large-tablet' ? 'w-48' : screenSize === 'desktop' ? 'w-56' : 'w-64'} 
         border-r bg-white flex-col flex-shrink-0
         transition-all duration-300 ease-in-out
