@@ -246,7 +246,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
         <p className="text-sm text-gray-500">Navigation temporarily unavailable</p>
         <button 
           onClick={() => window.location.reload()} 
-          className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+          className="mt-2 text-primary hover:text-primary/80 text-sm"
         >
           Refresh Page
         </button>

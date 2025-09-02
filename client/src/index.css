@@ -112,6 +112,20 @@ body {
   border-color: hsl(var(--border));
 }
 
+/* Global Brand Color Overrides - Replace Blues with Teal */
+.bg-blue-100 { background-color: hsl(193 60% 91%) !important; } /* Light teal */
+.bg-blue-50 { background-color: hsl(193 60% 95%) !important; } /* Very light teal */
+.text-blue-600 { color: hsl(var(--primary)) !important; } /* Brand teal */
+.text-blue-700 { color: hsl(193 60% 35%) !important; } /* Darker teal */
+.text-blue-800 { color: hsl(193 60% 25%) !important; } /* Dark teal */
+.text-blue-900 { color: hsl(var(--primary)) !important; } /* Brand teal */
+.border-blue-200 { border-color: hsl(193 60% 85%) !important; } /* Light teal border */
+.border-blue-300 { border-color: hsl(193 60% 75%) !important; } /* Medium teal border */
+
+/* Hover states for blue elements */
+.hover\:text-blue-800:hover { color: hsl(193 60% 25%) !important; }
+.hover\:bg-blue-50:hover { background-color: hsl(193 60% 95%) !important; }
+
 /* Mobile header fix */
 .mobile-header-fix {
   min-height: 60px;

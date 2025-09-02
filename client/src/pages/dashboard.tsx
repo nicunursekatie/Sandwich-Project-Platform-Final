@@ -194,8 +194,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return (
           <div className="space-y-6 p-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
-                <Clock className="w-6 h-6 text-blue-600" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
+                <Clock className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Weekly Monitoring</h1>
@@ -227,8 +227,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return (
           <div className="h-full flex flex-col">
             <div className="flex-shrink-0 flex items-center gap-4 p-6 pb-2 border-b border-gray-200">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
-                <MessageCircle className="w-6 h-6 text-blue-600" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
+                <MessageCircle className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
