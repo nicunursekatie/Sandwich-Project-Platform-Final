@@ -198,17 +198,17 @@ export default function ImportantDocuments() {
         </div>
 
         <Tabs defaultValue="documents" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-6 bg-gray-50 rounded-lg border">
+          <TabsList className="grid w-full grid-cols-2 h-auto p-0 mb-6 bg-white rounded-lg border-2 border-[#236383]">
             <TabsTrigger 
               value="documents" 
-              className="flex items-center gap-2 py-3 px-6 rounded-md font-medium transition-all duration-200 bg-white text-gray-700 shadow-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-gray-100 data-[state=active]:hover:bg-[#1a4e66]"
+              className="flex items-center gap-2 py-3 px-6 rounded-l-md font-medium transition-all duration-200 bg-white text-[#236383] border-0 data-[state=active]:bg-[#236383] data-[state=active]:text-white hover:bg-[#f0f9ff] data-[state=active]:hover:bg-[#1a4e66]"
             >
               <FileText className="h-4 w-4" />
               Documents
             </TabsTrigger>
             <TabsTrigger 
               value="logos" 
-              className="flex items-center gap-2 py-3 px-6 rounded-md font-medium transition-all duration-200 bg-white text-gray-700 shadow-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-gray-100 data-[state=active]:hover:bg-[#1a4e66]"
+              className="flex items-center gap-2 py-3 px-6 rounded-r-md font-medium transition-all duration-200 bg-white text-[#236383] border-0 data-[state=active]:bg-[#236383] data-[state=active]:text-white hover:bg-[#f0f9ff] data-[state=active]:hover:bg-[#1a4e66]"
             >
               <FileImage className="h-4 w-4" />
               Logos & Branding
