@@ -11,6 +11,7 @@ interface DocumentPreviewProps {
 
 export function DocumentPreview({ documentPath, documentName, documentType, onClose }: DocumentPreviewProps) {
  const [isLoading, setIsLoading] = useState(true);
+ const [showFallback, setShowFallback] = useState(false);
 
  const handleDownload = () => {
  const link = document.createElement('a');
@@ -57,16 +58,63 @@ export function DocumentPreview({ documentPath, documentName, documentType, onCl
  
  {/* PDF viewer - takes full space */}
  <div className="flex-1 bg-white">
+ {showFallback ? (
+ <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+ <div className="mb-4">
+ <FileText className="w-16 h-16 text-red-500 mx-auto mb-4" />
+ <h3 className="text-lg font-semibold mb-2">PDF Preview Blocked</h3>
+ <p className="text-gray-600 mb-6 max-w-md">
+ Your browser (likely Brave or another privacy-focused browser) has blocked the PDF preview for security reasons. 
+ Use the buttons above to download the file or open it in a new tab.
+ </p>
+ </div>
+ <div className="flex gap-4">
+ <Button onClick={handleDownload} className="flex items-center gap-2">
+ <Download className="w-4 h-4" />
+ Download PDF
+ </Button>
+ <Button 
+ variant="outline" 
+ onClick={handleOpenInNewTab}
+ className="flex items-center gap-2"
+ >
+ <ExternalLink className="w-4 h-4" />
+ Open in New Tab
+ </Button>
+ </div>
+ </div>
+ ) : (
  <iframe
  src={documentPath}
  className="w-full h-full border-0"
- onLoad={() => setIsLoading(false)}
+ onLoad={() => {
+ setIsLoading(false);
+ // Check if iframe loaded properly after a short delay
+ setTimeout(() => {
+ const iframe = document.querySelector('iframe[title="' + documentName + '"]') as HTMLIFrameElement;
+ if (iframe) {
+ try {
+ // Try to access the iframe content - this will fail if blocked
+ if (!iframe.contentDocument && !iframe.contentWindow) {
+ setShowFallback(true);
+ }
+ } catch (e) {
+ setShowFallback(true);
+ }
+ }
+ }, 1000);
+ }}
+ onError={() => {
+ setIsLoading(false);
+ setShowFallback(true);
+ }}
  title={documentName}
  style={{ 
  display: 'block',
  border: 'none'
  }}
  />
+ )}
  </div>
  </div>
  );
