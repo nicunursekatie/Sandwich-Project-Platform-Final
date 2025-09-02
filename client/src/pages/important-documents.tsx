@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Download, Eye, ExternalLink, FileImage, Palette, ImageIcon } from 'lucide-react';
+import { FileText, Download, Eye, ExternalLink, FileImage, Palette, ImageIcon, Share2, Copy } from 'lucide-react';
 import { DocumentPreview } from '@/components/document-preview';
+import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface AdminDocument {
@@ -134,6 +135,7 @@ const logoFiles = [
 
 export default function ImportantDocuments() {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const { toast } = useToast();
   const [previewDocument, setPreviewDocument] = useState<AdminDocument | null>(null);
 
   const filteredDocuments = adminDocuments.filter(doc => 
@@ -168,9 +170,77 @@ export default function ImportantDocuments() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      toast({
+        title: "Download Complete",
+        description: `${displayName} has been downloaded successfully.`,
+      });
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download logo. Please try again.');
+      toast({
+        title: "Download Failed",
+        description: "Failed to download logo. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogoShare = async (filename: string, displayName: string) => {
+    const logoUrl = `${window.location.origin}/public-objects/LOGOS/${filename}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `The Sandwich Project - ${displayName}`,
+          text: `Check out this logo from The Sandwich Project`,
+          url: logoUrl,
+        });
+        toast({
+          title: "Shared Successfully",
+          description: `${displayName} has been shared.`,
+        });
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error('Share failed:', error);
+          toast({
+            title: "Share Failed",
+            description: "Failed to share logo. The link has been copied instead.",
+            variant: "destructive",
+          });
+          await navigator.clipboard.writeText(logoUrl);
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(logoUrl);
+      toast({
+        title: "Link Copied",
+        description: `Link to ${displayName} has been copied to clipboard.`,
+      });
+    }
+  };
+
+  const handleLogoCopy = async (filename: string, displayName: string) => {
+    try {
+      const response = await fetch(`/public-objects/LOGOS/${filename}`);
+      if (!response.ok) throw new Error('Logo not found');
+      
+      const blob = await response.blob();
+      const item = new ClipboardItem({ [blob.type]: blob });
+      await navigator.clipboard.write([item]);
+      
+      toast({
+        title: "Image Copied",
+        description: `${displayName} has been copied to clipboard.`,
+      });
+    } catch (error) {
+      console.error('Copy failed:', error);
+      // Fallback to copying the URL
+      const logoUrl = `${window.location.origin}/public-objects/LOGOS/${filename}`;
+      await navigator.clipboard.writeText(logoUrl);
+      toast({
+        title: "Link Copied",
+        description: `Link to ${displayName} has been copied to clipboard instead.`,
+      });
     }
   };
 
@@ -344,15 +414,15 @@ export default function ImportantDocuments() {
                       </div>
                     </div>
 
-                    <div className="flex gap-3 pt-2">
+                    <div className="grid grid-cols-2 gap-3 pt-2">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
                             variant="outline"
                             size="lg"
-                            className="flex-1 h-11 font-semibold border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white transition-all duration-200 rounded-xl shadow-sm hover:shadow-md"
+                            className="h-11 font-semibold border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white transition-all duration-200 rounded-xl shadow-sm hover:shadow-md"
                           >
-                            <Eye className="h-5 w-5 mr-2" />
+                            <Eye className="h-4 w-4 mr-1" />
                             Preview
                           </Button>
                         </DialogTrigger>
@@ -396,10 +466,30 @@ export default function ImportantDocuments() {
                       <Button
                         onClick={() => handleLogoDownload(logo.filename, logo.name)}
                         size="lg"
-                        className="flex-1 h-11 font-semibold bg-gradient-to-r from-[#236383] to-[#1a4e66] hover:from-[#1a4e66] hover:to-[#0f3a52] text-white transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                        className="h-11 font-semibold bg-gradient-to-r from-[#236383] to-[#1a4e66] hover:from-[#1a4e66] hover:to-[#0f3a52] text-white transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                       >
-                        <Download className="h-5 w-5 mr-2" />
+                        <Download className="h-4 w-4 mr-1" />
                         Download
+                      </Button>
+                      
+                      <Button
+                        onClick={() => handleLogoShare(logo.filename, logo.name)}
+                        size="lg"
+                        variant="outline"
+                        className="h-11 font-semibold border-2 border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white transition-all duration-200 rounded-xl shadow-sm hover:shadow-md"
+                      >
+                        <Share2 className="h-4 w-4 mr-1" />
+                        Share
+                      </Button>
+                      
+                      <Button
+                        onClick={() => handleLogoCopy(logo.filename, logo.name)}
+                        size="lg"
+                        variant="outline"
+                        className="h-11 font-semibold border-2 border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 rounded-xl shadow-sm hover:shadow-md"
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy
                       </Button>
                     </div>
                   </CardContent>
