@@ -207,13 +207,13 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
       case 'new':
         return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">New Request</Badge>;
       case 'contacted':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Contacted</Badge>;
+        return <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">Contacted</Badge>;
       case 'contact_completed':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Event Complete</Badge>;
+        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Event Complete</Badge>;
       case 'scheduled':
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Upcoming Event</Badge>;
       case 'completed':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
+        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Completed</Badge>;
       case 'past':
         return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Past Event</Badge>;
       case 'declined':
@@ -227,8 +227,8 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
     return (
       <div className="space-y-6 p-6">
         <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
-            <Building className="w-6 h-6 text-blue-600" />
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
+            <Building className="w-6 h-6 text-teal-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
@@ -260,8 +260,8 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
-          <Building className="w-6 h-6 text-blue-600" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
+          <Building className="w-6 h-6 text-teal-600" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
@@ -379,7 +379,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                       <span>{group.totalRequests} total requests</span>
                     </span>
                     {group.hasHostedEvent && (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                         ✓ Has hosted events
                       </Badge>
                     )}
@@ -475,7 +475,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                     <div className="text-sm mb-3">
                       <strong>Hosted Event with Us?</strong> {
                         org.hasHostedEvent
-                          ? <span className="text-green-600 font-semibold">Yes</span>
+                          ? <span className="text-orange-600 font-semibold">Yes</span>
                           : <span className="text-gray-500">No</span>
                       }
                     </div>
@@ -652,10 +652,10 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                         <div className="mt-1">
                           {(() => {
                             const statusConfig = {
-                              'new': { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'New Request' },
+                              'new': { color: 'bg-teal-100 text-teal-800 border-teal-200', label: 'New Request' },
                               'contacted': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Contact Made' },
                               'scheduled': { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Event Scheduled' },
-                              'completed': { color: 'bg-green-100 text-green-800 border-green-200', label: 'Event Completed' },
+                              'completed': { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Event Completed' },
                               'past': { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Past Event' }
                             };
                             const config = statusConfig[eventDetails.status as keyof typeof statusConfig] || statusConfig.new;
@@ -701,7 +701,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                       {eventDetails.sandwichesMade && (
                         <div>
                           <label className="text-sm font-medium text-gray-600">Sandwiches Made</label>
-                          <p className="text-lg font-semibold text-green-600">
+                          <p className="text-lg font-semibold text-orange-600">
                             {eventDetails.sandwichesMade} sandwiches
                           </p>
                         </div>
@@ -738,28 +738,28 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
 
                   {/* Additional Details */}
                   {(eventDetails.message || eventDetails.planningNotes || eventDetails.contactCompletionNotes) && (
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h3 className="font-semibold text-blue-800 mb-3">Additional Information</h3>
+                    <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                      <h3 className="font-semibold text-teal-800 mb-3">Additional Information</h3>
                       {eventDetails.message && (
                         <div className="mb-3">
-                          <label className="text-sm font-medium text-blue-700">Original Message</label>
-                          <p className="text-sm text-blue-800 bg-white p-2 rounded border">
+                          <label className="text-sm font-medium text-teal-700">Original Message</label>
+                          <p className="text-sm text-teal-800 bg-white p-2 rounded border">
                             {eventDetails.message}
                           </p>
                         </div>
                       )}
                       {eventDetails.planningNotes && (
                         <div className="mb-3">
-                          <label className="text-sm font-medium text-blue-700">Planning Notes</label>
-                          <p className="text-sm text-blue-800 bg-white p-2 rounded border">
+                          <label className="text-sm font-medium text-teal-700">Planning Notes</label>
+                          <p className="text-sm text-teal-800 bg-white p-2 rounded border">
                             {eventDetails.planningNotes}
                           </p>
                         </div>
                       )}
                       {eventDetails.contactCompletionNotes && (
                         <div>
-                          <label className="text-sm font-medium text-blue-700">Contact Notes</label>
-                          <p className="text-sm text-blue-800 bg-white p-2 rounded border">
+                          <label className="text-sm font-medium text-teal-700">Contact Notes</label>
+                          <p className="text-sm text-teal-800 bg-white p-2 rounded border">
                             {eventDetails.contactCompletionNotes}
                           </p>
                         </div>
@@ -800,8 +800,8 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                           <div className="flex items-center space-x-2 mt-1">
                             {eventDetails.hasHostedEvent ? (
                               <>
-                                <CheckCircle className="w-5 h-5 text-green-600" />
-                                <span className="text-green-600 font-semibold">Yes</span>
+                                <CheckCircle className="w-5 h-5 text-orange-600" />
+                                <span className="text-orange-600 font-semibold">Yes</span>
                               </>
                             ) : (
                               <>
