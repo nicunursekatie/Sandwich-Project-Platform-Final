@@ -1230,11 +1230,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check permissions using shared auth utils
         const { hasPermission, PERMISSIONS } = await import("@shared/auth-utils");
         
-        const canEditAll = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_ALL);
+        const canEditAll = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_ALL) ||
+                          hasPermission(req.user, PERMISSIONS.MANAGE_ALL_PROJECTS);
         const canEditOwn = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_OWN) && 
                           (existingProject.createdBy === req.user.id);
 
         console.log('Permission check - canEditAll:', canEditAll, 'canEditOwn:', canEditOwn);
+        console.log('User permissions include MANAGE_ALL_PROJECTS:', hasPermission(req.user, PERMISSIONS.MANAGE_ALL_PROJECTS));
 
         if (!canEditAll && !canEditOwn) {
           console.log('Permission denied for user:', req.user?.email);
