@@ -3759,12 +3759,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get projects marked for review in next meeting
-  app.get("/api/projects/for-review", isAuthenticated, async (req: any, res) => {
+  app.get("/api/projects/for-review", isAuthenticated, requirePermission("PROJECTS_VIEW"), async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, 'access_projects')) {
-        return res.status(403).json({ error: "Insufficient permissions to view projects" });
-      }
-
       const projectsForReview = await storage.getProjectsForReview();
       
       res.json(projectsForReview);

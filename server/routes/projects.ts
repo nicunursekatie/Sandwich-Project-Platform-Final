@@ -49,6 +49,20 @@ function canCreateProjects(req: any) {
   return hasPermission(user, PERMISSIONS.CREATE_PROJECTS);
 }
 
+// Permission check for project editing
+function canEditProjects(req: any) {
+  const user = req.user;
+  return hasPermission(user, PERMISSIONS.PROJECTS_EDIT_ALL) || 
+         hasPermission(user, PERMISSIONS.PROJECTS_EDIT_OWN);
+}
+
+// Permission check for project deletion
+function canDeleteProjects(req: any) {
+  const user = req.user;
+  return hasPermission(user, PERMISSIONS.PROJECTS_DELETE_ALL) || 
+         hasPermission(user, PERMISSIONS.PROJECTS_DELETE_OWN);
+}
+
 // Get projects assigned to the current user
 router.get("/projects/assigned", isAuthenticated, async (req, res) => {
   try {
