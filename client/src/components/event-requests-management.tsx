@@ -756,6 +756,13 @@ export default function EventRequestsManagement() {
   };
 
   // Permission checking functions
+  const canEditEventRequest = () => {
+    if (!user) return false;
+    return hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS) || 
+           hasPermission(user, PERMISSIONS.MANAGE_USERS) || 
+           user.role === 'super_admin';
+  };
+
   const canEditField = (field: string) => {
     if (!user) return false;
     
