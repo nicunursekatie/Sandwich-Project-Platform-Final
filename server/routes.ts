@@ -615,11 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import and use the new modular routes
-  const routesModule = await import("./routes/index");
-  if (routesModule.apiRoutes) {
-    app.use(routesModule.apiRoutes);
-  }
+  // Note: Removed duplicate routes/index import - using inline routes instead
 
   // Import and register sandwich distributions routes
   const sandwichDistributionsRoutes = await import("./routes/sandwich-distributions");
@@ -1229,6 +1225,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Check permissions using shared auth utils
         const { hasPermission, PERMISSIONS } = await import("@shared/auth-utils");
+        
+        console.log('DEBUG: User permissions array:', req.user?.permissions);
+        console.log('DEBUG: User role:', req.user?.role);
+        console.log('DEBUG: User ID:', req.user?.id);
+        console.log('DEBUG: Project createdBy:', existingProject.createdBy);
+        console.log('DEBUG: Checking permission:', PERMISSIONS.PROJECTS_EDIT_ALL);
+        console.log('DEBUG: Checking permission:', PERMISSIONS.PROJECTS_EDIT_OWN);
         
         const canEditAll = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_ALL);
         const canEditOwn = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_OWN) && 
