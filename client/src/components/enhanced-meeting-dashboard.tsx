@@ -1073,7 +1073,10 @@ export default function EnhancedMeetingDashboard() {
         </div>
         <button
           onClick={() => setShowNewMeetingDialog(true)}
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-3 md:px-4 py-3 md:py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 w-full sm:w-auto text-sm"
+          style={{ backgroundColor: '#FBAD3F' }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = '#e09d36'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = '#FBAD3F'}
+          className="flex items-center justify-center gap-2 text-white px-3 md:px-4 py-3 md:py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 w-full sm:w-auto text-sm"
         >
           <Plus className="w-4 h-4" />
           <span>Schedule Meeting</span>
@@ -1633,7 +1636,10 @@ export default function EnhancedMeetingDashboard() {
               <button
                 onClick={handleUpdateMeeting}
                 disabled={updateMeetingMutation.isPending}
-                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#FBAD3F' }}
+                onMouseEnter={(e) => !updateMeetingMutation.isPending && (e.target.style.backgroundColor = '#e09d36')}
+                onMouseLeave={(e) => !updateMeetingMutation.isPending && (e.target.style.backgroundColor = '#FBAD3F')}
+                className="flex-1 flex items-center justify-center gap-2 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
               >
                 {updateMeetingMutation.isPending ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -1693,7 +1699,10 @@ export default function EnhancedMeetingDashboard() {
                 size="sm"
                 onClick={() => setShowResetConfirmDialog(true)}
                 disabled={resetAgendaPlanningMutation.isPending}
-                className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                style={{ borderColor: '#FBAD3F', color: '#FBAD3F' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#fef7e6'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                className=""
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Reset for Next Week
@@ -2550,7 +2559,10 @@ export default function EnhancedMeetingDashboard() {
             <Button 
               onClick={() => resetAgendaPlanningMutation.mutate()}
               disabled={resetAgendaPlanningMutation.isPending}
-              className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+              style={{ backgroundColor: '#FBAD3F' }}
+              onMouseEnter={(e) => !resetAgendaPlanningMutation.isPending && (e.target.style.backgroundColor = '#e09d36')}
+              onMouseLeave={(e) => !resetAgendaPlanningMutation.isPending && (e.target.style.backgroundColor = '#FBAD3F')}
+              className="flex-1 text-white"
             >
               {resetAgendaPlanningMutation.isPending ? (
                 <div className="flex items-center gap-2">
