@@ -12,6 +12,7 @@
 /* Ensure all tabs use brand colors */
 [role="tablist"] {
   background-color: white !important;
+  border: none !important;
 }
 
 [role="tab"][data-state="inactive"] {

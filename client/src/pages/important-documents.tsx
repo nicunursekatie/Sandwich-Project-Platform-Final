@@ -198,7 +198,7 @@ export default function ImportantDocuments() {
         </div>
 
         <Tabs defaultValue="documents" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-6 border-2 border-[#236383]">
+          <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-6 border-0">
             <TabsTrigger 
               value="documents" 
               className="flex items-center gap-2 py-3 px-6 rounded-l-md font-medium text-[#236383]"
