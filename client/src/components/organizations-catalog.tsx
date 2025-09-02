@@ -453,42 +453,84 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                 {group.departments.map((org, index) => (
                   <Card key={`${org.organizationName}-${org.contactName}-${index}`} className={`hover:shadow-lg transition-all duration-300 border-l-4 ${org.status === 'declined' ? 'border-l-4 border-2 shadow-xl' : 'bg-gradient-to-br from-white to-orange-50 border-l-4'}`} style={org.status === 'declined' ? {background: 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)', borderLeftColor: '#A31C41', borderColor: '#A31C41'} : {borderLeftColor: '#FBAD3F'}}>
                     <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <CardTitle className="flex flex-col space-y-1 text-lg mb-3">
-                            <span className="text-gray-900 font-bold">{org.organizationName}</span>
+                      {/* Main headline with org name and date */}
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-gray-900 leading-tight">{org.organizationName}</h3>
                             {org.department && (
-                              <span className="text-gray-600 font-medium text-base">{org.department}</span>
+                              <p className="text-gray-600 font-medium text-base mt-1">{org.department}</p>
                             )}
-                          </CardTitle>
-                    
-                    {/* Contact Information - Prominent Display */}
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <User className="w-4 h-4" style={{ color: '#236383' }} />
-                        <span className="text-base font-semibold" style={{ color: '#236383' }}>
-                          {org.contactName}
-                        </span>
-                      </div>
-                      
-                      {org.email && (
-                        <div className="flex items-center space-x-2">
-                          <Mail className="w-4 h-4" style={{ color: '#236383' }} />
-                          <span className="text-sm font-medium" style={{ color: '#236383' }}>
-                            {org.email}
-                          </span>
+                            {/* Event Date - Prominent */}
+                            {org.eventDate ? (
+                              <div className="flex items-center mt-2 text-lg font-semibold" style={{ color: '#FBAD3F' }}>
+                                <Calendar className="w-5 h-5 mr-2" />
+                                <span>{(() => {
+                                  try {
+                                    let date: Date;
+                                    if (org.eventDate.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                                      const dateOnly = org.eventDate.split(' ')[0];
+                                      date = new Date(dateOnly + 'T12:00:00');
+                                    } else if (org.eventDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                      date = new Date(org.eventDate + 'T12:00:00');
+                                    } else {
+                                      date = new Date(org.eventDate);
+                                    }
+                                    if (isNaN(date.getTime())) return 'Invalid date';
+                                    if (typeof org.eventDate === 'string' && org.eventDate.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                                      const datePart = org.eventDate.split('T')[0];
+                                      const safeDate = new Date(datePart + 'T12:00:00');
+                                      return safeDate.toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      });
+                                    }
+                                    return date.toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    });
+                                  } catch {
+                                    return 'Invalid date';
+                                  }
+                                })()}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center mt-2 text-base text-gray-500">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                <span>Event date not specified</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    {getStatusBadge(org.status)}
-                    <Badge variant="secondary" className="text-xs bg-[#FBAD3F] text-white hover:bg-[#FBAD3F]/90">
-                      {org.totalRequests} request{org.totalRequests !== 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
+                        
+                        {/* Contact Info - Secondary visual weight */}
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <User className="w-4 h-4" />
+                            <span>{org.contactName}</span>
+                          </div>
+                          {org.email && (
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Mail className="w-4 h-4" />
+                              <span>{org.email}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Consolidated Status Bar */}
+                        <div className="bg-gray-50 p-2 rounded-md">
+                          <div className="text-xs text-gray-600 flex items-center space-x-1">
+                            <span>Status: <span className="font-medium text-gray-800">{getStatusText(org.status)}</span></span>
+                            <span className="text-gray-400">•</span>
+                            <span>Requests: <span className="font-medium text-gray-800">{org.totalRequests}</span></span>
+                            <span className="text-gray-400">•</span>
+                            <span>Hosted: <span className="font-medium text-gray-800">{org.hasHostedEvent ? 'Yes' : 'No'}</span></span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
               
               <CardContent>
                 <div className="space-y-2">

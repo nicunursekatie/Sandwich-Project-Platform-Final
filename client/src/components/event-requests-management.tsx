@@ -780,43 +780,53 @@ export default function EventRequestsManagement() {
 
     return (
       <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-gradient-to-br from-white to-teal-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''}`}>
-        {/* Header Row: Org name · Event date/time · Status badges */}
+        {/* Header Row: Bold headline with org name and date */}
         <CardHeader className="pb-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <h3 className="text-xl font-bold text-gray-900 truncate">
-                {request.organizationName}
-                {request.department && <span className="text-sm text-gray-600 ml-2">· {request.department}</span>}
-              </h3>
-              {request.desiredEventDate && (
-                <div className="flex items-center space-x-1 text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
-                  <Calendar className="w-4 h-4" />
-                  <span className="font-semibold text-sm">
-                    {(() => {
-                      const dateInfo = formatEventDate(request.desiredEventDate);
-                      return dateInfo.text;
-                    })()}
-                  </span>
-                </div>
-              )}
+          <div className="space-y-3">
+            {/* Main headline */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-gray-900 leading-tight">
+                  {request.organizationName}
+                </h3>
+                {request.department && (
+                  <p className="text-gray-600 font-medium text-base mt-1">{request.department}</p>
+                )}
+                {/* Event Date - Prominent in headline */}
+                {request.desiredEventDate && (
+                  <div className="flex items-center mt-2 text-lg font-semibold" style={{ color: '#FBAD3F' }}>
+                    <Calendar className="w-5 h-5 mr-2" />
+                    <span>
+                      {(() => {
+                        const dateInfo = formatEventDate(request.desiredEventDate);
+                        return dateInfo.text;
+                      })()} 
+                    </span>
+                  </div>
+                )}
+              </div>
+              {getStatusDisplay(request.status)}
             </div>
             
-            {/* Status Badges */}
-            <div className="flex items-center space-x-2 flex-wrap">
-              {(() => {
-                const driver = getDriverStatus();
-                const toolkit = getToolkitStatus();
-                const refrigeration = getRefrigerationStatus();
-                
-                return (
-                  <>
-                    <Badge className={`text-xs ${driver.color} border-0`}>{driver.badge}</Badge>
-                    <Badge className={`text-xs ${toolkit.color} border-0`}>{toolkit.badge}</Badge>
-                    <Badge className={`text-xs ${refrigeration.color} border-0`}>{refrigeration.badge}</Badge>
-                    {getStatusDisplay(request.status)}
-                  </>
-                );
-              })()}
+            {/* Consolidated Status Bar */}
+            <div className="bg-gray-50 p-3 rounded-md border">
+              <div className="text-sm text-gray-700 flex items-center flex-wrap gap-1">
+                {(() => {
+                  const driver = getDriverStatus();
+                  const toolkit = getToolkitStatus();
+                  const refrigeration = getRefrigerationStatus();
+                  
+                  return (
+                    <>
+                      <span>Toolkit: <span className="font-medium">{toolkit.badge.replace(/[✓⚠️]/g, '').trim()}</span></span>
+                      <span className="text-gray-400 mx-1">·</span>
+                      <span>Driver: <span className="font-medium">{driver.badge.replace(/[✓⚠️]/g, '').trim()}</span></span>
+                      <span className="text-gray-400 mx-1">·</span>
+                      <span>Refrigeration: <span className="font-medium">{refrigeration.badge.replace(/[✓❌❓]/g, '').trim()}</span></span>
+                    </>
+                  );
+                })()} 
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -825,13 +835,13 @@ export default function EventRequestsManagement() {
           <div className="space-y-4">
             {/* Body: Inline editable contact info, address, sandwich count */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Contact Information - Inline Editable */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-800 text-sm">Contact Information</h4>
+              {/* Contact Information - Secondary visual weight */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-700 text-sm">Contact Information</h4>
                 
                 {/* Contact Name */}
                 <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4 text-teal-600" />
+                  <User className="w-4 h-4 text-gray-500" />
                   {editingField === 'contact' && editingEventId === request.id ? (
                     <div className="flex space-x-2 flex-1">
                       <input
@@ -848,7 +858,7 @@ export default function EventRequestsManagement() {
                     </div>
                   ) : (
                     <span 
-                      className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                      className="text-sm text-gray-600 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
                       onClick={() => {
                         setEditingField('contact');
                         setEditingEventId(request.id);
@@ -861,7 +871,7 @@ export default function EventRequestsManagement() {
                 
                 {/* Email */}
                 <div className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4 text-teal-600" />
+                  <Mail className="w-4 h-4 text-gray-500" />
                   {editingField === 'email' && editingEventId === request.id ? (
                     <input
                       className="text-sm border rounded px-2 py-1 flex-1"
@@ -872,7 +882,7 @@ export default function EventRequestsManagement() {
                     />
                   ) : (
                     <span 
-                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                      className="text-sm text-gray-600 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
                       onClick={() => {
                         setEditingField('email');
                         setEditingEventId(request.id);
@@ -885,7 +895,7 @@ export default function EventRequestsManagement() {
                 
                 {/* Phone */}
                 <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-teal-600" />
+                  <Phone className="w-4 h-4 text-gray-500" />
                   {editingField === 'phone' && editingEventId === request.id ? (
                     <input
                       className="text-sm border rounded px-2 py-1 flex-1"
@@ -896,7 +906,7 @@ export default function EventRequestsManagement() {
                     />
                   ) : (
                     <span 
-                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                      className="text-sm text-gray-500 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
                       onClick={() => {
                         setEditingField('phone');
                         setEditingEventId(request.id);
@@ -988,32 +998,89 @@ export default function EventRequestsManagement() {
               </div>
             </div>
             
-            {/* Driver / Speaker Slots */}
+            {/* Assignments Section */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-gray-800 text-sm">Assignments</h4>
-                <div className="flex space-x-2">
-                  {((request as any).driversNeeded > 0 || (request as any).assignedDriverIds?.length > 0) && (
-                    <Badge className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                      Drivers: {(request as any).assignedDriverIds?.length || 0}/{(request as any).driversNeeded || 0}
-                    </Badge>
-                  )}
-                  {((request as any).speakersNeeded > 0) && (
-                    <Badge className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                      Speakers: 0/{(request as any).speakersNeeded || 0}
-                    </Badge>
-                  )}
+              <h4 className="font-medium text-gray-700 text-sm">Assignments</h4>
+              
+              {/* Driver Assignment Chips */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Drivers ({(request as any).assignedDriverIds?.length || 0}/{(request as any).driversNeeded || 0})</span>
+                  <button 
+                    className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                    onClick={() => {
+                      // TODO: Add driver assignment functionality
+                      toast({ title: "Driver assignment coming soon" });
+                    }}
+                  >
+                    + Assign Driver
+                  </button>
                 </div>
+                {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
+                  <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
+                    {getUserDisplayName(driverId)}
+                    <button 
+                      className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
+                      onClick={() => {
+                        // TODO: Remove driver assignment
+                        toast({ title: "Driver removal coming soon" });
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
               
-              {/* TSP Contact Assignment */}
-              {(request as any).tspContact && (
-                <div className="flex items-center space-x-2">
-                  <Badge className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                    TSP Contact: {getUserDisplayName((request as any).tspContact)}
-                  </Badge>
+              {/* Speaker Assignment Chips */}
+              {(request as any).speakersNeeded > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Speakers (0/{(request as any).speakersNeeded || 0})</span>
+                    <button 
+                      className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200"
+                      onClick={() => {
+                        // TODO: Add speaker assignment functionality
+                        toast({ title: "Speaker assignment coming soon" });
+                      }}
+                    >
+                      + Assign Speaker
+                    </button>
+                  </div>
                 </div>
               )}
+              
+              {/* TSP Contact Assignment */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">TSP Contact</span>
+                  {!(request as any).tspContact && (
+                    <button 
+                      className="text-xs bg-teal-50 text-teal-700 hover:bg-teal-100 px-2 py-1 rounded border border-teal-200"
+                      onClick={() => {
+                        // TODO: Add TSP contact assignment functionality
+                        toast({ title: "TSP contact assignment coming soon" });
+                      }}
+                    >
+                      + Assign Contact
+                    </button>
+                  )}
+                </div>
+                {(request as any).tspContact && (
+                  <div className="inline-flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs border border-teal-200">
+                    {getUserDisplayName((request as any).tspContact)}
+                    <button 
+                      className="ml-1 hover:bg-teal-200 rounded-full w-4 h-4 flex items-center justify-center"
+                      onClick={() => {
+                        // TODO: Remove TSP contact assignment
+                        toast({ title: "TSP contact removal coming soon" });
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             
           </div>
