@@ -48,6 +48,8 @@ export default function UserManagement() {
     lastName: "", 
     role: "volunteer" 
   });
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   // Check if current user can manage users
   if (!hasPermission(currentUser, PERMISSIONS.MANAGE_USERS)) {
@@ -184,7 +186,60 @@ export default function UserManagement() {
   });
 
   const handleEditUser = (user: User) => {
+    setEditUser(user);
+    setShowEditDialog(true);
+  };
+
+  const handlePermissionsEdit = (user: User) => {
     setSelectedUser(user);
+  };
+
+  const editUserMutation = useMutation({
+    mutationFn: async (data: { userId: string; email: string; firstName: string; lastName: string; role: string; isActive: boolean }) => {
+      return apiRequest("PATCH", `/api/users/${data.userId}/profile`, {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role,
+        isActive: data.isActive,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "User Updated",
+        description: "User details have been successfully updated.",
+      });
+      setShowEditDialog(false);
+      setEditUser(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveUserEdit = () => {
+    if (!editUser || !editUser.email || !editUser.firstName || !editUser.lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    editUserMutation.mutate({
+      userId: editUser.id,
+      email: editUser.email,
+      firstName: editUser.firstName,
+      lastName: editUser.lastName,
+      role: editUser.role,
+      isActive: editUser.isActive,
+    });
   };
 
   const handleResetPassword = () => {
@@ -465,6 +520,92 @@ export default function UserManagement() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              {/* Edit User Dialog */}
+              <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit User Details</DialogTitle>
+                    <DialogDescription>
+                      Update user information, role, and status
+                    </DialogDescription>
+                  </DialogHeader>
+                  {editUser && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="editEmail">Email Address *</Label>
+                        <Input
+                          id="editEmail"
+                          type="email"
+                          value={editUser.email}
+                          onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                          placeholder="user@example.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="editFirstName">First Name *</Label>
+                        <Input
+                          id="editFirstName"
+                          value={editUser.firstName}
+                          onChange={(e) => setEditUser({ ...editUser, firstName: e.target.value })}
+                          placeholder="John"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="editLastName">Last Name *</Label>
+                        <Input
+                          id="editLastName"
+                          value={editUser.lastName}
+                          onChange={(e) => setEditUser({ ...editUser, lastName: e.target.value })}
+                          placeholder="Doe"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="editRole">Role</Label>
+                        <Select value={editUser.role} onValueChange={(value) => setEditUser({ ...editUser, role: value })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="volunteer">Volunteer</SelectItem>
+                            <SelectItem value="host">Host</SelectItem>
+                            <SelectItem value="driver">Driver</SelectItem>
+                            <SelectItem value="core_team">Core Team</SelectItem>
+                            <SelectItem value="committee_member">Committee Member</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="editActive"
+                          checked={editUser.isActive}
+                          onCheckedChange={(checked) => setEditUser({ ...editUser, isActive: !!checked })}
+                        />
+                        <Label htmlFor="editActive">User is active</Label>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setShowEditDialog(false);
+                            setEditUser(null);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleSaveUserEdit}
+                          disabled={editUserMutation.isPending}
+                        >
+                          {editUserMutation.isPending ? "Saving..." : "Save Changes"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           </CardHeader>
         <CardContent>
@@ -518,7 +659,15 @@ export default function UserManagement() {
                         onClick={() => handleEditUser(user)}
                       >
                         <Settings className="h-4 w-4 mr-1" />
-                        Edit
+                        Edit Details
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePermissionsEdit(user)}
+                      >
+                        <Shield className="h-4 w-4 mr-1" />
+                        Permissions
                       </Button>
                       
                       {/* Password Reset Dialog */}

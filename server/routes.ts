@@ -101,6 +101,7 @@ import { QueryOptimizer } from "./performance/query-optimizer";
 import { db } from "./db";
 import { StreamChat } from "stream-chat";
 import { requirePermission, requireOwnershipPermission } from "./middleware/auth";
+import { AuditLogger } from "./audit-logger";
 
 
 // Configure multer for file uploads
@@ -922,6 +923,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error updating user status:", error);
         res.status(500).json({ message: "Failed to update user status" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/users/:id/profile",
+    isAuthenticated,
+    requirePermission("USERS_EDIT"),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { email, firstName, lastName, role, isActive } = req.body;
+        
+        // Build update object with only provided fields
+        const updateData: any = {};
+        if (email !== undefined) updateData.email = email;
+        if (firstName !== undefined) updateData.firstName = firstName;
+        if (lastName !== undefined) updateData.lastName = lastName;
+        if (role !== undefined) updateData.role = role;
+        if (isActive !== undefined) updateData.isActive = isActive;
+        
+        const updatedUser = await storage.updateUser(id, updateData);
+        
+        // Log the user profile update
+        await AuditLogger.log(
+          'user_profile_updated',
+          'user_management',
+          id,
+          { updatedFields: Object.keys(updateData), newValues: updateData },
+          { userId: req.user?.id }
+        );
+        
+        res.json(updatedUser);
+      } catch (error) {
+        console.error("Error updating user profile:", error);
+        res.status(500).json({ message: "Failed to update user profile" });
       }
     },
   );
