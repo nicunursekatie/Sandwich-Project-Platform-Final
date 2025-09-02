@@ -197,6 +197,11 @@ export default function EventRequestsManagement() {
   const [tempValues, setTempValues] = useState<any>({});
   const [pendingChanges, setPendingChanges] = useState<{[eventId: number]: {[field: string]: any}}>({});
   const [undoTimeouts, setUndoTimeouts] = useState<{[key: string]: NodeJS.Timeout}>({});
+  // TSP Contact Assignment state
+  const [showTspContactDialog, setShowTspContactDialog] = useState(false);
+  const [assigningContactRequest, setAssigningContactRequest] = useState<EventRequest | null>(null);
+  const [selectedTspContacts, setSelectedTspContacts] = useState<string[]>([]);
+  const [customTspContacts, setCustomTspContacts] = useState<string[]>(['']);
   
   // Get current user for permission checking
   const { user } = useAuth();
@@ -927,6 +932,40 @@ export default function EventRequestsManagement() {
     }
   };
 
+  // Handle TSP contact assignment
+  const handleAssignTspContact = () => {
+    if (!assigningContactRequest) return;
+    
+    const contactData: any = {};
+    
+    // Assign selected team members to contact fields
+    if (selectedTspContacts.length > 0) {
+      contactData.tspContact = selectedTspContacts[0] || null;
+      contactData.tspContactAssigned = selectedTspContacts[1] || null;
+      contactData.additionalContact1 = selectedTspContacts[2] || null;
+      contactData.additionalContact2 = selectedTspContacts[3] || null;
+    }
+    
+    // Combine custom contacts into one field
+    const nonEmptyCustomContacts = customTspContacts.filter(contact => contact.trim());
+    if (nonEmptyCustomContacts.length > 0) {
+      contactData.customTspContact = nonEmptyCustomContacts.join('; ');
+    }
+
+    updateMutation.mutate({
+      id: assigningContactRequest.id,
+      ...contactData
+    });
+
+    // Reset state
+    setShowTspContactDialog(false);
+    setAssigningContactRequest(null);
+    setSelectedTspContacts([]);
+    setCustomTspContacts(['']);
+
+    toast({ title: "TSP contacts assigned successfully" });
+  };
+
   // Function to render enhanced scheduled event cards with inline editing
   const renderScheduledEventCard = (request: EventRequest) => {
 
@@ -1500,32 +1539,58 @@ export default function EventRequestsManagement() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">TSP Contact</span>
-                  {!(request as any).tspContact && (
-                    <button 
-                      className="text-xs bg-teal-50 text-teal-700 hover:bg-teal-100 px-2 py-1 rounded border border-teal-200"
-                      onClick={() => {
-                        // TODO: Add TSP contact assignment functionality
-                        toast({ title: "TSP contact assignment coming soon" });
-                      }}
-                    >
-                      + Assign Contact
-                    </button>
+                  <button 
+                    className="text-xs bg-teal-50 text-teal-700 hover:bg-teal-100 px-2 py-1 rounded border border-teal-200"
+                    onClick={() => {
+                      setAssigningContactRequest(request);
+                      setShowTspContactDialog(true);
+                      // Initialize with current contacts
+                      const currentContacts = [
+                        (request as any).tspContact,
+                        (request as any).tspContactAssigned,
+                        (request as any).additionalContact1,
+                        (request as any).additionalContact2
+                      ].filter(Boolean);
+                      setSelectedTspContacts(currentContacts);
+                      // Parse custom contacts if they exist
+                      const customContacts = (request as any).customTspContact 
+                        ? (request as any).customTspContact.split(';').map((c: string) => c.trim()).filter(Boolean)
+                        : [];
+                      setCustomTspContacts(customContacts.length > 0 ? customContacts : ['']);
+                    }}
+                  >
+                    {(request as any).tspContact || (request as any).tspContactAssigned || (request as any).additionalContact1 || (request as any).additionalContact2 || (request as any).customTspContact ? 'Manage Contacts' : '+ Assign Contact'}
+                  </button>
+                </div>
+                
+                {/* Display assigned contacts */}
+                <div className="flex flex-wrap gap-1">
+                  {(request as any).tspContact && (
+                    <div className="inline-flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs border border-teal-200">
+                      Primary: {getUserDisplayName((request as any).tspContact)}
+                    </div>
+                  )}
+                  {(request as any).tspContactAssigned && (
+                    <div className="inline-flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs border border-teal-200">
+                      Secondary: {getUserDisplayName((request as any).tspContactAssigned)}
+                    </div>
+                  )}
+                  {(request as any).additionalContact1 && (
+                    <div className="inline-flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs border border-teal-200">
+                      Third: {getUserDisplayName((request as any).additionalContact1)}
+                    </div>
+                  )}
+                  {(request as any).additionalContact2 && (
+                    <div className="inline-flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs border border-teal-200">
+                      Fourth: {getUserDisplayName((request as any).additionalContact2)}
+                    </div>
+                  )}
+                  {(request as any).customTspContact && (
+                    <div className="inline-flex items-center bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-200">
+                      Custom: {(request as any).customTspContact}
+                    </div>
                   )}
                 </div>
-                {(request as any).tspContact && (
-                  <div className="inline-flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs border border-teal-200">
-                    {getUserDisplayName((request as any).tspContact)}
-                    <button 
-                      className="ml-1 hover:bg-teal-200 rounded-full w-4 h-4 flex items-center justify-center"
-                      onClick={() => {
-                        // TODO: Remove TSP contact assignment
-                        toast({ title: "TSP contact removal coming soon" });
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
             
@@ -3419,6 +3484,131 @@ export default function EventRequestsManagement() {
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* TSP Contact Assignment Dialog */}
+      {showTspContactDialog && assigningContactRequest && (
+        <Dialog open={showTspContactDialog} onOpenChange={setShowTspContactDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Assign TSP Contacts</DialogTitle>
+              <p className="text-sm text-gray-600">
+                Assign team members and add custom contact information for {assigningContactRequest.organizationName}
+              </p>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Team Member Selection */}
+              <div>
+                <Label className="text-base font-medium">Team Members (up to 4)</Label>
+                <p className="text-xs text-gray-500 mb-3">Select team members to assign as contacts for this event</p>
+                
+                <div className="space-y-3">
+                  {[0, 1, 2, 3].map((index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <span className="text-sm font-medium min-w-0 w-20">
+                        {index === 0 ? 'Primary:' : index === 1 ? 'Secondary:' : index === 2 ? 'Third:' : 'Fourth:'}
+                      </span>
+                      <select
+                        value={selectedTspContacts[index] || ''}
+                        onChange={(e) => {
+                          const newContacts = [...selectedTspContacts];
+                          if (e.target.value === '') {
+                            newContacts.splice(index, 1);
+                          } else {
+                            newContacts[index] = e.target.value;
+                          }
+                          setSelectedTspContacts(newContacts);
+                        }}
+                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Select team member</option>
+                        {users?.map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName && user.lastName 
+                              ? `${user.firstName} ${user.lastName}` 
+                              : user.displayName || user.email}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Contact Information */}
+              <div>
+                <Label className="text-base font-medium">Custom Contact Information</Label>
+                <p className="text-xs text-gray-500 mb-3">Add external contacts or special instructions</p>
+                
+                <div className="space-y-2">
+                  {customTspContacts.map((contact, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={contact}
+                        onChange={(e) => {
+                          const newContacts = [...customTspContacts];
+                          newContacts[index] = e.target.value;
+                          setCustomTspContacts(newContacts);
+                        }}
+                        placeholder="Enter contact name, phone, or instructions"
+                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                      {customTspContacts.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newContacts = customTspContacts.filter((_, i) => i !== index);
+                            setCustomTspContacts(newContacts);
+                          }}
+                          className="h-10 w-10 p-0"
+                        >
+                          ✗
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCustomTspContacts([...customTspContacts, ''])}
+                    className="mt-2"
+                  >
+                    + Add Another Contact
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowTspContactDialog(false);
+                  setAssigningContactRequest(null);
+                  setSelectedTspContacts([]);
+                  setCustomTspContacts(['']);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button"
+                onClick={handleAssignTspContact}
+                disabled={updateMutation.isPending}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                {updateMutation.isPending ? "Assigning..." : "Assign Contacts"}
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       )}
