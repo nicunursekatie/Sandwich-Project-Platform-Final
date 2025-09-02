@@ -4,25 +4,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Force override ugly gray tab backgrounds */
-[data-state="inactive"] {
-  background-color: white !important;
-}
-
-/* Ensure all tabs use brand colors */
+/* FORCE CLEAN TAB STYLING - OVERRIDE ALL DEFAULTS */
 [role="tablist"] {
-  background-color: white !important;
+  background-color: transparent !important;
+  background: transparent !important;
   border: none !important;
+  box-shadow: none !important;
 }
 
-[role="tab"][data-state="inactive"] {
+[role="tab"] {
   background-color: white !important;
+  background: white !important;
   color: #236383 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 [role="tab"][data-state="active"] {
   background-color: #236383 !important;
+  background: #236383 !important;
   color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[role="tab"]:hover {
+  background-color: #f0f9ff !important;
+  background: #f0f9ff !important;
+}
+
+[role="tab"][data-state="active"]:hover {
+  background-color: #1a4e66 !important;
+  background: #1a4e66 !important;
 }
 
 /* Fix for horizontal scroll issues */
@@ -44,27 +57,7 @@ body {
   }
 }
 
-/* Professional Tab Styling - Using Brand Colors */
-[role="tablist"] {
-  background-color: hsl(var(--muted)) !important;
-  border: 1px solid hsl(var(--border)) !important;
-}
-
-[role="tab"] {
-  color: hsl(var(--foreground)) !important;
-  background-color: transparent !important;
-}
-
-[role="tab"][data-state="active"] {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
-  border-bottom: 2px solid hsl(var(--primary)) !important;
-}
-
-[role="tab"]:hover {
-  background-color: hsl(var(--primary) / 0.1) !important;
-  color: hsl(var(--primary)) !important;
-}
+/* Completely override default tab styling */
 
 /* Professional Button Styling */
 .btn-primary {
