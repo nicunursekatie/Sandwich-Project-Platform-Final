@@ -557,59 +557,6 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
               
               <CardContent>
                 <div className="space-y-2">
-                  {/* Event Date - Show for all events */}
-                  {org.eventDate ? (
-                    <div className="flex items-center text-sm font-medium" style={{ color: '#FBAD3F' }}>
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span>Event date: {(() => {
-                        try {
-                          // Handle timezone-safe parsing for database timestamps
-                          let date: Date;
-                          
-                          if (org.eventDate.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                            // Database timestamp format: "2025-08-27 00:00:00"
-                            // Extract just the date part and create at noon to avoid timezone issues
-                            const dateOnly = org.eventDate.split(' ')[0];
-                            date = new Date(dateOnly + 'T12:00:00');
-                          } else if (org.eventDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                            // Pure date format: "2025-08-27"
-                            date = new Date(org.eventDate + 'T12:00:00');
-                          } else {
-                            // ISO format or other - use as is
-                            date = new Date(org.eventDate);
-                          }
-                          
-                          if (isNaN(date.getTime())) return 'Invalid date';
-                          
-                          // Timezone-safe date display
-                          if (typeof org.eventDate === 'string' && org.eventDate.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-                            // Handle ISO midnight format that causes timezone shifting
-                            const datePart = org.eventDate.split('T')[0];
-                            const safeDate = new Date(datePart + 'T12:00:00');
-                            return safeDate.toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            });
-                          }
-                          
-                          return date.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          });
-                        } catch {
-                          return 'Invalid date';
-                        }
-                      })()}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span>Event date: Not specified</span>
-                    </div>
-                  )}
-                  
                   {/* Hosted Event Status */}
                   <div className="pt-2 border-t">
                     <div className="text-sm mb-3">
@@ -621,7 +568,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                     </div>
                     
                     {/* Sandwich Count for Completed Events */}
-                    {org.totalSandwiches > 0 && (
+                    {org.totalSandwiches && org.totalSandwiches > 0 && (
                       <div className="text-sm mb-3 bg-orange-50 p-2 rounded-lg border border-orange-200">
                         <div className="flex items-center space-x-2">
                           <span className="text-orange-600">🥪</span>
