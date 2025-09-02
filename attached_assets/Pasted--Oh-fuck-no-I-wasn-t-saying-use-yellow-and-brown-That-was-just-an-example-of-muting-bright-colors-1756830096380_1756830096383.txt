@@ -1,0 +1,123 @@
+**Oh fuck no, I wasn't saying use yellow and brown! That was just an example of muting bright colors. Let's use YOUR style guide colors properly!**
+
+## Your Color Palette is Actually Good!
+
+You've got:
+- **Teal** (#236383) - Perfect primary action color
+- **Orange** (#FBAD3F) - Great for highlights/alerts
+- **Dark Gray** (#646464) - Solid for text
+- **Wine/Burgundy** (#A31C41) - Good for warnings/important
+- **Dark Teal** (#007E8C) - Nice hover states
+- **Light Blue** (#47B3CB) - Good for secondary actions
+- **Light Gray** (#D1D3D4) - Perfect for borders/backgrounds
+
+## Here's How to Use Them Properly
+
+```css
+:root {
+  /* Primary Actions */
+  --primary: #236383;        /* Main teal */
+  --primary-hover: #007E8C;  /* Dark teal on hover */
+  
+  /* Status Colors */
+  --success: #47B3CB;        /* Light blue */
+  --warning: #FBAD3F;        /* Orange */
+  --danger: #A31C41;         /* Wine */
+  
+  /* Neutrals */
+  --text-primary: #646464;   /* Dark gray */
+  --text-secondary: #646464CC; /* Dark gray 80% */
+  --border: #D1D3D4;         /* Light gray */
+  --bg-subtle: #D1D3D410;    /* Light gray 10% opacity */
+  
+  /* Whites/Blacks */
+  --white: #FFFFFF;
+  --black: #000000;
+}
+```
+
+## Apply to Your Meeting Page
+
+```css
+/* Primary button - use your teal */
+.btn-send-agenda {
+  background: #236383;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.btn-send-agenda:hover {
+  background: #007E8C;
+}
+
+/* Secondary button - outline style */
+.btn-table-later {
+  background: transparent;
+  color: #236383;
+  border: 2px solid #236383;
+  padding: 10px 20px;
+  border-radius: 6px;
+}
+.btn-table-later:hover {
+  background: #23638310; /* Super light teal */
+}
+
+/* Status badges - subtle backgrounds */
+.badge-progress {
+  background: #FBAD3F20;  /* Orange at 20% */
+  color: #B57200;         /* Darker orange text */
+  border: 1px solid #FBAD3F40;
+}
+
+.badge-complete {
+  background: #47B3CB20;  /* Light blue at 20% */
+  color: #007E8C;
+  border: 1px solid #47B3CB40;
+}
+
+/* Cards */
+.project-card {
+  background: white;
+  border: 1px solid #D1D3D4;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(100, 100, 100, 0.1);
+}
+
+/* Text hierarchy */
+h1, h2, h3 {
+  color: #236383;  /* Headers in your brand teal */
+}
+
+body {
+  color: #646464;  /* Main text in dark gray */
+}
+
+.text-muted {
+  color: #64646499; /* Gray at 60% for secondary text */
+}
+```
+
+## For Pre-made Themes
+
+You can use **any** theme and just swap their color variables with yours:
+
+**Example with Tailwind UI:**
+```javascript
+// tailwind.config.js
+colors: {
+  primary: '#236383',
+  secondary: '#FBAD3F',
+  accent: '#47B3CB',
+  danger: '#A31C41',
+  gray: {
+    50: '#F9FAFB',
+    100: '#F3F4F6',
+    200: '#D1D3D4',  // Your light gray
+    600: '#646464',  // Your dark gray
+  }
+}
+```
+
+Your colors are professional as fuck - they just need to be used consistently with proper hierarchy!

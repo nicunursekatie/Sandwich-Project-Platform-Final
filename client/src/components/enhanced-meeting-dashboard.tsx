@@ -97,7 +97,7 @@ const formatStatusText = (status: string) => {
 const getStatusBadgeProps = (status: string) => {
   switch (status) {
     case 'completed':
-      return { variant: 'default' as const, className: 'bg-green-100 text-green-800 border-green-200' };
+      return { variant: 'default' as const, className: 'bg-teal-100 text-teal-800 border-teal-200' };
     case 'in_progress':
       return { variant: 'secondary' as const, className: 'text-black border-2', style: { backgroundColor: '#FBAD3F', borderColor: '#FBAD3F' } };
     case 'pending':
@@ -723,9 +723,9 @@ export default function EnhancedMeetingDashboard() {
   // Helper functions for agenda section icons and colors
   const getSectionIcon = (title: string) => {
     switch (title.toLowerCase()) {
-      case 'old business': return <RotateCcw className="w-4 h-4 text-blue-600" />;
+      case 'old business': return <RotateCcw className="w-4 h-4 text-primary" />;
       case 'urgent items': return <AlertCircle className="w-4 h-4 text-red-600" />;
-      case 'housekeeping': return <Home className="w-4 h-4 text-green-600" />;
+      case 'housekeeping': return <Home className="w-4 h-4 text-teal-600" />;
       case 'new business': return <Lightbulb className="w-4 h-4 text-orange-600" />;
       default: return <FileText className="w-4 h-4 text-gray-600" />;
     }
@@ -733,9 +733,9 @@ export default function EnhancedMeetingDashboard() {
 
   const getSectionColor = (title: string) => {
     switch (title.toLowerCase()) {
-      case 'old business': return 'text-blue-800';
+      case 'old business': return 'text-primary';
       case 'urgent items': return 'text-red-800';
-      case 'housekeeping': return 'text-green-800';
+      case 'housekeeping': return 'text-teal-800';
       case 'new business': return 'text-orange-800';
       default: return 'text-gray-800';
     }
@@ -933,7 +933,7 @@ export default function EnhancedMeetingDashboard() {
                         <Edit3 className="w-3 h-3" />
                         <span className="ml-1 md:hidden">Edit</span>
                       </Button>
-                      <Badge className="bg-green-100 text-green-800 text-xs">
+                      <Badge className="bg-teal-100 text-teal-800 text-xs">
                         Upcoming
                       </Badge>
                     </div>
@@ -1487,7 +1487,7 @@ export default function EnhancedMeetingDashboard() {
                   size="sm"
                   onClick={handleFinalizeAgenda}
                   disabled={isGeneratingPDF}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {isGeneratingPDF ? 'Generating...' : 'Finalize Agenda PDF'}
@@ -1498,13 +1498,13 @@ export default function EnhancedMeetingDashboard() {
 
           {/* Agenda Summary */}
           {(agendaSummary.agendaCount > 0 || agendaSummary.tabledCount > 0) && (
-            <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+            <Card className="bg-gradient-to-r from-teal-50 to-accent/10 border-primary/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-blue-900">Agenda Status</h3>
+                    <h3 className="font-medium text-primary">Agenda Status</h3>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-green-700">
+                      <span className="text-sm text-teal-700">
                         📅 {agendaSummary.agendaCount} for agenda
                       </span>
                       <span className="text-sm text-orange-700">
@@ -1521,7 +1521,7 @@ export default function EnhancedMeetingDashboard() {
                     size="sm"
                     onClick={handleFinalizeAgenda}
                     disabled={isGeneratingPDF || agendaSummary.agendaCount === 0}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     {isGeneratingPDF ? 'Generating...' : 'Download Agenda PDF'}
@@ -1716,7 +1716,7 @@ export default function EnhancedMeetingDashboard() {
                                 <Button
                                   size="sm"
                                   onClick={() => handleSendToAgenda(project.id)}
-                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                                 >
                                   📅 Send to Agenda
                                 </Button>
@@ -1891,13 +1891,13 @@ export default function EnhancedMeetingDashboard() {
                               {uploadedFiles[project.id] && uploadedFiles[project.id].length > 0 ? (
                                 <div className="space-y-2">
                                   {uploadedFiles[project.id].map((file, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 p-2 bg-blue-50 rounded text-sm border border-blue-200">
-                                      <FileText className="w-4 h-4 text-blue-600" />
-                                      <span className="flex-1 text-blue-800">{file.name}</span>
+                                    <div key={idx} className="flex items-center gap-2 p-2 bg-teal-50 rounded text-sm border border-teal-200">
+                                      <FileText className="w-4 h-4 text-primary" />
+                                      <span className="flex-1 text-primary">{file.name}</span>
                                       <Button 
                                         size="sm" 
                                         variant="ghost" 
-                                        className="h-6 px-2 text-blue-600 hover:text-blue-800"
+                                        className="h-6 px-2 text-primary hover:text-primary/80"
                                         onClick={() => window.open(file.url, '_blank')}
                                       >
                                         View
