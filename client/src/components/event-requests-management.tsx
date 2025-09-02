@@ -1363,39 +1363,76 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
                 
-                {/* Refrigeration Toggle */}
+                {/* Refrigeration Status */}
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium">Refrigeration:</span>
-                  <div className="flex space-x-1">
-                    {canEditField('hasRefrigeration') ? (
-                      <>
+                  {editingField === 'refrigeration' && editingEventId === request.id ? (
+                    <div className="flex space-x-2 items-center">
+                      <div className="flex space-x-1">
                         <button
-                          className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === true ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-green-50'}`}
-                          onClick={() => handleAutosave(request.id, 'hasRefrigeration', true)}
+                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === true ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-green-50'}`}
+                          onClick={() => setTempValues(prev => ({ ...prev, refrigeration: true }))}
                         >
                           ✓ Available
                         </button>
                         <button
-                          className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 hover:bg-red-50'}`}
-                          onClick={() => handleAutosave(request.id, 'hasRefrigeration', false)}
+                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 hover:bg-red-50'}`}
+                          onClick={() => setTempValues(prev => ({ ...prev, refrigeration: false }))}
                         >
                           ❌ None
                         </button>
                         <button
-                          className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === null || request.hasRefrigeration === undefined ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600 hover:bg-yellow-50'}`}
-                          onClick={() => handleAutosave(request.id, 'hasRefrigeration', null)}
+                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === null || tempValues.refrigeration === undefined ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600 hover:bg-yellow-50'}`}
+                          onClick={() => setTempValues(prev => ({ ...prev, refrigeration: null }))}
                         >
                           ❓ Unknown
                         </button>
-                      </>
-                    ) : (
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          handleTrackChange(request.id, 'hasRefrigeration', tempValues.refrigeration);
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-500">
-                        {request.hasRefrigeration === true ? '✓ Available' : 
-                         request.hasRefrigeration === false ? '❌ None' : 
+                        {getDisplayValue(request, 'hasRefrigeration') === true ? '✓ Available' : 
+                         getDisplayValue(request, 'hasRefrigeration') === false ? '❌ None' : 
                          '❓ Unknown'}
                       </span>
-                    )}
-                  </div>
+                      {canEditField('hasRefrigeration') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField('refrigeration');
+                            setEditingEventId(request.id);
+                            setTempValues({ refrigeration: getDisplayValue(request, 'hasRefrigeration') });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
