@@ -345,40 +345,42 @@ export default function ImportantDocuments() {
                       {logo.type}
                     </Badge>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-6 p-6">
                     {/* Logo Preview */}
                     <div 
-                      className="w-full h-32 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden"
+                      className="w-full h-40 rounded-xl border-0 shadow-inner flex items-center justify-center overflow-hidden group-hover:shadow-lg transition-all duration-300"
                       style={{ backgroundColor: logo.bgColor }}
                     >
                       <img 
                         src={`/public-objects/LOGOS/${logo.filename}`}
                         alt={logo.name}
-                        className="max-w-full max-h-full object-contain p-2"
+                        className="max-w-full max-h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
                           e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEg0NFY0NEgyMFYyMFoiIGZpbGw9IiNkMWQ1ZGIiLz4KPC9zdmc+';
                         }}
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <p className="text-sm text-[#646464]">
+                    <div className="space-y-4">
+                      <p className="text-base text-gray-700 leading-relaxed font-medium">
                         {logo.description}
                       </p>
-                      <p className="text-xs text-[#646464] font-medium">
-                        Best for: {logo.usage}
-                      </p>
+                      <div className="bg-[#236383]/5 p-4 rounded-lg">
+                        <p className="text-sm text-[#236383] font-semibold">
+                          Best for: {logo.usage}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-3 pt-2">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
                             variant="outline"
-                            size="sm"
-                            className="flex-1 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                            size="lg"
+                            className="flex-1 h-11 font-semibold border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white transition-all duration-200 rounded-xl shadow-sm hover:shadow-md"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="h-5 w-5 mr-2" />
                             Preview
                           </Button>
                         </DialogTrigger>
@@ -421,10 +423,10 @@ export default function ImportantDocuments() {
 
                       <Button
                         onClick={() => handleLogoDownload(logo.filename, logo.name)}
-                        size="sm"
-                        className="flex-1 bg-[#236383] hover:bg-[#1a4e66]"
+                        size="lg"
+                        className="flex-1 h-11 font-semibold bg-gradient-to-r from-[#236383] to-[#1a4e66] hover:from-[#1a4e66] hover:to-[#0f3a52] text-white transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                       >
-                        <Download className="h-4 w-4 mr-1" />
+                        <Download className="h-5 w-5 mr-2" />
                         Download
                       </Button>
                     </div>
