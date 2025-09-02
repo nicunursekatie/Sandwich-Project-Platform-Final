@@ -198,19 +198,17 @@ export default function ImportantDocuments() {
         </div>
 
         <Tabs defaultValue="documents" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-auto p-0 mb-6 bg-white rounded-lg border-2 border-[#236383]" style={{ backgroundColor: 'white !important' }}>
+          <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-6 border-2 border-[#236383]">
             <TabsTrigger 
               value="documents" 
-              className="flex items-center gap-2 py-3 px-6 rounded-l-md font-medium transition-all duration-200 bg-white !bg-white text-[#236383] border-0 data-[state=active]:bg-[#236383] data-[state=active]:text-white hover:bg-[#f0f9ff] data-[state=active]:hover:bg-[#1a4e66]"
-              style={{ backgroundColor: 'white !important' }}
+              className="flex items-center gap-2 py-3 px-6 rounded-l-md font-medium text-[#236383]"
             >
               <FileText className="h-4 w-4" />
               Documents
             </TabsTrigger>
             <TabsTrigger 
               value="logos" 
-              className="flex items-center gap-2 py-3 px-6 rounded-r-md font-medium transition-all duration-200 bg-white !bg-white text-[#236383] border-0 data-[state=active]:bg-[#236383] data-[state=active]:text-white hover:bg-[#f0f9ff] data-[state=active]:hover:bg-[#1a4e66]"
-              style={{ backgroundColor: 'white !important' }}
+              className="flex items-center gap-2 py-3 px-6 rounded-r-md font-medium text-[#236383]"
             >
               <FileImage className="h-4 w-4" />
               Logos & Branding
