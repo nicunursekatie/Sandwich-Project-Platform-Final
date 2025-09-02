@@ -1230,19 +1230,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check permissions using shared auth utils
         const { hasPermission, PERMISSIONS } = await import("@shared/auth-utils");
         
-        const canEditAll = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_ALL) ||
-                          hasPermission(req.user, PERMISSIONS.MANAGE_ALL_PROJECTS);
-        const canEditOwn = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_OWN) && 
-                          (existingProject.createdBy === req.user.id);
+        // Special handling for "Send to Agenda" - this is a meeting management function, not project editing
+        const isAgendaUpdate = updates.reviewInNextMeeting !== undefined && Object.keys(updates).length === 1;
+        
+        if (isAgendaUpdate) {
+          // For agenda updates, only need MEETINGS_MANAGE permission
+          const canManageMeetings = hasPermission(req.user, PERMISSIONS.MEETINGS_MANAGE);
+          console.log('Agenda update detected - checking MEETINGS_MANAGE permission:', canManageMeetings);
+          
+          if (!canManageMeetings) {
+            console.log('Permission denied for agenda update - user lacks MEETINGS_MANAGE:', req.user?.email);
+            return res.status(403).json({ 
+              message: "Permission denied. You need meeting management permissions to send projects to agenda." 
+            });
+          }
+        } else {
+          // For other project updates, use standard project edit permissions
+          const canEditAll = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_ALL) ||
+                            hasPermission(req.user, PERMISSIONS.MANAGE_ALL_PROJECTS);
+          const canEditOwn = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_OWN) && 
+                            (existingProject.createdBy === req.user.id);
 
-        console.log('Permission check - canEditAll:', canEditAll, 'canEditOwn:', canEditOwn);
-        console.log('User permissions include MANAGE_ALL_PROJECTS:', hasPermission(req.user, PERMISSIONS.MANAGE_ALL_PROJECTS));
+          console.log('Regular project edit - canEditAll:', canEditAll, 'canEditOwn:', canEditOwn);
 
-        if (!canEditAll && !canEditOwn) {
-          console.log('Permission denied for user:', req.user?.email);
-          return res.status(403).json({ 
-            message: "Permission denied. You can only edit your own projects or need admin privileges." 
-          });
+          if (!canEditAll && !canEditOwn) {
+            console.log('Permission denied for project edit:', req.user?.email);
+            return res.status(403).json({ 
+              message: "Permission denied. You can only edit your own projects or need admin privileges." 
+            });
+          }
         }
 
         // Filter out fields that shouldn't be updated directly
