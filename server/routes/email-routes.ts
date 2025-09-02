@@ -303,4 +303,73 @@ router.post('/:messageId/read', isAuthenticated, async (req: any, res) => {
   }
 });
 
+// Event-specific email endpoint with attachment support
+router.post('/event', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { 
+      eventRequestId, 
+      recipientEmail, 
+      recipientName, 
+      subject, 
+      content, 
+      isDraft, 
+      attachments = [],
+      contextType,
+      contextId,
+      contextTitle 
+    } = req.body;
+
+    if (!subject || !content) {
+      return res.status(400).json({ message: 'Subject and content are required' });
+    }
+
+    if (!isDraft && !recipientEmail) {
+      return res.status(400).json({ message: 'Recipient email is required' });
+    }
+
+    console.log(`[Event Email API] Sending event email from ${user.email} to ${recipientEmail}`);
+    console.log(`[Event Email API] Attachments: ${attachments.join(', ')}`);
+
+    // Enhanced content with attachment list
+    let enhancedContent = content;
+    if (attachments.length > 0 && !isDraft) {
+      enhancedContent += `\n\n📎 Attachments:\n${attachments.map(att => `• ${att}`).join('\n')}`;
+    }
+
+    const newEmail = await emailService.sendEmail({
+      senderId: user.id,
+      senderName: user.name || user.email,
+      senderEmail: user.email,
+      recipientId: 'external',
+      recipientName: recipientName || 'Event Contact',
+      recipientEmail: recipientEmail,
+      subject,
+      content: enhancedContent,
+      isDraft,
+      contextType: contextType || 'event_request',
+      contextId: contextId || eventRequestId?.toString(),
+      contextTitle: contextTitle || `Event Communication`
+    });
+
+    console.log(`[Event Email API] Email ${isDraft ? 'saved as draft' : 'sent'} successfully`);
+    res.json({ 
+      success: true, 
+      message: isDraft ? 'Draft saved successfully' : 'Email sent successfully',
+      emailId: newEmail.id 
+    });
+
+  } catch (error) {
+    console.error('[Event Email API] Error:', error);
+    res.status(500).json({ 
+      message: 'Failed to send email',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

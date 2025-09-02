@@ -17,6 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { DriverSelection } from "./driver-selection";
 import EventVolunteerSignup from "./event-volunteer-signup";
+import { EventEmailComposer } from "./event-email-composer";
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24: string): string => {
@@ -178,6 +179,8 @@ export default function EventRequestsManagement() {
   const [detailsRequest, setDetailsRequest] = useState<EventRequest | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [pastEventsSortOrder, setPastEventsSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [emailComposerRequest, setEmailComposerRequest] = useState<EventRequest | null>(null);
   const [pastEventsPage, setPastEventsPage] = useState(1);
   const [pastEventsPerPage] = useState(10);
   // Sorting state for all tabs
@@ -831,13 +834,25 @@ export default function EventRequestsManagement() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
+                  setEmailComposerRequest(request);
+                  setShowEmailComposer(true);
+                }}
+                className="h-8 w-8 p-0 text-teal-600 hover:text-teal-800 hover:bg-teal-100"
+                title="Email Contact"
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
                   setSelectedRequest(request);
                   setCurrentEditingStatus(request.status);
                   setShowEditDialog(true);
                 }}
-                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               >
-                <Edit className="h-3 w-3" />
+                <Edit className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -909,6 +924,18 @@ export default function EventRequestsManagement() {
               })()}
             </div>
             <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmailComposerRequest(request);
+                  setShowEmailComposer(true);
+                }}
+                className="text-teal-600 hover:text-teal-800 bg-gradient-to-r from-teal-50 to-cyan-100 hover:from-teal-100 hover:to-cyan-200"
+              >
+                <Mail className="h-4 w-4 mr-1" />
+                Email Contact
+              </Button>
               <Button
                 variant="default"
                 size="sm"
@@ -1080,6 +1107,19 @@ export default function EventRequestsManagement() {
               )}
             </div>
             <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmailComposerRequest(request);
+                  setShowEmailComposer(true);
+                }}
+                className="text-teal-600 hover:text-teal-800 bg-gradient-to-r from-teal-50 to-cyan-100 hover:from-teal-100 hover:to-cyan-200"
+              >
+                <Mail className="h-4 w-4 mr-1" />
+                Email Contact
+              </Button>
+              
               {/* Show "Complete Primary Contact" only for new requests in Event Requests tab */}
               {activeTab === 'requests' && request.status === 'new' && !request.contactCompletedAt && (
                 <Button
@@ -1153,18 +1193,32 @@ export default function EventRequestsManagement() {
           <div className="flex flex-col items-end space-y-2">
             <Badge variant="secondary" className="text-xs">Event Completed</Badge>
             {/* Edit button for admins */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedRequest(request);
-                setShowEditDialog(true);
-              }}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Edit Event
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmailComposerRequest(request);
+                  setShowEmailComposer(true);
+                }}
+                className="text-teal-600 hover:text-teal-800 bg-gradient-to-r from-teal-50 to-cyan-100 hover:from-teal-100 hover:to-cyan-200"
+              >
+                <Mail className="h-4 w-4 mr-1" />
+                Email Contact
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setShowEditDialog(true);
+                }}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Edit Event
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -2707,6 +2761,18 @@ export default function EventRequestsManagement() {
             </form>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Email Composer Dialog */}
+      {showEmailComposer && emailComposerRequest && (
+        <EventEmailComposer
+          eventRequest={emailComposerRequest}
+          isOpen={showEmailComposer}
+          onClose={() => {
+            setShowEmailComposer(false);
+            setEmailComposerRequest(null);
+          }}
+        />
       )}
     </div>
   );
