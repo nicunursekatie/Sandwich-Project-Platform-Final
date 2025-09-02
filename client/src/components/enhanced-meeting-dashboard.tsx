@@ -317,6 +317,15 @@ export default function EnhancedMeetingDashboard() {
 
   // Handler for agenda actions
   const handleSendToAgenda = useCallback((projectId: number) => {
+    // Debug logging for Christine's issue
+    console.log('🔍 Send to Agenda Debug Info:', {
+      user: user?.email,
+      role: user?.role,
+      permissions: user?.permissions?.length || 0,
+      projectId,
+      timestamp: new Date().toISOString()
+    });
+    
     setProjectAgendaStatus(prev => ({ ...prev, [projectId]: 'agenda' }));
     setMinimizedProjects(prev => new Set([...Array.from(prev), projectId]));
     updateProjectDiscussionMutation.mutate({ 
@@ -327,7 +336,7 @@ export default function EnhancedMeetingDashboard() {
       title: "Added to Agenda",
       description: "Project has been added to this week's meeting agenda",
     });
-  }, [updateProjectDiscussionMutation, toast]);
+  }, [updateProjectDiscussionMutation, toast, user]);
 
   const handleTableProject = useCallback((projectId: number) => {
     setProjectAgendaStatus(prev => ({ ...prev, [projectId]: 'tabled' }));

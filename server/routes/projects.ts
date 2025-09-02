@@ -228,9 +228,29 @@ router.post("/projects", isAuthenticated, sanitizeMiddleware, async (req, res) =
 });
 
 router.patch("/projects/:id", isAuthenticated, sanitizeMiddleware, async (req, res) => {
-  // Check if user has permission to edit projects
-  if (!canEditProjects(req)) {
-    return res.status(403).json({ error: "Insufficient permissions to edit projects" });
+  const updates = req.body;
+  
+  // Check if this is a meeting-related update (agenda planning functions)
+  const isMeetingRelatedUpdate = 'reviewInNextMeeting' in updates || 
+                                'meetingDiscussionPoints' in updates || 
+                                'meetingDecisionItems' in updates;
+  
+  // Check if this is ONLY meeting-related fields (no other project fields being updated)
+  const meetingOnlyFields = ['reviewInNextMeeting', 'meetingDiscussionPoints', 'meetingDecisionItems'];
+  const isMeetingOnlyUpdate = Object.keys(updates).every(key => meetingOnlyFields.includes(key));
+  
+  if (isMeetingRelatedUpdate && isMeetingOnlyUpdate) {
+    // For meeting-only updates, check meeting management permissions
+    if (!hasPermission(req, PERMISSIONS.MEETINGS_MANAGE)) {
+      return res.status(403).json({ 
+        error: "You need meeting management permissions to update agenda items and discussion points" 
+      });
+    }
+  } else {
+    // For regular project edits, check project edit permissions
+    if (!canEditProjects(req)) {
+      return res.status(403).json({ error: "Insufficient permissions to edit projects" });
+    }
   }
   try {
     const id = parseInt(req.params.id);
