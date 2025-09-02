@@ -110,6 +110,14 @@ interface EventRequest {
   organizationExists: boolean;
   duplicateNotes?: string;
   createdAt: string;
+  isUnresponsive?: boolean;
+  contactAttempts?: number;
+  lastContactAttempt?: string;
+  unresponsiveAfterAttempts?: number;
+  firstAttemptDate?: string;
+  lastAttemptDate?: string;
+  unresponsiveStatus?: string;
+  unresponsiveNotes?: string;
   updatedAt: string;
   contactedAt?: string;
   createdBy?: string;
@@ -511,6 +519,24 @@ export default function EventRequestsManagement() {
     onError: (error: any) => {
       toast({ 
         title: "Error importing historical events", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, ...data }: any) => apiRequest("PUT", `/api/event-requests/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      toast({ 
+        title: "Event request updated", 
+        description: "The event request has been updated successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error updating event request", 
         description: error.message,
         variant: "destructive" 
       });
