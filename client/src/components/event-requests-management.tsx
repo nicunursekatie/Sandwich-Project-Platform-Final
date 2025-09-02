@@ -133,11 +133,11 @@ interface EventRequest {
 }
 
 const statusColors = {
-  new: "bg-teal-100 text-teal-800",
-  contact_completed: "bg-orange-100 text-orange-800",
-  scheduled: "bg-yellow-100 text-yellow-800",
-  completed: "bg-gray-100 text-gray-800",
-  declined: "bg-rose-100 text-white border-2 font-bold shadow-lg"
+  new: "bg-gradient-to-r from-teal-50 to-cyan-100 text-teal-800 border border-teal-200",
+  contact_completed: "bg-gradient-to-r from-orange-50 to-amber-100 text-orange-800 border border-orange-200",
+  scheduled: "bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200",
+  completed: "bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200",
+  declined: "bg-gradient-to-r text-white border-2 font-bold shadow-lg"
 };
 
 const statusIcons = {
@@ -701,7 +701,7 @@ export default function EventRequestsManagement() {
     
     if (status === 'declined') {
       return (
-        <Badge className="bg-rose-100 text-white border-2 font-bold shadow-lg" style={{backgroundColor: '#A31C41', borderColor: '#A31C41'}}>
+        <Badge className="text-white border-2 font-bold shadow-lg" style={{background: 'linear-gradient(135deg, #A31C41 0%, #8B1538 100%)', borderColor: '#A31C41'}}>
           <Icon className="w-3 h-3 mr-1" />
           {option?.label || status}
         </Badge>
@@ -730,7 +730,7 @@ export default function EventRequestsManagement() {
 
   // Function to render enhanced scheduled event cards
   const renderScheduledEventCard = (request: EventRequest) => (
-    <Card key={request.id} className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-teal-500 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-yellow-50' : ''}`}>
+    <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-gradient-to-br from-white to-teal-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''}`}>
       <CardHeader className="pb-3">
         {/* Prominent Date Display */}
         {request.desiredEventDate && (
@@ -930,7 +930,7 @@ export default function EventRequestsManagement() {
 
   // Function to render standard event cards (for requests and past events)
   const renderStandardEventCard = (request: EventRequest) => (
-    <Card key={request.id} className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383] ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-yellow-50' : ''}`}>
+    <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-[#236383] bg-gradient-to-br from-white to-orange-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -1119,7 +1119,7 @@ export default function EventRequestsManagement() {
 
   // Function to render comprehensive past event cards with all details
   const renderPastEventCard = (request: EventRequest) => (
-    <Card key={request.id} className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-gray-500 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-yellow-50' : ''}`}>
+    <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-gray-500 bg-gradient-to-br from-white to-gray-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">

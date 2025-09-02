@@ -205,19 +205,19 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'new':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">New Request</Badge>;
+        return <Badge className="bg-gradient-to-r from-teal-100 to-cyan-200 text-teal-800 border border-teal-300 shadow-sm">New Request</Badge>;
       case 'contacted':
-        return <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">Contacted</Badge>;
+        return <Badge className="bg-gradient-to-r from-emerald-100 to-teal-200 text-teal-700 border border-teal-300 shadow-sm">Contacted</Badge>;
       case 'contact_completed':
-        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Event Complete</Badge>;
+        return <Badge className="bg-gradient-to-r from-orange-100 to-amber-200 text-orange-800 border border-orange-300 shadow-sm">Event Complete</Badge>;
       case 'scheduled':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Upcoming Event</Badge>;
+        return <Badge className="bg-gradient-to-r from-yellow-100 to-orange-200 text-yellow-800 border border-yellow-300 shadow-sm">Upcoming Event</Badge>;
       case 'completed':
-        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Completed</Badge>;
+        return <Badge className="bg-gradient-to-r from-green-100 to-emerald-200 text-green-800 border border-green-300 shadow-sm">Completed</Badge>;
       case 'past':
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Past Event</Badge>;
+        return <Badge className="bg-gradient-to-r from-gray-100 to-slate-200 text-gray-700 border border-gray-300 shadow-sm">Past Event</Badge>;
       case 'declined':
-        return <Badge variant="outline" className="bg-rose-100 text-white border-2 font-bold shadow-lg" style={{backgroundColor: '#A31C41', borderColor: '#A31C41'}}>🚫 EVENT POSTPONED</Badge>;
+        return <Badge className="text-white border-2 font-bold shadow-lg" style={{background: 'linear-gradient(135deg, #A31C41 0%, #8B1538 100%)', borderColor: '#A31C41'}}>🚫 EVENT POSTPONED</Badge>;
       default:
         return null; // Remove confusing "Unknown" badges
     }
@@ -227,8 +227,8 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
     return (
       <div className="space-y-6 p-6">
         <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-            <Building className="w-6 h-6 text-teal-600" />
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-100 to-cyan-200 shadow-sm">
+            <Building className="w-6 h-6 text-teal-700" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
@@ -362,7 +362,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
       ) : (
         <div className="space-y-8">
           {paginatedGroups.map((group, groupIndex) => (
-            <div key={`${group.name}-${groupIndex}`} className="bg-gray-50 rounded-lg border p-6">
+            <div key={`${group.name}-${groupIndex}`} className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm">
               {/* Group Header */}
               <div className="mb-6 pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
@@ -391,7 +391,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
               {/* Department Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {group.departments.map((org, index) => (
-                  <Card key={`${org.organizationName}-${org.contactName}-${index}`} className={`hover:shadow-md transition-all duration-200 border-l-4 ${org.status === 'declined' ? 'bg-rose-50 border-l-4 border-2 shadow-lg' : 'bg-white border-l-[#FBAD3F]'}`} style={org.status === 'declined' ? {borderLeftColor: '#A31C41', borderColor: '#A31C41'} : {}}>
+                  <Card key={`${org.organizationName}-${org.contactName}-${index}`} className={`hover:shadow-lg transition-all duration-300 border-l-4 ${org.status === 'declined' ? 'border-l-4 border-2 shadow-xl' : 'bg-gradient-to-br from-white to-orange-50 border-l-4'}`} style={org.status === 'declined' ? {background: 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)', borderLeftColor: '#A31C41', borderColor: '#A31C41'} : {borderLeftColor: '#FBAD3F'}}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
