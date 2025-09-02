@@ -144,6 +144,12 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
       description: "Form for tracking and documenting community service hours",
       category: "Forms",
       path: "/attached_assets/TSP COMMUNITY SERVICE HOURS (1) (1) (1).pdf"
+    },
+    {
+      title: "ACORD Document",
+      description: "Official ACORD documentation for organizational reference",
+      category: "Forms",
+      path: "/attached_assets/ACORD®_1756831296864.pdf"
     }
   ];
 
