@@ -642,7 +642,13 @@ export default function GmailStyleInbox() {
             {folders.map((folder) => (
               <button
                 key={folder.id}
-                onClick={() => setActiveFolder(folder.id)}
+                onClick={() => {
+                  setActiveFolder(folder.id);
+                  // On mobile, collapse sidebar when selecting a folder to show content
+                  if (screenSize === 'mobile') {
+                    setIsSidebarCollapsed(true);
+                  }
+                }}
                 className={`
                   w-full flex items-center justify-between px-3 py-2 mb-1 rounded-lg text-left transition-colors font-['Roboto']
                   ${activeFolder === folder.id 
