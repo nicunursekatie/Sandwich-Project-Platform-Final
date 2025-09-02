@@ -1701,7 +1701,7 @@ export default function EnhancedMeetingDashboard() {
                                       {getCategoryIcon(project.category)} {project.category}
                                     </Badge>
                                   )}
-                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                  <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700">
                                     Last discussed: {lastDiscussed}
                                   </Badge>
                                 </div>
@@ -1820,18 +1820,18 @@ export default function EnhancedMeetingDashboard() {
                             </div>
 
                             {/* Meeting Discussion Interface - Redesigned for clarity */}
-                            <div className="space-y-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <div className="space-y-6 bg-teal-50 p-4 rounded-lg border border-teal-200">
                               <div className="text-center">
-                                <h4 className="font-medium text-blue-900 mb-1">Meeting Discussion Prep</h4>
-                                <p className="text-sm text-blue-700">Only fill out if this project needs team discussion this week</p>
+                                <h4 className="font-medium text-primary mb-1">Meeting Discussion Prep</h4>
+                                <p className="text-sm text-teal-700">Only fill out if this project needs team discussion this week</p>
                               </div>
                               
                               <div className="space-y-4">
                                 <div>
-                                  <Label className="text-sm font-semibold text-blue-900 mb-2 block">
+                                  <Label className="text-sm font-semibold text-primary mb-2 block">
                                     💬 What do we need to talk about?
                                   </Label>
-                                  <p className="text-xs text-blue-700 mb-2">
+                                  <p className="text-xs text-teal-700 mb-2">
                                     Examples: "Blocked on X", "Need feedback on approach", "Budget concerns", "Timeline slipping"
                                   </p>
                                   <Textarea
@@ -1847,10 +1847,10 @@ export default function EnhancedMeetingDashboard() {
                               </div>
                               
                               <div>
-                                <Label className="text-sm font-semibold text-blue-900 mb-2 block">
+                                <Label className="text-sm font-semibold text-primary mb-2 block">
                                   ✅ What decisions need to be made?
                                 </Label>
-                                <p className="text-xs text-blue-700 mb-2">
+                                <p className="text-xs text-teal-700 mb-2">
                                   Examples: "Approve budget of $X", "Choose between option A/B", "Assign person Y to task Z"
                                 </p>
                                 <Textarea
