@@ -18,9 +18,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 // Removed formatDateForDisplay import as we now use toLocaleDateString directly
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
-import { DriverSelection } from "./driver-selection";
-import EventVolunteerSignup from "./event-volunteer-signup";
-import { EventEmailComposer } from "./event-email-composer";
+// import { DriverSelection } from "./driver-selection";
+// import EventVolunteerSignup from "./event-volunteer-signup";
+// import { EventEmailComposer } from "./event-email-composer";
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24: string): string => {
@@ -3696,7 +3696,7 @@ export default function EventRequestsManagement() {
               </div>
 
               {/* Drivers Section - Enhanced with Database Integration */}
-              <DriverSelection
+              {/* <DriverSelection
                 eventId={detailsRequest.id}
                 currentDrivers={(detailsRequest as any).assignedDriverIds || []}
                 currentDriverDetails={(detailsRequest as any).driverDetails}
@@ -3745,12 +3745,12 @@ export default function EventRequestsManagement() {
 
               {/* Volunteer Signup Section */}
               <div className="border-t pt-6">
-                <EventVolunteerSignup 
+                {/* <EventVolunteerSignup 
                   eventId={detailsRequest.id}
                   eventTitle={detailsRequest.organizationName}
                   driversNeeded={(detailsRequest as any).driversNeeded || 0}
                   speakersNeeded={(detailsRequest as any).speakersNeeded || 0}
-                />
+                /> */}
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
@@ -3904,14 +3904,7 @@ export default function EventRequestsManagement() {
 
       {/* Email Composer Dialog */}
       {showEmailComposer && emailComposerRequest && (
-        <EventEmailComposer
-          eventRequest={emailComposerRequest}
-          isOpen={showEmailComposer}
-          onClose={() => {
-            setShowEmailComposer(false);
-            setEmailComposerRequest(null);
-          }}
-        />
+        <div>Email Composer temporarily disabled</div>
       )}
 
       {/* Unresponsive Contact Management Dialog */}
