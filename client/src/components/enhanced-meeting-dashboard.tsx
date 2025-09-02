@@ -1608,15 +1608,61 @@ export default function EnhancedMeetingDashboard() {
                                     </div>
                                   )}
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleExpandProject(project.id)}
-                                  className="ml-4"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                  Edit
-                                </Button>
+                                <div className="flex gap-2 ml-4">
+                                  {agendaStatus === 'agenda' ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleExpandProject(project.id)}
+                                        className="flex items-center gap-1"
+                                      >
+                                        <FolderOpen className="w-4 h-4" />
+                                        Reopen Project
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleTableProject(project.id)}
+                                        className="flex items-center gap-1 text-orange-700 hover:text-orange-800"
+                                      >
+                                        <X className="w-4 h-4" />
+                                        Remove from Agenda
+                                      </Button>
+                                    </>
+                                  ) : agendaStatus === 'tabled' ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleExpandProject(project.id)}
+                                        className="flex items-center gap-1"
+                                      >
+                                        <FolderOpen className="w-4 h-4" />
+                                        Reopen Project
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleSendToAgenda(project.id)}
+                                        className="flex items-center gap-1 text-green-700 hover:text-green-800"
+                                      >
+                                        <CalendarDays className="w-4 h-4" />
+                                        Send to Agenda
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleExpandProject(project.id)}
+                                      className="flex items-center gap-1"
+                                    >
+                                      <Edit3 className="w-4 h-4" />
+                                      Edit
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
