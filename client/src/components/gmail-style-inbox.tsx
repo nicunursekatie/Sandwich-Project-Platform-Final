@@ -682,16 +682,8 @@ export default function GmailStyleInbox() {
       
       {/* Main Content Area - Message List + Details + Kudos */}
       <div className="flex-1 flex bg-yellow-200 min-w-0 overflow-hidden" style={{ minHeight: '400px' }}>
-        {/* Message List Panel */}
-        <div className={`
-          ${isMessageListCollapsed ? 'hidden' : 'flex'} 
-          ${selectedMessage && screenSize === 'desktop' ? 'w-full lg:w-1/3 lg:min-w-[300px] lg:max-w-[400px]' : ''}
-          ${selectedMessage && screenSize === 'large-tablet' ? 'w-2/5 min-w-[260px]' : ''}
-          ${selectedMessage && (screenSize === 'small-tablet' || screenSize === 'mobile') ? 'flex-1' : ''}
-          ${!selectedMessage ? 'flex-1' : ''}
-          border-r flex-col bg-white min-w-0 overflow-hidden
-          transition-all duration-300 ease-in-out
-        `}>
+        {/* Message List Panel - Simplified for mobile */}
+        <div className="flex-1 flex-col bg-white min-w-0 overflow-hidden border-r" style={{ display: 'flex' }}>
           {/* Toolbar */}
           <div className="border-b p-4 space-y-3 bg-white">
             <div className="flex items-center justify-between">
