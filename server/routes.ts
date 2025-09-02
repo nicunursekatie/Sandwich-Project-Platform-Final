@@ -1227,11 +1227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Existing project found:', existingProject.title);
         console.log('Current supportPeople:', existingProject.supportPeople);
 
-        // Check permissions - ownership-based or admin
-        const canEditAll = req.user?.permissions?.includes('PROJECTS_EDIT_ALL') || 
-                          req.user?.role === 'admin' || req.user?.role === 'super_admin';
+        // Check permissions using shared auth utils
+        const { hasPermission, PERMISSIONS } = await import("@shared/auth-utils");
         
-        const canEditOwn = req.user?.permissions?.includes('PROJECTS_EDIT_OWN') && 
+        const canEditAll = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_ALL);
+        const canEditOwn = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_OWN) && 
                           (existingProject.createdBy === req.user.id);
 
         console.log('Permission check - canEditAll:', canEditAll, 'canEditOwn:', canEditOwn);
