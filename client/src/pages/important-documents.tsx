@@ -300,34 +300,6 @@ export default function ImportantDocuments() {
           </TabsContent>
 
           <TabsContent value="logos" className="space-y-8">
-            {/* Usage Guidelines */}
-            <Card className="border-0 bg-gradient-to-br from-[#236383]/5 to-blue-50/30 shadow-lg rounded-2xl">
-              <CardHeader className="pb-6 bg-gradient-to-r from-[#236383]/10 to-blue-100/20 rounded-t-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#236383] rounded-lg">
-                    <FileText className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-[#236383] text-2xl font-bold">Brand Usage Guidelines</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 p-8">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
-                    <p className="text-gray-700 text-base leading-relaxed">
-                      Use the high-resolution versions for professional printing
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
-                    <p className="text-gray-700 text-base leading-relaxed">
-                      Choose the transparent versions when placing over photos or colored backgrounds
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Logo Grid - Professional design */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {logoFiles.map((logo) => (
