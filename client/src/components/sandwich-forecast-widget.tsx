@@ -1,0 +1,252 @@
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, TrendingUp, Users, AlertTriangle } from "lucide-react";
+
+interface EventRequest {
+  id: number;
+  organizationName: string;
+  desiredEventDate?: string;
+  estimatedSandwichCount?: number;
+  status: 'new' | 'contact_completed' | 'scheduled' | 'completed' | 'declined';
+}
+
+export default function SandwichForecastWidget() {
+  const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
+    queryKey: ['/api/event-requests/all'],
+    queryFn: async () => {
+      const response = await fetch('/api/event-requests?all=true');
+      if (!response.ok) throw new Error('Failed to fetch event requests');
+      return response.json();
+    }
+  });
+
+  // Weekly sandwich prediction calculator
+  const weeklySandwichForecast = useMemo(() => {
+    if (!eventRequests) return [];
+
+    const weeklyData: Record<string, {
+      weekStartDate: string;
+      weekEndDate: string;
+      events: EventRequest[];
+      totalEstimated: number;
+      confirmedCount: number;
+      pendingCount: number;
+    }> = {};
+
+    // Helper function to get the Sunday of a given date (week start)
+    const getWeekStart = (date: Date) => {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = d.getDate() - day;
+      d.setDate(diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+
+    // Helper function to get week end (Saturday)
+    const getWeekEnd = (weekStart: Date) => {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + 6);
+      d.setHours(23, 59, 59, 999);
+      return d;
+    };
+
+    // Get current date for filtering future events
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Process events with dates and estimated sandwich counts (future events only)
+    const relevantEvents = eventRequests.filter(request => {
+      if (!request.desiredEventDate || !request.estimatedSandwichCount || request.estimatedSandwichCount <= 0) {
+        return false;
+      }
+
+      // Only include events that are likely to happen
+      if (!['contact_completed', 'scheduled', 'completed'].includes(request.status)) {
+        return false;
+      }
+
+      try {
+        const eventDate = new Date(request.desiredEventDate);
+        if (isNaN(eventDate.getTime())) return false;
+        
+        // Only future events
+        return eventDate >= today;
+      } catch (error) {
+        return false;
+      }
+    });
+
+    relevantEvents.forEach(request => {
+      try {
+        const eventDate = new Date(request.desiredEventDate!);
+        const weekStart = getWeekStart(eventDate);
+        const weekEnd = getWeekEnd(weekStart);
+        const weekKey = weekStart.toISOString().split('T')[0];
+
+        if (!weeklyData[weekKey]) {
+          weeklyData[weekKey] = {
+            weekStartDate: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            weekEndDate: weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            events: [],
+            totalEstimated: 0,
+            confirmedCount: 0,
+            pendingCount: 0
+          };
+        }
+
+        weeklyData[weekKey].events.push(request);
+        weeklyData[weekKey].totalEstimated += request.estimatedSandwichCount || 0;
+        
+        if (request.status === 'completed' || request.status === 'scheduled') {
+          weeklyData[weekKey].confirmedCount += request.estimatedSandwichCount || 0;
+        } else {
+          weeklyData[weekKey].pendingCount += request.estimatedSandwichCount || 0;
+        }
+      } catch (error) {
+        console.warn('Error processing event date:', request.desiredEventDate);
+      }
+    });
+
+    // Convert to array and sort by week start date
+    return Object.entries(weeklyData)
+      .map(([weekKey, data]) => ({
+        weekKey,
+        ...data
+      }))
+      .sort((a, b) => a.weekKey.localeCompare(b.weekKey))
+      .slice(0, 8); // Show next 8 weeks
+  }, [eventRequests]);
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    if (!weeklySandwichForecast.length) return { total: 0, confirmed: 0, pending: 0, events: 0 };
+
+    return weeklySandwichForecast.reduce((acc, week) => ({
+      total: acc.total + week.totalEstimated,
+      confirmed: acc.confirmed + week.confirmedCount,
+      pending: acc.pending + week.pendingCount,
+      events: acc.events + week.events.length
+    }), { total: 0, confirmed: 0, pending: 0, events: 0 });
+  }, [weeklySandwichForecast]);
+
+  if (isLoading) {
+    return (
+      <Card className="border-2 border-[#236383]/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-[#236383] flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Sandwich Forecast
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#236383]"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-2 border-[#236383]/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-[#236383] flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          Sandwich Forecast Tool
+        </CardTitle>
+        <p className="text-sm text-[#646464] mt-1">
+          Estimated sandwich totals from upcoming group events
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-[#236383]/10 rounded-lg p-3 text-center">
+            <div className="text-xl font-bold text-[#236383]">{totals.total.toLocaleString()}</div>
+            <div className="text-xs text-[#646464]">Total Estimated</div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-3 text-center">
+            <div className="text-xl font-bold text-green-700">{totals.confirmed.toLocaleString()}</div>
+            <div className="text-xs text-[#646464]">Confirmed</div>
+          </div>
+          <div className="bg-orange-50 rounded-lg p-3 text-center">
+            <div className="text-xl font-bold text-orange-700">{totals.pending.toLocaleString()}</div>
+            <div className="text-xs text-[#646464]">Pending</div>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-3 text-center">
+            <div className="text-xl font-bold text-blue-700">{totals.events}</div>
+            <div className="text-xs text-[#646464]">Events</div>
+          </div>
+        </div>
+
+        {weeklySandwichForecast.length === 0 ? (
+          <div className="text-center py-8 text-[#646464]">
+            <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+            <p className="text-lg font-medium">No upcoming events with sandwich estimates</p>
+            <p className="text-sm">Events need contact completion and sandwich count estimates to appear here</p>
+          </div>
+        ) : (
+          /* Weekly Breakdown */
+          <div className="space-y-3">
+            <h4 className="font-semibold text-[#236383] flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Weekly Breakdown (Next 8 Weeks)
+            </h4>
+            <div className="grid gap-3">
+              {weeklySandwichForecast.map((week, index) => (
+                <div key={week.weekKey} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium text-[#236383]">
+                      Week of {week.weekStartDate} - {week.weekEndDate}
+                    </div>
+                    <div className="text-sm text-[#646464] mt-1">
+                      {week.events.length} event{week.events.length !== 1 ? 's' : ''} scheduled
+                    </div>
+                    {week.events.length > 0 && (
+                      <div className="text-xs text-[#646464] mt-1 truncate">
+                        {week.events.slice(0, 2).map(e => e.organizationName).join(', ')}
+                        {week.events.length > 2 && ` +${week.events.length - 2} more`}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right ml-4">
+                    <div className="text-lg font-bold text-[#236383]">
+                      {week.totalEstimated.toLocaleString()}
+                    </div>
+                    <div className="flex gap-1 mt-1">
+                      {week.confirmedCount > 0 && (
+                        <Badge className="text-xs bg-green-100 text-green-700">
+                          {week.confirmedCount.toLocaleString()} confirmed
+                        </Badge>
+                      )}
+                      {week.pendingCount > 0 && (
+                        <Badge className="text-xs bg-orange-100 text-orange-700">
+                          {week.pendingCount.toLocaleString()} pending
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {weeklySandwichForecast.length > 0 && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800 font-medium">
+              📊 Planning Insights
+            </p>
+            <p className="text-xs text-blue-700 mt-1">
+              Peak week: {Math.max(...weeklySandwichForecast.map(w => w.totalEstimated)).toLocaleString()} sandwiches
+              • Average per week: {Math.round(totals.total / weeklySandwichForecast.length).toLocaleString()}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
