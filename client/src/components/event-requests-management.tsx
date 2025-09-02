@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -702,24 +703,37 @@ export default function EventRequestsManagement() {
     };
   }, [filteredRequests, activeTab, pastEventsPage, pastEventsPerPage]);
 
+  // Status explanations for tooltips
+  const statusExplanations = {
+    'new': 'A new event request that hasn\'t been contacted yet',
+    'contact_completed': 'Initial contact has been made with the organization',
+    'scheduled': 'Event is confirmed and scheduled with details finalized',
+    'completed': 'Event has been successfully completed',
+    'declined': 'Request was declined or event was cancelled',
+    'past': 'Past event that is archived'
+  };
+
   const getStatusDisplay = (status: string) => {
     const option = statusOptions.find(opt => opt.value === status);
     const Icon = statusIcons[status as keyof typeof statusIcons];
+    const explanation = statusExplanations[status as keyof typeof statusExplanations] || 'Status information';
     
-    if (status === 'declined') {
-      return (
-        <Badge className="text-white border-2 font-bold shadow-lg" style={{background: 'linear-gradient(135deg, #A31C41 0%, #8B1538 100%)', borderColor: '#A31C41'}}>
-          <Icon className="w-3 h-3 mr-1" />
-          {option?.label || status}
-        </Badge>
-      );
-    }
-    
-    return (
-      <Badge className={statusColors[status as keyof typeof statusColors]}>
+    const badge = (
+      <Badge className={status === 'declined' ? "text-white border-2 font-bold shadow-lg" : statusColors[status as keyof typeof statusColors]} style={status === 'declined' ? {background: 'linear-gradient(135deg, #A31C41 0%, #8B1538 100%)', borderColor: '#A31C41'} : {}}>
         <Icon className="w-3 h-3 mr-1" />
         {option?.label || status}
       </Badge>
+    );
+    
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {badge}
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="text-sm">{explanation}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
@@ -818,11 +832,32 @@ export default function EventRequestsManagement() {
                   
                   return (
                     <>
-                      <span>Toolkit: <span className="font-medium">{toolkit.badge.replace(/[✓⚠️]/g, '').trim()}</span></span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">Toolkit: <span className="font-medium">{toolkit.badge.replace(/[✓⚠️]/g, '').trim()}</span></span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-sm">Information packet sent to organization with event planning materials</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <span className="text-gray-400 mx-1">·</span>
-                      <span>Driver: <span className="font-medium">{driver.badge.replace(/[✓⚠️]/g, '').trim()}</span></span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">Driver: <span className="font-medium">{driver.badge.replace(/[✓⚠️]/g, '').trim()}</span></span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-sm">Volunteer drivers assigned to transport sandwiches to the event</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <span className="text-gray-400 mx-1">·</span>
-                      <span>Refrigeration: <span className="font-medium">{refrigeration.badge.replace(/[✓❌❓]/g, '').trim()}</span></span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">Refrigeration: <span className="font-medium">{refrigeration.badge.replace(/[✓❌❓]/g, '').trim()}</span></span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-sm">Whether the event location has refrigeration available for sandwich storage</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </>
                   );
                 })()} 
@@ -1710,7 +1745,8 @@ export default function EventRequestsManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Event Planning</h1>
         <div className="flex flex-wrap gap-2">
@@ -2968,6 +3004,7 @@ export default function EventRequestsManagement() {
           }}
         />
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
