@@ -749,20 +749,20 @@ export default function EnhancedMeetingDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-50 to-orange-50 p-6 rounded-lg border border-teal-200">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-teal-50 to-orange-50 p-4 md:p-6 rounded-lg border border-teal-200">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold text-teal-900 mb-2">
+            <h1 className="text-xl md:text-2xl font-bold text-teal-900 mb-2">
               Meeting Management
             </h1>
-            <p className="text-teal-700">
+            <p className="text-sm md:text-base text-teal-700">
               Weekly agenda compilation from Google Sheet projects and meeting documentation
             </p>
           </div>
-          <div className="text-right text-sm text-teal-600">
+          <div className="text-left md:text-right text-sm text-teal-600">
             <div className="font-medium">{dateRange.month}</div>
             <div className="text-xs text-teal-500">Current Week: {dateRange.week}</div>
           </div>
@@ -770,28 +770,28 @@ export default function EnhancedMeetingDashboard() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-full md:w-fit overflow-x-auto">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+          className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
             activeTab === 'overview'
               ? 'bg-white text-teal-700 shadow-sm'
               : 'text-gray-600 hover:text-teal-700'
           }`}
         >
           <CalendarDays className="w-4 h-4" />
-          Meeting Overview
+          <span className="hidden sm:inline">Meeting </span>Overview
         </button>
         <button
           onClick={() => setActiveTab('agenda')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+          className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
             activeTab === 'agenda'
               ? 'bg-white text-teal-700 shadow-sm'
               : 'text-gray-600 hover:text-teal-700'
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          Agenda Planning
+          <span className="hidden sm:inline">Agenda </span>Planning
         </button>
       </div>
 
@@ -858,7 +858,7 @@ export default function EnhancedMeetingDashboard() {
         </div>
         <button
           onClick={() => setShowNewMeetingDialog(true)}
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-3 md:px-4 py-3 md:py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 w-full sm:w-auto text-sm"
         >
           <Plus className="w-4 h-4" />
           <span>Schedule Meeting</span>
@@ -890,16 +890,16 @@ export default function EnhancedMeetingDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {upcomingMeetings.map((meeting: Meeting) => (
               <Card key={meeting.id} className="hover:shadow-lg transition-all duration-200 border-teal-200 bg-gradient-to-br from-white to-teal-50">
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg text-teal-900">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between space-y-3 md:space-y-0">
+                    <div className="flex-1">
+                      <CardTitle className="text-base md:text-lg text-teal-900 mb-2">
                         {meeting.title}
                       </CardTitle>
-                      <div className="flex items-center gap-4 mt-2 text-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm">
                         <div className="flex items-center gap-1">
                           <CalendarDays className="w-4 h-4 text-teal-600" />
                           <span className="text-teal-800 font-medium">
@@ -914,16 +914,17 @@ export default function EnhancedMeetingDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-start">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEditMeeting(meeting)}
-                        className="h-7 px-2"
+                        className="h-8 px-3 md:h-7 md:px-2"
                       >
                         <Edit3 className="w-3 h-3" />
+                        <span className="ml-1 md:hidden">Edit</span>
                       </Button>
-                      <Badge className="bg-green-100 text-green-800">
+                      <Badge className="bg-green-100 text-green-800 text-xs">
                         Upcoming
                       </Badge>
                     </div>
@@ -939,10 +940,10 @@ export default function EnhancedMeetingDashboard() {
 
                   <Separator />
 
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <button
                       onClick={() => setSelectedMeeting(meeting)}
-                      className="w-full flex items-center justify-start gap-3 px-4 py-2.5 border border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300 rounded-lg font-medium transition-all duration-200"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300 rounded-lg font-medium transition-all duration-200 text-sm"
                     >
                       <FileText className="w-4 h-4" />
                       View Agenda Details
@@ -951,7 +952,7 @@ export default function EnhancedMeetingDashboard() {
                     <button
                       onClick={() => handleCompileAgenda(meeting)}
                       disabled={isCompiling}
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2.5 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed text-sm"
                     >
                       {isCompiling ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -978,7 +979,7 @@ export default function EnhancedMeetingDashboard() {
             </Badge>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {pastMeetings.slice(0, 6).map((meeting: Meeting) => (
               <Card key={meeting.id} className="bg-gray-50 border-gray-200 hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
