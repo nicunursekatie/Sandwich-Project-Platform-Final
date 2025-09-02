@@ -731,199 +731,292 @@ export default function EventRequestsManagement() {
     );
   };
 
-  // Function to render enhanced scheduled event cards
-  const renderScheduledEventCard = (request: EventRequest) => (
-    <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-gradient-to-br from-white to-teal-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''}`}>
-      <CardHeader className="pb-3">
-        {/* Prominent Date Display */}
-        {request.desiredEventDate && (
-          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-3 mb-4">
-            <div className="flex items-center justify-center space-x-2">
-              <Calendar className="w-5 h-5 text-amber-600" />
-              <span className="text-lg font-bold text-amber-800">
-                {(() => {
-                  const dateInfo = formatEventDate(request.desiredEventDate);
-                  return dateInfo.text;
-                })()}
-              </span>
-            </div>
-          </div>
-        )}
-        
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="flex items-center space-x-3 text-xl mb-3">
-              <Calendar className="w-6 h-6 text-teal-600" />
-              <span className="text-gray-900">
+  // Function to render enhanced scheduled event cards with inline editing
+  const renderScheduledEventCard = (request: EventRequest) => {
+    const [editingField, setEditingField] = useState<string | null>(null);
+    const [tempValues, setTempValues] = useState<any>({});
+
+    const handleInlineEdit = async (field: string, value: any) => {
+      try {
+        await updateMutation.mutateAsync({
+          id: request.id,
+          [field]: value
+        });
+        setEditingField(null);
+        setTempValues({});
+        toast({ title: "Updated successfully" });
+      } catch (error) {
+        toast({ title: "Update failed", variant: "destructive" });
+      }
+    };
+
+    const getDriverStatus = () => {
+      const driverIds = (request as any).assignedDriverIds || [];
+      const driversNeeded = (request as any).driversNeeded || 0;
+      if (driversNeeded === 0) return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
+      if (driverIds.length >= driversNeeded) return { badge: '✓ Arranged', color: 'bg-green-100 text-green-700' };
+      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-orange-700' };
+    };
+
+    const getToolkitStatus = () => {
+      const status = (request as any).toolkitStatus || 'not_sent';
+      switch (status) {
+        case 'sent': return { badge: '✓ Delivered', color: 'bg-green-100 text-green-700' };
+        case 'received_confirmed': return { badge: '✓ Confirmed', color: 'bg-green-100 text-green-700' };
+        case 'not_needed': return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
+        default: return { badge: '⚠️ Pending', color: 'bg-orange-100 text-orange-700' };
+      }
+    };
+
+    const getRefrigerationStatus = () => {
+      if (request.hasRefrigeration === true) return { badge: '✓ Available', color: 'bg-green-100 text-green-700' };
+      if (request.hasRefrigeration === false) return { badge: '❌ None', color: 'bg-red-100 text-red-700' };
+      return { badge: '❓ Unknown', color: 'bg-yellow-100 text-yellow-700' };
+    };
+
+    return (
+      <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-gradient-to-br from-white to-teal-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''}`}>
+        {/* Header Row: Org name · Event date/time · Status badges */}
+        <CardHeader className="pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <h3 className="text-xl font-bold text-gray-900 truncate">
                 {request.organizationName}
-                {request.department && <span className="text-sm text-gray-600 ml-2">- {request.department}</span>}
-              </span>
-              {(request as any).toolkitStatus && (
-                <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
-                  Toolkit: {(() => {
-                    const status = (request as any).toolkitStatus;
-                    switch (status) {
-                      case 'not_sent': return '⏳ Pending';
-                      case 'sent': return '✓ Sent';
-                      case 'received_confirmed': return '✓✓ Confirmed';
-                      case 'not_needed': return 'N/A';
-                      default: return status;
-                    }
-                  })()}
-                </Badge>
-              )}
-            </CardTitle>
-            
-            {/* Contact Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <User className="w-5 h-5 text-teal-600" />
-                  <span className="text-lg font-semibold text-teal-800">
-                    {request.firstName} {request.lastName}
+                {request.department && <span className="text-sm text-gray-600 ml-2">· {request.department}</span>}
+              </h3>
+              {request.desiredEventDate && (
+                <div className="flex items-center space-x-1 text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                  <Calendar className="w-4 h-4" />
+                  <span className="font-semibold text-sm">
+                    {(() => {
+                      const dateInfo = formatEventDate(request.desiredEventDate);
+                      return dateInfo.text;
+                    })()}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4 text-teal-600" />
-                  <span className="text-sm text-gray-600">{request.email}</span>
-                </div>
-                {request.phone && (
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-teal-600" />
-                    <span className="text-sm text-gray-600">{request.phone}</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Event Details - Prominently displayed */}
-              <div className="space-y-2">
-                {((request as any).eventStartTime || (request as any).eventEndTime) && (
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-teal-600" />
-                    <span className="text-sm font-medium">
-                      Event: {formatTime12Hour((request as any).eventStartTime)}
-                      {(request as any).eventEndTime && ` - ${formatTime12Hour((request as any).eventEndTime)}`}
-                    </span>
-                  </div>
-                )}
-                {(request as any).pickupTime && (
-                  <div className="flex items-center space-x-2">
-                    <Trash2 className="w-4 h-4 text-teal-600" />
-                    <span className="text-sm font-medium">Pickup: {formatTime12Hour((request as any).pickupTime)}</span>
-                  </div>
-                )}
-                {request.eventAddress && (
-                  <div className="flex items-center space-x-2">
-                    <Building className="w-4 h-4 text-teal-600" />
-                    <span className="text-sm font-medium">{request.eventAddress}</span>
-                  </div>
-                )}
-                {request.estimatedSandwichCount && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-teal-600 text-sm">🥪</span>
-                    <span className="text-sm font-medium">{request.estimatedSandwichCount} sandwiches</span>
-                  </div>
-                )}
-              </div>
+              )}
+            </div>
+            
+            {/* Status Badges */}
+            <div className="flex items-center space-x-2 flex-wrap">
+              {(() => {
+                const driver = getDriverStatus();
+                const toolkit = getToolkitStatus();
+                const refrigeration = getRefrigerationStatus();
+                
+                return (
+                  <>
+                    <Badge className={`text-xs ${driver.color} border-0`}>{driver.badge}</Badge>
+                    <Badge className={`text-xs ${toolkit.color} border-0`}>{toolkit.badge}</Badge>
+                    <Badge className={`text-xs ${refrigeration.color} border-0`}>{refrigeration.badge}</Badge>
+                    {getStatusDisplay(request.status)}
+                  </>
+                );
+              })()}
             </div>
           </div>
-          <div className="flex flex-col items-end space-y-2">
-            {getStatusDisplay(request.status)}
-            <div className="flex space-x-1">
+        </CardHeader>
+        
+        <CardContent>
+          <div className="space-y-4">
+            {/* Body: Inline editable contact info, address, sandwich count */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Contact Information - Inline Editable */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-800 text-sm">Contact Information</h4>
+                
+                {/* Contact Name */}
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4 text-teal-600" />
+                  {editingField === 'contact' ? (
+                    <div className="flex space-x-2 flex-1">
+                      <input
+                        className="text-sm border rounded px-2 py-1 flex-1"
+                        defaultValue={`${request.firstName} ${request.lastName}`}
+                        onBlur={(e) => {
+                          const [firstName, ...lastNameParts] = e.target.value.split(' ');
+                          handleInlineEdit('firstName', firstName);
+                          handleInlineEdit('lastName', lastNameParts.join(' '));
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <span 
+                      className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                      onClick={() => setEditingField('contact')}
+                    >
+                      {request.firstName} {request.lastName}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Email */}
+                <div className="flex items-center space-x-2">
+                  <Mail className="w-4 h-4 text-teal-600" />
+                  {editingField === 'email' ? (
+                    <input
+                      className="text-sm border rounded px-2 py-1 flex-1"
+                      defaultValue={request.email}
+                      onBlur={(e) => handleInlineEdit('email', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                      autoFocus
+                    />
+                  ) : (
+                    <span 
+                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                      onClick={() => setEditingField('email')}
+                    >
+                      {request.email}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Phone */}
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-4 h-4 text-teal-600" />
+                  {editingField === 'phone' ? (
+                    <input
+                      className="text-sm border rounded px-2 py-1 flex-1"
+                      defaultValue={request.phone || ''}
+                      onBlur={(e) => handleInlineEdit('phone', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                      autoFocus
+                    />
+                  ) : (
+                    <span 
+                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                      onClick={() => setEditingField('phone')}
+                    >
+                      {request.phone || 'Click to add phone'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Event Details - Inline Editable */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-800 text-sm">Event Details</h4>
+                
+                {/* Address */}
+                <div className="flex items-center space-x-2">
+                  <Building className="w-4 h-4 text-teal-600" />
+                  {editingField === 'address' ? (
+                    <input
+                      className="text-sm border rounded px-2 py-1 flex-1"
+                      defaultValue={request.eventAddress || ''}
+                      onBlur={(e) => handleInlineEdit('eventAddress', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                      autoFocus
+                    />
+                  ) : (
+                    <span 
+                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                      onClick={() => setEditingField('address')}
+                    >
+                      {request.eventAddress || 'Click to add address'}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Sandwich Count */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-teal-600 text-sm">🥪</span>
+                  {editingField === 'sandwichCount' ? (
+                    <input
+                      type="number"
+                      className="text-sm border rounded px-2 py-1 w-24"
+                      defaultValue={request.estimatedSandwichCount || ''}
+                      onBlur={(e) => handleInlineEdit('estimatedSandwichCount', parseInt(e.target.value) || null)}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                      autoFocus
+                    />
+                  ) : (
+                    <span 
+                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                      onClick={() => setEditingField('sandwichCount')}
+                    >
+                      {request.estimatedSandwichCount || 'Click to add count'} sandwiches
+                    </span>
+                  )}
+                </div>
+                
+                {/* Refrigeration Toggle */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">Refrigeration:</span>
+                  <div className="flex space-x-1">
+                    <button
+                      className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === true ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-green-50'}`}
+                      onClick={() => handleInlineEdit('hasRefrigeration', true)}
+                    >
+                      ✓ Available
+                    </button>
+                    <button
+                      className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 hover:bg-red-50'}`}
+                      onClick={() => handleInlineEdit('hasRefrigeration', false)}
+                    >
+                      ❌ None
+                    </button>
+                    <button
+                      className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === null || request.hasRefrigeration === undefined ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600 hover:bg-yellow-50'}`}
+                      onClick={() => handleInlineEdit('hasRefrigeration', null)}
+                    >
+                      ❓ Unknown
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Driver / Speaker Slots */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-gray-800 text-sm">Assignments</h4>
+                <div className="flex space-x-2">
+                  {((request as any).driversNeeded > 0 || (request as any).assignedDriverIds?.length > 0) && (
+                    <Badge className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      Drivers: {(request as any).assignedDriverIds?.length || 0}/{(request as any).driversNeeded || 0}
+                    </Badge>
+                  )}
+                  {((request as any).speakersNeeded > 0) && (
+                    <Badge className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                      Speakers: 0/{(request as any).speakersNeeded || 0}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              
+              {/* TSP Contact Assignment */}
+              {(request as any).tspContact && (
+                <div className="flex items-center space-x-2">
+                  <Badge className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                    TSP Contact: {getUserDisplayName((request as any).tspContact)}
+                  </Badge>
+                </div>
+              )}
+            </div>
+            
+          </div>
+        </CardContent>
+        
+        {/* Footer Actions */}
+        <div className="px-6 pb-4">
+          <div className="flex justify-between items-center pt-3 border-t">
+            <div className="flex space-x-2">
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setEmailComposerRequest(request);
-                  setShowEmailComposer(true);
-                }}
-                className="h-8 w-8 p-0 text-teal-600 hover:text-teal-800 hover:bg-teal-100"
-                title="Email Contact"
-              >
-                <Mail className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   setSelectedRequest(request);
                   setCurrentEditingStatus(request.status);
                   setShowEditDialog(true);
                 }}
-                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                className="text-teal-600 hover:text-teal-800 border-teal-200 hover:bg-teal-50"
               >
-                <Edit className="h-4 w-4" />
+                <Edit className="h-4 w-4 mr-1" />
+                Update Details
               </Button>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* TSP Team Information */}
-          {((request as any).tspContact || (request as any).customTspContact) && (
-            <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
-              <h4 className="font-semibold text-teal-800 mb-2">TSP Team Assignment</h4>
-              <div className="space-y-1">
-                {(request as any).tspContact && (
-                  <div className="text-sm">
-                    <strong>Primary Contact:</strong> {getUserDisplayName((request as any).tspContact)}
-                  </div>
-                )}
-                {(request as any).customTspContact && (
-                  <div className="text-sm">
-                    <strong>Additional Info:</strong> {(request as any).customTspContact}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Planning Notes */}
-          {(request as any).planningNotes && (
-            <div className="bg-gray-50 p-3 rounded-lg border">
-              <h4 className="font-semibold text-gray-800 mb-2">Planning Notes</h4>
-              <p className="text-sm text-gray-700">{(request as any).planningNotes}</p>
-            </div>
-          )}
-          
-          {/* Basic Event Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            {request.department && (
-              <div><strong>Department:</strong> {request.department}</div>
-            )}
-            <div><strong>Refrigeration:</strong> {
-              request.hasRefrigeration === true ? 'Available' : 
-              request.hasRefrigeration === false ? 'Not available' : 
-              'Not specified'
-            }</div>
-            <div><strong>Previously Hosted:</strong> {
-              previouslyHostedOptions.find(opt => opt.value === request.previouslyHosted)?.label
-            }</div>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center pt-3 border-t">
-            <div className="text-xs text-gray-500">
-              {request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
-                try {
-                  // Parse timestamp safely to preserve the original time
-                  let date: Date;
-                  if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                    // Database timestamp format: "2025-08-27 06:26:14"
-                    // Treat as-is without timezone conversion
-                    const [datePart, timePart] = request.createdAt.split(' ');
-                    date = new Date(datePart + 'T' + timePart);
-                  } else {
-                    date = new Date(request.createdAt);
-                  }
-                  return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-                } catch (error) {
-                  return 'Invalid date';
-                }
-              })()}
-            </div>
-            <div className="space-x-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -931,29 +1024,36 @@ export default function EventRequestsManagement() {
                   setEmailComposerRequest(request);
                   setShowEmailComposer(true);
                 }}
-                className="text-teal-600 hover:text-teal-800 bg-gradient-to-r from-teal-50 to-cyan-100 hover:from-teal-100 hover:to-cyan-200"
+                className="text-teal-600 hover:text-teal-800 border-teal-200 hover:bg-teal-50"
               >
                 <Mail className="h-4 w-4 mr-1" />
                 Email Contact
               </Button>
+            </div>
+            
+            {/* Check-in Buttons */}
+            <div className="flex space-x-2">
               <Button
-                variant="default"
+                variant="outline"
                 size="sm"
-                onClick={() => {
-                  setDetailsRequest(request);
-                  setShowEventDetailsDialog(true);
-                }}
-                className="bg-teal-600 hover:bg-teal-700 text-white"
+                className="text-orange-600 hover:text-orange-800 border-orange-200 hover:bg-orange-50"
               >
-                <Calendar className="h-4 w-4 mr-1" />
-                {hasAdvancedDetails(request) ? 'Update Event Details' : 'Complete Event Details'}
+                1 Week Check-in
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-amber-600 hover:text-amber-800 border-amber-200 hover:bg-amber-50"
+              >
+                1 Day Check-in
               </Button>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
+      </Card>
+    );
+  };
+
 
   // Function to render standard event cards (for requests and past events)
   const renderStandardEventCard = (request: EventRequest) => (
