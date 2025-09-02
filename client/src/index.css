@@ -4,6 +4,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force override ugly gray tab backgrounds */
+[data-state="inactive"] {
+  background-color: white !important;
+}
+
+/* Ensure all tabs use brand colors */
+[role="tablist"] {
+  background-color: white !important;
+}
+
+[role="tab"][data-state="inactive"] {
+  background-color: white !important;
+  color: #236383 !important;
+}
+
+[role="tab"][data-state="active"] {
+  background-color: #236383 !important;
+  color: white !important;
+}
+
 /* Fix for horizontal scroll issues */
 html, body {
   overflow-x: hidden;
