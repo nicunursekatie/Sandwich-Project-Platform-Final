@@ -198,22 +198,22 @@ export default function ImportantDocuments() {
         </div>
 
         <Tabs defaultValue="documents" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 p-1">
+          <div className="flex w-full mb-6 bg-gray-50 rounded-lg p-1 border">
             <TabsTrigger 
               value="documents" 
-              className="flex items-center gap-2 bg-white text-[#646464] hover:bg-gray-50 data-[state=active]:bg-[#236383] data-[state=active]:text-white transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-md font-medium transition-all duration-200 bg-white text-gray-700 shadow-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-gray-100 data-[state=active]:hover:bg-[#1a4e66]"
             >
               <FileText className="h-4 w-4" />
               Documents
             </TabsTrigger>
             <TabsTrigger 
               value="logos" 
-              className="flex items-center gap-2 bg-white text-[#646464] hover:bg-gray-50 data-[state=active]:bg-[#236383] data-[state=active]:text-white transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-md font-medium transition-all duration-200 bg-white text-gray-700 shadow-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-gray-100 data-[state=active]:hover:bg-[#1a4e66]"
             >
               <FileImage className="h-4 w-4" />
               Logos & Branding
             </TabsTrigger>
-          </TabsList>
+          </div>
 
           <TabsContent value="documents" className="space-y-6">
             {/* Category Filter */}
