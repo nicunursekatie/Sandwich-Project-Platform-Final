@@ -1,4 +1,4 @@
-import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator, Calendar, Clock, Truck } from "lucide-react";
+import { Sandwich, LogOut, LayoutDashboard, ListTodo, MessageCircle, ClipboardList, FolderOpen, BarChart3, TrendingUp, Users, Car, Building2, FileText, ChevronDown, ChevronRight, Menu, X, UserCog, Lightbulb, AlertCircle, Trophy, Calculator, Calendar, Clock, Truck, FileImage } from "lucide-react";
 import { useLocation } from "wouter";
 // Using optimized SVG for faster loading
 const sandwichLogo = "/sandwich-icon-optimized.svg";
@@ -63,6 +63,7 @@ import EventRequestsManagement from "@/components/event-requests-management";
 import GroupCatalog from "@/components/organizations-catalog";
 import ActionTracking from "@/components/action-tracking-enhanced";
 import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
+import LogosPage from "@/pages/logos";
 
 import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
 
@@ -133,6 +134,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     { id: "collections", label: "Collections", icon: Sandwich },
     ...(hasPermission(user, PERMISSIONS.ACCESS_EVENTS) ? [{ id: "events", label: "Events", icon: Calendar }] : []),
     { id: "inventory-calculator", label: "Inventory Calculator", icon: Calculator },
+    { id: "logos", label: "Logos & Branding", icon: FileImage },
 
     
     // Data section (filtered by permissions)
@@ -211,6 +213,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank');
         setActiveSection("dashboard");
         return <DashboardOverview onSectionChange={setActiveSection} />;
+      case "logos":
+        return <LogosPage />;
       case "projects":
         console.log("Rendering ProjectsClean component");
         return <ProjectsClean />;
