@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 // Removed formatDateForDisplay import as we now use toLocaleDateString directly
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { DriverSelection } from "./driver-selection";
@@ -190,10 +191,15 @@ export default function EventRequestsManagement() {
   const [scheduledSortBy, setScheduledSortBy] = useState<'date' | 'organization'>('date');
   const [scheduledSortOrder, setScheduledSortOrder] = useState<'asc' | 'desc'>('asc');
   const [pastSortBy, setPastSortBy] = useState<'date' | 'organization'>('date');
-  // Inline editing state for scheduled events
+  // Enhanced inline editing state for safer editing
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [tempValues, setTempValues] = useState<any>({});
+  const [pendingChanges, setPendingChanges] = useState<{[eventId: number]: {[field: string]: any}}>({});
+  const [undoTimeouts, setUndoTimeouts] = useState<{[key: string]: NodeJS.Timeout}>({});
+  
+  // Get current user for permission checking
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -749,19 +755,168 @@ export default function EventRequestsManagement() {
     );
   };
 
-  // Handle inline editing for scheduled events
-  const handleInlineEdit = async (field: string, value: any) => {
+  // Permission checking functions
+  const canEditField = (field: string) => {
+    if (!user) return false;
+    
+    // Lightweight fields that volunteers can edit
+    const lightweightFields = ['phone', 'email', 'planningNotes'];
+    
+    // Critical fields that require admin permissions
+    const criticalFields = ['eventDate', 'eventStartTime', 'eventEndTime', 'eventAddress', 'estimatedSandwichCount', 'contact'];
+    
+    if (lightweightFields.includes(field)) {
+      return hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS);
+    }
+    
+    if (criticalFields.includes(field)) {
+      return hasPermission(user, PERMISSIONS.MANAGE_USERS) || user.role === 'super_admin';
+    }
+    
+    return false;
+  };
+
+  // Track pending changes without saving immediately
+  const handleTrackChange = (eventId: number, field: string, value: any) => {
+    if (!canEditEventRequest()) {
+      toast({ title: "Access denied", description: "You don't have permission to edit event requests", variant: "destructive" });
+      return;
+    }
+
+    setPendingChanges(prev => ({
+      ...prev,
+      [eventId]: {
+        ...prev[eventId],
+        [field]: value
+      }
+    }));
+  };
+
+  // Enhanced autosave with undo functionality
+  const handleAutosave = async (eventId: number, field: string, value: any) => {
+    const originalValue = eventRequests.find(r => r.id === eventId)?.[field as keyof EventRequest];
+    
     try {
       await updateMutation.mutateAsync({
-        id: editingEventId!,
+        id: eventId,
         [field]: value
       });
-      setEditingField(null);
-      setEditingEventId(null);
-      setTempValues({});
-      toast({ title: "Updated successfully" });
+
+      // Show success toast with undo option
+      const undoKey = `${eventId}-${field}`;
+      
+      // Clear any existing undo timeout for this field
+      if (undoTimeouts[undoKey]) {
+        clearTimeout(undoTimeouts[undoKey]);
+      }
+
+      // Create undo functionality
+      const undoTimeout = setTimeout(() => {
+        setUndoTimeouts(prev => {
+          const newTimeouts = { ...prev };
+          delete newTimeouts[undoKey];
+          return newTimeouts;
+        });
+      }, 8000); // 8 seconds to undo
+
+      setUndoTimeouts(prev => ({
+        ...prev,
+        [undoKey]: undoTimeout
+      }));
+
+      toast({
+        title: `${field.charAt(0).toUpperCase() + field.slice(1)} updated`,
+        description: (
+          <div className="flex items-center justify-between">
+            <span>Changed to: {value}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                // Undo the change
+                await updateMutation.mutateAsync({
+                  id: eventId,
+                  [field]: originalValue
+                });
+                clearTimeout(undoTimeout);
+                setUndoTimeouts(prev => {
+                  const newTimeouts = { ...prev };
+                  delete newTimeouts[undoKey];
+                  return newTimeouts;
+                });
+                toast({ title: "Change undone" });
+              }}
+            >
+              Undo
+            </Button>
+          </div>
+        ),
+        duration: 8000,
+      });
+
+      // Log audit trail
+      console.log(`[AUDIT] User ${user?.email} changed ${field} from "${originalValue}" to "${value}" for event ${eventId}`);
+      
     } catch (error) {
       toast({ title: "Update failed", variant: "destructive" });
+    }
+  };
+
+  // Handle inline editing with confirmation
+  const handleFieldSave = (eventId: number, field: string, value: any) => {
+    handleAutosave(eventId, field, value);
+    setEditingField(null);
+    setEditingEventId(null);
+    setTempValues({});
+  };
+
+  // Cancel editing without saving
+  const handleFieldCancel = () => {
+    setEditingField(null);
+    setEditingEventId(null);
+    setTempValues({});
+  };
+
+  // Check if event has pending changes
+  const hasPendingChanges = (eventId: number) => {
+    return pendingChanges[eventId] && Object.keys(pendingChanges[eventId]).length > 0;
+  };
+
+  // Get display value (pending change or original value)
+  const getDisplayValue = (request: EventRequest, field: string) => {
+    if (pendingChanges[request.id] && pendingChanges[request.id][field] !== undefined) {
+      return pendingChanges[request.id][field];
+    }
+    return request[field as keyof EventRequest];
+  };
+
+  // Save all pending changes for an event
+  const handleSaveAllChanges = async (eventId: number) => {
+    const changes = pendingChanges[eventId];
+    if (!changes) return;
+
+    try {
+      await updateMutation.mutateAsync({
+        id: eventId,
+        ...changes
+      });
+
+      // Clear pending changes
+      setPendingChanges(prev => {
+        const newPending = { ...prev };
+        delete newPending[eventId];
+        return newPending;
+      });
+
+      toast({
+        title: "All changes saved",
+        description: `Updated ${Object.keys(changes).length} field(s)`,
+      });
+
+      // Log audit trail for bulk save
+      console.log(`[AUDIT] User ${user?.email} saved bulk changes for event ${eventId}:`, changes);
+    } catch (error) {
+      toast({ title: "Save failed", variant: "destructive" });
     }
   };
 
@@ -793,7 +948,7 @@ export default function EventRequestsManagement() {
     };
 
     return (
-      <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-gradient-to-br from-white to-teal-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''}`}>
+      <Card key={request.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-gradient-to-br from-white to-teal-50 ${highlightedEventId === request.id ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100' : ''} ${hasPendingChanges(request.id) ? 'ring-2 ring-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50' : ''}`}>
         {/* Header Row: Bold headline with org name and date */}
         <CardHeader className="pb-3">
           <div className="space-y-3">
@@ -878,29 +1033,67 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4 text-gray-500" />
                   {editingField === 'contact' && editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1">
+                    <div className="flex space-x-2 flex-1 items-center">
                       <input
                         className="text-sm border rounded px-2 py-1 flex-1"
-                        defaultValue={`${request.firstName} ${request.lastName}`}
-                        onBlur={(e) => {
-                          const [firstName, ...lastNameParts] = e.target.value.split(' ');
-                          handleInlineEdit('firstName', firstName);
-                          handleInlineEdit('lastName', lastNameParts.join(' '));
+                        value={tempValues.contact || `${request.firstName} ${request.lastName}`}
+                        onChange={(e) => setTempValues(prev => ({ ...prev, contact: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const [firstName, ...lastNameParts] = (tempValues.contact || e.target.value).split(' ');
+                            handleTrackChange(request.id, 'firstName', firstName);
+                            handleTrackChange(request.id, 'lastName', lastNameParts.join(' '));
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }
+                          if (e.key === 'Escape') handleFieldCancel();
                         }}
-                        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                        autoFocus
                       />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          const [firstName, ...lastNameParts] = tempValues.contact.split(' ');
+                          handleTrackChange(request.id, 'firstName', firstName);
+                          handleTrackChange(request.id, 'lastName', lastNameParts.join(' '));
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
                     </div>
                   ) : (
-                    <span 
-                      className="text-sm text-gray-600 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => {
-                        setEditingField('contact');
-                        setEditingEventId(request.id);
-                      }}
-                    >
-                      {request.firstName} {request.lastName}
-                    </span>
+                    <div className="flex items-center space-x-2 flex-1">
+                      <span className="text-sm text-gray-600 flex-1">
+                        {getDisplayValue(request, 'firstName')} {getDisplayValue(request, 'lastName')}
+                      </span>
+                      {canEditField('contact') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField('contact');
+                            setEditingEventId(request.id);
+                            setTempValues({ contact: `${getDisplayValue(request, 'firstName')} ${getDisplayValue(request, 'lastName')}` });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 
@@ -908,23 +1101,63 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-gray-500" />
                   {editingField === 'email' && editingEventId === request.id ? (
-                    <input
-                      className="text-sm border rounded px-2 py-1 flex-1"
-                      defaultValue={request.email}
-                      onBlur={(e) => handleInlineEdit('email', e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                      autoFocus
-                    />
+                    <div className="flex space-x-2 flex-1 items-center">
+                      <input
+                        className="text-sm border rounded px-2 py-1 flex-1"
+                        value={tempValues.email || request.email}
+                        onChange={(e) => setTempValues(prev => ({ ...prev, email: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleTrackChange(request.id, 'email', tempValues.email || e.target.value);
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }
+                          if (e.key === 'Escape') handleFieldCancel();
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          handleTrackChange(request.id, 'email', tempValues.email);
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
+                    </div>
                   ) : (
-                    <span 
-                      className="text-sm text-gray-600 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => {
-                        setEditingField('email');
-                        setEditingEventId(request.id);
-                      }}
-                    >
-                      {request.email}
-                    </span>
+                    <div className="flex items-center space-x-2 flex-1">
+                      <span className="text-sm text-gray-600 flex-1">
+                        {getDisplayValue(request, 'email')}
+                      </span>
+                      {canEditField('email') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField('email');
+                            setEditingEventId(request.id);
+                            setTempValues({ email: getDisplayValue(request, 'email') });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 
@@ -932,23 +1165,64 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-gray-500" />
                   {editingField === 'phone' && editingEventId === request.id ? (
-                    <input
-                      className="text-sm border rounded px-2 py-1 flex-1"
-                      defaultValue={request.phone || ''}
-                      onBlur={(e) => handleInlineEdit('phone', e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                      autoFocus
-                    />
+                    <div className="flex space-x-2 flex-1 items-center">
+                      <input
+                        className="text-sm border rounded px-2 py-1 flex-1"
+                        value={tempValues.phone || request.phone || ''}
+                        onChange={(e) => setTempValues(prev => ({ ...prev, phone: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleTrackChange(request.id, 'phone', tempValues.phone || e.target.value);
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }
+                          if (e.key === 'Escape') handleFieldCancel();
+                        }}
+                        placeholder="Enter phone number"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          handleTrackChange(request.id, 'phone', tempValues.phone);
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
+                    </div>
                   ) : (
-                    <span 
-                      className="text-sm text-gray-500 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => {
-                        setEditingField('phone');
-                        setEditingEventId(request.id);
-                      }}
-                    >
-                      {request.phone || 'Click to add phone'}
-                    </span>
+                    <div className="flex items-center space-x-2 flex-1">
+                      <span className="text-sm text-gray-500 flex-1">
+                        {getDisplayValue(request, 'phone') || 'No phone number'}
+                      </span>
+                      {canEditField('phone') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField('phone');
+                            setEditingEventId(request.id);
+                            setTempValues({ phone: getDisplayValue(request, 'phone') || '' });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -961,23 +1235,64 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <Building className="w-4 h-4 text-teal-600" />
                   {editingField === 'address' && editingEventId === request.id ? (
-                    <input
-                      className="text-sm border rounded px-2 py-1 flex-1"
-                      defaultValue={request.eventAddress || ''}
-                      onBlur={(e) => handleInlineEdit('eventAddress', e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                      autoFocus
-                    />
+                    <div className="flex space-x-2 flex-1 items-center">
+                      <input
+                        className="text-sm border rounded px-2 py-1 flex-1"
+                        value={tempValues.address || request.eventAddress || ''}
+                        onChange={(e) => setTempValues(prev => ({ ...prev, address: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleTrackChange(request.id, 'eventAddress', tempValues.address || e.target.value);
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }
+                          if (e.key === 'Escape') handleFieldCancel();
+                        }}
+                        placeholder="Enter event address"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          handleTrackChange(request.id, 'eventAddress', tempValues.address);
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
+                    </div>
                   ) : (
-                    <span 
-                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => {
-                        setEditingField('address');
-                        setEditingEventId(request.id);
-                      }}
-                    >
-                      {request.eventAddress || 'Click to add address'}
-                    </span>
+                    <div className="flex items-center space-x-2 flex-1">
+                      <span className="text-sm flex-1">
+                        {getDisplayValue(request, 'eventAddress') || 'No address provided'}
+                      </span>
+                      {canEditField('eventAddress') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField('address');
+                            setEditingEventId(request.id);
+                            setTempValues({ address: getDisplayValue(request, 'eventAddress') || '' });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 
@@ -985,24 +1300,66 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <span className="text-teal-600 text-sm">🥪</span>
                   {editingField === 'sandwichCount' && editingEventId === request.id ? (
-                    <input
-                      type="number"
-                      className="text-sm border rounded px-2 py-1 w-24"
-                      defaultValue={request.estimatedSandwichCount || ''}
-                      onBlur={(e) => handleInlineEdit('estimatedSandwichCount', parseInt(e.target.value) || null)}
-                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                      autoFocus
-                    />
+                    <div className="flex space-x-2 items-center">
+                      <input
+                        type="number"
+                        className="text-sm border rounded px-2 py-1 w-24"
+                        value={tempValues.sandwichCount || request.estimatedSandwichCount || ''}
+                        onChange={(e) => setTempValues(prev => ({ ...prev, sandwichCount: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleTrackChange(request.id, 'estimatedSandwichCount', parseInt(tempValues.sandwichCount || e.target.value) || null);
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }
+                          if (e.key === 'Escape') handleFieldCancel();
+                        }}
+                        placeholder="0"
+                      />
+                      <span className="text-sm text-gray-500">sandwiches</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          handleTrackChange(request.id, 'estimatedSandwichCount', parseInt(tempValues.sandwichCount) || null);
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
+                    </div>
                   ) : (
-                    <span 
-                      className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-                      onClick={() => {
-                        setEditingField('sandwichCount');
-                        setEditingEventId(request.id);
-                      }}
-                    >
-                      {request.estimatedSandwichCount || 'Click to add count'} sandwiches
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">
+                        {getDisplayValue(request, 'estimatedSandwichCount') || 'No count'} sandwiches
+                      </span>
+                      {canEditField('estimatedSandwichCount') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField('sandwichCount');
+                            setEditingEventId(request.id);
+                            setTempValues({ sandwichCount: getDisplayValue(request, 'estimatedSandwichCount') || '' });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 
@@ -1010,24 +1367,34 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium">Refrigeration:</span>
                   <div className="flex space-x-1">
-                    <button
-                      className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === true ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-green-50'}`}
-                      onClick={() => handleInlineEdit('hasRefrigeration', true)}
-                    >
-                      ✓ Available
-                    </button>
-                    <button
-                      className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 hover:bg-red-50'}`}
-                      onClick={() => handleInlineEdit('hasRefrigeration', false)}
-                    >
-                      ❌ None
-                    </button>
-                    <button
-                      className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === null || request.hasRefrigeration === undefined ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600 hover:bg-yellow-50'}`}
-                      onClick={() => handleInlineEdit('hasRefrigeration', null)}
-                    >
-                      ❓ Unknown
-                    </button>
+                    {canEditField('hasRefrigeration') ? (
+                      <>
+                        <button
+                          className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === true ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-green-50'}`}
+                          onClick={() => handleAutosave(request.id, 'hasRefrigeration', true)}
+                        >
+                          ✓ Available
+                        </button>
+                        <button
+                          className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 hover:bg-red-50'}`}
+                          onClick={() => handleAutosave(request.id, 'hasRefrigeration', false)}
+                        >
+                          ❌ None
+                        </button>
+                        <button
+                          className={`px-2 py-1 text-xs rounded ${request.hasRefrigeration === null || request.hasRefrigeration === undefined ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600 hover:bg-yellow-50'}`}
+                          onClick={() => handleAutosave(request.id, 'hasRefrigeration', null)}
+                        >
+                          ❓ Unknown
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-sm text-gray-500">
+                        {request.hasRefrigeration === true ? '✓ Available' : 
+                         request.hasRefrigeration === false ? '❌ None' : 
+                         '❓ Unknown'}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1373,6 +1740,25 @@ export default function EventRequestsManagement() {
               )}
             </div>
           </div>
+          
+          {/* Save All Changes Button - only show if there are pending changes */}
+          {hasPendingChanges(request.id) && (
+            <div className="pt-4 border-t bg-yellow-50 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-amber-700 font-medium">
+                  ⚠️ You have unsaved changes
+                </div>
+                <Button
+                  onClick={() => handleSaveAllChanges(request.id)}
+                  disabled={updateMutation.isPending}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  size="sm"
+                >
+                  {updateMutation.isPending ? "Saving..." : "Save All Changes"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
