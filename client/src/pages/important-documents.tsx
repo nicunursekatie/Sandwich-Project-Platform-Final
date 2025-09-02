@@ -201,14 +201,14 @@ export default function ImportantDocuments() {
           <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 p-1">
             <TabsTrigger 
               value="documents" 
-              className="flex items-center gap-2 data-[state=active]:bg-[#236383] data-[state=active]:text-white data-[state=inactive]:bg-white data-[state=inactive]:text-[#646464] data-[state=inactive]:hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 bg-white text-[#646464] hover:bg-gray-50 data-[state=active]:bg-[#236383] data-[state=active]:text-white transition-colors"
             >
               <FileText className="h-4 w-4" />
               Documents
             </TabsTrigger>
             <TabsTrigger 
               value="logos" 
-              className="flex items-center gap-2 data-[state=active]:bg-[#236383] data-[state=active]:text-white data-[state=inactive]:bg-white data-[state=inactive]:text-[#646464] data-[state=inactive]:hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 bg-white text-[#646464] hover:bg-gray-50 data-[state=active]:bg-[#236383] data-[state=active]:text-white transition-colors"
             >
               <FileImage className="h-4 w-4" />
               Logos & Branding
