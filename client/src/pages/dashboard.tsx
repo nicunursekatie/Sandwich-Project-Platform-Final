@@ -293,9 +293,9 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
               <p className="font-body text-muted-foreground">Data insights and impact visualization</p>
             </div>
             <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
-                <TabsTrigger value="data" className="text-xs sm:text-sm">Data Analytics</TabsTrigger>
-                <TabsTrigger value="impact" className="text-xs sm:text-sm">Impact Dashboard</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10 bg-[#236383]/10 border-[#236383]/20">
+                <TabsTrigger value="data" className="text-xs sm:text-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white text-[#236383]">Data Analytics</TabsTrigger>
+                <TabsTrigger value="impact" className="text-xs sm:text-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white text-[#646464]">Impact Dashboard</TabsTrigger>
               </TabsList>
               <TabsContent value="data" className="mt-6">
                 <AnalyticsDashboard />
