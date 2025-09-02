@@ -49,11 +49,14 @@ export class BackupManager {
     try {
       await fs.mkdir(backupDir, { recursive: true });
       
-      // Get all data
+      // Get ALL data including USERS
       const collections = await storage.getAllSandwichCollections();
       const hosts = await storage.getAllHosts();
       const projects = await storage.getAllProjects();
       const contacts = await storage.getAllContacts();
+      const users = await storage.getAllUsers();
+      const drivers = await storage.getAllDrivers();
+      const recipients = await storage.getAllRecipients();
       const auditLogs = await AuditLogger.getAuditHistory();
 
       // Create backup data structure
@@ -65,7 +68,10 @@ export class BackupManager {
           hosts: hosts,
           projects: projects,
           contacts: contacts,
-          audit_logs: auditLogs.logs
+          users: users,
+          drivers: drivers,
+          recipients: recipients,
+          audit_logs: auditLogs
         }
       };
 
@@ -82,13 +88,16 @@ export class BackupManager {
         id: backupId,
         timestamp: new Date(),
         version: '1.0',
-        tables: ['sandwich_collections', 'hosts', 'projects', 'contacts', 'audit_logs'],
+        tables: ['sandwich_collections', 'hosts', 'projects', 'contacts', 'users', 'drivers', 'recipients', 'audit_logs'],
         recordCounts: {
           sandwich_collections: collections.length,
           hosts: hosts.length,
           projects: projects.length,
           contacts: contacts.length,
-          audit_logs: auditLogs.logs.length
+          users: users.length,
+          drivers: drivers.length,
+          recipients: recipients.length,
+          audit_logs: auditLogs.length
         },
         fileSize: stats.size,
         checksum,
@@ -107,7 +116,7 @@ export class BackupManager {
       await AuditLogger.log(
         'backup_created',
         'system',
-        null,
+        'system',
         {
           backupId,
           recordCounts: manifest.recordCounts,
@@ -209,7 +218,7 @@ export class BackupManager {
           errors.push('Invalid backup structure - missing data section');
         }
 
-        const requiredTables = ['sandwich_collections', 'hosts', 'projects', 'contacts'];
+        const requiredTables = ['sandwich_collections', 'hosts', 'projects', 'contacts', 'users', 'drivers', 'recipients'];
         for (const table of requiredTables) {
           if (!Array.isArray(backupData.data[table])) {
             errors.push(`Invalid backup data for table: ${table}`);
@@ -243,7 +252,7 @@ export class BackupManager {
         'system',
         null,
         { backupId },
-        { userId }
+        { userId: userId || 'system' }
       );
 
       return true;
