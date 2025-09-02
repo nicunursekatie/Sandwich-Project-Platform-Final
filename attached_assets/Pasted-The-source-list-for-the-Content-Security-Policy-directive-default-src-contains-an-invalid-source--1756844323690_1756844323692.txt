@@ -1,0 +1,2218 @@
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+Sandwich-Project-Platform-Final:1 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+Sandwich-Project-Platform-Final:1 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+Sandwich-Project-Platform-Final:1 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+_app-b566bb6aa7eb9ca0.js:38 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+cdn.segment.com/next-integrations/actions/tiktok-pixel/920266289e7b08bf066b.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+hook.js:608 Failed to create PluginFactory Object
+overrideMethod @ hook.js:608
+hook.js:608 Failed to load Remote Plugin Error: Failed to load https://cdn.segment.com/next-integrations/actions/tiktok-pixel/920266289e7b08bf066b.js
+    at HTMLScriptElement.<anonymous> (load-script.ts:53:24)
+overrideMethod @ hook.js:608
+_app-b566bb6aa7eb9ca0.js:38 [LaunchDarkly] LaunchDarkly client initialized
+_app-b566bb6aa7eb9ca0.js:38 Adding extension: Javascript Commands Object
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'ambient-light-sensor'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'battery'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-not-rendered'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'execution-while-out-of-viewport'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'layout-animations'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'legacy-image-formats'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'navigation-override'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'oversized-images'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'publickey-credentials'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'speaker-selection'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unoptimized-images'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+Unrecognized feature: 'unsized-media'.
+framework-2e0fdbeb2b9cca7a.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-2e0fdbeb2b9cca7a.js:1
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowfullscreen'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+Allow attribute will take precedence over 'allowpaymentrequest'.
+_app-b566bb6aa7eb9ca0.js:38 Adding extension: ReplDB Export and Import Object
+_app-b566bb6aa7eb9ca0.js:38 Adding extension: repl.tv Object
+_app-b566bb6aa7eb9ca0.js:38 Adding extension: AI Playground Object
+hook.js:608 Command: javascript-root-command has unrecognized contributions: commandbar. Valid contributions are commandbar,filetree-context-menu,sidebar-search,editor-context-menu Object
+overrideMethod @ hook.js:608
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+Sandwich-Project-Platform-Final:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=ff163fff-3dbe-4120-b15f-d57262e7a1c0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=dc9b146c-97a2-4787-b8fd-0f4e89a11139:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=150d0e3b-a537-4595-9f45-899d69298aa1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=d07735f3-814f-44bb-acf7-7b3b65e10054:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=01bbebaf-ce5c-4805-9cc7-91eaee26c2a1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_TIMED_OUT
+r.stripe.com/b:1  Failed to load resource: net::ERR_TIMED_OUT
+shared-7bf9fbb9678ce0ef20d3cd1deb350464.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-7bf9fbb9678ce0ef20d3cd1deb350464.js:1:220985
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=cb0f9830-664a-465b-b808-837e7e19047f:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=3329f010-68a6-4429-b19b-90221a2d112d:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=5486d46c-770c-4a70-9f2d-5712d1596075:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=WpbXf3AFRo_j' failed: 
+t @ Network.js:227
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=WpbXf3AFRo_j' failed: 
+t @ eruda.js:2
+/public/js/beacon.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+/public/js/beacon.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ Network.js:227
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ eruda.js:2
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=WpbXf3AFRo_j' failed: 
+t @ Network.js:227
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=WpbXf3AFRo_j' failed: 
+t @ eruda.js:2
+eruda.js:2 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=WpbXf3AFRo_j' is invalid.
+    at new t (eruda.js:2:218737)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+eruda.js:2 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ Console.js:61
+/public/js/beacon.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+/public/js/beacon.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+eruda.js:2 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+eruda.js:2 Current URL location: /
+eruda.js:2 Dashboard activeSection changed to: dashboard
+eruda.js:2 WebSocket connected successfully
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ Network.js:227
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ eruda.js:2
+eruda.js:2 Messaging WebSocket error: Event
+Mt.forEach.n.<computed> @ Console.js:61
+eruda.js:2 Messaging WebSocket disconnected
+eruda.js:2 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ Console.js:61
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+eruda.js:2 Navigation click: gmail-inbox
+eruda.js:2 Dashboard setActiveSection called with: gmail-inbox
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: Object
+eruda.js:2 Current URL location: /dashboard
+eruda.js:2 Dashboard activeSection changed to: gmail-inbox
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: Object
+eruda.js:2 Fetched 2 emails from inbox folder
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: Object
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: Object
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: ObjectactiveFolder: "inbox"messageCount: 2selectedMessage: false[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+Promise.catch
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+workspace_iframe.html:151  GET https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=gmail-inbox 502 (Bad Gateway)
+(anonymous) @ workspace_iframe.html?initialPath=%2Fdashboard%3Fsection%3Dgmail-inbox&id=%3Ar1re%3A:151
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+Promise.catch
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=483hTn3ysPP3' failed: 
+t @ Network.js:227
+setupWebSocket @ client:536
+(anonymous) @ client:531
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=483hTn3ysPP3' failed: 
+t @ eruda.js:2
+setupWebSocket @ client:536
+(anonymous) @ client:531
+eruda.js:2 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=483hTn3ysPP3' is invalid.
+    at new t (eruda.js:2:218737)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+t @ Network.js:227
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+eruda.js:2 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ Console.js:61
+(anonymous) @ App.tsx:143
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=0cbe1f2d:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=0cbe1f2d:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=0cbe1f2d:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=0cbe1f2d:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=0cbe1f2d:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19432
+commitRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=0cbe1f2d:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:18718
+workLoop @ chunk-RPCDYKBN.js?v=0cbe1f2d:197
+flushWork @ chunk-RPCDYKBN.js?v=0cbe1f2d:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=0cbe1f2d:384
+workspace_iframe.html:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2F&id=%3Ar22c%3A:142
+workspace_iframe.html:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html:142
+eruda.js:2 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+eruda.js:2 Current URL location: /
+eruda.js:2 Dashboard activeSection changed to: dashboard
+eruda.js:2 WebSocket connected successfully
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ Network.js:227
+(anonymous) @ useMessaging.ts:242
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=0cbe1f2d:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=0cbe1f2d:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=0cbe1f2d:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=0cbe1f2d:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19416
+commitRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=0cbe1f2d:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=0cbe1f2d:18627
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ eruda.js:2
+(anonymous) @ useMessaging.ts:165
+commitHookEffectListMount @ chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js:19447
+commitRootImpl @ chunk-RPCDYKBN.js:19416
+commitRoot @ chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js:9119
+(anonymous) @ chunk-RPCDYKBN.js:18627
+eruda.js:2 Messaging WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+Mt.forEach.n.<computed> @ Console.js:61
+ws.onerror @ useMessaging.ts:281
+eruda.js:2 Messaging WebSocket disconnected
+eruda.js:2 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ Console.js:61
+ws.onclose @ useMessaging.ts:291
+eruda.js:2 Navigation click: gmail-inbox
+eruda.js:2 Dashboard setActiveSection called with: gmail-inbox
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 0}
+eruda.js:2 Current URL location: /dashboard
+eruda.js:2 Dashboard activeSection changed to: gmail-inbox
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 0}
+eruda.js:2 Fetched 2 emails from inbox folder
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}activeFolder: "inbox"messageCount: 2selectedMessage: false[[Prototype]]: Object
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=483hTn3ysPP3' failed: 
+t @ VM3218 eruda.js:2
+setupWebSocket @ VM3220 client:536
+(anonymous) @ VM3220 client:531
+eruda.js:2 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=483hTn3ysPP3' is invalid.
+    at new t (eruda.js:2:218737)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+t @ VM3218 eruda.js:2
+setupWebSocket @ VM3220 client:536
+fallback @ VM3220 client:509
+(anonymous) @ VM3220 client:555
+eruda.js:2 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ VM3218 eruda.js:2
+(anonymous) @ VM3252 App.tsx:381
+commitHookEffectListMount @ VM3249 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3249 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3249 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3249 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3249 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3249 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3249 chunk-RPCDYKBN.js:19447
+performSyncWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18868
+flushSyncCallbacks @ VM3249 chunk-RPCDYKBN.js:9119
+commitRootImpl @ VM3249 chunk-RPCDYKBN.js:19432
+commitRoot @ VM3249 chunk-RPCDYKBN.js:19277
+finishConcurrentRender @ VM3249 chunk-RPCDYKBN.js:18805
+performConcurrentWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18718
+workLoop @ VM3249 chunk-RPCDYKBN.js:197
+flushWork @ VM3249 chunk-RPCDYKBN.js:176
+performWorkUntilDeadline @ VM3249 chunk-RPCDYKBN.js:384
+workspace_iframe.html:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2Fdashboard%3Fsection%3Dgmail-inbox&id=%3Ar22c%3A:142
+eruda.js:2 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+eruda.js:2 Current URL location: /dashboard
+eruda.js:2 Dashboard activeSection changed to: dashboard
+eruda.js:2 WebSocket connected successfully
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ VM3218 eruda.js:2
+(anonymous) @ VM3410 useMessaging.ts:165
+commitHookEffectListMount @ VM3249 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3249 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3249 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3249 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3249 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3249 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3249 chunk-RPCDYKBN.js:19447
+commitRootImpl @ VM3249 chunk-RPCDYKBN.js:19416
+commitRoot @ VM3249 chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ VM3249 chunk-RPCDYKBN.js:9119
+(anonymous) @ VM3249 chunk-RPCDYKBN.js:18627
+eruda.js:2 Messaging WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+Mt.forEach.n.<computed> @ VM3218 eruda.js:2
+ws.onerror @ VM3410 useMessaging.ts:196
+eruda.js:2 Messaging WebSocket disconnected
+eruda.js:2 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ VM3218 eruda.js:2
+ws.onclose @ VM3410 useMessaging.ts:203
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+Promise.catch
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+eruda.js:2 Navigation click: gmail-inbox
+eruda.js:2 Dashboard setActiveSection called with: gmail-inbox
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 0}
+eruda.js:2 Dashboard activeSection changed to: gmail-inbox
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 0}
+eruda.js:2 Fetched 2 emails from inbox folder
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}
+eruda.js:2 🔍 GmailStyleInbox component is rendering
+eruda.js:2 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+eruda.js:2 🎨 About to render GmailStyleInbox main UI
+eruda.js:2 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}
+eruda.js:2 WebSocket connection closed: 1006 
+eruda.js:2  GET https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count 502 (Bad Gateway)
+window.fetch @ VM3218 eruda.js:2
+apply @ VM3219 injected.js:253
+apiRequest @ VM3259 queryClient.ts:22
+queryFn @ VM3329 simple-nav.tsx:60
+fetchFn @ VM3255 @tanstack_react-query.js:881
+run @ VM3255 @tanstack_react-query.js:513
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+onSubscribe @ VM3255 @tanstack_react-query.js:1983
+subscribe @ VM3255 @tanstack_react-query.js:24
+(anonymous) @ VM3255 @tanstack_react-query.js:3146
+subscribeToStore @ VM3249 chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ VM3249 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3249 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3249 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3249 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3249 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3249 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3249 chunk-RPCDYKBN.js:19447
+commitRootImpl @ VM3249 chunk-RPCDYKBN.js:19416
+commitRoot @ VM3249 chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ VM3249 chunk-RPCDYKBN.js:9119
+(anonymous) @ VM3249 chunk-RPCDYKBN.js:18627
+setTimeout
+defaultScheduler @ VM3255 @tanstack_react-query.js:565
+flush @ VM3255 @tanstack_react-query.js:589
+batch @ VM3255 @tanstack_react-query.js:607
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+onSubscribe @ VM3255 @tanstack_react-query.js:1983
+subscribe @ VM3255 @tanstack_react-query.js:24
+(anonymous) @ VM3255 @tanstack_react-query.js:3146
+subscribeToStore @ VM3249 chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ VM3249 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3249 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3249 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3249 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3249 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3249 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3249 chunk-RPCDYKBN.js:19447
+performSyncWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18868
+flushSyncCallbacks @ VM3249 chunk-RPCDYKBN.js:9119
+commitRootImpl @ VM3249 chunk-RPCDYKBN.js:19432
+commitRoot @ VM3249 chunk-RPCDYKBN.js:19277
+finishConcurrentRender @ VM3249 chunk-RPCDYKBN.js:18805
+performConcurrentWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18718
+workLoop @ VM3249 chunk-RPCDYKBN.js:197
+flushWork @ VM3249 chunk-RPCDYKBN.js:176
+performWorkUntilDeadline @ VM3249 chunk-RPCDYKBN.js:384
+eruda.js:2 Failed to fetch Gmail unread count: Error: DATABASE_ERROR
+    at throwIfResNotOk (bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/lib/queryClient.ts:17:11)
+    at async apiRequest (bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/lib/queryClient.ts:28:3)
+    at async queryFn (bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/simple-nav.tsx:60:28)
+Mt.forEach.n.<computed> @ VM3218 eruda.js:2
+queryFn @ VM3329 simple-nav.tsx:63
+await in queryFn
+fetchFn @ VM3255 @tanstack_react-query.js:881
+run @ VM3255 @tanstack_react-query.js:513
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+(anonymous) @ VM3255 @tanstack_react-query.js:2313
+setInterval
+updateRefetchInterval_fn @ VM3255 @tanstack_react-query.js:2311
+updateTimers_fn @ VM3255 @tanstack_react-query.js:2318
+onQueryUpdate @ VM3255 @tanstack_react-query.js:2274
+(anonymous) @ VM3255 @tanstack_react-query.js:1042
+(anonymous) @ VM3255 @tanstack_react-query.js:1041
+batch @ VM3255 @tanstack_react-query.js:603
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+onSubscribe @ VM3255 @tanstack_react-query.js:1983
+subscribe @ VM3255 @tanstack_react-query.js:24
+(anonymous) @ VM3255 @tanstack_react-query.js:3146
+subscribeToStore @ VM3249 chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ VM3249 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3249 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3249 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3249 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3249 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3249 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3249 chunk-RPCDYKBN.js:19447
+commitRootImpl @ VM3249 chunk-RPCDYKBN.js:19416
+commitRoot @ VM3249 chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ VM3249 chunk-RPCDYKBN.js:9119
+(anonymous) @ VM3249 chunk-RPCDYKBN.js:18627
+setTimeout
+defaultScheduler @ VM3255 @tanstack_react-query.js:565
+flush @ VM3255 @tanstack_react-query.js:589
+batch @ VM3255 @tanstack_react-query.js:607
+dispatch_fn @ VM3255 @tanstack_react-query.js:1040
+setData @ VM3255 @tanstack_react-query.js:718
+onSuccess @ VM3255 @tanstack_react-query.js:940
+resolve @ VM3255 @tanstack_react-query.js:475
+Promise.then
+run @ VM3255 @tanstack_react-query.js:517
+start @ VM3255 @tanstack_react-query.js:555
+fetch @ VM3255 @tanstack_react-query.js:969
+executeFetch_fn @ VM3255 @tanstack_react-query.js:2279
+onSubscribe @ VM3255 @tanstack_react-query.js:1983
+subscribe @ VM3255 @tanstack_react-query.js:24
+(anonymous) @ VM3255 @tanstack_react-query.js:3146
+subscribeToStore @ VM3249 chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ VM3249 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3249 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3249 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3249 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3249 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3249 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3249 chunk-RPCDYKBN.js:19447
+performSyncWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18868
+flushSyncCallbacks @ VM3249 chunk-RPCDYKBN.js:9119
+commitRootImpl @ VM3249 chunk-RPCDYKBN.js:19432
+commitRoot @ VM3249 chunk-RPCDYKBN.js:19277
+finishConcurrentRender @ VM3249 chunk-RPCDYKBN.js:18805
+performConcurrentWorkOnRoot @ VM3249 chunk-RPCDYKBN.js:18718
+workLoop @ VM3249 chunk-RPCDYKBN.js:197
+flushWork @ VM3249 chunk-RPCDYKBN.js:176
+performWorkUntilDeadline @ VM3249 chunk-RPCDYKBN.js:384
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+Promise.catch
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=_nDM39foQOhv' failed: 
+t @ VM3505 eruda.js:2
+setupWebSocket @ VM3536 client:536
+(anonymous) @ VM3536 client:531
+eruda.js:2 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=_nDM39foQOhv' is invalid.
+    at new t (eruda.js:2:218737)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+t @ VM3505 eruda.js:2
+setupWebSocket @ VM3536 client:536
+fallback @ VM3536 client:509
+(anonymous) @ VM3536 client:555
+eruda.js:2 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ VM3505 eruda.js:2
+(anonymous) @ VM3539 App.tsx:381
+commitHookEffectListMount @ VM3535 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3535 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3535 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3535 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3535 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3535 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3535 chunk-RPCDYKBN.js:19447
+performSyncWorkOnRoot @ VM3535 chunk-RPCDYKBN.js:18868
+flushSyncCallbacks @ VM3535 chunk-RPCDYKBN.js:9119
+commitRootImpl @ VM3535 chunk-RPCDYKBN.js:19432
+commitRoot @ VM3535 chunk-RPCDYKBN.js:19277
+finishConcurrentRender @ VM3535 chunk-RPCDYKBN.js:18805
+performConcurrentWorkOnRoot @ VM3535 chunk-RPCDYKBN.js:18718
+workLoop @ VM3535 chunk-RPCDYKBN.js:197
+flushWork @ VM3535 chunk-RPCDYKBN.js:176
+performWorkUntilDeadline @ VM3535 chunk-RPCDYKBN.js:384
+workspace_iframe.html:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2F&id=%3Ar24h%3A:142
+eruda.js:2 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+eruda.js:2 Current URL location: /
+eruda.js:2 Dashboard activeSection changed to: dashboard
+eruda.js:2 WebSocket connected successfully
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ VM3505 eruda.js:2
+(anonymous) @ VM3697 useMessaging.ts:165
+commitHookEffectListMount @ VM3535 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3535 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3535 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3535 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3535 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3535 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3535 chunk-RPCDYKBN.js:19447
+commitRootImpl @ VM3535 chunk-RPCDYKBN.js:19416
+commitRoot @ VM3535 chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ VM3535 chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ VM3535 chunk-RPCDYKBN.js:9119
+(anonymous) @ VM3535 chunk-RPCDYKBN.js:18627
+eruda.js:2 Messaging WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+Mt.forEach.n.<computed> @ VM3505 eruda.js:2
+ws.onerror @ VM3697 useMessaging.ts:196
+eruda.js:2 Messaging WebSocket disconnected
+eruda.js:2 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ VM3505 eruda.js:2
+ws.onclose @ VM3697 useMessaging.ts:203
+eruda.js:2 WebSocket connection closed: 1006 
+_app-b566bb6aa7eb9ca0.js:40  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adcda6b8d&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=dafb3b5f-b393-4023-a95c-8be453246457 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+sendOnExit @ _app-b566bb6aa7eb9ca0.js:40
+e.flush @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+e.notify @ _app-b566bb6aa7eb9ca0.js:1
+f @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+e.notify @ _app-b566bb6aa7eb9ca0.js:1
+r.capture @ _app-b566bb6aa7eb9ca0.js:1
+d @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+_app-b566bb6aa7eb9ca0.js:40  POST https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+add @ _app-b566bb6aa7eb9ca0.js:38
+i @ _app-b566bb6aa7eb9ca0.js:38
+_sendEnvelope @ _app-b566bb6aa7eb9ca0.js:38
+_flushOutcomes @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=_nDM39foQOhv' failed: 
+t @ VM3792 eruda.js:2
+setupWebSocket @ VM3794 client:536
+(anonymous) @ VM3794 client:531
+eruda.js:2 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=_nDM39foQOhv' is invalid.
+    at new t (eruda.js:2:218737)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+t @ VM3792 eruda.js:2
+setupWebSocket @ VM3794 client:536
+fallback @ VM3794 client:509
+(anonymous) @ VM3794 client:555
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=_nDM39foQOhv' failed: 
+t @ VM3937 eruda.js:2
+setupWebSocket @ VM3982 client:536
+(anonymous) @ VM3982 client:531
+eruda.js:2 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=_nDM39foQOhv' is invalid.
+    at new t (eruda.js:2:218737)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+t @ VM3937 eruda.js:2
+setupWebSocket @ VM3982 client:536
+fallback @ VM3982 client:509
+(anonymous) @ VM3982 client:555
+eruda.js:2 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ VM3937 eruda.js:2
+(anonymous) @ VM3969 App.tsx:381
+commitHookEffectListMount @ VM3967 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3967 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3967 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3967 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3967 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3967 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3967 chunk-RPCDYKBN.js:19447
+performSyncWorkOnRoot @ VM3967 chunk-RPCDYKBN.js:18868
+flushSyncCallbacks @ VM3967 chunk-RPCDYKBN.js:9119
+commitRootImpl @ VM3967 chunk-RPCDYKBN.js:19432
+commitRoot @ VM3967 chunk-RPCDYKBN.js:19277
+finishConcurrentRender @ VM3967 chunk-RPCDYKBN.js:18805
+performConcurrentWorkOnRoot @ VM3967 chunk-RPCDYKBN.js:18718
+workLoop @ VM3967 chunk-RPCDYKBN.js:197
+flushWork @ VM3967 chunk-RPCDYKBN.js:176
+performWorkUntilDeadline @ VM3967 chunk-RPCDYKBN.js:384
+workspace_iframe.html:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2F&id=%3Ar28b%3A:142
+eruda.js:2 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+eruda.js:2 Current URL location: /
+eruda.js:2 Dashboard activeSection changed to: dashboard
+eruda.js:2 WebSocket connected successfully
+eruda.js:2 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ VM3937 eruda.js:2
+(anonymous) @ VM4127 useMessaging.ts:165
+commitHookEffectListMount @ VM3967 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM3967 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM3967 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM3967 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM3967 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM3967 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM3967 chunk-RPCDYKBN.js:19447
+commitRootImpl @ VM3967 chunk-RPCDYKBN.js:19416
+commitRoot @ VM3967 chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ VM3967 chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ VM3967 chunk-RPCDYKBN.js:9119
+(anonymous) @ VM3967 chunk-RPCDYKBN.js:18627
+eruda.js:2 Messaging WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+Mt.forEach.n.<computed> @ VM3937 eruda.js:2
+ws.onerror @ VM4127 useMessaging.ts:196
+eruda.js:2 Messaging WebSocket disconnected
+eruda.js:2 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ VM3937 eruda.js:2
+ws.onclose @ VM4127 useMessaging.ts:203
+eruda.js:2 WebSocket connection closed: 1006 
+eruda.js:2 WebSocket connected successfully
+_app-b566bb6aa7eb9ca0.js:38 Uncaught TypeError: Cannot read properties of undefined (reading 'dimensions')
+    at get dimensions (7b975a49.21f1ec111d51f23f.js:3:88160)
+    at t.Viewport.syncScrollArea (7b975a49.21f1ec111d51f23f.js:3:30735)
+    at 7b975a49.21f1ec111d51f23f.js:3:29381
+    at n (_app-b566bb6aa7eb9ca0.js:38:2959)
+get dimensions @ 7b975a49.21f1ec111d51f23f.js:3
+syncScrollArea @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38 Uncaught TypeError: Cannot read properties of undefined (reading 'dimensions')
+    at get dimensions (7b975a49.21f1ec111d51f23f.js:3:88160)
+    at t.Viewport.syncScrollArea (7b975a49.21f1ec111d51f23f.js:3:30735)
+    at 7b975a49.21f1ec111d51f23f.js:3:29381
+    at n (_app-b566bb6aa7eb9ca0.js:38:2959)
+get dimensions @ 7b975a49.21f1ec111d51f23f.js:3
+syncScrollArea @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38 Uncaught TypeError: Cannot read properties of undefined (reading 'dimensions')
+    at get dimensions (7b975a49.21f1ec111d51f23f.js:3:88160)
+    at t.Viewport.syncScrollArea (7b975a49.21f1ec111d51f23f.js:3:30735)
+    at 7b975a49.21f1ec111d51f23f.js:3:29381
+    at n (_app-b566bb6aa7eb9ca0.js:38:2959)
+get dimensions @ 7b975a49.21f1ec111d51f23f.js:3
+syncScrollArea @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38 Uncaught TypeError: Cannot read properties of undefined (reading 'dimensions')
+    at get dimensions (7b975a49.21f1ec111d51f23f.js:3:88160)
+    at t.Viewport.syncScrollArea (7b975a49.21f1ec111d51f23f.js:3:30735)
+    at 7b975a49.21f1ec111d51f23f.js:3:29381
+    at n (_app-b566bb6aa7eb9ca0.js:38:2959)
+get dimensions @ 7b975a49.21f1ec111d51f23f.js:3
+syncScrollArea @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+requestAnimationFrame
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+fire @ 7b975a49.21f1ec111d51f23f.js:3
+fullReset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+_innerWrite @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+n @ main-63c743569e0a59cb.js:1
+u @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ 268-f58cfbcba40f818d.js:1
+oO @ framework-2e0fdbeb2b9cca7a.js:1
+uB @ framework-2e0fdbeb2b9cca7a.js:1
+u_ @ framework-2e0fdbeb2b9cca7a.js:1
+r6 @ framework-2e0fdbeb2b9cca7a.js:1
+(anonymous) @ framework-2e0fdbeb2b9cca7a.js:1
+uO @ framework-2e0fdbeb2b9cca7a.js:1
+uS @ framework-2e0fdbeb2b9cca7a.js:1
+C @ framework-2e0fdbeb2b9cca7a.js:1
+z @ framework-2e0fdbeb2b9cca7a.js:1
+_app-b566bb6aa7eb9ca0.js:38 Uncaught TypeError: Cannot read properties of undefined (reading 'dimensions')
+    at get dimensions (7b975a49.21f1ec111d51f23f.js:3:88160)
+    at t.Viewport.syncScrollArea (7b975a49.21f1ec111d51f23f.js:3:30735)
+    at 7b975a49.21f1ec111d51f23f.js:3:29381
+    at n (_app-b566bb6aa7eb9ca0.js:38:2959)
+get dimensions @ 7b975a49.21f1ec111d51f23f.js:3
+syncScrollArea @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+requestAnimationFrame
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+fire @ 7b975a49.21f1ec111d51f23f.js:3
+fullReset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+_innerWrite @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+n @ main-63c743569e0a59cb.js:1
+u @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ 268-f58cfbcba40f818d.js:1
+oO @ framework-2e0fdbeb2b9cca7a.js:1
+uB @ framework-2e0fdbeb2b9cca7a.js:1
+u_ @ framework-2e0fdbeb2b9cca7a.js:1
+r6 @ framework-2e0fdbeb2b9cca7a.js:1
+(anonymous) @ framework-2e0fdbeb2b9cca7a.js:1
+uO @ framework-2e0fdbeb2b9cca7a.js:1
+uS @ framework-2e0fdbeb2b9cca7a.js:1
+C @ framework-2e0fdbeb2b9cca7a.js:1
+z @ framework-2e0fdbeb2b9cca7a.js:1
+_app-b566bb6aa7eb9ca0.js:38 Uncaught TypeError: Cannot read properties of undefined (reading 'dimensions')
+    at get dimensions (7b975a49.21f1ec111d51f23f.js:3:88160)
+    at t.Viewport.syncScrollArea (7b975a49.21f1ec111d51f23f.js:3:30735)
+    at 7b975a49.21f1ec111d51f23f.js:3:29381
+    at n (_app-b566bb6aa7eb9ca0.js:38:2959)
+get dimensions @ 7b975a49.21f1ec111d51f23f.js:3
+syncScrollArea @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+requestAnimationFrame
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+fire @ 7b975a49.21f1ec111d51f23f.js:3
+fullReset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+_innerWrite @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+n @ main-63c743569e0a59cb.js:1
+u @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ 268-f58cfbcba40f818d.js:1
+oO @ framework-2e0fdbeb2b9cca7a.js:1
+uB @ framework-2e0fdbeb2b9cca7a.js:1
+u_ @ framework-2e0fdbeb2b9cca7a.js:1
+r6 @ framework-2e0fdbeb2b9cca7a.js:1
+(anonymous) @ framework-2e0fdbeb2b9cca7a.js:1
+uO @ framework-2e0fdbeb2b9cca7a.js:1
+uS @ framework-2e0fdbeb2b9cca7a.js:1
+C @ framework-2e0fdbeb2b9cca7a.js:1
+z @ framework-2e0fdbeb2b9cca7a.js:1
+_app-b566bb6aa7eb9ca0.js:38 Uncaught TypeError: Cannot read properties of undefined (reading 'dimensions')
+    at get dimensions (7b975a49.21f1ec111d51f23f.js:3:88160)
+    at t.Viewport.syncScrollArea (7b975a49.21f1ec111d51f23f.js:3:30735)
+    at 7b975a49.21f1ec111d51f23f.js:3:29381
+    at n (_app-b566bb6aa7eb9ca0.js:38:2959)
+get dimensions @ 7b975a49.21f1ec111d51f23f.js:3
+syncScrollArea @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+requestAnimationFrame
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+reset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+fire @ 7b975a49.21f1ec111d51f23f.js:3
+fullReset @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+parse @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+_innerWrite @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 7b975a49.21f1ec111d51f23f.js:3
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+write @ 7b975a49.21f1ec111d51f23f.js:3
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+n @ main-63c743569e0a59cb.js:1
+u @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ main-63c743569e0a59cb.js:1
+(anonymous) @ 1618-ff6b3ac3eb02e9ab.js:1
+(anonymous) @ 268-f58cfbcba40f818d.js:1
+oO @ framework-2e0fdbeb2b9cca7a.js:1
+uB @ framework-2e0fdbeb2b9cca7a.js:1
+u_ @ framework-2e0fdbeb2b9cca7a.js:1
+r6 @ framework-2e0fdbeb2b9cca7a.js:1
+(anonymous) @ framework-2e0fdbeb2b9cca7a.js:1
+uO @ framework-2e0fdbeb2b9cca7a.js:1
+uS @ framework-2e0fdbeb2b9cca7a.js:1
+C @ framework-2e0fdbeb2b9cca7a.js:1
+z @ framework-2e0fdbeb2b9cca7a.js:1
+_app-b566bb6aa7eb9ca0.js:40  POST https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+add @ _app-b566bb6aa7eb9ca0.js:38
+i @ _app-b566bb6aa7eb9ca0.js:38
+_sendEnvelope @ _app-b566bb6aa7eb9ca0.js:38
+sendSession @ _app-b566bb6aa7eb9ca0.js:36
+captureSession @ _app-b566bb6aa7eb9ca0.js:36
+_updateSessionFromEvent @ _app-b566bb6aa7eb9ca0.js:37
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:37
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+_executeHandlers @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+s @ _app-b566bb6aa7eb9ca0.js:1
+then @ _app-b566bb6aa7eb9ca0.js:1
+_processEvent @ _app-b566bb6aa7eb9ca0.js:37
+_captureEvent @ _app-b566bb6aa7eb9ca0.js:37
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:36
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+_executeHandlers @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+s @ _app-b566bb6aa7eb9ca0.js:1
+then @ _app-b566bb6aa7eb9ca0.js:1
+captureException @ _app-b566bb6aa7eb9ca0.js:36
+captureException @ _app-b566bb6aa7eb9ca0.js:1
+captureException @ _app-b566bb6aa7eb9ca0.js:6
+c @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+withScope @ _app-b566bb6aa7eb9ca0.js:6
+g @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:40  POST https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+add @ _app-b566bb6aa7eb9ca0.js:38
+i @ _app-b566bb6aa7eb9ca0.js:38
+_sendEnvelope @ _app-b566bb6aa7eb9ca0.js:38
+sendEvent @ _app-b566bb6aa7eb9ca0.js:36
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:37
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+_executeHandlers @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+s @ _app-b566bb6aa7eb9ca0.js:1
+then @ _app-b566bb6aa7eb9ca0.js:1
+_processEvent @ _app-b566bb6aa7eb9ca0.js:37
+_captureEvent @ _app-b566bb6aa7eb9ca0.js:37
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:36
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+_executeHandlers @ _app-b566bb6aa7eb9ca0.js:1
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:1
+s @ _app-b566bb6aa7eb9ca0.js:1
+then @ _app-b566bb6aa7eb9ca0.js:1
+captureException @ _app-b566bb6aa7eb9ca0.js:36
+captureException @ _app-b566bb6aa7eb9ca0.js:1
+captureException @ _app-b566bb6aa7eb9ca0.js:6
+c @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+withScope @ _app-b566bb6aa7eb9ca0.js:6
+g @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+_app-b566bb6aa7eb9ca0.js:38  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+promise @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+r.httpRequest @ _app-b566bb6aa7eb9ca0.js:40
+t @ _app-b566bb6aa7eb9ca0.js:40
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:40
+Promise.catch
+t @ _app-b566bb6aa7eb9ca0.js:40
+a.sendChunk @ _app-b566bb6aa7eb9ca0.js:40
+a.sendEvents @ _app-b566bb6aa7eb9ca0.js:40
+a.flush @ _app-b566bb6aa7eb9ca0.js:40
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+setTimeout
+(anonymous) @ _app-b566bb6aa7eb9ca0.js:38
+e @ _app-b566bb6aa7eb9ca0.js:40
+n @ _app-b566bb6aa7eb9ca0.js:38
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=_nDM39foQOhv' failed: 
+t @ Network.js:227
+setupWebSocket @ client:536
+(anonymous) @ client:531
+Network.js:227 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=_nDM39foQOhv' is invalid.
+    at new t (Network.js:227:18)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+t @ Network.js:227
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+Console.js:61 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ Console.js:61
+(anonymous) @ App.tsx:143
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=0cbe1f2d:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=0cbe1f2d:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=0cbe1f2d:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=0cbe1f2d:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=0cbe1f2d:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19432
+commitRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=0cbe1f2d:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:18718
+workLoop @ chunk-RPCDYKBN.js?v=0cbe1f2d:197
+flushWork @ chunk-RPCDYKBN.js?v=0cbe1f2d:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=0cbe1f2d:384
+workspace_iframe.html?initialPath=%2F&id=%3Ar2am%3A:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2F&id=%3Ar2am%3A:142
+Console.js:61 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+Console.js:61 Current URL location: /
+Console.js:61 Dashboard activeSection changed to: dashboard
+Console.js:61 WebSocket connected successfully
+useMessaging.ts:242 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+t @ Network.js:227
+(anonymous) @ useMessaging.ts:242
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=0cbe1f2d:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=0cbe1f2d:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=0cbe1f2d:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=0cbe1f2d:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=0cbe1f2d:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=0cbe1f2d:19416
+commitRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=0cbe1f2d:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=0cbe1f2d:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=0cbe1f2d:18627
+Console.js:61 Messaging WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+Mt.forEach.n.<computed> @ Console.js:61
+ws.onerror @ useMessaging.ts:281
+Console.js:61 Messaging WebSocket disconnected
+Console.js:61 WebSocket closed unexpectedly: 1006 
+Mt.forEach.n.<computed> @ Console.js:61
+ws.onclose @ useMessaging.ts:291
+Console.js:61 Navigation click: gmail-inbox
+Console.js:61 Dashboard setActiveSection called with: gmail-inbox
+Console.js:61 🔍 GmailStyleInbox component is rendering
+Console.js:61 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+Console.js:61 🎨 About to render GmailStyleInbox main UI
+Console.js:61 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 0}
+Console.js:61 Current URL location: /dashboard
+Console.js:61 Dashboard activeSection changed to: gmail-inbox
+Console.js:61 🔍 GmailStyleInbox component is rendering
+Console.js:61 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+Console.js:61 🎨 About to render GmailStyleInbox main UI
+Console.js:61 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 0}
+Console.js:61 Fetched 2 emails from inbox folder
+Console.js:61 🔍 GmailStyleInbox component is rendering
+Console.js:61 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+Console.js:61 🎨 About to render GmailStyleInbox main UI
+Console.js:61 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}
+Console.js:61 🔍 GmailStyleInbox component is rendering
+Console.js:61 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+Console.js:61 🎨 About to render GmailStyleInbox main UI
+Console.js:61 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}
+Console.js:61 🔍 GmailStyleInbox component is rendering
+Console.js:61 ✅ User authenticated, rendering inbox for: admin@sandwich.project
+Console.js:61 🎨 About to render GmailStyleInbox main UI
+Console.js:61 📊 Component state: {activeFolder: 'inbox', selectedMessage: false, messageCount: 2}activeFolder: "inbox"messageCount: 2selectedMessage: false[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()

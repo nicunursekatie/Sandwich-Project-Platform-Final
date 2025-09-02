@@ -597,7 +597,10 @@ export default function GmailStyleInbox() {
   console.log('📊 Component state:', { activeFolder, selectedMessage: !!selectedMessage, messageCount: messages.length });
 
   return (
-    <div className="flex h-full bg-red-100 relative min-w-0 max-w-full overflow-hidden" style={{ minHeight: '500px', border: '2px solid red' }}>
+    <div className="flex h-full bg-red-500 relative min-w-0 max-w-full overflow-visible" style={{ minHeight: '100vh', border: '5px solid blue', zIndex: 99999, position: 'relative' }}>
+      <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black p-8 z-50" style={{ fontSize: '32px', fontWeight: 'bold', border: '3px solid black' }}>
+        INBOX IS HERE! Messages: {messages.length}, Screen: {screenSize}
+      </div>
       {/* Mobile/Tablet Overlay for Sidebar - when sidebar is open as overlay */}
       {!isSidebarCollapsed && (screenSize === 'mobile' || screenSize === 'small-tablet') && (
         <div 
