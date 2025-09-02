@@ -223,7 +223,7 @@ export default function ImportantDocuments() {
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
               onClick={() => setSelectedCategory(category)}
-              className="text-sm"
+              className={selectedCategory === category ? "text-sm bg-[#236383] hover:bg-[#1a4e66] border-[#236383]" : "text-sm border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"}
             >
               {category}
             </Button>
@@ -265,7 +265,7 @@ export default function ImportantDocuments() {
                     size="default"
                     variant="outline"
                     onClick={() => handlePreview(doc)}
-                    className="w-full h-11 text-base font-medium"
+                    className="w-full h-11 text-base font-medium border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
                   >
                     <Eye className="h-5 w-5 mr-2" />
                     Preview
@@ -274,7 +274,7 @@ export default function ImportantDocuments() {
                     size="default"
                     variant="default"
                     onClick={() => handleDownload(doc)}
-                    className="w-full h-11 text-base font-medium"
+                    className="w-full h-11 text-base font-medium bg-[#236383] hover:bg-[#1a4e66] border-[#236383]"
                   >
                     <Download className="h-5 w-5 mr-2" />
                     Download
