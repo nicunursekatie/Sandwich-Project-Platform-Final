@@ -1531,6 +1531,28 @@ export default function EnhancedMeetingDashboard() {
             </Card>
           )}
 
+          {/* Progress Indicator */}
+          {allProjects.length > 0 && (
+            <div className="sticky top-0 bg-white z-10 p-3 border-b border-gray-200 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-medium text-gray-700">Reviewing projects for meeting</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-teal-600 font-medium">
+                    {agendaSummary.agendaCount + agendaSummary.tabledCount} of {allProjects.filter(p => p.status !== 'completed').length} reviewed
+                  </span>
+                  <div className="w-32 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-teal-600 h-2 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${Math.min(100, ((agendaSummary.agendaCount + agendaSummary.tabledCount) / allProjects.filter(p => p.status !== 'completed').length) * 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Projects Selection Table */}
           <Card>
             <CardHeader>
@@ -1551,7 +1573,35 @@ export default function EnhancedMeetingDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {allProjects.filter((project: any) => project.status !== 'completed').map((project: any) => {
+                    {allProjects.filter((project: any) => project.status !== 'completed').map((project: any, index: number) => {
+                      // Add section headers to break up the list
+                      let sectionHeader = null;
+                      const filteredProjects = allProjects.filter((p: any) => p.status !== 'completed');
+                      
+                      if (index === 0) {
+                        const needsDiscussionCount = filteredProjects.filter((p: any) => 
+                          p.meetingDiscussionPoints || p.meetingDecisionItems
+                        ).length;
+                        if (needsDiscussionCount > 0) {
+                          sectionHeader = (
+                            <h4 key="needs-discussion" className="text-xs font-semibold text-gray-500 my-4 uppercase tracking-wider">
+                              NEEDS DISCUSSION ({needsDiscussionCount})
+                            </h4>
+                          );
+                        }
+                      } else if (index === Math.floor(filteredProjects.length * 0.4)) {
+                        sectionHeader = (
+                          <h4 key="in-progress" className="text-xs font-semibold text-gray-500 my-4 uppercase tracking-wider">
+                            IN PROGRESS
+                          </h4>
+                        );
+                      } else if (index === Math.floor(filteredProjects.length * 0.7)) {
+                        sectionHeader = (
+                          <h4 key="other-projects" className="text-xs font-semibold text-gray-500 my-4 uppercase tracking-wider">
+                            OTHER PROJECTS
+                          </h4>
+                        );
+                      }
                       // Use our date utility to avoid timezone conversion issues
                       const lastDiscussed = project.lastDiscussedDate 
                         ? formatDateForDisplay(project.lastDiscussedDate)
@@ -1559,32 +1609,35 @@ export default function EnhancedMeetingDashboard() {
                       
                       const isMinimized = minimizedProjects.has(project.id);
                       const agendaStatus = projectAgendaStatus[project.id] || 'none';
+                      const needsDiscussion = project.meetingDiscussionPoints || project.meetingDecisionItems;
                       
                       // Minimized view
                       if (isMinimized) {
                         return (
-                          <Card 
-                            key={project.id} 
-                            className={`border-2 transition-all ${
-                              agendaStatus === 'agenda' 
-                                ? 'border-green-300 bg-green-50' 
-                                : agendaStatus === 'tabled' 
-                                ? 'border-orange-300 bg-orange-50'
-                                : 'border-gray-200'
-                            }`}
-                          >
+                          <React.Fragment key={`fragment-${project.id}`}>
+                            {sectionHeader}
+                            <Card 
+                              key={project.id} 
+                              className={`border-2 transition-all mb-2 ${
+                                agendaStatus === 'agenda' 
+                                  ? 'border-green-300 bg-green-50' 
+                                  : agendaStatus === 'tabled' 
+                                  ? 'border-orange-300 bg-orange-50'
+                                  : index % 2 === 0 ? 'border-gray-200 bg-white' : 'border-gray-200 bg-gray-50'
+                              }`}
+                            >
                             <CardContent className="p-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3">
                                     <h3 className="font-medium text-gray-900">{project.title}</h3>
                                     <Badge 
-                                      className={`text-xs ${
+                                      className={`text-xs font-medium ${
                                         agendaStatus === 'agenda' 
-                                          ? 'bg-green-100 text-green-800' 
+                                          ? 'bg-green-100 text-green-800 border-green-200' 
                                           : agendaStatus === 'tabled'
-                                          ? 'bg-orange-100 text-orange-800'
-                                          : 'bg-gray-100 text-gray-800'
+                                          ? 'bg-orange-100 text-orange-800 border-orange-200'
+                                          : 'bg-gray-100 text-gray-600 border-gray-200'
                                       }`}
                                     >
                                       {agendaStatus === 'agenda' ? '📅 On Agenda' : agendaStatus === 'tabled' ? '⏳ Tabled' : 'Not Scheduled'}
@@ -1617,7 +1670,7 @@ export default function EnhancedMeetingDashboard() {
                                     </div>
                                   )}
                                 </div>
-                                <div className="flex gap-2 ml-4">
+                                <div className="flex gap-2 ml-4 opacity-80 hover:opacity-100 transition-opacity">
                                   {agendaStatus === 'agenda' ? (
                                     <>
                                       <Button
@@ -1674,13 +1727,18 @@ export default function EnhancedMeetingDashboard() {
                                 </div>
                               </div>
                             </CardContent>
-                          </Card>
+                            </Card>
+                          </React.Fragment>
                         );
                       }
                       
-                      // Full view
+                      // Full view with alternating backgrounds for easier scanning
                       return (
-                        <Card key={project.id} className="border border-gray-200 hover:border-gray-300">
+                        <React.Fragment key={`fragment-full-${project.id}`}>
+                          {sectionHeader}
+                          <Card key={project.id} className={`border border-gray-200 hover:border-gray-300 mb-3 ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                          }`}>
                           <CardHeader className="pb-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -1716,15 +1774,19 @@ export default function EnhancedMeetingDashboard() {
                                 <Button
                                   size="sm"
                                   onClick={() => handleSendToAgenda(project.id)}
-                                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                  className={`px-4 py-2 rounded font-medium transition-all ${
+                                    agendaStatus === 'agenda'
+                                      ? 'bg-teal-600 text-white'
+                                      : 'bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-50'
+                                  }`}
                                 >
-                                  📅 Send to Agenda
+                                  {agendaStatus === 'agenda' ? '✓ On Agenda' : 'Send to Agenda'}
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleTableProject(project.id)}
-                                  className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                                  className="px-4 py-2 rounded font-medium border-2 border-orange-500 text-orange-700 hover:bg-orange-50 transition-all"
                                 >
                                   ⏳ Table for Later
                                 </Button>
@@ -1910,7 +1972,8 @@ export default function EnhancedMeetingDashboard() {
                               )}
                             </div>
                           </CardContent>
-                        </Card>
+                          </Card>
+                        </React.Fragment>
                       );
                     })}
                   </div>
@@ -1975,6 +2038,33 @@ export default function EnhancedMeetingDashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Floating Action Bar */}
+          {(agendaSummary.agendaCount > 0 || agendaSummary.tabledCount > 0) && (
+            <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 border border-gray-200 z-50">
+              <div className="text-sm text-gray-600 mb-2 font-medium">
+                {agendaSummary.agendaCount + agendaSummary.tabledCount} projects reviewed
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm"
+                  onClick={handleFinalizeAgenda}
+                  disabled={isGeneratingPDF || agendaSummary.agendaCount === 0}
+                  className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 transition-all"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Generate PDF
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition-all"
+                >
+                  Save Progress
+                </Button>
+              </div>
+            </div>
           )}
         </div>
       )}
