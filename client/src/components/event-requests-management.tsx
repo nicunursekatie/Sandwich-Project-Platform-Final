@@ -261,11 +261,24 @@ export default function EventRequestsManagement() {
   // Helper function to get user display name
   const getUserDisplayName = (userId: string | null | undefined) => {
     if (!userId) return "Not specified";
+    
+    // First try to find by user ID
     const user = users.find((u: any) => u.id === userId);
-    if (!user) return "User not found";
-    return user.firstName && user.lastName 
-      ? `${user.firstName} ${user.lastName}` 
-      : user.displayName || user.email;
+    if (user) {
+      return user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.displayName || user.email;
+    }
+    
+    // If not found by ID, check if it's already a display name (plain text)
+    // This handles legacy data where names were stored directly
+    if (userId.includes('@') || userId.includes('_')) {
+      // Looks like a user ID that wasn't found
+      return "User not found";
+    } else {
+      // Assume it's a plain text name (legacy data)
+      return userId;
+    }
   };
 
   // Helper function to get organization event count
