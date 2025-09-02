@@ -346,67 +346,87 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           </div>
         </div>
 
-        {/* Quick Actions Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mx-4 mt-6 sm:mt-8">
-          <div className="bg-white rounded-xl p-3 sm:p-4 text-left group shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-              <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        {/* Secondary Tools Section */}
+        <div className="mx-4 mb-8">
+          <h3 className="text-lg font-semibold text-[#236383] mb-4">Planning Tools</h3>
+          
+          {/* Inventory Calculator - Prominent but secondary */}
+          <div className="bg-gradient-to-r from-[#236383] to-[#007E8C] rounded-xl p-6 text-white shadow-lg mb-6">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                <Calculator className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h4 className="text-xl font-bold mb-1">Inventory Calculator</h4>
+                <p className="text-white/90">Essential tool for planning sandwich quantities</p>
+              </div>
             </div>
-            <h4 className="text-sm sm:text-base font-semibold text-[#236383] mb-1 sm:mb-2">Inventory Calculator</h4>
-            <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Plan quantities</p>
-            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+            <div className="flex gap-3">
               <Button
-                size="sm"
-                variant="default"
                 onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}
-                className="flex-1 h-7 sm:h-8 text-xs"
+                className="bg-white text-[#236383] hover:bg-gray-50 font-semibold px-6 py-2"
               >
-                <ExternalLink className="w-3 h-3 mr-1" />
-                Open
+                <Calculator className="w-4 h-4 mr-2" />
+                Open Calculator
               </Button>
               <Button
-                size="sm"
                 variant="outline"
                 onClick={handleShareInventoryCalculator}
-                className="flex-1 h-7 sm:h-8 text-xs"
+                className="border-white text-white hover:bg-white/10 px-4 py-2"
               >
-                <Share2 className="w-3 h-3 mr-1" />
+                <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
             </div>
           </div>
+          
+          {/* Quick Actions Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
 
-          <button className="bg-white rounded-xl p-3 sm:p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('collections')}>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20" onClick={() => onSectionChange?.('collections')}>
+              <div className="w-12 h-12 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-[#236383] mb-1">Collections</h3>
+              <p className="text-sm text-gray-600 mb-3">View all data</p>
+              <div className="text-[#236383] font-medium text-sm flex items-center">
+                Open Collections →
+              </div>
             </div>
-            <h4 className="text-sm sm:text-base font-semibold text-[#236383]">Collections</h4>
-            <p className="text-xs sm:text-sm text-gray-600">View all data</p>
-          </button>
 
-          <button className="bg-white rounded-xl p-3 sm:p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('analytics')}>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20" onClick={() => onSectionChange?.('analytics')}>
+              <div className="w-12 h-12 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-[#236383] mb-1">Analytics</h3>
+              <p className="text-sm text-gray-600 mb-3">Deep insights</p>
+              <div className="text-[#236383] font-medium text-sm flex items-center">
+                View Analytics →
+              </div>
             </div>
-            <h4 className="text-sm sm:text-base font-semibold text-[#236383]">Analytics</h4>
-            <p className="text-xs sm:text-sm text-gray-600">Deep insights</p>
-          </button>
 
-          <button className="bg-white rounded-xl p-3 sm:p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200" onClick={() => onSectionChange?.('phone-directory')}>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#007E8C] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20" onClick={() => onSectionChange?.('phone-directory')}>
+              <div className="w-12 h-12 bg-[#007E8C] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-[#236383] mb-1">Directory</h3>
+              <p className="text-sm text-gray-600 mb-3">Contact info</p>
+              <div className="text-[#236383] font-medium text-sm flex items-center">
+                Open Directory →
+              </div>
             </div>
-            <h4 className="text-sm sm:text-base font-semibold text-[#236383]">Directory</h4>
-            <p className="text-xs sm:text-sm text-gray-600">Contact info</p>
-          </button>
 
-          <button className="bg-white rounded-xl p-3 sm:p-4 text-left group cursor-pointer shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 col-span-2 sm:col-span-1" onClick={() => onSectionChange?.('messages')}>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#A31C41] rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20" onClick={() => onSectionChange?.('messages')}>
+              <div className="w-12 h-12 bg-[#A31C41] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <Calendar className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-[#236383] mb-1">Messages</h3>
+              <p className="text-sm text-gray-600 mb-3">Communication</p>
+              <div className="text-[#236383] font-medium text-sm flex items-center">
+                Open Messages →
+              </div>
             </div>
-            <h4 className="text-sm sm:text-base font-semibold text-[#236383]">Messages</h4>
-            <p className="text-xs sm:text-sm text-gray-600">Communication</p>
-          </button>
+          </div>
         </div>
 
         {/* Important Documents - Using same layout as governance documents */}
@@ -424,7 +444,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
           {/* Documents Grid - Better mobile responsiveness */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {importantDocuments.map((doc, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200">
+              <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-[#236383]/20">
                 <CardHeader className="pb-3 sm:pb-4 flex-shrink-0">
                   <div className="flex items-start justify-between mb-2 sm:mb-3">
                     <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
@@ -437,7 +457,7 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 bg-purple-100 text-purple-800">
+                    <Badge className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 bg-[#236383]/10 text-[#236383]">
                       {doc.category}
                     </Badge>
                     <Badge variant="outline" className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1">
@@ -455,19 +475,18 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
                       size="default"
                       variant="outline"
                       onClick={() => openPreviewModal(doc.path, doc.title, 'pdf')}
-                      className="w-full h-10 sm:h-11 text-sm sm:text-base font-medium"
+                      className="w-full h-11 font-medium border-[#236383]/30 hover:border-[#236383] text-[#236383] hover:bg-[#236383]/5"
                     >
-                      <Eye className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                      Preview
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview Document
                     </Button>
                     <Button
                       size="default"
-                      variant="default"
                       onClick={() => window.open(doc.path, '_blank')}
-                      className="w-full h-10 sm:h-11 text-sm sm:text-base font-medium"
+                      className="w-full h-11 font-medium bg-[#236383] hover:bg-[#007E8C] text-white"
                     >
-                      <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                      Download
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
                     </Button>
                   </div>
                 </CardContent>
