@@ -1079,8 +1079,13 @@ export const eventRequests = pgTable("event_requests", {
   previouslyHosted: varchar("previously_hosted").notNull().default("i_dont_know"), // 'yes', 'no', 'i_dont_know'
   
   // System tracking
-  status: varchar("status").notNull().default("new"), // 'new', 'contact_completed', 'scheduled', 'completed', 'declined'
+  status: varchar("status").notNull().default("new"), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined'
   assignedTo: varchar("assigned_to"), // User ID of person handling this request
+  
+  // Follow-up tracking fields
+  followUpMethod: varchar("follow_up_method"), // 'email', 'call'
+  updatedEmail: varchar("updated_email"), // Email address collected during follow-up call
+  followUpDate: timestamp("follow_up_date"), // When follow-up was completed
   
   // Timeline tracking
   contactedAt: timestamp("contacted_at"), // When initial contact was completed

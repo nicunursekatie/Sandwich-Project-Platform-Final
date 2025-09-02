@@ -105,7 +105,7 @@ interface EventRequest {
   desiredEventDate?: string;
   message?: string;
   previouslyHosted: 'yes' | 'no' | 'i_dont_know';
-  status: 'new' | 'contact_completed' | 'scheduled' | 'completed' | 'declined';
+  status: 'new' | 'followed_up' | 'in_process' | 'scheduled' | 'completed' | 'declined';
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
@@ -142,19 +142,24 @@ interface EventRequest {
   additionalContact1?: string;
   additionalContact2?: string;
   customTspContact?: string;
+  followUpMethod?: string;
+  updatedEmail?: string;
+  followUpDate?: string;
 }
 
 const statusColors = {
-  new: "bg-gradient-to-r from-teal-50 to-cyan-100 text-teal-800 border border-teal-200",
-  contact_completed: "bg-gradient-to-r from-orange-50 to-amber-100 text-orange-800 border border-orange-200",
+  new: "bg-gradient-to-r from-teal-50 to-cyan-100 text-[#236383] border border-teal-200",
+  followed_up: "bg-gradient-to-r from-orange-50 to-amber-100 text-[#FBAD3F] border border-orange-200",
+  in_process: "bg-gradient-to-r from-teal-50 to-cyan-100 text-[#007E8C] border border-teal-200",
   scheduled: "bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200",
   completed: "bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200",
-  declined: "bg-gradient-to-r text-white border-2 font-bold shadow-lg"
+  declined: "bg-gradient-to-r from-[#A31C41] to-red-700 text-white border-2 font-bold shadow-lg"
 };
 
 const statusIcons = {
   new: Clock,
-  contact_completed: CheckCircle,
+  followed_up: Mail,
+  in_process: Phone,
   scheduled: Calendar,
   completed: CheckCircle,
   declined: XCircle
@@ -168,7 +173,8 @@ const previouslyHostedOptions = [
 
 const statusOptions = [
   { value: "new", label: "New Request" },
-  { value: "contact_completed", label: "Contact Completed" },
+  { value: "followed_up", label: "Followed Up" },
+  { value: "in_process", label: "In Process" },
   { value: "scheduled", label: "Scheduled" },
   { value: "completed", label: "Completed" },
   { value: "declined", label: "🚫 EVENT POSTPONED" }
@@ -213,6 +219,11 @@ export default function EventRequestsManagement() {
   const [unresponsiveRequest, setUnresponsiveRequest] = useState<EventRequest | null>(null);
   const [selectedTspContacts, setSelectedTspContacts] = useState<string[]>([]);
   const [customTspContacts, setCustomTspContacts] = useState<string[]>(['']);
+  const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
+  const [followUpRequest, setFollowUpRequest] = useState<EventRequest | null>(null);
+  const [showCallbackDialog, setShowCallbackDialog] = useState(false);
+  const [showCallCompletedDialog, setShowCallCompletedDialog] = useState(false);
+  const [callCompletedRequest, setCallCompletedRequest] = useState<EventRequest | null>(null);
   
   // Get current user for permission checking
   const { user } = useAuth();
@@ -413,6 +424,93 @@ export default function EventRequestsManagement() {
     }
   });
 
+  const followUpMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/event-requests/follow-up", data),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/event-requests"] });
+      const previousEvents = queryClient.getQueryData(["/api/event-requests"]);
+      
+      // Optimistically update the event status
+      queryClient.setQueryData(["/api/event-requests"], (old: any) => {
+        if (!old) return old;
+        return old.map((event: any) => 
+          event.id === data.id ? { 
+            ...event, 
+            status: data.method === 'email' ? 'followed_up' : 'in_process',
+            followUpMethod: data.method,
+            updatedEmail: data.updatedEmail,
+            followUpDate: new Date().toISOString()
+          } : event
+        );
+      });
+      
+      return { previousEvents };
+    },
+    onSuccess: () => {
+      setShowFollowUpDialog(false);
+      setFollowUpRequest(null);
+      toast({ title: "Follow-up recorded successfully" });
+    },
+    onError: (error: any, variables, context: any) => {
+      queryClient.setQueryData(["/api/event-requests"], context?.previousEvents);
+      toast({ 
+        title: "Error recording follow-up", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+    }
+  });
+
+  const callCompletedMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("PATCH", `/api/event-requests/${data.id}/event-details`, { 
+      status: 'scheduled',
+      ...data.eventDetails 
+    }),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/event-requests"] });
+      const previousEvents = queryClient.getQueryData(["/api/event-requests"]);
+      
+      // Optimistically update the event to scheduled
+      queryClient.setQueryData(["/api/event-requests"], (old: any) => {
+        if (!old) return old;
+        return old.map((event: any) => 
+          event.id === data.id ? { 
+            ...event, 
+            status: 'scheduled',
+            ...data.eventDetails
+          } : event
+        );
+      });
+      
+      return { previousEvents };
+    },
+    onError: (err, data, context) => {
+      // Rollback optimistic update
+      if (context?.previousEvents) {
+        queryClient.setQueryData(["/api/event-requests"], context.previousEvents);
+      }
+      toast({
+        title: "Error",
+        description: "Failed to update event details",
+        variant: "destructive"
+      });
+    },
+    onSuccess: () => {
+      setShowCallCompletedDialog(false);
+      setCallCompletedRequest(null);
+      toast({
+        title: "Call completed",
+        description: "Event moved to Scheduled status with full details"
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+    }
+  });
+
   const completeEventDetailsMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests/complete-event-details", data),
     onMutate: async (data) => {
@@ -572,7 +670,8 @@ export default function EventRequestsManagement() {
     if (eventDate >= today) {
       return req.status === 'new' || 
              !req.status || 
-             (req.status !== 'contact_completed' && 
+             (req.status !== 'followed_up' && 
+              req.status !== 'in_process' && 
               req.status !== 'scheduled' && 
               req.status !== 'completed' && 
               req.status !== 'declined');
@@ -583,7 +682,7 @@ export default function EventRequestsManagement() {
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
-    if (!req.desiredEventDate) return req.status === 'contact_completed' || req.status === 'scheduled';
+    if (!req.desiredEventDate) return req.status === 'followed_up' || req.status === 'in_process' || req.status === 'scheduled';
     // Use the same timezone-safe parsing as formatEventDate function
     let eventDate: Date;
     const dateString = req.desiredEventDate;
@@ -597,7 +696,7 @@ export default function EventRequestsManagement() {
       eventDate = new Date(dateString);
     }
     eventDate.setHours(0, 0, 0, 0);
-    return eventDate >= today && (req.status === 'contact_completed' || req.status === 'scheduled');
+    return eventDate >= today && (req.status === 'followed_up' || req.status === 'in_process' || req.status === 'scheduled');
   });
   
   const pastEvents = eventRequests.filter((req: EventRequest) => {
@@ -766,8 +865,9 @@ export default function EventRequestsManagement() {
 
   // Status explanations for tooltips
   const statusExplanations = {
-    'new': 'A new event request that hasn\'t been contacted yet',
-    'contact_completed': 'Initial contact has been made with the organization',
+    'new': 'A new event request that hasn\'t been followed up with yet',
+    'followed_up': 'Toolkit and scheduling link have been sent via email',
+    'in_process': 'Phone call completed, scheduling in progress',
     'scheduled': 'Event is confirmed and scheduled with details finalized',
     'completed': 'Event has been successfully completed',
     'declined': 'Request was declined or event was cancelled',
@@ -1851,22 +1951,43 @@ export default function EventRequestsManagement() {
               </Button>
             </div>
             
-            {/* Check-in Buttons */}
+            {/* Status-specific Action Buttons */}
             <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-orange-600 hover:text-orange-800 border-orange-200 hover:bg-orange-50"
-              >
-                1 Week Check-in
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-amber-600 hover:text-amber-800 border-amber-200 hover:bg-amber-50"
-              >
-                1 Day Check-in
-              </Button>
+              {/* Call Completed button for in_process events */}
+              {request.status === 'in_process' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCallCompletedRequest(request);
+                    setShowCallCompletedDialog(true);
+                  }}
+                  className="bg-[#236383] hover:bg-[#1d4f6a] text-white border-[#236383]"
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  Call Completed
+                </Button>
+              )}
+              
+              {/* Check-in buttons for scheduled events */}
+              {request.status === 'scheduled' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-orange-600 hover:text-orange-800 border-orange-200 hover:bg-orange-50"
+                  >
+                    1 Week Check-in
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-amber-600 hover:text-amber-800 border-amber-200 hover:bg-amber-50"
+                  >
+                    1 Day Check-in
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -2050,18 +2171,19 @@ export default function EventRequestsManagement() {
                 Email Contact
               </Button>
               
-              {/* Show "Complete Primary Contact" only for new requests in Event Requests tab */}
-              {activeTab === 'requests' && request.status === 'new' && !request.contactCompletedAt && (
+              {/* Show "Followed Up" only for new requests in Event Requests tab */}
+              {activeTab === 'requests' && request.status === 'new' && !request.followUpDate && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setCompletingRequest(request);
-                    setShowCompleteContactDialog(true);
+                    setFollowUpRequest(request);
+                    setShowFollowUpDialog(true);
                   }}
+                  className="bg-[#FBAD3F] hover:bg-[#e69d36] text-white border-[#FBAD3F]"
                 >
-                  <Clock className="h-4 w-4 mr-1" />
-                  Complete Primary Contact
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Followed Up
                 </Button>
               )}
               
@@ -3905,6 +4027,268 @@ export default function EventRequestsManagement() {
       {/* Email Composer Dialog */}
       {showEmailComposer && emailComposerRequest && (
         <div>Email Composer temporarily disabled</div>
+      )}
+
+      {/* Follow-Up Dialog */}
+      {showFollowUpDialog && followUpRequest && (
+        <Dialog open={showFollowUpDialog} onOpenChange={setShowFollowUpDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <CheckCircle className="h-5 w-5 text-[#FBAD3F]" />
+                <span>Record Follow-Up</span>
+              </DialogTitle>
+              <DialogDescription>
+                How did you follow up with {followUpRequest.organizationName}?
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    followUpMutation.mutate({
+                      id: followUpRequest.id,
+                      method: 'email'
+                    });
+                  }}
+                  disabled={followUpMutation.isPending}
+                  className="bg-[#236383] hover:bg-[#1a4d63] text-white border-[#236383]"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Toolkit/Scheduling Link Emailed
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowFollowUpDialog(false);
+                    setShowCallbackDialog(true);
+                  }}
+                  className="bg-[#007E8C] hover:bg-[#006b76] text-white border-[#007E8C]"
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  Called Back
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Callback Dialog for collecting email */}
+      {showCallbackDialog && followUpRequest && (
+        <Dialog open={showCallbackDialog} onOpenChange={setShowCallbackDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Called Back - Collect Email</DialogTitle>
+              <DialogDescription>
+                Enter the email address you collected during the call
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const updatedEmail = formData.get("updatedEmail") as string;
+              const notes = formData.get("notes") as string;
+              
+              followUpMutation.mutate({
+                id: followUpRequest.id,
+                method: 'call',
+                updatedEmail,
+                notes
+              });
+            }} className="space-y-4">
+              <div>
+                <Label htmlFor="updatedEmail">Email Address Collected</Label>
+                <Input
+                  name="updatedEmail"
+                  type="email"
+                  placeholder="example@domain.com"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="notes">Notes (optional)</Label>
+                <Textarea
+                  name="notes"
+                  placeholder="Any additional notes from the call..."
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowCallbackDialog(false);
+                    setFollowUpRequest(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={followUpMutation.isPending}
+                  className="bg-[#FBAD3F] hover:bg-[#e69d36] text-white"
+                >
+                  {followUpMutation.isPending ? "Recording..." : "Record & Send Toolkit"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Call Completed Dialog */}
+      {showCallCompletedDialog && callCompletedRequest && (
+        <Dialog open={showCallCompletedDialog} onOpenChange={setShowCallCompletedDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Phone className="h-5 w-5 text-[#236383]" />
+                <span>Call Completed - Enter Event Details</span>
+              </DialogTitle>
+              <DialogDescription>
+                Fill out the complete event details for {callCompletedRequest.organizationName}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              
+              const eventDetails = {
+                desiredEventDate: formData.get("desiredEventDate") as string,
+                estimatedAttendeeCount: parseInt(formData.get("estimatedAttendeeCount") as string, 10),
+                estimatedSandwichCount: parseInt(formData.get("estimatedSandwichCount") as string, 10),
+                driversNeeded: parseInt(formData.get("driversNeeded") as string, 10),
+                speakersNeeded: parseInt(formData.get("speakersNeeded") as string, 10),
+                hasRefrigeration: formData.get("hasRefrigeration") === "true",
+                address: formData.get("address") as string,
+                message: formData.get("message") as string
+              };
+              
+              callCompletedMutation.mutate({
+                id: callCompletedRequest.id,
+                eventDetails
+              });
+            }} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="desiredEventDate">Event Date</Label>
+                  <Input
+                    name="desiredEventDate"
+                    type="date"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="estimatedAttendeeCount">Expected Attendees</Label>
+                  <Input
+                    name="estimatedAttendeeCount"
+                    type="number"
+                    min="1"
+                    placeholder="50"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="estimatedSandwichCount">Sandwiches Needed</Label>
+                  <Input
+                    name="estimatedSandwichCount"
+                    type="number"
+                    min="1"
+                    placeholder="50"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="driversNeeded">Drivers Needed</Label>
+                  <Input
+                    name="driversNeeded"
+                    type="number"
+                    min="0"
+                    placeholder="1"
+                    defaultValue="1"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="speakersNeeded">Speakers Needed</Label>
+                  <Input
+                    name="speakersNeeded"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    defaultValue="0"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                  <select
+                    name="hasRefrigeration"
+                    className="w-full p-2 border rounded"
+                    required
+                  >
+                    <option value="">Select option</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="address">Event Address</Label>
+                <Input
+                  name="address"
+                  type="text"
+                  placeholder="123 Main St, City, State 12345"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="message">Additional Notes</Label>
+                <Textarea
+                  name="message"
+                  placeholder="Any special instructions or additional information..."
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowCallCompletedDialog(false);
+                    setCallCompletedRequest(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={callCompletedMutation.isPending}
+                  className="bg-[#236383] hover:bg-[#1d4f6a] text-white"
+                >
+                  {callCompletedMutation.isPending ? "Saving..." : "Schedule Event"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Unresponsive Contact Management Dialog */}

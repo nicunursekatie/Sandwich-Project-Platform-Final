@@ -522,6 +522,62 @@ router.post(
   },
 );
 
+// Record follow-up action (email sent or callback completed)
+router.post(
+  "/follow-up",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_EDIT"),
+  async (req, res) => {
+    try {
+      const { id, method, updatedEmail, notes } = req.body;
+
+      console.log("=== FOLLOW-UP RECORDING ===");
+      console.log("Event ID:", id);
+      console.log("Method:", method);
+      console.log("Updated email:", updatedEmail);
+
+      const updates: any = {
+        followUpMethod: method,
+        followUpDate: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Set status based on method
+      if (method === 'email') {
+        updates.status = 'followed_up';
+      } else if (method === 'call') {
+        updates.status = 'in_process';
+        updates.updatedEmail = updatedEmail;
+      }
+
+      // Add notes to existing followUpNotes if provided
+      if (notes) {
+        const existingEvent = await storage.getEventRequestById(id);
+        const existingNotes = existingEvent?.followUpNotes || '';
+        updates.followUpNotes = existingNotes ? `${existingNotes}\n\n${notes}` : notes;
+      }
+
+      const updatedEventRequest = await storage.updateEventRequest(id, updates);
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
+      console.log("Successfully recorded follow-up for:", id);
+      await logActivity(
+        req,
+        res,
+        "EVENT_REQUESTS_FOLLOW_UP",
+        `Recorded follow-up (${method}) for event request: ${id}`,
+      );
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error("Error recording follow-up:", error);
+      res.status(500).json({ message: "Failed to record follow-up" });
+    }
+  },
+);
+
 // Update event request details - specific endpoint for event details updates
 router.patch(
   "/:id/event-details",
