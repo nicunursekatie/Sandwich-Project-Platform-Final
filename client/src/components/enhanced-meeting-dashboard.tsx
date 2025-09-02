@@ -216,6 +216,7 @@ export default function EnhancedMeetingDashboard() {
   const [minimizedProjects, setMinimizedProjects] = useState<Set<number>>(new Set());
   const [projectAgendaStatus, setProjectAgendaStatus] = useState<Record<number, 'none' | 'agenda' | 'tabled'>>({});
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
   
   // Local state for text inputs to ensure responsiveness
   const [localProjectText, setLocalProjectText] = useState<Record<number, { discussionPoints?: string; decisionItems?: string }>>({});
@@ -266,6 +267,73 @@ export default function EnhancedMeetingDashboard() {
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update project discussion notes.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Convert meeting notes to tasks mutation
+  const createTasksFromNotesMutation = useMutation({
+    mutationFn: async () => {
+      const projectsWithNotes = allProjects.filter((project: any) => 
+        (project.meetingDiscussionPoints?.trim() || project.meetingDecisionItems?.trim()) && 
+        (projectAgendaStatus[project.id] === 'agenda' || projectAgendaStatus[project.id] === 'tabled')
+      );
+
+      const taskPromises = projectsWithNotes.map(async (project: any) => {
+        const tasks = [];
+        
+        // Create task from discussion points
+        if (project.meetingDiscussionPoints?.trim()) {
+          tasks.push({
+            title: `Follow up on: ${project.title}`,
+            description: `Meeting Discussion Notes: ${project.meetingDiscussionPoints.trim()}`,
+            assigneeName: project.assigneeName || 'Unassigned',
+            priority: 'medium',
+            status: 'pending',
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 7 days from now
+          });
+        }
+
+        // Create task from decision items
+        if (project.meetingDecisionItems?.trim()) {
+          tasks.push({
+            title: `Action item: ${project.title}`,
+            description: `Meeting Decisions to Implement: ${project.meetingDecisionItems.trim()}`,
+            assigneeName: project.assigneeName || 'Unassigned',
+            priority: 'high',
+            status: 'pending',
+            dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 3 days for decisions
+          });
+        }
+
+        // Create tasks for this project
+        const taskResults = await Promise.all(
+          tasks.map(task => apiRequest('POST', `/api/projects/${project.id}/tasks`, task))
+        );
+
+        return { projectTitle: project.title, tasksCreated: taskResults.length };
+      });
+
+      return Promise.all(taskPromises);
+    },
+    onSuccess: (results) => {
+      const totalTasks = results.reduce((sum, result) => sum + result.tasksCreated, 0);
+      const projectCount = results.length;
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      
+      toast({
+        title: "Tasks Created Successfully!",
+        description: `Created ${totalTasks} task${totalTasks !== 1 ? 's' : ''} from meeting notes across ${projectCount} project${projectCount !== 1 ? 's' : ''}`,
+        duration: 5000,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to create tasks from notes:', error);
+      toast({
+        title: "Error Creating Tasks",
+        description: error?.message || "Failed to convert meeting notes into tasks",
         variant: "destructive",
       });
     },
@@ -1739,26 +1807,26 @@ export default function EnhancedMeetingDashboard() {
                             index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                           }`}>
                           <CardHeader className="pb-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
+                            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                              <div className="flex-1 min-w-0">
                                 <CardTitle className="text-lg text-gray-900">{project.title}</CardTitle>
-                                <div className="flex items-center gap-2 mt-2">
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
                                   <Badge 
                                     {...getStatusBadgeProps(project.status)}
-                                    className={getStatusBadgeProps(project.status).className}
+                                    className={`${getStatusBadgeProps(project.status).className} whitespace-nowrap`}
                                     style={getStatusBadgeProps(project.status).style}
                                   >
                                     {formatStatusText(project.status)}
                                   </Badge>
                                   {project.priority && (
-                                    <Badge variant="outline">{project.priority}</Badge>
+                                    <Badge variant="outline" className="whitespace-nowrap">{project.priority}</Badge>
                                   )}
                                   {project.category && project.category !== project.milestone && (
-                                    <Badge variant="outline" className="text-xs bg-[#236383] text-white">
+                                    <Badge variant="outline" className="text-xs bg-[#236383] text-white whitespace-nowrap">
                                       {getCategoryIcon(project.category)} {project.category}
                                     </Badge>
                                   )}
-                                  <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700">
+                                  <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 whitespace-nowrap">
                                     Last discussed: {lastDiscussed}
                                   </Badge>
                                 </div>
@@ -1769,11 +1837,11 @@ export default function EnhancedMeetingDashboard() {
                                 )}
 
                               </div>
-                              <div className="flex gap-2">
+                              <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
                                 <Button
                                   size="sm"
                                   onClick={() => handleSendToAgenda(project.id)}
-                                  className={`px-4 py-2 rounded font-medium transition-all ${
+                                  className={`px-3 py-2 rounded font-medium transition-all text-sm whitespace-nowrap ${
                                     agendaStatus === 'agenda'
                                       ? 'bg-teal-600 text-white'
                                       : 'bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-50'
@@ -1785,7 +1853,7 @@ export default function EnhancedMeetingDashboard() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleTableProject(project.id)}
-                                  className="px-4 py-2 rounded font-medium border-2 border-orange-500 text-orange-700 hover:bg-orange-50 transition-all"
+                                  className="px-3 py-2 rounded font-medium border-2 border-orange-500 text-orange-700 hover:bg-orange-50 transition-all text-sm whitespace-nowrap"
                                 >
                                   ⏳ Table for Later
                                 </Button>
@@ -2058,9 +2126,21 @@ export default function EnhancedMeetingDashboard() {
                 <Button 
                   size="sm"
                   variant="outline"
-                  className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition-all"
+                  onClick={() => createTasksFromNotesMutation.mutate()}
+                  disabled={createTasksFromNotesMutation.isPending}
+                  className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition-all disabled:opacity-50"
                 >
-                  Save Progress
+                  {createTasksFromNotesMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                      Creating Tasks...
+                    </div>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Create Tasks from Notes
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
