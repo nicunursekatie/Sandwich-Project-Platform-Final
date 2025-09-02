@@ -136,7 +136,7 @@ export default function GmailStyleInbox() {
     );
   }
   
-  console.log('✅ User authenticated, rendering inbox for:', user?.email);
+  console.log('✅ User authenticated, rendering inbox for:', (user as any)?.email);
   
   // UI State
   const [activeFolder, setActiveFolder] = useState("inbox");
@@ -805,7 +805,7 @@ export default function GmailStyleInbox() {
                           // Create a message object that matches the expected format
                           const kudosMessage = {
                             id: kudo?.id,
-                            userId: kudo?.userId || user?.id || 'unknown',
+                            userId: kudo?.userId || (user as any)?.id || 'unknown',
                             sender: kudo.sender,
                             senderName: kudo.senderName,
                             conversationId: kudo.conversationId || kudo.id,
@@ -872,7 +872,7 @@ export default function GmailStyleInbox() {
                           onClick={() => {
                             const kudosMessage = {
                               id: kudo?.id,
-                              userId: kudo?.userId || user?.id || 'unknown',
+                              userId: kudo?.userId || (user as any)?.id || 'unknown',
                               sender: kudo.sender,
                               senderName: kudo.senderName,
                               conversationId: kudo.conversationId || kudo.id,
