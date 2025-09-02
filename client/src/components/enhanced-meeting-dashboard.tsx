@@ -73,6 +73,7 @@ interface Project {
   meetingDiscussionPoints?: string;
   meetingDecisionItems?: string;
   supportPeople?: string;
+  assigneeName?: string;
 }
 
 interface ProjectTask {
@@ -127,7 +128,7 @@ const getCategoryIcon = (category: string) => {
 
 // Project Tasks Component
 function ProjectTasksView({ projectId }: { projectId: number }) {
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery<ProjectTask[]>({
     queryKey: [`/api/projects/${projectId}/tasks`],
   });
 
@@ -135,7 +136,7 @@ function ProjectTasksView({ projectId }: { projectId: number }) {
     return <div className="text-sm text-gray-500">Loading tasks...</div>;
   }
 
-  if (tasks.length === 0) {
+  if (!Array.isArray(tasks) || tasks.length === 0) {
     return (
       <div className="text-sm text-gray-500 text-center py-3">
         No tasks yet. Add tasks to track project progress.
@@ -146,10 +147,10 @@ function ProjectTasksView({ projectId }: { projectId: number }) {
   return (
     <div>
       <Label className="text-sm font-medium text-gray-700 mb-2 block">
-        Project Tasks ({tasks.length})
+        Project Tasks ({Array.isArray(tasks) ? tasks.length : 0})
       </Label>
       <div className="space-y-2 max-h-40 overflow-y-auto">
-        {tasks.map((task: ProjectTask) => (
+        {Array.isArray(tasks) && tasks.map((task: ProjectTask) => (
           <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -232,22 +233,22 @@ export default function EnhancedMeetingDashboard() {
   });
 
   // Fetch meetings
-  const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
+  const { data: meetings = [], isLoading: meetingsLoading } = useQuery<Meeting[]>({
     queryKey: ['/api/meetings'],
   });
 
   // Fetch projects for review
-  const { data: projectsForReview = [] } = useQuery({
+  const { data: projectsForReview = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects/for-review'],
   });
 
   // Fetch all projects for agenda planning
-  const { data: allProjects = [] } = useQuery({
+  const { data: allProjects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
   });
 
   // Fetch compiled agenda for selected meeting
-  const { data: compiledAgenda, isLoading: agendaLoading } = useQuery({
+  const { data: compiledAgenda, isLoading: agendaLoading } = useQuery<CompiledAgenda>({
     queryKey: ['/api/meetings', selectedMeeting?.id, 'compiled-agenda'],
     enabled: !!selectedMeeting,
   });
@@ -317,7 +318,7 @@ export default function EnhancedMeetingDashboard() {
   // Handler for agenda actions
   const handleSendToAgenda = useCallback((projectId: number) => {
     setProjectAgendaStatus(prev => ({ ...prev, [projectId]: 'agenda' }));
-    setMinimizedProjects(prev => new Set([...prev, projectId]));
+    setMinimizedProjects(prev => new Set([...Array.from(prev), projectId]));
     updateProjectDiscussionMutation.mutate({ 
       projectId, 
       updates: { reviewInNextMeeting: true } 
@@ -330,7 +331,7 @@ export default function EnhancedMeetingDashboard() {
 
   const handleTableProject = useCallback((projectId: number) => {
     setProjectAgendaStatus(prev => ({ ...prev, [projectId]: 'tabled' }));
-    setMinimizedProjects(prev => new Set([...prev, projectId]));
+    setMinimizedProjects(prev => new Set([...Array.from(prev), projectId]));
     updateProjectDiscussionMutation.mutate({ 
       projectId, 
       updates: { reviewInNextMeeting: false } 
@@ -355,13 +356,13 @@ export default function EnhancedMeetingDashboard() {
       setIsGeneratingPDF(true);
       
       // Get agenda projects and tabled projects (excluding completed ones)
-      const activeProjects = allProjects.filter(p => p.status !== 'completed');
-      const agendaProjects = activeProjects.filter(p => projectAgendaStatus[p.id] === 'agenda');
-      const tabledProjects = activeProjects.filter(p => projectAgendaStatus[p.id] === 'tabled');
+      const activeProjects = Array.isArray(allProjects) ? allProjects.filter((p: Project) => p.status !== 'completed') : [];
+      const agendaProjects = activeProjects.filter((p: Project) => projectAgendaStatus[p.id] === 'agenda');
+      const tabledProjects = activeProjects.filter((p: Project) => projectAgendaStatus[p.id] === 'tabled');
       
       // Fetch tasks for each agenda project
       const projectsWithTasks = await Promise.all(
-        agendaProjects.map(async (project) => {
+        agendaProjects.map(async (project: Project) => {
           try {
             const tasksResponse = await fetch(`/api/projects/${project.id}/tasks`, {
               credentials: 'include',
@@ -404,7 +405,7 @@ export default function EnhancedMeetingDashboard() {
       const agendaData = {
         meetingDate: getTodayString(),
         agendaProjects: projectsWithTasks,
-        tabledProjects: tabledProjects.map(p => ({
+        tabledProjects: tabledProjects.map((p: Project) => ({
           title: p.title,
           owner: p.assigneeName || 'Unassigned',
           reason: p.meetingDiscussionPoints || 'No reason specified'
@@ -439,10 +440,10 @@ export default function EnhancedMeetingDashboard() {
         description: `PDF agenda downloaded with ${agendaProjects.length} projects and ${tabledProjects.length} tabled items`,
       });
       
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Export Failed",
-        description: error.message || "Failed to generate agenda PDF",
+        description: error?.message || "Failed to generate agenda PDF",
         variant: "destructive",
       });
     } finally {
@@ -451,18 +452,18 @@ export default function EnhancedMeetingDashboard() {
   }, [allProjects, projectAgendaStatus, toast]);
 
   // Calculate agenda summary (only for non-completed projects)
-  const activeProjects = allProjects.filter((project: any) => project.status !== 'completed');
+  const activeProjects = Array.isArray(allProjects) ? allProjects.filter((project: Project) => project.status !== 'completed') : [];
   const agendaSummary = {
     agendaCount: Object.entries(projectAgendaStatus).filter(([projectId, status]) => {
-      const project = allProjects.find((p: any) => p.id === parseInt(projectId));
+      const project = Array.isArray(allProjects) ? allProjects.find((p: Project) => p.id === parseInt(projectId)) : undefined;
       return project && project.status !== 'completed' && status === 'agenda';
     }).length,
     tabledCount: Object.entries(projectAgendaStatus).filter(([projectId, status]) => {
-      const project = allProjects.find((p: any) => p.id === parseInt(projectId));
+      const project = Array.isArray(allProjects) ? allProjects.find((p: Project) => p.id === parseInt(projectId)) : undefined;
       return project && project.status !== 'completed' && status === 'tabled';
     }).length,
     undecidedCount: activeProjects.length - Object.keys(projectAgendaStatus).filter(projectId => {
-      const project = allProjects.find((p: any) => p.id === parseInt(projectId));
+      const project = Array.isArray(allProjects) ? allProjects.find((p: Project) => p.id === parseInt(projectId)) : undefined;
       return project && project.status !== 'completed';
     }).length
   };
