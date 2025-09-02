@@ -455,6 +455,19 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                           }
                           
                           if (isNaN(date.getTime())) return 'Invalid date';
+                          
+                          // Timezone-safe date display
+                          if (typeof org.eventDate === 'string' && org.eventDate.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                            // Handle ISO midnight format that causes timezone shifting
+                            const datePart = org.eventDate.split('T')[0];
+                            const safeDate = new Date(datePart + 'T12:00:00');
+                            return safeDate.toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            });
+                          }
+                          
                           return date.toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
@@ -676,13 +689,24 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                           <p className="text-base font-semibold" style={{ color: '#FBAD3F' }}>
                             {(() => {
                               try {
-                                const date = new Date(eventDetails.desiredEventDate);
-                                return date.toLocaleDateString('en-US', {
-                                  weekday: 'long',
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                });
+                                // Timezone-safe date parsing and display
+                              let date: Date;
+                              const dateStr = eventDetails.desiredEventDate;
+                              
+                              if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                                // Handle ISO midnight format that causes timezone shifting
+                                const datePart = dateStr.split('T')[0];
+                                date = new Date(datePart + 'T12:00:00');
+                              } else {
+                                date = new Date(dateStr + 'T12:00:00');
+                              }
+                              
+                              return date.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              });
                               } catch {
                                 return eventDetails.desiredEventDate;
                               }
@@ -781,7 +805,16 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                         <p className="text-base font-medium text-teal-800">
                           {(() => {
                             try {
-                              const date = new Date(eventDetails.createdAt);
+                              // Timezone-safe date parsing for submission date
+                              let date: Date;
+                              if (eventDetails.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                                // Database timestamp format: "2025-08-27 06:26:14"
+                                const [datePart, timePart] = eventDetails.createdAt.split(' ');
+                                date = new Date(datePart + 'T' + timePart);
+                              } else {
+                                date = new Date(eventDetails.createdAt);
+                              }
+                              
                               return date.toLocaleDateString('en-US', { 
                                 year: 'numeric', 
                                 month: 'short', 

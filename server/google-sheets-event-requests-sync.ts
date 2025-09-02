@@ -44,12 +44,47 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       email: eventRequest.email || '',
       phone: eventRequest.phone || '',
       department: eventRequest.department || '',
-      desiredEventDate: eventRequest.desiredEventDate ? new Date(eventRequest.desiredEventDate).toLocaleDateString() : '',
+      desiredEventDate: eventRequest.desiredEventDate ? (() => {
+        // Timezone-safe date formatting for Google Sheets
+        const dateStr = eventRequest.desiredEventDate;
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+          // Handle ISO midnight format that causes timezone shifting
+          const datePart = dateStr.split('T')[0];
+          const safeDate = new Date(datePart + 'T12:00:00');
+          return safeDate.toLocaleDateString();
+        } else {
+          // Standard date parsing
+          const date = new Date(dateStr + 'T12:00:00');
+          return date.toLocaleDateString();
+        }
+      })() : '',
       status: eventRequest.status || 'new',
       message: eventRequest.message || '',
       previouslyHosted: eventRequest.previouslyHosted || '',
-      createdDate: eventRequest.createdAt ? new Date(eventRequest.createdAt).toLocaleDateString() : '',
-      lastUpdated: eventRequest.updatedAt ? new Date(eventRequest.updatedAt).toLocaleDateString() : '',
+      createdDate: eventRequest.createdAt ? (() => {
+        // Timezone-safe date formatting for Google Sheets
+        if (eventRequest.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+          // Database timestamp format
+          const [datePart] = eventRequest.createdAt.split(' ');
+          const date = new Date(datePart + 'T12:00:00');
+          return date.toLocaleDateString();
+        } else {
+          const date = new Date(eventRequest.createdAt + 'T12:00:00');
+          return date.toLocaleDateString();
+        }
+      })() : '',
+      lastUpdated: eventRequest.updatedAt ? (() => {
+        // Timezone-safe date formatting for Google Sheets
+        if (eventRequest.updatedAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+          // Database timestamp format
+          const [datePart] = eventRequest.updatedAt.split(' ');
+          const date = new Date(datePart + 'T12:00:00');
+          return date.toLocaleDateString();
+        } else {
+          const date = new Date(eventRequest.updatedAt + 'T12:00:00');
+          return date.toLocaleDateString();
+        }
+      })() : '',
       duplicateCheck: eventRequest.organizationExists ? 'Yes' : 'No',
       notes: eventRequest.duplicateNotes || ''
     };
@@ -85,7 +120,21 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       email: row.email,
       phone: row.phone,
       department: row.department,
-      desiredEventDate: row.desiredEventDate ? new Date(row.desiredEventDate) : null,
+      desiredEventDate: row.desiredEventDate ? (() => {
+        // Timezone-safe date parsing from Google Sheets
+        const dateStr = row.desiredEventDate;
+        if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+          // Handle MM/DD/YYYY format from Google Sheets
+          const [month, day, year] = dateStr.split('/');
+          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // Handle YYYY-MM-DD format
+          return new Date(dateStr + 'T12:00:00');
+        } else {
+          // Fallback with noon time to avoid timezone issues
+          return new Date(dateStr + 'T12:00:00');
+        }
+      })() : null,
       status: row.status || 'new',
       message: row.message,
       previouslyHosted: row.previouslyHosted,

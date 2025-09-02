@@ -1394,7 +1394,11 @@ export default function EventRequestsManagement() {
       phone: formData.get("phone"),
       organizationName: formData.get("organizationName"),
       department: formData.get("department"),
-      desiredEventDate: formData.get("desiredEventDate") ? new Date(formData.get("desiredEventDate") as string) : null,
+      desiredEventDate: formData.get("desiredEventDate") ? (() => {
+        const dateStr = formData.get("desiredEventDate") as string;
+        // Timezone-safe date parsing for form data
+        return new Date(dateStr + 'T12:00:00');
+      })() : null,
       message: formData.get("message"),
       previouslyHosted: formData.get("previouslyHosted"),
       status: formData.get("status") || "new"
@@ -1415,7 +1419,11 @@ export default function EventRequestsManagement() {
       phone: formData.get("phone"),
       organizationName: formData.get("organizationName"),
       department: formData.get("department"),
-      desiredEventDate: formData.get("desiredEventDate") ? new Date(formData.get("desiredEventDate") as string) : null,
+      desiredEventDate: formData.get("desiredEventDate") ? (() => {
+        const dateStr = formData.get("desiredEventDate") as string;
+        // Timezone-safe date parsing for form data
+        return new Date(dateStr + 'T12:00:00');
+      })() : null,
       message: formData.get("message"),
       previouslyHosted: formData.get("previouslyHosted"),
       status: formData.get("status"),
