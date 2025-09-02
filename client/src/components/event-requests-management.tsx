@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
@@ -2397,7 +2398,7 @@ export default function EventRequestsManagement() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-3">
+        <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-4">
           <TabsTrigger value="requests" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
             Event Requests
             <Badge variant="secondary" className="ml-2">
@@ -2409,6 +2410,9 @@ export default function EventRequestsManagement() {
             <Badge variant="secondary" className="ml-2">
               {scheduledEvents.length}
             </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="forecast" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
+            Sandwich Forecast
           </TabsTrigger>
           <TabsTrigger value="past" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
             Past Events
@@ -2817,6 +2821,10 @@ export default function EventRequestsManagement() {
                 )}
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="forecast" className="space-y-4">
+            <SandwichForecastWidget />
           </TabsContent>
         </div>
       </Tabs>

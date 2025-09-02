@@ -61,7 +61,6 @@ import WishlistPage from "@/pages/wishlist";
 import EventRequestsManagement from "@/components/event-requests-management";
 import GroupCatalog from "@/components/organizations-catalog";
 import ActionTracking from "@/components/action-tracking-enhanced";
-import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
 import LogosPage from "@/pages/logos";
 
 import sandwich_logo from "@assets/CMYK_PRINT_TSP-01_1749585167435.png";
@@ -281,12 +280,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
       case "volunteers":
         return <VolunteerManagement />;
       case "event-requests":
-        return (
-          <div className="space-y-6">
-            <SandwichForecastWidget />
-            <EventRequestsManagement />
-          </div>
-        );
+        return <EventRequestsManagement />;
       case "groups-catalog":
         return <GroupCatalog onNavigateToEventPlanning={() => setActiveSection("event-requests")} />;
       case "action-tracking":
