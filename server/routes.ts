@@ -4342,7 +4342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all meetings - this endpoint was missing
-  app.get("/api/meetings", async (req, res) => {
+  app.get("/api/meetings", isAuthenticated, async (req, res) => {
     try {
       const meetings = await storage.getAllMeetings();
       res.json(meetings);

@@ -137,7 +137,7 @@ router.get("/tasks/assigned", isAuthenticated, async (req, res) => {
 });
 
 // Project management routes
-router.get("/projects", async (req, res) => {
+router.get("/projects", isAuthenticated, async (req, res) => {
   try {
     const projects = await storage.getAllProjects();
     res.json(projects);
@@ -147,7 +147,7 @@ router.get("/projects", async (req, res) => {
   }
 });
 
-router.get("/projects/:id", async (req, res) => {
+router.get("/projects/:id", isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const project = await storage.getProject(id);
