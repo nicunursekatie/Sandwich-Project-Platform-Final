@@ -675,8 +675,13 @@ export default function GmailStyleInbox() {
         </ScrollArea>
       </div>
 
+      {/* DEBUG: Main Content Area Status */}
+      <div className="fixed top-4 right-4 bg-red-500 text-white p-2 text-xs z-50">
+        Screen: {screenSize} | MsgListCollapsed: {isMessageListCollapsed.toString()} | SidebarCollapsed: {isSidebarCollapsed.toString()}
+      </div>
+      
       {/* Main Content Area - Message List + Details + Kudos */}
-      <div className="flex-1 flex bg-white min-w-0 overflow-hidden">
+      <div className="flex-1 flex bg-yellow-200 min-w-0 overflow-hidden" style={{ minHeight: '400px' }}>
         {/* Message List Panel */}
         <div className={`
           ${isMessageListCollapsed ? 'hidden' : 'flex'} 
