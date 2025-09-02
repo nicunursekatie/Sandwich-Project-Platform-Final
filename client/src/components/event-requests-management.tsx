@@ -2769,11 +2769,23 @@ export default function EventRequestsManagement() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-3">
+        <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-5">
           <TabsTrigger value="requests" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
             New Requests
             <Badge variant="secondary" className="ml-2">
               {requestsEvents.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="followed_up" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
+            Followed Up
+            <Badge variant="secondary" className="ml-2">
+              {followedUpEvents.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="in_process" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
+            In Process
+            <Badge variant="secondary" className="ml-2">
+              {inProcessEvents.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="scheduled" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
