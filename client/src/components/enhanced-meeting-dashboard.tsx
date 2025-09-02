@@ -683,16 +683,22 @@ export default function EnhancedMeetingDashboard() {
     }).length
   };
 
-  // Helper function to format dates in a user-friendly way
+  // Helper function to format dates in a user-friendly way - TIMEZONE SAFE
   const formatMeetingDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Use timezone-safe parsing by adding noon time
+    const date = new Date(dateString + 'T12:00:00');
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    if (date.toDateString() === today.toDateString()) {
+    // Create local date comparisons to avoid timezone issues
+    const meetingDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const tomorrowOnly = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+    
+    if (meetingDateOnly.getTime() === todayOnly.getTime()) {
       return 'Today';
-    } else if (date.toDateString() === tomorrow.toDateString()) {
+    } else if (meetingDateOnly.getTime() === tomorrowOnly.getTime()) {
       return 'Tomorrow';
     } else {
       return date.toLocaleDateString('en-US', { 
