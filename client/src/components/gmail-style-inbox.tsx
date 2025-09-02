@@ -156,9 +156,9 @@ export default function GmailStyleInbox() {
       const width = window.innerWidth;
       
       if (width < 768) {
-        // Mobile (< 768px): Show only message body, collapse both sidebar and message list
+        // Mobile (< 768px): Keep sidebar visible by default, allow manual collapse
         setScreenSize('mobile');
-        setIsSidebarCollapsed(true);
+        // Don't auto-collapse sidebar on mobile - let users see it exists
         setIsMessageListCollapsed(true);
       } else if (width < 900) {
         // Small tablet (768-899px): Show message list + body, collapse sidebar
@@ -675,13 +675,8 @@ export default function GmailStyleInbox() {
         </ScrollArea>
       </div>
 
-      {/* DEBUG: Main Content Area Status */}
-      <div className="fixed top-4 right-4 bg-red-500 text-white p-2 text-xs z-50">
-        Screen: {screenSize} | MsgListCollapsed: {isMessageListCollapsed.toString()} | SidebarCollapsed: {isSidebarCollapsed.toString()}
-      </div>
-      
       {/* Main Content Area - Message List + Details + Kudos */}
-      <div className="flex-1 flex bg-yellow-200 min-w-0 overflow-hidden" style={{ minHeight: '400px' }}>
+      <div className="flex-1 flex bg-white min-w-0 overflow-hidden">
         {/* Message List Panel - Simplified for mobile */}
         <div className="flex-1 flex-col bg-white min-w-0 overflow-hidden border-r" style={{ display: 'flex' }}>
           {/* Toolbar */}
