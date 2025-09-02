@@ -800,34 +800,37 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                       Event History
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-teal-700">Request Submitted</label>
-                        <p className="text-base font-medium text-teal-800">
-                          {(() => {
-                            try {
-                              // Timezone-safe date parsing for submission date
-                              let date: Date;
-                              if (eventDetails.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                                // Database timestamp format: "2025-08-27 06:26:14"
-                                const [datePart, timePart] = eventDetails.createdAt.split(' ');
-                                date = new Date(datePart + 'T' + timePart);
-                              } else {
-                                date = new Date(eventDetails.createdAt);
+                      {/* Only show Request Submitted for actual form submissions, not imported events */}
+                      {eventDetails.createdBy !== 'admin_1751065261945' && (
+                        <div>
+                          <label className="text-sm font-medium text-teal-700">Request Submitted</label>
+                          <p className="text-base font-medium text-teal-800">
+                            {(() => {
+                              try {
+                                // Timezone-safe date parsing for submission date
+                                let date: Date;
+                                if (eventDetails.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                                  // Database timestamp format: "2025-08-27 06:26:14"
+                                  const [datePart, timePart] = eventDetails.createdAt.split(' ');
+                                  date = new Date(datePart + 'T' + timePart);
+                                } else {
+                                  date = new Date(eventDetails.createdAt);
+                                }
+                                
+                                return date.toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit'
+                                });
+                              } catch (error) {
+                                return 'Unknown';
                               }
-                              
-                              return date.toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit'
-                              });
-                            } catch (error) {
-                              return 'Unknown';
-                            }
-                          })()}
-                        </p>
-                      </div>
+                            })()}
+                          </p>
+                        </div>
+                      )}
                       
                       {eventDetails.hasHostedEvent !== undefined && (
                         <div>
