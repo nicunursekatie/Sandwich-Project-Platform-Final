@@ -74,7 +74,7 @@ const formatEventDate = (dateString: string) => {
     if (dayOfWeek === 2) {
       className = "text-gray-700 font-medium";
     } else if (isWedOrThu) {
-      className = "text-green-700 font-medium";
+      className = "text-orange-700 font-medium";
     } else {
       className = "text-[#236383] font-bold";
     }
@@ -133,9 +133,9 @@ interface EventRequest {
 }
 
 const statusColors = {
-  new: "bg-blue-100 text-blue-800",
+  new: "bg-teal-100 text-teal-800",
   contact_completed: "bg-emerald-100 text-emerald-800",
-  scheduled: "bg-green-100 text-green-800",
+  scheduled: "bg-orange-100 text-orange-800",
   completed: "bg-gray-100 text-gray-800",
   declined: "bg-red-100 text-red-800"
 };
@@ -1227,12 +1227,12 @@ export default function EventRequestsManagement() {
           )}
           
           {/* Organization Contact Information */}
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+          <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
+            <h4 className="font-semibold text-teal-800 mb-2 flex items-center">
               <User className="w-4 h-4 mr-2" />
               Organization Contact
             </h4>
-            <div className="space-y-1 text-sm text-blue-700">
+            <div className="space-y-1 text-sm text-teal-700">
               <div><strong>Name:</strong> {request.firstName} {request.lastName}</div>
               <div><strong>Email:</strong> {request.email}</div>
               {request.phone && (
@@ -1245,9 +1245,9 @@ export default function EventRequestsManagement() {
           </div>
           
           {/* Event Summary with all remaining details */}
-          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-            <h4 className="font-semibold text-green-800 mb-2">Event Summary</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-green-700">
+          <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+            <h4 className="font-semibold text-orange-800 mb-2">Event Summary</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-orange-700">
               {/* Event timing */}
               {((request as any).eventStartTime || (request as any).eventEndTime) && (
                 <div>

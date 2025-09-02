@@ -198,7 +198,7 @@ export default function EventVolunteerSignup({
                 Drivers ({driverVolunteers.length}/{driversNeeded})
               </h3>
               {availableDriverSpots > 0 && (
-                <Badge variant="outline" className="bg-green-50">
+                <Badge variant="outline" className="bg-orange-50">
                   {availableDriverSpots} spot{availableDriverSpots !== 1 ? 's' : ''} available
                 </Badge>
               )}
@@ -209,7 +209,7 @@ export default function EventVolunteerSignup({
                 <div key={volunteer.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
                   <span className="font-medium">{volunteer.volunteerName}</span>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-green-100">
+                    <Badge variant="outline" className="bg-orange-100">
                       {volunteer.status}
                     </Badge>
                     {((user as any)?.id === volunteer.volunteerUserId || (user as any)?.permissions && (user as any).permissions > 0) && (
@@ -344,7 +344,7 @@ export default function EventVolunteerSignup({
                 Speakers ({speakerVolunteers.length}/{speakersNeeded})
               </h3>
               {availableSpeakerSpots > 0 && (
-                <Badge variant="outline" className="bg-blue-50">
+                <Badge variant="outline" className="bg-teal-50">
                   {availableSpeakerSpots} spot{availableSpeakerSpots !== 1 ? 's' : ''} available
                 </Badge>
               )}
@@ -355,7 +355,7 @@ export default function EventVolunteerSignup({
                 <div key={volunteer.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
                   <span className="font-medium">{volunteer.volunteerName}</span>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-blue-100">
+                    <Badge variant="outline" className="bg-teal-100">
                       {volunteer.status}
                     </Badge>
                     {((user as any)?.id === volunteer.volunteerUserId || (user as any)?.permissions && (user as any).permissions > 0) && (
