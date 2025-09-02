@@ -648,11 +648,20 @@ router.put(
       // Process ALL date/timestamp fields to ensure they're proper Date objects
       const processedUpdates = { ...updates };
       
-      // Convert timestamp fields that might come as strings
-      const timestampFields = ['desiredEventDate', 'contactedAt', 'toolkitSentDate', 'duplicateCheckDate'];
+      // Convert timestamp fields that might come as strings to Date objects
+      const timestampFields = [
+        'desiredEventDate', 'contactedAt', 'toolkitSentDate', 'duplicateCheckDate',
+        'markedUnresponsiveAt', 'lastContactAttempt', 'nextFollowUpDate',
+        'contactCompletedAt', 'callScheduledAt', 'callCompletedAt'
+      ];
       timestampFields.forEach(field => {
         if (processedUpdates[field] && typeof processedUpdates[field] === 'string') {
-          processedUpdates[field] = new Date(processedUpdates[field]);
+          try {
+            processedUpdates[field] = new Date(processedUpdates[field]);
+          } catch (error) {
+            console.error(`Failed to parse date field ${field}:`, processedUpdates[field]);
+            delete processedUpdates[field]; // Remove invalid date fields
+          }
         }
       });
 
