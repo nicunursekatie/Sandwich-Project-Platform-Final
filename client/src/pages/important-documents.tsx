@@ -270,6 +270,10 @@ export default function ImportantDocuments() {
               <p className="text-lg text-gray-600">
                 Key documents, forms, and official logos for The Sandwich Project
               </p>
+              <div className="mt-3 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2 inline-block">
+                <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">Organization EIN</div>
+                <div className="text-lg font-bold text-teal-900 font-mono">87-0939484</div>
+              </div>
             </div>
           </div>
         </div>

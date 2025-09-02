@@ -1614,10 +1614,9 @@ export default function EnhancedMeetingDashboard() {
                       // Minimized view
                       if (isMinimized) {
                         return (
-                          <React.Fragment key={`fragment-${project.id}`}>
+                          <div key={`wrapper-${project.id}`}>
                             {sectionHeader}
                             <Card 
-                              key={project.id} 
                               className={`border-2 transition-all mb-2 ${
                                 agendaStatus === 'agenda' 
                                   ? 'border-green-300 bg-green-50' 
@@ -1728,15 +1727,15 @@ export default function EnhancedMeetingDashboard() {
                               </div>
                             </CardContent>
                             </Card>
-                          </React.Fragment>
+                          </div>
                         );
                       }
                       
                       // Full view with alternating backgrounds for easier scanning
                       return (
-                        <React.Fragment key={`fragment-full-${project.id}`}>
+                        <div key={`wrapper-full-${project.id}`}>
                           {sectionHeader}
-                          <Card key={project.id} className={`border border-gray-200 hover:border-gray-300 mb-3 ${
+                          <Card className={`border border-gray-200 hover:border-gray-300 mb-3 ${
                             index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                           }`}>
                           <CardHeader className="pb-4">
@@ -1973,7 +1972,7 @@ export default function EnhancedMeetingDashboard() {
                             </div>
                           </CardContent>
                           </Card>
-                        </React.Fragment>
+                        </div>
                       );
                     })}
                   </div>

@@ -543,6 +543,16 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
               }}
               isCollapsed={isSidebarCollapsed}
             />
+            
+            {/* EIN Information - Always visible at bottom */}
+            {!isSidebarCollapsed && (
+              <div className="px-4 mt-6 pt-4 border-t border-amber-200">
+                <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg px-3 py-2">
+                  <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">Organization EIN</div>
+                  <div className="text-sm font-bold text-teal-900 font-mono">87-0939484</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
