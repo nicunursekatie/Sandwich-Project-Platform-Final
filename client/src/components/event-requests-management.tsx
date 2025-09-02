@@ -1131,17 +1131,21 @@ export default function EventRequestsManagement() {
   }) => {
     const [action, setAction] = useState(request.isUnresponsive ? 'update' : 'mark');
     const [reason, setReason] = useState(request.unresponsiveReason || '');
-    const [contactMethod, setContactMethod] = useState(request.contactMethod || 'both');
-    const [nextFollowUpDate, setNextFollowUpDate] = useState(request.nextFollowUpDate ? request.nextFollowUpDate.split('T')[0] : '');
+    const [scheduleFollowUp, setScheduleFollowUp] = useState(false);
     const [notes, setNotes] = useState(request.unresponsiveNotes || '');
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
+      
+      // Auto-calculate follow-up date one week out if requested
+      const nextFollowUpDate = scheduleFollowUp ? 
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : 
+        null;
+
       onSubmit({
         action,
         reason,
-        contactMethod,
-        nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate).toISOString() : null,
+        nextFollowUpDate,
         notes
       });
     };
@@ -1183,15 +1187,16 @@ export default function EventRequestsManagement() {
         {/* Reason */}
         {action !== 'resolve' && (
           <div className="space-y-2">
-            <Label htmlFor="reason">Reason for Unresponsive Status</Label>
+            <Label htmlFor="reason">What contact issue occurred?</Label>
             <Select value={reason} onValueChange={setReason}>
               <SelectTrigger>
-                <SelectValue placeholder="Select reason..." />
+                <SelectValue placeholder="Select what happened..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="no_email">No email provided</SelectItem>
+                <SelectItem value="no_phone">No phone number provided</SelectItem>
                 <SelectItem value="no_response_email">No response to emails</SelectItem>
                 <SelectItem value="no_response_phone">No response to phone calls</SelectItem>
-                <SelectItem value="no_response_multiple">No response to multiple contact methods</SelectItem>
                 <SelectItem value="incorrect_contact">Contact information appears incorrect</SelectItem>
                 <SelectItem value="organization_inactive">Organization appears inactive</SelectItem>
                 <SelectItem value="other">Other reason</SelectItem>
@@ -1200,30 +1205,25 @@ export default function EventRequestsManagement() {
           </div>
         )}
 
-        {/* Contact Method */}
+        {/* Simple Follow-up Checkbox */}
         <div className="space-y-2">
-          <Label htmlFor="contactMethod">Preferred Contact Method</Label>
-          <Select value={contactMethod} onValueChange={setContactMethod}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="email">Email</SelectItem>
-              <SelectItem value="phone">Phone</SelectItem>
-              <SelectItem value="both">Both Email and Phone</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Next Follow-up Date */}
-        <div className="space-y-2">
-          <Label htmlFor="nextFollowUpDate">Next Follow-up Date (Optional)</Label>
-          <Input
-            type="date"
-            value={nextFollowUpDate}
-            onChange={(e) => setNextFollowUpDate(e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-          />
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="scheduleFollowUp"
+              checked={scheduleFollowUp}
+              onChange={(e) => setScheduleFollowUp(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <Label htmlFor="scheduleFollowUp" className="text-sm">
+              Schedule follow-up attempt? (automatically sets date one week from now)
+            </Label>
+          </div>
+          {scheduleFollowUp && (
+            <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+              Follow-up will be scheduled for: {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+            </div>
+          )}
         </div>
 
         {/* Notes */}
@@ -2123,7 +2123,7 @@ export default function EventRequestsManagement() {
                 </div>
               )}
             </div>
-            <div className="space-x-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -2131,7 +2131,7 @@ export default function EventRequestsManagement() {
                   setEmailComposerRequest(request);
                   setShowEmailComposer(true);
                 }}
-                className="text-teal-600 hover:text-teal-800 bg-gradient-to-r from-teal-50 to-cyan-100 hover:from-teal-100 hover:to-cyan-200"
+                className="text-teal-600 hover:text-teal-800 bg-gradient-to-r from-teal-50 to-cyan-100 hover:from-teal-100 hover:to-cyan-200 flex-shrink-0"
               >
                 <Mail className="h-4 w-4 mr-1" />
                 Email Contact
@@ -2146,7 +2146,7 @@ export default function EventRequestsManagement() {
                     setFollowUpRequest(request);
                     setShowFollowUpDialog(true);
                   }}
-                  className="bg-[#FBAD3F] hover:bg-[#e69d36] text-white border-[#FBAD3F]"
+                  className="bg-[#FBAD3F] hover:bg-[#e69d36] text-white border-[#FBAD3F] flex-shrink-0"
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
                   Followed Up
@@ -2162,7 +2162,7 @@ export default function EventRequestsManagement() {
                     setUnresponsiveRequest(request);
                     setShowUnresponsiveDialog(true);
                   }}
-                  className="text-amber-600 hover:text-amber-800 bg-gradient-to-r from-amber-50 to-yellow-100 hover:from-amber-100 hover:to-yellow-200"
+                  className="text-amber-600 hover:text-amber-800 bg-gradient-to-r from-amber-50 to-yellow-100 hover:from-amber-100 hover:to-yellow-200 flex-shrink-0"
                 >
                   <AlertTriangle className="h-4 w-4 mr-1" />
                   Mark Unresponsive
@@ -2178,7 +2178,7 @@ export default function EventRequestsManagement() {
                     setUnresponsiveRequest(request);
                     setShowUnresponsiveDialog(true);
                   }}
-                  className="text-red-600 hover:text-red-800 bg-gradient-to-r from-red-50 to-pink-100 hover:from-red-100 hover:to-pink-200"
+                  className="text-red-600 hover:text-red-800 bg-gradient-to-r from-red-50 to-pink-100 hover:from-red-100 hover:to-pink-200 flex-shrink-0"
                 >
                   <XCircle className="h-4 w-4 mr-1" />
                   Manage Unresponsive
