@@ -436,6 +436,16 @@ export default function EnhancedMeetingDashboard() {
       const activeProjects = Array.isArray(allProjects) ? allProjects.filter((p: Project) => p.status !== 'completed') : [];
       const agendaProjects = activeProjects.filter((p: Project) => projectAgendaStatus[p.id] === 'agenda');
       const tabledProjects = activeProjects.filter((p: Project) => projectAgendaStatus[p.id] === 'tabled');
+
+      // Validate that we have agenda items to generate
+      if (agendaProjects.length === 0 && tabledProjects.length === 0) {
+        toast({
+          title: "No Agenda Items",
+          description: "Please add at least one project to the agenda or table some items before generating PDF.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Fetch tasks for each agenda project
       const projectsWithTasks = await Promise.all(
@@ -500,7 +510,15 @@ export default function EnhancedMeetingDashboard() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to generate PDF: ${response.statusText}`);
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || `HTTP ${response.status}: ${response.statusText}`;
+        } catch {
+          errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
       
       // Download the PDF
@@ -518,10 +536,26 @@ export default function EnhancedMeetingDashboard() {
       });
       
     } catch (error: any) {
+      console.error('=== PDF GENERATION CLIENT ERROR ===');
+      console.error('Error details:', error);
+      console.error('User permissions:', user?.permissions);
+      console.error('User email:', user?.email);
+      console.error('====================================');
+      
+      let errorMessage = "Failed to generate agenda PDF";
+      if (error?.message?.includes("403")) {
+        errorMessage = "Permission denied - please contact an administrator to ensure you have meeting management permissions";
+      } else if (error?.message?.includes("400")) {
+        errorMessage = "Invalid agenda data - please ensure you have projects selected for the agenda";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Export Failed",
-        description: error?.message || "Failed to generate agenda PDF",
+        description: errorMessage,
         variant: "destructive",
+        duration: 8000, // Show longer for debugging
       });
     } finally {
       setIsGeneratingPDF(false);

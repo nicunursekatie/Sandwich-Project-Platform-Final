@@ -3574,8 +3574,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate agenda data structure
       if (!agendaData.meetingDate || !agendaData.agendaProjects) {
-        return res.status(400).json({ error: "Invalid agenda data structure" });
+        return res.status(400).json({ error: "Invalid agenda data structure - missing meetingDate or agendaProjects" });
       }
+
+      // Log received data for debugging
+      console.log('=== PDF GENERATION REQUEST ===');
+      console.log('User:', req.user?.email);
+      console.log('User permissions count:', req.user?.permissions);
+      console.log('Meeting date:', agendaData.meetingDate);
+      console.log('Agenda projects count:', agendaData.agendaProjects.length);
+      console.log('Tabled projects count:', agendaData.tabledProjects?.length || 0);
+      console.log('===============================');
 
       // Dynamic import for ES modules
       const PDFKit = (await import("pdfkit")).default;
@@ -3772,7 +3781,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(pdfBuffer);
     } catch (error) {
       logger.error('Finalize agenda PDF error:', error);
-      res.status(500).json({ error: "Failed to generate finalized agenda PDF" });
+      console.error('=== PDF GENERATION ERROR DETAILS ===');
+      console.error('Error:', error);
+      console.error('Agenda data received:', JSON.stringify(agendaData, null, 2));
+      console.error('User permissions:', req.user?.permissions);
+      console.error('User ID:', req.user?.id);
+      console.error('=====================================');
+      
+      const errorMessage = error instanceof Error 
+        ? `PDF generation failed: ${error.message}`
+        : "Failed to generate finalized agenda PDF";
+      
+      res.status(500).json({ 
+        error: errorMessage,
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
