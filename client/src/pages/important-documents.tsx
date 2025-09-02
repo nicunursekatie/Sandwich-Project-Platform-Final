@@ -315,25 +315,13 @@ export default function ImportantDocuments() {
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
                     <p className="text-gray-700 text-base leading-relaxed">
-                      Use these logos to represent The Sandwich Project in official communications and marketing materials
+                      Use the high-resolution versions for professional printing
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
                     <p className="text-gray-700 text-base leading-relaxed">
-                      Maintain proper spacing and never modify colors, fonts, or proportions
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
-                    <p className="text-gray-700 text-base leading-relaxed">
-                      For print materials, always use the CMYK version for accurate color reproduction
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
-                    <p className="text-gray-700 text-base leading-relaxed">
-                      Use transparent PNG versions when overlaying on colored or image backgrounds
+                      Choose the transparent versions when placing over photos or colored backgrounds
                     </p>
                   </div>
                 </div>
