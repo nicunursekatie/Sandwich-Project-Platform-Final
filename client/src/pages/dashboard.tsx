@@ -16,6 +16,7 @@ import VolunteerManagement from "@/components/volunteer-management";
 import HostsManagement from "@/components/hosts-management-consolidated";
 import { DocumentsBrowser } from "@/components/documents-browser";
 import DocumentManagement from "@/components/document-management";
+import ImportantDocuments from "@/pages/important-documents";
 
 import BulkDataManager from "@/components/bulk-data-manager";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
@@ -46,8 +47,6 @@ import GoogleSheetsPage from "@/pages/google-sheets";
 import MessagingSystem from "@/components/messaging-system";
 import RealTimeMessages from "@/pages/real-time-messages";
 import Governance from "@/pages/governance";
-
-import ImportantDocuments from "@/pages/important-documents";
 
 
 import GmailStyleInbox from "@/components/gmail-style-inbox";
@@ -134,6 +133,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     { id: "collections", label: "Collections", icon: Sandwich },
     ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "events", label: "Events", icon: Calendar }] : []),
     { id: "inventory-calculator", label: "Inventory Calculator", icon: Calculator },
+    { id: "important-documents", label: "Important Documents", icon: FileText },
 
     
     // Data section (filtered by permissions)
@@ -212,6 +212,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank');
         setActiveSection("dashboard");
         return <DashboardOverview onSectionChange={setActiveSection} />;
+      case "important-documents":
+        return <ImportantDocuments />;
       case "projects":
         console.log("Rendering ProjectsClean component");
         return <ProjectsClean />;
