@@ -186,15 +186,22 @@ export default function ImportantDocuments() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Important Documents & Logos
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Key documents, forms, and official logos for The Sandwich Project.
-          </p>
+        <div className="mb-12">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 bg-[#236383] rounded-xl shadow-lg">
+              <FileText className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Important Documents & Logos
+              </h1>
+              <p className="text-lg text-gray-600">
+                Key documents, forms, and official logos for The Sandwich Project
+              </p>
+            </div>
+          </div>
         </div>
 
         <Tabs defaultValue="documents" className="w-full">
@@ -217,66 +224,72 @@ export default function ImportantDocuments() {
 
           <TabsContent value="documents" className="space-y-6">
             {/* Category Filter */}
-            <div className="mb-6 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              onClick={() => setSelectedCategory(category)}
-              className={selectedCategory === category ? "text-sm bg-[#236383] hover:bg-[#1a4e66] border-[#236383]" : "text-sm border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"}
-            >
-              {category}
-            </Button>
-              ))}
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Filter by Category</h3>
+              <div className="flex flex-wrap gap-3">
+                {categories.map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    onClick={() => setSelectedCategory(category)}
+                    className={selectedCategory === category 
+                      ? "px-6 py-2.5 text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] border-[#236383] shadow-md transform hover:scale-105 transition-all duration-200" 
+                      : "px-6 py-2.5 text-sm font-medium border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white bg-white shadow-sm transform hover:scale-105 transition-all duration-200"
+                    }
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
             </div>
 
-            {/* Documents Grid - Better tablet responsiveness with wider cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
+            {/* Documents Grid - Professional design */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200">
-              <CardHeader className="pb-4 flex-shrink-0">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3 min-w-0 flex-1">
-                    <div className="flex-shrink-0">
-                      <FileText className="h-5 w-5 text-red-500" />
+            <Card key={doc.id} className="group hover:shadow-2xl transition-all duration-300 h-full flex flex-col bg-white border-0 shadow-md hover:shadow-[#236383]/10 hover:-translate-y-1 rounded-2xl overflow-hidden">
+              <CardHeader className="pb-6 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-4 min-w-0 flex-1">
+                    <div className="flex-shrink-0 p-3 bg-[#236383]/10 rounded-xl">
+                      <FileText className="h-6 w-6 text-[#236383]" />
                     </div>
-                    <CardTitle className="text-lg md:text-xl font-semibold text-gray-900 leading-tight">
+                    <CardTitle className="text-xl md:text-2xl font-bold text-gray-900 leading-tight group-hover:text-[#236383] transition-colors">
                       {doc.name}
                     </CardTitle>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="text-sm font-medium px-3 py-1 bg-purple-100 text-purple-800">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge className="text-sm font-semibold px-4 py-1.5 bg-purple-100 text-purple-800 rounded-full">
                     {doc.category}
                   </Badge>
-                  <Badge variant="outline" className="text-sm font-medium px-3 py-1">
+                  <Badge variant="outline" className="text-sm font-semibold px-4 py-1.5 border-[#236383] text-[#236383] rounded-full">
                     {doc.type.toUpperCase()}
                   </Badge>
                   {getImportanceBadge(doc.importance)}
                 </div>
               </CardHeader>
-              <CardContent className="pt-0 flex-1 flex flex-col">
-                <CardDescription className="mb-6 flex-1 text-base leading-relaxed text-gray-600">
+              <CardContent className="pt-0 flex-1 flex flex-col px-6 pb-6">
+                <CardDescription className="mb-8 flex-1 text-lg leading-relaxed text-gray-600 font-medium">
                   {doc.description}
                 </CardDescription>
-                {/* Action buttons - optimized for tablet with larger touch targets */}
-                <div className="flex flex-col gap-3 mt-auto">
+                {/* Action buttons - Premium design */}
+                <div className="flex flex-col gap-4 mt-auto">
                   <Button
-                    size="default"
+                    size="lg"
                     variant="outline"
                     onClick={() => handlePreview(doc)}
-                    className="w-full h-11 text-base font-medium border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                    className="w-full h-12 text-base font-semibold border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white transition-all duration-200 rounded-xl shadow-sm hover:shadow-md"
                   >
-                    <Eye className="h-5 w-5 mr-2" />
+                    <Eye className="h-5 w-5 mr-3" />
                     Preview
                   </Button>
                   <Button
-                    size="default"
+                    size="lg"
                     variant="default"
                     onClick={() => handleDownload(doc)}
-                    className="w-full h-11 text-base font-medium bg-[#236383] hover:bg-[#1a4e66] border-[#236383]"
+                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-[#236383] to-[#1a4e66] hover:from-[#1a4e66] hover:to-[#0f3a52] text-white transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                   >
-                    <Download className="h-5 w-5 mr-2" />
+                    <Download className="h-5 w-5 mr-3" />
                     Download
                   </Button>
                 </div>
@@ -286,38 +299,61 @@ export default function ImportantDocuments() {
             </div>
           </TabsContent>
 
-          <TabsContent value="logos" className="space-y-6">
+          <TabsContent value="logos" className="space-y-8">
             {/* Usage Guidelines */}
-            <Card className="border-[#236383]/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-[#236383] text-lg">Usage Guidelines</CardTitle>
+            <Card className="border-0 bg-gradient-to-br from-[#236383]/5 to-blue-50/30 shadow-lg rounded-2xl">
+              <CardHeader className="pb-6 bg-gradient-to-r from-[#236383]/10 to-blue-100/20 rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#236383] rounded-lg">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-[#236383] text-2xl font-bold">Brand Usage Guidelines</CardTitle>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-[#646464] text-sm">
-                  • Use these logos to represent The Sandwich Project in official communications
-                </p>
-                <p className="text-[#646464] text-sm">
-                  • Maintain proper spacing and don't modify colors or proportions
-                </p>
-                <p className="text-[#646464] text-sm">
-                  • For print materials, use the CMYK version for best color accuracy
-                </p>
-                <p className="text-[#646464] text-sm">
-                  • Use transparent versions when overlaying on colored backgrounds
-                </p>
+              <CardContent className="space-y-4 p-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
+                    <p className="text-gray-700 text-base leading-relaxed">
+                      Use these logos to represent The Sandwich Project in official communications and marketing materials
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
+                    <p className="text-gray-700 text-base leading-relaxed">
+                      Maintain proper spacing and never modify colors, fonts, or proportions
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
+                    <p className="text-gray-700 text-base leading-relaxed">
+                      For print materials, always use the CMYK version for accurate color reproduction
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-2 h-2 bg-[#236383] rounded-full mt-3"></div>
+                    <p className="text-gray-700 text-base leading-relaxed">
+                      Use transparent PNG versions when overlaying on colored or image backgrounds
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Logo Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Logo Grid - Professional design */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {logoFiles.map((logo) => (
-                <Card key={logo.id} className="border-[#236383]/20 hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-[#236383] text-lg flex items-center gap-2">
-                      {logo.icon}
-                      {logo.name}
-                    </CardTitle>
-                    <Badge variant="secondary" className="w-fit">
+                <Card key={logo.id} className="group hover:shadow-2xl transition-all duration-300 h-full flex flex-col bg-white border-0 shadow-md hover:shadow-[#236383]/10 hover:-translate-y-1 rounded-2xl overflow-hidden">
+                  <CardHeader className="pb-6 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex items-center justify-between mb-3">
+                      <CardTitle className="text-[#236383] text-xl font-bold flex items-center gap-3 group-hover:text-[#1a4e66] transition-colors">
+                        <div className="p-2 bg-[#236383]/10 rounded-lg">
+                          {logo.icon}
+                        </div>
+                        {logo.name}
+                      </CardTitle>
+                    </div>
+                    <Badge variant="secondary" className="w-fit px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
                       {logo.type}
                     </Badge>
                   </CardHeader>
