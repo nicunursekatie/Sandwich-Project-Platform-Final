@@ -451,56 +451,41 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
               </div>
             </div>
 
-          {/* Documents Grid - Better mobile responsiveness */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+          {/* Documents Grid - Compact design */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {importantDocuments.map((doc, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-[#236383]/20">
-                <CardHeader className="pb-3 sm:pb-4 flex-shrink-0">
-                  <div className="flex items-start justify-between mb-2 sm:mb-3">
-                    <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                      <div className="flex-shrink-0">
-                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
-                      </div>
-                      <CardTitle className="text-sm sm:text-lg md:text-xl font-semibold text-gray-900 leading-tight">
-                        {doc.title}
-                      </CardTitle>
+              <div key={index} className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200 border hover:border-[#236383]/30">
+                <div className="flex items-center mb-3">
+                  <FileText className="h-5 w-5 text-[#236383] mr-2 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-semibold text-[#236383] truncate">{doc.title}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs bg-[#236383]/10 text-[#236383] px-2 py-0.5 rounded">{doc.category}</span>
+                      <span className="text-xs text-gray-500">PDF</span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 bg-[#236383]/10 text-[#236383]">
-                      {doc.category}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1">
-                      PDF
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0 flex-1 flex flex-col">
-                  <CardDescription className="mb-4 sm:mb-6 flex-1 text-sm sm:text-base leading-relaxed text-gray-600">
-                    {doc.description}
-                  </CardDescription>
-                  {/* Action buttons - mobile optimized */}
-                  <div className="flex flex-col gap-2 sm:gap-3 mt-auto">
-                    <Button
-                      size="default"
-                      variant="outline"
-                      onClick={() => openPreviewModal(doc.path, doc.title, 'pdf')}
-                      className="w-full h-11 font-medium border-[#236383]/30 hover:border-[#236383] text-[#236383] hover:bg-[#236383]/5"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview Document
-                    </Button>
-                    <Button
-                      size="default"
-                      onClick={() => window.open(doc.path, '_blank')}
-                      className="w-full h-11 font-medium bg-[#236383] hover:bg-[#007E8C] text-white"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+                <p className="text-xs text-gray-600 mb-3 line-clamp-2">{doc.description}</p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openPreviewModal(doc.path, doc.title, 'pdf')}
+                    className="flex-1 h-8 text-xs border-[#236383]/30 hover:border-[#236383] text-[#236383]"
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Preview
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => window.open(doc.path, '_blank')}
+                    className="flex-1 h-8 text-xs bg-[#236383] hover:bg-[#007E8C] text-white"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Download
+                  </Button>
+                </div>
+              </div>
             ))}
             </div>
           </div>
