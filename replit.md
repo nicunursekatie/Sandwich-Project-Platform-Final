@@ -55,6 +55,7 @@ Typography uses Roboto font family. UI elements prioritize clarity with well-def
 - **Task Creation from Meeting Notes**: Implemented functionality to automatically convert meeting discussion notes and decision items into actionable project tasks via the "Create Tasks from Notes" button, with appropriate priority levels and due dates.
 - **Meeting PDF Generation Debugging**: Enhanced PDF generation system with comprehensive error handling, detailed logging for troubleshooting permission issues, and improved user feedback for successful agenda exports.
 - **Organization EIN Display**: Added prominent EIN (87-0939484) display in sidebar navigation and Important Documents page for easy access and tracking.
+- **Unresponsive Contact Workflow**: Comprehensive system for managing unresponsive event requests with tracking fields (contact attempts, last attempt date, reason, contact method preferences), workflow buttons for marking and managing unresponsive status, visual indicators with red badges, filtering capabilities, and detailed management forms with automated follow-up scheduling and audit logging.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

@@ -1128,6 +1128,17 @@ export const eventRequests = pgTable("event_requests", {
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates
   duplicateNotes: text("duplicate_notes"), // Notes about potential matches
   
+  // Unresponsive contact tracking
+  contactAttempts: integer("contact_attempts").default(0), // Number of contact attempts made
+  lastContactAttempt: timestamp("last_contact_attempt"), // When we last tried to contact them
+  isUnresponsive: boolean("is_unresponsive").default(false), // Flag indicating they're not responding
+  markedUnresponsiveAt: timestamp("marked_unresponsive_at"), // When marked as unresponsive
+  markedUnresponsiveBy: varchar("marked_unresponsive_by"), // User ID who marked as unresponsive
+  unresponsiveReason: text("unresponsive_reason"), // Why they were marked unresponsive
+  contactMethod: varchar("contact_method"), // 'phone', 'email', 'both' - preferred contact method
+  nextFollowUpDate: timestamp("next_follow_up_date"), // Scheduled next attempt date
+  unresponsiveNotes: text("unresponsive_notes"), // Detailed notes about unresponsive status
+  
   // Audit tracking
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

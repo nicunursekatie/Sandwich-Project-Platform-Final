@@ -201,6 +201,8 @@ export default function EventRequestsManagement() {
   // TSP Contact Assignment state
   const [showTspContactDialog, setShowTspContactDialog] = useState(false);
   const [assigningContactRequest, setAssigningContactRequest] = useState<EventRequest | null>(null);
+  const [showUnresponsiveDialog, setShowUnresponsiveDialog] = useState(false);
+  const [unresponsiveRequest, setUnresponsiveRequest] = useState<EventRequest | null>(null);
   const [selectedTspContacts, setSelectedTspContacts] = useState<string[]>([]);
   const [customTspContacts, setCustomTspContacts] = useState<string[]>(['']);
   
@@ -625,8 +627,16 @@ export default function EventRequestsManagement() {
         request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (request.desiredEventDate && typeof request.desiredEventDate === 'string' && request.desiredEventDate.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (request.desiredEventDate && formatEventDate(request.desiredEventDate).text.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // Apply status filter
+      const matchesStatusFilter = () => {
+        if (statusFilter === 'all') return true;
+        if (statusFilter === 'unresponsive') return request.isUnresponsive === true;
+        if (statusFilter === 'responsive') return request.isUnresponsive !== true;
+        return true;
+      };
         
-      return matchesSearch;
+      return matchesSearch && matchesStatusFilter();
     });
 
     // Sorting function for safe date parsing
@@ -702,7 +712,7 @@ export default function EventRequestsManagement() {
     }
     
     return filtered;
-  }, [eventRequests, searchTerm, activeTab, globalSearch, pastEventsSortOrder, requestsSortBy, requestsSortOrder, scheduledSortBy, scheduledSortOrder, pastSortBy]);
+  }, [eventRequests, searchTerm, activeTab, globalSearch, pastEventsSortOrder, requestsSortBy, requestsSortOrder, scheduledSortBy, scheduledSortOrder, pastSortBy, statusFilter]);
 
   // Paginated past events for display
   const paginatedPastEvents = useMemo(() => {
@@ -978,6 +988,179 @@ export default function EventRequestsManagement() {
     setCustomTspContacts(['']);
 
     toast({ title: "TSP contacts assigned successfully" });
+  };
+
+  // Handle unresponsive status management
+  const handleUnresponsiveSubmit = async (data: any) => {
+    if (!unresponsiveRequest) return;
+    
+    try {
+      const updateData = {
+        isUnresponsive: data.action === 'mark',
+        markedUnresponsiveAt: data.action === 'mark' ? new Date().toISOString() : null,
+        markedUnresponsiveBy: data.action === 'mark' ? user?.id : null,
+        unresponsiveReason: data.reason || null,
+        contactMethod: data.contactMethod || null,
+        nextFollowUpDate: data.nextFollowUpDate || null,
+        unresponsiveNotes: data.notes || null,
+        contactAttempts: data.action === 'mark' ? (unresponsiveRequest.contactAttempts || 0) + 1 : unresponsiveRequest.contactAttempts,
+        lastContactAttempt: data.action === 'mark' ? new Date().toISOString() : unresponsiveRequest.lastContactAttempt
+      };
+      
+      await updateMutation.mutateAsync({
+        id: unresponsiveRequest.id,
+        ...updateData
+      });
+
+      toast({
+        title: data.action === 'mark' ? "Marked as unresponsive" : "Unresponsive status updated",
+        description: `${unresponsiveRequest.organizationName} has been updated`,
+      });
+
+      setShowUnresponsiveDialog(false);
+      setUnresponsiveRequest(null);
+      
+      // Log audit trail
+      console.log(`[AUDIT] User ${user?.email} ${data.action === 'mark' ? 'marked' : 'updated'} unresponsive status for event ${unresponsiveRequest.id}:`, updateData);
+    } catch (error) {
+      toast({ 
+        title: "Update failed", 
+        description: "Failed to update unresponsive status",
+        variant: "destructive" 
+      });
+    }
+  };
+
+  // Unresponsive Management Form Component
+  const UnresponsiveManagementForm = ({ request, onSubmit, onCancel }: {
+    request: any;
+    onSubmit: (data: any) => void;
+    onCancel: () => void;
+  }) => {
+    const [action, setAction] = useState(request.isUnresponsive ? 'update' : 'mark');
+    const [reason, setReason] = useState(request.unresponsiveReason || '');
+    const [contactMethod, setContactMethod] = useState(request.contactMethod || 'both');
+    const [nextFollowUpDate, setNextFollowUpDate] = useState(request.nextFollowUpDate ? request.nextFollowUpDate.split('T')[0] : '');
+    const [notes, setNotes] = useState(request.unresponsiveNotes || '');
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      onSubmit({
+        action,
+        reason,
+        contactMethod,
+        nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate).toISOString() : null,
+        notes
+      });
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Action Selection */}
+        <div className="space-y-2">
+          <Label>Action</Label>
+          <Select value={action} onValueChange={setAction}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mark">Mark as Unresponsive</SelectItem>
+              {request.isUnresponsive && (
+                <>
+                  <SelectItem value="update">Update Unresponsive Status</SelectItem>
+                  <SelectItem value="resolve">Mark as Responsive Again</SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Current Status Display */}
+        {request.isUnresponsive && (
+          <div className="bg-red-50 border border-red-200 p-3 rounded-md">
+            <div className="text-sm">
+              <p className="font-medium text-red-800">Currently marked as unresponsive</p>
+              <p className="text-red-600">Contact attempts: {request.contactAttempts || 0}</p>
+              {request.lastContactAttempt && (
+                <p className="text-red-600">Last attempt: {new Date(request.lastContactAttempt).toLocaleDateString()}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Reason */}
+        {action !== 'resolve' && (
+          <div className="space-y-2">
+            <Label htmlFor="reason">Reason for Unresponsive Status</Label>
+            <Select value={reason} onValueChange={setReason}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select reason..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no_response_email">No response to emails</SelectItem>
+                <SelectItem value="no_response_phone">No response to phone calls</SelectItem>
+                <SelectItem value="no_response_multiple">No response to multiple contact methods</SelectItem>
+                <SelectItem value="incorrect_contact">Contact information appears incorrect</SelectItem>
+                <SelectItem value="organization_inactive">Organization appears inactive</SelectItem>
+                <SelectItem value="other">Other reason</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Contact Method */}
+        <div className="space-y-2">
+          <Label htmlFor="contactMethod">Preferred Contact Method</Label>
+          <Select value={contactMethod} onValueChange={setContactMethod}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="email">Email</SelectItem>
+              <SelectItem value="phone">Phone</SelectItem>
+              <SelectItem value="both">Both Email and Phone</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Next Follow-up Date */}
+        <div className="space-y-2">
+          <Label htmlFor="nextFollowUpDate">Next Follow-up Date (Optional)</Label>
+          <Input
+            type="date"
+            value={nextFollowUpDate}
+            onChange={(e) => setNextFollowUpDate(e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+          />
+        </div>
+
+        {/* Notes */}
+        <div className="space-y-2">
+          <Label htmlFor="notes">Notes</Label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Additional notes about contact attempts, issues, or next steps..."
+            rows={3}
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            className={action === 'resolve' ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'}
+          >
+            {action === 'mark' && 'Mark as Unresponsive'}
+            {action === 'update' && 'Update Status'}
+            {action === 'resolve' && 'Mark as Responsive'}
+          </Button>
+        </div>
+      </form>
+    );
   };
 
   // Function to render enhanced scheduled event cards with inline editing
@@ -1773,23 +1956,33 @@ export default function EventRequestsManagement() {
           
           <div className="flex justify-between items-center pt-3 border-t">
             <div className="text-sm text-gray-500">
-              <div>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
-                try {
-                  // Parse timestamp safely to preserve the original time
-                  let date: Date;
-                  if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                    // Database timestamp format: "2025-08-27 06:26:14"
-                    // Treat as-is without timezone conversion
-                    const [datePart, timePart] = request.createdAt.split(' ');
-                    date = new Date(datePart + 'T' + timePart);
-                  } else {
-                    date = new Date(request.createdAt);
+              <div className="flex items-center space-x-2">
+                <span>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
+                  try {
+                    // Parse timestamp safely to preserve the original time
+                    let date: Date;
+                    if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                      // Database timestamp format: "2025-08-27 06:26:14"
+                      // Treat as-is without timezone conversion
+                      const [datePart, timePart] = request.createdAt.split(' ');
+                      date = new Date(datePart + 'T' + timePart);
+                    } else {
+                      date = new Date(request.createdAt);
+                    }
+                    return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                  } catch (error) {
+                    return 'Invalid date';
                   }
-                  return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-                } catch (error) {
-                  return 'Invalid date';
-                }
-              })()}</div>
+                })()}</span>
+                
+                {/* Unresponsive Status Badge */}
+                {request.isUnresponsive && (
+                  <Badge variant="destructive" className="text-xs bg-red-100 text-red-700 border-red-300">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Unresponsive
+                  </Badge>
+                )}
+              </div>
               {request.status === 'new' && !request.contactCompletedAt && (
                 <div className="font-medium" style={{ color: '#FBAD3F' }}>
                   Action needed: {(() => {
@@ -1843,6 +2036,38 @@ export default function EventRequestsManagement() {
                 >
                   <Clock className="h-4 w-4 mr-1" />
                   Complete Primary Contact
+                </Button>
+              )}
+              
+              {/* Show unresponsive workflow buttons for new requests */}
+              {activeTab === 'requests' && request.status === 'new' && !request.isUnresponsive && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setUnresponsiveRequest(request);
+                    setShowUnresponsiveDialog(true);
+                  }}
+                  className="text-amber-600 hover:text-amber-800 bg-gradient-to-r from-amber-50 to-yellow-100 hover:from-amber-100 hover:to-yellow-200"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Mark Unresponsive
+                </Button>
+              )}
+              
+              {/* Show if already marked unresponsive */}
+              {request.isUnresponsive && (
+                <Button
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setUnresponsiveRequest(request);
+                    setShowUnresponsiveDialog(true);
+                  }}
+                  className="text-red-600 hover:text-red-800 bg-gradient-to-r from-red-50 to-pink-100 hover:from-red-100 hover:to-pink-200"
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Manage Unresponsive
                 </Button>
               )}
               
@@ -2434,17 +2659,34 @@ export default function EventRequestsManagement() {
                 className="pl-10"
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="globalSearch"
-                checked={globalSearch}
-                onChange={(e) => setGlobalSearch(e.target.checked)}
-                className="rounded border-gray-300 focus:ring-teal-500"
-              />
-              <label htmlFor="globalSearch" className="text-sm text-gray-600 cursor-pointer">
-                Search across all events (not just current tab)
-              </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="globalSearch"
+                  checked={globalSearch}
+                  onChange={(e) => setGlobalSearch(e.target.checked)}
+                  className="rounded border-gray-300 focus:ring-teal-500"
+                />
+                <label htmlFor="globalSearch" className="text-sm text-gray-600 cursor-pointer">
+                  Search across all events (not just current tab)
+                </label>
+              </div>
+              
+              {/* Status Filter */}
+              <div className="flex items-center space-x-2">
+                <label htmlFor="statusFilter" className="text-sm text-gray-600">Filter:</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Requests</SelectItem>
+                    <SelectItem value="responsive">Responsive Only</SelectItem>
+                    <SelectItem value="unresponsive">Unresponsive Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             {globalSearch && searchTerm && (
               <div className="text-sm text-teal-600 bg-teal-50 p-2 rounded">
@@ -3644,6 +3886,32 @@ export default function EventRequestsManagement() {
             setEmailComposerRequest(null);
           }}
         />
+      )}
+
+      {/* Unresponsive Contact Management Dialog */}
+      {showUnresponsiveDialog && unresponsiveRequest && (
+        <Dialog open={showUnresponsiveDialog} onOpenChange={setShowUnresponsiveDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <span>Unresponsive Contact Management</span>
+              </DialogTitle>
+              <DialogDescription>
+                Manage unresponsive contact status for {unresponsiveRequest.organizationName}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <UnresponsiveManagementForm 
+              request={unresponsiveRequest}
+              onSubmit={handleUnresponsiveSubmit}
+              onCancel={() => {
+                setShowUnresponsiveDialog(false);
+                setUnresponsiveRequest(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
       </div>
     </TooltipProvider>
