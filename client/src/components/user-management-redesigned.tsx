@@ -71,6 +71,7 @@ import AuthDebug from "@/components/auth-debug";
 import ShoutoutSystem from "@/components/shoutout-system";
 import MeaningfulUserAnalytics from "@/components/meaningful-user-analytics";
 import { DetailedActivityAnalytics } from "@/components/detailed-activity-analytics";
+import { SystemHealthDashboard } from "@/components/system-health-dashboard";
 import { ButtonTooltip } from "@/components/ui/button-tooltip";
 
 interface User {
@@ -133,7 +134,7 @@ export default function UserManagementRedesigned() {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "activity" | "announcements" | "shoutouts" | "debug">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "user-activity" | "activity" | "announcements" | "shoutouts" | "system-health" | "debug">("overview");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -480,7 +481,7 @@ export default function UserManagementRedesigned() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+        <TabsList className="grid grid-cols-8 w-full max-w-5xl">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -504,6 +505,10 @@ export default function UserManagementRedesigned() {
           <TabsTrigger value="shoutouts" className="flex items-center gap-2">
             <Award className="h-4 w-4" />
             <span className="hidden sm:inline">Shoutouts</span>
+          </TabsTrigger>
+          <TabsTrigger value="system-health" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Tests</span>
           </TabsTrigger>
           <TabsTrigger value="debug" className="flex items-center gap-2">
             <Bug className="h-4 w-4" />
@@ -847,6 +852,11 @@ export default function UserManagementRedesigned() {
         {/* Shoutouts Tab */}
         <TabsContent value="shoutouts">
           <ShoutoutSystem />
+        </TabsContent>
+
+        {/* System Health Tab */}
+        <TabsContent value="system-health">
+          <SystemHealthDashboard />
         </TabsContent>
 
         {/* Debug Tab */}
