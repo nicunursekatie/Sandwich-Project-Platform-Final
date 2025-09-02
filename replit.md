@@ -25,6 +25,10 @@ The application features a consistent brand identity using The Sandwich Project'
 - **Burgundy Accent**: #A31C41 (accent color, used for warnings/postponed events)
 - **Teal Muted**: #007E8C (supporting color)
 
+Complete Official Brand Palette (from TSP Style Guide):
+PRIMARY: Teal #236383, Orange #FBAD3F, Charcoal #646464
+SECONDARY: Burgundy #A31C41, Dark Teal #007E8C, Light Teal #47B3CB, Light Gray #D1D3D4
+
 Typography uses Roboto font family. UI elements prioritize clarity with well-defined button labels and interface text. The design is responsive, adapting for mobile and tablet views with features like hamburger menus and compact forms. Visual hierarchy is established through card-based dashboards and clear sectioning. Form elements are enhanced with focus states and subtle hover effects for improved user interaction.
 
 ### Technical Implementations
