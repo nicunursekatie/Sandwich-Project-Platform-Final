@@ -189,6 +189,10 @@ export default function EventRequestsManagement() {
   const [scheduledSortBy, setScheduledSortBy] = useState<'date' | 'organization'>('date');
   const [scheduledSortOrder, setScheduledSortOrder] = useState<'asc' | 'desc'>('asc');
   const [pastSortBy, setPastSortBy] = useState<'date' | 'organization'>('date');
+  // Inline editing state for scheduled events
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [tempValues, setTempValues] = useState<any>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -731,24 +735,24 @@ export default function EventRequestsManagement() {
     );
   };
 
+  // Handle inline editing for scheduled events
+  const handleInlineEdit = async (field: string, value: any) => {
+    try {
+      await updateMutation.mutateAsync({
+        id: editingEventId!,
+        [field]: value
+      });
+      setEditingField(null);
+      setEditingEventId(null);
+      setTempValues({});
+      toast({ title: "Updated successfully" });
+    } catch (error) {
+      toast({ title: "Update failed", variant: "destructive" });
+    }
+  };
+
   // Function to render enhanced scheduled event cards with inline editing
   const renderScheduledEventCard = (request: EventRequest) => {
-    const [editingField, setEditingField] = useState<string | null>(null);
-    const [tempValues, setTempValues] = useState<any>({});
-
-    const handleInlineEdit = async (field: string, value: any) => {
-      try {
-        await updateMutation.mutateAsync({
-          id: request.id,
-          [field]: value
-        });
-        setEditingField(null);
-        setTempValues({});
-        toast({ title: "Updated successfully" });
-      } catch (error) {
-        toast({ title: "Update failed", variant: "destructive" });
-      }
-    };
 
     const getDriverStatus = () => {
       const driverIds = (request as any).assignedDriverIds || [];
@@ -828,7 +832,7 @@ export default function EventRequestsManagement() {
                 {/* Contact Name */}
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4 text-teal-600" />
-                  {editingField === 'contact' ? (
+                  {editingField === 'contact' && editingEventId === request.id ? (
                     <div className="flex space-x-2 flex-1">
                       <input
                         className="text-sm border rounded px-2 py-1 flex-1"
@@ -845,7 +849,10 @@ export default function EventRequestsManagement() {
                   ) : (
                     <span 
                       className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => setEditingField('contact')}
+                      onClick={() => {
+                        setEditingField('contact');
+                        setEditingEventId(request.id);
+                      }}
                     >
                       {request.firstName} {request.lastName}
                     </span>
@@ -855,7 +862,7 @@ export default function EventRequestsManagement() {
                 {/* Email */}
                 <div className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-teal-600" />
-                  {editingField === 'email' ? (
+                  {editingField === 'email' && editingEventId === request.id ? (
                     <input
                       className="text-sm border rounded px-2 py-1 flex-1"
                       defaultValue={request.email}
@@ -866,7 +873,10 @@ export default function EventRequestsManagement() {
                   ) : (
                     <span 
                       className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => setEditingField('email')}
+                      onClick={() => {
+                        setEditingField('email');
+                        setEditingEventId(request.id);
+                      }}
                     >
                       {request.email}
                     </span>
@@ -876,7 +886,7 @@ export default function EventRequestsManagement() {
                 {/* Phone */}
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-teal-600" />
-                  {editingField === 'phone' ? (
+                  {editingField === 'phone' && editingEventId === request.id ? (
                     <input
                       className="text-sm border rounded px-2 py-1 flex-1"
                       defaultValue={request.phone || ''}
@@ -887,7 +897,10 @@ export default function EventRequestsManagement() {
                   ) : (
                     <span 
                       className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => setEditingField('phone')}
+                      onClick={() => {
+                        setEditingField('phone');
+                        setEditingEventId(request.id);
+                      }}
                     >
                       {request.phone || 'Click to add phone'}
                     </span>
@@ -902,7 +915,7 @@ export default function EventRequestsManagement() {
                 {/* Address */}
                 <div className="flex items-center space-x-2">
                   <Building className="w-4 h-4 text-teal-600" />
-                  {editingField === 'address' ? (
+                  {editingField === 'address' && editingEventId === request.id ? (
                     <input
                       className="text-sm border rounded px-2 py-1 flex-1"
                       defaultValue={request.eventAddress || ''}
@@ -913,7 +926,10 @@ export default function EventRequestsManagement() {
                   ) : (
                     <span 
                       className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-                      onClick={() => setEditingField('address')}
+                      onClick={() => {
+                        setEditingField('address');
+                        setEditingEventId(request.id);
+                      }}
                     >
                       {request.eventAddress || 'Click to add address'}
                     </span>
@@ -923,7 +939,7 @@ export default function EventRequestsManagement() {
                 {/* Sandwich Count */}
                 <div className="flex items-center space-x-2">
                   <span className="text-teal-600 text-sm">🥪</span>
-                  {editingField === 'sandwichCount' ? (
+                  {editingField === 'sandwichCount' && editingEventId === request.id ? (
                     <input
                       type="number"
                       className="text-sm border rounded px-2 py-1 w-24"
@@ -935,7 +951,10 @@ export default function EventRequestsManagement() {
                   ) : (
                     <span 
                       className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-                      onClick={() => setEditingField('sandwichCount')}
+                      onClick={() => {
+                        setEditingField('sandwichCount');
+                        setEditingEventId(request.id);
+                      }}
                     >
                       {request.estimatedSandwichCount || 'Click to add count'} sandwiches
                     </span>

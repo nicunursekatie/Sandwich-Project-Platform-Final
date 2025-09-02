@@ -85,8 +85,8 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
   // Extract and flatten groups from response
   const rawGroups = groupsResponse?.groups || [];
   
-  // Convert to flat structure for easier filtering and display
-  const groups: OrganizationContact[] = rawGroups.flatMap((org: Group) => 
+  // Convert to flat structure and separate active vs historical organizations
+  const allOrganizations: OrganizationContact[] = rawGroups.flatMap((org: Group) => 
     org.departments.map(contact => ({
       organizationName: org.name,
       contactName: contact.contactName,
@@ -100,9 +100,17 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
     }))
   );
 
+  // Separate active organizations (with event requests) from historical ones (sandwich collections only)
+  const activeOrganizations = allOrganizations.filter(org => 
+    org.email && org.contactName !== 'Historical Organization'
+  );
+  
+  const historicalOrganizations = allOrganizations.filter(org => 
+    !org.email || org.contactName === 'Historical Organization'
+  );
 
-  // Filter groups first
-  const filteredGroups = groups
+  // Filter active organizations
+  const filteredActiveGroups = activeOrganizations
     .filter((org) => {
       const matchesSearch = 
         org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,6 +123,13 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
       return matchesSearch && matchesStatus;
     });
 
+  // Filter historical organizations (simpler filtering since they don't have emails/status)
+  const filteredHistoricalGroups = historicalOrganizations
+    .filter((org) => {
+      return org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             org.contactName.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
   // Group entries by group name
   interface GroupInfo {
     groupName: string;
@@ -125,7 +140,8 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
     latestRequestDate: string;
   }
 
-  const groupInfo: GroupInfo[] = filteredGroups
+  // Process active organizations into groups
+  const activeGroupInfo: GroupInfo[] = Array.from(filteredActiveGroups
     .reduce((groups: Map<string, GroupInfo>, org) => {
       const orgName = org.organizationName;
       
@@ -152,10 +168,34 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
       
       return groups;
     }, new Map())
-    .values();
+    .values());
 
-  // Sort groups by organization name or latest request date
-  const sortedGroups = Array.from(groupInfo).sort((a, b) => {
+  // Process historical organizations into groups
+  const historicalGroupInfo: GroupInfo[] = Array.from(filteredHistoricalGroups
+    .reduce((groups: Map<string, GroupInfo>, org) => {
+      const orgName = org.organizationName;
+      
+      if (!groups.has(orgName)) {
+        groups.set(orgName, {
+          groupName: orgName,
+          departments: [],
+          totalRequests: 0,
+          totalDepartments: 0,
+          hasHostedEvent: org.hasHostedEvent,
+          latestRequestDate: org.latestRequestDate
+        });
+      }
+      
+      const group = groups.get(orgName)!;
+      group.departments.push(org);
+      group.hasHostedEvent = group.hasHostedEvent || org.hasHostedEvent;
+      
+      return groups;
+    }, new Map())
+    .values());
+
+  // Sort active groups by organization name or latest request date
+  const sortedActiveGroups = activeGroupInfo.sort((a, b) => {
     if (sortBy === 'groupName') {
       return sortOrder === "desc" 
         ? b.groupName.localeCompare(a.groupName)
@@ -168,8 +208,13 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
     return sortOrder === "desc" ? bDate - aDate : aDate - bDate;
   });
 
-  // Sort departments within each group
-  sortedGroups.forEach(group => {
+  // Sort historical groups by organization name
+  const sortedHistoricalGroups = historicalGroupInfo.sort((a, b) => {
+    return a.groupName.localeCompare(b.groupName);
+  });
+
+  // Sort departments within each active group
+  sortedActiveGroups.forEach(group => {
     group.departments.sort((a, b) => {
       if (sortBy === 'eventDate') {
         const aDate = a.eventDate ? new Date(a.eventDate).getTime() : (sortOrder === "desc" ? -Infinity : Infinity);
@@ -190,12 +235,15 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
     group.totalDepartments = group.departments.length;
   });
 
-  // Pagination logic
-  const totalItems = sortedGroups.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedGroups = sortedGroups.slice(startIndex, endIndex);
+  // Pagination logic for active groups
+  const totalActiveItems = sortedActiveGroups.length;
+  const totalActivePages = Math.ceil(totalActiveItems / itemsPerPage);
+  const activeStartIndex = (currentPage - 1) * itemsPerPage;
+  const activeEndIndex = activeStartIndex + itemsPerPage;
+  const paginatedActiveGroups = sortedActiveGroups.slice(activeStartIndex, activeEndIndex);
+  
+  // Historical groups don't need pagination initially - show all
+  const paginatedHistoricalGroups = sortedHistoricalGroups;
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -329,7 +377,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
         {/* Results Summary */}
         <div className="mt-4 pt-3 border-t flex justify-between items-center">
           <small className="text-gray-600">
-            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} groups with {filteredGroups.length} departments/contacts
+            Showing {activeStartIndex + 1}-{Math.min(activeEndIndex, totalActiveItems)} of {totalActiveItems} active groups • {paginatedHistoricalGroups.length} historical organizations
           </small>
           <div className="flex items-center gap-2">
             <small className="text-gray-600">Items per page:</small>
@@ -348,11 +396,11 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
         </div>
       </div>
 
-      {/* Groups Grid */}
-      {totalItems === 0 ? (
+      {/* Organizations Display - Separated by Active and Historical */}
+      {totalActiveItems === 0 && paginatedHistoricalGroups.length === 0 ? (
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No groups found</p>
+          <p className="text-gray-600">No organizations found</p>
           <p className="text-sm text-gray-500 mt-2">
             {searchTerm || statusFilter !== "all" 
               ? "Try adjusting your search or filters" 
@@ -361,7 +409,19 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
         </div>
       ) : (
         <div className="space-y-8">
-          {paginatedGroups.map((group, groupIndex) => (
+          {/* Active Organizations Section */}
+          {totalActiveItems > 0 && (
+            <div>
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
+                  <Calendar className="w-5 h-5 text-teal-700" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Active Organizations</h2>
+                <Badge className="bg-teal-100 text-teal-700">{totalActiveItems} organizations</Badge>
+              </div>
+              
+              <div className="space-y-6">
+                {paginatedActiveGroups.map((group, groupIndex) => (
             <div key={`${group.name}-${groupIndex}`} className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm">
               {/* Group Header */}
               <div className="mb-6 pb-4 border-b border-gray-200">
@@ -530,13 +590,60 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
               </div>
             ))}
           </div>
-        )}
+        </div>
+          )}
+          
+          {/* Historical Organizations Section */}
+          {paginatedHistoricalGroups.length > 0 && (
+            <div className="mt-12">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-slate-200">
+                  <Building className="w-5 h-5 text-gray-700" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Historical Organizations</h2>
+                <Badge className="bg-gray-100 text-gray-700">{paginatedHistoricalGroups.length} organizations</Badge>
+                <span className="text-sm text-gray-600">(from sandwich collections only)</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {paginatedHistoricalGroups.map((group, groupIndex) => (
+                  <Card key={`historical-${group.groupName}-${groupIndex}`} className="bg-gradient-to-br from-gray-50 to-slate-100 border border-gray-200 hover:shadow-lg transition-all duration-300">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-gray-800 flex items-center space-x-2">
+                        <Building className="w-5 h-5 text-gray-600" />
+                        <span>{group.groupName}</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Users className="w-4 h-4 mr-2" />
+                          <span>Historical host location</span>
+                        </div>
+                        {group.hasHostedEvent && (
+                          <div className="flex items-center text-sm text-green-700">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            <span>Previously hosted sandwiches</span>
+                          </div>
+                        )}
+                        <div className="pt-2 mt-3 border-t">
+                          <small className="text-gray-500">From sandwich collections records</small>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Pagination Controls */}
-      {totalItems > 0 && totalPages > 1 && (
+      {/* Pagination Controls - Only for Active Organizations */}
+      {totalActiveItems > 0 && totalActivePages > 1 && (
         <div className="flex items-center justify-between bg-white rounded-lg border p-4 shadow-sm mt-6">
           <div className="text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
+            Page {currentPage} of {totalActivePages}
           </div>
           
           <div className="flex items-center gap-2">
@@ -552,14 +659,14 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
             </Button>
             
             <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              {Array.from({ length: Math.min(totalActivePages, 5) }, (_, i) => {
                 let pageNum;
-                if (totalPages <= 5) {
+                if (totalActivePages <= 5) {
                   pageNum = i + 1;
                 } else if (currentPage <= 3) {
                   pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
+                } else if (currentPage >= totalActivePages - 2) {
+                  pageNum = totalActivePages - 4 + i;
                 } else {
                   pageNum = currentPage - 2 + i;
                 }
@@ -581,8 +688,8 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalActivePages))}
+              disabled={currentPage === totalActivePages}
               className="h-8"
             >
               Next
