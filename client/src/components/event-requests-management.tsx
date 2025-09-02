@@ -646,57 +646,19 @@ export default function EventRequestsManagement() {
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
   
   const requestsEvents = eventRequests.filter((req: EventRequest) => {
-    // Include new requests AND any future events not handled by other tabs
-    if (!req.desiredEventDate) {
-      // No date specified - only include new requests or unknown status
-      return req.status === 'new' || !req.status;
-    }
-    
-    // Use the same timezone-safe parsing as formatEventDate function
-    let eventDate: Date;
-    const dateString = req.desiredEventDate;
-    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-      const dateOnly = dateString.split(' ')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-      const dateOnly = dateString.split('T')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else {
-      eventDate = new Date(dateString);
-    }
-    eventDate.setHours(0, 0, 0, 0);
-    
-    // Show future events that are 'new' OR don't have a recognized status
-    if (eventDate >= today) {
-      return req.status === 'new' || 
-             !req.status || 
-             (req.status !== 'followed_up' && 
-              req.status !== 'in_process' && 
-              req.status !== 'scheduled' && 
-              req.status !== 'completed' && 
-              req.status !== 'declined');
-    }
-    
-    // Also show past events with 'new' status so they can be processed
-    return req.status === 'new';
+    return req.status === 'new' || !req.status;
+  });
+  
+  const followedUpEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'followed_up';
+  });
+  
+  const inProcessEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'in_process';
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
-    if (!req.desiredEventDate) return req.status === 'followed_up' || req.status === 'in_process' || req.status === 'scheduled';
-    // Use the same timezone-safe parsing as formatEventDate function
-    let eventDate: Date;
-    const dateString = req.desiredEventDate;
-    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-      const dateOnly = dateString.split(' ')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-      const dateOnly = dateString.split('T')[0];
-      eventDate = new Date(dateOnly + 'T12:00:00');
-    } else {
-      eventDate = new Date(dateString);
-    }
-    eventDate.setHours(0, 0, 0, 0);
-    return eventDate >= today && (req.status === 'followed_up' || req.status === 'in_process' || req.status === 'scheduled');
+    return req.status === 'scheduled';
   });
   
   const pastEvents = eventRequests.filter((req: EventRequest) => {
@@ -732,6 +694,10 @@ export default function EventRequestsManagement() {
     switch (activeTab) {
       case 'requests':
         return requestsEvents;
+      case 'followed_up':
+        return followedUpEvents;
+      case 'in_process':
+        return inProcessEvents;
       case 'scheduled':
         return scheduledEvents;
       case 'past':
