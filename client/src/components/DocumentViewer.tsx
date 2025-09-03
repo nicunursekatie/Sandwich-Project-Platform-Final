@@ -68,10 +68,10 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  return (
  <div className={`bg-white rounded-lg shadow-sm ${className}`}>
  {/* Document Controls */}
- <div className="flex items-center justify-between p-4 border-b border-gray-200"
+ <div className="flex items-center justify-between p-4 border-b border-gray-200">
  <div className="flex items-center gap-2">
- <FileText className="h-5 w-5 text-blue-600 />"
- <span className="font-medium text-gray-900"
+ <FileText className="h-5 w-5 text-blue-600" />
+ <span className="font-medium text-gray-900">{fileName}</span>
  <span className="text-sm text-gray-500 uppercase">{fileType}</span>
  </div>
  
@@ -90,10 +90,10 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  {/* Document Viewer */}
  <div className="relative" style={{ height: '600px' }}>
  {isLoading && (
- <div className="absolute inset-0 flex items-center justify-center bg-gray-50"
+ <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
  <div className="flex flex-col items-center">
  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
- <p className="text-gray-600 document...</p>"
+ <p className="text-gray-600">Loading document...</p>
  </div>
  </div>
  )}
@@ -116,7 +116,7 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  <p className="text-gray-600 text-center mb-6">
  Click the buttons above to download or open this document in a new tab for viewing.
  </p>
- <div className="text-sm text-gray-500"
+ <div className="text-sm text-gray-500">
  File: {fileName}
  </div>
  </div>
@@ -130,7 +130,7 @@ export function DocumentViewer({ fileName, fileType, filePath, mimeType, classNa
  <p className="text-gray-600 text-center mb-6">
  Use the buttons above to download or open this document.
  </p>
- <div className="text-sm text-gray-500"
+ <div className="text-sm text-gray-500">
  File: {fileName} ({fileType?.toUpperCase()})
  </div>
  </div>
