@@ -1196,6 +1196,32 @@ export const eventVolunteers = pgTable("event_volunteers", {
   roleStatusIdx: index("idx_event_volunteers_role_status").on(table.role, table.status),
 }));
 
+// Event reminders table for tracking follow-ups and to-dos related to events
+export const eventReminders = pgTable("event_reminders", {
+  id: serial("id").primaryKey(),
+  eventRequestId: integer("event_request_id").notNull(), // Reference to event_requests.id
+  title: varchar("title").notNull(), // Brief description of the reminder
+  description: text("description"), // Detailed notes about what needs to be done
+  reminderType: varchar("reminder_type").notNull(), // 'follow_up', 'toolkit_send', 'post_event', 'postponed_followup', 'custom'
+  dueDate: timestamp("due_date").notNull(), // When this reminder should trigger
+  assignedToUserId: varchar("assigned_to_user_id"), // User ID responsible for this task
+  assignedToName: varchar("assigned_to_name"), // Name of assigned person
+  status: varchar("status").notNull().default("pending"), // 'pending', 'in_progress', 'completed', 'cancelled'
+  priority: varchar("priority").notNull().default("medium"), // 'low', 'medium', 'high', 'urgent'
+  completedAt: timestamp("completed_at"),
+  completedBy: varchar("completed_by"), // User ID who completed the task
+  completionNotes: text("completion_notes"), // Notes about completion
+  createdBy: varchar("created_by").notNull(), // User ID who created this reminder
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  eventIdIdx: index("idx_event_reminders_event_id").on(table.eventRequestId),
+  dueDateIdx: index("idx_event_reminders_due_date").on(table.dueDate),
+  statusIdx: index("idx_event_reminders_status").on(table.status),
+  assignedIdx: index("idx_event_reminders_assigned").on(table.assignedToUserId),
+  typeStatusIdx: index("idx_event_reminders_type_status").on(table.reminderType, table.status),
+}));
+
 export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   id: true,
   createdAt: true,
@@ -1230,6 +1256,20 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   followUpOneMonthDate: z.date().nullable().optional(),
   followUpNotes: z.string().nullable().optional(),
 });
+
+export const insertEventReminderSchema = createInsertSchema(eventReminders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  dueDate: z.union([
+    z.date(),
+    z.string().transform((str) => str ? new Date(str) : new Date()),
+  ]),
+});
+
+export type InsertEventReminder = z.infer<typeof insertEventReminderSchema>;
+export type EventReminder = typeof eventReminders.$inferSelect;
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   id: true,

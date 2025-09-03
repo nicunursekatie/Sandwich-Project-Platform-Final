@@ -53,6 +53,7 @@ import {
   insertDocumentPermissionSchema,
   insertDocumentAccessLogSchema,
   insertEventRequestSchema,
+  insertEventReminderSchema,
   insertOrganizationSchema,
   drivers,
   volunteers,
@@ -67,6 +68,7 @@ import {
   documents,
   documentPermissions,
   documentAccessLogs,
+  eventReminders,
 } from "@shared/schema";
 
 import { getDefaultPermissionsForRole, hasPermission, hasAccessToChat } from "@shared/auth-utils";
@@ -635,6 +637,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register event request routes
   app.use("/api/event-requests", eventRequestRoutes);
+  
+  // Register event reminders routes  
+  const activityLogger = (req: any, action: string, description: string, metadata?: any) => {
+    // Simple activity logging for event reminders
+    console.log(`[Activity] ${req.user?.id || 'unknown'}: ${action} - ${description}`, metadata);
+  };
+  app.use("/api/event-reminders", createEventRemindersRoutes(isAuthenticated, activityLogger));
   
   // Register import events routes
   app.use("/api/import", importEventsRoutes);
@@ -10603,4 +10612,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
   (global as any).broadcastTaskAssignment = broadcastTaskAssignment;
 
   return httpServer;
+}
+
+// Event Reminders API Routes
+function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
+  const router = express.Router();
+
+  // GET /api/event-reminders - Get all reminders or filter by event
+  router.get("/", isAuthenticated, async (req, res) => {
+    try {
+      if (!hasPermission(req.user, "EVENT_REQUESTS_VIEW")) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const eventId = req.query.eventId ? parseInt(req.query.eventId as string) : null;
+      const status = req.query.status as string;
+      const assignedTo = req.query.assignedTo as string;
+
+      let query = storage.db
+        .select({
+          id: eventReminders.id,
+          eventRequestId: eventReminders.eventRequestId,
+          title: eventReminders.title,
+          description: eventReminders.description,
+          reminderType: eventReminders.reminderType,
+          dueDate: eventReminders.dueDate,
+          assignedToUserId: eventReminders.assignedToUserId,
+          assignedToName: eventReminders.assignedToName,
+          status: eventReminders.status,
+          priority: eventReminders.priority,
+          completedAt: eventReminders.completedAt,
+          completedBy: eventReminders.completedBy,
+          completionNotes: eventReminders.completionNotes,
+          createdBy: eventReminders.createdBy,
+          createdAt: eventReminders.createdAt,
+          updatedAt: eventReminders.updatedAt,
+        })
+        .from(eventReminders);
+
+      const conditions = [];
+      if (eventId) conditions.push(eq(eventReminders.eventRequestId, eventId));
+      if (status) conditions.push(eq(eventReminders.status, status));
+      if (assignedTo) conditions.push(eq(eventReminders.assignedToUserId, assignedTo));
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      const reminders = await query.orderBy(desc(eventReminders.dueDate));
+
+      activityLogger(req, "EVENT_REMINDERS_VIEW", "Retrieved event reminders", {
+        eventId,
+        status,
+        assignedTo,
+        count: reminders.length
+      });
+
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching event reminders:", error);
+      res.status(500).json({ message: "Failed to fetch event reminders" });
+    }
+  });
+
+  // POST /api/event-reminders - Create new reminder
+  router.post("/", isAuthenticated, async (req, res) => {
+    try {
+      if (!hasPermission(req.user, "EVENT_REQUESTS_EDIT")) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const validatedData = insertEventReminderSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+
+      const [newReminder] = await storage.db
+        .insert(eventReminders)
+        .values(validatedData)
+        .returning();
+
+      activityLogger(req, "EVENT_REMINDERS_CREATE", "Created event reminder", {
+        reminderId: newReminder.id,
+        eventId: newReminder.eventRequestId,
+        title: newReminder.title,
+        reminderType: newReminder.reminderType
+      });
+
+      res.status(201).json(newReminder);
+    } catch (error) {
+      console.error("Error creating event reminder:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid reminder data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create event reminder" });
+    }
+  });
+
+  // PUT /api/event-reminders/:id - Update reminder
+  router.put("/:id", isAuthenticated, async (req, res) => {
+    try {
+      if (!hasPermission(req.user, "EVENT_REQUESTS_EDIT")) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const id = parseInt(req.params.id);
+      const updateData = {
+        ...req.body,
+        updatedAt: new Date()
+      };
+
+      const [updatedReminder] = await storage.db
+        .update(eventReminders)
+        .set(updateData)
+        .where(eq(eventReminders.id, id))
+        .returning();
+
+      if (!updatedReminder) {
+        return res.status(404).json({ message: "Reminder not found" });
+      }
+
+      activityLogger(req, "EVENT_REMINDERS_UPDATE", "Updated event reminder", {
+        reminderId: id,
+        changes: Object.keys(updateData)
+      });
+
+      res.json(updatedReminder);
+    } catch (error) {
+      console.error("Error updating event reminder:", error);
+      res.status(500).json({ message: "Failed to update event reminder" });
+    }
+  });
+
+  // DELETE /api/event-reminders/:id - Delete reminder
+  router.delete("/:id", isAuthenticated, async (req, res) => {
+    try {
+      if (!hasPermission(req.user, "EVENT_REQUESTS_DELETE")) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const id = parseInt(req.params.id);
+
+      const [deletedReminder] = await storage.db
+        .delete(eventReminders)
+        .where(eq(eventReminders.id, id))
+        .returning();
+
+      if (!deletedReminder) {
+        return res.status(404).json({ message: "Reminder not found" });
+      }
+
+      activityLogger(req, "EVENT_REMINDERS_DELETE", "Deleted event reminder", {
+        reminderId: id,
+        title: deletedReminder.title
+      });
+
+      res.json({ message: "Reminder deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting event reminder:", error);
+      res.status(500).json({ message: "Failed to delete event reminder" });
+    }
+  });
+
+  // GET /api/event-reminders/upcoming - Get upcoming reminders dashboard
+  router.get("/upcoming", isAuthenticated, async (req, res) => {
+    try {
+      if (!hasPermission(req.user, "EVENT_REQUESTS_VIEW")) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const days = parseInt(req.query.days as string) || 30;
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + days);
+
+      const upcomingReminders = await storage.db
+        .select({
+          id: eventReminders.id,
+          eventRequestId: eventReminders.eventRequestId,
+          title: eventReminders.title,
+          description: eventReminders.description,
+          reminderType: eventReminders.reminderType,
+          dueDate: eventReminders.dueDate,
+          assignedToUserId: eventReminders.assignedToUserId,
+          assignedToName: eventReminders.assignedToName,
+          status: eventReminders.status,
+          priority: eventReminders.priority,
+        })
+        .from(eventReminders)
+        .where(and(
+          eq(eventReminders.status, "pending"),
+          sql`${eventReminders.dueDate} <= ${futureDate}`
+        ))
+        .orderBy(eventReminders.dueDate);
+
+      res.json(upcomingReminders);
+    } catch (error) {
+      console.error("Error fetching upcoming reminders:", error);
+      res.status(500).json({ message: "Failed to fetch upcoming reminders" });
+    }
+  });
+
+  return router;
 }

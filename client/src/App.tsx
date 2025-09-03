@@ -126,6 +126,7 @@ function Router() {
       <Route path="/weekly-monitoring">{() => <Dashboard initialSection="weekly-monitoring" />}</Route>
       <Route path="/wishlist">{() => <Dashboard initialSection="wishlist" />}</Route>
       <Route path="/event-requests">{() => <Dashboard initialSection="event-requests" />}</Route>
+      <Route path="/event-reminders">{() => <Dashboard initialSection="event-reminders" />}</Route>
       <Route path="/sms-opt-in" component={lazy(() => import('./pages/sms-opt-in'))} />
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">{(params) => <Dashboard initialSection={params.section} />}</Route>

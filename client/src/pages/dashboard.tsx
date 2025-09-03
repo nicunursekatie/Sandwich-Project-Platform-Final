@@ -59,6 +59,7 @@ import DonationTracking from "@/components/donation-tracking";
 import WeeklyMonitoringDashboard from "@/components/weekly-monitoring-dashboard";
 import WishlistPage from "@/pages/wishlist";
 import EventRequestsManagement from "@/components/event-requests-management";
+import EventRemindersManagement from "@/components/event-reminders-management";
 import GroupCatalog from "@/components/organizations-catalog";
 import ActionTracking from "@/components/action-tracking-enhanced";
 import LogosPage from "@/pages/logos";
@@ -144,6 +145,7 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
     
     // Event Planning section
     ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "event-requests", label: "Event Planning", icon: Calendar }] : []),
+    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "event-reminders", label: "Event Reminders", icon: Clock }] : []),
     ...(hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW) ? [{ id: "groups-catalog", label: "Groups Catalog", icon: Building2 }] : []),
     
     // Operations section
@@ -281,6 +283,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
         return <VolunteerManagement />;
       case "event-requests":
         return <EventRequestsManagement />;
+      case "event-reminders":
+        return <EventRemindersManagement />;
       case "groups-catalog":
         return <GroupCatalog onNavigateToEventPlanning={() => setActiveSection("event-requests")} />;
       case "action-tracking":
