@@ -562,4 +562,45 @@ router.post("/import-excel", isAuthenticated, async (req, res) => {
   }
 });
 
+// Sync from Google Sheets - proxy to event requests sync endpoint
+router.post("/sync-from-sheets", isAuthenticated, async (req, res) => {
+  try {
+    console.log('🔄 Proxying sync-from-sheets request to event-requests sync endpoint...');
+    
+    // Import the event requests sync service
+    const { getEventRequestsGoogleSheetsService } = await import('../google-sheets-event-requests-sync');
+    const { storage: storageWrapper } = await import('../storage-wrapper');
+    
+    const syncService = getEventRequestsGoogleSheetsService(storageWrapper);
+    if (!syncService) {
+      return res.status(500).json({
+        success: false,
+        message: "Google Sheets service not configured",
+      });
+    }
+
+    const result = await syncService.syncFromGoogleSheets();
+    
+    // Ensure the response has the expected format for the frontend
+    const response = {
+      success: true,
+      message: result.message || `Successfully synced from Google Sheets: ${result.created || 0} created, ${result.updated || 0} updated`,
+      total: (result.created || 0) + (result.updated || 0),
+      imported: result.created || 0,
+      updated: result.updated || 0,
+      created: result.created || 0,
+      ...result
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("❌ Error syncing from Google Sheets:", error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Sync failed",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 export default router;

@@ -130,14 +130,18 @@ export default function SandwichForecastWidget() {
 
   // Calculate totals
   const totals = useMemo(() => {
-    if (!weeklySandwichForecast.length) return { total: 0, confirmed: 0, pending: 0, events: 0 };
+    if (!weeklySandwichForecast?.length) return { total: 0, confirmed: 0, pending: 0, events: 0 };
 
-    return weeklySandwichForecast.reduce((acc, week) => ({
-      total: acc.total + week.totalEstimated,
-      confirmed: acc.confirmed + week.confirmedCount,
-      pending: acc.pending + week.pendingCount,
-      events: acc.events + week.events.length
-    }), { total: 0, confirmed: 0, pending: 0, events: 0 });
+    return weeklySandwichForecast.reduce((acc, week) => {
+      // Ensure week object exists and has default values
+      const safeWeek = week || {};
+      return {
+        total: acc.total + (safeWeek.totalEstimated || 0),
+        confirmed: acc.confirmed + (safeWeek.confirmedCount || 0),
+        pending: acc.pending + (safeWeek.pendingCount || 0),
+        events: acc.events + (safeWeek.events?.length || 0)
+      };
+    }, { total: 0, confirmed: 0, pending: 0, events: 0 });
   }, [weeklySandwichForecast]);
 
   if (isLoading) {
