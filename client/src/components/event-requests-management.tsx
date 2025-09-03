@@ -3661,8 +3661,6 @@ export default function EventRequestsManagement() {
             </form>
           </DialogContent>
         </Dialog>
-          </div>
-        </div>
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
