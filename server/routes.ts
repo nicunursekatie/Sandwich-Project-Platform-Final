@@ -9919,6 +9919,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register error logging routes
   app.use("/api/error-logs", createErrorLogsRoutes(storage));
 
+  // Register permission testing routes for debugging
+  const permissionTestRoutes = await import("./routes/permission-test");
+  app.use("/api/permission-test", permissionTestRoutes.default);
+
   // Register email routes (completely separate from chat)
   app.use("/api/emails", emailRoutes);
   
