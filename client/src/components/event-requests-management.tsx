@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
+import { EventEmailComposer } from "@/components/event-email-composer";
 import {
   Collapsible,
   CollapsibleContent,
@@ -1766,9 +1767,9 @@ export default function EventRequestsManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             
             {/* Left Column: Contact Information */}
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <h4 className="font-bold text-gray-800 text-lg mb-4 flex items-center">
-                <User className="w-5 h-5 mr-2 text-teal-600" />
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
+              <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
+                <User className="w-5 h-5 mr-2 text-[#236383]" />
                 Contact
               </h4>
               <div className="space-y-4">
@@ -2004,9 +2005,9 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Center Column: Event Logistics */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-bold text-gray-800 text-lg mb-4 flex items-center">
-                <Building className="w-5 h-5 mr-2 text-blue-600" />
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
+              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
+                <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
                 Event Details
               </h4>
               <div className="space-y-4">
@@ -2289,9 +2290,9 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Right Column: Status & Assignments */}
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="font-bold text-gray-800 text-lg mb-4 flex items-center">
-                <span className="inline-block w-5 h-5 mr-2 bg-green-600 rounded-full"></span>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
+              <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
+                <span className="inline-block w-5 h-5 mr-2 bg-[#A31C41] rounded-full"></span>
                 Assignments
               </h4>
               <div className="space-y-4">
@@ -5283,7 +5284,18 @@ export default function EventRequestsManagement() {
 
         {/* Email Composer Dialog */}
         {showEmailComposer && emailComposerRequest && (
-          <div>Email Composer temporarily disabled</div>
+          <EventEmailComposer
+            isOpen={showEmailComposer}
+            onClose={() => {
+              setShowEmailComposer(false);
+              setEmailComposerRequest(null);
+            }}
+            eventRequest={emailComposerRequest}
+            onEmailSent={() => {
+              // Optionally refresh data or show success message
+              console.log('Email sent successfully');
+            }}
+          />
         )}
 
         {/* Follow-Up Dialog */}
