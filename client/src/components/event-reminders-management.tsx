@@ -91,6 +91,7 @@ export default function EventRemindersManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-reminders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/event-reminders/count"] });
       toast({ title: "Reminder created successfully" });
       setIsCreateDialogOpen(false);
     },
@@ -117,6 +118,7 @@ export default function EventRemindersManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-reminders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/event-reminders/count"] });
       toast({ title: "Reminder marked as completed" });
       setIsCompleteDialogOpen(false);
       setSelectedReminder(null);

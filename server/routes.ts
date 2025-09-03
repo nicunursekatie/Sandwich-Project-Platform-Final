@@ -10774,6 +10774,25 @@ function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
     }
   });
 
+  // GET /api/event-reminders/count - Get pending reminders count for badge
+  router.get("/count", isAuthenticated, async (req, res) => {
+    try {
+      if (!hasPermission(req.user, "EVENT_REQUESTS_VIEW")) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const count = await storage.db
+        .select({ count: sql`count(*)` })
+        .from(eventReminders)
+        .where(eq(eventReminders.status, "pending"));
+
+      res.json({ count: parseInt(count[0]?.count) || 0 });
+    } catch (error) {
+      console.error("Error fetching reminders count:", error);
+      res.status(500).json({ message: "Failed to fetch reminders count" });
+    }
+  });
+
   // GET /api/event-reminders/upcoming - Get upcoming reminders dashboard
   router.get("/upcoming", isAuthenticated, async (req, res) => {
     try {

@@ -67,6 +67,23 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
+  // Get event reminders pending count
+  const { data: remindersCount = 0 } = useQuery({
+    queryKey: ['/api/event-reminders/count', (user as any)?.id || 'no-user'],
+    queryFn: async () => {
+      if (!(user as any)?.id) return 0;
+      try {
+        const response = await apiRequest('GET', '/api/event-reminders/count');
+        return response.count || 0;
+      } catch (error) {
+        console.error('Failed to fetch reminders count:', error);
+        return 0;
+      }
+    },
+    enabled: !!(user as any)?.id && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW),
+    refetchInterval: 60000, // Refetch every minute
+  });
+
   // Navigation organized by sections: DASHBOARD (at top), COLLECTIONS LOG, COMMUNICATION, OPERATIONS, PLANNING & COORDINATION, DOCUMENTATION, ADMIN
   const navigationItems: NavigationItem[] = [
     // DASHBOARD (at the very top)
@@ -95,6 +112,7 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
     ...(hasPermission(user, PERMISSIONS.MEETINGS_VIEW) ? [{ id: "meetings", label: "Meetings", icon: Calendar, href: "meetings", group: "planning" }] : []),
     { id: "events", label: "Events Google Sheet", icon: Calendar, href: "events", group: "planning" },
     ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "event-requests", label: "Event Planning", icon: Calendar, href: "event-requests", group: "planning" }] : []),
+    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW) ? [{ id: "event-reminders", label: "Event Reminders", icon: Clock, href: "event-reminders", group: "planning" }] : []),
     { id: "signup-genius", label: "SignUp Genius", icon: Users, href: "signup-genius", group: "planning" },
     { id: "wishlist", label: "Amazon Wishlist", icon: Gift, href: "wishlist", group: "planning" },
     { id: "toolkit", label: "Toolkit", icon: FolderOpen, href: "toolkit", group: "planning" },
@@ -189,6 +207,8 @@ export default function SimpleNav({ onSectionChange, activeSection, isCollapsed 
           unreadCount = totalUnread; // Direct/Group messages
         } else if (item.id === 'chat') {
           unreadCount = unreadCounts.general; // Chat rooms
+        } else if (item.id === 'event-reminders') {
+          unreadCount = remindersCount; // Pending event reminders
         } else if (item.id === 'committee-chat') {
           unreadCount = unreadCounts.committee;
         } else if (item.id === 'suggestions' && unreadCounts.suggestion) {
