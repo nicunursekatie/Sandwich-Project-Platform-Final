@@ -2795,7 +2795,7 @@ export default function EventRequestsManagement() {
                   <span className="text-xs font-medium text-[#FBAD3F] uppercase tracking-wide">
                     Submitted
                   </span>
-                  <span className="text-sm font-bold text-[#FBAD3F]">
+                  <span className="text-sm font-medium text-gray-600">
                     {(() => {
                       try {
                         let date: Date;
