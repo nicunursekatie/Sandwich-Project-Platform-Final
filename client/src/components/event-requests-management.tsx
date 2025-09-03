@@ -323,6 +323,16 @@ export default function EventRequestsManagement() {
   const [followUpRequest, setFollowUpRequest] = useState<EventRequest | null>(
     null,
   );
+  // Driver Assignment state
+  const [showDriverDialog, setShowDriverDialog] = useState(false);
+  const [assigningDriverRequest, setAssigningDriverRequest] =
+    useState<EventRequest | null>(null);
+  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
+  // Speaker Assignment state
+  const [showSpeakerDialog, setShowSpeakerDialog] = useState(false);
+  const [assigningSpeakerRequest, setAssigningSpeakerRequest] =
+    useState<EventRequest | null>(null);
+  const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
   const [showCallbackDialog, setShowCallbackDialog] = useState(false);
   const [showCallCompletedDialog, setShowCallCompletedDialog] = useState(false);
   const [callCompletedRequest, setCallCompletedRequest] =
@@ -774,6 +784,49 @@ export default function EventRequestsManagement() {
     onError: (error: any) => {
       toast({
         title: "Error updating event request",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Assignment update function
+  const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
+    updateMutation.mutate({
+      id: eventId,
+      [field]: value,
+    });
+  };
+
+  // Assignment save mutations
+  const saveDriverAssignmentMutation = useMutation({
+    mutationFn: ({ eventId, driverIds }: { eventId: number; driverIds: string[] }) =>
+      apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedDriverIds: driverIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      setShowDriverDialog(false);
+      toast({ title: "Driver assignments updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating driver assignments",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveSpeakerAssignmentMutation = useMutation({
+    mutationFn: ({ eventId, speakerIds }: { eventId: number; speakerIds: string[] }) =>
+      apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedSpeakerIds: speakerIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      setShowSpeakerDialog(false);
+      toast({ title: "Speaker assignments updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating speaker assignments",
         description: error.message,
         variant: "destructive",
       });
@@ -2324,10 +2377,13 @@ export default function EventRequestsManagement() {
                     <button
                       className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
                       onClick={() => {
-                        toast({ title: "Driver assignment coming soon" });
+                        setAssigningDriverRequest(request);
+                        setShowDriverDialog(true);
+                        const currentDrivers = (request as any).assignedDriverIds || [];
+                        setSelectedDrivers(currentDrivers);
                       }}
                     >
-                      + Assign
+                      {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
                     </button>
                   </div>
                   {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
@@ -2336,7 +2392,8 @@ export default function EventRequestsManagement() {
                       <button
                         className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
                         onClick={() => {
-                          toast({ title: "Driver removal coming soon" });
+                          const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
+                          handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
                         }}
                       >
                         ×
@@ -2395,15 +2452,32 @@ export default function EventRequestsManagement() {
                       <button
                         className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200"
                         onClick={() => {
-                          toast({ title: "Speaker assignment coming soon" });
+                          setAssigningSpeakerRequest(request);
+                          setShowSpeakerDialog(true);
+                          const currentSpeakers = (request as any).assignedSpeakerIds || [];
+                          setSelectedSpeakers(currentSpeakers);
                         }}
                       >
-                        + Assign
+                        {(request as any).assignedSpeakerIds?.length > 0 ? "Edit Speakers" : "+ Assign Speaker"}
                       </button>
                     </div>
                     <span className="text-xs text-gray-600">
-                      Needed: 0/{(request as any).speakersNeeded || 0}
+                      Assigned: {(request as any).assignedSpeakerIds?.length || 0}/{(request as any).speakersNeeded || 0}
                     </span>
+                    {(request as any).assignedSpeakerIds?.map((speakerId: string, index: number) => (
+                      <div key={index} className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200 mr-1">
+                        {getUserDisplayName(speakerId)}
+                        <button
+                          className="ml-1 hover:bg-purple-200 rounded-full w-4 h-4 flex items-center justify-center"
+                          onClick={() => {
+                            const updatedSpeakers = (request as any).assignedSpeakerIds?.filter((id: string, i: number) => i !== index) || [];
+                            handleAssignmentUpdate(request.id, 'assignedSpeakerIds', updatedSpeakers);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -5288,6 +5362,182 @@ export default function EventRequestsManagement() {
                   {updateMutation.isPending
                     ? "Assigning..."
                     : "Assign Contacts"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Driver Assignment Dialog */}
+        {showDriverDialog && assigningDriverRequest && (
+          <Dialog
+            open={showDriverDialog}
+            onOpenChange={setShowDriverDialog}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Assign Drivers</DialogTitle>
+                <p className="text-sm text-gray-600">
+                  Assign drivers for{" "}
+                  {assigningDriverRequest.organizationName}
+                </p>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-base font-medium">
+                    Available Team Members
+                  </Label>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Drivers needed: {(assigningDriverRequest as any).driversNeeded || 0}
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                    {availableUsers?.map((user: any) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`driver-${user.id}`}
+                          checked={selectedDrivers.includes(user.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDrivers([...selectedDrivers, user.id]);
+                            } else {
+                              setSelectedDrivers(
+                                selectedDrivers.filter((id) => id !== user.id)
+                              );
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <label
+                          htmlFor={`driver-${user.id}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {user.displayName} ({user.email})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowDriverDialog(false);
+                    setAssigningDriverRequest(null);
+                    setSelectedDrivers([]);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    saveDriverAssignmentMutation.mutate({
+                      eventId: assigningDriverRequest.id,
+                      driverIds: selectedDrivers,
+                    });
+                  }}
+                  disabled={saveDriverAssignmentMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {saveDriverAssignmentMutation.isPending
+                    ? "Assigning..."
+                    : "Assign Drivers"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Speaker Assignment Dialog */}
+        {showSpeakerDialog && assigningSpeakerRequest && (
+          <Dialog
+            open={showSpeakerDialog}
+            onOpenChange={setShowSpeakerDialog}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Assign Speakers</DialogTitle>
+                <p className="text-sm text-gray-600">
+                  Assign speakers for{" "}
+                  {assigningSpeakerRequest.organizationName}
+                </p>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-base font-medium">
+                    Available Team Members
+                  </Label>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Speakers needed: {(assigningSpeakerRequest as any).speakersNeeded || 0}
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                    {availableUsers?.map((user: any) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`speaker-${user.id}`}
+                          checked={selectedSpeakers.includes(user.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSpeakers([...selectedSpeakers, user.id]);
+                            } else {
+                              setSelectedSpeakers(
+                                selectedSpeakers.filter((id) => id !== user.id)
+                              );
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <label
+                          htmlFor={`speaker-${user.id}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {user.displayName} ({user.email})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowSpeakerDialog(false);
+                    setAssigningSpeakerRequest(null);
+                    setSelectedSpeakers([]);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    saveSpeakerAssignmentMutation.mutate({
+                      eventId: assigningSpeakerRequest.id,
+                      speakerIds: selectedSpeakers,
+                    });
+                  }}
+                  disabled={saveSpeakerAssignmentMutation.isPending}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {saveSpeakerAssignmentMutation.isPending
+                    ? "Assigning..."
+                    : "Assign Speakers"}
                 </Button>
               </div>
             </DialogContent>
