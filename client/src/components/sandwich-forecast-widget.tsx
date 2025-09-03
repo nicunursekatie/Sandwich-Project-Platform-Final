@@ -174,11 +174,7 @@ export default function SandwichForecastWidget() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[#236383]/10 rounded-lg p-3 text-center">
-            <div className="text-xl font-bold text-[#236383]">{totals.total.toLocaleString()}</div>
-            <div className="text-xs text-[#646464]">Total Estimated</div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="bg-green-50 rounded-lg p-3 text-center">
             <div className="text-xl font-bold text-green-700">{totals.confirmed.toLocaleString()}</div>
             <div className="text-xs text-[#646464]">Confirmed</div>
