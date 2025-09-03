@@ -2436,12 +2436,14 @@ export default function EventRequestsManagement() {
 
                 {/* TSP Contact Assignment */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">TSP Contact</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">TSP Contact</span>
+                    </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
+                      className="w-full text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
                       onClick={() => {
                         setAssigningContactRequest(request);
                         setShowTspContactDialog(true);
