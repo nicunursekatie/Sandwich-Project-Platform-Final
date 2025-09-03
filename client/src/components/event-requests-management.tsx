@@ -3019,41 +3019,61 @@ export default function EventRequestsManagement() {
             (request as any).additionalTspContacts ||
             (request as any).additionalContact1 ||
             (request as any).additionalContact2) && (
-            <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
-              <h4 className="font-semibold text-teal-800 mb-2 flex items-center">
-                <UserCheck className="w-4 h-4 mr-2" />
+            <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-4 rounded-lg border border-teal-300 shadow-sm">
+              <h4 className="font-bold text-teal-900 mb-3 flex items-center">
+                <UserCheck className="w-5 h-5 mr-2 text-teal-600" />
                 TSP Team Assignment
               </h4>
-              <div className="space-y-1 text-sm text-teal-700">
+              <div className="space-y-2 text-sm">
                 {/* Primary Contact */}
                 {(request as any).tspContact && (
-                  <div>
-                    <strong>Primary Contact:</strong>{" "}
-                    {getUserDisplayName((request as any).tspContact)}
+                  <div className="bg-white/70 p-3 rounded-md border border-teal-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
+                      <span className="font-semibold text-teal-900">Primary Contact</span>
+                    </div>
+                    <div className="mt-1 text-teal-800 font-medium">
+                      {getUserDisplayName((request as any).tspContact)}
+                    </div>
                   </div>
                 )}
 
                 {/* Secondary Contact */}
                 {(request as any).tspContactAssigned && (
-                  <div>
-                    <strong>Secondary Contact:</strong>{" "}
-                    {getUserDisplayName((request as any).tspContactAssigned)}
+                  <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <span className="font-semibold text-blue-900">Secondary Contact</span>
+                    </div>
+                    <div className="mt-1 text-blue-800 font-medium">
+                      {getUserDisplayName((request as any).tspContactAssigned)}
+                    </div>
                   </div>
                 )}
 
                 {/* Third Contact */}
                 {(request as any).additionalContact1 && (
-                  <div>
-                    <strong>Third Contact:</strong>{" "}
-                    {getUserDisplayName((request as any).additionalContact1)}
+                  <div className="bg-white/70 p-3 rounded-md border border-indigo-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
+                      <span className="font-semibold text-indigo-900">Third Contact</span>
+                    </div>
+                    <div className="mt-1 text-indigo-800 font-medium">
+                      {getUserDisplayName((request as any).additionalContact1)}
+                    </div>
                   </div>
                 )}
 
                 {/* Fourth Contact */}
                 {(request as any).additionalContact2 && (
-                  <div>
-                    <strong>Fourth Contact:</strong>{" "}
-                    {getUserDisplayName((request as any).additionalContact2)}
+                  <div className="bg-white/70 p-3 rounded-md border border-purple-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                      <span className="font-semibold text-purple-900">Fourth Contact</span>
+                    </div>
+                    <div className="mt-1 text-purple-800 font-medium">
+                      {getUserDisplayName((request as any).additionalContact2)}
+                    </div>
                   </div>
                 )}
 
@@ -3086,7 +3106,7 @@ export default function EventRequestsManagement() {
               <div>
                 <strong>Name:</strong> {request.firstName} {request.lastName}
               </div>
-              <div>
+              <div className="break-all">
                 <strong>Email:</strong> {request.email}
               </div>
               {request.phone && (
