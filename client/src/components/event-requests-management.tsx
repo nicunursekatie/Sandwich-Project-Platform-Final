@@ -312,6 +312,7 @@ function SandwichTypesManager({ request, onUpdate }: SandwichTypesManagerProps) 
   });
 
   const availableTypes = [
+    'Unknown',
     'Deli (Turkey, Ham, etc.)',
     'Turkey',
     'Ham', 
