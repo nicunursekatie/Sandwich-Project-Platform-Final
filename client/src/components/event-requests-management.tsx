@@ -142,7 +142,7 @@ const formatEventDate = (dateString: string) => {
     if (dayOfWeek === 2) {
       className = "text-gray-700 font-medium";
     } else if (isWedOrThu) {
-      className = "text-[#FBAD3F] font-medium";
+      className = "text-orange-600 font-medium";
     } else {
       className = "text-[#236383] font-bold";
     }
