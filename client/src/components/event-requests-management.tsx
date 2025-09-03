@@ -2102,10 +2102,10 @@ export default function EventRequestsManagement() {
                   <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
                   {editingField === "sandwichCount" &&
                   editingEventId === request.id ? (
-                    <div className="flex space-x-2 items-center">
+                    <div className="flex flex-wrap gap-2 items-center w-full">
                       <input
                         type="number"
-                        className="text-sm border rounded px-2 py-1 w-24"
+                        className="text-sm border rounded px-2 py-1 w-24 bg-white"
                         value={
                           tempValues.sandwichCount ||
                           request.estimatedSandwichCount ||
