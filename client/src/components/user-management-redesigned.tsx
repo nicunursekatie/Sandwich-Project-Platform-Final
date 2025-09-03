@@ -41,7 +41,8 @@ import {
   Trophy,
   Building,
   TrendingUp,
-  KeyRound
+  KeyRound,
+  BarChart3
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -71,6 +72,7 @@ import AuthDebug from "@/components/auth-debug";
 import ShoutoutSystem from "@/components/shoutout-system";
 import MeaningfulUserAnalytics from "@/components/meaningful-user-analytics";
 import { DetailedActivityAnalytics } from "@/components/detailed-activity-analytics";
+import { IndividualUserActivity } from "@/components/individual-user-activity";
 import { SystemHealthDashboard } from "@/components/system-health-dashboard";
 import { ButtonTooltip } from "@/components/ui/button-tooltip";
 
@@ -136,6 +138,7 @@ export default function UserManagementRedesigned() {
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "user-activity" | "activity" | "announcements" | "shoutouts" | "system-health" | "debug">("overview");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [viewingUserActivity, setViewingUserActivity] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
@@ -853,6 +856,13 @@ export default function UserManagementRedesigned() {
                                     <Phone className="h-4 w-4 mr-2" />
                                     Manage SMS
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    setViewingUserActivity(user);
+                                    setActiveTab("user-activity");
+                                  }}>
+                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                    View Activity
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => toggleUserStatusMutation.mutate({ 
                                       userId: user.id, 
@@ -895,7 +905,14 @@ export default function UserManagementRedesigned() {
 
         {/* User Activity Tab */}
         <TabsContent value="user-activity">
-          <DetailedActivityAnalytics />
+          {viewingUserActivity ? (
+            <IndividualUserActivity 
+              user={viewingUserActivity}
+              onBack={() => setViewingUserActivity(null)}
+            />
+          ) : (
+            <DetailedActivityAnalytics />
+          )}
         </TabsContent>
 
         {/* Impact Tab */}

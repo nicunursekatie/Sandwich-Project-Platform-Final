@@ -12,18 +12,35 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
       const timeFilter = req.query.timeFilter as string || '24h';
       const sectionFilter = req.query.sectionFilter as string || 'all';
       const actionFilter = req.query.actionFilter as string || 'all';
+      const userId = req.query.userId as string;
+      const individual = req.query.individual as string;
 
       // Convert time filter to days
       let days = 1;
       if (timeFilter === '7d') days = 7;
       else if (timeFilter === '30d') days = 30;
+      else if (timeFilter === '90d') days = 90;
       else if (timeFilter === '24h') days = 1;
+      else if (timeFilter === 'all') days = 365; // Large number for "all time"
 
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
       const { userActivityLogs, users } = await import("@shared/schema");
       const { db } = await import("../db");
+
+      // Build where conditions
+      const whereConditions = [sql`${userActivityLogs.createdAt} >= ${startDate}`];
+      
+      // Add individual user filter if provided
+      if (userId && individual === 'true') {
+        whereConditions.push(eq(userActivityLogs.userId, userId));
+      }
+      
+      // Add action filter if provided
+      if (actionFilter && actionFilter !== 'all') {
+        whereConditions.push(eq(userActivityLogs.action, actionFilter));
+      }
 
       // Get detailed activity logs
       const recentActivity = await db
@@ -40,9 +57,9 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
           createdAt: userActivityLogs.createdAt
         })
         .from(userActivityLogs)
-        .where(sql`${userActivityLogs.createdAt} >= ${startDate}`)
+        .where(and(...whereConditions))
         .orderBy(desc(userActivityLogs.createdAt))
-        .limit(100);
+        .limit(individual === 'true' ? 500 : 100);
 
       // Get user names from the database
       const userIds = [...new Set(recentActivity.map(log => log.userId).filter(Boolean))];
@@ -131,13 +148,34 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
+      // If individual user request, include additional summary data
+      let individualSummary = null;
+      if (userId && individual === 'true') {
+        // Calculate login count (approximate by counting distinct days)
+        const uniqueDays = [...new Set(recentActivity.map(log => 
+          log.createdAt.toISOString().split('T')[0]
+        ))].length;
+        
+        // Calculate last activity
+        const lastActivity = recentActivity.length > 0 ? recentActivity[0].createdAt : null;
+        
+        individualSummary = {
+          totalActions,
+          loginCount: uniqueDays,
+          lastActivity,
+          topActions,
+          topSections
+        };
+      }
+
       const response = {
         totalActions,
         uniqueUsers,
         topActions,
         topSections,
         topFeatures,
-        recentActivity: recentActivity.map(log => {
+        ...(individualSummary && { summary: individualSummary }),
+        ...(individual === 'true' && { activities: recentActivity.map(log => {
           let parsedMetadata = {};
           try {
             parsedMetadata = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata || {};
@@ -159,7 +197,30 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
             duration: log.duration,
             createdAt: log.createdAt
           };
-        })
+        }) }),
+        ...(!individual && { recentActivity: recentActivity.map(log => {
+          let parsedMetadata = {};
+          try {
+            parsedMetadata = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata || {};
+          } catch (e) {
+            parsedMetadata = {};
+          }
+          
+          return {
+            id: log.id,
+            userId: log.userId,
+            userName: userNameMap[log.userId] || 'Unknown User',
+            action: log.action,
+            section: log.section,
+            feature: log.feature,
+            page: log.page,
+            details: log.details && typeof log.details === 'string' ? log.details : 
+                     `${log.action} - ${log.section}${log.feature ? ` - ${log.feature}` : ''}`,
+            metadata: parsedMetadata,
+            duration: log.duration,
+            createdAt: log.createdAt
+          };
+        }) })
       };
 
       res.json(response);
