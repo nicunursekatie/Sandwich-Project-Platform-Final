@@ -172,46 +172,7 @@ export default function SandwichForecastWidget() {
           📅 Individual makers prep Wednesdays • Group distributions Thursdays
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Weekly Summary Cards */}
-        {weeklySandwichForecast.length > 0 && (
-          <div className="space-y-3">
-            {/* Upcoming Week - Prominent Display */}
-            <div className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white rounded-lg p-4 border-2 border-[#236383]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium opacity-90">UPCOMING WEEK</div>
-                  <div className="text-lg font-bold">{weeklySandwichForecast[0].distributionDate}</div>
-                  <div className="text-xs opacity-75">Prep: {weeklySandwichForecast[0].weekStartDate} • Distribute: {weeklySandwichForecast[0].weekEndDate}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">{(weeklySandwichForecast[0].totalEstimated || 0).toLocaleString()}</div>
-                  <div className="text-sm opacity-90">{(weeklySandwichForecast[0].events?.length || 0)} event{(weeklySandwichForecast[0].events?.length || 0) !== 1 ? 's' : ''}</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Following Weeks - Compact Display */}
-            {weeklySandwichForecast.length > 1 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {weeklySandwichForecast.slice(1).map((week, index) => (
-                  <div key={week.weekKey} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium text-[#236383]">{week.distributionDate}</div>
-                        <div className="text-xs text-gray-600">{(week.events?.length || 0)} event{(week.events?.length || 0) !== 1 ? 's' : ''}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">{(week.totalEstimated || 0).toLocaleString()}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
+      <CardContent className="space-y-6">
         {weeklySandwichForecast.length === 0 ? (
           <div className="text-center py-8 text-[#646464]">
             <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-gray-400" />
@@ -219,65 +180,94 @@ export default function SandwichForecastWidget() {
             <p className="text-sm">Events need contact completion and sandwich count estimates to appear here</p>
           </div>
         ) : (
-          /* Weekly Breakdown */
-          <div className="space-y-3">
-            <h4 className="font-semibold text-[#236383] flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Weekly Breakdown (Next 8 Weeks)
-            </h4>
-            <div className="grid gap-3">
+          <>
+            {/* Summary Cards Grid - Next 8 Weeks */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {weeklySandwichForecast.map((week, index) => (
-                <div key={week.weekKey} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="font-medium text-[#236383]">
-                      {week.distributionDate}
+                <div key={week.weekKey} className={`rounded-lg p-3 border ${
+                  index === 0 
+                    ? 'bg-gradient-to-r from-[#236383] to-[#007E8C] text-white border-[#236383]' 
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <div className="text-center">
+                    <div className={`text-xs font-medium ${index === 0 ? 'opacity-90' : 'text-gray-600'}`}>
+                      {index === 0 ? 'UPCOMING WEEK' : week.distributionDate}
                     </div>
-                    <div className="text-sm text-[#646464] mt-1">
-                      Prep: {week.weekStartDate} • Distribute: {week.weekEndDate}
-                    </div>
-                    <div className="text-sm text-[#646464]">
-                      {Array.isArray(week.events) ? week.events.length : (week.events || 0)} group event{(Array.isArray(week.events) ? week.events.length : (week.events || 0)) !== 1 ? 's' : ''} scheduled
-                    </div>
-                    {Array.isArray(week.events) && week.events.length > 0 && (
-                      <div className="text-xs text-[#646464] mt-1 truncate">
-                        {week.events.slice(0, 2).map(e => e?.organizationName || 'Unknown Organization').join(', ')}
-                        {week.events.length > 2 && ` +${week.events.length - 2} more`}
-                      </div>
+                    {index === 0 && (
+                      <div className="text-sm font-bold mt-1">{week.distributionDate}</div>
                     )}
-                  </div>
-                  <div className="text-right ml-4">
-                    <div className="text-lg font-bold text-[#236383]">
-                      {(week.totalEstimated || week.totalSandwiches || 0).toLocaleString()}
+                    <div className={`text-2xl font-bold mt-1 ${index === 0 ? 'text-white' : 'text-[#236383]'}`}>
+                      {(week.totalEstimated || 0).toLocaleString()}
                     </div>
-                    <div className="flex gap-1 mt-1">
-                      {(week.confirmedCount || 0) > 0 && (
-                        <Badge className="text-xs bg-green-100 text-green-700">
-                          {(week.confirmedCount || 0).toLocaleString()} confirmed
-                        </Badge>
-                      )}
-                      {(week.pendingCount || 0) > 0 && (
-                        <Badge className="text-xs bg-orange-100 text-orange-700">
-                          {(week.pendingCount || 0).toLocaleString()} pending
-                        </Badge>
-                      )}
+                    <div className={`text-xs ${index === 0 ? 'opacity-90' : 'text-gray-600'}`}>
+                      {(week.events?.length || 0)} event{(week.events?.length || 0) !== 1 ? 's' : ''}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
 
-        {weeklySandwichForecast.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-800 font-medium">
-              📊 Planning Insights
-            </p>
-            <p className="text-xs text-blue-700 mt-1">
-              Peak week: {Math.max(...weeklySandwichForecast.map(w => w.totalEstimated || w.totalSandwiches || 0)).toLocaleString()} sandwiches
-              • Average per week: {Math.round(totals.total / weeklySandwichForecast.length).toLocaleString()}
-            </p>
-          </div>
+            {/* Detailed Weekly Breakdown */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-[#236383] flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Weekly Breakdown (Next 8 Weeks)
+              </h4>
+              <div className="space-y-3">
+                {weeklySandwichForecast.map((week, index) => (
+                  <div key={week.weekKey} className="border rounded-lg p-4 bg-white">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h5 className="font-semibold text-[#236383]">{week.distributionDate}</h5>
+                        <p className="text-sm text-gray-600">
+                          Prep: {week.weekStartDate} • Distribute: {week.weekEndDate}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-bold text-[#236383]">
+                          {(week.totalEstimated || 0).toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {(week.events?.length || 0)} group event{(week.events?.length || 0) !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Event Details */}
+                    {Array.isArray(week.events) && week.events.length > 0 && (
+                      <div className="grid gap-2">
+                        {week.events.map((event, eventIndex) => {
+                          const eventDate = new Date(event.desiredEventDate!);
+                          const dayName = eventDate.toLocaleDateString('en-US', { weekday: 'long' });
+                          
+                          return (
+                            <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{event.organizationName}</div>
+                                <div className="text-xs text-gray-600">{dayName}, {eventDate.toLocaleDateString()}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-[#236383]">
+                                  {(event.estimatedSandwichCount || 0).toLocaleString()}
+                                </div>
+                                <div className="text-xs text-gray-500">sandwiches</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {(!week.events || week.events.length === 0) && (
+                      <div className="text-center py-4 text-gray-500 text-sm">
+                        No events scheduled for this week
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
