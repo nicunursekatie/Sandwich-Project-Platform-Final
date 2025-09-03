@@ -279,6 +279,41 @@ router.get(
   },
 );
 
+// Get organization event counts (completed events only) - MUST BE BEFORE /:id route
+router.get("/organization-counts", isAuthenticated, async (req, res) => {
+  try {
+    console.log('🔍 Organization Counts API called by user:', req.user?.email);
+    console.log('🔍 User permissions:', req.user?.permissions);
+    
+    const allEventRequests = await storage.getAllEventRequests();
+    console.log('📊 Total event requests retrieved:', allEventRequests.length);
+    
+    // Count completed events by organization
+    const organizationCounts = new Map();
+    
+    allEventRequests.forEach((event: any) => {
+      // Only count completed events
+      if (event.status === 'completed' && event.organizationName) {
+        const orgName = event.organizationName.trim();
+        if (orgName) {
+          organizationCounts.set(orgName, (organizationCounts.get(orgName) || 0) + 1);
+        }
+      }
+    });
+    
+    // Convert to array and sort by count (descending)
+    const sortedCounts = Array.from(organizationCounts.entries())
+      .map(([name, count]) => ({ organizationName: name, eventCount: count }))
+      .sort((a, b) => b.eventCount - a.eventCount);
+    
+    console.log('📊 Organization counts calculated:', sortedCounts.length, 'organizations');
+    res.json(sortedCounts);
+  } catch (error) {
+    console.error('❌ Error in organization counts API:', error);
+    res.status(500).json({ error: "Failed to fetch organization counts" });
+  }
+});
+
 // Get single event request
 router.get(
   "/:id",
