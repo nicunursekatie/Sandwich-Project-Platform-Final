@@ -87,6 +87,28 @@ const formatTime12Hour = (time24: string): string => {
   return `${hour24 - 12}:${minutes} PM`;
 };
 
+// Helper function to get sandwich types summary
+const getSandwichTypesSummary = (request: any) => {
+  // Handle new format (array of sandwich types)
+  if (Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0) {
+    const total = request.sandwichTypes.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+    const breakdown = request.sandwichTypes
+      .filter((item: any) => item.quantity > 0)
+      .map((item: any) => `${item.quantity} ${item.type}`)
+      .join(', ');
+    return { total, breakdown, hasBreakdown: true };
+  }
+  
+  // Handle old format (estimated count + type string)
+  if (request.estimatedSandwichCount) {
+    const total = request.estimatedSandwichCount;
+    const type = request.sandwichTypes || 'sandwiches';
+    return { total, breakdown: `${total} ${type}`, hasBreakdown: false };
+  }
+  
+  return { total: 0, breakdown: 'Unknown', hasBreakdown: false };
+};
+
 // Enhanced date formatting with day-of-week and color coding
 const formatEventDate = (dateString: string) => {
   try {
@@ -254,6 +276,143 @@ const statusOptions = [
   { value: "completed", label: "Completed" },
   { value: "declined", label: "🚫 EVENT POSTPONED" },
 ];
+
+// Sandwich Types Manager Component
+interface SandwichType {
+  type: string;
+  quantity: number;
+}
+
+interface SandwichTypesManagerProps {
+  request: any;
+  onUpdate: (sandwichTypes: SandwichType[]) => void;
+}
+
+function SandwichTypesManager({ request, onUpdate }: SandwichTypesManagerProps) {
+  const [sandwichTypes, setSandwichTypes] = useState<SandwichType[]>(() => {
+    // Initialize from existing data - handle both old and new formats
+    if (Array.isArray(request.sandwichTypes)) {
+      return request.sandwichTypes;
+    } else if (request.sandwichTypes && typeof request.sandwichTypes === 'string') {
+      // Convert old format to new format
+      return [{
+        type: request.sandwichTypes,
+        quantity: request.estimatedSandwichCount || 0
+      }];
+    } else if (request.estimatedSandwichCount) {
+      // Default to deli if we have a count but no type
+      return [{
+        type: 'deli',
+        quantity: request.estimatedSandwichCount
+      }];
+    }
+    return [];
+  });
+
+  const availableTypes = [
+    'Deli (Turkey, Ham, etc.)',
+    'Turkey',
+    'Ham', 
+    'PB&J',
+    'Vegetarian',
+    'Vegan',
+    'Gluten-Free',
+    'Other'
+  ];
+
+  const addSandwichType = () => {
+    const newType = { type: 'Deli (Turkey, Ham, etc.)', quantity: 0 };
+    const updated = [...sandwichTypes, newType];
+    setSandwichTypes(updated);
+    onUpdate(updated);
+  };
+
+  const removeSandwichType = (index: number) => {
+    const updated = sandwichTypes.filter((_, i) => i !== index);
+    setSandwichTypes(updated);
+    onUpdate(updated);
+  };
+
+  const updateType = (index: number, newType: string) => {
+    const updated = sandwichTypes.map((item, i) => 
+      i === index ? { ...item, type: newType } : item
+    );
+    setSandwichTypes(updated);
+    onUpdate(updated);
+  };
+
+  const updateQuantity = (index: number, newQuantity: number) => {
+    const updated = sandwichTypes.map((item, i) => 
+      i === index ? { ...item, quantity: Math.max(0, newQuantity) } : item
+    );
+    setSandwichTypes(updated);
+    onUpdate(updated);
+  };
+
+  const totalSandwiches = sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <Label className="text-base font-semibold">Sandwich Types & Quantities</Label>
+        <div className="text-sm text-muted-foreground">
+          Total: <span className="font-semibold text-[#236383]">{totalSandwiches}</span> sandwiches
+        </div>
+      </div>
+
+      {sandwichTypes.length === 0 && (
+        <div className="text-sm text-muted-foreground text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
+          No sandwich types added yet. Click "Add Sandwich Type" to get started.
+        </div>
+      )}
+
+      {sandwichTypes.map((sandwich, index) => (
+        <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
+          <div className="flex-1">
+            <select
+              value={sandwich.type}
+              onChange={(e) => updateType(index, e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#236383] focus:border-transparent"
+            >
+              {availableTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-24">
+            <input
+              type="number"
+              min="0"
+              value={sandwich.quantity}
+              onChange={(e) => updateQuantity(index, parseInt(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#236383] focus:border-transparent"
+              placeholder="0"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => removeSandwichType(index)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ))}
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={addSandwichType}
+        className="w-full border-dashed border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Add Sandwich Type
+      </Button>
+    </div>
+  );
+}
 
 export default function EventRequestsManagement() {
   const [activeTab, setActiveTab] = useState("requests");
@@ -2153,71 +2312,56 @@ export default function EventRequestsManagement() {
                 {/* Sandwich Count */}
                 <div className="flex items-start space-x-3">
                   <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
-                  {editingField === "sandwichCount" &&
+                  {editingField === "sandwichTypes" &&
                   editingEventId === request.id ? (
-                    <div className="flex flex-wrap gap-2 items-center w-full">
-                      <input
-                        type="number"
-                        className="text-sm border rounded px-2 py-1 w-24 bg-white"
-                        value={
-                          tempValues.sandwichCount ||
-                          request.estimatedSandwichCount ||
-                          ""
-                        }
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            sandwichCount: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "estimatedSandwichCount",
-                              parseInt(
-                                tempValues.sandwichCount || e.target.value,
-                              ) || null,
-                            );
+                    <div className="w-full bg-white border rounded-lg p-3 shadow-sm">
+                      <SandwichTypesManager
+                        request={{ sandwichTypes: tempValues.sandwichTypes }}
+                        onUpdate={(sandwichTypes) => {
+                          setTempValues(prev => ({ ...prev, sandwichTypes }));
+                        }}
+                      />
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Calculate total and save
+                            const total = tempValues.sandwichTypes?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+                            handleTrackChange(request.id, "sandwichTypes", tempValues.sandwichTypes);
+                            handleTrackChange(request.id, "estimatedSandwichCount", total);
                             setEditingField(null);
                             setEditingEventId(null);
                             setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                        placeholder="0"
-                      />
-                      <span className="text-sm text-gray-600">sandwiches</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "estimatedSandwichCount",
-                            parseInt(tempValues.sandwichCount) || null,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
+                          }}
+                        >
+                          <Save className="w-4 h-4 mr-1" />
+                          Save Changes
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleFieldCancel}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2 flex-1">
                       <span className="text-sm text-gray-600 flex-1">
-                        <span className="font-medium">{getDisplayValue(request, "estimatedSandwichCount") || "Unknown"}</span> sandwiches
+                        {(() => {
+                          const summary = getSandwichTypesSummary(request);
+                          return summary.hasBreakdown ? (
+                            <div>
+                              <span className="font-medium text-[#236383]">{summary.total}</span> sandwiches
+                              <div className="text-xs text-gray-500 mt-1">{summary.breakdown}</div>
+                            </div>
+                          ) : (
+                            <span><span className="font-medium">{summary.total || "Unknown"}</span> sandwiches</span>
+                          );
+                        })()}
                       </span>
                       {canEditField("estimatedSandwichCount") && (
                         <Button
@@ -2225,14 +2369,12 @@ export default function EventRequestsManagement() {
                           variant="ghost"
                           className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
                           onClick={() => {
-                            setEditingField("sandwichCount");
+                            setEditingField("sandwichTypes");
                             setEditingEventId(request.id);
                             setTempValues({
-                              sandwichCount:
-                                getDisplayValue(
-                                  request,
-                                  "estimatedSandwichCount",
-                                ) || "",
+                              sandwichTypes: getSandwichTypesSummary(request).hasBreakdown 
+                                ? request.sandwichTypes 
+                                : [{type: 'Deli (Turkey, Ham, etc.)', quantity: request.estimatedSandwichCount || 0}]
                             });
                           }}
                         >
@@ -3001,16 +3143,26 @@ export default function EventRequestsManagement() {
       <CardContent>
         <div className="space-y-4">
           {/* Prominent Sandwich Count */}
-          {request.estimatedSandwichCount && (
-            <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
-              <div className="flex items-center justify-center space-x-3">
-                <span className="text-3xl">🥪</span>
-                <span className="text-2xl font-bold text-[#FBAD3F]">
-                  {request.estimatedSandwichCount} Sandwiches
-                </span>
+          {(() => {
+            const summary = getSandwichTypesSummary(request);
+            return summary.total > 0 ? (
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
+                <div className="flex items-center justify-center space-x-3">
+                  <span className="text-3xl">🥪</span>
+                  <div className="text-center">
+                    <span className="text-2xl font-bold text-[#FBAD3F]">
+                      {summary.total} Sandwiches
+                    </span>
+                    {summary.hasBreakdown && (
+                      <div className="text-sm text-[#FBAD3F]/80 mt-1">
+                        {summary.breakdown}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            ) : null;
+          })()}
 
           {/* TSP Contact Information */}
           {((request as any).tspContact ||
@@ -5157,21 +5309,16 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="sandwichTypes">Type of Sandwiches</Label>
-                  <select
-                    name="sandwichTypes"
-                    defaultValue={(detailsRequest as any).sandwichTypes || ""}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Select sandwich types</option>
-                    <option value="deli">Deli</option>
-                    <option value="turkey">Turkey</option>
-                    <option value="ham">Ham</option>
-                    <option value="pb&j">PB&J</option>
-                    <option value="pb&j+deli">PB&J + Deli</option>
-                  </select>
-                </div>
+                <SandwichTypesManager 
+                  request={detailsRequest} 
+                  onUpdate={(sandwichTypes) => {
+                    // Update the sandwich types
+                    setDetailsRequest(prev => ({
+                      ...prev,
+                      sandwichTypes: sandwichTypes
+                    }));
+                  }}
+                />
 
                 {/* Speakers Section */}
                 <div className="space-y-4">

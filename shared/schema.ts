@@ -1115,7 +1115,7 @@ export const eventRequests = pgTable("event_requests", {
   planningNotes: text("planning_notes"), // General planning notes
   
   // Additional event details
-  sandwichTypes: varchar("sandwich_types"), // Type of sandwiches: 'deli', 'turkey', 'ham', 'pb&j', 'pb&j+deli'
+  sandwichTypes: jsonb("sandwich_types"), // Array of {type: string, quantity: number} objects
   // Driver and speaker requirements
   driversNeeded: integer("drivers_needed").default(0), // How many drivers this event needs
   speakersNeeded: integer("speakers_needed").default(0), // How many speakers this event needs
@@ -1244,7 +1244,10 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   planningNotes: z.string().nullable().optional(),
   eventAddress: z.string().nullable().optional(),
   estimatedSandwichCount: z.number().nullable().optional(),
-  sandwichTypes: z.string().nullable().optional(),
+  sandwichTypes: z.array(z.object({
+    type: z.string(),
+    quantity: z.number().min(0)
+  })).nullable().optional(),
   driversArranged: z.boolean().nullable().optional(),
   driverDetails: z.string().nullable().optional(),
   speakersNeeded: z.boolean().nullable().optional(),
