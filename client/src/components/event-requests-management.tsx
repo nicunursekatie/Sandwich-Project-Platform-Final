@@ -3567,100 +3567,100 @@ export default function EventRequestsManagement() {
         </div>
         
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Event Request
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Event Request
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add New Event Request</DialogTitle>
+              <DialogDescription>
+                Create a new event request from an organization
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input name="firstName" required />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input name="lastName" required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input name="email" type="email" required />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone (Optional)</Label>
+                  <Input name="phone" type="tel" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="organizationName">
+                    Organization Name
+                  </Label>
+                  <Input name="organizationName" required />
+                </div>
+                <div>
+                  <Label htmlFor="department">Department (Optional)</Label>
+                  <Input name="department" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="desiredEventDate">
+                    Desired Event Date
+                  </Label>
+                  <Input name="desiredEventDate" type="date" />
+                </div>
+                <div>
+                  <Label htmlFor="previouslyHosted">
+                    Previously Hosted Event?
+                  </Label>
+                  <Select name="previouslyHosted" defaultValue="no">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {previouslyHostedOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="message">
+                  Additional Information (Optional)
+                </Label>
+                <Textarea name="message" rows={3} />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddDialog(false)}
+                >
+                  Cancel
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Event Request</DialogTitle>
-                  <DialogDescription>
-                    Create a new event request from an organization
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input name="firstName" required />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input name="lastName" required />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input name="email" type="email" required />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone (Optional)</Label>
-                      <Input name="phone" type="tel" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="organizationName">
-                        Organization Name
-                      </Label>
-                      <Input name="organizationName" required />
-                    </div>
-                    <div>
-                      <Label htmlFor="department">Department (Optional)</Label>
-                      <Input name="department" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="desiredEventDate">
-                        Desired Event Date
-                      </Label>
-                      <Input name="desiredEventDate" type="date" />
-                    </div>
-                    <div>
-                      <Label htmlFor="previouslyHosted">
-                        Previously Hosted Event?
-                      </Label>
-                      <Select name="previouslyHosted" defaultValue="no">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {previouslyHostedOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="message">
-                      Additional Information (Optional)
-                    </Label>
-                    <Textarea name="message" rows={3} />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowAddDialog(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={createMutation.isPending}>
-                      {createMutation.isPending
-                        ? "Creating..."
-                        : "Create Event Request"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending
+                    ? "Creating..."
+                    : "Create Event Request"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
           </div>
         </div>
 
