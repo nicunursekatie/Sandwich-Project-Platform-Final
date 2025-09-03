@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { isAuthenticated } from '../temp-auth';
 import { IStorage } from '../storage.js';
-import { sql, eq, and, desc, asc, count } from 'drizzle-orm';
+import { sql, eq, and, desc, asc, count, inArray } from 'drizzle-orm';
 
 export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
   const router = Router();
@@ -44,20 +44,37 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
         .orderBy(desc(userActivityLogs.createdAt))
         .limit(100);
 
-      // Get user names separately to avoid join issues
+      // Get user names from the database
       const userIds = [...new Set(recentActivity.map(log => log.userId).filter(Boolean))];
       let usersData: Array<{id: string, name: string}> = [];
       
-      // Create a hardcoded user map for now to avoid query issues
-      const knownUsers: Record<string, string> = {
-        'admin_1751065261945': 'Katie (Admin) Long',
-        'user_1751071509329_mrkw2z95z': 'Katie (Main) Long'
-      };
-      
-      usersData = userIds.map(id => ({
-        id,
-        name: knownUsers[id] || 'Unknown User'
-      }));
+      if (userIds.length > 0) {
+        try {
+          const userRecords = await db
+            .select({
+              id: users.id,
+              firstName: users.firstName,
+              lastName: users.lastName,
+              email: users.email
+            })
+            .from(users)
+            .where(inArray(users.id, userIds));
+          
+          usersData = userRecords.map(user => ({
+            id: user.id,
+            name: user.firstName && user.lastName 
+              ? `${user.firstName} ${user.lastName}` 
+              : user.email || 'Unknown User'
+          }));
+        } catch (error) {
+          console.error('Error fetching user names:', error);
+          // Fallback to unknown users if query fails
+          usersData = userIds.map(id => ({
+            id,
+            name: 'Unknown User'
+          }));
+        }
+      }
 
       const userNameMap = usersData.reduce((acc: Record<string, string>, user) => {
         acc[user.id] = user.name;
