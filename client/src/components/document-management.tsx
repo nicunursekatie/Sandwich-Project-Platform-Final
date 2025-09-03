@@ -217,7 +217,7 @@ function DocumentPermissionsDialog({
   const [newPermissionType, setNewPermissionType] = useState("view");
   const [notes, setNotes] = useState("");
 
-  const { data: permissions = [] } = useQuery({
+  const { data: permissions = [] } = useQuery<DocumentPermission[]>({
     queryKey: ['/api/documents', document.id, 'permissions'],
     enabled: !!document
   });
