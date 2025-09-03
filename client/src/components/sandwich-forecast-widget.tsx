@@ -182,11 +182,11 @@ export default function SandwichForecastWidget() {
                 <div>
                   <div className="text-sm font-medium opacity-90">UPCOMING WEEK</div>
                   <div className="text-lg font-bold">{weeklySandwichForecast[0].distributionDate}</div>
-                  <div className="text-xs opacity-75">Prep: {weeklySandwichForecast[0].prepDate} • Distribute: {weeklySandwichForecast[0].distributionDate}</div>
+                  <div className="text-xs opacity-75">Prep: {weeklySandwichForecast[0].weekStartDate} • Distribute: {weeklySandwichForecast[0].weekEndDate}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold">{(weeklySandwichForecast[0].totalSandwiches || 0).toLocaleString()}</div>
-                  <div className="text-sm opacity-90">{weeklySandwichForecast[0].events || 0} event{(weeklySandwichForecast[0].events || 0) !== 1 ? 's' : ''}</div>
+                  <div className="text-2xl font-bold">{(weeklySandwichForecast[0].totalEstimated || 0).toLocaleString()}</div>
+                  <div className="text-sm opacity-90">{(weeklySandwichForecast[0].events?.length || 0)} event{(weeklySandwichForecast[0].events?.length || 0) !== 1 ? 's' : ''}</div>
                 </div>
               </div>
             </div>
@@ -199,10 +199,10 @@ export default function SandwichForecastWidget() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-medium text-[#236383]">{week.distributionDate}</div>
-                        <div className="text-xs text-gray-600">{week.events || 0} event{(week.events || 0) !== 1 ? 's' : ''}</div>
+                        <div className="text-xs text-gray-600">{(week.events?.length || 0)} event{(week.events?.length || 0) !== 1 ? 's' : ''}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">{(week.totalSandwiches || 0).toLocaleString()}</div>
+                        <div className="text-lg font-bold text-gray-900">{(week.totalEstimated || 0).toLocaleString()}</div>
                       </div>
                     </div>
                   </div>
