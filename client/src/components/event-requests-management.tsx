@@ -721,12 +721,9 @@ export default function EventRequestsManagement() {
     return req.status === 'completed' || req.status === 'contact_completed' || req.status === 'declined';
   });
 
-  const followedUpEvents = eventRequests.filter((req: EventRequest) => {
-    return req.status === 'followed_up' || req.status === 'toolkit_sent' || req.status === 'contact_completed';
-  });
-
   const inProcessEvents = eventRequests.filter((req: EventRequest) => {
-    return req.status === 'in_process' || req.status === 'call_scheduled';
+    return req.status === 'followed_up' || req.status === 'toolkit_sent' || req.status === 'contact_completed' || 
+           req.status === 'in_process' || req.status === 'call_scheduled';
   });
 
   // Get current events based on active tab
@@ -734,8 +731,6 @@ export default function EventRequestsManagement() {
     switch (activeTab) {
       case 'requests':
         return requestsEvents;
-      case 'followed_up':
-        return followedUpEvents;
       case 'in_process':
         return inProcessEvents;
       case 'scheduled':
@@ -2782,12 +2777,6 @@ export default function EventRequestsManagement() {
             New Requests
             <Badge variant="secondary" className="ml-2">
               {requestsEvents.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="followed_up" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
-            Followed Up
-            <Badge variant="secondary" className="ml-2">
-              {followedUpEvents.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="in_process" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
