@@ -198,7 +198,7 @@ export default function EventRequestsManagement() {
   const [pastEventsPerPage] = useState(10);
   // Sorting state for all tabs
   const [requestsSortBy, setRequestsSortBy] = useState<'date' | 'organization'>('date');
-  const [requestsSortOrder, setRequestsSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [requestsSortOrder, setRequestsSortOrder] = useState<'asc' | 'desc'>('desc');
   const [scheduledSortBy, setScheduledSortBy] = useState<'date' | 'organization'>('date');
   const [scheduledSortOrder, setScheduledSortOrder] = useState<'asc' | 'desc'>('asc');
   const [pastSortBy, setPastSortBy] = useState<'date' | 'organization'>('date');
@@ -783,9 +783,14 @@ export default function EventRequestsManagement() {
       }
       return new Date(dateString);
     };
+
+    const getSubmissionDate = (req: EventRequest) => {
+      if (!req.createdAt) return new Date(0); // Fallback date for requests without submission dates
+      return new Date(req.createdAt);
+    };
     
     // Sort events based on tab
-    if (activeTab === 'requests' || activeTab === 'followed_up' || activeTab === 'in_process') {
+    if (activeTab === 'requests') {
       return filtered.sort((a: any, b: any) => {
         if (requestsSortBy === 'organization') {
           const orgA = a.organizationName.toLowerCase();
@@ -793,7 +798,23 @@ export default function EventRequestsManagement() {
           const comparison = orgA.localeCompare(orgB);
           return requestsSortOrder === 'desc' ? -comparison : comparison;
         } else {
-          // Sort by date
+          // Sort by submission date for new requests
+          const dateA = getSubmissionDate(a);
+          const dateB = getSubmissionDate(b);
+          return requestsSortOrder === 'desc' 
+            ? dateB.getTime() - dateA.getTime()
+            : dateA.getTime() - dateB.getTime();
+        }
+      });
+    } else if (activeTab === 'followed_up' || activeTab === 'in_process') {
+      return filtered.sort((a: any, b: any) => {
+        if (requestsSortBy === 'organization') {
+          const orgA = a.organizationName.toLowerCase();
+          const orgB = b.organizationName.toLowerCase();
+          const comparison = orgA.localeCompare(orgB);
+          return requestsSortOrder === 'desc' ? -comparison : comparison;
+        } else {
+          // Sort by event date for in-process requests
           const dateA = getEventDate(a);
           const dateB = getEventDate(b);
           return requestsSortOrder === 'desc' 
@@ -2871,7 +2892,7 @@ export default function EventRequestsManagement() {
                   {requestsSortBy === 'date' ? (
                     <>
                       <Calendar className="h-4 w-4" />
-                      Date
+                      Submission Date
                     </>
                   ) : (
                     <>
