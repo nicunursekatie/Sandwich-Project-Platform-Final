@@ -3048,6 +3048,13 @@ export default function EventRequestsManagement() {
                   `Showing ${filteredRequests.length} in process event${filteredRequests.length !== 1 ? 's' : ''}`
                 )}
               </div>
+              {/* Debug info */}
+              <div className="text-xs text-gray-400">
+                Raw in_process: {inProcessEvents.length} | 
+                Search: "{searchTerm}" | 
+                Status Filter: {statusFilter} |
+                Global: {globalSearch ? 'Yes' : 'No'}
+              </div>
             </div>
             {filteredRequests.length === 0 ? (
               <Card>
