@@ -151,7 +151,7 @@ export function DataManagementDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Data Management</h1>
-          <p className="text-gray-600"
+          <p className="text-gray-600">
             Export, search, and manage your data with professional tools
           </p>
         </div>
@@ -347,7 +347,7 @@ export function DataManagementDashboard() {
                               </Badge>
                               <span className="font-medium">{result.title}</span>
                             </div>
-                            <p className="text-sm text-gray-600"
+                            <p className="text-sm text-gray-600">
                               {result.description}
                             </p>
                           </div>
@@ -486,10 +486,10 @@ export function DataManagementDashboard() {
                   {integrityData.issues.length === 0 ? (
                     <div className="text-center py-8">
                       <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-green-700"
+                      <h3 className="text-lg font-medium text-green-700">
                         No Issues Found
                       </h3>
-                      <p className="text-gray-600"
+                      <p className="text-gray-600">
                         Your data integrity is excellent!
                       </p>
                     </div>
