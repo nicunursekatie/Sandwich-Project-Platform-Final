@@ -721,6 +721,14 @@ export default function EventRequestsManagement() {
     return req.status === 'completed' || req.status === 'contact_completed' || req.status === 'declined';
   });
 
+  const followedUpEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'followed_up' || req.status === 'toolkit_sent' || req.status === 'contact_completed';
+  });
+
+  const inProcessEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'in_process' || req.status === 'call_scheduled';
+  });
+
   // Get current events based on active tab
   const getCurrentEvents = () => {
     switch (activeTab) {
