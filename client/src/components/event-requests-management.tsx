@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Upload, Download, RotateCcw, ExternalLink, Edit, Trash2, ChevronDown, ChevronUp, UserCheck, ChevronLeft, ChevronRight, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -1368,6 +1368,76 @@ export default function EventRequestsManagement() {
                     </span>
                   </div>
                 )}
+                
+                {/* Event Times - Display start time, end time, and pickup time */}
+                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm">
+                  {(request as any).eventStartTime && (
+                    <div className="flex items-center text-gray-700">
+                      <Clock className="w-4 h-4 mr-1" />
+                      <span className="font-medium">Starts:</span>
+                      <span className="ml-1 font-semibold">
+                        {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).eventStartTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', { 
+                              hour: 'numeric', 
+                              minute: '2-digit',
+                              hour12: true 
+                            });
+                          } catch {
+                            return (request as any).eventStartTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).eventEndTime && (
+                    <div className="flex items-center text-gray-700">
+                      <Clock className="w-4 h-4 mr-1" />
+                      <span className="font-medium">Ends:</span>
+                      <span className="ml-1 font-semibold">
+                        {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).eventEndTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', { 
+                              hour: 'numeric', 
+                              minute: '2-digit',
+                              hour12: true 
+                            });
+                          } catch {
+                            return (request as any).eventEndTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).pickupTime && (
+                    <div className="flex items-center text-teal-700">
+                      <Truck className="w-4 h-4 mr-1" />
+                      <span className="font-medium">Pickup:</span>
+                      <span className="ml-1 font-semibold">
+                        {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).pickupTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', { 
+                              hour: 'numeric', 
+                              minute: '2-digit',
+                              hour12: true 
+                            });
+                          } catch {
+                            return (request as any).pickupTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               {getStatusDisplay(request.status)}
             </div>
