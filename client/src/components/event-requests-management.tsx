@@ -2490,7 +2490,7 @@ export default function EventRequestsManagement() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-orange-600 hover:text-orange-800 border-orange-200 hover:bg-orange-50"
+                    className="text-[#FBAD3F] hover:text-[#FBAD3F] border-[#FBAD3F] hover:bg-orange-50"
                   >
                     1 Week Check-in
                   </Button>
@@ -2545,10 +2545,10 @@ export default function EventRequestsManagement() {
 
             <div className="space-y-2">
               {/* Prominent Submission Date Display */}
-              <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-orange-50 p-2 rounded-lg border border-orange-200">
-                <Calendar className="w-5 h-5 text-orange-600" />
+              <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-orange-50 p-2 rounded-lg border border-[#FBAD3F]">
+                <Calendar className="w-5 h-5 text-[#FBAD3F]" />
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium text-orange-600 uppercase tracking-wide">
+                  <span className="text-xs font-medium text-[#FBAD3F] uppercase tracking-wide">
                     Submitted
                   </span>
                   <span className="text-sm font-bold text-orange-800">
@@ -2924,10 +2924,10 @@ export default function EventRequestsManagement() {
         <div className="space-y-4">
           {/* Prominent Sandwich Count */}
           {request.estimatedSandwichCount && (
-            <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+            <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
               <div className="flex items-center justify-center space-x-3">
                 <span className="text-3xl">🥪</span>
-                <span className="text-2xl font-bold text-orange-800">
+                <span className="text-2xl font-bold text-[#FBAD3F]">
                   {request.estimatedSandwichCount} Sandwiches
                 </span>
               </div>
@@ -3025,8 +3025,8 @@ export default function EventRequestsManagement() {
           </div>
 
           {/* Event Summary with all remaining details */}
-          <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-            <h4 className="font-semibold text-orange-800 mb-2">
+          <div className="bg-orange-50 p-3 rounded-lg border border-[#FBAD3F]">
+            <h4 className="font-semibold text-[#FBAD3F] mb-2">
               Event Summary
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-orange-700">
