@@ -374,7 +374,7 @@ function SandwichTypesManager({ request, onUpdate }: SandwichTypesManagerProps) 
             <select
               value={sandwich.type}
               onChange={(e) => updateType(index, e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#236383] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#236383] focus:border-transparent"
             >
               {availableTypes.map(type => (
                 <option key={type} value={type}>{type}</option>
@@ -387,7 +387,7 @@ function SandwichTypesManager({ request, onUpdate }: SandwichTypesManagerProps) 
               min="0"
               value={sandwich.quantity}
               onChange={(e) => updateQuantity(index, parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#236383] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-[#236383] focus:border-transparent"
               placeholder="0"
             />
           </div>
