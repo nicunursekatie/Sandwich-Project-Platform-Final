@@ -5791,6 +5791,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Static file serving for documents
   app.use("/documents", express.static("public/documents"));
+  
+  // Static file serving for toolkit files
+  app.use("/toolkit", express.static("public/toolkit"));
 
   // Add data management routes
   app.use("/api/data", dataManagementRoutes);

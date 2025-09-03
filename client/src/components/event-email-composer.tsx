@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mail, Send, Paperclip, FileText, Calculator, Users, Clock, X } from "lucide-react";
+import { Mail, Send, Paperclip, FileText, Calculator, Users, Clock, X, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -102,12 +102,48 @@ export function EventEmailComposer({ isOpen, onClose, eventRequest, onEmailSent 
     }
   }, [selectedSubjectSuggestion, eventRequest]);
 
-  // Initialize with greeting when component opens
+  // Initialize with comprehensive template when component opens
   useEffect(() => {
     if (isOpen && !content) {
-      setContent(`Hi ${eventRequest.firstName},\n\n`);
+      const eventDetails = formatEventDetails();
+      const template = `Hi ${eventRequest.firstName},
+
+Thank you for your interest in The Sandwich Project! We're excited to help support your ${eventRequest.organizationName} event${eventRequest.department ? ` with ${eventRequest.department}` : ''}.
+${eventDetails}
+To help ensure your event is successful, I've attached our complete toolkit which includes:
+• Food safety guidelines for volunteers
+• Step-by-step sandwich making instructions for both deli and PB&J sandwiches
+• Printable labels for sandwich identification
+
+**Important Resources:**
+🧮 **Inventory Calculator**: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+Use this tool to determine exactly how much food to purchase based on your guest count.
+
+📅 **Schedule a Planning Call with Steph**: https://thesandwichproject.as.me/
+I'd love to schedule a brief call to discuss your event details and answer any questions you might have.
+
+Our toolkit ensures all volunteers follow proper food safety protocols and maintain consistency in sandwich preparation. Please review the attached documents and don't hesitate to reach out if you have any questions.
+
+Looking forward to partnering with you to make your event a success!
+
+Best regards,
+The Sandwich Project Team
+
+---
+The Sandwich Project is a 501(c)(3) nonprofit organization
+Website: thesandwichproject.org | Email: info@thesandwichproject.org`;
+      
+      setContent(template);
+      setSubject(`The Sandwich Project - Event Resources for ${eventRequest.organizationName}`);
+      
+      // Pre-select all toolkit documents (use full URLs)
+      setSelectedAttachments([
+        '/toolkit/food-safety-volunteers.pdf',
+        '/toolkit/deli-sandwich-making-101.pdf', 
+        '/toolkit/pbj-sandwich-making-101.pdf'
+      ]);
     }
-  }, [isOpen, eventRequest.firstName]);
+  }, [isOpen, eventRequest, formatEventDetails]);
 
   const sendEmailMutation = useMutation({
     mutationFn: async (emailData: {
@@ -172,11 +208,11 @@ export function EventEmailComposer({ isOpen, onClose, eventRequest, onEmailSent 
     });
   };
 
-  const toggleAttachment = (fileName: string) => {
+  const toggleAttachment = (fileUrl: string) => {
     setSelectedAttachments(prev =>
-      prev.includes(fileName)
-        ? prev.filter(f => f !== fileName)
-        : [...prev, fileName]
+      prev.includes(fileUrl)
+        ? prev.filter(f => f !== fileUrl)
+        : [...prev, fileUrl]
     );
   };
 
@@ -189,11 +225,9 @@ export function EventEmailComposer({ isOpen, onClose, eventRequest, onEmailSent 
 
   // Available toolkit documents (inventory calculator is now online)
   const toolkitDocuments = [
-    '20250622-TSP-PBJ Sandwich Making 101.pdf',
-    '20240622-TSP-Deli Sandwich Making 101.pdf', 
-    '20230525-TSP-Food Safety Volunteers.pdf',
-    'Deli labels.pdf',
-    'Pbj labels.pdf'
+    { name: 'Food Safety Guidelines', url: '/toolkit/food-safety-volunteers.pdf' },
+    { name: 'Deli Sandwich Instructions', url: '/toolkit/deli-sandwich-making-101.pdf' },
+    { name: 'PB&J Sandwich Instructions', url: '/toolkit/pbj-sandwich-making-101.pdf' }
   ];
 
   return (
@@ -258,8 +292,8 @@ export function EventEmailComposer({ isOpen, onClose, eventRequest, onEmailSent 
           {/* Content */}
           <div className="space-y-2">
             <Label htmlFor="content" className="text-sm font-medium">Message</Label>
-            <div className="text-xs text-gray-500 mb-2">
-              💡 Tip: The inventory calculator is at https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+            <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
+              💡 <strong>Quick Links:</strong> Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html | Schedule Call: https://thesandwichproject.as.me/
             </div>
             <Textarea
               id="content"
@@ -277,34 +311,34 @@ export function EventEmailComposer({ isOpen, onClose, eventRequest, onEmailSent 
               Attach Toolkit Documents (optional)
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {toolkitDocuments.map(fileName => {
-                const IconComponent = getDocumentIcon(fileName);
-                const isSelected = selectedAttachments.includes(fileName);
+              {toolkitDocuments.map(doc => {
+                const IconComponent = getDocumentIcon(doc.name);
+                const isSelected = selectedAttachments.includes(doc.url);
                 
                 return (
                   <Card
-                    key={fileName}
+                    key={doc.url}
                     className={`cursor-pointer transition-all duration-200 ${
                       isSelected 
                         ? 'bg-gradient-to-r from-teal-100 to-cyan-200 border-teal-300 shadow-md' 
                         : 'bg-gradient-to-r from-gray-50 to-white border-gray-200 hover:border-teal-200'
                     }`}
-                    onClick={() => toggleAttachment(fileName)}
+                    onClick={() => toggleAttachment(doc.url)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={isSelected}
-                          onChange={() => toggleAttachment(fileName)}
+                          onChange={() => toggleAttachment(doc.url)}
                           className="flex-shrink-0"
                         />
                         <IconComponent className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-teal-600' : 'text-gray-500'}`} />
                         <div className="min-w-0 flex-1">
                           <p className={`text-sm font-medium truncate ${isSelected ? 'text-teal-900' : 'text-gray-700'}`}>
-                            {fileName.replace(/\.(pdf|xlsx|docx)$/, '')}
+                            {doc.name}
                           </p>
                           <p className="text-xs text-gray-500 uppercase">
-                            {fileName.split('.').pop()}
+                            PDF
                           </p>
                         </div>
                       </div>
