@@ -16,7 +16,6 @@ import { Search, Plus, Calendar, Building, User, Mail, Phone, AlertTriangle, Che
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-// Removed formatDateForDisplay import as we now use toLocaleDateString directly
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 // Utility function to convert 24-hour time to 12-hour format
@@ -3864,20 +3863,6 @@ export default function EventRequestsManagement() {
                 </select>
               </div>
 
-              {/* Drivers Section - Enhanced with Database Integration */}
-              {/* <DriverSelection
-                eventId={detailsRequest.id}
-                currentDrivers={(detailsRequest as any).assignedDriverIds || []}
-                currentDriverDetails={(detailsRequest as any).driverDetails}
-                currentDriversArranged={(detailsRequest as any).driversArranged}
-                currentDriverPickupTime={(detailsRequest as any).driverPickupTime}
-                currentDriverNotes={(detailsRequest as any).driverNotes}
-                onDriversUpdate={() => {
-                  // Refresh the event requests data to show updated information
-                  queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-                }}
-              />
-
               {/* Speakers Section */}
               <div className="space-y-4">
                 <div>
@@ -3912,15 +3897,6 @@ export default function EventRequestsManagement() {
                 />
               </div>
 
-              {/* Volunteer Signup Section */}
-              <div className="border-t pt-6">
-                {/* <EventVolunteerSignup 
-                  eventId={detailsRequest.id}
-                  eventTitle={detailsRequest.organizationName}
-                  driversNeeded={(detailsRequest as any).driversNeeded || 0}
-                  speakersNeeded={(detailsRequest as any).speakersNeeded || 0}
-                /> */}
-              </div>
 
               <div className="flex justify-end space-x-2 pt-4">
                 <Button 
