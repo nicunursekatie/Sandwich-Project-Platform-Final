@@ -2458,7 +2458,7 @@ export default function EventRequestsManagement() {
             {hasPendingChanges(request.id) && (
               <Button
                 size="sm"
-                onClick={() => handleBulkSave(request.id)}
+                onClick={() => handleSaveAllChanges(request.id)}
                 className="bg-teal-600 hover:bg-teal-700 text-white"
               >
                 <Save className="w-4 h-4 mr-1" />
