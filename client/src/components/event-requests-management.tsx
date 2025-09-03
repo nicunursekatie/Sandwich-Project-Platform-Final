@@ -3477,18 +3477,23 @@ export default function EventRequestsManagement() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-3xl font-bold">Event Planning</h1>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveTab("forecast")}
-              className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                Weekly Planning
-              </span>
-            </Button>
+          <div className="flex flex-col gap-3">
+            {/* Weekly Planning Button - Separated for prominence */}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => setActiveTab("forecast")}
+                className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0 font-semibold"
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span className="ml-2">
+                  Weekly Planning
+                </span>
+              </Button>
+            </div>
+            {/* Data Management Buttons */}
+            <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3557,7 +3562,11 @@ export default function EventRequestsManagement() {
                   : "Import 2024 Data"}
               </span>
             </Button>
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            </div>
+          </div>
+        </div>
+        
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
