@@ -50,6 +50,7 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
       
       if (userIds.length > 0) {
         try {
+          console.log('🔍 Attempting to fetch user data for IDs:', userIds);
           const userRecords = await db
             .select({
               id: users.id,
@@ -60,14 +61,18 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
             .from(users)
             .where(inArray(users.id, userIds));
           
+          console.log('🔍 Raw user records from database:', userRecords);
+          
           usersData = userRecords.map(user => ({
             id: user.id,
             name: user.firstName && user.lastName 
               ? `${user.firstName} ${user.lastName}` 
               : user.email || 'Unknown User'
           }));
+          
+          console.log('🔍 Processed user data:', usersData);
         } catch (error) {
-          console.error('Error fetching user names:', error);
+          console.error('❌ Error fetching user names:', error);
           // Fallback to unknown users if query fails
           usersData = userIds.map(id => ({
             id,
@@ -80,6 +85,12 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
         acc[user.id] = user.name;
         return acc;
       }, {});
+
+      // Debug logging
+      console.log('🔍 User Activity Debug:');
+      console.log('- Found', userIds.length, 'unique user IDs:', userIds);
+      console.log('- Fetched', usersData.length, 'user records');
+      console.log('- User name map:', userNameMap);
 
       // Get simple counts
       const totalActions = recentActivity.length;

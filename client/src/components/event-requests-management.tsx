@@ -18,9 +18,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 // Removed formatDateForDisplay import as we now use toLocaleDateString directly
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
-// import { DriverSelection } from "./driver-selection";
-// import EventVolunteerSignup from "./event-volunteer-signup";
-// import { EventEmailComposer } from "./event-email-composer";
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24: string): string => {
@@ -722,8 +719,8 @@ export default function EventRequestsManagement() {
   });
 
   const inProcessEvents = eventRequests.filter((req: EventRequest) => {
-    return req.status === 'followed_up' || req.status === 'toolkit_sent' || req.status === 'contact_completed' || 
-           req.status === 'in_process' || req.status === 'call_scheduled';
+    // Only include events that are truly "in process" - actively being worked on
+    return req.status === 'in_process' || req.status === 'followed_up';
   });
 
   // Get current events based on active tab
