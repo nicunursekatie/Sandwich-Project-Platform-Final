@@ -2065,8 +2065,32 @@ export default function EventRequestsManagement() {
                 </Button>
               )}
               
-              {/* Check-in buttons for scheduled events */}
-              {request.status === 'scheduled' && (
+              {/* Check-in buttons for scheduled events that have already occurred */}
+              {request.status === 'scheduled' && (() => {
+                // Only show check-in buttons if the event date has passed
+                if (!request.desiredEventDate) return false;
+                
+                try {
+                  let eventDate: Date;
+                  if (request.desiredEventDate.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                    const dateOnly = request.desiredEventDate.split(' ')[0];
+                    eventDate = new Date(dateOnly + 'T12:00:00');
+                  } else if (request.desiredEventDate.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                    const dateOnly = request.desiredEventDate.split('T')[0];
+                    eventDate = new Date(dateOnly + 'T12:00:00');
+                  } else {
+                    eventDate = new Date(request.desiredEventDate);
+                  }
+                  
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+                  eventDate.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+                  
+                  return eventDate < today; // Event has already occurred
+                } catch {
+                  return false;
+                }
+              })() && (
                 <>
                   <Button
                     variant="outline"
@@ -3047,13 +3071,6 @@ export default function EventRequestsManagement() {
                 ) : (
                   `Showing ${filteredRequests.length} in process event${filteredRequests.length !== 1 ? 's' : ''}`
                 )}
-              </div>
-              {/* Debug info */}
-              <div className="text-xs text-gray-400">
-                Raw in_process: {inProcessEvents.length} | 
-                Search: "{searchTerm}" | 
-                Status Filter: {statusFilter} |
-                Global: {globalSearch ? 'Yes' : 'No'}
               </div>
             </div>
             {filteredRequests.length === 0 ? (
