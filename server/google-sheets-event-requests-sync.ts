@@ -154,7 +154,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       // Read current sheet to find the row
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: (this as any).config.spreadsheetId,
-        range: `${(this as any).config.worksheetName}!A2:H1000`,
+        range: `${(this as any).config.worksheetName}!A2:K1000`,
       });
 
       const rows = response.data.values || [];
@@ -175,11 +175,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         };
       }
 
-      // Update the status in column H (index 7)
+      // Update the status in column K (index 10)
       const actualRowNumber = rowIndex + 2; // +2 because: +1 for header row, +1 for 1-based indexing
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: (this as any).config.spreadsheetId,
-        range: `${(this as any).config.worksheetName}!H${actualRowNumber}`,
+        range: `${(this as any).config.worksheetName}!K${actualRowNumber}`,
         valueInputOption: 'USER_ENTERED',
         resource: { values: [[newStatus]] },
       });
@@ -368,7 +368,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     }
     
     return rows.map((row: string[], index: number) => ({
-      // Match the actual Google Sheet structure from the screenshot
+      // Match the updated Google Sheet structure from the screenshot
       submittedOn: row[0] || '', // Submitted On (A) - the actual form submission date
       contactName: row[1] || '', // Name (B)
       email: row[2] || '', // Email (C)
@@ -376,10 +376,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       phone: row[4] || '', // Phone (E)
       desiredEventDate: row[5] || '', // Desired Event Date (F)
       message: row[6] || '', // Message (G)
-      status: row[7] || 'new', // Status (H) - read from your new status column, default to 'new'
+      previouslyHosted: row[7] || 'i_dont_know', // has your organization done an event with us before (H)
+      department: row[8] || '', // departmentteam if applicable (I)
+      // Note: row[9] appears to be "your email" - duplicate of email field
+      status: row[10] || 'new', // status (K) - read from your new status column, default to 'new'
       createdDate: '', // Legacy field, not used for mapping
-      department: '', // Not in current sheet
-      previouslyHosted: 'i_dont_know', // Default value
       lastUpdated: new Date().toISOString(),
       duplicateCheck: 'No',
       notes: '',
