@@ -10,6 +10,7 @@ import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { requirePermission } from "../middleware/auth";
 import { isAuthenticated } from "../temp-auth";
 import { getEventRequestsGoogleSheetsService } from "../google-sheets-event-requests-sync";
+import { AuditLogger } from "../audit-logger";
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.use((req, res, next) => {
   next();
 });
 
-// Simple logging function for activity tracking
+// Enhanced logging function for activity tracking with audit details
 const logActivity = async (
   req: any,
   res: any,
@@ -56,6 +57,46 @@ const logActivity = async (
 ) => {
   // Activity logging will be handled by the global middleware
   console.log(`Activity: ${permission} - ${message}`);
+};
+
+// Enhanced audit logging for event request actions
+const logEventRequestAudit = async (
+  action: string,
+  eventId: string,
+  oldData: any,
+  newData: any,
+  req: any,
+  additionalContext?: any
+) => {
+  try {
+    const context = {
+      userId: req.user?.id,
+      ipAddress: req.ip || req.connection?.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      sessionId: req.session?.id || req.sessionID
+    };
+
+    // Enhanced logging with action-specific details
+    const enhancedNewData = {
+      ...newData,
+      actionContext: additionalContext || {},
+      actionTimestamp: new Date().toISOString(),
+      performedBy: req.user?.email || req.user?.displayName || 'Unknown User'
+    };
+
+    await AuditLogger.log(
+      action,
+      'event_requests',
+      eventId,
+      oldData,
+      enhancedNewData,
+      context
+    );
+
+    console.log(`🔍 AUDIT LOG: ${action} on Event ${eventId} by ${req.user?.email}`);
+  } catch (error) {
+    console.error('Failed to log audit entry:', error);
+  }
 };
 
 // Get event requests assigned to the current user
@@ -571,6 +612,12 @@ router.post(
       console.log("Method:", method);
       console.log("Updated email:", updatedEmail);
 
+      // Get original data for audit logging
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
       const updates: any = {
         followUpMethod: method,
         followUpDate: new Date(),
@@ -587,8 +634,7 @@ router.post(
 
       // Add notes to existing followUpNotes if provided
       if (notes) {
-        const existingEvent = await storage.getEventRequestById(id);
-        const existingNotes = existingEvent?.followUpNotes || '';
+        const existingNotes = originalEvent?.followUpNotes || '';
         updates.followUpNotes = existingNotes ? `${existingNotes}\n\n${notes}` : notes;
       }
 
@@ -597,6 +643,24 @@ router.post(
       if (!updatedEventRequest) {
         return res.status(404).json({ message: "Event request not found" });
       }
+
+      // Enhanced audit logging with detailed context
+      await logEventRequestAudit(
+        'FOLLOW_UP_RECORDED',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          followUpMethod: method,
+          followUpAction: method === 'email' ? 'Email Follow-up Sent' : 'Call Follow-up Scheduled',
+          statusChange: `${originalEvent.status} → ${updatedEventRequest.status}`,
+          organizationName: originalEvent.organizationName,
+          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
+          notes: notes || null,
+          updatedEmail: updatedEmail || null
+        }
+      );
 
       console.log("Successfully recorded follow-up for:", id);
       await logActivity(
@@ -680,6 +744,12 @@ router.put(
       console.log("Request ID:", id);
       console.log("Updates received:", JSON.stringify(updates, null, 2));
 
+      // Get original data for audit logging
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
       // Process ALL date/timestamp fields to ensure they're proper Date objects
       const processedUpdates = { ...updates };
       
@@ -709,6 +779,37 @@ router.put(
       if (!updatedEventRequest) {
         return res.status(404).json({ message: "Event request not found" });
       }
+
+      // Determine action type based on changes
+      let actionType = 'EVENT_REQUEST_UPDATED';
+      let actionContext: any = {
+        organizationName: originalEvent.organizationName,
+        contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
+        fieldsUpdated: Object.keys(processedUpdates)
+      };
+
+      // Check for specific status changes
+      if (originalEvent.status !== updatedEventRequest.status) {
+        actionType = 'STATUS_CHANGED';
+        actionContext.statusChange = `${originalEvent.status} → ${updatedEventRequest.status}`;
+      }
+
+      // Check for unresponsive marking
+      if (updates.isUnresponsive && !originalEvent.isUnresponsive) {
+        actionType = 'MARKED_UNRESPONSIVE';
+        actionContext.unresponsiveReason = updates.unresponsiveReason;
+        actionContext.contactMethod = updates.contactMethod;
+      }
+
+      // Enhanced audit logging with detailed context
+      await logEventRequestAudit(
+        actionType,
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        actionContext
+      );
 
       console.log(
         "Updated event request:",
@@ -791,6 +892,90 @@ router.post("/check-duplicates", async (req, res) => {
     res.status(500).json({ message: "Failed to check duplicates" });
   }
 });
+
+// Get recent audit logs for event requests - useful for tracking specific actions
+router.get("/audit-logs", isAuthenticated, requirePermission("EVENT_REQUESTS_VIEW"), async (req, res) => {
+  try {
+    const { 
+      limit = 50, 
+      offset = 0, 
+      eventId, 
+      action, 
+      userId,
+      hours = 24 
+    } = req.query;
+
+    // Calculate time filter for recent actions (default last 24 hours)
+    const sinceTime = new Date();
+    sinceTime.setHours(sinceTime.getHours() - parseInt(hours as string));
+
+    const auditHistory = await AuditLogger.getAuditHistory(
+      'event_requests',
+      eventId as string,
+      userId as string,
+      parseInt(limit as string),
+      parseInt(offset as string)
+    );
+
+    // Filter for recent actions and enhance with readable context
+    const recentLogs = auditHistory
+      .filter(log => new Date(log.timestamp) > sinceTime)
+      .filter(log => action ? log.action === action : true)
+      .map(log => {
+        let parsedNewData = null;
+        let parsedOldData = null;
+        
+        try {
+          parsedNewData = log.newData ? JSON.parse(log.newData) : null;
+          parsedOldData = log.oldData ? JSON.parse(log.oldData) : null;
+        } catch (e) {
+          // Handle parsing errors gracefully
+        }
+
+        return {
+          id: log.id,
+          action: log.action,
+          eventId: log.recordId,
+          timestamp: log.timestamp,
+          userId: log.userId,
+          userEmail: parsedNewData?.performedBy || 'Unknown User',
+          organizationName: parsedNewData?.actionContext?.organizationName || 'Unknown',
+          contactName: parsedNewData?.actionContext?.contactName || 'Unknown',
+          actionDescription: getActionDescription(log.action, parsedNewData?.actionContext),
+          details: parsedNewData?.actionContext || null,
+          statusChange: parsedNewData?.actionContext?.statusChange || null,
+          followUpMethod: parsedNewData?.actionContext?.followUpMethod || null
+        };
+      });
+
+    res.json({
+      logs: recentLogs,
+      total: recentLogs.length,
+      timeRange: `Last ${hours} hours`,
+      filters: { eventId, action, userId }
+    });
+
+  } catch (error) {
+    console.error("Error fetching audit logs:", error);
+    res.status(500).json({ message: "Failed to fetch audit logs" });
+  }
+});
+
+// Helper function to generate readable action descriptions
+function getActionDescription(action: string, context: any): string {
+  switch (action) {
+    case 'FOLLOW_UP_RECORDED':
+      return `${context?.followUpAction || 'Follow-up recorded'} - ${context?.statusChange || ''}`;
+    case 'STATUS_CHANGED':
+      return `Status changed: ${context?.statusChange || 'Status updated'}`;
+    case 'MARKED_UNRESPONSIVE':
+      return `Marked unresponsive: ${context?.unresponsiveReason || 'No reason provided'}`;
+    case 'EVENT_REQUEST_UPDATED':
+      return `Updated fields: ${context?.fieldsUpdated?.join(', ') || 'Multiple fields'}`;
+    default:
+      return action.replace(/_/g, ' ').toLowerCase();
+  }
+}
 
 // Organization management routes
 router.get("/organizations/all", async (req, res) => {
