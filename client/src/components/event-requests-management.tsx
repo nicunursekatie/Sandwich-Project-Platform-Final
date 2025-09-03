@@ -2545,45 +2545,67 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* TSP Contact Assignment */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">TSP Contact</span>
-                    <button
-                      className="text-xs bg-teal-50 text-teal-700 hover:bg-teal-100 px-2 py-1 rounded border border-teal-200"
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
                       onClick={() => {
                         setAssigningContactRequest(request);
                         setShowTspContactDialog(true);
                         const currentContacts = [
                           (request as any).tspContact,
                           (request as any).tspContactAssigned,
+                          (request as any).additionalContact1,
+                          (request as any).additionalContact2,
                           (request as any).customTspContact,
                         ].filter(Boolean);
                         setSelectedTspContacts(currentContacts);
                       }}
                     >
-                      {(() => {
-                        const currentContacts = [
-                          (request as any).tspContact,
-                          (request as any).tspContactAssigned,
-                          (request as any).customTspContact,
-                        ].filter(Boolean);
-                        return currentContacts.length > 0 ? "Edit TSP Team" : "+ Assign TSP";
-                      })()}
-                    </button>
+                      <Users className="w-3 h-3 mr-1" />
+                      Manage TSP Contact
+                    </Button>
                   </div>
-                  {(() => {
-                    const currentContacts = [
-                      (request as any).tspContact,
-                      (request as any).tspContactAssigned,
-                      (request as any).customTspContact,
-                    ].filter(Boolean);
+                  
+                  {/* TSP Contact Display - Visually distinct and larger */}
+                  <div className="bg-white border-2 border-[#236383] rounded-lg p-4">
+                    {(() => {
+                      const currentContacts = [
+                        (request as any).tspContact,
+                        (request as any).tspContactAssigned,
+                        (request as any).additionalContact1,
+                        (request as any).additionalContact2,
+                        (request as any).customTspContact,
+                      ].filter(Boolean);
 
-                    return currentContacts.map((contactId: string, index: number) => (
-                      <div key={index} className="inline-flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs border border-teal-200 mr-1">
-                        {getUserDisplayName(contactId)}
-                      </div>
-                    ));
-                  })()}
+                      if (currentContacts.length === 0) {
+                        return (
+                          <div className="text-center py-3">
+                            <span className="text-gray-400 text-sm italic">No TSP contact assigned</span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-[#236383] uppercase tracking-wide mb-2">
+                            Assigned TSP Team ({currentContacts.length})
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {currentContacts.map((contactId: string, index: number) => (
+                              <div key={index} className="flex items-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm">
+                                <Users className="w-4 h-4 mr-2" />
+                                {getUserDisplayName(contactId)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 {/* Speaker Assignment (if needed) */}
