@@ -10632,7 +10632,7 @@ function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
       const status = req.query.status as string;
       const assignedTo = req.query.assignedTo as string;
 
-      let query = storage.db
+      let query = db
         .select({
           id: eventReminders.id,
           eventRequestId: eventReminders.eventRequestId,
@@ -10690,7 +10690,7 @@ function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
         createdBy: req.user.id
       });
 
-      const [newReminder] = await storage.db
+      const [newReminder] = await db
         .insert(eventReminders)
         .values(validatedData)
         .returning();
@@ -10725,7 +10725,7 @@ function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
         updatedAt: new Date()
       };
 
-      const [updatedReminder] = await storage.db
+      const [updatedReminder] = await db
         .update(eventReminders)
         .set(updateData)
         .where(eq(eventReminders.id, id))
@@ -10756,7 +10756,7 @@ function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
 
       const id = parseInt(req.params.id);
 
-      const [deletedReminder] = await storage.db
+      const [deletedReminder] = await db
         .delete(eventReminders)
         .where(eq(eventReminders.id, id))
         .returning();
@@ -10784,7 +10784,7 @@ function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
 
-      const count = await storage.db
+      const count = await db
         .select({ count: sql`count(*)` })
         .from(eventReminders)
         .where(eq(eventReminders.status, "pending"));
@@ -10807,7 +10807,7 @@ function createEventRemindersRoutes(isAuthenticated: any, activityLogger: any) {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + days);
 
-      const upcomingReminders = await storage.db
+      const upcomingReminders = await db
         .select({
           id: eventReminders.id,
           eventRequestId: eventReminders.eventRequestId,
