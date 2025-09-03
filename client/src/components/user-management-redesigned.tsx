@@ -152,6 +152,8 @@ export default function UserManagementRedesigned() {
   const [showSMSDialog, setShowSMSDialog] = useState(false);
   const [smsUser, setSmsUser] = useState<User | null>(null);
   const [smsPhoneNumber, setSmsPhoneNumber] = useState("");
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
 
   // Check permissions
   if (!hasPermission(currentUser, PERMISSIONS.MANAGE_USERS)) {
@@ -274,6 +276,59 @@ export default function UserManagementRedesigned() {
     }
 
     addUserMutation.mutate(newUser);
+  };
+
+  const editUserMutation = useMutation({
+    mutationFn: async (data: { userId: string; email: string; firstName: string; lastName: string; role: string; isActive: boolean }) => {
+      return apiRequest("PATCH", `/api/users/${data.userId}/profile`, {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role,
+        isActive: data.isActive,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "User Updated",
+        description: "User details have been successfully updated.",
+      });
+      setShowEditDialog(false);
+      setEditUser(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update user details.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditUser = (user: User) => {
+    setEditUser(user);
+    setShowEditDialog(true);
+  };
+
+  const handleSaveUserEdit = () => {
+    if (!editUser || !editUser.email || !editUser.firstName || !editUser.lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    editUserMutation.mutate({
+      userId: editUser.id,
+      email: editUser.email,
+      firstName: editUser.firstName,
+      lastName: editUser.lastName,
+      role: editUser.role,
+      isActive: editUser.isActive,
+    });
   };
 
   const setPasswordMutation = useMutation({
@@ -779,8 +834,12 @@ export default function UserManagementRedesigned() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setSelectedUser(user)}>
+                                  <DropdownMenuItem onClick={() => handleEditUser(user)}>
                                     <Edit className="h-4 w-4 mr-2" />
+                                    Edit User Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setSelectedUser(user)}>
+                                    <Settings className="h-4 w-4 mr-2" />
                                     Edit Permissions
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => {
@@ -1076,6 +1135,100 @@ export default function UserManagementRedesigned() {
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User Details</DialogTitle>
+            <DialogDescription>
+              Update user information, role, and status
+            </DialogDescription>
+          </DialogHeader>
+          {editUser && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="editEmail">Email Address *</Label>
+                <Input
+                  id="editEmail"
+                  type="email"
+                  value={editUser.email}
+                  onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editFirstName">First Name *</Label>
+                  <Input
+                    id="editFirstName"
+                    value={editUser.firstName}
+                    onChange={(e) => setEditUser({ ...editUser, firstName: e.target.value })}
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editLastName">Last Name *</Label>
+                  <Input
+                    id="editLastName"
+                    value={editUser.lastName}
+                    onChange={(e) => setEditUser({ ...editUser, lastName: e.target.value })}
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="editRole">Role</Label>
+                <Select value={editUser.role} onValueChange={(value) => setEditUser({ ...editUser, role: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="volunteer">Volunteer</SelectItem>
+                    <SelectItem value="host">Host</SelectItem>
+                    <SelectItem value="admin">Administrator</SelectItem>
+                    <SelectItem value="super_admin">Super Administrator</SelectItem>
+                    <SelectItem value="committee_member">Committee Member</SelectItem>
+                    <SelectItem value="core_team">Core Team</SelectItem>
+                    <SelectItem value="driver">Driver</SelectItem>
+                    <SelectItem value="recipient">Recipient</SelectItem>
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                    <SelectItem value="work_logger">Work Logger</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="editActive"
+                  checked={editUser.isActive}
+                  onChange={(e) => setEditUser({ ...editUser, isActive: e.target.checked })}
+                  className="w-4 h-4 text-[#236383] border-slate-300 rounded focus:ring-[#236383]"
+                />
+                <Label htmlFor="editActive">User is active</Label>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDialog(false);
+                    setEditUser(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveUserEdit}
+                  disabled={editUserMutation.isPending}
+                  className="bg-[#236383] hover:bg-[#1a4d66]"
+                >
+                  {editUserMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
