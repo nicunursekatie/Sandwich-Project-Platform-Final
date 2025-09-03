@@ -2569,7 +2569,6 @@ export default function EventRequestsManagement() {
       message: formData.get("message"),
       previouslyHosted: formData.get("previouslyHosted"),
       status: formData.get("status"),
-      duplicateNotes: formData.get("duplicateNotes"),
       // Event planning fields
       eventStartTime: formData.get("eventStartTime") || null,
       eventEndTime: formData.get("eventEndTime") || null,
@@ -3411,7 +3410,7 @@ export default function EventRequestsManagement() {
 
       {/* Edit Dialog */}
       {showEditDialog && selectedRequest && (
-        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <Dialog key={selectedRequest.id} open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Event Request</DialogTitle>
@@ -3672,10 +3671,6 @@ export default function EventRequestsManagement() {
               <div>
                 <Label htmlFor="message">Event Details</Label>
                 <Textarea name="message" rows={3} defaultValue={selectedRequest.message || ""} />
-              </div>
-              <div>
-                <Label htmlFor="duplicateNotes">Duplicate Check Notes</Label>
-                <Textarea name="duplicateNotes" rows={2} defaultValue={selectedRequest.duplicateNotes || ""} />
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
