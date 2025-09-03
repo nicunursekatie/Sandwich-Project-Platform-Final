@@ -642,10 +642,9 @@ export default function EventRequestsManagement() {
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
   
   const requestsEvents = eventRequests.filter((req: EventRequest) => {
-    // Include new requests AND any future events not handled by other tabs
+    // Only include new requests - clean separation
     if (!req.desiredEventDate) {
-      // No date specified - include new requests and in-progress statuses
-      return req.status === 'new' || req.status === 'followed_up' || req.status === 'in_process' || !req.status;
+      return req.status === 'new' || !req.status;
     }
     
     // Use the same timezone-safe parsing as formatEventDate function
@@ -662,13 +661,8 @@ export default function EventRequestsManagement() {
     }
     eventDate.setHours(0, 0, 0, 0);
     
-    // Show future events that are not scheduled yet
-    if (eventDate >= today) {
-      return req.status === 'new' || req.status === 'followed_up' || req.status === 'in_process' || !req.status;
-    }
-    
-    // Also show past events with incomplete status so they can be processed
-    return req.status === 'new' || req.status === 'followed_up' || req.status === 'in_process';
+    // Show future and past events that are new status
+    return req.status === 'new' || !req.status;
   });
   
   const scheduledEvents = eventRequests.filter((req: EventRequest) => {
@@ -719,7 +713,21 @@ export default function EventRequestsManagement() {
 
   const inProcessEvents = eventRequests.filter((req: EventRequest) => {
     // Only include events that are truly "in process" - actively being worked on
-    return req.status === 'in_process' || req.status === 'followed_up';
+    return req.status === 'in_process';
+  });
+
+  // New filtering arrays for separate tabs
+  const declinedEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'declined';
+  });
+
+  const unresponsiveEvents = eventRequests.filter((req: EventRequest) => {
+    return req.status === 'unresponsive' || req.isUnresponsive;
+  });
+
+  const otherEvents = eventRequests.filter((req: EventRequest) => {
+    const standardStatuses = ['new', 'in_process', 'scheduled', 'completed', 'contact_completed', 'declined', 'unresponsive'];
+    return !standardStatuses.includes(req.status || '');
   });
 
   // Get current events based on active tab
@@ -2768,7 +2776,7 @@ export default function EventRequestsManagement() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-5">
+        <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-4">
           <TabsTrigger value="requests" className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2">
             New Requests
             <Badge variant="secondary" className="ml-2">
@@ -3264,6 +3272,108 @@ export default function EventRequestsManagement() {
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* Separate Section for Other Event Categories */}
+      {(declinedEvents.length > 0 || unresponsiveEvents.length > 0 || otherEvents.length > 0) && (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Other Event Categories</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Declined Events */}
+            {declinedEvents.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <XCircle className="h-5 w-5 text-red-500" />
+                    Declined Events
+                    <Badge variant="secondary">{declinedEvents.length}</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Events that were declined or canceled
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {declinedEvents.map((request: EventRequest) => (
+                      <div key={request.id} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="font-medium text-sm">{request.organizationName}</div>
+                        <div className="text-sm text-gray-600">{request.firstName} {request.lastName}</div>
+                        <div className="text-xs text-gray-500">
+                          {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'No date specified'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Unresponsive Events */}
+            {unresponsiveEvents.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                    Unresponsive Events
+                    <Badge variant="secondary">{unresponsiveEvents.length}</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Events where contact was lost or no response received
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {unresponsiveEvents.map((request: EventRequest) => (
+                      <div key={request.id} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="font-medium text-sm">{request.organizationName}</div>
+                        <div className="text-sm text-gray-600">{request.firstName} {request.lastName}</div>
+                        <div className="text-xs text-gray-500">
+                          {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'No date specified'}
+                        </div>
+                        {request.unresponsiveReason && (
+                          <div className="text-xs text-yellow-700 mt-1">{request.unresponsiveReason}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Other/Review Events */}
+            {otherEvents.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-blue-500" />
+                    Other/Review
+                    <Badge variant="secondary">{otherEvents.length}</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Events with unusual statuses that need review
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {otherEvents.map((request: EventRequest) => (
+                      <div key={request.id} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="font-medium text-sm">{request.organizationName}</div>
+                        <div className="text-sm text-gray-600">{request.firstName} {request.lastName}</div>
+                        <div className="text-xs text-gray-500">
+                          {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'No date specified'}
+                        </div>
+                        <div className="text-xs text-blue-700 mt-1">
+                          Status: {request.status || 'No status'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Edit Dialog */}
       {showEditDialog && selectedRequest && (
