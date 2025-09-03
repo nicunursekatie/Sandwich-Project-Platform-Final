@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, MousePointer, FileText, Filter, Download, Plus, Edit, Trash2 } from 'lucide-react';
+import { Eye, MousePointer, FileText, Filter, Download, Plus, Edit, Trash2, User, Users } from 'lucide-react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { IndividualUserActivity } from '@/components/individual-user-activity';
 
 interface ActivityLog {
   id: number;
@@ -32,10 +33,18 @@ interface ActivitySummary {
   recentActivity: ActivityLog[];
 }
 
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export function DetailedActivityAnalytics() {
   const [timeFilter, setTimeFilter] = useState('24h');
   const [sectionFilter, setSectionFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
+  const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const { trackView, trackClick, trackFilter } = useActivityTracker();
 
   // Track component view on mount
@@ -43,15 +52,32 @@ export function DetailedActivityAnalytics() {
     trackView('Detailed Activity Analytics', 'Analytics', 'Activity Dashboard', 'User opened detailed activity analytics dashboard');
   }, [trackView]);
 
+  // Fetch users list for the selector
+  const { data: users } = useQuery<User[]>({
+    queryKey: ['/api/users'],
+    queryFn: async () => {
+      const response = await fetch('/api/users');
+      if (!response.ok) throw new Error('Failed to fetch users');
+      return response.json();
+    }
+  });
+
+  // Get selected user object
+  const selectedUser = selectedUserId !== 'all' ? users?.find(u => u.id === selectedUserId) : null;
+
   // Fetch activity data
   const { data: activityData, isLoading, refetch } = useQuery<ActivitySummary>({
-    queryKey: ['/api/enhanced-user-activity', 'detailed', timeFilter, sectionFilter, actionFilter],
+    queryKey: ['/api/enhanced-user-activity', 'detailed', timeFilter, sectionFilter, actionFilter, selectedUserId],
     queryFn: async () => {
       const params = new URLSearchParams({
         timeFilter,
         sectionFilter,
         actionFilter,
-        detailed: 'true'
+        detailed: 'true',
+        ...(selectedUserId !== 'all' && { 
+          userId: selectedUserId,
+          individual: 'true'
+        })
       });
       const response = await fetch(`/api/enhanced-user-activity?${params}`);
       if (!response.ok) throw new Error('Failed to fetch activity data');
@@ -73,6 +99,10 @@ export function DetailedActivityAnalytics() {
       case 'action':
         setActionFilter(value);
         trackFilter('Action Filter', value, 'Analytics', 'Activity Dashboard');
+        break;
+      case 'user':
+        setSelectedUserId(value);
+        trackFilter('User Filter', value, 'Analytics', 'Activity Dashboard');
         break;
     }
   };
@@ -109,6 +139,16 @@ export function DetailedActivityAnalytics() {
     }
   };
 
+  // If a specific user is selected, show individual user activity
+  if (selectedUser) {
+    return (
+      <IndividualUserActivity 
+        user={selectedUser}
+        onBack={() => setSelectedUserId('all')}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <Card className="w-full">
@@ -143,6 +183,28 @@ export function DetailedActivityAnalytics() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
+            <Select value={selectedUserId} onValueChange={(value) => handleFilterChange('user', value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="View Mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    All Users Overview
+                  </div>
+                </SelectItem>
+                {users?.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {user.firstName} {user.lastName}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={timeFilter} onValueChange={(value) => handleFilterChange('time', value)}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Time Range" />
@@ -152,6 +214,8 @@ export function DetailedActivityAnalytics() {
                 <SelectItem value="24h">Last 24 Hours</SelectItem>
                 <SelectItem value="7d">Last 7 Days</SelectItem>
                 <SelectItem value="30d">Last 30 Days</SelectItem>
+                <SelectItem value="90d">Last 90 Days</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
               </SelectContent>
             </Select>
 
