@@ -114,6 +114,8 @@ export default function ShoutoutSystem() {
   const [customSubject, setCustomSubject] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [recipientGroup, setRecipientGroup] = useState<string>('all');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [showUserSelection, setShowUserSelection] = useState(false);
 
   // Fetch users for recipient selection
   const { data: users } = useQuery({
@@ -134,6 +136,7 @@ export default function ShoutoutSystem() {
       message: string; 
       recipientGroup: string;
       templateName?: string;
+      customRecipients?: string[];
     }) => {
       return apiRequest('POST', '/api/shoutouts/send', data);
     },
@@ -148,6 +151,8 @@ export default function ShoutoutSystem() {
       setCustomSubject('');
       setCustomMessage('');
       setRecipientGroup('all');
+      setSelectedUsers([]);
+      setShowUserSelection(false);
     },
     onError: (error: any) => {
       toast({
@@ -203,11 +208,22 @@ export default function ShoutoutSystem() {
       return;
     }
 
+    // Validate custom recipients if needed
+    if (recipientGroup === 'custom' && selectedUsers.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No users selected",
+        description: "Please select at least one user for custom email."
+      });
+      return;
+    }
+
     sendShoutoutMutation.mutate({
       subject: customSubject,
       message: customMessage,
       recipientGroup,
-      templateName: selectedTemplate?.name
+      templateName: selectedTemplate?.name,
+      customRecipients: recipientGroup === 'custom' ? selectedUsers : undefined
     });
   };
 
@@ -224,8 +240,39 @@ export default function ShoutoutSystem() {
       case 'hosts': return users.filter((u: any) => u.role === 'host').length;
       case 'volunteers': return users.filter((u: any) => u.role === 'volunteer').length;
       case 'committee': return users.filter((u: any) => u.role === 'committee_member').length;
+      case 'custom': return selectedUsers.length;
       default: return 0;
     }
+  };
+
+  const handleRecipientGroupChange = (value: string) => {
+    setRecipientGroup(value);
+    if (value === 'custom') {
+      setShowUserSelection(true);
+    } else {
+      setShowUserSelection(false);
+      setSelectedUsers([]);
+    }
+  };
+
+  const handleUserToggle = (userId: string) => {
+    setSelectedUsers(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
+  };
+
+  const selectAllUsers = () => {
+    if (users) {
+      setSelectedUsers(users.map((u: any) => u.id));
+    }
+  };
+
+  const clearAllUsers = () => {
+    setSelectedUsers([]);
   };
 
   const getTypeIcon = (type: string) => {
@@ -312,20 +359,86 @@ export default function ShoutoutSystem() {
             {/* Recipient Selection */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700 font-roboto">Send to:</label>
-              <Select value={recipientGroup} onValueChange={setRecipientGroup}>
+              <Select value={recipientGroup} onValueChange={handleRecipientGroupChange}>
                 <SelectTrigger className="border-slate-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Users ({getRecipientCount()})</SelectItem>
+                  <SelectItem value="all">All Users ({users?.length || 0})</SelectItem>
                   <SelectItem value="super_admins">Super Administrators ({users?.filter((u: any) => u.role === 'super_admin').length || 0})</SelectItem>
                   <SelectItem value="admins">Administrators ({users?.filter((u: any) => u.role === 'admin').length || 0})</SelectItem>
                   <SelectItem value="hosts">Hosts ({users?.filter((u: any) => u.role === 'host').length || 0})</SelectItem>
                   <SelectItem value="volunteers">Volunteers ({users?.filter((u: any) => u.role === 'volunteer').length || 0})</SelectItem>
                   <SelectItem value="committee">Committee Members ({users?.filter((u: any) => u.role === 'committee_member').length || 0})</SelectItem>
+                  <SelectItem value="custom">✨ Custom Selection ({selectedUsers.length})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Custom User Selection */}
+            {showUserSelection && (
+              <div className="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-700 font-roboto">Select Users:</label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={selectAllUsers}
+                      className="text-xs"
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllUsers}
+                      className="text-xs"
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="max-h-60 overflow-y-auto space-y-2 border border-slate-200 rounded-md p-3 bg-white">
+                  {users?.map((user: any) => (
+                    <div
+                      key={user.id}
+                      className={`flex items-center space-x-3 p-2 rounded-md cursor-pointer transition-colors ${
+                        selectedUsers.includes(user.id)
+                          ? 'bg-[#FBAD3F]/10 border border-[#FBAD3F]/30'
+                          : 'hover:bg-slate-50 border border-transparent'
+                      }`}
+                      onClick={() => handleUserToggle(user.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={() => handleUserToggle(user.id)}
+                        className="w-4 h-4 text-[#FBAD3F] border-slate-300 rounded focus:ring-[#FBAD3F]"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-slate-900 truncate">
+                            {user.displayName || user.firstName || user.email}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {user.role?.replace('_', ' ') || 'user'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-500 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="text-sm text-slate-600">
+                  {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
+                </div>
+              </div>
+            )}
 
             <Separator />
 

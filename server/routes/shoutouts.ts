@@ -70,14 +70,15 @@ router.post('/test', isAuthenticated, requirePermission('USERS_EDIT'), async (re
 const sendShoutoutSchema = z.object({
   subject: z.string().min(1, "Subject is required"),
   message: z.string().min(1, "Message is required"),
-  recipientGroup: z.enum(['all', 'super_admins', 'admins', 'hosts', 'volunteers', 'committee']),
-  templateName: z.string().optional()
+  recipientGroup: z.enum(['all', 'super_admins', 'admins', 'hosts', 'volunteers', 'committee', 'custom']),
+  templateName: z.string().optional(),
+  customRecipients: z.array(z.string()).optional() // Array of user IDs for custom selection
 });
 
 // Send shoutout endpoint
 router.post('/send', isAuthenticated, requirePermission('USERS_EDIT'), async (req, res) => {
   try {
-    const { subject, message, recipientGroup, templateName } = sendShoutoutSchema.parse(req.body);
+    const { subject, message, recipientGroup, templateName, customRecipients } = sendShoutoutSchema.parse(req.body);
     
     // Get all users
     const allUsers = await storage.getAllUsers();
@@ -102,6 +103,14 @@ router.post('/send', isAuthenticated, requirePermission('USERS_EDIT'), async (re
         break;
       case 'committee':
         recipients = allUsers.filter(user => user.role === 'committee_member');
+        break;
+      case 'custom':
+        if (!customRecipients || customRecipients.length === 0) {
+          return res.status(400).json({ 
+            error: 'Custom recipients list is required when using custom selection' 
+          });
+        }
+        recipients = allUsers.filter(user => customRecipients.includes(user.id));
         break;
       default:
         recipients = [];
