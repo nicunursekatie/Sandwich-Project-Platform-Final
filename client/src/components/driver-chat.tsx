@@ -26,6 +26,12 @@ interface Message {
   created_at?: string;
 }
 
+interface Conversation {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export default function DriverChat() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -41,7 +47,7 @@ export default function DriverChat() {
     user?.role === 'super_admin';
 
   // Get all conversations to find Driver Chat
-  const { data: conversations = [] } = useQuery({
+  const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
     queryFn: async () => {
       const response = await fetch("/api/conversations");
@@ -55,7 +61,7 @@ export default function DriverChat() {
   });
 
   // Find Driver Chat conversation from the list
-  const driverConversation = conversations.find((c: any) => 
+  const driverConversation = conversations.find((c) => 
     c.type === 'channel' && c.name === 'Driver Chat'
   );
 
