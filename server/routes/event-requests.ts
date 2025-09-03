@@ -410,6 +410,21 @@ router.post(
         createdBy: user?.id || 1,
       });
 
+      // Enhanced audit logging for create operation
+      await logEventRequestAudit(
+        'CREATE',
+        newEventRequest.id?.toString() || 'unknown',
+        null,
+        newEventRequest,
+        req,
+        {
+          action: 'Event Request Created',
+          organizationName: validatedData.organizationName,
+          contactName: `${validatedData.firstName} ${validatedData.lastName}`,
+          createdBy: user?.email || user?.displayName || 'Unknown User'
+        }
+      );
+
       await logActivity(
         req,
         res,
@@ -448,6 +463,12 @@ router.patch(
 
       const validatedData = completionDataSchema.parse(req.body);
 
+      // Get original data for audit logging
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
       const updatedEventRequest = await storage.updateEventRequest(id, {
         contactedAt: new Date(),
         completedByUserId: req.user?.id,
@@ -477,6 +498,24 @@ router.patch(
       if (!updatedEventRequest) {
         return res.status(404).json({ message: "Event request not found" });
       }
+
+      // Enhanced audit logging for contact completion
+      await logEventRequestAudit(
+        'PRIMARY_CONTACT_COMPLETED',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: 'Primary Contact Completed',
+          organizationName: originalEvent.organizationName,
+          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
+          completedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          communicationMethod: validatedData.communicationMethod,
+          estimatedSandwichCount: validatedData.estimatedSandwichCount,
+          statusChange: `${originalEvent.status} → contact_completed`
+        }
+      );
 
       await logActivity(
         req,
@@ -687,6 +726,12 @@ router.patch(
       const id = parseInt(req.params.id);
       const updates = req.body;
 
+      // Get original data for audit logging
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...updates,
@@ -713,6 +758,23 @@ router.patch(
           console.warn('Failed to update Google Sheets status:', error);
         }
       }
+
+      // Enhanced audit logging for event details update
+      await logEventRequestAudit(
+        'EVENT_DETAILS_UPDATED',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: 'Event Details Updated',
+          organizationName: originalEvent.organizationName,
+          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
+          updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          updatedFields: Object.keys(updates),
+          statusChange: updates.status ? `${originalEvent.status} → ${updates.status}` : null
+        }
+      );
 
       await logActivity(
         req,
@@ -846,11 +908,34 @@ router.delete(
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Get original data for audit logging before deletion
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ message: "Event request not found" });
+      }
+
       const deleted = await storage.deleteEventRequest(id);
 
       if (!deleted) {
         return res.status(404).json({ message: "Event request not found" });
       }
+
+      // Enhanced audit logging for deletion
+      await logEventRequestAudit(
+        'DELETE',
+        id.toString(),
+        originalEvent,
+        null,
+        req,
+        {
+          action: 'Event Request Deleted',
+          organizationName: originalEvent.organizationName,
+          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
+          deletedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          deletionReason: 'Manual deletion via UI'
+        }
+      );
 
       await logActivity(
         req,

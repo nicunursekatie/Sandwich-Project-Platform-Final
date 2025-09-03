@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
 import { EventEmailComposer } from "@/components/event-email-composer";
+import { EventRequestAuditLog } from "@/components/event-request-audit-log";
 import {
   Collapsible,
   CollapsibleContent,
@@ -3666,7 +3667,7 @@ export default function EventRequestsManagement() {
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-4">
+          <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-5">
             <TabsTrigger
               value="requests"
               className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
@@ -3702,6 +3703,12 @@ export default function EventRequestsManagement() {
               <Badge variant="secondary" className="ml-2">
                 {pastEvents.length}
               </Badge>
+            </TabsTrigger>
+            <TabsTrigger
+              value="audit"
+              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+            >
+              Audit Log
             </TabsTrigger>
           </TabsList>
 
@@ -4298,6 +4305,10 @@ export default function EventRequestsManagement() {
                   )}
                 </>
               )}
+            </TabsContent>
+
+            <TabsContent value="audit" className="space-y-4">
+              <EventRequestAuditLog />
             </TabsContent>
 
             <TabsContent value="forecast" className="space-y-4">
