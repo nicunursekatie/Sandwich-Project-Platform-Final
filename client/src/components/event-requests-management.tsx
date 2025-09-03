@@ -3569,6 +3569,17 @@ export default function EventRequestsManagement() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setActiveTab("forecast")}
+              className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline sm:ml-2">
+                Weekly Planning
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() =>
                 window.open(
                   `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_EVENT_REQUESTS_SHEET_ID || "1GsiY_Nafzt_AYr4lXd-Nc-tKiCcSIc4_FW3lDJWX_ss"}/edit`,
@@ -3734,7 +3745,7 @@ export default function EventRequestsManagement() {
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-5">
+          <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-4">
             <TabsTrigger
               value="requests"
               className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
@@ -3770,13 +3781,6 @@ export default function EventRequestsManagement() {
               <Badge variant="secondary" className="ml-2">
                 {pastEvents.length}
               </Badge>
-            </TabsTrigger>
-            <TabsTrigger
-              value="forecast"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2 bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66]"
-            >
-              Weekly Planning
-              <TrendingUp className="w-4 h-4 ml-2" />
             </TabsTrigger>
           </TabsList>
 
