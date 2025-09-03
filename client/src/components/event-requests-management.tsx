@@ -2043,6 +2043,37 @@ export default function EventRequestsManagement() {
             </CardTitle>
             
             <div className="space-y-2">
+              {/* Prominent Submission Date Display */}
+              <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-orange-50 p-2 rounded-lg border border-orange-200">
+                <Calendar className="w-5 h-5 text-orange-600" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-orange-600 uppercase tracking-wide">Submitted</span>
+                  <span className="text-sm font-bold text-orange-800">
+                    {(() => {
+                      try {
+                        let date: Date;
+                        if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                          const [datePart, timePart] = request.createdAt.split(' ');
+                          date = new Date(datePart + 'T' + timePart);
+                        } else {
+                          date = new Date(request.createdAt);
+                        }
+                        return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { 
+                          weekday: 'short',
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric', 
+                          hour: 'numeric', 
+                          minute: '2-digit' 
+                        });
+                      } catch (error) {
+                        return 'Invalid date';
+                      }
+                    })()}
+                  </span>
+                </div>
+              </div>
+              
               <div className="flex items-center space-x-2">
                 <User className="w-5 h-5" style={{ color: '#236383' }} />
                 <span className="text-lg font-semibold" style={{ color: '#236383' }}>
@@ -2130,24 +2161,6 @@ export default function EventRequestsManagement() {
           <div className="flex justify-between items-center pt-3 border-t">
             <div className="text-sm text-gray-500">
               <div className="flex items-center space-x-2">
-                <span>{request.message === 'Imported from Excel file' ? 'Imported' : 'Submitted'}: {(() => {
-                  try {
-                    // Parse timestamp safely to preserve the original time
-                    let date: Date;
-                    if (request.createdAt.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                      // Database timestamp format: "2025-08-27 06:26:14"
-                      // Treat as-is without timezone conversion
-                      const [datePart, timePart] = request.createdAt.split(' ');
-                      date = new Date(datePart + 'T' + timePart);
-                    } else {
-                      date = new Date(request.createdAt);
-                    }
-                    return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-                  } catch (error) {
-                    return 'Invalid date';
-                  }
-                })()}</span>
-                
                 {/* Unresponsive Status Badge */}
                 {request.isUnresponsive && (
                   <Badge variant="destructive" className="text-xs bg-red-100 text-red-700 border-red-300">
