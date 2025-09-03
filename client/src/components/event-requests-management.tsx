@@ -2430,7 +2430,10 @@ export default function EventRequestsManagement() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => openEditDialog(request)}
+                onClick={() => {
+                  setDetailsRequest(request);
+                  setShowEventDetailsDialog(true);
+                }}
                 className="hover:bg-teal-50 hover:border-teal-300"
               >
                 <Edit className="w-4 h-4 mr-1" />
