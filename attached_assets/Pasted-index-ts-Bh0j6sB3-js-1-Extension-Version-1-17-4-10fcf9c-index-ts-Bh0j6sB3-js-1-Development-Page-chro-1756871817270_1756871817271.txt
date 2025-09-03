@@ -1,0 +1,744 @@
+index.ts-Bh0j6sB3.js:1 Extension Version 1.17.4 10fcf9c
+index.ts-Bh0j6sB3.js:1 Development Page chrome-extension://amcccnldajjnngnaoinemnaloklogjak/src/pages/dev/index.html
+client:536 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/?token=nXYXEnwloW6v' failed: 
+setupWebSocket @ client:536
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=nXYXEnwloW6v' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+hook.js:608 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID Error Component Stack
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+message-notifications.tsx:99 Connecting to WebSocket at: wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/notifications
+dashboard.tsx:77 Current URL location: /dashboard
+dashboard.tsx:99 Dashboard activeSection changed to: dashboard
+message-notifications.tsx:111 WebSocket connected successfully
+useMessaging.ts:242 WebSocket connection to 'wss://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev/notifications' failed: 
+(anonymous) @ useMessaging.ts:242
+hook.js:608 Messaging WebSocket error: Event
+overrideMethod @ hook.js:608
+useMessaging.ts:286 Messaging WebSocket disconnected
+hook.js:608 WebSocket closed unexpectedly: 1006 
+overrideMethod @ hook.js:608
+:5000/api/event-reminders/count:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+hook.js:608 Failed to fetch reminders count: Error: DATABASE_ERROR
+    at throwIfResNotOk (queryClient.ts:22:11)
+    at async apiRequest (queryClient.ts:40:3)
+    at async queryFn (simple-nav.tsx:76:26)
+overrideMethod @ hook.js:608
+simple-nav.tsx:232 Navigation click: event-requests
+dashboard.tsx:534 Dashboard setActiveSection called with: event-requests
+dashboard.tsx:99 Dashboard activeSection changed to: event-requests
+hook.js:608 Warning: Function components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?
+
+Check the render method of `Primitive.button.SlotClone`. Error Component Stack
+    at Badge (badge.tsx:30:18)
+    at chunk-E7TSFT4J.js?v=0cbe1f2d:79:13
+    at chunk-E7TSFT4J.js?v=0cbe1f2d:56:13
+    at chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at chunk-E7TSFT4J.js?v=0cbe1f2d:79:13
+    at chunk-E7TSFT4J.js?v=0cbe1f2d:56:13
+    at chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at chunk-56J4LWOU.js?v=0cbe1f2d:1931:13
+    at @radix-ui_react-tooltip.js?v=0cbe1f2d:201:13
+    at Provider (chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at Provider (chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at Popper (chunk-56J4LWOU.js?v=0cbe1f2d:1923:11)
+    at Tooltip (@radix-ui_react-tooltip.js?v=0cbe1f2d:109:5)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at _c3 (card.tsx:23:6)
+    at div (<anonymous>)
+    at _c (card.tsx:8:6)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at @radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (tabs.tsx:41:6)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at @radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div (<anonymous>)
+    at Provider (chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (event-requests-management.tsx:282:37)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at Dashboard (dashboard.tsx:71:37)
+    at Route (wouter.js?v=0cbe1f2d:206:16)
+    at Switch (wouter.js?v=0cbe1f2d:262:17)
+    at Router (App.tsx:24:49)
+    at Provider (chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+chunk-RPCDYKBN.js?v=0cbe1f2d:9934 Uncaught Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=0cbe1f2d:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=0cbe1f2d:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=0cbe1f2d:3733:39)
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+hook.js:608 The above error occurred in the <Fragment> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at SandwichForecastWidget (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/sandwich-forecast-widget.tsx?t=1756871747398:25:46)
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Presence (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HBQZEAXN.js?v=0cbe1f2d:24:11)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:178:13
+    at _c5 (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/ui/tabs.tsx:72:12)
+    at div
+    at div
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-J2KA7NLM.js?v=0cbe1f2d:43:13
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=0cbe1f2d:55:7
+    at div
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at EventRequestsManagement (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/event-requests-management.tsx?t=1756871747398:187:37)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Dashboard (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/pages/dashboard.tsx?t=1756871747398:67:37)
+    at Route (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:206:16)
+    at Switch (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0cbe1f2d:262:17)
+    at Router (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:36:49)
+    at Provider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=0cbe1f2d:38:15)
+    at TooltipProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0cbe1f2d:65:5)
+    at QueryClientProvider (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0cbe1f2d:2933:3)
+    at ErrorBoundary (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/components/error-boundary.tsx:10:5)
+    at App (https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/src/App.tsx?t=1756871747398&v=7iPNX57TSAkjB5Ylu_auP:388:3)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+overrideMethod @ hook.js:608
+hook.js:608 Error caught by boundary: Error: Objects are not valid as a React child (found: object with keys {id, firstName, lastName, email, phone, organizationName, department, desiredEventDate, message, previouslyHosted, status, assignedTo, followUpMethod, updatedEmail, followUpDate, contactedAt, communicationMethod, contactCompletionNotes, eventAddress, estimatedSandwichCount, hasRefrigeration, completedByUserId, tspContactAssigned, tspContact, additionalTspContacts, additionalContact1, additionalContact2, customTspContact, toolkitSent, toolkitSentDate, toolkitStatus, eventStartTime, eventEndTime, pickupTime, additionalRequirements, planningNotes, sandwichTypes, driversNeeded, speakersNeeded, volunteerNotes, followUpOneDayCompleted, followUpOneDayDate, followUpOneMonthCompleted, followUpOneMonthDate, followUpNotes, organizationExists, duplicateCheckDate, duplicateNotes, contactAttempts, lastContactAttempt, isUnresponsive, markedUnresponsiveAt, markedUnresponsiveBy, unresponsiveReason, contactMethod, nextFollowUpDate, unresponsiveNotes, createdAt, updatedAt, createdBy}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (chunk-RPCDYKBN.js?v=0cbe1f2d:9934:17)
+    at createChild (chunk-RPCDYKBN.js?v=0cbe1f2d:10110:15)
+    at reconcileChildrenArray (chunk-RPCDYKBN.js?v=0cbe1f2d:10282:33)
+    at reconcileChildFibers2 (chunk-RPCDYKBN.js?v=0cbe1f2d:10559:24)
+    at reconcileChildren (chunk-RPCDYKBN.js?v=0cbe1f2d:14290:37)
+    at updateFragment (chunk-RPCDYKBN.js?v=0cbe1f2d:14522:11)
+    at beginWork (chunk-RPCDYKBN.js?v=0cbe1f2d:15949:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=0cbe1f2d:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=0cbe1f2d:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=0cbe1f2d:19137:13) Object Error Component Stack
+    at ErrorBoundary (error-boundary.tsx:19:5)
+    at App (App.tsx:141:3)
+overrideMethod @ hook.js:608
+message-notifications.tsx:137 WebSocket connection closed: 1000 Component unmounting

@@ -236,9 +236,9 @@ export default function SandwichForecastWidget() {
                       Prep: {week.weekStartDate} • Distribute: {week.weekEndDate}
                     </div>
                     <div className="text-sm text-[#646464]">
-                      {week.events.length} group event{week.events.length !== 1 ? 's' : ''} scheduled
+                      {Array.isArray(week.events) ? week.events.length : (week.events || 0)} group event{(Array.isArray(week.events) ? week.events.length : (week.events || 0)) !== 1 ? 's' : ''} scheduled
                     </div>
-                    {week.events.length > 0 && (
+                    {Array.isArray(week.events) && week.events.length > 0 && (
                       <div className="text-xs text-[#646464] mt-1 truncate">
                         {week.events.slice(0, 2).map(e => e.organizationName).join(', ')}
                         {week.events.length > 2 && ` +${week.events.length - 2} more`}
@@ -247,17 +247,17 @@ export default function SandwichForecastWidget() {
                   </div>
                   <div className="text-right ml-4">
                     <div className="text-lg font-bold text-[#236383]">
-                      {week.totalEstimated.toLocaleString()}
+                      {(week.totalEstimated || week.totalSandwiches || 0).toLocaleString()}
                     </div>
                     <div className="flex gap-1 mt-1">
-                      {week.confirmedCount > 0 && (
+                      {(week.confirmedCount || 0) > 0 && (
                         <Badge className="text-xs bg-green-100 text-green-700">
-                          {week.confirmedCount.toLocaleString()} confirmed
+                          {(week.confirmedCount || 0).toLocaleString()} confirmed
                         </Badge>
                       )}
-                      {week.pendingCount > 0 && (
+                      {(week.pendingCount || 0) > 0 && (
                         <Badge className="text-xs bg-orange-100 text-orange-700">
-                          {week.pendingCount.toLocaleString()} pending
+                          {(week.pendingCount || 0).toLocaleString()} pending
                         </Badge>
                       )}
                     </div>
