@@ -240,7 +240,7 @@ export default function SandwichForecastWidget() {
                     </div>
                     {Array.isArray(week.events) && week.events.length > 0 && (
                       <div className="text-xs text-[#646464] mt-1 truncate">
-                        {week.events.slice(0, 2).map(e => e.organizationName).join(', ')}
+                        {week.events.slice(0, 2).map(e => e?.organizationName || 'Unknown Organization').join(', ')}
                         {week.events.length > 2 && ` +${week.events.length - 2} more`}
                       </div>
                     )}
@@ -274,7 +274,7 @@ export default function SandwichForecastWidget() {
               📊 Planning Insights
             </p>
             <p className="text-xs text-blue-700 mt-1">
-              Peak week: {Math.max(...weeklySandwichForecast.map(w => w.totalEstimated)).toLocaleString()} sandwiches
+              Peak week: {Math.max(...weeklySandwichForecast.map(w => w.totalEstimated || w.totalSandwiches || 0)).toLocaleString()} sandwiches
               • Average per week: {Math.round(totals.total / weeklySandwichForecast.length).toLocaleString()}
             </p>
           </div>
