@@ -141,7 +141,7 @@ const formatEventDate = (dateString: string) => {
     if (dayOfWeek === 2) {
       className = "text-gray-700 font-medium";
     } else if (isWedOrThu) {
-      className = "text-orange-700 font-medium";
+      className = "text-[#FBAD3F] font-medium";
     } else {
       className = "text-[#236383] font-bold";
     }
@@ -1629,7 +1629,7 @@ export default function EventRequestsManagement() {
         return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
       if (driverIds.length >= driversNeeded)
         return { badge: "✓ Arranged", color: "bg-green-100 text-green-700" };
-      return { badge: "⚠️ Needed", color: "bg-orange-100 text-orange-700" };
+      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
     };
 
     const getToolkitStatus = () => {
@@ -1644,7 +1644,7 @@ export default function EventRequestsManagement() {
         default:
           return {
             badge: "⚠️ Pending",
-            color: "bg-orange-100 text-orange-700",
+            color: "bg-orange-100 text-[#FBAD3F]",
           };
       }
     };
@@ -1676,7 +1676,7 @@ export default function EventRequestsManagement() {
               )}
               {/* Event Date as Styled Subtitle */}
               {request.desiredEventDate && (
-                <div className="flex items-center text-xl font-semibold text-orange-600 mb-2">
+                <div className="flex items-center text-xl font-semibold text-[#FBAD3F] mb-2">
                   <Calendar className="w-6 h-6 mr-2" />
                   <span>
                     {(() => {
@@ -2554,7 +2554,7 @@ export default function EventRequestsManagement() {
                   <span className="text-xs font-medium text-[#FBAD3F] uppercase tracking-wide">
                     Submitted
                   </span>
-                  <span className="text-sm font-bold text-orange-800">
+                  <span className="text-sm font-bold text-[#FBAD3F]">
                     {(() => {
                       try {
                         let date: Date;
@@ -3032,7 +3032,7 @@ export default function EventRequestsManagement() {
             <h4 className="font-semibold text-[#FBAD3F] mb-2">
               Event Summary
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-orange-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-[#FBAD3F]">
               {/* Event timing */}
               {((request as any).eventStartTime ||
                 (request as any).eventEndTime) && (
