@@ -47,6 +47,7 @@ import {
   Calendar,
   Building,
   User,
+  Users,
   Mail,
   Phone,
   AlertTriangle,
@@ -67,6 +68,7 @@ import {
   Truck,
   TrendingUp,
   Save,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -1994,7 +1996,7 @@ export default function EventRequestsManagement() {
                   {editingField === "contact" && editingEventId === request.id ? (
                     <div className="flex space-x-2 flex-1 items-center">
                       <input
-                        className="text-sm border rounded px-2 py-1 flex-1"
+                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
                         value={tempValues.contact || `${request.firstName} ${request.lastName}`}
                         onChange={(e) =>
                           setTempValues((prev) => ({
@@ -2063,7 +2065,7 @@ export default function EventRequestsManagement() {
                   {editingField === "email" && editingEventId === request.id ? (
                     <div className="flex space-x-2 flex-1 items-center">
                       <input
-                        className="text-sm border rounded px-2 py-1 flex-1"
+                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
                         value={tempValues.email || request.email}
                         onChange={(e) =>
                           setTempValues((prev) => ({
@@ -2142,7 +2144,7 @@ export default function EventRequestsManagement() {
                   {editingField === "phone" && editingEventId === request.id ? (
                     <div className="flex space-x-2 flex-1 items-center">
                       <input
-                        className="text-sm border rounded px-2 py-1 flex-1"
+                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
                         value={tempValues.phone || request.phone || ""}
                         onChange={(e) =>
                           setTempValues((prev) => ({
@@ -2233,7 +2235,7 @@ export default function EventRequestsManagement() {
                   editingEventId === request.id ? (
                     <div className="flex space-x-2 flex-1 items-center">
                       <input
-                        className="text-sm border rounded px-2 py-1 flex-1"
+                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
                         value={tempValues.address || request.eventAddress || ""}
                         onChange={(e) =>
                           setTempValues((prev) => ({
@@ -4633,7 +4635,7 @@ export default function EventRequestsManagement() {
                     <select
                       name="previouslyHosted"
                       defaultValue={selectedRequest.previouslyHosted}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {previouslyHostedOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -4686,7 +4688,7 @@ export default function EventRequestsManagement() {
                       defaultValue={
                         selectedRequest.hasRefrigeration?.toString() || ""
                       }
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="">Select option</option>
                       <option value="true">Yes</option>
@@ -4800,7 +4802,7 @@ export default function EventRequestsManagement() {
                         defaultValue={
                           (selectedRequest as any).tspContact || "none"
                         }
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="none">No primary contact</option>
                         {users
@@ -4823,7 +4825,7 @@ export default function EventRequestsManagement() {
                         defaultValue={
                           (selectedRequest as any).tspContactAssigned || "none"
                         }
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="none">No secondary contact</option>
                         {users
@@ -4858,7 +4860,7 @@ export default function EventRequestsManagement() {
                             (selectedRequest as any).additionalContact1 ||
                             "none"
                           }
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <option value="none">No third contact</option>
                           {users
@@ -4882,7 +4884,7 @@ export default function EventRequestsManagement() {
                             (selectedRequest as any).additionalContact2 ||
                             "none"
                           }
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <option value="none">No fourth contact</option>
                           {users
@@ -5252,7 +5254,7 @@ export default function EventRequestsManagement() {
                     <select
                       name="toolkitStatus"
                       defaultValue={detailsRequest.toolkitStatus || ""}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="">Select toolkit status</option>
                       <option value="not_sent">Not Yet Sent</option>
@@ -5269,7 +5271,7 @@ export default function EventRequestsManagement() {
                     <select
                       name="tspContact"
                       defaultValue={detailsRequest.tspContact || ""}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="">Select team member</option>
                       <option value="none">No assignment</option>
