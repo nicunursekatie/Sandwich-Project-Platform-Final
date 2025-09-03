@@ -2368,7 +2368,7 @@ export default function EventRequestsManagement() {
                           (request as any).tspContactAssigned,
                           (request as any).customTspContact,
                         ].filter(Boolean);
-                        return currentContacts.length > 0 ? "Manage" : "+ Assign";
+                        return currentContacts.length > 0 ? "Edit TSP Team" : "+ Assign TSP";
                       })()}
                     </button>
                   </div>
