@@ -35,21 +35,28 @@ export default function SandwichForecastWidget() {
       pendingCount: number;
     }> = {};
 
-    // Helper function to get the Sunday of a given date (week start)
-    const getWeekStart = (date: Date) => {
+    // Helper function to get the Thursday of a given week (distribution day)
+    const getDistributionThursday = (date: Date) => {
       const d = new Date(date);
-      const day = d.getDay();
-      const diff = d.getDate() - day;
-      d.setDate(diff);
+      const day = d.getDay(); // 0 = Sunday, 4 = Thursday
+      const daysToThursday = (4 - day + 7) % 7; // Days until next Thursday
+      
+      // If it's already Thursday or later in the week, get this week's Thursday
+      // Otherwise get next week's Thursday
+      if (day <= 4) {
+        d.setDate(d.getDate() + daysToThursday);
+      } else {
+        d.setDate(d.getDate() + (7 - day + 4)); // Next Thursday
+      }
+      
       d.setHours(0, 0, 0, 0);
       return d;
     };
 
-    // Helper function to get week end (Saturday)
-    const getWeekEnd = (weekStart: Date) => {
-      const d = new Date(weekStart);
-      d.setDate(d.getDate() + 6);
-      d.setHours(23, 59, 59, 999);
+    // Helper function to get Wednesday (prep day) before Thursday
+    const getPrepWednesday = (thursday: Date) => {
+      const d = new Date(thursday);
+      d.setDate(d.getDate() - 1); // Day before Thursday
       return d;
     };
 
@@ -82,14 +89,15 @@ export default function SandwichForecastWidget() {
     relevantEvents.forEach(request => {
       try {
         const eventDate = new Date(request.desiredEventDate!);
-        const weekStart = getWeekStart(eventDate);
-        const weekEnd = getWeekEnd(weekStart);
-        const weekKey = weekStart.toISOString().split('T')[0];
+        const distributionThursday = getDistributionThursday(eventDate);
+        const prepWednesday = getPrepWednesday(distributionThursday);
+        const weekKey = distributionThursday.toISOString().split('T')[0];
 
         if (!weeklyData[weekKey]) {
           weeklyData[weekKey] = {
-            weekStartDate: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            weekEndDate: weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            weekStartDate: prepWednesday.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            weekEndDate: distributionThursday.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            distributionDate: distributionThursday.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
             events: [],
             totalEstimated: 0,
             confirmedCount: 0,
@@ -155,10 +163,13 @@ export default function SandwichForecastWidget() {
       <CardHeader className="pb-3">
         <CardTitle className="text-[#236383] flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          Sandwich Forecast Tool
+          Weekly Sandwich Planning
         </CardTitle>
         <p className="text-sm text-[#646464] mt-1">
-          Estimated sandwich totals from upcoming group events
+          Group sandwich production forecast by Thursday distribution dates
+        </p>
+        <p className="text-xs text-blue-600 mt-1 font-medium">
+          📅 Individual makers prep Wednesdays • Group distributions Thursdays
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -200,10 +211,13 @@ export default function SandwichForecastWidget() {
                 <div key={week.weekKey} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium text-[#236383]">
-                      Week of {week.weekStartDate} - {week.weekEndDate}
+                      {week.distributionDate}
                     </div>
                     <div className="text-sm text-[#646464] mt-1">
-                      {week.events.length} event{week.events.length !== 1 ? 's' : ''} scheduled
+                      Prep: {week.weekStartDate} • Distribute: {week.weekEndDate}
+                    </div>
+                    <div className="text-sm text-[#646464]">
+                      {week.events.length} group event{week.events.length !== 1 ? 's' : ''} scheduled
                     </div>
                     {week.events.length > 0 && (
                       <div className="text-xs text-[#646464] mt-1 truncate">
