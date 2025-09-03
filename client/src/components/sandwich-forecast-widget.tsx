@@ -173,21 +173,44 @@ export default function SandwichForecastWidget() {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-green-50 rounded-lg p-3 text-center">
-            <div className="text-xl font-bold text-green-700">{totals.confirmed.toLocaleString()}</div>
-            <div className="text-xs text-[#646464]">Confirmed</div>
+        {/* Weekly Summary Cards */}
+        {weeklySandwichForecast.length > 0 && (
+          <div className="space-y-3">
+            {/* Upcoming Week - Prominent Display */}
+            <div className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white rounded-lg p-4 border-2 border-[#236383]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium opacity-90">UPCOMING WEEK</div>
+                  <div className="text-lg font-bold">{weeklySandwichForecast[0].distributionDate}</div>
+                  <div className="text-xs opacity-75">Prep: {weeklySandwichForecast[0].prepDate} • Distribute: {weeklySandwichForecast[0].distributionDate}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{weeklySandwichForecast[0].totalSandwiches.toLocaleString()}</div>
+                  <div className="text-sm opacity-90">{weeklySandwichForecast[0].events} event{weeklySandwichForecast[0].events !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Following Weeks - Compact Display */}
+            {weeklySandwichForecast.length > 1 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {weeklySandwichForecast.slice(1).map((week, index) => (
+                  <div key={week.weekKey} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-[#236383]">{week.distributionDate}</div>
+                        <div className="text-xs text-gray-600">{week.events} event{week.events !== 1 ? 's' : ''}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-gray-900">{week.totalSandwiches.toLocaleString()}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="bg-orange-50 rounded-lg p-3 text-center">
-            <div className="text-xl font-bold text-orange-700">{totals.pending.toLocaleString()}</div>
-            <div className="text-xs text-[#646464]">Pending</div>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-3 text-center">
-            <div className="text-xl font-bold text-blue-700">{totals.events}</div>
-            <div className="text-xs text-[#646464]">Events</div>
-          </div>
-        </div>
+        )}
 
         {weeklySandwichForecast.length === 0 ? (
           <div className="text-center py-8 text-[#646464]">
