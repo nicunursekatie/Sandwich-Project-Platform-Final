@@ -1,0 +1,1557 @@
+Test Users
+admin@sandwich.project
+super_admin
+Full system access
+
+christine@thesandwichproject.org
+core_team
+Meeting management + project oversight
+
+juliet@thesandwichproject.org
+volunteer
+Limited volunteer access
+
+test2@testing.com
+viewer
+View-only access
+
+Permission Matrix Test
+FAILED
+Admin Access
+vickib@aol.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+vickib@aol.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+vickib@aol.com → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+vickib@aol.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+vickib@aol.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+vickib@aol.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+vickib@aol.com → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+vickib@aol.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+vickib@aol.com → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+vickib@aol.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+vickib@aol.com → Meetings Manage Check
+Expected: ALLOW
+Actual: DENY
+Messages View
+vickib@aol.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+vickib@aol.com → Send Kudos Check
+Expected: ALLOW
+Actual: DENY
+Suggestions View
+vickib@aol.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+vickib@aol.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+vickib@aol.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: DENY
+Admin Access
+kenig.ka@gmail.com → Admin Access Check
+Expected: DENY
+Actual: ALLOW
+Users Edit
+kenig.ka@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+kenig.ka@gmail.com → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+kenig.ka@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+kenig.ka@gmail.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+kenig.ka@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+kenig.ka@gmail.com → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+kenig.ka@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+kenig.ka@gmail.com → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+kenig.ka@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+kenig.ka@gmail.com → Meetings Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Messages View
+kenig.ka@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+kenig.ka@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+kenig.ka@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+kenig.ka@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+kenig.ka@gmail.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: DENY
+Admin Access
+stephanie@thesandwichproject.org → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+stephanie@thesandwichproject.org → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+stephanie@thesandwichproject.org → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+stephanie@thesandwichproject.org → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+stephanie@thesandwichproject.org → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+stephanie@thesandwichproject.org → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+stephanie@thesandwichproject.org → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+stephanie@thesandwichproject.org → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+stephanie@thesandwichproject.org → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+stephanie@thesandwichproject.org → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+stephanie@thesandwichproject.org → Meetings Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Messages View
+stephanie@thesandwichproject.org → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+stephanie@thesandwichproject.org → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+stephanie@thesandwichproject.org → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+stephanie@thesandwichproject.org → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+stephanie@thesandwichproject.org → Suggestions Manage Check
+Expected: ALLOW
+Actual: DENY
+Admin Access
+ross.kimberly.a@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+ross.kimberly.a@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+ross.kimberly.a@gmail.com → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+ross.kimberly.a@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+ross.kimberly.a@gmail.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+ross.kimberly.a@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+ross.kimberly.a@gmail.com → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+ross.kimberly.a@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+ross.kimberly.a@gmail.com → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+ross.kimberly.a@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+ross.kimberly.a@gmail.com → Meetings Manage Check
+Expected: ALLOW
+Actual: DENY
+Messages View
+ross.kimberly.a@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+ross.kimberly.a@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+ross.kimberly.a@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+ross.kimberly.a@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+ross.kimberly.a@gmail.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: DENY
+Admin Access
+karenacohen@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+karenacohen@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+karenacohen@gmail.com → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+karenacohen@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+karenacohen@gmail.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+karenacohen@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+karenacohen@gmail.com → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+karenacohen@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+karenacohen@gmail.com → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+karenacohen@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+karenacohen@gmail.com → Meetings Manage Check
+Expected: ALLOW
+Actual: DENY
+Messages View
+karenacohen@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+karenacohen@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+karenacohen@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+karenacohen@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+karenacohen@gmail.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Admin Access
+jordanglick@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+jordanglick@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+jordanglick@gmail.com → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+jordanglick@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+jordanglick@gmail.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+jordanglick@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+jordanglick@gmail.com → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+jordanglick@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+jordanglick@gmail.com → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+jordanglick@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+jordanglick@gmail.com → Meetings Manage Check
+Expected: ALLOW
+Actual: DENY
+Messages View
+jordanglick@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+jordanglick@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+jordanglick@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+jordanglick@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+jordanglick@gmail.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Admin Access
+lisahiles@me.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+lisahiles@me.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+lisahiles@me.com → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+lisahiles@me.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+lisahiles@me.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+lisahiles@me.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+lisahiles@me.com → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+lisahiles@me.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+lisahiles@me.com → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+lisahiles@me.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+lisahiles@me.com → Meetings Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Messages View
+lisahiles@me.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+lisahiles@me.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+lisahiles@me.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+lisahiles@me.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+lisahiles@me.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Admin Access
+christine.cooper@sandwich.project → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+christine.cooper@sandwich.project → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+christine.cooper@sandwich.project → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+christine.cooper@sandwich.project → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+christine.cooper@sandwich.project → Hosts Edit Check
+Expected: ALLOW
+Actual: DENY
+Collections View
+christine.cooper@sandwich.project → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+christine.cooper@sandwich.project → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+christine.cooper@sandwich.project → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+christine.cooper@sandwich.project → Projects Edit All Check
+Expected: ALLOW
+Actual: DENY
+Meetings View
+christine.cooper@sandwich.project → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+christine.cooper@sandwich.project → Meetings Manage Check
+Expected: ALLOW
+Actual: DENY
+Messages View
+christine.cooper@sandwich.project → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+christine.cooper@sandwich.project → Send Kudos Check
+Expected: ALLOW
+Actual: DENY
+Suggestions View
+christine.cooper@sandwich.project → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+christine.cooper@sandwich.project → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+christine.cooper@sandwich.project → Suggestions Manage Check
+Expected: ALLOW
+Actual: DENY
+Admin Access
+silke.shilling@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+silke.shilling@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+silke.shilling@gmail.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+silke.shilling@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+silke.shilling@gmail.com → Hosts Edit Check
+Expected: DENY
+Actual: ALLOW
+Collections View
+silke.shilling@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+silke.shilling@gmail.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+silke.shilling@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+silke.shilling@gmail.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+silke.shilling@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+silke.shilling@gmail.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+silke.shilling@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+silke.shilling@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+silke.shilling@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+silke.shilling@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+silke.shilling@gmail.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+jameshsatterfield5@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+jameshsatterfield5@gmail.com → Users Edit Check
+Expected: DENY
+Actual: ALLOW
+Users View
+jameshsatterfield5@gmail.com → Users View Check
+Expected: DENY
+Actual: ALLOW
+Hosts View
+jameshsatterfield5@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+jameshsatterfield5@gmail.com → Hosts Edit Check
+Expected: DENY
+Actual: ALLOW
+Collections View
+jameshsatterfield5@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+jameshsatterfield5@gmail.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+jameshsatterfield5@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+jameshsatterfield5@gmail.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+jameshsatterfield5@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: DENY
+Meetings Manage
+jameshsatterfield5@gmail.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+jameshsatterfield5@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+jameshsatterfield5@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+jameshsatterfield5@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+jameshsatterfield5@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+jameshsatterfield5@gmail.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+juliet.eden@sandwich.project → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+juliet.eden@sandwich.project → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+juliet.eden@sandwich.project → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+juliet.eden@sandwich.project → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+juliet.eden@sandwich.project → Hosts Edit Check
+Expected: DENY
+Actual: DENY
+Collections View
+juliet.eden@sandwich.project → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+juliet.eden@sandwich.project → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+juliet.eden@sandwich.project → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+juliet.eden@sandwich.project → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+juliet.eden@sandwich.project → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+juliet.eden@sandwich.project → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+juliet.eden@sandwich.project → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+juliet.eden@sandwich.project → Send Kudos Check
+Expected: ALLOW
+Actual: DENY
+Suggestions View
+juliet.eden@sandwich.project → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+juliet.eden@sandwich.project → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+juliet.eden@sandwich.project → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+mfalaki@savantwealth.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+mfalaki@savantwealth.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+mfalaki@savantwealth.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+mfalaki@savantwealth.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+mfalaki@savantwealth.com → Hosts Edit Check
+Expected: DENY
+Actual: DENY
+Collections View
+mfalaki@savantwealth.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+mfalaki@savantwealth.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+mfalaki@savantwealth.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+mfalaki@savantwealth.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+mfalaki@savantwealth.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+mfalaki@savantwealth.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+mfalaki@savantwealth.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+mfalaki@savantwealth.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+mfalaki@savantwealth.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+mfalaki@savantwealth.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+mfalaki@savantwealth.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+jenmcohen@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+jenmcohen@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+jenmcohen@gmail.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+jenmcohen@gmail.com → Hosts View Check
+Expected: DENY
+Actual: ALLOW
+Hosts Edit
+jenmcohen@gmail.com → Hosts Edit Check
+Expected: DENY
+Actual: DENY
+Collections View
+jenmcohen@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+jenmcohen@gmail.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+jenmcohen@gmail.com → Projects View Check
+Expected: DENY
+Actual: ALLOW
+Projects Edit All
+jenmcohen@gmail.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+jenmcohen@gmail.com → Meetings View Check
+Expected: DENY
+Actual: DENY
+Meetings Manage
+jenmcohen@gmail.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+jenmcohen@gmail.com → Messages View Check
+Expected: DENY
+Actual: ALLOW
+Send Kudos
+jenmcohen@gmail.com → Send Kudos Check
+Expected: DENY
+Actual: ALLOW
+Suggestions View
+jenmcohen@gmail.com → Suggestions View Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Add
+jenmcohen@gmail.com → Suggestions Add Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Manage
+jenmcohen@gmail.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+lzauderer@yahoo.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+lzauderer@yahoo.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+lzauderer@yahoo.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+lzauderer@yahoo.com → Hosts View Check
+Expected: DENY
+Actual: ALLOW
+Hosts Edit
+lzauderer@yahoo.com → Hosts Edit Check
+Expected: DENY
+Actual: ALLOW
+Collections View
+lzauderer@yahoo.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+lzauderer@yahoo.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+lzauderer@yahoo.com → Projects View Check
+Expected: DENY
+Actual: ALLOW
+Projects Edit All
+lzauderer@yahoo.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+lzauderer@yahoo.com → Meetings View Check
+Expected: DENY
+Actual: DENY
+Meetings Manage
+lzauderer@yahoo.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+lzauderer@yahoo.com → Messages View Check
+Expected: DENY
+Actual: ALLOW
+Send Kudos
+lzauderer@yahoo.com → Send Kudos Check
+Expected: DENY
+Actual: ALLOW
+Suggestions View
+lzauderer@yahoo.com → Suggestions View Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Add
+lzauderer@yahoo.com → Suggestions Add Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Manage
+lzauderer@yahoo.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+atlantamillers@comcast.net → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+atlantamillers@comcast.net → Users Edit Check
+Expected: DENY
+Actual: ALLOW
+Users View
+atlantamillers@comcast.net → Users View Check
+Expected: DENY
+Actual: ALLOW
+Hosts View
+atlantamillers@comcast.net → Hosts View Check
+Expected: DENY
+Actual: ALLOW
+Hosts Edit
+atlantamillers@comcast.net → Hosts Edit Check
+Expected: DENY
+Actual: DENY
+Collections View
+atlantamillers@comcast.net → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+atlantamillers@comcast.net → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+atlantamillers@comcast.net → Projects View Check
+Expected: DENY
+Actual: ALLOW
+Projects Edit All
+atlantamillers@comcast.net → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+atlantamillers@comcast.net → Meetings View Check
+Expected: DENY
+Actual: DENY
+Meetings Manage
+atlantamillers@comcast.net → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+atlantamillers@comcast.net → Messages View Check
+Expected: DENY
+Actual: ALLOW
+Send Kudos
+atlantamillers@comcast.net → Send Kudos Check
+Expected: DENY
+Actual: ALLOW
+Suggestions View
+atlantamillers@comcast.net → Suggestions View Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Add
+atlantamillers@comcast.net → Suggestions Add Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Manage
+atlantamillers@comcast.net → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+annabaylin@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+annabaylin@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+annabaylin@gmail.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+annabaylin@gmail.com → Hosts View Check
+Expected: DENY
+Actual: ALLOW
+Hosts Edit
+annabaylin@gmail.com → Hosts Edit Check
+Expected: DENY
+Actual: DENY
+Collections View
+annabaylin@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+annabaylin@gmail.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+annabaylin@gmail.com → Projects View Check
+Expected: DENY
+Actual: ALLOW
+Projects Edit All
+annabaylin@gmail.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+annabaylin@gmail.com → Meetings View Check
+Expected: DENY
+Actual: DENY
+Meetings Manage
+annabaylin@gmail.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+annabaylin@gmail.com → Messages View Check
+Expected: DENY
+Actual: ALLOW
+Send Kudos
+annabaylin@gmail.com → Send Kudos Check
+Expected: DENY
+Actual: ALLOW
+Suggestions View
+annabaylin@gmail.com → Suggestions View Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Add
+annabaylin@gmail.com → Suggestions Add Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Manage
+annabaylin@gmail.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+carreyhugoo@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+carreyhugoo@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+carreyhugoo@gmail.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+carreyhugoo@gmail.com → Hosts View Check
+Expected: DENY
+Actual: ALLOW
+Hosts Edit
+carreyhugoo@gmail.com → Hosts Edit Check
+Expected: DENY
+Actual: ALLOW
+Collections View
+carreyhugoo@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+carreyhugoo@gmail.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+carreyhugoo@gmail.com → Projects View Check
+Expected: DENY
+Actual: ALLOW
+Projects Edit All
+carreyhugoo@gmail.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+carreyhugoo@gmail.com → Meetings View Check
+Expected: DENY
+Actual: DENY
+Meetings Manage
+carreyhugoo@gmail.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+carreyhugoo@gmail.com → Messages View Check
+Expected: DENY
+Actual: ALLOW
+Send Kudos
+carreyhugoo@gmail.com → Send Kudos Check
+Expected: DENY
+Actual: ALLOW
+Suggestions View
+carreyhugoo@gmail.com → Suggestions View Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Add
+carreyhugoo@gmail.com → Suggestions Add Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Manage
+carreyhugoo@gmail.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+kristinamday@yahoo.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+kristinamday@yahoo.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+kristinamday@yahoo.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+kristinamday@yahoo.com → Hosts View Check
+Expected: DENY
+Actual: ALLOW
+Hosts Edit
+kristinamday@yahoo.com → Hosts Edit Check
+Expected: DENY
+Actual: DENY
+Collections View
+kristinamday@yahoo.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+kristinamday@yahoo.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+kristinamday@yahoo.com → Projects View Check
+Expected: DENY
+Actual: ALLOW
+Projects Edit All
+kristinamday@yahoo.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+kristinamday@yahoo.com → Meetings View Check
+Expected: DENY
+Actual: DENY
+Meetings Manage
+kristinamday@yahoo.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+kristinamday@yahoo.com → Messages View Check
+Expected: DENY
+Actual: ALLOW
+Send Kudos
+kristinamday@yahoo.com → Send Kudos Check
+Expected: DENY
+Actual: ALLOW
+Suggestions View
+kristinamday@yahoo.com → Suggestions View Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Add
+kristinamday@yahoo.com → Suggestions Add Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Manage
+kristinamday@yahoo.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+vpennington924@gmail.com → Admin Access Check
+Expected: DENY
+Actual: DENY
+Users Edit
+vpennington924@gmail.com → Users Edit Check
+Expected: DENY
+Actual: DENY
+Users View
+vpennington924@gmail.com → Users View Check
+Expected: DENY
+Actual: DENY
+Hosts View
+vpennington924@gmail.com → Hosts View Check
+Expected: DENY
+Actual: ALLOW
+Hosts Edit
+vpennington924@gmail.com → Hosts Edit Check
+Expected: DENY
+Actual: ALLOW
+Collections View
+vpennington924@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+vpennington924@gmail.com → Collections Edit All Check
+Expected: DENY
+Actual: DENY
+Projects View
+vpennington924@gmail.com → Projects View Check
+Expected: DENY
+Actual: ALLOW
+Projects Edit All
+vpennington924@gmail.com → Projects Edit All Check
+Expected: DENY
+Actual: DENY
+Meetings View
+vpennington924@gmail.com → Meetings View Check
+Expected: DENY
+Actual: DENY
+Meetings Manage
+vpennington924@gmail.com → Meetings Manage Check
+Expected: DENY
+Actual: DENY
+Messages View
+vpennington924@gmail.com → Messages View Check
+Expected: DENY
+Actual: ALLOW
+Send Kudos
+vpennington924@gmail.com → Send Kudos Check
+Expected: DENY
+Actual: ALLOW
+Suggestions View
+vpennington924@gmail.com → Suggestions View Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Add
+vpennington924@gmail.com → Suggestions Add Check
+Expected: DENY
+Actual: ALLOW
+Suggestions Manage
+vpennington924@gmail.com → Suggestions Manage Check
+Expected: DENY
+Actual: DENY
+Admin Access
+admin@sandwich.project → Admin Access Check
+Expected: ALLOW
+Actual: ALLOW
+Users Edit
+admin@sandwich.project → Users Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Users View
+admin@sandwich.project → Users View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts View
+admin@sandwich.project → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+admin@sandwich.project → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+admin@sandwich.project → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+admin@sandwich.project → Collections Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Projects View
+admin@sandwich.project → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+admin@sandwich.project → Projects Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings View
+admin@sandwich.project → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+admin@sandwich.project → Meetings Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Messages View
+admin@sandwich.project → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+admin@sandwich.project → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+admin@sandwich.project → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+admin@sandwich.project → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+admin@sandwich.project → Suggestions Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Admin Access
+katielong2316@gmail.com → Admin Access Check
+Expected: ALLOW
+Actual: ALLOW
+Users Edit
+katielong2316@gmail.com → Users Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Users View
+katielong2316@gmail.com → Users View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts View
+katielong2316@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+katielong2316@gmail.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+katielong2316@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+katielong2316@gmail.com → Collections Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Projects View
+katielong2316@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+katielong2316@gmail.com → Projects Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings View
+katielong2316@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+katielong2316@gmail.com → Meetings Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Messages View
+katielong2316@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+katielong2316@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+katielong2316@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+katielong2316@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+katielong2316@gmail.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Admin Access
+christine@thesandwichproject.org → Admin Access Check
+Expected: ALLOW
+Actual: ALLOW
+Users Edit
+christine@thesandwichproject.org → Users Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Users View
+christine@thesandwichproject.org → Users View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts View
+christine@thesandwichproject.org → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+christine@thesandwichproject.org → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+christine@thesandwichproject.org → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+christine@thesandwichproject.org → Collections Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Projects View
+christine@thesandwichproject.org → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+christine@thesandwichproject.org → Projects Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings View
+christine@thesandwichproject.org → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+christine@thesandwichproject.org → Meetings Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Messages View
+christine@thesandwichproject.org → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+christine@thesandwichproject.org → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+christine@thesandwichproject.org → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+christine@thesandwichproject.org → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+christine@thesandwichproject.org → Suggestions Manage Check
+Expected: ALLOW
+Actual: DENY
+Admin Access
+mdlouza@gmail.com → Admin Access Check
+Expected: ALLOW
+Actual: DENY
+Users Edit
+mdlouza@gmail.com → Users Edit Check
+Expected: ALLOW
+Actual: DENY
+Users View
+mdlouza@gmail.com → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+mdlouza@gmail.com → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+mdlouza@gmail.com → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+mdlouza@gmail.com → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+mdlouza@gmail.com → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+mdlouza@gmail.com → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+mdlouza@gmail.com → Projects Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings View
+mdlouza@gmail.com → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+mdlouza@gmail.com → Meetings Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Messages View
+mdlouza@gmail.com → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+mdlouza@gmail.com → Send Kudos Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions View
+mdlouza@gmail.com → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+mdlouza@gmail.com → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+mdlouza@gmail.com → Suggestions Manage Check
+Expected: ALLOW
+Actual: ALLOW
+Admin Access
+marcy@thesandwichproject.org → Admin Access Check
+Expected: ALLOW
+Actual: DENY
+Users Edit
+marcy@thesandwichproject.org → Users Edit Check
+Expected: ALLOW
+Actual: DENY
+Users View
+marcy@thesandwichproject.org → Users View Check
+Expected: ALLOW
+Actual: DENY
+Hosts View
+marcy@thesandwichproject.org → Hosts View Check
+Expected: ALLOW
+Actual: ALLOW
+Hosts Edit
+marcy@thesandwichproject.org → Hosts Edit Check
+Expected: ALLOW
+Actual: ALLOW
+Collections View
+marcy@thesandwichproject.org → Collections View Check
+Expected: ALLOW
+Actual: ALLOW
+Collections Edit All
+marcy@thesandwichproject.org → Collections Edit All Check
+Expected: ALLOW
+Actual: DENY
+Projects View
+marcy@thesandwichproject.org → Projects View Check
+Expected: ALLOW
+Actual: ALLOW
+Projects Edit All
+marcy@thesandwichproject.org → Projects Edit All Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings View
+marcy@thesandwichproject.org → Meetings View Check
+Expected: ALLOW
+Actual: ALLOW
+Meetings Manage
+marcy@thesandwichproject.org → Meetings Manage Check
+Expected: ALLOW
+Actual: DENY
+Messages View
+marcy@thesandwichproject.org → Messages View Check
+Expected: ALLOW
+Actual: ALLOW
+Send Kudos
+marcy@thesandwichproject.org → Send Kudos Check
+Expected: ALLOW
+Actual: DENY
+Suggestions View
+marcy@thesandwichproject.org → Suggestions View Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Add
+marcy@thesandwichproject.org → Suggestions Add Check
+Expected: ALLOW
+Actual: ALLOW
+Suggestions Manage
+marcy@thesandwichproject.org → Suggestions Manage Check
+Expected: ALLOW
+Actual: DENY
+Permission Issues Detected
+Some users have incorrect permissions. Review the failed tests above and check user roles.
