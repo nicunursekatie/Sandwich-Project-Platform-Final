@@ -44,53 +44,217 @@ async function getAllTestUsers(): Promise<TestUser[]> {
   }
 }
 
-// Permissions to test - expectations based on role hierarchy
+// Comprehensive permissions test - covers all major permission categories
 const PERMISSION_TESTS: PermissionTest[] = [
-  // Admin-only permissions
+  // === ADMINISTRATIVE PERMISSIONS ===
   { permission: PERMISSIONS.ADMIN_ACCESS, name: 'Admin Access', 
-    shouldHavePermission: (role) => role === 'admin' || role === 'super_admin' },
-  { permission: PERMISSIONS.USERS_EDIT, name: 'Users Edit', 
-    shouldHavePermission: (role) => role === 'admin' || role === 'super_admin' },
+    shouldHavePermission: (role) => false }, // Test actual vs expected, no assumptions
+  { permission: PERMISSIONS.MANAGE_ANNOUNCEMENTS, name: 'Manage Announcements', 
+    shouldHavePermission: (role) => false },
   
-  // Management permissions (admin + core_team)
+  // === USER MANAGEMENT ===
   { permission: PERMISSIONS.USERS_VIEW, name: 'Users View', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.USERS_ADD, name: 'Users Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.USERS_EDIT, name: 'Users Edit', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.USERS_DELETE, name: 'Users Delete', 
+    shouldHavePermission: (role) => false },
+  
+  // === HOSTS MANAGEMENT ===
   { permission: PERMISSIONS.HOSTS_VIEW, name: 'Hosts View', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.HOSTS_ADD, name: 'Hosts Add', 
+    shouldHavePermission: (role) => false },
   { permission: PERMISSIONS.HOSTS_EDIT, name: 'Hosts Edit', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.HOSTS_DELETE, name: 'Hosts Delete', 
+    shouldHavePermission: (role) => false },
   
-  // Collections permissions
+  // === RECIPIENTS MANAGEMENT ===
+  { permission: PERMISSIONS.RECIPIENTS_VIEW, name: 'Recipients View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.RECIPIENTS_ADD, name: 'Recipients Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.RECIPIENTS_EDIT, name: 'Recipients Edit', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.RECIPIENTS_DELETE, name: 'Recipients Delete', 
+    shouldHavePermission: (role) => false },
+  
+  // === DRIVERS MANAGEMENT ===
+  { permission: PERMISSIONS.DRIVERS_VIEW, name: 'Drivers View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DRIVERS_ADD, name: 'Drivers Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DRIVERS_EDIT, name: 'Drivers Edit', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DRIVERS_DELETE, name: 'Drivers Delete', 
+    shouldHavePermission: (role) => false },
+  
+  // === COLLECTIONS MANAGEMENT ===
   { permission: PERMISSIONS.COLLECTIONS_VIEW, name: 'Collections View', 
-    shouldHavePermission: (role) => true }, // Everyone can view
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.COLLECTIONS_ADD, name: 'Collections Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.COLLECTIONS_EDIT_OWN, name: 'Collections Edit Own', 
+    shouldHavePermission: (role) => false },
   { permission: PERMISSIONS.COLLECTIONS_EDIT_ALL, name: 'Collections Edit All', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.COLLECTIONS_DELETE_OWN, name: 'Collections Delete Own', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.COLLECTIONS_DELETE_ALL, name: 'Collections Delete All', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.COLLECTIONS_WALKTHROUGH, name: 'Collections Walkthrough', 
+    shouldHavePermission: (role) => false },
   
-  // Project permissions
+  // === PROJECTS MANAGEMENT ===
   { permission: PERMISSIONS.PROJECTS_VIEW, name: 'Projects View', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.PROJECTS_ADD, name: 'Projects Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.PROJECTS_EDIT_OWN, name: 'Projects Edit Own', 
+    shouldHavePermission: (role) => false },
   { permission: PERMISSIONS.PROJECTS_EDIT_ALL, name: 'Projects Edit All', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.PROJECTS_DELETE_OWN, name: 'Projects Delete Own', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.PROJECTS_DELETE_ALL, name: 'Projects Delete All', 
+    shouldHavePermission: (role) => false },
   
-  // Meeting permissions  
-  { permission: PERMISSIONS.MEETINGS_VIEW, name: 'Meetings View', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
-  { permission: PERMISSIONS.MEETINGS_MANAGE, name: 'Meetings Manage', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
+  // === DISTRIBUTIONS ===
+  { permission: PERMISSIONS.DISTRIBUTIONS_VIEW, name: 'Distributions View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DISTRIBUTIONS_ADD, name: 'Distributions Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DISTRIBUTIONS_EDIT, name: 'Distributions Edit', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DISTRIBUTIONS_DELETE, name: 'Distributions Delete', 
+    shouldHavePermission: (role) => false },
   
-  // Communication permissions
+  // === EVENT REQUESTS ===
+  { permission: PERMISSIONS.EVENT_REQUESTS_VIEW, name: 'Event Requests View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.EVENT_REQUESTS_ADD, name: 'Event Requests Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.EVENT_REQUESTS_EDIT, name: 'Event Requests Edit', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.EVENT_REQUESTS_DELETE, name: 'Event Requests Delete', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.EVENT_REQUESTS_SYNC, name: 'Event Requests Sync', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT, name: 'Event Requests Complete Contact', 
+    shouldHavePermission: (role) => false },
+  
+  // === MESSAGING SYSTEM ===
   { permission: PERMISSIONS.MESSAGES_VIEW, name: 'Messages View', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
-  { permission: PERMISSIONS.SEND_KUDOS, name: 'Send Kudos', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.MESSAGES_SEND, name: 'Messages Send', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.MESSAGES_EDIT, name: 'Messages Edit', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.MESSAGES_DELETE, name: 'Messages Delete', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.MESSAGES_MODERATE, name: 'Messages Moderate', 
+    shouldHavePermission: (role) => false },
   
-  // Suggestions permissions
+  // === WORK LOGS ===
+  { permission: PERMISSIONS.WORK_LOGS_VIEW, name: 'Work Logs View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.WORK_LOGS_VIEW_ALL, name: 'Work Logs View All', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.WORK_LOGS_ADD, name: 'Work Logs Add', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.WORK_LOGS_EDIT_OWN, name: 'Work Logs Edit Own', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.WORK_LOGS_EDIT_ALL, name: 'Work Logs Edit All', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.WORK_LOGS_DELETE_OWN, name: 'Work Logs Delete Own', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.WORK_LOGS_DELETE_ALL, name: 'Work Logs Delete All', 
+    shouldHavePermission: (role) => false },
+  
+  // === SUGGESTIONS SYSTEM ===
   { permission: PERMISSIONS.SUGGESTIONS_VIEW, name: 'Suggestions View', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+    shouldHavePermission: (role) => false },
   { permission: PERMISSIONS.SUGGESTIONS_ADD, name: 'Suggestions Add', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.SUGGESTIONS_EDIT_OWN, name: 'Suggestions Edit Own', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.SUGGESTIONS_EDIT_ALL, name: 'Suggestions Edit All', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.SUGGESTIONS_DELETE_OWN, name: 'Suggestions Delete Own', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.SUGGESTIONS_DELETE_ALL, name: 'Suggestions Delete All', 
+    shouldHavePermission: (role) => false },
   { permission: PERMISSIONS.SUGGESTIONS_MANAGE, name: 'Suggestions Manage', 
-    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) }
+    shouldHavePermission: (role) => false },
+  
+  // === CHAT PERMISSIONS ===
+  { permission: PERMISSIONS.CHAT_GENERAL, name: 'Chat General', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_GRANTS_COMMITTEE, name: 'Chat Grants Committee', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_EVENTS_COMMITTEE, name: 'Chat Events Committee', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_BOARD, name: 'Chat Board', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_WEB_COMMITTEE, name: 'Chat Web Committee', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT, name: 'Chat Volunteer Management', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_HOST, name: 'Chat Host', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_DRIVER, name: 'Chat Driver', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_RECIPIENT, name: 'Chat Recipient', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_CORE_TEAM, name: 'Chat Core Team', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_DIRECT, name: 'Chat Direct', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_GROUP, name: 'Chat Group', 
+    shouldHavePermission: (role) => false },
+  
+  // === KUDOS SYSTEM ===
+  { permission: PERMISSIONS.KUDOS_SEND, name: 'Kudos Send', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.KUDOS_RECEIVE, name: 'Kudos Receive', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.KUDOS_VIEW, name: 'Kudos View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.KUDOS_MANAGE, name: 'Kudos Manage', 
+    shouldHavePermission: (role) => false },
+  
+  // === ANALYTICS & REPORTING ===
+  { permission: PERMISSIONS.ANALYTICS_VIEW, name: 'Analytics View', 
+    shouldHavePermission: (role) => false },
+  
+  // === MEETINGS ===
+  { permission: PERMISSIONS.MEETINGS_VIEW, name: 'Meetings View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.MEETINGS_MANAGE, name: 'Meetings Manage', 
+    shouldHavePermission: (role) => false },
+  
+  // === DOCUMENTS ===
+  { permission: PERMISSIONS.DOCUMENTS_VIEW, name: 'Documents View', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DOCUMENTS_MANAGE, name: 'Documents Manage', 
+    shouldHavePermission: (role) => false },
+  
+  // === DATA IMPORT/EXPORT ===
+  { permission: PERMISSIONS.DATA_EXPORT, name: 'Data Export', 
+    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DATA_IMPORT, name: 'Data Import', 
+    shouldHavePermission: (role) => false },
+  
+  // === ORGANIZATIONS ===
+  { permission: PERMISSIONS.ORGANIZATIONS_VIEW, name: 'Organizations View', 
+    shouldHavePermission: (role) => false },
+  
+  // === TOOLKIT ===
+  { permission: PERMISSIONS.TOOLKIT_ACCESS, name: 'Toolkit Access', 
+    shouldHavePermission: (role) => false },
 ];
 
 router.get('/matrix', async (req, res) => {
