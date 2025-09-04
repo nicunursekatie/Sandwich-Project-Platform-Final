@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +34,24 @@ export default function SendKudosButton({
   const { user } = useAuth();
   const { toast } = useToast();
   const [hasSentKudos, setHasSentKudos] = useState(false);
+  
+  // Check if kudos already sent when component mounts
+  const { data: kudosCheckData } = useQuery({
+    queryKey: ["/api/messaging/kudos/check", recipientId, contextType, contextId],
+    queryFn: () => 
+      fetch(`/api/messaging/kudos/check?recipientId=${recipientId}&contextType=${contextType}&contextId=${contextId}`, {
+        credentials: 'include'
+      }).then(res => res.json()),
+    enabled: !!(user && recipientId && contextType && contextId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Update local state when query data changes
+  useEffect(() => {
+    if (kudosCheckData?.sent) {
+      setHasSentKudos(true);
+    }
+  }, [kudosCheckData]);
 
   // Don't render if recipientId is empty or invalid
   if (!recipientId || !recipientId.trim()) {
@@ -109,11 +127,7 @@ export default function SendKudosButton({
       // Check if it's a 409 error (kudos already sent)
       if (error?.response?.status === 409 || error?.status === 409) {
         setHasSentKudos(true);
-        const message = error?.response?.data?.message || "Kudos already sent for this item!";
-        toast({
-          description: message,
-          variant: "default"
-        });
+        // Don't show error toast for duplicate kudos - just silently update the UI
       } else {
         const errorMessage = error?.response?.data?.error || error?.message || "Failed to send kudos";
         toast({
