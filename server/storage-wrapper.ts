@@ -82,24 +82,36 @@ class StorageWrapper implements IStorage {
 
   // User methods (required for authentication)
   async getUser(id: string) {
-    return this.executeWithFallback(
-      () => this.primaryStorage.getUser(id),
-      () => this.fallbackStorage.getUser(id)
-    );
+    try {
+      // For user lookups, null/undefined is a valid result (user not found)
+      const result = await this.primaryStorage.getUser(id);
+      return result; // Return null/undefined as-is, don't fall back
+    } catch (error) {
+      console.warn('Primary storage getUser failed, using fallback:', error);
+      return this.fallbackStorage.getUser(id);
+    }
   }
 
   async getUserById(id: string) {
-    return this.executeWithFallback(
-      () => this.primaryStorage.getUserById(id),
-      () => this.fallbackStorage.getUserById(id)
-    );
+    try {
+      // For user lookups, null/undefined is a valid result (user not found)  
+      const result = await this.primaryStorage.getUserById(id);
+      return result; // Return null/undefined as-is, don't fall back
+    } catch (error) {
+      console.warn('Primary storage getUserById failed, using fallback:', error);
+      return this.fallbackStorage.getUserById(id);
+    }
   }
 
   async getUserByEmail(email: string) {
-    return this.executeWithFallback(
-      () => this.primaryStorage.getUserByEmail(email),
-      () => this.fallbackStorage.getUserByEmail(email)
-    );
+    try {
+      // For user lookups, null/undefined is a valid result (user not found)
+      const result = await this.primaryStorage.getUserByEmail(email);
+      return result; // Return null/undefined as-is, don't fall back
+    } catch (error) {
+      console.warn('Primary storage getUserByEmail failed, using fallback:', error);
+      return this.fallbackStorage.getUserByEmail(email);
+    }
   }
 
   async upsertUser(user: any) {
