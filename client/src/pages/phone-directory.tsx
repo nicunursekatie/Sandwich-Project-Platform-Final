@@ -65,13 +65,19 @@ export default function PhoneDirectoryPage() {
             <button 
               onClick={async () => {
                 try {
-                  await fetch('/api/logout', { method: 'POST' });
-                  queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                  await fetch('/api/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                  });
                   queryClient.clear();
-                  window.location.href = '/';
+                  queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                  queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                  window.location.href = '/api/login';
                 } catch (error) {
                   queryClient.clear();
-                  window.location.href = '/';
+                  queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                  queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                  window.location.href = '/api/login';
                 }
               }}
               className="text-slate-400 hover:text-slate-600"

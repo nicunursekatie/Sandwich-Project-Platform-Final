@@ -478,12 +478,18 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
                     method: 'POST',
                     credentials: 'include'
                   });
+                  // Clear all cached data and force auth state refresh
                   queryClient.clear();
-                  window.location.href = "/";
+                  queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                  queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                  // Force immediate redirect to login
+                  window.location.href = "/api/login";
                 } catch (error) {
                   console.error('Logout error:', error);
                   queryClient.clear();
-                  window.location.href = "/";
+                  queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                  queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                  window.location.href = "/api/login";
                 }
               }}
               className="flex items-center gap-1 px-2 py-2 text-amber-700 hover:text-amber-900 rounded-lg hover:bg-amber-50 transition-colors touch-manipulation border border-amber-200 hover:border-amber-300 flex-shrink-0 min-w-[44px]"
