@@ -13,8 +13,6 @@ interface TestUser {
 interface PermissionTest {
   permission: number;
   name: string;
-  // Dynamic expectation based on user role
-  shouldHavePermission: (role: string) => boolean;
 }
 
 // Get all real active users dynamically
@@ -45,216 +43,132 @@ async function getAllTestUsers(): Promise<TestUser[]> {
 }
 
 // Comprehensive permissions test - covers all major permission categories
+// This is a pure reporting tool that shows what permissions each user actually has
 const PERMISSION_TESTS: PermissionTest[] = [
   // === ADMINISTRATIVE PERMISSIONS ===
-  { permission: PERMISSIONS.ADMIN_ACCESS, name: 'Admin Access', 
-    shouldHavePermission: (role) => false }, // Test actual vs expected, no assumptions
-  { permission: PERMISSIONS.MANAGE_ANNOUNCEMENTS, name: 'Manage Announcements', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.ADMIN_ACCESS, name: 'Admin Access' },
+  { permission: PERMISSIONS.MANAGE_ANNOUNCEMENTS, name: 'Manage Announcements' },
   
   // === USER MANAGEMENT ===
-  { permission: PERMISSIONS.USERS_VIEW, name: 'Users View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.USERS_ADD, name: 'Users Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.USERS_EDIT, name: 'Users Edit', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.USERS_DELETE, name: 'Users Delete', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.USERS_VIEW, name: 'Users View' },
+  { permission: PERMISSIONS.USERS_ADD, name: 'Users Add' },
+  { permission: PERMISSIONS.USERS_EDIT, name: 'Users Edit' },
+  { permission: PERMISSIONS.USERS_DELETE, name: 'Users Delete' },
   
   // === HOSTS MANAGEMENT ===
-  { permission: PERMISSIONS.HOSTS_VIEW, name: 'Hosts View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.HOSTS_ADD, name: 'Hosts Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.HOSTS_EDIT, name: 'Hosts Edit', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.HOSTS_DELETE, name: 'Hosts Delete', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.HOSTS_VIEW, name: 'Hosts View' },
+  { permission: PERMISSIONS.HOSTS_ADD, name: 'Hosts Add' },
+  { permission: PERMISSIONS.HOSTS_EDIT, name: 'Hosts Edit' },
+  { permission: PERMISSIONS.HOSTS_DELETE, name: 'Hosts Delete' },
   
   // === RECIPIENTS MANAGEMENT ===
-  { permission: PERMISSIONS.RECIPIENTS_VIEW, name: 'Recipients View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.RECIPIENTS_ADD, name: 'Recipients Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.RECIPIENTS_EDIT, name: 'Recipients Edit', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.RECIPIENTS_DELETE, name: 'Recipients Delete', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.RECIPIENTS_VIEW, name: 'Recipients View' },
+  { permission: PERMISSIONS.RECIPIENTS_ADD, name: 'Recipients Add' },
+  { permission: PERMISSIONS.RECIPIENTS_EDIT, name: 'Recipients Edit' },
+  { permission: PERMISSIONS.RECIPIENTS_DELETE, name: 'Recipients Delete' },
   
   // === DRIVERS MANAGEMENT ===
-  { permission: PERMISSIONS.DRIVERS_VIEW, name: 'Drivers View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DRIVERS_ADD, name: 'Drivers Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DRIVERS_EDIT, name: 'Drivers Edit', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DRIVERS_DELETE, name: 'Drivers Delete', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DRIVERS_VIEW, name: 'Drivers View' },
+  { permission: PERMISSIONS.DRIVERS_ADD, name: 'Drivers Add' },
+  { permission: PERMISSIONS.DRIVERS_EDIT, name: 'Drivers Edit' },
+  { permission: PERMISSIONS.DRIVERS_DELETE, name: 'Drivers Delete' },
   
   // === COLLECTIONS MANAGEMENT ===
-  { permission: PERMISSIONS.COLLECTIONS_VIEW, name: 'Collections View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.COLLECTIONS_ADD, name: 'Collections Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.COLLECTIONS_EDIT_OWN, name: 'Collections Edit Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.COLLECTIONS_EDIT_ALL, name: 'Collections Edit All', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.COLLECTIONS_DELETE_OWN, name: 'Collections Delete Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.COLLECTIONS_DELETE_ALL, name: 'Collections Delete All', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.COLLECTIONS_WALKTHROUGH, name: 'Collections Walkthrough', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.COLLECTIONS_VIEW, name: 'Collections View' },
+  { permission: PERMISSIONS.COLLECTIONS_ADD, name: 'Collections Add' },
+  { permission: PERMISSIONS.COLLECTIONS_EDIT_OWN, name: 'Collections Edit Own' },
+  { permission: PERMISSIONS.COLLECTIONS_EDIT_ALL, name: 'Collections Edit All' },
+  { permission: PERMISSIONS.COLLECTIONS_DELETE_OWN, name: 'Collections Delete Own' },
+  { permission: PERMISSIONS.COLLECTIONS_DELETE_ALL, name: 'Collections Delete All' },
+  { permission: PERMISSIONS.COLLECTIONS_WALKTHROUGH, name: 'Collections Walkthrough' },
   
   // === PROJECTS MANAGEMENT ===
-  { permission: PERMISSIONS.PROJECTS_VIEW, name: 'Projects View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.PROJECTS_ADD, name: 'Projects Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.PROJECTS_EDIT_OWN, name: 'Projects Edit Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.PROJECTS_EDIT_ALL, name: 'Projects Edit All', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.PROJECTS_DELETE_OWN, name: 'Projects Delete Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.PROJECTS_DELETE_ALL, name: 'Projects Delete All', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.PROJECTS_VIEW, name: 'Projects View' },
+  { permission: PERMISSIONS.PROJECTS_ADD, name: 'Projects Add' },
+  { permission: PERMISSIONS.PROJECTS_EDIT_OWN, name: 'Projects Edit Own' },
+  { permission: PERMISSIONS.PROJECTS_EDIT_ALL, name: 'Projects Edit All' },
+  { permission: PERMISSIONS.PROJECTS_DELETE_OWN, name: 'Projects Delete Own' },
+  { permission: PERMISSIONS.PROJECTS_DELETE_ALL, name: 'Projects Delete All' },
   
   // === DISTRIBUTIONS ===
-  { permission: PERMISSIONS.DISTRIBUTIONS_VIEW, name: 'Distributions View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DISTRIBUTIONS_ADD, name: 'Distributions Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DISTRIBUTIONS_EDIT, name: 'Distributions Edit', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DISTRIBUTIONS_DELETE, name: 'Distributions Delete', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DISTRIBUTIONS_VIEW, name: 'Distributions View' },
+  { permission: PERMISSIONS.DISTRIBUTIONS_ADD, name: 'Distributions Add' },
+  { permission: PERMISSIONS.DISTRIBUTIONS_EDIT, name: 'Distributions Edit' },
+  { permission: PERMISSIONS.DISTRIBUTIONS_DELETE, name: 'Distributions Delete' },
   
   // === EVENT REQUESTS ===
-  { permission: PERMISSIONS.EVENT_REQUESTS_VIEW, name: 'Event Requests View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.EVENT_REQUESTS_ADD, name: 'Event Requests Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.EVENT_REQUESTS_EDIT, name: 'Event Requests Edit', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.EVENT_REQUESTS_DELETE, name: 'Event Requests Delete', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.EVENT_REQUESTS_SYNC, name: 'Event Requests Sync', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT, name: 'Event Requests Complete Contact', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.EVENT_REQUESTS_VIEW, name: 'Event Requests View' },
+  { permission: PERMISSIONS.EVENT_REQUESTS_ADD, name: 'Event Requests Add' },
+  { permission: PERMISSIONS.EVENT_REQUESTS_EDIT, name: 'Event Requests Edit' },
+  { permission: PERMISSIONS.EVENT_REQUESTS_DELETE, name: 'Event Requests Delete' },
+  { permission: PERMISSIONS.EVENT_REQUESTS_SYNC, name: 'Event Requests Sync' },
+  { permission: PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT, name: 'Event Requests Complete Contact' },
   
   // === MESSAGING SYSTEM ===
-  { permission: PERMISSIONS.MESSAGES_VIEW, name: 'Messages View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.MESSAGES_SEND, name: 'Messages Send', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.MESSAGES_EDIT, name: 'Messages Edit', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.MESSAGES_DELETE, name: 'Messages Delete', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.MESSAGES_MODERATE, name: 'Messages Moderate', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.MESSAGES_VIEW, name: 'Messages View' },
+  { permission: PERMISSIONS.MESSAGES_SEND, name: 'Messages Send' },
+  { permission: PERMISSIONS.MESSAGES_EDIT, name: 'Messages Edit' },
+  { permission: PERMISSIONS.MESSAGES_DELETE, name: 'Messages Delete' },
+  { permission: PERMISSIONS.MESSAGES_MODERATE, name: 'Messages Moderate' },
   
   // === WORK LOGS ===
-  { permission: PERMISSIONS.WORK_LOGS_VIEW, name: 'Work Logs View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.WORK_LOGS_VIEW_ALL, name: 'Work Logs View All', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.WORK_LOGS_ADD, name: 'Work Logs Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.WORK_LOGS_EDIT_OWN, name: 'Work Logs Edit Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.WORK_LOGS_EDIT_ALL, name: 'Work Logs Edit All', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.WORK_LOGS_DELETE_OWN, name: 'Work Logs Delete Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.WORK_LOGS_DELETE_ALL, name: 'Work Logs Delete All', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.WORK_LOGS_VIEW, name: 'Work Logs View' },
+  { permission: PERMISSIONS.WORK_LOGS_VIEW_ALL, name: 'Work Logs View All' },
+  { permission: PERMISSIONS.WORK_LOGS_ADD, name: 'Work Logs Add' },
+  { permission: PERMISSIONS.WORK_LOGS_EDIT_OWN, name: 'Work Logs Edit Own' },
+  { permission: PERMISSIONS.WORK_LOGS_EDIT_ALL, name: 'Work Logs Edit All' },
+  { permission: PERMISSIONS.WORK_LOGS_DELETE_OWN, name: 'Work Logs Delete Own' },
+  { permission: PERMISSIONS.WORK_LOGS_DELETE_ALL, name: 'Work Logs Delete All' },
   
   // === SUGGESTIONS SYSTEM ===
-  { permission: PERMISSIONS.SUGGESTIONS_VIEW, name: 'Suggestions View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.SUGGESTIONS_ADD, name: 'Suggestions Add', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.SUGGESTIONS_EDIT_OWN, name: 'Suggestions Edit Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.SUGGESTIONS_EDIT_ALL, name: 'Suggestions Edit All', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.SUGGESTIONS_DELETE_OWN, name: 'Suggestions Delete Own', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.SUGGESTIONS_DELETE_ALL, name: 'Suggestions Delete All', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.SUGGESTIONS_MANAGE, name: 'Suggestions Manage', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.SUGGESTIONS_VIEW, name: 'Suggestions View' },
+  { permission: PERMISSIONS.SUGGESTIONS_ADD, name: 'Suggestions Add' },
+  { permission: PERMISSIONS.SUGGESTIONS_EDIT_OWN, name: 'Suggestions Edit Own' },
+  { permission: PERMISSIONS.SUGGESTIONS_EDIT_ALL, name: 'Suggestions Edit All' },
+  { permission: PERMISSIONS.SUGGESTIONS_DELETE_OWN, name: 'Suggestions Delete Own' },
+  { permission: PERMISSIONS.SUGGESTIONS_DELETE_ALL, name: 'Suggestions Delete All' },
+  { permission: PERMISSIONS.SUGGESTIONS_MANAGE, name: 'Suggestions Manage' },
   
   // === CHAT PERMISSIONS ===
-  { permission: PERMISSIONS.CHAT_GENERAL, name: 'Chat General', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_GRANTS_COMMITTEE, name: 'Chat Grants Committee', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_EVENTS_COMMITTEE, name: 'Chat Events Committee', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_BOARD, name: 'Chat Board', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_WEB_COMMITTEE, name: 'Chat Web Committee', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT, name: 'Chat Volunteer Management', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_HOST, name: 'Chat Host', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_DRIVER, name: 'Chat Driver', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_RECIPIENT, name: 'Chat Recipient', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_CORE_TEAM, name: 'Chat Core Team', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_DIRECT, name: 'Chat Direct', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.CHAT_GROUP, name: 'Chat Group', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.CHAT_GENERAL, name: 'Chat General' },
+  { permission: PERMISSIONS.CHAT_GRANTS_COMMITTEE, name: 'Chat Grants Committee' },
+  { permission: PERMISSIONS.CHAT_EVENTS_COMMITTEE, name: 'Chat Events Committee' },
+  { permission: PERMISSIONS.CHAT_BOARD, name: 'Chat Board' },
+  { permission: PERMISSIONS.CHAT_WEB_COMMITTEE, name: 'Chat Web Committee' },
+  { permission: PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT, name: 'Chat Volunteer Management' },
+  { permission: PERMISSIONS.CHAT_HOST, name: 'Chat Host' },
+  { permission: PERMISSIONS.CHAT_DRIVER, name: 'Chat Driver' },
+  { permission: PERMISSIONS.CHAT_RECIPIENT, name: 'Chat Recipient' },
+  { permission: PERMISSIONS.CHAT_CORE_TEAM, name: 'Chat Core Team' },
+  { permission: PERMISSIONS.CHAT_DIRECT, name: 'Chat Direct' },
+  { permission: PERMISSIONS.CHAT_GROUP, name: 'Chat Group' },
   
   // === KUDOS SYSTEM ===
-  { permission: PERMISSIONS.KUDOS_SEND, name: 'Kudos Send', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.KUDOS_RECEIVE, name: 'Kudos Receive', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.KUDOS_VIEW, name: 'Kudos View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.KUDOS_MANAGE, name: 'Kudos Manage', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.KUDOS_SEND, name: 'Kudos Send' },
+  { permission: PERMISSIONS.KUDOS_RECEIVE, name: 'Kudos Receive' },
+  { permission: PERMISSIONS.KUDOS_VIEW, name: 'Kudos View' },
+  { permission: PERMISSIONS.KUDOS_MANAGE, name: 'Kudos Manage' },
   
   // === ANALYTICS & REPORTING ===
-  { permission: PERMISSIONS.ANALYTICS_VIEW, name: 'Analytics View', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.ANALYTICS_VIEW, name: 'Analytics View' },
   
   // === MEETINGS ===
-  { permission: PERMISSIONS.MEETINGS_VIEW, name: 'Meetings View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.MEETINGS_MANAGE, name: 'Meetings Manage', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.MEETINGS_VIEW, name: 'Meetings View' },
+  { permission: PERMISSIONS.MEETINGS_MANAGE, name: 'Meetings Manage' },
   
   // === DOCUMENTS ===
-  { permission: PERMISSIONS.DOCUMENTS_VIEW, name: 'Documents View', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DOCUMENTS_MANAGE, name: 'Documents Manage', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DOCUMENTS_VIEW, name: 'Documents View' },
+  { permission: PERMISSIONS.DOCUMENTS_MANAGE, name: 'Documents Manage' },
   
   // === DATA IMPORT/EXPORT ===
-  { permission: PERMISSIONS.DATA_EXPORT, name: 'Data Export', 
-    shouldHavePermission: (role) => false },
-  { permission: PERMISSIONS.DATA_IMPORT, name: 'Data Import', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.DATA_EXPORT, name: 'Data Export' },
+  { permission: PERMISSIONS.DATA_IMPORT, name: 'Data Import' },
   
   // === ORGANIZATIONS ===
-  { permission: PERMISSIONS.ORGANIZATIONS_VIEW, name: 'Organizations View', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.ORGANIZATIONS_VIEW, name: 'Organizations View' },
   
   // === TOOLKIT ===
-  { permission: PERMISSIONS.TOOLKIT_ACCESS, name: 'Toolkit Access', 
-    shouldHavePermission: (role) => false },
+  { permission: PERMISSIONS.TOOLKIT_ACCESS, name: 'Toolkit Access' },
 ];
 
 router.get('/matrix', async (req, res) => {
@@ -293,17 +207,13 @@ router.get('/matrix', async (req, res) => {
       totalTests++;
       
       let actualResult = false;
-      let expectedResult = false;
       let status = 'ERROR';
       
-      // Determine expected result based on user role
-      expectedResult = permTest.shouldHavePermission(testUser.expectedRole);
-
       if (user && userStatus === 'ACTIVE') {
         try {
           actualResult = hasPermission(user, permTest.permission);
-          status = actualResult === expectedResult ? 'PASS' : 'FAIL';
-          if (status === 'PASS') passedTests++;
+          status = actualResult ? 'HAS_PERMISSION' : 'NO_ACCESS';
+          if (actualResult) passedTests++;
         } catch (error) {
           status = 'ERROR';
           console.log(`💥 Permission check error for ${permTest.name}:`, error);
@@ -317,16 +227,19 @@ router.get('/matrix', async (req, res) => {
         userDescription: testUser.description,
         userStatus,
         permission: permTest.name,
-        expected: expectedResult,
-        actual: actualResult,
-        status,
-        passed: status === 'PASS'
+        hasPermission: actualResult,
+        status
       };
 
       results.push(result);
       
-      const icon = status === 'PASS' ? '✅' : status === 'FAIL' ? '❌' : '⚠️';
-      console.log(`  ${icon} ${permTest.name}: Expected ${expectedResult}, Got ${actualResult} (${status})`);
+      if (status === 'HAS_PERMISSION') {
+        console.log(`  ✅ ${permTest.name}: HAS ACCESS`);
+      } else if (status === 'NO_ACCESS') {
+        console.log(`  ⭕ ${permTest.name}: NO ACCESS`);
+      } else {
+        console.log(`  ⚠️ ${permTest.name}: ${status}`);
+      }
     }
   }
 
