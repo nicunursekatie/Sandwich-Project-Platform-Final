@@ -17,6 +17,7 @@ interface SendKudosButtonProps {
   className?: string;
   size?: "sm" | "default" | "lg";
   variant?: "default" | "secondary" | "outline";
+  iconOnly?: boolean; // New prop for icon-only display
 }
 
 export default function SendKudosButton({
@@ -27,7 +28,8 @@ export default function SendKudosButton({
   contextTitle,
   className = "",
   size = "sm",
-  variant = "outline"
+  variant = "outline",
+  iconOnly = false
 }: SendKudosButtonProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -148,6 +150,19 @@ export default function SendKudosButton({
   }
 
   if (hasSentKudos) {
+    if (iconOnly) {
+      return (
+        <Button
+          disabled
+          size={size}
+          variant="outline"
+          className={`gap-1 ${className}`}
+          title="Kudos already sent"
+        >
+          <Heart className="h-3 w-3 fill-red-400 text-red-400" />
+        </Button>
+      );
+    }
     return (
       <Badge variant="secondary" className={`gap-1 ${className}`}>
         <Heart className="h-3 w-3 fill-red-400 text-red-400" />
@@ -163,16 +178,17 @@ export default function SendKudosButton({
       size={size}
       variant={variant}
       className={`gap-1 ${className}`}
+      title={iconOnly ? `Send kudos to ${recipientName}` : undefined}
     >
       {sendKudosMutation.isPending ? (
         <>
           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
-          Sending...
+          {!iconOnly && "Sending..."}
         </>
       ) : (
         <>
           {getRandomIcon()}
-          Send Kudos to {recipientName}
+          {!iconOnly && `Send Kudos to ${recipientName}`}
         </>
       )}
     </Button>

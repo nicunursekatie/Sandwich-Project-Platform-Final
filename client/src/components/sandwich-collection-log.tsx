@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sandwich, Calendar, User, Users, Edit, Trash2, Upload, AlertTriangle, Scan, Square, CheckSquare, Filter, X, ArrowUp, ArrowDown, Download, Plus, Database, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { Sandwich, Calendar, User, Users, Edit, Trash2, Upload, AlertTriangle, Scan, Square, CheckSquare, Filter, X, ArrowUp, ArrowDown, Download, Plus, Database, ChevronLeft, ChevronRight, HelpCircle, Heart } from "lucide-react";
+import SendKudosButton from "@/components/send-kudos-button";
 import sandwichLogo from "@assets/LOGOS/Copy of TSP_transparent.png";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -1521,6 +1522,20 @@ export default function SandwichCollectionLog() {
                       <div className={`text-xs ${isInactiveHost ? 'text-gray-500' : 'text-slate-500'}`}>total</div>
                     </div>
                     <div className="flex items-center gap-1">
+                      {/* Send Kudos Button - only show if collection has a submitter and user can send kudos */}
+                      {collection.createdBy && collection.createdByName && hasPermission(user, PERMISSIONS.SEND_KUDOS) && (
+                        <SendKudosButton
+                          recipientId={collection.createdBy}
+                          recipientName={collection.createdByName}
+                          contextType="task"
+                          contextId={collection.id.toString()}
+                          contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
+                          size="sm"
+                          variant="outline"
+                          iconOnly={true}
+                          className="h-7 w-7 p-0 sm:h-8 sm:w-8 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        />
+                      )}
                       {canEditCollection(user, collection) && (
                         <Button
                           variant="outline"
