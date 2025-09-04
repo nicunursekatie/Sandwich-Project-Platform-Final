@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,29 @@ export default function SendKudosButton({
   const { user } = useAuth();
   const { toast } = useToast();
   const [hasSentKudos, setHasSentKudos] = useState(false);
+  
+  // Check if kudos already sent when component mounts
+  useEffect(() => {
+    const checkKudosStatus = async () => {
+      if (!user || !recipientId || !contextType || !contextId) return;
+      
+      try {
+        const response = await fetch(`/api/messaging/kudos/check?recipientId=${recipientId}&contextType=${contextType}&contextId=${contextId}`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.sent) {
+            setHasSentKudos(true);
+          }
+        }
+      } catch (error) {
+        // Silently fail - worst case user gets a 409 error when clicking
+      }
+    };
+    
+    checkKudosStatus();
+  }, [user, recipientId, contextType, contextId]);
 
   // Don't render if recipientId is empty or invalid
   if (!recipientId || !recipientId.trim()) {
