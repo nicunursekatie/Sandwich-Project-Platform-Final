@@ -13,51 +13,84 @@ interface TestUser {
 interface PermissionTest {
   permission: number;
   name: string;
-  expectAdmin: boolean;
-  expectChristine: boolean;
-  expectJuliet: boolean;
-  expectRegular: boolean;
+  // Dynamic expectation based on user role
+  shouldHavePermission: (role: string) => boolean;
 }
 
-// Test users we'll check permissions for
-const TEST_USERS: TestUser[] = [
-  { email: 'admin@sandwich.project', expectedRole: 'admin', description: 'Admin User' },
-  { email: 'christine@thesandwichproject.org', expectedRole: 'core_team', description: 'Christine (Core Team)' },
-  { email: 'juliet@thesandwichproject.org', expectedRole: 'core_team', description: 'Juliet (Core Team)' },
-  { email: 'test2@testing.com', expectedRole: 'volunteer', description: 'Test User (Regular)' }
-];
+// Get all real active users dynamically
+async function getAllTestUsers(): Promise<TestUser[]> {
+  try {
+    const users = await storage.getAllUsers();
+    return users
+      .filter(user => user.isActive)
+      .map(user => ({
+        email: user.email,
+        expectedRole: user.role,
+        description: user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName} (${user.role})`
+          : `${user.email} (${user.role})`
+      }))
+      .sort((a, b) => {
+        // Sort by role hierarchy: admin > core_team > committee_member > host > volunteer
+        const roleOrder = { admin: 0, super_admin: 0, core_team: 1, committee_member: 2, host: 3, volunteer: 4 };
+        return (roleOrder[a.expectedRole] || 5) - (roleOrder[b.expectedRole] || 5);
+      });
+  } catch (error) {
+    console.error('Failed to get all users, using fallback list:', error);
+    return [
+      { email: 'admin@sandwich.project', expectedRole: 'admin', description: 'Admin User' },
+      { email: 'christine@thesandwichproject.org', expectedRole: 'admin', description: 'Christine (Admin)' }
+    ];
+  }
+}
 
-// Permissions to test
+// Permissions to test - expectations based on role hierarchy
 const PERMISSION_TESTS: PermissionTest[] = [
-  // Admin permissions
-  { permission: PERMISSIONS.ADMIN_ACCESS, name: 'Admin Access', expectAdmin: true, expectChristine: false, expectJuliet: false, expectRegular: false },
-  { permission: PERMISSIONS.USERS_VIEW, name: 'Users View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.USERS_EDIT, name: 'Users Edit', expectAdmin: true, expectChristine: false, expectJuliet: false, expectRegular: false },
+  // Admin-only permissions
+  { permission: PERMISSIONS.ADMIN_ACCESS, name: 'Admin Access', 
+    shouldHavePermission: (role) => role === 'admin' || role === 'super_admin' },
+  { permission: PERMISSIONS.USERS_EDIT, name: 'Users Edit', 
+    shouldHavePermission: (role) => role === 'admin' || role === 'super_admin' },
   
-  // Host permissions
-  { permission: PERMISSIONS.HOSTS_VIEW, name: 'Hosts View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.HOSTS_EDIT, name: 'Hosts Edit', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  // Management permissions (admin + core_team)
+  { permission: PERMISSIONS.USERS_VIEW, name: 'Users View', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
+  { permission: PERMISSIONS.HOSTS_VIEW, name: 'Hosts View', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+  { permission: PERMISSIONS.HOSTS_EDIT, name: 'Hosts Edit', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
   
   // Collections permissions
-  { permission: PERMISSIONS.COLLECTIONS_VIEW, name: 'Collections View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: true },
-  { permission: PERMISSIONS.COLLECTIONS_EDIT_ALL, name: 'Collections Edit All', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  { permission: PERMISSIONS.COLLECTIONS_VIEW, name: 'Collections View', 
+    shouldHavePermission: (role) => true }, // Everyone can view
+  { permission: PERMISSIONS.COLLECTIONS_EDIT_ALL, name: 'Collections Edit All', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
   
   // Project permissions
-  { permission: PERMISSIONS.PROJECTS_VIEW, name: 'Projects View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.PROJECTS_EDIT_ALL, name: 'Projects Edit All', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  { permission: PERMISSIONS.PROJECTS_VIEW, name: 'Projects View', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+  { permission: PERMISSIONS.PROJECTS_EDIT_ALL, name: 'Projects Edit All', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
   
-  // Meeting permissions
-  { permission: PERMISSIONS.MEETINGS_VIEW, name: 'Meetings View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.MEETINGS_MANAGE, name: 'Meetings Manage', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  // Meeting permissions  
+  { permission: PERMISSIONS.MEETINGS_VIEW, name: 'Meetings View', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+  { permission: PERMISSIONS.MEETINGS_MANAGE, name: 'Meetings Manage', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) },
   
-  // Messaging permissions
-  { permission: PERMISSIONS.MESSAGES_VIEW, name: 'Messages View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.SEND_KUDOS, name: 'Send Kudos', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  // Communication permissions
+  { permission: PERMISSIONS.MESSAGES_VIEW, name: 'Messages View', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+  { permission: PERMISSIONS.SEND_KUDOS, name: 'Send Kudos', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
   
   // Suggestions permissions
-  { permission: PERMISSIONS.SUGGESTIONS_VIEW, name: 'Suggestions View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.SUGGESTIONS_ADD, name: 'Suggestions Add', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.SUGGESTIONS_MANAGE, name: 'Suggestions Manage', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false }
+  { permission: PERMISSIONS.SUGGESTIONS_VIEW, name: 'Suggestions View', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+  { permission: PERMISSIONS.SUGGESTIONS_ADD, name: 'Suggestions Add', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team', 'committee_member'].includes(role) },
+  { permission: PERMISSIONS.SUGGESTIONS_MANAGE, name: 'Suggestions Manage', 
+    shouldHavePermission: (role) => ['admin', 'super_admin', 'core_team'].includes(role) }
 ];
 
 router.get('/matrix', async (req, res) => {
@@ -66,6 +99,10 @@ router.get('/matrix', async (req, res) => {
   const results: any[] = [];
   let totalTests = 0;
   let passedTests = 0;
+
+  // Get all real active users
+  const TEST_USERS = await getAllTestUsers();
+  console.log(`📋 Testing ${TEST_USERS.length} active users`);
 
   for (const testUser of TEST_USERS) {
     console.log(`\n👤 Testing user: ${testUser.email}`);
@@ -95,21 +132,8 @@ router.get('/matrix', async (req, res) => {
       let expectedResult = false;
       let status = 'ERROR';
       
-      // Determine expected result based on user
-      switch (testUser.email) {
-        case 'admin@sandwich.project':
-          expectedResult = permTest.expectAdmin;
-          break;
-        case 'christine@thesandwichproject.org':
-          expectedResult = permTest.expectChristine;
-          break;
-        case 'juliet@thesandwichproject.org':
-          expectedResult = permTest.expectJuliet;
-          break;
-        case 'test2@testing.com':
-          expectedResult = permTest.expectRegular;
-          break;
-      }
+      // Determine expected result based on user role
+      expectedResult = permTest.shouldHavePermission(testUser.expectedRole);
 
       if (user && userStatus === 'ACTIVE') {
         try {
