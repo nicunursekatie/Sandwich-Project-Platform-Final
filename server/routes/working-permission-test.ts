@@ -40,19 +40,24 @@ const PERMISSION_TESTS: PermissionTest[] = [
   
   // Collections permissions
   { permission: PERMISSIONS.COLLECTIONS_VIEW, name: 'Collections View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: true },
-  { permission: PERMISSIONS.COLLECTIONS_EDIT, name: 'Collections Edit', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  { permission: PERMISSIONS.COLLECTIONS_EDIT_ALL, name: 'Collections Edit All', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
   
   // Project permissions
   { permission: PERMISSIONS.PROJECTS_VIEW, name: 'Projects View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.PROJECTS_EDIT, name: 'Projects Edit', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  { permission: PERMISSIONS.PROJECTS_EDIT_ALL, name: 'Projects Edit All', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
   
   // Meeting permissions
   { permission: PERMISSIONS.MEETINGS_VIEW, name: 'Meetings View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.MEETINGS_EDIT, name: 'Meetings Edit', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  { permission: PERMISSIONS.MEETINGS_MANAGE, name: 'Meetings Manage', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
   
   // Messaging permissions
   { permission: PERMISSIONS.MESSAGES_VIEW, name: 'Messages View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
-  { permission: PERMISSIONS.SEND_KUDOS, name: 'Send Kudos', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false }
+  { permission: PERMISSIONS.SEND_KUDOS, name: 'Send Kudos', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  
+  // Suggestions permissions
+  { permission: PERMISSIONS.SUGGESTIONS_VIEW, name: 'Suggestions View', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  { permission: PERMISSIONS.SUGGESTIONS_ADD, name: 'Suggestions Add', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false },
+  { permission: PERMISSIONS.SUGGESTIONS_MANAGE, name: 'Suggestions Manage', expectAdmin: true, expectChristine: true, expectJuliet: true, expectRegular: false }
 ];
 
 router.get('/matrix', async (req, res) => {
