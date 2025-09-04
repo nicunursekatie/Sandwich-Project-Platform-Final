@@ -97,59 +97,7 @@ export function SystemHealthDashboard() {
   // Check if user has permission to run tests
   const canRunTests = user?.role === 'super_admin' || user?.role === 'admin';
 
-  const runPermissionTest = async (testUser: any, testCase: any) => {
-    try {
-      // Login as test user
-      const loginResponse = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: testUser.email,
-          password: 'password123'
-        })
-      });
-
-      if (!loginResponse.ok) {
-        throw new Error(`Login failed for ${testUser.email}`);
-      }
-
-      const cookies = loginResponse.headers.get('set-cookie');
-      
-      // Test the endpoint
-      const [method, path] = testCase.endpoint.split(' ');
-      const testResponse = await fetch(path, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': cookies || ''
-        },
-        body: testCase.body ? JSON.stringify(testCase.body) : undefined
-      });
-
-      const shouldHaveAccess = testCase.expected_users.includes(testUser.email);
-      const hasAccess = testResponse.ok;
-      
-      return {
-        user: testUser.email,
-        endpoint: testCase.endpoint,
-        name: testCase.name,
-        expected: shouldHaveAccess ? 'ALLOW' : 'DENY',
-        actual: hasAccess ? 'ALLOW' : (testResponse.status === 403 ? 'DENY' : `ERROR_${testResponse.status}`),
-        status_code: testResponse.status,
-        match: (shouldHaveAccess && hasAccess) || (!shouldHaveAccess && testResponse.status === 403)
-      };
-    } catch (error) {
-      return {
-        user: testUser.email,
-        endpoint: testCase.endpoint,
-        name: testCase.name,
-        expected: 'UNKNOWN',
-        actual: 'ERROR',
-        status_code: 500,
-        match: false
-      };
-    }
-  };
+  // Old broken test function removed - now using working permission test API
 
   const runAllTests = async () => {
     if (!canRunTests) {
@@ -172,22 +120,28 @@ export function SystemHealthDashboard() {
       };
       
       setTestSuites([suite]);
+      setCurrentTest('Running comprehensive permission matrix test...');
       
-      // Run tests for each user/endpoint combination
-      for (const testUser of TEST_USERS) {
-        setCurrentTest(`Testing ${testUser.email}...`);
-        
-        for (const testCase of CRITICAL_TESTS) {
-          const result = await runPermissionTest(testUser, testCase);
-          suite.results.push(result);
-          
-          // Update the suite with current results
-          setTestSuites([{ ...suite, results: [...suite.results] }]);
-          
-          // Small delay to prevent overwhelming server
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+      // Use the new working permission test API
+      const response = await fetch('/api/working-permission-test/matrix');
+      if (!response.ok) {
+        throw new Error('Permission test API failed');
       }
+      
+      const testData = await response.json();
+      
+      // Convert results to our format
+      const convertedResults = testData.results.map((result: any) => ({
+        user: result.user,
+        endpoint: `${result.permission} Check`,
+        name: result.permission,
+        expected: result.expected ? 'ALLOW' : 'DENY',
+        actual: result.actual ? 'ALLOW' : 'DENY',
+        status_code: result.status === 'PASS' ? 200 : (result.status === 'FAIL' ? 403 : 500),
+        match: result.passed
+      }));
+      
+      suite.results = convertedResults;
       
       // Determine final status
       const failures = suite.results.filter(r => !r.match);
@@ -199,12 +153,12 @@ export function SystemHealthDashboard() {
       if (failures.length === 0) {
         toast({
           title: "All Tests Passed!",
-          description: "Authentication and permissions are working correctly",
+          description: `${testData.summary.successRate}% success rate - Authentication and permissions are working correctly`,
         });
       } else {
         toast({
           title: `${failures.length} Test Failures`,
-          description: "Check the results below for permission issues",
+          description: `${testData.summary.successRate}% success rate - Check the results below for permission issues`,
           variant: "destructive"
         });
       }

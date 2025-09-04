@@ -9931,9 +9931,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register error logging routes
   app.use("/api/error-logs", createErrorLogsRoutes(storage));
 
-  // Register permission testing routes for debugging
-  const permissionTestRoutes = await import("./routes/permission-test");
-  app.use("/api/permission-test", permissionTestRoutes.default);
+  // DISABLED old broken permission test - use /api/working-permission-test instead
+  // const permissionTestRoutes = await import("./routes/permission-test");
+  // app.use("/api/permission-test", permissionTestRoutes.default);
   
   // Register working permission testing routes  
   const workingPermissionTestRoutes = await import("./routes/working-permission-test");
