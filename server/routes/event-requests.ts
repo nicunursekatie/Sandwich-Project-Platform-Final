@@ -54,9 +54,14 @@ const logActivity = async (
   res: any,
   permission: string,
   message: string,
+  metadata?: any
 ) => {
+  // Store audit details in res.locals for the activity logger middleware to capture
+  if (metadata) {
+    res.locals.eventRequestAuditDetails = metadata;
+  }
   // Activity logging will be handled by the global middleware
-  console.log(`Activity: ${permission} - ${message}`);
+  console.log(`Activity: ${permission} - ${message}`, metadata ? `(with ${Object.keys(metadata).length} metadata fields)` : '');
 };
 
 // Enhanced audit logging for event request actions
@@ -776,11 +781,26 @@ router.patch(
         }
       );
 
+      // Prepare audit details for activity logging
+      const auditDetails: any = {};
+      for (const [key, newValue] of Object.entries(updates)) {
+        if (key !== 'updatedAt') { // Skip timestamp field
+          const oldValue = (originalEvent as any)[key];
+          if (oldValue !== newValue && newValue !== undefined) {
+            auditDetails[key] = {
+              from: oldValue,
+              to: newValue
+            };
+          }
+        }
+      }
+
       await logActivity(
         req,
         res,
         "EVENT_REQUESTS_EDIT",
-        `Updated event request details: ${id}`,
+        `Updated event request details: ${Object.keys(auditDetails).join(', ')}`,
+        { auditDetails: auditDetails }
       );
       res.json(updatedEventRequest);
     } catch (error) {

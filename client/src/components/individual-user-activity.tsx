@@ -54,6 +54,15 @@ const getActionColor = (action: string) => {
   }
 };
 
+const formatFieldName = (fieldName: string) => {
+  // Convert camelCase/snake_case to readable format
+  return fieldName
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/_/g, ' ')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+};
+
 export function IndividualUserActivity({ user, onBack }: IndividualUserActivityProps) {
   const [timeFilter, setTimeFilter] = useState('7d');
   const [actionFilter, setActionFilter] = useState('all');
@@ -276,6 +285,24 @@ export function IndividualUserActivity({ user, onBack }: IndividualUserActivityP
                       )}
                     </div>
                     <p className="text-sm text-foreground">{activity.details}</p>
+                    {/* Show specific field changes for Updates */}
+                    {activity.action === 'Update' && activity.metadata?.auditDetails && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                        <div className="font-medium text-gray-700 mb-1">Changes made:</div>
+                        <div className="space-y-1">
+                          {Object.entries(activity.metadata.auditDetails).map(([field, details]: [string, any]) => (
+                            <div key={field} className="flex flex-col">
+                              <span className="font-medium text-gray-600">{formatFieldName(field)}:</span>
+                              <div className="ml-2 text-gray-700">
+                                <span className="text-red-600">From: {details.from || '(empty)'}</span>
+                                <span className="mx-2">→</span>
+                                <span className="text-green-600">To: {details.to || '(empty)'}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3 mr-1 inline" />

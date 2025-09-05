@@ -227,9 +227,21 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
                   ? 'Updated suggestion details or status'
                   : 'Submitted new suggestion';
               } else if (req.path.includes('/event-requests')) {
-                activityDetails = actionDetails.action === 'Update'
-                  ? 'Updated event request status or details'
-                  : 'Submitted new event request';
+                if (actionDetails.action === 'Update') {
+                  // Check if audit details were provided by the route handler
+                  if (res.locals?.eventRequestAuditDetails?.auditDetails) {
+                    const auditDetails = res.locals.eventRequestAuditDetails.auditDetails;
+                    metadata.auditDetails = auditDetails;
+                    const changedFields = Object.keys(auditDetails);
+                    activityDetails = changedFields.length > 0 
+                      ? `Updated event request: ${changedFields.join(', ')}`
+                      : 'Updated event request details';
+                  } else {
+                    activityDetails = 'Updated event request details';
+                  }
+                } else {
+                  activityDetails = 'Submitted new event request';
+                }
               } else {
                 // Generic fallback with more context
                 activityDetails = actionDetails.action === 'Update'
