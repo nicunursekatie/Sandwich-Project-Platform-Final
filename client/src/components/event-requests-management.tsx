@@ -6092,7 +6092,7 @@ export default function EventRequestsManagement() {
             open={showEventDetailsDialog}
             onOpenChange={setShowEventDetailsDialog}
           >
-            <DialogContent className="max-w-4xl">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   Event Details for {detailsRequest.organizationName}
@@ -6101,7 +6101,7 @@ export default function EventRequestsManagement() {
                   Complete or update the advanced event planning details
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleCompleteEventDetails} className="space-y-6">
+              <form onSubmit={handleCompleteEventDetails} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="toolkitStatus">Toolkit Status</Label>
@@ -6274,9 +6274,9 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Drivers Section */}
-                <div className="space-y-4 border rounded-lg p-4 bg-blue-50">
-                  <h3 className="text-lg font-semibold text-blue-800">🚗 Drivers</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3 border rounded-lg p-3 bg-blue-50">
+                  <h3 className="text-base font-semibold text-blue-800">🚗 Drivers</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="driversNeeded">How Many Drivers Needed?</Label>
                       <Input
@@ -6285,6 +6285,7 @@ export default function EventRequestsManagement() {
                         min="0"
                         defaultValue={(detailsRequest as any).driversNeeded || 0}
                         placeholder="Number of drivers needed"
+                        className="h-8"
                       />
                     </div>
                     <div>
@@ -6302,7 +6303,7 @@ export default function EventRequestsManagement() {
                               e.target.value = "";
                             }
                           }}
-                          className="w-full text-sm border rounded px-2 py-1"
+                          className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
                           {availableUsers?.map(user => (
@@ -6311,22 +6312,43 @@ export default function EventRequestsManagement() {
                             </option>
                           ))}
                         </select>
-                        <input
-                          type="text"
-                          placeholder="Or type custom driver name"
-                          className="w-full text-sm border rounded px-2 py-1"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && e.target.value.trim()) {
-                              const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, e.target.value.trim()];
-                              setDetailsRequest(prev => ({
-                                ...prev,
-                                assignedDriverIds: updatedDrivers
-                              }));
-                              e.target.value = "";
-                            }
-                          }}
-                        />
+                        <div className="flex">
+                          <input
+                            type="text"
+                            placeholder="Or type custom driver name"
+                            className="flex-1 text-sm border rounded-l px-2 py-1 h-8"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && e.target.value.trim()) {
+                                e.preventDefault();
+                                const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
+                                const updatedDrivers = [...currentDrivers, e.target.value.trim()];
+                                setDetailsRequest(prev => ({
+                                  ...prev,
+                                  assignedDriverIds: updatedDrivers
+                                }));
+                                e.target.value = "";
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="bg-green-500 hover:bg-green-600 text-white px-2 rounded-r text-sm h-8"
+                            onClick={(e) => {
+                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              if (input.value.trim()) {
+                                const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
+                                const updatedDrivers = [...currentDrivers, input.value.trim()];
+                                setDetailsRequest(prev => ({
+                                  ...prev,
+                                  assignedDriverIds: updatedDrivers
+                                }));
+                                input.value = "";
+                              }
+                            }}
+                          >
+                            ✓
+                          </button>
+                        </div>
                         <div className="flex flex-wrap gap-1">
                           {((detailsRequest as any).assignedDriverIds || []).map((driverId: string, index: number) => (
                             <span key={index} className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
@@ -6353,9 +6375,9 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Speakers Section */}
-                <div className="space-y-4 border rounded-lg p-4 bg-green-50">
-                  <h3 className="text-lg font-semibold text-green-800">🎤 Speakers</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3 border rounded-lg p-3 bg-green-50">
+                  <h3 className="text-base font-semibold text-green-800">🎤 Speakers</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
                       <Input
@@ -6364,6 +6386,7 @@ export default function EventRequestsManagement() {
                         min="0"
                         defaultValue={(detailsRequest as any).speakersNeeded || 0}
                         placeholder="Number of speakers needed"
+                        className="h-8"
                       />
                     </div>
                     <div>
@@ -6381,7 +6404,7 @@ export default function EventRequestsManagement() {
                               e.target.value = "";
                             }
                           }}
-                          className="w-full text-sm border rounded px-2 py-1"
+                          className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
                           {availableUsers?.map(user => (
@@ -6390,22 +6413,43 @@ export default function EventRequestsManagement() {
                             </option>
                           ))}
                         </select>
-                        <input
-                          type="text"
-                          placeholder="Or type custom speaker name"
-                          className="w-full text-sm border rounded px-2 py-1"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && e.target.value.trim()) {
-                              const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
-                              const updatedSpeakers = [...currentSpeakers, e.target.value.trim()];
-                              setDetailsRequest(prev => ({
-                                ...prev,
-                                assignedSpeakerIds: updatedSpeakers
-                              }));
-                              e.target.value = "";
-                            }
-                          }}
-                        />
+                        <div className="flex">
+                          <input
+                            type="text"
+                            placeholder="Or type custom speaker name"
+                            className="flex-1 text-sm border rounded-l px-2 py-1 h-8"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && e.target.value.trim()) {
+                                e.preventDefault();
+                                const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
+                                const updatedSpeakers = [...currentSpeakers, e.target.value.trim()];
+                                setDetailsRequest(prev => ({
+                                  ...prev,
+                                  assignedSpeakerIds: updatedSpeakers
+                                }));
+                                e.target.value = "";
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="bg-green-500 hover:bg-green-600 text-white px-2 rounded-r text-sm h-8"
+                            onClick={(e) => {
+                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              if (input.value.trim()) {
+                                const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
+                                const updatedSpeakers = [...currentSpeakers, input.value.trim()];
+                                setDetailsRequest(prev => ({
+                                  ...prev,
+                                  assignedSpeakerIds: updatedSpeakers
+                                }));
+                                input.value = "";
+                              }
+                            }}
+                          >
+                            ✓
+                          </button>
+                        </div>
                         <div className="flex flex-wrap gap-1">
                           {((detailsRequest as any).assignedSpeakerIds || []).map((speakerId: string, index: number) => (
                             <span key={index} className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
