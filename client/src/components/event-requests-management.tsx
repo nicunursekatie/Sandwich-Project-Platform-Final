@@ -122,26 +122,33 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
 
   // Combine and filter destination options
   const destinationOptions = useMemo(() => {
-    const hostOptions = (hosts as any[]).map(host => ({
-      value: host.hostLocationName,
-      label: `🏢 ${host.hostLocationName}`,
-      type: 'host',
-      details: host.hostContactPerson ? `Contact: ${host.hostContactPerson}` : ''
-    }));
+    // Filter hosts with valid names
+    const hostOptions = (hosts as any[])
+      .filter(host => host && host.hostLocationName)
+      .map(host => ({
+        value: host.hostLocationName,
+        label: `🏢 ${host.hostLocationName}`,
+        type: 'host',
+        details: host.hostContactPerson ? `Contact: ${host.hostContactPerson}` : ''
+      }));
 
-    const recipientOptions = (recipients as any[]).map(recipient => ({
-      value: recipient.organizationName,
-      label: `🎯 ${recipient.organizationName}`,
-      type: 'recipient',
-      details: recipient.focusArea ? `Focus: ${recipient.focusArea}` : ''
-    }));
+    // Filter recipients with valid names  
+    const recipientOptions = (recipients as any[])
+      .filter(recipient => recipient && recipient.organizationName)
+      .map(recipient => ({
+        value: recipient.organizationName,
+        label: `🎯 ${recipient.organizationName}`,
+        type: 'recipient',
+        details: recipient.focusArea ? `Focus: ${recipient.focusArea}` : ''
+      }));
 
     const allOptions = [...hostOptions, ...recipientOptions];
     
     return searchTerm 
       ? allOptions.filter(option => 
-          option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          option.details.toLowerCase().includes(searchTerm.toLowerCase())
+          option.value && option.label &&
+          (option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          option.details.toLowerCase().includes(searchTerm.toLowerCase()))
         )
       : allOptions;
   }, [hosts, recipients, searchTerm]);
