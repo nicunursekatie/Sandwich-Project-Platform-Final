@@ -4576,10 +4576,10 @@ export default function EventRequestsManagement() {
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-6">
+          <TabsList className="w-full h-auto p-1 grid grid-cols-6 gap-1">
             <TabsTrigger
               value="requests"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-center"
             >
               New Requests
               <Badge variant="secondary" className="ml-2">
@@ -4588,7 +4588,7 @@ export default function EventRequestsManagement() {
             </TabsTrigger>
             <TabsTrigger
               value="in_process"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-center"
             >
               In Process
               <Badge variant="secondary" className="ml-2">
@@ -4597,7 +4597,7 @@ export default function EventRequestsManagement() {
             </TabsTrigger>
             <TabsTrigger
               value="scheduled"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-center"
             >
               Scheduled
               <Badge variant="secondary" className="ml-2">
@@ -4606,7 +4606,7 @@ export default function EventRequestsManagement() {
             </TabsTrigger>
             <TabsTrigger
               value="past"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-center"
             >
               Past Events
               <Badge variant="secondary" className="ml-2">
