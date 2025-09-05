@@ -316,6 +316,11 @@ export default function EventRequestsManagement() {
   const [deletingRequest, setDeletingRequest] = useState<EventRequest | null>(
     null,
   );
+  // Inline editing state
+  const [inlineEditing, setInlineEditing] = useState<{
+    [key: string]: { field: string; requestId: number }
+  }>({});
+  const [editValues, setEditValues] = useState<{[key: string]: string}>({});
   // Sorting state for all tabs
   const [requestsSortBy, setRequestsSortBy] = useState<"date" | "organization">(
     "date",
@@ -795,6 +800,51 @@ export default function EventRequestsManagement() {
       setShowDeleteConfirmDialog(false);
       setDeletingRequest(null);
     }
+  };
+
+  // Inline editing handlers
+  const startInlineEdit = (requestId: number, field: string, currentValue: string) => {
+    const editKey = `${requestId}-${field}`;
+    setInlineEditing({ ...inlineEditing, [editKey]: { field, requestId } });
+    setEditValues({ ...editValues, [editKey]: currentValue });
+  };
+
+  const saveInlineEdit = (requestId: number, field: string) => {
+    const editKey = `${requestId}-${field}`;
+    const newValue = editValues[editKey];
+    
+    if (newValue !== undefined) {
+      // Prepare the update data
+      const updateData = { [field]: newValue };
+      
+      // Call the update mutation
+      updateMutation.mutate({ id: requestId, ...updateData });
+      
+      // Clear the editing state
+      const newInlineEditing = { ...inlineEditing };
+      delete newInlineEditing[editKey];
+      setInlineEditing(newInlineEditing);
+      
+      const newEditValues = { ...editValues };
+      delete newEditValues[editKey];
+      setEditValues(newEditValues);
+    }
+  };
+
+  const cancelInlineEdit = (requestId: number, field: string) => {
+    const editKey = `${requestId}-${field}`;
+    const newInlineEditing = { ...inlineEditing };
+    delete newInlineEditing[editKey];
+    setInlineEditing(newInlineEditing);
+    
+    const newEditValues = { ...editValues };
+    delete newEditValues[editKey];
+    setEditValues(newEditValues);
+  };
+
+  const isEditing = (requestId: number, field: string) => {
+    const editKey = `${requestId}-${field}`;
+    return inlineEditing[editKey] !== undefined;
   };
 
   const importHistoricalMutation = useMutation({
@@ -3051,14 +3101,95 @@ export default function EventRequestsManagement() {
             {/* Organization Name and Event Date */}
             <CardTitle className="flex items-center space-x-3 text-xl mb-2">
               <CheckCircle className="w-6 h-6 text-gray-600" />
-              <span className="text-gray-900">
-                {request.organizationName}
-                {request.department && (
-                  <span className="text-sm text-gray-600 ml-2">
-                    - {request.department}
-                  </span>
-                )}
-              </span>
+              <div className="flex-1">
+                {/* Organization Name with inline editing */}
+                <div className="flex items-center space-x-2 mb-1">
+                  {isEditing(request.id, 'organizationName') ? (
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Input
+                        value={editValues[`${request.id}-organizationName`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-organizationName`]: e.target.value })}
+                        placeholder="Organization name"
+                        className="h-8 text-sm font-semibold"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'organizationName')}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'organizationName')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-gray-900 text-xl font-semibold">
+                        {request.organizationName}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        onClick={() => startInlineEdit(request.id, 'organizationName', request.organizationName)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+                
+                {/* Department with inline editing */}
+                <div className="flex items-center space-x-2">
+                  {isEditing(request.id, 'department') ? (
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        value={editValues[`${request.id}-department`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-department`]: e.target.value })}
+                        placeholder="Department (optional)"
+                        className="h-6 text-xs"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'department')}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'department')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-sm text-gray-600">
+                        {request.department ? `- ${request.department}` : "- No department"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
+                        onClick={() => startInlineEdit(request.id, 'department', request.department || '')}
+                      >
+                        <Edit className="h-2 w-2" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
             </CardTitle>
 
             {/* Event Date */}
@@ -3102,6 +3233,7 @@ export default function EventRequestsManagement() {
                 size="sm"
                 onClick={() => {
                   setSelectedRequest(request);
+                  setCurrentEditingStatus(request.status);
                   setShowEditDialog(true);
                 }}
                 className="text-gray-600 hover:text-gray-800"
@@ -3149,88 +3281,181 @@ export default function EventRequestsManagement() {
           })()}
 
           {/* TSP Contact Information */}
-          {((request as any).tspContact ||
-            (request as any).customTspContact ||
-            (request as any).tspContactAssigned ||
-            (request as any).additionalTspContacts ||
-            (request as any).additionalContact1 ||
-            (request as any).additionalContact2) && (
-            <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-4 rounded-lg border border-teal-300 shadow-sm">
-              <h4 className="font-bold text-teal-900 mb-3 flex items-center">
-                <UserCheck className="w-5 h-5 mr-2 text-teal-600" />
-                TSP Team Assignment
-              </h4>
-              <div className="space-y-2 text-sm">
-                {/* Primary Contact */}
-                {(request as any).tspContact && (
-                  <div className="bg-white/70 p-3 rounded-md border border-teal-200">
+          <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-4 rounded-lg border border-teal-300 shadow-sm">
+            <h4 className="font-bold text-teal-900 mb-3 flex items-center">
+              <UserCheck className="w-5 h-5 mr-2 text-teal-600" />
+              TSP Team Assignment
+            </h4>
+            <div className="space-y-2 text-sm">
+              {/* Primary Contact */}
+              <div className="bg-white/70 p-3 rounded-md border border-teal-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
+                    <span className="font-semibold text-teal-900">Primary Contact</span>
+                  </div>
+                  {!isEditing(request.id, 'tspContact') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-teal-600 hover:text-teal-800"
+                      onClick={() => startInlineEdit(request.id, 'tspContact', (request as any).tspContact || '')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-1">
+                  {isEditing(request.id, 'tspContact') ? (
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
-                      <span className="font-semibold text-teal-900">Primary Contact</span>
+                      <select
+                        value={editValues[`${request.id}-tspContact`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContact`]: e.target.value })}
+                        className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
+                      >
+                        <option value="">No primary contact</option>
+                        {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'tspContact')}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'tspContact')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="mt-1 text-teal-800 font-medium">
-                      {getUserDisplayName((request as any).tspContact)}
+                  ) : (
+                    <div className="text-teal-800 font-medium">
+                      {(request as any).tspContact ? getUserDisplayName((request as any).tspContact) : "No primary contact assigned"}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
 
-                {/* Secondary Contact */}
-                {(request as any).tspContactAssigned && (
-                  <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+              {/* Secondary Contact */}
+              <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    <span className="font-semibold text-blue-900">Secondary Contact</span>
+                  </div>
+                  {!isEditing(request.id, 'tspContactAssigned') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                      onClick={() => startInlineEdit(request.id, 'tspContactAssigned', (request as any).tspContactAssigned || '')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-1">
+                  {isEditing(request.id, 'tspContactAssigned') ? (
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                      <span className="font-semibold text-blue-900">Secondary Contact</span>
+                      <select
+                        value={editValues[`${request.id}-tspContactAssigned`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContactAssigned`]: e.target.value })}
+                        className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
+                      >
+                        <option value="">No secondary contact</option>
+                        {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'tspContactAssigned')}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'tspContactAssigned')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="mt-1 text-blue-800 font-medium">
-                      {getUserDisplayName((request as any).tspContactAssigned)}
+                  ) : (
+                    <div className="text-blue-800 font-medium">
+                      {(request as any).tspContactAssigned ? getUserDisplayName((request as any).tspContactAssigned) : "No secondary contact assigned"}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
 
-                {/* Third Contact */}
-                {(request as any).additionalContact1 && (
-                  <div className="bg-white/70 p-3 rounded-md border border-indigo-200">
+              {/* Custom TSP Contact */}
+              <div className="bg-white/70 p-3 rounded-md border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                    <span className="font-semibold text-gray-900">Custom Contact</span>
+                  </div>
+                  {!isEditing(request.id, 'customTspContact') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
+                      onClick={() => startInlineEdit(request.id, 'customTspContact', (request as any).customTspContact || '')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-1">
+                  {isEditing(request.id, 'customTspContact') ? (
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
-                      <span className="font-semibold text-indigo-900">Third Contact</span>
+                      <Input
+                        value={editValues[`${request.id}-customTspContact`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-customTspContact`]: e.target.value })}
+                        placeholder="External contact name or special instructions"
+                        className="h-8 text-sm"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'customTspContact')}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'customTspContact')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="mt-1 text-indigo-800 font-medium">
-                      {getUserDisplayName((request as any).additionalContact1)}
+                  ) : (
+                    <div className="text-gray-800 font-medium">
+                      {(request as any).customTspContact || "No custom contact specified"}
                     </div>
-                  </div>
-                )}
-
-                {/* Fourth Contact */}
-                {(request as any).additionalContact2 && (
-                  <div className="bg-white/70 p-3 rounded-md border border-purple-200">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-                      <span className="font-semibold text-purple-900">Fourth Contact</span>
-                    </div>
-                    <div className="mt-1 text-purple-800 font-medium">
-                      {getUserDisplayName((request as any).additionalContact2)}
-                    </div>
-                  </div>
-                )}
-
-                {/* Legacy Additional Contacts */}
-                {(request as any).additionalTspContacts && (
-                  <div>
-                    <strong>Additional Contacts:</strong>{" "}
-                    {(request as any).additionalTspContacts}
-                  </div>
-                )}
-
-                {/* Custom TSP Contact */}
-                {(request as any).customTspContact && (
-                  <div>
-                    <strong>Custom Contact:</strong>{" "}
-                    {(request as any).customTspContact}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Organization Contact Information */}
           <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
@@ -3264,22 +3489,149 @@ export default function EventRequestsManagement() {
               Event Summary
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-[#FBAD3F]">
-              {/* Event timing */}
-              {((request as any).eventStartTime ||
-                (request as any).eventEndTime) && (
-                <div>
-                  <strong>Event Time:</strong>{" "}
-                  {formatTime12Hour((request as any).eventStartTime)}
-                  {(request as any).eventEndTime &&
-                    ` - ${formatTime12Hour((request as any).eventEndTime)}`}
+              {/* Event Start Time with inline editing */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {isEditing(request.id, 'eventStartTime') ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-[#FBAD3F]">Start Time:</span>
+                      <input
+                        type="time"
+                        value={editValues[`${request.id}-eventStartTime`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventStartTime`]: e.target.value })}
+                        className="h-6 px-2 text-xs border rounded"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'eventStartTime')}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'eventStartTime')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span>
+                        <strong>Start Time:</strong>{" "}
+                        {(request as any).eventStartTime ? formatTime12Hour((request as any).eventStartTime) : "Not set"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        onClick={() => startInlineEdit(request.id, 'eventStartTime', (request as any).eventStartTime || '')}
+                      >
+                        <Edit className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
-              {(request as any).pickupTime && (
-                <div>
-                  <strong>Pickup Time:</strong>{" "}
-                  {formatTime12Hour((request as any).pickupTime)}
+              </div>
+
+              {/* Event End Time with inline editing */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {isEditing(request.id, 'eventEndTime') ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-[#FBAD3F]">End Time:</span>
+                      <input
+                        type="time"
+                        value={editValues[`${request.id}-eventEndTime`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventEndTime`]: e.target.value })}
+                        className="h-6 px-2 text-xs border rounded"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'eventEndTime')}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'eventEndTime')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span>
+                        <strong>End Time:</strong>{" "}
+                        {(request as any).eventEndTime ? formatTime12Hour((request as any).eventEndTime) : "Not set"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        onClick={() => startInlineEdit(request.id, 'eventEndTime', (request as any).eventEndTime || '')}
+                      >
+                        <Edit className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Pickup Time with inline editing */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {isEditing(request.id, 'pickupTime') ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-[#FBAD3F]">Pickup Time:</span>
+                      <input
+                        type="time"
+                        value={editValues[`${request.id}-pickupTime`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-pickupTime`]: e.target.value })}
+                        className="h-6 px-2 text-xs border rounded"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'pickupTime')}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'pickupTime')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span>
+                        <strong>Pickup Time:</strong>{" "}
+                        {(request as any).pickupTime ? formatTime12Hour((request as any).pickupTime) : "Not set"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        onClick={() => startInlineEdit(request.id, 'pickupTime', (request as any).pickupTime || '')}
+                      >
+                        <Edit className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Sandwich details */}
               {(request as any).sandwichTypes && (
