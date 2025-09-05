@@ -4337,6 +4337,12 @@ export default function EventRequestsManagement() {
         ? parseInt(formData.get("estimatedSandwichCount") as string)
         : null,
       sandwichTypes: formData.get("sandwichTypes") || null,
+      
+      // Transportation workflow fields
+      deliveryDestination: formData.get("deliveryDestination") || null,
+      storageLocation: formData.get("storageLocation") || null,
+      finalDeliveryMethod: formData.get("finalDeliveryMethod") || null,
+      
       driversNeeded: formData.get("driversNeeded")
         ? parseInt(formData.get("driversNeeded") as string)
         : 0,
@@ -4344,6 +4350,10 @@ export default function EventRequestsManagement() {
         ? parseInt(formData.get("speakersNeeded") as string)
         : 0,
       volunteerNotes: formData.get("volunteerNotes") || null,
+      
+      // Driver and speaker assignments from component state
+      assignedDriverIds: (detailsRequest as any).assignedDriverIds || [],
+      assignedSpeakerIds: (detailsRequest as any).assignedSpeakerIds || [],
     };
 
     completeEventDetailsMutation.mutate(data);
