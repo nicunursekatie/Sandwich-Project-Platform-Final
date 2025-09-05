@@ -1790,6 +1790,8 @@ export default function EventRequestsManagement() {
           return { badge: "✓ Confirmed", color: "bg-green-100 text-green-700" };
         case "not_needed":
           return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
+        case "not_sent":
+          return { badge: "Not Sent", color: "bg-gray-200 text-gray-700" };
         default:
           return {
             badge: "⚠️ Pending",
