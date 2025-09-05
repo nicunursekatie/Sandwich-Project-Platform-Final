@@ -3176,7 +3176,7 @@ export default function EventRequestsManagement() {
                     </div>
                   ) : (
                     <>
-                      {request.department ? (
+                      {request.department && (
                         <>
                           <span className="text-lg font-medium text-gray-700">
                             {request.department}
@@ -3190,16 +3190,6 @@ export default function EventRequestsManagement() {
                             <Edit className="h-2 w-2" />
                           </Button>
                         </>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-gray-400 hover:text-gray-600 h-6"
-                          onClick={() => startInlineEdit(request.id, 'department', '')}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add Department
-                        </Button>
                       )}
                     </>
                   )}
