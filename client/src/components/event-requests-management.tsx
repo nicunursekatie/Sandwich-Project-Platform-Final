@@ -3176,17 +3176,31 @@ export default function EventRequestsManagement() {
                     </div>
                   ) : (
                     <>
-                      <span className="text-sm text-gray-600">
-                        {request.department ? `- ${request.department}` : "- No department"}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
-                        onClick={() => startInlineEdit(request.id, 'department', request.department || '')}
-                      >
-                        <Edit className="h-2 w-2" />
-                      </Button>
+                      {request.department ? (
+                        <>
+                          <span className="text-lg font-medium text-gray-700">
+                            {request.department}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
+                            onClick={() => startInlineEdit(request.id, 'department', request.department || '')}
+                          >
+                            <Edit className="h-2 w-2" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-gray-400 hover:text-gray-600 h-6"
+                          onClick={() => startInlineEdit(request.id, 'department', '')}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Department
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
