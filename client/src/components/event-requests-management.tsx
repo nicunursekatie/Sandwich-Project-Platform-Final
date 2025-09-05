@@ -3568,7 +3568,7 @@ export default function EventRequestsManagement() {
             <h4 className="font-semibold text-[#FBAD3F] mb-2">
               Event Summary
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-[#FBAD3F]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {/* Event Start Time with inline editing */}
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -3600,9 +3600,9 @@ export default function EventRequestsManagement() {
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <span>
-                        <strong>Start Time:</strong>{" "}
-                        {(request as any).eventStartTime ? formatTime12Hour((request as any).eventStartTime) : "Not set"}
+                      <span className="text-gray-800">
+                        <span className="font-semibold text-blue-700">Start Time:</span>{" "}
+                        <span className="text-gray-900 font-medium">{(request as any).eventStartTime ? formatTime12Hour((request as any).eventStartTime) : "Not set"}</span>
                       </span>
                       <Button
                         variant="ghost"
@@ -3648,9 +3648,9 @@ export default function EventRequestsManagement() {
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <span>
-                        <strong>End Time:</strong>{" "}
-                        {(request as any).eventEndTime ? formatTime12Hour((request as any).eventEndTime) : "Not set"}
+                      <span className="text-gray-800">
+                        <span className="font-semibold text-blue-700">End Time:</span>{" "}
+                        <span className="text-gray-900 font-medium">{(request as any).eventEndTime ? formatTime12Hour((request as any).eventEndTime) : "Not set"}</span>
                       </span>
                       <Button
                         variant="ghost"
@@ -3696,9 +3696,9 @@ export default function EventRequestsManagement() {
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <span>
-                        <strong>Pickup Time:</strong>{" "}
-                        {(request as any).pickupTime ? formatTime12Hour((request as any).pickupTime) : "Not set"}
+                      <span className="text-gray-800">
+                        <span className="font-semibold text-blue-700">Pickup Time:</span>{" "}
+                        <span className="text-gray-900 font-medium">{(request as any).pickupTime ? formatTime12Hour((request as any).pickupTime) : "Not set"}</span>
                       </span>
                       <Button
                         variant="ghost"
@@ -3715,45 +3715,46 @@ export default function EventRequestsManagement() {
 
               {/* Sandwich details */}
               {(request as any).sandwichTypes && (
-                <div>
-                  <strong>Sandwich Types:</strong>{" "}
-                  {(request as any).sandwichTypes}
+                <div className="text-gray-800">
+                  <span className="font-semibold text-green-700">Sandwich Types:</span>{" "}
+                  <span className="text-gray-900 font-medium">{(request as any).sandwichTypes}</span>
                 </div>
               )}
 
               {/* Drivers section */}
-              <div>
-                <strong>Drivers:</strong>{" "}
-                {(request as any).driverDetails || "Not specified"}
+              <div className="text-gray-800">
+                <span className="font-semibold text-purple-700">Drivers:</span>{" "}
+                <span className="text-gray-900 font-medium">{(request as any).driverDetails || "Not specified"}</span>
               </div>
 
               {/* Speakers section */}
-              <div>
-                <strong>Speakers:</strong>{" "}
-                {(request as any).speakerDetails || "Not specified"}
+              <div className="text-gray-800">
+                <span className="font-semibold text-indigo-700">Speakers:</span>{" "}
+                <span className="text-gray-900 font-medium">{(request as any).speakerDetails || "Not specified"}</span>
               </div>
 
               {/* Other logistics */}
-              <div>
-                <strong>Refrigeration:</strong>{" "}
-                {request.hasRefrigeration === true
+              <div className="text-gray-800">
+                <span className="font-semibold text-cyan-700">Refrigeration:</span>{" "}
+                <span className="text-gray-900 font-medium">{request.hasRefrigeration === true
                   ? "Available"
                   : request.hasRefrigeration === false
                     ? "Not available"
-                    : "Not specified"}
+                    : "Not specified"}</span>
               </div>
               {(request as any).additionalRequirements && (
-                <div>
-                  <strong>Special Requirements:</strong>{" "}
-                  {(request as any).additionalRequirements}
+                <div className="text-gray-800">
+                  <span className="font-semibold text-red-700">Special Requirements:</span>{" "}
+                  <span className="text-gray-900 font-medium">{(request as any).additionalRequirements}</span>
                 </div>
               )}
 
               {/* Include original message in event summary if it exists and isn't generic */}
               {request.message &&
                 request.message !== "Imported from Excel file" && (
-                  <div className="col-span-full">
-                    <strong>Event Details:</strong> {request.message}
+                  <div className="col-span-full text-gray-800 p-3 bg-gray-50 rounded border-l-4 border-orange-400">
+                    <span className="font-semibold text-orange-700">Event Details:</span>{" "}
+                    <span className="text-gray-900 font-medium">{request.message}</span>
                   </div>
                 )}
             </div>
