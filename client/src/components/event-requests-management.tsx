@@ -70,6 +70,8 @@ import {
   TrendingUp,
   Save,
   X,
+  History,
+  HelpCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -2787,15 +2789,20 @@ export default function EventRequestsManagement() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {request.department && (
-            <p>
-              <strong>Department:</strong> {request.department}
+          {/* Department Field - Hide if it contains invalid values like "Yes"/"No" from data mapping issues */}
+          {request.department && 
+           !["Yes", "No", "yes", "no", "Unknown", "unknown", "i_dont_know"].includes(request.department.toLowerCase()) && (
+            <p className="flex items-center">
+              <Building className="w-4 h-4 mr-2 text-gray-500" />
+              <strong>Department:</strong>
+              <span className="ml-2">{request.department}</span>
             </p>
           )}
+          
           {request.desiredEventDate && (
             <p className="flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              <strong>Desired Date: </strong>
+              <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+              <strong>Desired Date:</strong>
               <span className="ml-2">
                 {(() => {
                   const dateInfo = formatEventDate(request.desiredEventDate);
@@ -2806,14 +2813,48 @@ export default function EventRequestsManagement() {
               </span>
             </p>
           )}
-          <p>
-            <strong>Previously Hosted:</strong>{" "}
-            {
-              previouslyHostedOptions.find(
-                (opt) => opt.value === request.previouslyHosted,
-              )?.label
-            }
-          </p>
+          
+          {/* Previously Hosted - Enhanced display with icons and badges */}
+          <div className="flex items-center">
+            <History className="w-4 h-4 mr-2 text-gray-500" />
+            <strong>Previously Hosted:</strong>
+            <span className="ml-2">
+              {(() => {
+                const previouslyHostedValue = request.previouslyHosted;
+                const matchedOption = previouslyHostedOptions.find(
+                  (opt) => opt.value === previouslyHostedValue
+                );
+                
+                if (matchedOption) {
+                  return (
+                    <Badge 
+                      variant={matchedOption.value === "yes" ? "default" : "secondary"}
+                      className={`text-xs ${
+                        matchedOption.value === "yes" 
+                          ? "bg-green-100 text-green-800 border-green-300" 
+                          : matchedOption.value === "no" 
+                          ? "bg-orange-100 text-orange-800 border-orange-300"
+                          : "bg-gray-100 text-gray-700 border-gray-300"
+                      }`}
+                    >
+                      {matchedOption.value === "yes" && <CheckCircle className="w-3 h-3 mr-1" />}
+                      {matchedOption.value === "no" && <XCircle className="w-3 h-3 mr-1" />}
+                      {matchedOption.value === "i_dont_know" && <HelpCircle className="w-3 h-3 mr-1" />}
+                      {matchedOption.label}
+                    </Badge>
+                  );
+                } else {
+                  // Handle case where data might be in wrong field due to import issues
+                  return (
+                    <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700 border-gray-300">
+                      <HelpCircle className="w-3 h-3 mr-1" />
+                      Unknown
+                    </Badge>
+                  );
+                }
+              })()}
+            </span>
+          </div>
           {request.message && (
             <div>
               <strong>Additional Information:</strong>

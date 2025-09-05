@@ -303,11 +303,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       'Contact Name', 
       'Email',
       'Phone',
-      'Department',
       'Desired Event Date',
-      'Status',
       'Message',
+      'Department',
       'Previously Hosted',
+      'Status',
       'Created Date',
       'Last Updated',
       'Duplicate Check',
@@ -322,11 +322,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         request.contactName,
         request.email,
         request.phone,
-        request.department,
         request.desiredEventDate,
-        request.status,
         request.message,
+        request.department,
         request.previouslyHosted,
+        request.status,
         request.createdDate,
         request.lastUpdated,
         request.duplicateCheck,
@@ -376,8 +376,8 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       phone: row[4] || '', // Phone (E)
       desiredEventDate: row[5] || '', // Desired Event Date (F)
       message: row[6] || '', // Message (G)
-      previouslyHosted: row[7] || 'i_dont_know', // has your organization done an event with us before (H)
-      department: row[8] || '', // departmentteam if applicable (I)
+      department: row[7] || '', // departmentteam if applicable (H)
+      previouslyHosted: row[8] || 'i_dont_know', // has your organization done an event with us before (I)
       // Note: row[9] appears to be "your email" - duplicate of email field
       status: row[10] || 'new', // status (K) - read from your new status column, default to 'new'
       createdDate: '', // Legacy field, not used for mapping
