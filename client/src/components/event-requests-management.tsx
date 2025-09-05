@@ -2478,9 +2478,78 @@ export default function EventRequestsManagement() {
                 {/* Driver Assignment Details */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">
-                      Assigned: {(request as any).assignedDriverIds?.length || 0}/{(request as any).driversNeeded || 0}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-600">
+                        Assigned: {(request as any).assignedDriverIds?.length || 0}/
+                      </span>
+                      {editingField === "driversNeeded" && editingEventId === request.id ? (
+                        <div className="flex items-center space-x-1">
+                          <input
+                            type="number"
+                            min="0"
+                            className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
+                            value={tempValues.driversNeeded || (request as any).driversNeeded || 0}
+                            onChange={(e) =>
+                              setTempValues((prev) => ({
+                                ...prev,
+                                driversNeeded: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleTrackChange(
+                                  request.id,
+                                  "driversNeeded",
+                                  parseInt(tempValues.driversNeeded || e.target.value) || 0,
+                                );
+                                setEditingField(null);
+                                setEditingEventId(null);
+                                setTempValues({});
+                              }
+                              if (e.key === "Escape") handleFieldCancel();
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={() => {
+                              handleTrackChange(
+                                request.id,
+                                "driversNeeded",
+                                parseInt(tempValues.driversNeeded) || 0,
+                              );
+                              setEditingField(null);
+                              setEditingEventId(null);
+                              setTempValues({});
+                            }}
+                          >
+                            ✓
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={handleFieldCancel}
+                          >
+                            ✗
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                          onClick={() => {
+                            setEditingField("driversNeeded");
+                            setEditingEventId(request.id);
+                            setTempValues({
+                              driversNeeded: (request as any).driversNeeded || 0,
+                            });
+                          }}
+                        >
+                          {(request as any).driversNeeded || 0}
+                        </button>
+                      )}
+                    </div>
                     <button
                       className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
                       onClick={() => {
@@ -2575,27 +2644,97 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
-                {/* Speaker Assignment (if needed) */}
-                {(request as any).speakersNeeded > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Speakers</span>
-                      <button
-                        className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200"
-                        onClick={() => {
-                          setAssigningSpeakerRequest(request);
-                          setShowSpeakerDialog(true);
-                          const currentSpeakers = (request as any).assignedSpeakerIds || [];
-                          setSelectedSpeakers(currentSpeakers);
-                        }}
-                      >
-                        {(request as any).assignedSpeakerIds?.length > 0 ? "Edit Speakers" : "+ Assign Speaker"}
-                      </button>
+                {/* Speaker Assignment */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Speakers</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-600">
+                        Assigned: {(request as any).assignedSpeakerIds?.length || 0}/
+                      </span>
+                      {editingField === "speakersNeeded" && editingEventId === request.id ? (
+                        <div className="flex items-center space-x-1">
+                          <input
+                            type="number"
+                            min="0"
+                            className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
+                            value={tempValues.speakersNeeded || (request as any).speakersNeeded || 0}
+                            onChange={(e) =>
+                              setTempValues((prev) => ({
+                                ...prev,
+                                speakersNeeded: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleTrackChange(
+                                  request.id,
+                                  "speakersNeeded",
+                                  parseInt(tempValues.speakersNeeded || e.target.value) || 0,
+                                );
+                                setEditingField(null);
+                                setEditingEventId(null);
+                                setTempValues({});
+                              }
+                              if (e.key === "Escape") handleFieldCancel();
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={() => {
+                              handleTrackChange(
+                                request.id,
+                                "speakersNeeded",
+                                parseInt(tempValues.speakersNeeded) || 0,
+                              );
+                              setEditingField(null);
+                              setEditingEventId(null);
+                              setTempValues({});
+                            }}
+                          >
+                            ✓
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={handleFieldCancel}
+                          >
+                            ✗
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-xs text-purple-600 hover:text-purple-800 hover:underline"
+                          onClick={() => {
+                            setEditingField("speakersNeeded");
+                            setEditingEventId(request.id);
+                            setTempValues({
+                              speakersNeeded: (request as any).speakersNeeded || 0,
+                            });
+                          }}
+                        >
+                          {(request as any).speakersNeeded || 0}
+                        </button>
+                      )}
                     </div>
-                    <span className="text-xs text-gray-600">
-                      Assigned: {(request as any).assignedSpeakerIds?.length || 0}/{(request as any).speakersNeeded || 0}
-                    </span>
-                    {(request as any).assignedSpeakerIds?.map((speakerId: string, index: number) => (
+                    <button
+                      className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200"
+                      onClick={() => {
+                        setAssigningSpeakerRequest(request);
+                        setShowSpeakerDialog(true);
+                        const currentSpeakers = (request as any).assignedSpeakerIds || [];
+                        setSelectedSpeakers(currentSpeakers);
+                      }}
+                    >
+                      {(request as any).assignedSpeakerIds?.length > 0 ? "Edit Speakers" : "+ Assign Speaker"}
+                    </button>
+                  </div>
+                  {(request as any).assignedSpeakerIds?.map((speakerId: string, index: number) => (
                       <div key={index} className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200 mr-1">
                         {getUserDisplayName(speakerId)}
                         <button
@@ -2610,7 +2749,6 @@ export default function EventRequestsManagement() {
                       </div>
                     ))}
                   </div>
-                )}
               </div>
             </div>
           </div>
