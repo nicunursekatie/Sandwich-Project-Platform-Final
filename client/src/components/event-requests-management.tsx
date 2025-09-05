@@ -447,6 +447,7 @@ export default function EventRequestsManagement() {
         : user.displayName || user.email;
     }
 
+
     // If not found by ID, check if it's already a display name (plain text)
     // This handles legacy data where names were stored directly
     if (userId.includes("@") || userId.includes("_")) {
@@ -3281,181 +3282,256 @@ export default function EventRequestsManagement() {
           })()}
 
           {/* TSP Contact Information */}
-          <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-4 rounded-lg border border-teal-300 shadow-sm">
-            <h4 className="font-bold text-teal-900 mb-3 flex items-center">
-              <UserCheck className="w-5 h-5 mr-2 text-teal-600" />
-              TSP Team Assignment
-            </h4>
-            <div className="space-y-2 text-sm">
-              {/* Primary Contact */}
-              <div className="bg-white/70 p-3 rounded-md border border-teal-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
-                    <span className="font-semibold text-teal-900">Primary Contact</span>
-                  </div>
-                  {!isEditing(request.id, 'tspContact') && (
+          {(() => {
+            const hasPrimaryContact = (request as any).tspContact;
+            const hasSecondaryContact = (request as any).tspContactAssigned;
+            const hasCustomContact = (request as any).customTspContact;
+            const hasAnyContact = hasPrimaryContact || hasSecondaryContact || hasCustomContact;
+            
+            if (!hasAnyContact) {
+              return (
+                <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-4 rounded-lg border border-teal-300 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <UserCheck className="w-5 h-5 mr-2 text-teal-600" />
+                      <h4 className="font-bold text-teal-900">TSP Team Assignment</h4>
+                    </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="h-6 w-6 p-0 text-teal-600 hover:text-teal-800"
-                      onClick={() => startInlineEdit(request.id, 'tspContact', (request as any).tspContact || '')}
+                      className="text-teal-700 border-teal-300 hover:bg-teal-100"
+                      onClick={() => startInlineEdit(request.id, 'tspContact', '')}
                     >
-                      <Edit className="h-3 w-3" />
+                      <Plus className="w-4 h-4 mr-2" />
+                      Assign TSP Contacts
                     </Button>
-                  )}
+                  </div>
                 </div>
-                <div className="mt-1">
-                  {isEditing(request.id, 'tspContact') ? (
-                    <div className="flex items-center space-x-2">
-                      <select
-                        value={editValues[`${request.id}-tspContact`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContact`]: e.target.value })}
-                        className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
-                      >
-                        <option value="">No primary contact</option>
-                        {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
-                          <option key={user.id} value={user.id}>
-                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'tspContact')}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'tspContact')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-teal-800 font-medium">
-                      {(request as any).tspContact ? getUserDisplayName((request as any).tspContact) : "No primary contact assigned"}
-                    </div>
-                  )}
-                </div>
-              </div>
+              );
+            }
 
-              {/* Secondary Contact */}
-              <div className="bg-white/70 p-3 rounded-md border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                    <span className="font-semibold text-blue-900">Secondary Contact</span>
-                  </div>
-                  {!isEditing(request.id, 'tspContactAssigned') && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
-                      onClick={() => startInlineEdit(request.id, 'tspContactAssigned', (request as any).tspContactAssigned || '')}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-                <div className="mt-1">
-                  {isEditing(request.id, 'tspContactAssigned') ? (
-                    <div className="flex items-center space-x-2">
-                      <select
-                        value={editValues[`${request.id}-tspContactAssigned`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContactAssigned`]: e.target.value })}
-                        className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
-                      >
-                        <option value="">No secondary contact</option>
-                        {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
-                          <option key={user.id} value={user.id}>
-                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'tspContactAssigned')}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'tspContactAssigned')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+            return (
+              <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-4 rounded-lg border border-teal-300 shadow-sm">
+                <h4 className="font-bold text-teal-900 mb-3 flex items-center">
+                  <UserCheck className="w-5 h-5 mr-2 text-teal-600" />
+                  TSP Team Assignment
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {/* Primary Contact - only show if has value */}
+                  {hasPrimaryContact && (
+                    <div className="bg-white/70 p-3 rounded-md border border-teal-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
+                          <span className="font-semibold text-teal-900">Primary Contact</span>
+                        </div>
+                        {!isEditing(request.id, 'tspContact') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-teal-600 hover:text-teal-800"
+                            onClick={() => startInlineEdit(request.id, 'tspContact', (request as any).tspContact || '')}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="mt-1">
+                        {isEditing(request.id, 'tspContact') ? (
+                          <div className="flex items-center space-x-2">
+                            <select
+                              value={editValues[`${request.id}-tspContact`] || ''}
+                              onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContact`]: e.target.value })}
+                              className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
+                            >
+                              <option value="">Remove primary contact</option>
+                              {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                              onClick={() => saveInlineEdit(request.id, 'tspContact')}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                              onClick={() => cancelInlineEdit(request.id, 'tspContact')}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-teal-800 font-medium">
+                            {getUserDisplayName((request as any).tspContact)}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-blue-800 font-medium">
-                      {(request as any).tspContactAssigned ? getUserDisplayName((request as any).tspContactAssigned) : "No secondary contact assigned"}
-                    </div>
                   )}
-                </div>
-              </div>
 
-              {/* Custom TSP Contact */}
-              <div className="bg-white/70 p-3 rounded-md border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
-                    <span className="font-semibold text-gray-900">Custom Contact</span>
-                  </div>
-                  {!isEditing(request.id, 'customTspContact') && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
-                      onClick={() => startInlineEdit(request.id, 'customTspContact', (request as any).customTspContact || '')}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-                <div className="mt-1">
-                  {isEditing(request.id, 'customTspContact') ? (
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        value={editValues[`${request.id}-customTspContact`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-customTspContact`]: e.target.value })}
-                        placeholder="External contact name or special instructions"
-                        className="h-8 text-sm"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'customTspContact')}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'customTspContact')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                  {/* Secondary Contact - only show if has value */}
+                  {hasSecondaryContact && (
+                    <div className="bg-white/70 p-3 rounded-md border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                          <span className="font-semibold text-blue-900">Secondary Contact</span>
+                        </div>
+                        {!isEditing(request.id, 'tspContactAssigned') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                            onClick={() => startInlineEdit(request.id, 'tspContactAssigned', (request as any).tspContactAssigned || '')}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="mt-1">
+                        {isEditing(request.id, 'tspContactAssigned') ? (
+                          <div className="flex items-center space-x-2">
+                            <select
+                              value={editValues[`${request.id}-tspContactAssigned`] || ''}
+                              onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContactAssigned`]: e.target.value })}
+                              className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
+                            >
+                              <option value="">Remove secondary contact</option>
+                              {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                              onClick={() => saveInlineEdit(request.id, 'tspContactAssigned')}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                              onClick={() => cancelInlineEdit(request.id, 'tspContactAssigned')}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-blue-800 font-medium">
+                            {getUserDisplayName((request as any).tspContactAssigned)}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-gray-800 font-medium">
-                      {(request as any).customTspContact || "No custom contact specified"}
+                  )}
+
+                  {/* Custom TSP Contact - only show if has value */}
+                  {hasCustomContact && (
+                    <div className="bg-white/70 p-3 rounded-md border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                          <span className="font-semibold text-gray-900">Custom Contact</span>
+                        </div>
+                        {!isEditing(request.id, 'customTspContact') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
+                            onClick={() => startInlineEdit(request.id, 'customTspContact', (request as any).customTspContact || '')}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="mt-1">
+                        {isEditing(request.id, 'customTspContact') ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editValues[`${request.id}-customTspContact`] || ''}
+                              onChange={(e) => setEditValues({ ...editValues, [`${request.id}-customTspContact`]: e.target.value })}
+                              placeholder="External contact name or special instructions"
+                              className="h-8 text-sm"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                              onClick={() => saveInlineEdit(request.id, 'customTspContact')}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                              onClick={() => cancelInlineEdit(request.id, 'customTspContact')}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-gray-800 font-medium">
+                            {(request as any).customTspContact}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add more contacts button - show when there are existing contacts */}
+                  {hasAnyContact && (
+                    <div className="flex justify-center pt-2">
+                      <div className="flex space-x-2">
+                        {!hasPrimaryContact && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-teal-600 border-teal-300 hover:bg-teal-50"
+                            onClick={() => startInlineEdit(request.id, 'tspContact', '')}
+                          >
+                            + Primary
+                          </Button>
+                        )}
+                        {!hasSecondaryContact && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                            onClick={() => startInlineEdit(request.id, 'tspContactAssigned', '')}
+                          >
+                            + Secondary
+                          </Button>
+                        )}
+                        {!hasCustomContact && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-gray-600 border-gray-300 hover:bg-gray-50"
+                            onClick={() => startInlineEdit(request.id, 'customTspContact', '')}
+                          >
+                            + Custom
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Organization Contact Information */}
           <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
