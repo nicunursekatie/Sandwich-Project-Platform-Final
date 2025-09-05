@@ -2377,11 +2377,11 @@ export default function EventRequestsManagement() {
                           const summary = getSandwichTypesSummary(request);
                           return summary.hasBreakdown ? (
                             <div>
-                              <span className="font-medium text-[#236383]">{summary.total}</span> sandwiches
+                              <span className="font-medium text-[#236383]">{summary.total}</span> sandwiches to be made
                               <div className="text-xs text-gray-500 mt-1">{summary.breakdown}</div>
                             </div>
                           ) : (
-                            <span><span className="font-medium">{summary.total || "Unknown"}</span> sandwiches</span>
+                            <span><span className="font-medium">{summary.total || "Unknown"}</span> sandwiches to be made</span>
                           );
                         })()}
                       </span>
@@ -5467,7 +5467,7 @@ export default function EventRequestsManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="estimatedSandwichCount">
-                      Number of Sandwiches
+                      Number of Sandwiches to be Made
                     </Label>
                     <Input
                       name="estimatedSandwichCount"
@@ -5944,7 +5944,7 @@ export default function EventRequestsManagement() {
                       name="estimatedSandwichCount"
                       type="number"
                       min="0"
-                      placeholder="How many sandwiches needed?"
+                      placeholder="How many sandwiches to be made?"
                     />
                   </div>
                 </div>
@@ -6283,7 +6283,7 @@ export default function EventRequestsManagement() {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="estimatedSandwichCount">
-                      How Many Sandwiches Needed?
+                      How Many Sandwiches to be Made?
                     </Label>
                     <Input
                       name="estimatedSandwichCount"
@@ -6294,7 +6294,7 @@ export default function EventRequestsManagement() {
                         ...prev,
                         estimatedSandwichCount: parseInt(e.target.value) || 0
                       }))}
-                      placeholder="Enter number of sandwiches"
+                      placeholder="How many sandwiches to be made?"
                     />
                   </div>
                   <div>
@@ -7071,7 +7071,7 @@ export default function EventRequestsManagement() {
 
                   <div>
                     <Label htmlFor="estimatedSandwichCount">
-                      Sandwiches Needed
+                      Sandwiches to be Made
                     </Label>
                     <Input
                       name="estimatedSandwichCount"
