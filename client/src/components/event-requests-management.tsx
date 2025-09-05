@@ -2536,7 +2536,7 @@ export default function EventRequestsManagement() {
                         }))
                       }
                       onSave={() => {
-                        handleTrackChange(
+                        handleAutosave(
                           request.id,
                           "deliveryDestination",
                           tempValues.deliveryDestination || "",
