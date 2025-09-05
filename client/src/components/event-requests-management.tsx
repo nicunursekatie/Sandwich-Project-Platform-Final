@@ -545,6 +545,12 @@ export default function EventRequestsManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch available users for speaker/driver assignments
+  const { data: availableUsers = [] } = useQuery({
+    queryKey: ["/api/users"],
+    enabled: true,
+  });
+
   // Handle URL parameters for tab and event highlighting
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
