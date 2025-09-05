@@ -3285,6 +3285,230 @@ export default function EventRequestsManagement() {
             ) : null;
           })()}
 
+
+          {/* Organization Contact Information */}
+          <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
+            <h4 className="font-semibold text-teal-800 mb-2 flex items-center">
+              <User className="w-4 h-4 mr-2" />
+              Organization Contact
+            </h4>
+            <div className="space-y-1 text-sm text-teal-700">
+              <div>
+                <strong>Name:</strong> {request.firstName} {request.lastName}
+              </div>
+              <div className="break-all">
+                <strong>Email:</strong> {request.email}
+              </div>
+              {request.phone && (
+                <div>
+                  <strong>Phone:</strong> {request.phone}
+                </div>
+              )}
+              {request.department && (
+                <div>
+                  <strong>Department:</strong> {request.department}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Event Summary with all remaining details */}
+          <div className="bg-orange-50 p-3 rounded-lg border border-[#FBAD3F]">
+            <h4 className="font-semibold text-[#FBAD3F] mb-2">
+              Event Summary
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {/* Event Start Time with inline editing */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {isEditing(request.id, 'eventStartTime') ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-[#FBAD3F]">Start Time:</span>
+                      <input
+                        type="time"
+                        value={editValues[`${request.id}-eventStartTime`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventStartTime`]: e.target.value })}
+                        className="h-6 px-2 text-xs border rounded"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'eventStartTime')}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'eventStartTime')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-800">
+                        <span className="font-semibold text-blue-700">Start Time:</span>{" "}
+                        <span className="text-gray-900 font-medium">{(request as any).eventStartTime ? formatTime12Hour((request as any).eventStartTime) : "Not set"}</span>
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        onClick={() => startInlineEdit(request.id, 'eventStartTime', (request as any).eventStartTime || '')}
+                      >
+                        <Edit className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Event End Time with inline editing */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {isEditing(request.id, 'eventEndTime') ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-[#FBAD3F]">End Time:</span>
+                      <input
+                        type="time"
+                        value={editValues[`${request.id}-eventEndTime`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventEndTime`]: e.target.value })}
+                        className="h-6 px-2 text-xs border rounded"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'eventEndTime')}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'eventEndTime')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-800">
+                        <span className="font-semibold text-blue-700">End Time:</span>{" "}
+                        <span className="text-gray-900 font-medium">{(request as any).eventEndTime ? formatTime12Hour((request as any).eventEndTime) : "Not set"}</span>
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        onClick={() => startInlineEdit(request.id, 'eventEndTime', (request as any).eventEndTime || '')}
+                      >
+                        <Edit className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Pickup Time with inline editing */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {isEditing(request.id, 'pickupTime') ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-[#FBAD3F]">Pickup Time:</span>
+                      <input
+                        type="time"
+                        value={editValues[`${request.id}-pickupTime`] || ''}
+                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-pickupTime`]: e.target.value })}
+                        className="h-6 px-2 text-xs border rounded"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
+                        onClick={() => saveInlineEdit(request.id, 'pickupTime')}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
+                        onClick={() => cancelInlineEdit(request.id, 'pickupTime')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-800">
+                        <span className="font-semibold text-blue-700">Pickup Time:</span>{" "}
+                        <span className="text-gray-900 font-medium">{(request as any).pickupTime ? formatTime12Hour((request as any).pickupTime) : "Not set"}</span>
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        onClick={() => startInlineEdit(request.id, 'pickupTime', (request as any).pickupTime || '')}
+                      >
+                        <Edit className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sandwich details */}
+              {(request as any).sandwichTypes && (
+                <div className="text-gray-800">
+                  <span className="font-semibold text-green-700">Sandwich Types:</span>{" "}
+                  <span className="text-gray-900 font-medium">{(request as any).sandwichTypes}</span>
+                </div>
+              )}
+
+              {/* Drivers section */}
+              <div className="text-gray-800">
+                <span className="font-semibold text-purple-700">Drivers:</span>{" "}
+                <span className="text-gray-900 font-medium">{(request as any).driverDetails || "Not specified"}</span>
+              </div>
+
+              {/* Speakers section */}
+              <div className="text-gray-800">
+                <span className="font-semibold text-indigo-700">Speakers:</span>{" "}
+                <span className="text-gray-900 font-medium">{(request as any).speakerDetails || "Not specified"}</span>
+              </div>
+
+              {/* Other logistics */}
+              <div className="text-gray-800">
+                <span className="font-semibold text-cyan-700">Refrigeration:</span>{" "}
+                <span className="text-gray-900 font-medium">{request.hasRefrigeration === true
+                  ? "Available"
+                  : request.hasRefrigeration === false
+                    ? "Not available"
+                    : "Not specified"}</span>
+              </div>
+              {(request as any).additionalRequirements && (
+                <div className="text-gray-800">
+                  <span className="font-semibold text-red-700">Special Requirements:</span>{" "}
+                  <span className="text-gray-900 font-medium">{(request as any).additionalRequirements}</span>
+                </div>
+              )}
+
+              {/* Include original message in event summary if it exists and isn't generic */}
+              {request.message &&
+                request.message !== "Imported from Excel file" && (
+                  <div className="col-span-full text-gray-800 p-3 bg-gray-50 rounded border-l-4 border-orange-400">
+                    <span className="font-semibold text-orange-700">Event Details:</span>{" "}
+                    <span className="text-gray-900 font-medium">{request.message}</span>
+                  </div>
+                )}
+            </div>
+          </div>
+
           {/* TSP Contact Information */}
           {(() => {
             const hasPrimaryContact = (request as any).tspContact;
@@ -3536,229 +3760,6 @@ export default function EventRequestsManagement() {
               </div>
             );
           })()}
-
-          {/* Organization Contact Information */}
-          <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
-            <h4 className="font-semibold text-teal-800 mb-2 flex items-center">
-              <User className="w-4 h-4 mr-2" />
-              Organization Contact
-            </h4>
-            <div className="space-y-1 text-sm text-teal-700">
-              <div>
-                <strong>Name:</strong> {request.firstName} {request.lastName}
-              </div>
-              <div className="break-all">
-                <strong>Email:</strong> {request.email}
-              </div>
-              {request.phone && (
-                <div>
-                  <strong>Phone:</strong> {request.phone}
-                </div>
-              )}
-              {request.department && (
-                <div>
-                  <strong>Department:</strong> {request.department}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Event Summary with all remaining details */}
-          <div className="bg-orange-50 p-3 rounded-lg border border-[#FBAD3F]">
-            <h4 className="font-semibold text-[#FBAD3F] mb-2">
-              Event Summary
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {/* Event Start Time with inline editing */}
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  {isEditing(request.id, 'eventStartTime') ? (
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">Start Time:</span>
-                      <input
-                        type="time"
-                        value={editValues[`${request.id}-eventStartTime`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventStartTime`]: e.target.value })}
-                        className="h-6 px-2 text-xs border rounded"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'eventStartTime')}
-                      >
-                        <CheckCircle className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'eventStartTime')}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-800">
-                        <span className="font-semibold text-blue-700">Start Time:</span>{" "}
-                        <span className="text-gray-900 font-medium">{(request as any).eventStartTime ? formatTime12Hour((request as any).eventStartTime) : "Not set"}</span>
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
-                        onClick={() => startInlineEdit(request.id, 'eventStartTime', (request as any).eventStartTime || '')}
-                      >
-                        <Edit className="h-2 w-2" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Event End Time with inline editing */}
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  {isEditing(request.id, 'eventEndTime') ? (
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">End Time:</span>
-                      <input
-                        type="time"
-                        value={editValues[`${request.id}-eventEndTime`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventEndTime`]: e.target.value })}
-                        className="h-6 px-2 text-xs border rounded"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'eventEndTime')}
-                      >
-                        <CheckCircle className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'eventEndTime')}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-800">
-                        <span className="font-semibold text-blue-700">End Time:</span>{" "}
-                        <span className="text-gray-900 font-medium">{(request as any).eventEndTime ? formatTime12Hour((request as any).eventEndTime) : "Not set"}</span>
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
-                        onClick={() => startInlineEdit(request.id, 'eventEndTime', (request as any).eventEndTime || '')}
-                      >
-                        <Edit className="h-2 w-2" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Pickup Time with inline editing */}
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  {isEditing(request.id, 'pickupTime') ? (
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">Pickup Time:</span>
-                      <input
-                        type="time"
-                        value={editValues[`${request.id}-pickupTime`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-pickupTime`]: e.target.value })}
-                        className="h-6 px-2 text-xs border rounded"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'pickupTime')}
-                      >
-                        <CheckCircle className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'pickupTime')}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-800">
-                        <span className="font-semibold text-blue-700">Pickup Time:</span>{" "}
-                        <span className="text-gray-900 font-medium">{(request as any).pickupTime ? formatTime12Hour((request as any).pickupTime) : "Not set"}</span>
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
-                        onClick={() => startInlineEdit(request.id, 'pickupTime', (request as any).pickupTime || '')}
-                      >
-                        <Edit className="h-2 w-2" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Sandwich details */}
-              {(request as any).sandwichTypes && (
-                <div className="text-gray-800">
-                  <span className="font-semibold text-green-700">Sandwich Types:</span>{" "}
-                  <span className="text-gray-900 font-medium">{(request as any).sandwichTypes}</span>
-                </div>
-              )}
-
-              {/* Drivers section */}
-              <div className="text-gray-800">
-                <span className="font-semibold text-purple-700">Drivers:</span>{" "}
-                <span className="text-gray-900 font-medium">{(request as any).driverDetails || "Not specified"}</span>
-              </div>
-
-              {/* Speakers section */}
-              <div className="text-gray-800">
-                <span className="font-semibold text-indigo-700">Speakers:</span>{" "}
-                <span className="text-gray-900 font-medium">{(request as any).speakerDetails || "Not specified"}</span>
-              </div>
-
-              {/* Other logistics */}
-              <div className="text-gray-800">
-                <span className="font-semibold text-cyan-700">Refrigeration:</span>{" "}
-                <span className="text-gray-900 font-medium">{request.hasRefrigeration === true
-                  ? "Available"
-                  : request.hasRefrigeration === false
-                    ? "Not available"
-                    : "Not specified"}</span>
-              </div>
-              {(request as any).additionalRequirements && (
-                <div className="text-gray-800">
-                  <span className="font-semibold text-red-700">Special Requirements:</span>{" "}
-                  <span className="text-gray-900 font-medium">{(request as any).additionalRequirements}</span>
-                </div>
-              )}
-
-              {/* Include original message in event summary if it exists and isn't generic */}
-              {request.message &&
-                request.message !== "Imported from Excel file" && (
-                  <div className="col-span-full text-gray-800 p-3 bg-gray-50 rounded border-l-4 border-orange-400">
-                    <span className="font-semibold text-orange-700">Event Details:</span>{" "}
-                    <span className="text-gray-900 font-medium">{request.message}</span>
-                  </div>
-                )}
-            </div>
-          </div>
 
           {/* Submission Information */}
           <div className="flex justify-between items-center pt-3 border-t text-xs text-gray-500">
