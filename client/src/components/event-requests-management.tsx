@@ -93,6 +93,172 @@ const formatTime12Hour = (time24: string): string => {
   return `${hour24 - 12}:${minutes} PM`;
 };
 
+// Sandwich Destination Tracker Component
+interface SandwichDestinationTrackerProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
+  value,
+  onChange,
+  onSave,
+  onCancel,
+}) => {
+  const [isCustomInput, setIsCustomInput] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch hosts and recipients for destination options
+  const { data: hosts = [] } = useQuery({
+    queryKey: ["/api/hosts"],
+    enabled: true,
+  });
+
+  const { data: recipients = [] } = useQuery({
+    queryKey: ["/api/recipients"],
+    enabled: true,
+  });
+
+  // Combine and filter destination options
+  const destinationOptions = useMemo(() => {
+    const hostOptions = (hosts as any[]).map(host => ({
+      value: host.hostLocationName,
+      label: `🏢 ${host.hostLocationName}`,
+      type: 'host',
+      details: host.hostContactPerson ? `Contact: ${host.hostContactPerson}` : ''
+    }));
+
+    const recipientOptions = (recipients as any[]).map(recipient => ({
+      value: recipient.organizationName,
+      label: `🎯 ${recipient.organizationName}`,
+      type: 'recipient',
+      details: recipient.focusArea ? `Focus: ${recipient.focusArea}` : ''
+    }));
+
+    const allOptions = [...hostOptions, ...recipientOptions];
+    
+    return searchTerm 
+      ? allOptions.filter(option => 
+          option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          option.details.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : allOptions;
+  }, [hosts, recipients, searchTerm]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      onSave();
+    }
+    if (e.key === "Escape") {
+      onCancel();
+    }
+  };
+
+  return (
+    <div className="flex-1 bg-white border rounded-lg p-3 shadow-sm space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+          <span className="w-4 h-4 mr-2">🎯</span>
+          Sandwich Destination Tracker
+        </h4>
+        <div className="flex space-x-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 w-6 p-0 text-green-600 hover:bg-green-50"
+            onClick={onSave}
+          >
+            ✓
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+            onClick={onCancel}
+          >
+            ✗
+          </Button>
+        </div>
+      </div>
+
+      {!isCustomInput ? (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <input
+              type="text"
+              placeholder="🔍 Search existing destinations..."
+              className="flex-1 text-xs border rounded px-2 py-1"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs px-2 py-1 h-7"
+              onClick={() => setIsCustomInput(true)}
+            >
+              + Custom
+            </Button>
+          </div>
+          
+          <div className="max-h-32 overflow-y-auto space-y-1">
+            {destinationOptions.length > 0 ? (
+              destinationOptions.map((option, index) => (
+                <button
+                  key={index}
+                  className={`w-full text-left p-2 text-xs rounded border transition-colors ${
+                    value === option.value 
+                      ? 'bg-blue-50 border-blue-300 text-blue-800' 
+                      : 'bg-gray-50 hover:bg-blue-50 border-gray-200'
+                  }`}
+                  onClick={() => onChange(option.value)}
+                >
+                  <div className="font-medium">{option.label}</div>
+                  {option.details && (
+                    <div className="text-gray-500 text-xs mt-1">{option.details}</div>
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="text-xs text-gray-500 italic p-2">
+                {searchTerm ? 'No matching destinations found' : 'Loading destinations...'}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <input
+              type="text"
+              placeholder="Enter custom destination name..."
+              className="flex-1 text-sm border rounded px-2 py-1"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs px-2 py-1 h-7"
+              onClick={() => setIsCustomInput(false)}
+            >
+              ← Back
+            </Button>
+          </div>
+          <div className="text-xs text-gray-600">
+            💡 Tip: Type any organization, location, or address for sandwich delivery
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Helper function to get sandwich types summary
 const getSandwichTypesSummary = (request: any) => {
   if (request.estimatedSandwichCount) {
@@ -2351,67 +2517,37 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
 
-                {/* Delivery Destination */}
+                {/* Sandwich Destination Tracker */}
                 <div className="flex items-start space-x-3">
                   <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🚚</span>
                   {editingField === "deliveryDestination" && editingEventId === request.id ? (
-                    <div className="flex items-center space-x-1 flex-1">
-                      <input
-                        type="text"
-                        className="flex-1 text-sm border rounded px-2 py-1 bg-white"
-                        value={tempValues.deliveryDestination || (request as any).deliveryDestination || ""}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            deliveryDestination: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "deliveryDestination",
-                              tempValues.deliveryDestination || "",
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                        placeholder="Enter destination organization/location..."
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 w-6 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "deliveryDestination",
-                            tempValues.deliveryDestination || "",
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 w-6 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
+                    <SandwichDestinationTracker
+                      value={tempValues.deliveryDestination || (request as any).deliveryDestination || ""}
+                      onChange={(value) => 
+                        setTempValues((prev) => ({
+                          ...prev,
+                          deliveryDestination: value,
+                        }))
+                      }
+                      onSave={() => {
+                        handleTrackChange(
+                          request.id,
+                          "deliveryDestination",
+                          tempValues.deliveryDestination || "",
+                        );
+                        setEditingField(null);
+                        setEditingEventId(null);
+                        setTempValues({});
+                      }}
+                      onCancel={handleFieldCancel}
+                    />
                   ) : (
                     <div className="flex items-center space-x-2 flex-1">
                       <span className="text-sm text-gray-600 flex-1">
-                        <span className="font-medium text-gray-700">Delivering to: </span>
-                        {(request as any).deliveryDestination || "Not specified"}
+                        <span className="font-medium text-gray-700">🎯 Sandwich Destination: </span>
+                        <span className={`${(request as any).deliveryDestination ? 'text-green-700 font-medium' : 'text-orange-600 italic'}`}>
+                          {(request as any).deliveryDestination || "⚠️ Not specified"}
+                        </span>
                       </span>
                       {canEditField("deliveryDestination") && (
                         <Button
