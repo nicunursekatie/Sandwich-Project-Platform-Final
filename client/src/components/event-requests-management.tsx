@@ -446,7 +446,7 @@ export default function EventRequestsManagement() {
 
   // Fetch available users for speaker/driver assignments
   const { data: availableUsers = [] } = useQuery({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users/for-assignments"],
     enabled: true,
   });
 
