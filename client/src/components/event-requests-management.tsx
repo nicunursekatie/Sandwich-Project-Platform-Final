@@ -676,7 +676,7 @@ export default function EventRequestsManagement() {
           event.id === data.id
             ? {
                 ...event,
-                status: data.method === "email" ? "followed_up" : "in_process",
+                status: "in_process", // Both email and call follow-ups should go to in_process
                 followUpMethod: data.method,
                 updatedEmail: data.updatedEmail,
                 followUpDate: new Date().toISOString(),

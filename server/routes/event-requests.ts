@@ -668,11 +668,9 @@ router.post(
         updatedAt: new Date(),
       };
 
-      // Set status based on method
-      if (method === 'email') {
-        updates.status = 'followed_up';
-      } else if (method === 'call') {
-        updates.status = 'in_process';
+      // Both email and call follow-ups should move event to in_process
+      updates.status = 'in_process';
+      if (method === 'call') {
         updates.updatedEmail = updatedEmail;
       }
 
