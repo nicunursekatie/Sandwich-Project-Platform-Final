@@ -2461,6 +2461,28 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
 
+                {/* Event Address */}
+                {(request as any).eventAddress && (
+                  <div className="flex items-start space-x-3">
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📍</span>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Event Location: </span>
+                      <span className="text-gray-600">{(request as any).eventAddress}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Planning Notes */}
+                {(request as any).planningNotes && (
+                  <div className="flex items-start space-x-3">
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Planning Notes: </span>
+                      <span className="text-gray-600">{(request as any).planningNotes}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Refrigeration */}
                 <div className="flex items-start space-x-3">
                   <span className="text-gray-500 text-sm mt-1 flex-shrink-0">❄️</span>
@@ -2810,6 +2832,16 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
+                {/* Pickup Time Display */}
+                {(request as any).pickupTime && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Pickup Time</span>
+                    <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                      {(request as any).pickupTime}
+                    </span>
+                  </div>
+                )}
+
                 {/* Speaker Assignment */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -2915,6 +2947,14 @@ export default function EventRequestsManagement() {
                       </div>
                     ))}
                   </div>
+
+                {/* Show volunteer notes if present */}
+                {(request as any).volunteerNotes && (
+                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                    <span className="font-medium text-yellow-800">Volunteer Notes: </span>
+                    <span className="text-yellow-700">{(request as any).volunteerNotes}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
