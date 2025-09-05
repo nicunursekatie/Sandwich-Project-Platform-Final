@@ -1336,6 +1336,7 @@ export default function EventRequestsManagement() {
       "eventEndTime",
       "eventAddress",
       "estimatedSandwichCount",
+      "deliveryDestination",
       "contact",
       "hasRefrigeration",
     ];
@@ -2340,6 +2341,88 @@ export default function EventRequestsManagement() {
                             setTempValues({
                               estimatedSandwichCount: request.estimatedSandwichCount || 0,
                               sandwichType: request.sandwichType || 'Unknown'
+                            });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Delivery Destination */}
+                <div className="flex items-start space-x-3">
+                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🚚</span>
+                  {editingField === "deliveryDestination" && editingEventId === request.id ? (
+                    <div className="flex items-center space-x-1 flex-1">
+                      <input
+                        type="text"
+                        className="flex-1 text-sm border rounded px-2 py-1 bg-white"
+                        value={tempValues.deliveryDestination || (request as any).deliveryDestination || ""}
+                        onChange={(e) =>
+                          setTempValues((prev) => ({
+                            ...prev,
+                            deliveryDestination: e.target.value,
+                          }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleTrackChange(
+                              request.id,
+                              "deliveryDestination",
+                              tempValues.deliveryDestination || "",
+                            );
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }
+                          if (e.key === "Escape") handleFieldCancel();
+                        }}
+                        placeholder="Enter destination organization/location..."
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          handleTrackChange(
+                            request.id,
+                            "deliveryDestination",
+                            tempValues.deliveryDestination || "",
+                          );
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 w-6 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 flex-1">
+                      <span className="text-sm text-gray-600 flex-1">
+                        <span className="font-medium text-gray-700">Delivering to: </span>
+                        {(request as any).deliveryDestination || "Not specified"}
+                      </span>
+                      {canEditField("deliveryDestination") && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField("deliveryDestination");
+                            setEditingEventId(request.id);
+                            setTempValues({
+                              deliveryDestination: (request as any).deliveryDestination || "",
                             });
                           }}
                         >

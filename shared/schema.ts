@@ -1116,6 +1116,7 @@ export const eventRequests = pgTable("event_requests", {
   
   // Additional event details
   sandwichTypes: jsonb("sandwich_types"), // Array of {type: string, quantity: number} objects
+  deliveryDestination: text("delivery_destination"), // Organization/host location where sandwiches will be delivered
   // Driver and speaker requirements
   driversNeeded: integer("drivers_needed").default(0), // How many drivers this event needs
   speakersNeeded: integer("speakers_needed").default(0), // How many speakers this event needs
@@ -1243,6 +1244,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   additionalContact2: z.string().nullable().optional(),
   planningNotes: z.string().nullable().optional(),
   eventAddress: z.string().nullable().optional(),
+  deliveryDestination: z.string().nullable().optional(),
   estimatedSandwichCount: z.number().nullable().optional(),
   sandwichTypes: z.array(z.object({
     type: z.string(),
