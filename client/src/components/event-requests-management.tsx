@@ -532,10 +532,8 @@ export default function EventRequestsManagement() {
     null,
   );
   // Driver Assignment state
-  const [showDriverDialog, setShowDriverDialog] = useState(false);
-  const [assigningDriverRequest, setAssigningDriverRequest] =
-    useState<EventRequest | null>(null);
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
+  const [editingDriversFor, setEditingDriversFor] = useState<number | null>(null);
+  const [tempDriverInput, setTempDriverInput] = useState("");
   // Speaker Assignment state
   const [showSpeakerDialog, setShowSpeakerDialog] = useState(false);
   const [assigningSpeakerRequest, setAssigningSpeakerRequest] =
@@ -1073,22 +1071,6 @@ export default function EventRequestsManagement() {
   };
 
   // Assignment save mutations
-  const saveDriverAssignmentMutation = useMutation({
-    mutationFn: ({ eventId, driverIds }: { eventId: number; driverIds: string[] }) =>
-      apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedDriverIds: driverIds }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
-      setShowDriverDialog(false);
-      toast({ title: "Driver assignments updated successfully" });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error updating driver assignments",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const saveSpeakerAssignmentMutation = useMutation({
     mutationFn: ({ eventId, speakerIds }: { eventId: number; speakerIds: string[] }) =>
@@ -2784,17 +2766,72 @@ export default function EventRequestsManagement() {
                         </button>
                       )}
                     </div>
-                    <button
-                      className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
-                      onClick={() => {
-                        setAssigningDriverRequest(request);
-                        setShowDriverDialog(true);
-                        const currentDrivers = (request as any).assignedDriverIds || [];
-                        setSelectedDrivers(currentDrivers);
-                      }}
-                    >
-                      {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
-                    </button>
+                    {editingDriversFor === request.id ? (
+                      <div className="flex items-center space-x-1">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "__custom__") {
+                              setTempDriverInput("");
+                              // Focus will be on input field
+                            } else if (value) {
+                              // Add selected driver immediately
+                              const currentDrivers = (request as any).assignedDriverIds || [];
+                              const updatedDrivers = [...currentDrivers, value];
+                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                            }
+                          }}
+                          className="text-xs border rounded px-2 py-1 min-w-32"
+                        >
+                          <option value="">Select driver...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                          <option value="__custom__">+ Add custom driver</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Type driver name..."
+                          value={tempDriverInput}
+                          onChange={(e) => setTempDriverInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && tempDriverInput.trim()) {
+                              const currentDrivers = (request as any).assignedDriverIds || [];
+                              const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
+                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                              setTempDriverInput("");
+                            }
+                            if (e.key === "Escape") {
+                              setEditingDriversFor(null);
+                              setTempDriverInput("");
+                            }
+                          }}
+                          className="text-xs border rounded px-2 py-1 w-32"
+                        />
+                        <button
+                          onClick={() => {
+                            setEditingDriversFor(null);
+                            setTempDriverInput("");
+                          }}
+                          className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700"
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                        onClick={() => {
+                          setEditingDriversFor(request.id);
+                          setTempDriverInput("");
+                        }}
+                      >
+                        {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
+                      </button>
+                    )}
                   </div>
                   {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
                     <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
@@ -6371,93 +6408,6 @@ export default function EventRequestsManagement() {
           </Dialog>
         )}
 
-        {/* Driver Assignment Dialog */}
-        {showDriverDialog && assigningDriverRequest && (
-          <Dialog
-            open={showDriverDialog}
-            onOpenChange={setShowDriverDialog}
-          >
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Assign Drivers</DialogTitle>
-                <p className="text-sm text-gray-600">
-                  Assign drivers for{" "}
-                  {assigningDriverRequest.organizationName}
-                </p>
-              </DialogHeader>
-
-              <div className="space-y-6">
-                <div>
-                  <Label className="text-base font-medium">
-                    Available Team Members
-                  </Label>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Drivers needed: {(assigningDriverRequest as any).driversNeeded || 0}
-                  </p>
-                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                    {availableUsers?.map((user: any) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <input
-                          type="checkbox"
-                          id={`driver-${user.id}`}
-                          checked={selectedDrivers.includes(user.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedDrivers([...selectedDrivers, user.id]);
-                            } else {
-                              setSelectedDrivers(
-                                selectedDrivers.filter((id) => id !== user.id)
-                              );
-                            }
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        <label
-                          htmlFor={`driver-${user.id}`}
-                          className="text-sm cursor-pointer"
-                        >
-                          {user.displayName} ({user.email})
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowDriverDialog(false);
-                    setAssigningDriverRequest(null);
-                    setSelectedDrivers([]);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    saveDriverAssignmentMutation.mutate({
-                      eventId: assigningDriverRequest.id,
-                      driverIds: selectedDrivers,
-                    });
-                  }}
-                  disabled={saveDriverAssignmentMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {saveDriverAssignmentMutation.isPending
-                    ? "Assigning..."
-                    : "Assign Drivers"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
 
         {/* Speaker Assignment Dialog */}
         {showSpeakerDialog && assigningSpeakerRequest && (
