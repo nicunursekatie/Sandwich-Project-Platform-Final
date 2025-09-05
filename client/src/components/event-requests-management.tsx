@@ -92,7 +92,7 @@ const formatTime12Hour = (time24: string): string => {
   return `${hour24 - 12}:${minutes} PM`;
 };
 
-// Sandwich Destination Tracker Component
+// Sandwich Destination Tracker Component - Simplified Free Text Entry
 interface SandwichDestinationTrackerProps {
   value: string;
   onChange: (value: string) => void;
@@ -106,53 +106,6 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
   onSave,
   onCancel,
 }) => {
-  const [isCustomInput, setIsCustomInput] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Fetch hosts and recipients for destination options
-  const { data: hosts = [] } = useQuery({
-    queryKey: ["/api/hosts"],
-    enabled: true,
-  });
-
-  const { data: recipients = [] } = useQuery({
-    queryKey: ["/api/recipients"],
-    enabled: true,
-  });
-
-  // Combine and filter destination options
-  const destinationOptions = useMemo(() => {
-    // Filter hosts with valid names
-    const hostOptions = (hosts as any[])
-      .filter(host => host && host.hostLocationName)
-      .map(host => ({
-        value: host.hostLocationName,
-        label: `🏢 ${host.hostLocationName}`,
-        type: 'host',
-        details: host.hostContactPerson ? `Contact: ${host.hostContactPerson}` : ''
-      }));
-
-    // Filter recipients with valid names  
-    const recipientOptions = (recipients as any[])
-      .filter(recipient => recipient && recipient.organizationName)
-      .map(recipient => ({
-        value: recipient.organizationName,
-        label: `🎯 ${recipient.organizationName}`,
-        type: 'recipient',
-        details: recipient.focusArea ? `Focus: ${recipient.focusArea}` : ''
-      }));
-
-    const allOptions = [...hostOptions, ...recipientOptions];
-    
-    return searchTerm 
-      ? allOptions.filter(option => 
-          option.value && option.label &&
-          (option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          option.details.toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-      : allOptions;
-  }, [hosts, recipients, searchTerm]);
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       onSave();
@@ -167,7 +120,7 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-gray-800 flex items-center">
           <span className="w-4 h-4 mr-2">🎯</span>
-          Sandwich Destination Tracker
+          Sandwich Destination
         </h4>
         <div className="flex space-x-1">
           <Button
@@ -189,78 +142,20 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
         </div>
       </div>
 
-      {!isCustomInput ? (
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <input
-              type="text"
-              placeholder="🔍 Search existing destinations..."
-              className="flex-1 text-xs border rounded px-2 py-1"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs px-2 py-1 h-7"
-              onClick={() => setIsCustomInput(true)}
-            >
-              + Custom
-            </Button>
-          </div>
-          
-          <div className="max-h-32 overflow-y-auto space-y-1">
-            {destinationOptions.length > 0 ? (
-              destinationOptions.map((option, index) => (
-                <button
-                  key={index}
-                  className={`w-full text-left p-2 text-xs rounded border transition-colors ${
-                    value === option.value 
-                      ? 'bg-blue-50 border-blue-300 text-blue-800' 
-                      : 'bg-gray-50 hover:bg-blue-50 border-gray-200'
-                  }`}
-                  onClick={() => onChange(option.value)}
-                >
-                  <div className="font-medium">{option.label}</div>
-                  {option.details && (
-                    <div className="text-gray-500 text-xs mt-1">{option.details}</div>
-                  )}
-                </button>
-              ))
-            ) : (
-              <div className="text-xs text-gray-500 italic p-2">
-                {searchTerm ? 'No matching destinations found' : 'Loading destinations...'}
-              </div>
-            )}
-          </div>
+      <div className="space-y-2">
+        <input
+          type="text"
+          placeholder="Enter destination (organization, address, location)..."
+          className="w-full text-sm border rounded px-3 py-2"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          autoFocus
+        />
+        <div className="text-xs text-gray-600">
+          💡 Examples: "Community Food Bank", "Main Office", "123 Main St", "Front desk delivery"
         </div>
-      ) : (
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <input
-              type="text"
-              placeholder="Enter custom destination name..."
-              className="flex-1 text-sm border rounded px-2 py-1"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              autoFocus
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs px-2 py-1 h-7"
-              onClick={() => setIsCustomInput(false)}
-            >
-              ← Back
-            </Button>
-          </div>
-          <div className="text-xs text-gray-600">
-            💡 Tip: Type any organization, location, or address for sandwich delivery
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
