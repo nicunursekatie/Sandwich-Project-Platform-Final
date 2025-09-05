@@ -51,8 +51,8 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
           section: userActivityLogs.section,
           feature: userActivityLogs.feature,
           page: userActivityLogs.page,
-          details: sql`COALESCE(CAST(${userActivityLogs.details} AS text), 'Activity logged')`.as('details'),
-          metadata: sql`COALESCE(CAST(${userActivityLogs.metadata} AS text), '{}')`.as('metadata'),
+          details: sql`COALESCE(NULLIF(CAST(${userActivityLogs.details} AS text), ''), 'Activity logged')`.as('details'),
+          metadata: sql`COALESCE(NULLIF(CAST(${userActivityLogs.metadata} AS text), ''), '{}')`.as('metadata'),
           duration: userActivityLogs.duration,
           createdAt: userActivityLogs.createdAt
         })
@@ -183,6 +183,9 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
             parsedMetadata = {};
           }
           
+          // Debug logging for individual activities
+          console.log(`🔍 Individual Activity ${log.id}: details="${log.details}", action="${log.action}", section="${log.section}", feature="${log.feature}"`);
+          
           return {
             id: log.id,
             userId: log.userId,
@@ -191,8 +194,8 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
             section: log.section,
             feature: log.feature,
             page: log.page,
-            details: log.details && typeof log.details === 'string' ? log.details : 
-                     `${log.action} - ${log.section}${log.feature ? ` - ${log.feature}` : ''}`,
+            details: log.details && typeof log.details === 'string' && log.details.trim() !== '' && log.details !== 'Activity logged' ? log.details : 
+                     `${log.action} in ${log.section}${log.feature ? ` (${log.feature})` : ''}`,
             metadata: parsedMetadata,
             duration: log.duration,
             createdAt: log.createdAt
@@ -214,8 +217,8 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
             section: log.section,
             feature: log.feature,
             page: log.page,
-            details: log.details && typeof log.details === 'string' ? log.details : 
-                     `${log.action} - ${log.section}${log.feature ? ` - ${log.feature}` : ''}`,
+            details: log.details && typeof log.details === 'string' && log.details.trim() !== '' ? log.details : 
+                     `${log.action} in ${log.section}${log.feature ? ` (${log.feature})` : ''}`,
             metadata: parsedMetadata,
             duration: log.duration,
             createdAt: log.createdAt
