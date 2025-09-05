@@ -312,6 +312,10 @@ export default function EventRequestsManagement() {
     useState<EventRequest | null>(null);
   const [pastEventsPage, setPastEventsPage] = useState(1);
   const [pastEventsPerPage] = useState(10);
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
+  const [deletingRequest, setDeletingRequest] = useState<EventRequest | null>(
+    null,
+  );
   // Sorting state for all tabs
   const [requestsSortBy, setRequestsSortBy] = useState<"date" | "organization">(
     "date",
@@ -778,6 +782,20 @@ export default function EventRequestsManagement() {
       });
     },
   });
+
+  // Handle delete confirmation
+  const handleDeleteRequest = (request: EventRequest) => {
+    setDeletingRequest(request);
+    setShowDeleteConfirmDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingRequest) {
+      deleteMutation.mutate(deletingRequest.id);
+      setShowDeleteConfirmDialog(false);
+      setDeletingRequest(null);
+    }
+  };
 
   const importHistoricalMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/import/import-historical"),
@@ -3090,6 +3108,16 @@ export default function EventRequestsManagement() {
               >
                 <Edit className="h-4 w-4 mr-1" />
                 Edit Event
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeleteRequest(request)}
+                className="text-red-600 hover:text-red-800 bg-gradient-to-r from-red-50 to-pink-100 hover:from-red-100 hover:to-pink-200"
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {deleteMutation.isPending ? "Deleting..." : "Delete Event"}
               </Button>
             </div>
           </div>
@@ -6063,6 +6091,62 @@ export default function EventRequestsManagement() {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-red-600">
+                <Trash2 className="h-5 w-5" />
+                <span>Delete Event Request</span>
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this event request? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {deletingRequest && (
+              <div className="py-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="font-medium text-gray-900">
+                    {deletingRequest.organizationName}
+                  </div>
+                  {deletingRequest.department && (
+                    <div className="text-sm text-gray-600">
+                      {deletingRequest.department}
+                    </div>
+                  )}
+                  {deletingRequest.desiredEventDate && (
+                    <div className="text-sm text-gray-600 mt-1">
+                      {formatEventDate(deletingRequest.desiredEventDate).text}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirmDialog(false);
+                  setDeletingRequest(null);
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={deleteMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete Event"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
