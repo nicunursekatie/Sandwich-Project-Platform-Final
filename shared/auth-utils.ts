@@ -128,6 +128,7 @@ export const PERMISSIONS = {
   // DOCUMENTS - Document management
   DOCUMENTS_VIEW: "DOCUMENTS_VIEW", 
   DOCUMENTS_MANAGE: "DOCUMENTS_MANAGE",
+  DOCUMENTS_CONFIDENTIAL: "DOCUMENTS_CONFIDENTIAL", // Access to confidential documents
 
   // DATA - Data import/export
   DATA_EXPORT: "DATA_EXPORT",

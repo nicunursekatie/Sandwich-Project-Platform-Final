@@ -2470,6 +2470,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDocumentsForUser(userId: string): Promise<Document[]> {
+    // Check if user has confidential documents access
+    const user = await this.getUserById(userId);
+    const hasConfidentialAccess = user?.permissions?.includes("DOCUMENTS_CONFIDENTIAL") || false;
+
     // Get documents that the user has permissions for or that they uploaded
     const results = await db.select({
       id: documents.id,
@@ -2495,6 +2499,8 @@ export class DatabaseStorage implements IStorage {
     ))
     .where(and(
       eq(documents.isActive, true),
+      // Exclude confidential documents unless user has special permission
+      hasConfidentialAccess ? undefined : ne(documents.category, "confidential"),
       or(
         eq(documents.uploadedBy, userId), // User uploaded this document
         isNotNull(documentPermissions.id) // User has explicit permission

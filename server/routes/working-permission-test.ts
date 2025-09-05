@@ -159,6 +159,7 @@ const PERMISSION_TESTS: PermissionTest[] = [
   // === DOCUMENTS ===
   { permission: PERMISSIONS.DOCUMENTS_VIEW, name: 'Documents View' },
   { permission: PERMISSIONS.DOCUMENTS_MANAGE, name: 'Documents Manage' },
+  { permission: PERMISSIONS.DOCUMENTS_CONFIDENTIAL, name: 'Documents Confidential' },
   
   // === DATA IMPORT/EXPORT ===
   { permission: PERMISSIONS.DATA_EXPORT, name: 'Data Export' },

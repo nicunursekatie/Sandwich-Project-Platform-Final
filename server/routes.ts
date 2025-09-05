@@ -10475,6 +10475,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Document not found" });
       }
 
+      // Check if document is confidential and user lacks permission
+      if (document.category === 'confidential' && !hasPermission(req.user, "DOCUMENTS_CONFIDENTIAL")) {
+        return res.status(403).json({ message: "Insufficient permissions for confidential document" });
+      }
+
       // Log access
       await storage.logDocumentAccess({
         documentId,
@@ -10682,6 +10687,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const document = await storage.getDocument(documentId);
       if (!document) {
         return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Check if document is confidential and user lacks permission
+      if (document.category === 'confidential' && !hasPermission(req.user, "DOCUMENTS_CONFIDENTIAL")) {
+        return res.status(403).json({ message: "Insufficient permissions for confidential document" });
       }
 
       // Log access

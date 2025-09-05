@@ -1935,8 +1935,15 @@ export class MemStorage implements IStorage {
   }
 
   async getDocumentsForUser(userId: string): Promise<Document[]> {
-    // For memory storage, return all documents (permissions checking would be done in database version)
-    return Array.from(this.documents.values()).filter(doc => doc.isActive);
+    // Check if user has confidential documents access
+    const user = await this.getUserById(userId);
+    const hasConfidentialAccess = user?.permissions?.includes("DOCUMENTS_CONFIDENTIAL") || false;
+
+    // For memory storage, filter documents based on confidential access
+    return Array.from(this.documents.values()).filter(doc => 
+      doc.isActive && 
+      (hasConfidentialAccess || doc.category !== "confidential")
+    );
   }
 
   async createDocument(insertDocument: InsertDocument): Promise<Document> {
