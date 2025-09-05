@@ -181,6 +181,82 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
               metadata.itemType = 'message';
             }
 
+            // Generate meaningful activity details based on the action and endpoint
+            let activityDetails = actionDetails.description;
+            
+            // Enhance details based on specific endpoints and actions
+            if (actionDetails.action === 'Update' || actionDetails.action === 'Create') {
+              if (req.path.includes('/users') || req.path.includes('/user-management')) {
+                activityDetails = actionDetails.action === 'Update' 
+                  ? 'Updated user account settings or permissions'
+                  : 'Created new user account';
+              } else if (req.path.includes('/projects')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated project details, status, or assignments'
+                  : 'Created new project';
+              } else if (req.path.includes('/collections')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated sandwich collection data or status'
+                  : 'Added new sandwich collection entry';
+              } else if (req.path.includes('/meetings')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated meeting details, agenda, or attendees'
+                  : 'Created new meeting';
+              } else if (req.path.includes('/hosts')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated host organization information or contacts'
+                  : 'Added new host organization';
+              } else if (req.path.includes('/recipients')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated recipient organization details or focus areas'
+                  : 'Added new recipient organization';
+              } else if (req.path.includes('/drivers')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated driver information or agreements'
+                  : 'Added new driver';
+              } else if (req.path.includes('/messages')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated or edited message content'
+                  : 'Sent new message';
+              } else if (req.path.includes('/announcements')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated announcement content or visibility'
+                  : 'Created new announcement';
+              } else if (req.path.includes('/suggestions')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated suggestion details or status'
+                  : 'Submitted new suggestion';
+              } else if (req.path.includes('/event-requests')) {
+                activityDetails = actionDetails.action === 'Update'
+                  ? 'Updated event request status or details'
+                  : 'Submitted new event request';
+              } else {
+                // Generic fallback with more context
+                activityDetails = actionDetails.action === 'Update'
+                  ? `Updated ${feature.toLowerCase()} information`
+                  : `Created new ${feature.toLowerCase()} entry`;
+              }
+              
+              // Add ID from URL if available for more specificity
+              const idMatch = req.path.match(/\/(\d+)$/);
+              if (idMatch) {
+                activityDetails += ` (ID: ${idMatch[1]})`;
+              }
+            } else if (actionDetails.action === 'View') {
+              if (req.path.includes('/dashboard')) {
+                activityDetails = `Viewed ${feature.toLowerCase()} dashboard`;
+              } else if (req.path.includes('/analytics')) {
+                activityDetails = `Accessed analytics and reports`;
+              } else if (req.path.includes('/user-management')) {
+                activityDetails = `Viewed user management interface`;
+              } else {
+                activityDetails = `Viewed ${feature.toLowerCase()} content`;
+              }
+            } else if (actionDetails.action === 'Delete') {
+              const idMatch = req.path.match(/\/(\d+)$/);
+              activityDetails = `Deleted ${feature.toLowerCase()}${idMatch ? ` (ID: ${idMatch[1]})` : ''}`;
+            }
+
             // Create detailed activity log entry
             await options.storage.logUserActivity({
               userId: user.id,
@@ -188,6 +264,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
               section,
               page,
               feature,
+              details: activityDetails,
               sessionId: (req as any).sessionID,
               ipAddress: req.ip,
               userAgent: req.get('User-Agent') || 'Unknown',
