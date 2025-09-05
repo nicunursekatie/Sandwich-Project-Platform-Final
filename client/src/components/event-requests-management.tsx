@@ -2555,11 +2555,11 @@ export default function EventRequestsManagement() {
                           {(request as any).deliveryDestination || "⚠️ Not specified"}
                         </span>
                       </span>
-                      {canEditField("deliveryDestination") && (
+                      {canEditField("deliveryDestination") ? (
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          variant="outline"
+                          className="h-8 px-2 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
                           onClick={() => {
                             setEditingField("deliveryDestination");
                             setEditingEventId(request.id);
@@ -2568,8 +2568,11 @@ export default function EventRequestsManagement() {
                             });
                           }}
                         >
-                          <Edit className="w-3 h-3" />
+                          <Edit className="w-3 h-3 mr-1" />
+                          Edit Destination
                         </Button>
+                      ) : (
+                        <div className="text-xs text-gray-400 italic">Edit requires admin permissions</div>
                       )}
                     </div>
                   )}
