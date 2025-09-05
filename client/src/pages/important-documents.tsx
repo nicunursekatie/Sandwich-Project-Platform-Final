@@ -318,32 +318,34 @@ export default function ImportantDocuments() {
             </div>
 
             {/* Documents Grid - Professional design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-16">
           {filteredDocuments.map((doc) => (
             <Card key={doc.id} className="group transition-all duration-300 ease-in-out h-full flex flex-col bg-white border-0 shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(35,99,131,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.08),0_16px_48px_rgba(35,99,131,0.08)] hover:-translate-y-2 rounded-lg overflow-hidden">
-              <CardHeader className="pb-8 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+              <CardHeader className="pb-6 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-5 min-w-0 flex-1">
+                  <div className="flex items-start space-x-4 min-w-0 flex-1">
                     <div className="flex-shrink-0 p-3 bg-gradient-to-br from-[#236383]/10 to-[#236383]/5 rounded-xl shadow-inner">
-                      <FileText className="h-6 w-6 text-[#236383]" />
+                      <FileText className="h-5 w-5 text-[#236383]" />
                     </div>
-                    <CardTitle className="text-xl md:text-2xl font-bold text-gray-900 leading-tight group-hover:text-[#236383] transition-colors">
-                      {doc.name}
-                    </CardTitle>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-lg font-bold text-gray-900 leading-tight group-hover:text-[#236383] transition-colors break-words">
+                        {doc.name}
+                      </CardTitle>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-4">
-                  <Badge className="text-sm font-semibold px-4 py-2 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 rounded-full shadow-sm">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge className="text-xs font-semibold px-3 py-1 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 rounded-full shadow-sm">
                     {doc.category}
                   </Badge>
-                  <Badge variant="outline" className="text-sm font-semibold px-4 py-2 border-2 border-[#236383] text-[#236383] rounded-full bg-white shadow-sm">
+                  <Badge variant="outline" className="text-xs font-semibold px-3 py-1 border border-[#236383] text-[#236383] rounded-full bg-white shadow-sm">
                     {doc.type.toUpperCase()}
                   </Badge>
                   {getImportanceBadge(doc.importance)}
                 </div>
               </CardHeader>
-              <CardContent className="pt-0 flex-1 flex flex-col px-8 pb-8">
-                <CardDescription className="mb-10 flex-1 text-lg leading-relaxed text-gray-600 font-medium">
+              <CardContent className="pt-0 flex-1 flex flex-col px-6 pb-6">
+                <CardDescription className="mb-6 flex-1 text-base leading-relaxed text-gray-600 line-clamp-3">
                   {doc.description}
                 </CardDescription>
                 {/* Action buttons - Smaller, more subtle design */}
@@ -373,7 +375,7 @@ export default function ImportantDocuments() {
 
           <TabsContent value="logos" className="space-y-8">
             {/* Logo Grid - Professional design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {logoFiles.map((logo) => (
                 <Card key={logo.id} className="group transition-all duration-300 ease-in-out h-full flex flex-col bg-white border-0 shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(35,99,131,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.08),0_16px_48px_rgba(35,99,131,0.08)] hover:-translate-y-2 rounded-lg overflow-hidden">
                   <CardHeader className="pb-8 bg-gradient-to-r from-gray-50 to-white">
