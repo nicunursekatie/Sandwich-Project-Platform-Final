@@ -72,6 +72,7 @@ import {
   X,
   History,
   HelpCircle,
+  Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
