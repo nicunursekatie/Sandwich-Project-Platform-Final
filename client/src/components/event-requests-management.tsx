@@ -5444,39 +5444,184 @@ export default function EventRequestsManagement() {
                     />
                   </div>
                 </div>
+                {/* Sandwich Destination */}
+                <div>
+                  <Label htmlFor="deliveryDestination">Sandwich Destination</Label>
+                  <Input
+                    name="deliveryDestination"
+                    defaultValue={(selectedRequest as any).deliveryDestination || ""}
+                    placeholder="Final delivery location (organization, address, etc.)"
+                  />
+                </div>
+
+                {/* Transportation Workflow */}
+                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+                  <h3 className="text-lg font-semibold text-gray-800">🚛 Transportation Plan</h3>
+                  <p className="text-sm text-gray-600">Many events involve temporary storage at a host location before final delivery</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="storageLocation">Overnight Storage Location (Optional)</Label>
+                      <Input
+                        name="storageLocation"
+                        defaultValue={(selectedRequest as any).storageLocation || ""}
+                        placeholder="Host location for overnight storage"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="finalDeliveryMethod">Final Delivery Method</Label>
+                      <select
+                        name="finalDeliveryMethod"
+                        defaultValue={(selectedRequest as any).finalDeliveryMethod || ""}
+                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Select delivery method</option>
+                        <option value="direct_delivery">Direct from event to recipient</option>
+                        <option value="pickup_by_recipient">Pickup by recipient from storage</option>
+                        <option value="driver_delivery">Driver delivery from storage</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Drivers Section */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Drivers</h3>
-                  <div>
-                    <Label htmlFor="driversNeeded">
-                      How Many Drivers Needed?
-                    </Label>
-                    <Input
-                      name="driversNeeded"
-                      type="number"
-                      min="0"
-                      defaultValue={(selectedRequest as any).driversNeeded || 0}
-                      placeholder="Number of drivers needed"
-                    />
+                <div className="space-y-4 border rounded-lg p-4 bg-blue-50">
+                  <h3 className="text-lg font-semibold text-blue-800">🚗 Drivers</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="driversNeeded">How Many Drivers Needed?</Label>
+                      <Input
+                        name="driversNeeded"
+                        type="number"
+                        min="0"
+                        defaultValue={(selectedRequest as any).driversNeeded || 0}
+                        placeholder="Number of drivers needed"
+                      />
+                    </div>
+                    <div>
+                      <Label>Assigned Drivers</Label>
+                      <div className="space-y-2">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentDrivers = (selectedRequest as any).assignedDriverIds || [];
+                              const updatedDrivers = [...currentDrivers, e.target.value];
+                              // Update the selectedRequest temporarily for display
+                              (selectedRequest as any).assignedDriverIds = updatedDrivers;
+                              e.target.value = "";
+                            }
+                          }}
+                          className="w-full text-sm border rounded px-2 py-1"
+                        >
+                          <option value="">Add team member...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Or type custom driver name"
+                          className="w-full text-sm border rounded px-2 py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && e.target.value.trim()) {
+                              const currentDrivers = (selectedRequest as any).assignedDriverIds || [];
+                              const updatedDrivers = [...currentDrivers, e.target.value.trim()];
+                              (selectedRequest as any).assignedDriverIds = updatedDrivers;
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {((selectedRequest as any).assignedDriverIds || []).map((driverId: string, index: number) => (
+                            <span key={index} className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                              {getUserDisplayName(driverId)}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedDrivers = (selectedRequest as any).assignedDriverIds?.filter((_: any, i: number) => i !== index) || [];
+                                  (selectedRequest as any).assignedDriverIds = updatedDrivers;
+                                }}
+                                className="ml-1 text-blue-600 hover:text-blue-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Speakers Section */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Speakers</h3>
-                  <div>
-                    <Label htmlFor="speakersNeeded">
-                      How Many Speakers Needed?
-                    </Label>
-                    <Input
-                      name="speakersNeeded"
-                      type="number"
-                      min="0"
-                      defaultValue={
-                        (selectedRequest as any).speakersNeeded || 0
-                      }
-                      placeholder="Number of speakers needed"
-                    />
+                <div className="space-y-4 border rounded-lg p-4 bg-green-50">
+                  <h3 className="text-lg font-semibold text-green-800">🎤 Speakers</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
+                      <Input
+                        name="speakersNeeded"
+                        type="number"
+                        min="0"
+                        defaultValue={(selectedRequest as any).speakersNeeded || 0}
+                        placeholder="Number of speakers needed"
+                      />
+                    </div>
+                    <div>
+                      <Label>Assigned Speakers</Label>
+                      <div className="space-y-2">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentSpeakers = (selectedRequest as any).assignedSpeakerIds || [];
+                              const updatedSpeakers = [...currentSpeakers, e.target.value];
+                              (selectedRequest as any).assignedSpeakerIds = updatedSpeakers;
+                              e.target.value = "";
+                            }
+                          }}
+                          className="w-full text-sm border rounded px-2 py-1"
+                        >
+                          <option value="">Add team member...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Or type custom speaker name"
+                          className="w-full text-sm border rounded px-2 py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && e.target.value.trim()) {
+                              const currentSpeakers = (selectedRequest as any).assignedSpeakerIds || [];
+                              const updatedSpeakers = [...currentSpeakers, e.target.value.trim()];
+                              (selectedRequest as any).assignedSpeakerIds = updatedSpeakers;
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {((selectedRequest as any).assignedSpeakerIds || []).map((speakerId: string, index: number) => (
+                            <span key={index} className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                              {getUserDisplayName(speakerId)}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedSpeakers = (selectedRequest as any).assignedSpeakerIds?.filter((_: any, i: number) => i !== index) || [];
+                                  (selectedRequest as any).assignedSpeakerIds = updatedSpeakers;
+                                }}
+                                className="ml-1 text-green-600 hover:text-green-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -6088,19 +6233,201 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
+                {/* Sandwich Destination */}
+                <div>
+                  <Label htmlFor="deliveryDestination">Sandwich Destination</Label>
+                  <Input
+                    name="deliveryDestination"
+                    defaultValue={(detailsRequest as any).deliveryDestination || ""}
+                    placeholder="Final delivery location (organization, address, etc.)"
+                  />
+                </div>
+
+                {/* Transportation Workflow */}
+                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+                  <h3 className="text-lg font-semibold text-gray-800">🚛 Transportation Plan</h3>
+                  <p className="text-sm text-gray-600">Many events involve temporary storage at a host location before final delivery</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="storageLocation">Overnight Storage Location (Optional)</Label>
+                      <Input
+                        name="storageLocation"
+                        defaultValue={(detailsRequest as any).storageLocation || ""}
+                        placeholder="Host location for overnight storage"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="finalDeliveryMethod">Final Delivery Method</Label>
+                      <select
+                        name="finalDeliveryMethod"
+                        defaultValue={(detailsRequest as any).finalDeliveryMethod || ""}
+                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Select delivery method</option>
+                        <option value="direct_delivery">Direct from event to recipient</option>
+                        <option value="pickup_by_recipient">Pickup by recipient from storage</option>
+                        <option value="driver_delivery">Driver delivery from storage</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Drivers Section */}
+                <div className="space-y-4 border rounded-lg p-4 bg-blue-50">
+                  <h3 className="text-lg font-semibold text-blue-800">🚗 Drivers</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="driversNeeded">How Many Drivers Needed?</Label>
+                      <Input
+                        name="driversNeeded"
+                        type="number"
+                        min="0"
+                        defaultValue={(detailsRequest as any).driversNeeded || 0}
+                        placeholder="Number of drivers needed"
+                      />
+                    </div>
+                    <div>
+                      <Label>Assigned Drivers</Label>
+                      <div className="space-y-2">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
+                              const updatedDrivers = [...currentDrivers, e.target.value];
+                              setDetailsRequest(prev => ({
+                                ...prev,
+                                assignedDriverIds: updatedDrivers
+                              }));
+                              e.target.value = "";
+                            }
+                          }}
+                          className="w-full text-sm border rounded px-2 py-1"
+                        >
+                          <option value="">Add team member...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Or type custom driver name"
+                          className="w-full text-sm border rounded px-2 py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && e.target.value.trim()) {
+                              const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
+                              const updatedDrivers = [...currentDrivers, e.target.value.trim()];
+                              setDetailsRequest(prev => ({
+                                ...prev,
+                                assignedDriverIds: updatedDrivers
+                              }));
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {((detailsRequest as any).assignedDriverIds || []).map((driverId: string, index: number) => (
+                            <span key={index} className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                              {getUserDisplayName(driverId)}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedDrivers = (detailsRequest as any).assignedDriverIds?.filter((_: any, i: number) => i !== index) || [];
+                                  setDetailsRequest(prev => ({
+                                    ...prev,
+                                    assignedDriverIds: updatedDrivers
+                                  }));
+                                }}
+                                className="ml-1 text-blue-600 hover:text-blue-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Speakers Section */}
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="speakersNeeded">
-                      How Many Speakers Needed?
-                    </Label>
-                    <Input
-                      name="speakersNeeded"
-                      type="number"
-                      min="0"
-                      defaultValue={(detailsRequest as any).speakersNeeded || 0}
-                      placeholder="Number of speakers needed"
-                    />
+                <div className="space-y-4 border rounded-lg p-4 bg-green-50">
+                  <h3 className="text-lg font-semibold text-green-800">🎤 Speakers</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
+                      <Input
+                        name="speakersNeeded"
+                        type="number"
+                        min="0"
+                        defaultValue={(detailsRequest as any).speakersNeeded || 0}
+                        placeholder="Number of speakers needed"
+                      />
+                    </div>
+                    <div>
+                      <Label>Assigned Speakers</Label>
+                      <div className="space-y-2">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
+                              const updatedSpeakers = [...currentSpeakers, e.target.value];
+                              setDetailsRequest(prev => ({
+                                ...prev,
+                                assignedSpeakerIds: updatedSpeakers
+                              }));
+                              e.target.value = "";
+                            }
+                          }}
+                          className="w-full text-sm border rounded px-2 py-1"
+                        >
+                          <option value="">Add team member...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Or type custom speaker name"
+                          className="w-full text-sm border rounded px-2 py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && e.target.value.trim()) {
+                              const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
+                              const updatedSpeakers = [...currentSpeakers, e.target.value.trim()];
+                              setDetailsRequest(prev => ({
+                                ...prev,
+                                assignedSpeakerIds: updatedSpeakers
+                              }));
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {((detailsRequest as any).assignedSpeakerIds || []).map((speakerId: string, index: number) => (
+                            <span key={index} className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                              {getUserDisplayName(speakerId)}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedSpeakers = (detailsRequest as any).assignedSpeakerIds?.filter((_: any, i: number) => i !== index) || [];
+                                  setDetailsRequest(prev => ({
+                                    ...prev,
+                                    assignedSpeakerIds: updatedSpeakers
+                                  }));
+                                }}
+                                className="ml-1 text-green-600 hover:text-green-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
