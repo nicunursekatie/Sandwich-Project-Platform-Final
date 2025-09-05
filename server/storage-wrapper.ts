@@ -1465,6 +1465,98 @@ class StorageWrapper implements IStorage {
       () => this.fallbackStorage.getEventRequest(id)
     );
   }
+
+  // Document Management Methods
+  async getDocument(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getDocument(id),
+      () => this.fallbackStorage.getDocument(id)
+    );
+  }
+
+  async getDocumentsForUser(userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getDocumentsForUser(userId),
+      () => this.fallbackStorage.getDocumentsForUser(userId)
+    );
+  }
+
+  async createDocument(document: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createDocument(document),
+      () => this.fallbackStorage.createDocument(document)
+    );
+  }
+
+  async updateDocument(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateDocument(id, updates),
+      () => this.fallbackStorage.updateDocument(id, updates)
+    );
+  }
+
+  async deleteDocument(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteDocument(id),
+      () => this.fallbackStorage.deleteDocument(id)
+    );
+  }
+
+  async checkUserDocumentAccess(documentId: number, userId: string, permission: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.checkUserDocumentAccess(documentId, userId, permission),
+      () => this.fallbackStorage.checkUserDocumentAccess(documentId, userId, permission)
+    );
+  }
+
+  async getDocumentPermissions(documentId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getDocumentPermissions(documentId),
+      () => this.fallbackStorage.getDocumentPermissions(documentId)
+    );
+  }
+
+  async grantDocumentPermission(permission: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.grantDocumentPermission(permission),
+      () => this.fallbackStorage.grantDocumentPermission(permission)
+    );
+  }
+
+  async revokeDocumentPermission(documentId: number, userId: string, permissionType: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.revokeDocumentPermission(documentId, userId, permissionType),
+      () => this.fallbackStorage.revokeDocumentPermission(documentId, userId, permissionType)
+    );
+  }
+
+  async logDocumentAccess(access: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.logDocumentAccess(access),
+      () => this.fallbackStorage.logDocumentAccess(access)
+    );
+  }
+
+  async getDocumentAccessLogs(documentId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getDocumentAccessLogs(documentId),
+      () => this.fallbackStorage.getDocumentAccessLogs(documentId)
+    );
+  }
+
+  async getUserDocumentPermission(documentId: number, userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getUserDocumentPermission(documentId, userId),
+      () => this.fallbackStorage.getUserDocumentPermission(documentId, userId)
+    );
+  }
+
+  async updateDocumentPermission(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateDocumentPermission(id, updates),
+      () => this.fallbackStorage.updateDocumentPermission(id, updates)
+    );
+  }
 }
 
 export const storage = new StorageWrapper();

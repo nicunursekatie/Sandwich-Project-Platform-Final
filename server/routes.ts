@@ -224,6 +224,39 @@ const projectDataUpload = multer({
   }
 });
 
+// Configure multer for document uploads
+const documentsUpload = multer({
+  dest: "uploads/documents/",
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Allow common document types
+    const allowedTypes = [
+      "application/pdf",
+      "text/plain",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "image/jpeg",
+      "image/jpg", 
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "text/csv",
+      "application/zip",
+      "application/x-zip-compressed",
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not supported for document uploads'));
+    }
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint for deployment monitoring
   app.get("/api/health", (req, res) => {
@@ -10460,13 +10493,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/documents", isAuthenticated, requirePermission("manage_documents"), async (req, res) => {
+  app.post("/api/documents", isAuthenticated, requirePermission("manage_documents"), (req, res, next) => {
+    documentsUpload.single('file')(req, res, (err) => {
+      if (err) {
+        console.log('💥 Multer error:', err);
+        return res.status(400).json({ message: `File upload error: ${err.message}` });
+      }
+      next();
+    });
+  }, async (req, res) => {
     try {
-      const result = insertDocumentSchema.safeParse({
-        ...req.body,
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Create document data combining form fields and file info
+      const documentData = {
+        title: req.body.title || req.file.originalname,
+        description: req.body.description || '',
+        fileName: req.file.filename, // Multer generated filename
+        originalName: req.file.originalname, // User's original filename
+        filePath: req.file.path,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        category: req.body.category || 'general',
         uploadedBy: req.user!.id,
         uploadedByName: `${req.user!.firstName} ${req.user!.lastName}`.trim()
-      });
+      };
+
+      const result = insertDocumentSchema.safeParse(documentData);
 
       if (!result.success) {
         return res.status(400).json({ 
@@ -10611,6 +10666,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       logger.error("Failed to get document access logs", error);
       res.status(500).json({ message: "Failed to get document access logs" });
+    }
+  });
+
+  // File serving endpoint for documents
+  app.get("/api/documents/:id/file", isAuthenticated, async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const hasAccess = await storage.checkUserDocumentAccess(documentId, req.user!.id, 'view');
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const document = await storage.getDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Log access
+      await storage.logDocumentAccess({
+        documentId,
+        userId: req.user!.id,
+        userName: `${req.user!.firstName} ${req.user!.lastName}`.trim(),
+        action: 'download',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || '',
+        sessionId: req.sessionID
+      });
+
+      // Serve the file
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      if (!document.filePath || !fs.existsSync(document.filePath)) {
+        return res.status(404).json({ message: "File not found on disk" });
+      }
+
+      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+      res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+      
+      res.sendFile(path.resolve(document.filePath));
+    } catch (error) {
+      logger.error("Failed to serve document file", error);
+      res.status(500).json({ message: "Failed to serve file" });
     }
   });
 
