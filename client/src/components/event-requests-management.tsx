@@ -153,7 +153,8 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
           autoFocus
         />
         <div className="text-xs text-gray-600">
-          💡 Examples: "Community Food Bank", "Main Office", "123 Main St", "Front desk delivery"
+          💡 Examples: "Community Food Bank", "Main Office", "123 Main St",
+          "Front desk delivery"
         </div>
       </div>
     </div>
@@ -164,15 +165,16 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
 const getSandwichTypesSummary = (request: any) => {
   if (request.estimatedSandwichCount) {
     const total = request.estimatedSandwichCount;
-    const type = request.sandwichType || 'Unknown';
-    return { 
-      total, 
-      breakdown: type !== 'Unknown' ? `${total} ${type}` : `${total} sandwiches`,
-      hasBreakdown: type !== 'Unknown'
+    const type = request.sandwichType || "Unknown";
+    return {
+      total,
+      breakdown:
+        type !== "Unknown" ? `${total} ${type}` : `${total} sandwiches`,
+      hasBreakdown: type !== "Unknown",
     };
   }
-  
-  return { total: 0, breakdown: 'Unknown', hasBreakdown: false };
+
+  return { total: 0, breakdown: "Unknown", hasBreakdown: false };
 };
 
 // Enhanced date formatting with day-of-week and color coding
@@ -247,7 +249,10 @@ const formatEventDate = (dateString: string) => {
 };
 
 type ToolkitStatus = "not_sent" | "sent" | "received_confirmed" | "not_needed";
-type FinalDeliveryMethod = "direct_delivery" | "driver_delivery" | "pickup_by_recipient";
+type FinalDeliveryMethod =
+  | "direct_delivery"
+  | "driver_delivery"
+  | "pickup_by_recipient";
 
 interface EventRequest {
   id: number;
@@ -331,8 +336,10 @@ const statusColors = {
     "bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200",
   declined:
     "bg-gradient-to-r from-[#A31C41] to-red-700 text-white border-2 font-bold shadow-lg",
-  contact_completed: "bg-gradient-to-r from-blue-50 to-indigo-100 text-indigo-700 border border-indigo-200",
-  unresponsive: "bg-gradient-to-r from-rose-50 to-rose-100 text-rose-700 border border-rose-200",
+  contact_completed:
+    "bg-gradient-to-r from-blue-50 to-indigo-100 text-indigo-700 border border-indigo-200",
+  unresponsive:
+    "bg-gradient-to-r from-rose-50 to-rose-100 text-rose-700 border border-rose-200",
 } as const;
 
 const statusIcons = {
@@ -404,9 +411,9 @@ export default function EventRequestsManagement() {
   );
   // Inline editing state
   const [inlineEditing, setInlineEditing] = useState<{
-    [key: string]: { field: string; requestId: number }
+    [key: string]: { field: string; requestId: number };
   }>({});
-  const [editValues, setEditValues] = useState<{[key: string]: string}>({});
+  const [editValues, setEditValues] = useState<{ [key: string]: string }>({});
   // Sorting state for all tabs
   const [requestsSortBy, setRequestsSortBy] = useState<"date" | "organization">(
     "date",
@@ -428,9 +435,9 @@ export default function EventRequestsManagement() {
   const [pendingChanges, setPendingChanges] = useState<{
     [eventId: number]: { [field: string]: any };
   }>({});
-  const [undoTimeouts, setUndoTimeouts] = useState<{
-    [key: string]: NodeJS.Timeout;
-  }>({});
+  const [undoTimeouts, setUndoTimeouts] = useState<
+    Record<string, ReturnType<typeof setTimeout>>
+  >({});
   // TSP Contact Assignment state
   const [showTspContactDialog, setShowTspContactDialog] = useState(false);
   const [assigningContactRequest, setAssigningContactRequest] =
@@ -445,7 +452,9 @@ export default function EventRequestsManagement() {
     null,
   );
   // Driver Assignment state
-  const [editingDriversFor, setEditingDriversFor] = useState<number | null>(null);
+  const [editingDriversFor, setEditingDriversFor] = useState<number | null>(
+    null,
+  );
   const [tempDriverInput, setTempDriverInput] = useState("");
   // Speaker Assignment state
   const [showSpeakerDialog, setShowSpeakerDialog] = useState(false);
@@ -461,12 +470,6 @@ export default function EventRequestsManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Fetch available users for speaker/driver assignments
-  const { data: availableUsers = [] } = useQuery({
-    queryKey: ["/api/users/for-assignments"],
-    enabled: true,
-  });
 
   // Handle URL parameters for tab and event highlighting
   useEffect(() => {
@@ -528,7 +531,7 @@ export default function EventRequestsManagement() {
   // Helper function to convert military time to 12-hour format
   const formatTime = (militaryTime: string | null | undefined) => {
     if (!militaryTime) return "Not specified";
-    
+
     try {
       const [hours, minutes] = militaryTime.split(":");
       const time = new Date();
@@ -554,7 +557,6 @@ export default function EventRequestsManagement() {
         ? `${user.firstName} ${user.lastName}`
         : user.displayName || user.email;
     }
-
 
     // If not found by ID, check if it's already a display name (plain text)
     // This handles legacy data where names were stored directly
@@ -912,7 +914,11 @@ export default function EventRequestsManagement() {
   };
 
   // Inline editing handlers
-  const startInlineEdit = (requestId: number, field: string, currentValue: string) => {
+  const startInlineEdit = (
+    requestId: number,
+    field: string,
+    currentValue: string,
+  ) => {
     const editKey = `${requestId}-${field}`;
     setInlineEditing({ ...inlineEditing, [editKey]: { field, requestId } });
     setEditValues({ ...editValues, [editKey]: currentValue });
@@ -921,19 +927,19 @@ export default function EventRequestsManagement() {
   const saveInlineEdit = (requestId: number, field: string) => {
     const editKey = `${requestId}-${field}`;
     const newValue = editValues[editKey];
-    
+
     if (newValue !== undefined) {
       // Prepare the update data
       const updateData = { [field]: newValue };
-      
+
       // Call the update mutation
       updateMutation.mutate({ id: requestId, ...updateData });
-      
+
       // Clear the editing state
       const newInlineEditing = { ...inlineEditing };
       delete newInlineEditing[editKey];
       setInlineEditing(newInlineEditing);
-      
+
       const newEditValues = { ...editValues };
       delete newEditValues[editKey];
       setEditValues(newEditValues);
@@ -945,7 +951,7 @@ export default function EventRequestsManagement() {
     const newInlineEditing = { ...inlineEditing };
     delete newInlineEditing[editKey];
     setInlineEditing(newInlineEditing);
-    
+
     const newEditValues = { ...editValues };
     delete newEditValues[editKey];
     setEditValues(newEditValues);
@@ -994,7 +1000,11 @@ export default function EventRequestsManagement() {
   });
 
   // Assignment update function
-  const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
+  const handleAssignmentUpdate = (
+    eventId: number,
+    field: string,
+    value: any,
+  ) => {
     updateMutation.mutate({
       id: eventId,
       [field]: value,
@@ -1004,8 +1014,16 @@ export default function EventRequestsManagement() {
   // Assignment save mutations
 
   const saveSpeakerAssignmentMutation = useMutation({
-    mutationFn: ({ eventId, speakerIds }: { eventId: number; speakerIds: string[] }) =>
-      apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedSpeakerIds: speakerIds }),
+    mutationFn: ({
+      eventId,
+      speakerIds,
+    }: {
+      eventId: number;
+      speakerIds: string[];
+    }) =>
+      apiRequest("PUT", `/api/event-requests/${eventId}`, {
+        assignedSpeakerIds: speakerIds,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowSpeakerDialog(false);
@@ -1122,10 +1140,12 @@ export default function EventRequestsManagement() {
     );
   });
 
-  const inProcessEvents = eventRequests.filter((req: EventRequest) => {
-    // Only include events that are truly "in process" - actively being worked on
-    return req.status === "in_process";
-  });
+  const inProcessEvents = eventRequests.filter(
+    (req: EventRequest) =>
+      req.status === "in_process" ||
+      req.status === "followed_up" ||
+      req.status === "contact_completed",
+  );
 
   // New filtering arrays for separate tabs
   const declinedEvents = eventRequests.filter((req: EventRequest) => {
@@ -1246,7 +1266,7 @@ export default function EventRequestsManagement() {
             : dateA.getTime() - dateB.getTime();
         }
       });
-    } else if (activeTab === "followed_up" || activeTab === "in_process") {
+    } else if (activeTab === "in_process") {
       return filtered.sort((a: any, b: any) => {
         if (requestsSortBy === "organization") {
           const orgA = a.organizationName.toLowerCase();
@@ -1918,11 +1938,11 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center bg-orange-100 px-3 py-1 rounded-full">
                   <span className="text-sm">🥪</span>
                   <span className="ml-1 font-semibold text-sm text-orange-800">
-                    {request.estimatedSandwichCount || 'TBD'} sandwiches
+                    {request.estimatedSandwichCount || "TBD"} sandwiches
                   </span>
                 </div>
               </div>
-              
+
               {/* Bottom Row: Date & Pickup Time */}
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center">
@@ -1941,30 +1961,38 @@ export default function EventRequestsManagement() {
                 )}
               </div>
             </div>
-            
+
             {/* Right Side: Status Badges */}
             <div className="flex flex-col items-end gap-2">
               {getStatusDisplay(request.status)}
-              
+
               {/* Transportation Status Chip - Smart check */}
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                ((request as any).deliveryDestination && (request as any).deliveryDestination !== 'Not specified') ||
-                ((request as any).storageLocation && (request as any).storageLocation !== 'Not specified')
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  ((request as any).deliveryDestination &&
+                    (request as any).deliveryDestination !== "Not specified") ||
+                  ((request as any).storageLocation &&
+                    (request as any).storageLocation !== "Not specified")
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
                 {(() => {
-                  const hasDestination = (request as any).deliveryDestination && (request as any).deliveryDestination !== 'Not specified';
-                  const hasStorage = (request as any).storageLocation && (request as any).storageLocation !== 'Not specified';
-                  
+                  const hasDestination =
+                    (request as any).deliveryDestination &&
+                    (request as any).deliveryDestination !== "Not specified";
+                  const hasStorage =
+                    (request as any).storageLocation &&
+                    (request as any).storageLocation !== "Not specified";
+
                   if (hasDestination && hasStorage) {
-                    return '✓ 2-Day Delivery Plan';
+                    return "✓ 2-Day Delivery Plan";
                   } else if (hasDestination) {
-                    return '✓ Direct Delivery';
+                    return "✓ Direct Delivery";
                   } else if (hasStorage) {
-                    return '✓ Host Storage';
+                    return "✓ Host Storage";
                   } else {
-                    return '📍 Plan Needed';
+                    return "📍 Plan Needed";
                   }
                 })()}
               </div>
@@ -1979,249 +2007,251 @@ export default function EventRequestsManagement() {
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 border-b pb-1">
               Logistics
             </h4>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Event Location */}
               <div className="bg-gray-50 p-3 rounded">
-                <div className="text-xs font-semibold text-gray-600 mb-2">Event Location</div>
+                <div className="text-xs font-semibold text-gray-600 mb-2">
+                  Event Location
+                </div>
                 <div className="text-sm">
                   {(request as any).eventAddress || "No address specified"}
                 </div>
               </div>
-              
+
               {/* Contact Info */}
               <div className="bg-gray-50 p-3 rounded">
-                <div className="text-xs font-semibold text-gray-600 mb-2">Contact</div>
+                <div className="text-xs font-semibold text-gray-600 mb-2">
+                  Contact
+                </div>
                 <div className="space-y-1">
-                  <div className="text-sm">{getDisplayValue(request, "firstName")} {getDisplayValue(request, "lastName")}</div>
-                  <div className="text-xs text-gray-600">{getDisplayValue(request, "email")}</div>
-                  <div className="text-xs text-gray-600">{getDisplayValue(request, "phone") || "No phone"}</div>
+                  <div className="text-sm">
+                    {getDisplayValue(request, "firstName")}{" "}
+                    {getDisplayValue(request, "lastName")}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {getDisplayValue(request, "email")}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {getDisplayValue(request, "phone") || "No phone"}
+                  </div>
                 </div>
               </div>
 
               {/* Transportation */}
               <div className="bg-gray-50 p-3 rounded md:col-span-2">
-                <div className="text-xs font-semibold text-gray-600 mb-2">Transportation Plan</div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h5 className="font-semibold text-purple-800 text-sm flex items-center">
-                      🚛 Transportation & Destination
-                    </h5>
-                    {canEditField("deliveryDestination") && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-2 text-xs opacity-60 hover:opacity-100"
-                        onClick={() => {
-                          setEditingField("transportationPlan");
-                          setEditingEventId(request.id);
-                          setTempValues({
-                            deliveryDestination: (request as any).deliveryDestination || "",
-                            storageLocation: (request as any).storageLocation || "",
-                            finalDeliveryMethod: (request as any).finalDeliveryMethod || ""
-                          });
+                <div className="text-xs font-semibold text-gray-600 mb-2">
+                  Transportation Plan
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className="font-semibold text-purple-800 text-sm flex items-center">
+                    🚛 Transportation & Destination
+                  </h5>
+                  {canEditField("deliveryDestination") && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs opacity-60 hover:opacity-100"
+                      onClick={() => {
+                        setEditingField("transportationPlan");
+                        setEditingEventId(request.id);
+                        setTempValues({
+                          deliveryDestination:
+                            (request as any).deliveryDestination || "",
+                          storageLocation:
+                            (request as any).storageLocation || "",
+                          finalDeliveryMethod:
+                            (request as any).finalDeliveryMethod || "",
+                        });
+                      }}
+                    >
+                      <Edit className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+
+                {/* Inline Editing Mode */}
+                {editingField === "transportationPlan" &&
+                editingEventId === request.id ? (
+                  <div className="space-y-3 bg-white p-3 rounded border border-purple-300">
+                    {/* Destination Field */}
+                    <div>
+                      <Label className="text-xs font-medium">
+                        Final Destination
+                      </Label>
+                      <Input
+                        value={tempValues.deliveryDestination || ""}
+                        onChange={(e) =>
+                          setTempValues((prev) => ({
+                            ...prev,
+                            deliveryDestination: e.target.value,
+                          }))
+                        }
+                        placeholder="Organization name and address"
+                        className="h-7 text-xs mt-1"
+                      />
+                    </div>
+
+                    {/* Delivery Method */}
+                    <div>
+                      <Label className="text-xs font-medium">
+                        Delivery Method
+                      </Label>
+                      <select
+                        value={tempValues.finalDeliveryMethod || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setTempValues((prev) => ({
+                            ...prev,
+                            finalDeliveryMethod: value,
+                            // Clear storage if switching to same-day
+                            storageLocation:
+                              value === "direct_delivery"
+                                ? ""
+                                : prev.storageLocation,
+                          }));
                         }}
+                        className="w-full h-7 text-xs border rounded px-2 mt-1"
                       >
-                        <Edit className="w-3 h-3 mr-1" />
-                        Edit
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {/* Inline Editing Mode */}
-                  {editingField === "transportationPlan" && editingEventId === request.id ? (
-                    <div className="space-y-3 bg-white p-3 rounded border border-purple-300">
-                      {/* Destination Field */}
+                        <option value="">Select...</option>
+                        <option value="direct_delivery">
+                          Same-day delivery
+                        </option>
+                        <option value="driver_delivery">
+                          Two-day with storage (driver delivers)
+                        </option>
+                        <option value="pickup_by_recipient">
+                          Two-day with storage (recipient pickup)
+                        </option>
+                      </select>
+                    </div>
+
+                    {/* Storage Location (show only if not same-day) */}
+                    {tempValues.finalDeliveryMethod !== "direct_delivery" && (
                       <div>
-                        <Label className="text-xs font-medium">Final Destination</Label>
+                        <Label className="text-xs font-medium">
+                          Overnight Storage Location
+                        </Label>
                         <Input
-                          value={tempValues.deliveryDestination || ""}
-                          onChange={(e) => setTempValues(prev => ({ ...prev, deliveryDestination: e.target.value }))}
-                          placeholder="Organization name and address"
+                          value={tempValues.storageLocation || ""}
+                          onChange={(e) =>
+                            setTempValues((prev) => ({
+                              ...prev,
+                              storageLocation: e.target.value,
+                            }))
+                          }
+                          placeholder="Host home for overnight storage"
                           className="h-7 text-xs mt-1"
                         />
                       </div>
-                      
-                      {/* Delivery Method */}
-                      <div>
-                        <Label className="text-xs font-medium">Delivery Method</Label>
-                        <select
-                          value={tempValues.finalDeliveryMethod || ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setTempValues(prev => ({
-                              ...prev,
-                              finalDeliveryMethod: value,
-                              // Clear storage if switching to same-day
-                              storageLocation: value === 'direct_delivery' ? '' : prev.storageLocation
-                            }));
-                          }}
-                          className="w-full h-7 text-xs border rounded px-2 mt-1"
-                        >
-                          <option value="">Select...</option>
-                          <option value="direct_delivery">Same-day delivery</option>
-                          <option value="driver_delivery">Two-day with storage (driver delivers)</option>
-                          <option value="pickup_by_recipient">Two-day with storage (recipient pickup)</option>
-                        </select>
-                      </div>
-                      
-                      {/* Storage Location (show only if not same-day) */}
-                      {tempValues.finalDeliveryMethod !== 'direct_delivery' && (
-                        <div>
-                          <Label className="text-xs font-medium">Overnight Storage Location</Label>
-                          <Input
-                            value={tempValues.storageLocation || ""}
-                            onChange={(e) => setTempValues(prev => ({ ...prev, storageLocation: e.target.value }))}
-                            placeholder="Host home for overnight storage"
-                            className="h-7 text-xs mt-1"
-                          />
-                        </div>
-                      )}
-                      
-                      {/* Save/Cancel Buttons */}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            handleAutosave(request.id, "deliveryDestination", tempValues.deliveryDestination);
-                            handleAutosave(request.id, "storageLocation", tempValues.storageLocation);
-                            handleAutosave(request.id, "finalDeliveryMethod", tempValues.finalDeliveryMethod);
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }}
-                        >
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
+                    )}
+
+                    {/* Save/Cancel Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          handleAutosave(
+                            request.id,
+                            "deliveryDestination",
+                            tempValues.deliveryDestination,
+                          );
+                          handleAutosave(
+                            request.id,
+                            "storageLocation",
+                            tempValues.storageLocation,
+                          );
+                          handleAutosave(
+                            request.id,
+                            "finalDeliveryMethod",
+                            tempValues.finalDeliveryMethod,
+                          );
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        <Save className="w-3 h-3 mr-1" />
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        Cancel
+                      </Button>
                     </div>
-                  ) : (
-                    <>
-                      {/* Sandwich Destination Display */}
-                      {(request as any).deliveryDestination && (
-                        <div className="flex items-start space-x-2 mb-3">
-                          <span className="text-xs mt-0.5">📍</span>
-                          <div className="text-xs">
-                            <span className="font-medium text-gray-700">Final Destination: </span>
-                            <span className="text-purple-700 font-medium">
-                              {(request as any).deliveryDestination}
-                              {(request as any).deliveryDestination.match(/\d{5}/) && (
-                                <a 
-                                  href={`https://maps.google.com/?q=${encodeURIComponent((request as any).deliveryDestination)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-2 text-blue-600 hover:text-blue-800 underline"
-                                >
-                                  View Map
-                                </a>
-                              )}
-                            </span>
-                          </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Sandwich Destination Display */}
+                    {(request as any).deliveryDestination && (
+                      <div className="flex items-start space-x-2 mb-3">
+                        <span className="text-xs mt-0.5">📍</span>
+                        <div className="text-xs">
+                          <span className="font-medium text-gray-700">
+                            Final Destination:{" "}
+                          </span>
+                          <span className="text-purple-700 font-medium">
+                            {(request as any).deliveryDestination}
+                            {(request as any).deliveryDestination.match(
+                              /\d{5}/,
+                            ) && (
+                              <a
+                                href={`https://maps.google.com/?q=${encodeURIComponent((request as any).deliveryDestination)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View Map
+                              </a>
+                            )}
+                          </span>
                         </div>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* Determine delivery scenario - hide when editing */}
-                  {editingField !== "transportationPlan" || editingEventId !== request.id ? (() => {
-                    const isSameDayDelivery = (request as any).finalDeliveryMethod === 'direct_delivery' || 
-                                            !(request as any).storageLocation;
-                    const hasStorageLocation = !!(request as any).storageLocation;
-                    const deliveryDestination = (request as any).deliveryDestination;
-                    const finalDeliveryMethod = (request as any).finalDeliveryMethod;
-                    
-                    if (isSameDayDelivery && !hasStorageLocation) {
-                      // Scenario 1: Same-day delivery direct from event
-                      return (
-                        <div className="space-y-2">
-                          <div className="flex items-start space-x-2">
-                            <span className="text-xs mt-0.5">🚚</span>
-                            <div className="text-xs">
-                              <span className="font-medium text-gray-700">Same-Day Delivery</span>
-                              {deliveryDestination && (
-                                <div className="text-purple-700 font-medium mt-1">
-                                  To: {deliveryDestination}
-                                  {deliveryDestination.match(/\d{5}/) && (
-                                    <a 
-                                      href={`https://maps.google.com/?q=${encodeURIComponent(deliveryDestination)}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="ml-2 text-blue-600 hover:text-blue-800 underline"
-                                    >
-                                      📍 Map
-                                    </a>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-start space-x-2">
-                            <span className="text-xs mt-0.5">👤</span>
-                            <div className="text-xs">
-                              <span className="font-medium text-gray-700">Driver Needed: </span>
-                              <span className="text-purple-700">1 driver for event day</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    } else if (hasStorageLocation) {
-                      // Scenario 2: Two-day process with overnight storage
-                      return (
-                        <div className="space-y-2">
-                          {/* Day 1: Event to Storage */}
-                          <div className="bg-white/50 rounded p-2">
-                            <div className="text-xs font-medium text-gray-700 mb-1">Day 1: Event Day</div>
-                            <div className="flex items-start space-x-2 ml-2">
-                              <span className="text-xs mt-0.5">🏠</span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Determine delivery scenario - hide when editing */}
+                {editingField !== "transportationPlan" ||
+                editingEventId !== request.id
+                  ? (() => {
+                      const isSameDayDelivery =
+                        (request as any).finalDeliveryMethod ===
+                          "direct_delivery" ||
+                        !(request as any).storageLocation;
+                      const hasStorageLocation = !!(request as any)
+                        .storageLocation;
+                      const deliveryDestination = (request as any)
+                        .deliveryDestination;
+                      const finalDeliveryMethod = (request as any)
+                        .finalDeliveryMethod;
+
+                      if (isSameDayDelivery && !hasStorageLocation) {
+                        // Scenario 1: Same-day delivery direct from event
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-start space-x-2">
+                              <span className="text-xs mt-0.5">🚚</span>
                               <div className="text-xs">
-                                <span className="text-gray-600">Transport to storage: </span>
-                                <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-start space-x-2 ml-2 mt-1">
-                              <span className="text-xs mt-0.5">👤</span>
-                              <div className="text-xs text-gray-600">
-                                Driver 1 needed (event → storage)
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Day 2: Storage to Final Destination */}
-                          <div className="bg-white/50 rounded p-2">
-                            <div className="text-xs font-medium text-gray-700 mb-1">Day 2: Next Day</div>
-                            {finalDeliveryMethod === 'pickup_by_recipient' ? (
-                              <div className="flex items-start space-x-2 ml-2">
-                                <span className="text-xs mt-0.5">🎯</span>
-                                <div className="text-xs">
-                                  <span className="text-gray-600">Recipient pickup from: </span>
-                                  <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex items-start space-x-2 ml-2">
-                                  <span className="text-xs mt-0.5">📦</span>
-                                  <div className="text-xs">
-                                    <span className="text-gray-600">Deliver to: </span>
-                                    <span className="text-purple-700 font-medium">
-                                      {deliveryDestination || 'Destination needed'}
-                                    </span>
-                                    {deliveryDestination && deliveryDestination.match(/\d{5}/) && (
-                                      <a 
+                                <span className="font-medium text-gray-700">
+                                  Same-Day Delivery
+                                </span>
+                                {deliveryDestination && (
+                                  <div className="text-purple-700 font-medium mt-1">
+                                    To: {deliveryDestination}
+                                    {deliveryDestination.match(/\d{5}/) && (
+                                      <a
                                         href={`https://maps.google.com/?q=${encodeURIComponent(deliveryDestination)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -2231,505 +2261,668 @@ export default function EventRequestsManagement() {
                                       </a>
                                     )}
                                   </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-start space-x-2">
+                              <span className="text-xs mt-0.5">👤</span>
+                              <div className="text-xs">
+                                <span className="font-medium text-gray-700">
+                                  Driver Needed:{" "}
+                                </span>
+                                <span className="text-purple-700">
+                                  1 driver for event day
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      } else if (hasStorageLocation) {
+                        // Scenario 2: Two-day process with overnight storage
+                        return (
+                          <div className="space-y-2">
+                            {/* Day 1: Event to Storage */}
+                            <div className="bg-white/50 rounded p-2">
+                              <div className="text-xs font-medium text-gray-700 mb-1">
+                                Day 1: Event Day
+                              </div>
+                              <div className="flex items-start space-x-2 ml-2">
+                                <span className="text-xs mt-0.5">🏠</span>
+                                <div className="text-xs">
+                                  <span className="text-gray-600">
+                                    Transport to storage:{" "}
+                                  </span>
+                                  <span className="text-purple-700 font-medium">
+                                    {(request as any).storageLocation}
+                                  </span>
                                 </div>
-                                <div className="flex items-start space-x-2 ml-2 mt-1">
-                                  <span className="text-xs mt-0.5">👤</span>
-                                  <div className="text-xs text-gray-600">
-                                    Driver 2 needed (storage → recipient)
+                              </div>
+                              <div className="flex items-start space-x-2 ml-2 mt-1">
+                                <span className="text-xs mt-0.5">👤</span>
+                                <div className="text-xs text-gray-600">
+                                  Driver 1 needed (event → storage)
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Day 2: Storage to Final Destination */}
+                            <div className="bg-white/50 rounded p-2">
+                              <div className="text-xs font-medium text-gray-700 mb-1">
+                                Day 2: Next Day
+                              </div>
+                              {finalDeliveryMethod === "pickup_by_recipient" ? (
+                                <div className="flex items-start space-x-2 ml-2">
+                                  <span className="text-xs mt-0.5">🎯</span>
+                                  <div className="text-xs">
+                                    <span className="text-gray-600">
+                                      Recipient pickup from:{" "}
+                                    </span>
+                                    <span className="text-purple-700 font-medium">
+                                      {(request as any).storageLocation}
+                                    </span>
                                   </div>
                                 </div>
-                              </>
-                            )}
+                              ) : (
+                                <>
+                                  <div className="flex items-start space-x-2 ml-2">
+                                    <span className="text-xs mt-0.5">📦</span>
+                                    <div className="text-xs">
+                                      <span className="text-gray-600">
+                                        Deliver to:{" "}
+                                      </span>
+                                      <span className="text-purple-700 font-medium">
+                                        {deliveryDestination ||
+                                          "Destination needed"}
+                                      </span>
+                                      {deliveryDestination &&
+                                        deliveryDestination.match(/\d{5}/) && (
+                                          <a
+                                            href={`https://maps.google.com/?q=${encodeURIComponent(deliveryDestination)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                                          >
+                                            📍 Map
+                                          </a>
+                                        )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start space-x-2 ml-2 mt-1">
+                                    <span className="text-xs mt-0.5">👤</span>
+                                    <div className="text-xs text-gray-600">
+                                      Driver 2 needed (storage → recipient)
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    } else {
-                      // No transportation plan specified
-                      return (
-                        <div className="text-xs text-gray-500 italic">
-                          Transportation plan not yet specified
-                        </div>
-                      );
-                    }
-                  })() : null}
-                </div>
+                        );
+                      } else {
+                        // No transportation plan specified
+                        return (
+                          <div className="text-xs text-gray-500 italic">
+                            Transportation plan not yet specified
+                          </div>
+                        );
+                      }
+                    })()
+                  : null}
               </div>
             </div>
+          </div>
 
-            {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
-              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
-                <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                Event Details
-              </h4>
-              <div className="space-y-4">
-                
-
-                {/* Sandwich Count */}
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
-                  {editingField === "sandwichTypes" &&
-                  editingEventId === request.id ? (
-                    <div className="w-full bg-white border rounded-lg p-3 shadow-sm">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            value={tempValues.estimatedSandwichCount || 0}
-                            onChange={(e) => setTempValues(prev => ({ ...prev, estimatedSandwichCount: parseInt(e.target.value) || 0 }))}
-                            className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm text-center"
-                            placeholder="0"
-                          />
-                          <span className="text-sm text-gray-600">sandwiches</span>
-                        </div>
-                        <div>
-                          <Label className="text-sm text-gray-600">Type (optional):</Label>
-                          <select
-                            value={tempValues.sandwichType || 'Unknown'}
-                            onChange={(e) => setTempValues(prev => ({ ...prev, sandwichType: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mt-1"
-                          >
-                            <option value="Unknown">Unknown</option>
-                            <option value="Deli (Turkey, Ham, etc.)">Deli (Turkey, Ham, etc.)</option>
-                            <option value="Turkey">Turkey</option>
-                            <option value="Ham">Ham</option>
-                            <option value="PB&J">PB&J</option>
-                            <option value="Vegetarian">Vegetarian</option>
-                            <option value="Vegan">Vegan</option>
-                            <option value="Gluten-Free">Gluten-Free</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 mt-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            handleTrackChange(request.id, "estimatedSandwichCount", tempValues.estimatedSandwichCount);
-                            handleTrackChange(request.id, "sandwichType", tempValues.sandwichType || 'Unknown');
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }}
-                        >
-                          <Save className="w-4 h-4 mr-1" />
-                          Save Changes
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }}
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {(() => {
-                          const summary = getSandwichTypesSummary(request);
-                          return summary.hasBreakdown ? (
-                            <div>
-                              <span className="font-medium text-[#236383]">{summary.total}</span> sandwiches to be made
-                              <div className="text-xs text-gray-500 mt-1">{summary.breakdown}</div>
-                            </div>
-                          ) : (
-                            <span><span className="font-medium">{summary.total || "Unknown"}</span> sandwiches to be made</span>
-                          );
-                        })()}
-                      </span>
-                      {canEditField("estimatedSandwichCount") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("sandwichTypes");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              estimatedSandwichCount: request.estimatedSandwichCount || 0,
-                              sandwichType: request.sandwichType || 'Unknown'
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Event Times */}
-                <div className="flex items-start space-x-3">
-                  <Clock className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  <div className="text-sm text-gray-600">
-                    {(() => {
-                      const eventDate = getDisplayValue(request, "eventDate");
-                      const startTime = (request as any).eventStartTime;
-                      const endTime = (request as any).eventEndTime;
-                      
-                      if (!eventDate && !startTime && !endTime) {
-                        return <span className="text-gray-500 italic">Event timing not specified</span>;
-                      }
-                      
-                      return (
-                        <div>
-                          {eventDate && (
-                            <div>
-                              <span className="font-medium text-gray-700">Date: </span>
-                              <span>{eventDate}</span>
-                            </div>
-                          )}
-                          {(startTime || endTime) && (
-                            <div>
-                              <span className="font-medium text-gray-700">Time: </span>
-                              <span>
-                                {startTime && formatTime(startTime)}
-                                {startTime && endTime && " - "}
-                                {endTime && formatTime(endTime)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-
-                {/* Planning Notes */}
-                {(request as any).planningNotes && (
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Planning Notes: </span>
-                      <span className="text-gray-600">{(request as any).planningNotes}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Refrigeration */}
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">❄️</span>
-                  {editingField === "refrigeration" &&
-                  editingEventId === request.id ? (
-                    <div className="flex space-x-2 items-center">
-                      <div className="flex space-x-1">
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600 hover:bg-green-50"}`}
-                          onClick={() =>
+          {/* Center Column: Event Logistics */}
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
+            <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
+              <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+              Event Details
+            </h4>
+            <div className="space-y-4">
+              {/* Sandwich Count */}
+              <div className="flex items-start space-x-3">
+                <span className="text-gray-500 text-sm mt-1 flex-shrink-0">
+                  🥪
+                </span>
+                {editingField === "sandwichTypes" &&
+                editingEventId === request.id ? (
+                  <div className="w-full bg-white border rounded-lg p-3 shadow-sm">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={tempValues.estimatedSandwichCount || 0}
+                          onChange={(e) =>
                             setTempValues((prev) => ({
                               ...prev,
-                              refrigeration: true,
+                              estimatedSandwichCount:
+                                parseInt(e.target.value) || 0,
                             }))
                           }
-                        >
-                          ✓ Available
-                        </button>
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600 hover:bg-red-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: false,
-                            }))
-                          }
-                        >
-                          ❌ None
-                        </button>
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === null || tempValues.refrigeration === undefined ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600 hover:bg-yellow-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: null,
-                            }))
-                          }
-                        >
-                          ❓ Unknown
-                        </button>
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm text-center"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-gray-600">
+                          sandwiches
+                        </span>
                       </div>
+                      <div>
+                        <Label className="text-sm text-gray-600">
+                          Type (optional):
+                        </Label>
+                        <select
+                          value={tempValues.sandwichType || "Unknown"}
+                          onChange={(e) =>
+                            setTempValues((prev) => ({
+                              ...prev,
+                              sandwichType: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mt-1"
+                        >
+                          <option value="Unknown">Unknown</option>
+                          <option value="Deli (Turkey, Ham, etc.)">
+                            Deli (Turkey, Ham, etc.)
+                          </option>
+                          <option value="Turkey">Turkey</option>
+                          <option value="Ham">Ham</option>
+                          <option value="PB&J">PB&J</option>
+                          <option value="Vegetarian">Vegetarian</option>
+                          <option value="Vegan">Vegan</option>
+                          <option value="Gluten-Free">Gluten-Free</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 p-0"
                         onClick={() => {
                           handleTrackChange(
                             request.id,
-                            "hasRefrigeration",
-                            tempValues.refrigeration,
+                            "estimatedSandwichCount",
+                            tempValues.estimatedSandwichCount,
+                          );
+                          handleTrackChange(
+                            request.id,
+                            "sandwichType",
+                            tempValues.sandwichType || "Unknown",
                           );
                           setEditingField(null);
                           setEditingEventId(null);
                           setTempValues({});
                         }}
                       >
-                        ✓
+                        <Save className="w-4 h-4 mr-1" />
+                        Save Changes
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
                       >
-                        ✗
+                        <X className="w-4 h-4 mr-1" />
+                        Cancel
                       </Button>
                     </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "hasRefrigeration") === true
-                          ? "✓ Available"
-                          : getDisplayValue(request, "hasRefrigeration") === false
-                            ? "❌ None"
-                            : "❓ Unknown"}
-                      </span>
-                      {canEditField("hasRefrigeration") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("refrigeration");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              refrigeration: getDisplayValue(
-                                request,
-                                "hasRefrigeration",
-                              ),
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2 flex-1">
+                    <span className="text-sm text-gray-600 flex-1">
+                      {(() => {
+                        const summary = getSandwichTypesSummary(request);
+                        return summary.hasBreakdown ? (
+                          <div>
+                            <span className="font-medium text-[#236383]">
+                              {summary.total}
+                            </span>{" "}
+                            sandwiches to be made
+                            <div className="text-xs text-gray-500 mt-1">
+                              {summary.breakdown}
+                            </div>
+                          </div>
+                        ) : (
+                          <span>
+                            <span className="font-medium">
+                              {summary.total || "Unknown"}
+                            </span>{" "}
+                            sandwiches to be made
+                          </span>
+                        );
+                      })()}
+                    </span>
+                    {canEditField("estimatedSandwichCount") && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                        onClick={() => {
+                          setEditingField("sandwichTypes");
+                          setEditingEventId(request.id);
+                          setTempValues({
+                            estimatedSandwichCount:
+                              request.estimatedSandwichCount || 0,
+                            sandwichType: request.sandwichType || "Unknown",
+                          });
+                        }}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Event Times */}
+              <div className="flex items-start space-x-3">
+                <Clock className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                <div className="text-sm text-gray-600">
+                  {(() => {
+                    const eventDate = getDisplayValue(request, "eventDate");
+                    const startTime = (request as any).eventStartTime;
+                    const endTime = (request as any).eventEndTime;
+
+                    if (!eventDate && !startTime && !endTime) {
+                      return (
+                        <span className="text-gray-500 italic">
+                          Event timing not specified
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <div>
+                        {eventDate && (
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Date:{" "}
+                            </span>
+                            <span>{eventDate}</span>
+                          </div>
+                        )}
+                        {(startTime || endTime) && (
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Time:{" "}
+                            </span>
+                            <span>
+                              {startTime && formatTime(startTime)}
+                              {startTime && endTime && " - "}
+                              {endTime && formatTime(endTime)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
+
+              {/* Planning Notes */}
+              {(request as any).planningNotes && (
+                <div className="flex items-start space-x-3">
+                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">
+                    📝
+                  </span>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium text-gray-700">
+                      Planning Notes:{" "}
+                    </span>
+                    <span className="text-gray-600">
+                      {(request as any).planningNotes}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Refrigeration */}
+              <div className="flex items-start space-x-3">
+                <span className="text-gray-500 text-sm mt-1 flex-shrink-0">
+                  ❄️
+                </span>
+                {editingField === "refrigeration" &&
+                editingEventId === request.id ? (
+                  <div className="flex space-x-2 items-center">
+                    <div className="flex space-x-1">
+                      <button
+                        className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600 hover:bg-green-50"}`}
+                        onClick={() =>
+                          setTempValues((prev) => ({
+                            ...prev,
+                            refrigeration: true,
+                          }))
+                        }
+                      >
+                        ✓ Available
+                      </button>
+                      <button
+                        className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600 hover:bg-red-50"}`}
+                        onClick={() =>
+                          setTempValues((prev) => ({
+                            ...prev,
+                            refrigeration: false,
+                          }))
+                        }
+                      >
+                        ❌ None
+                      </button>
+                      <button
+                        className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === null || tempValues.refrigeration === undefined ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600 hover:bg-yellow-50"}`}
+                        onClick={() =>
+                          setTempValues((prev) => ({
+                            ...prev,
+                            refrigeration: null,
+                          }))
+                        }
+                      >
+                        ❓ Unknown
+                      </button>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        handleTrackChange(
+                          request.id,
+                          "hasRefrigeration",
+                          tempValues.refrigeration,
+                        );
+                        setEditingField(null);
+                        setEditingEventId(null);
+                        setTempValues({});
+                      }}
+                    >
+                      ✓
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
+                      onClick={handleFieldCancel}
+                    >
+                      ✗
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2 flex-1">
+                    <span className="text-sm text-gray-600 flex-1">
+                      {getDisplayValue(request, "hasRefrigeration") === true
+                        ? "✓ Available"
+                        : getDisplayValue(request, "hasRefrigeration") === false
+                          ? "❌ None"
+                          : "❓ Unknown"}
+                    </span>
+                    {canEditField("hasRefrigeration") && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                        onClick={() => {
+                          setEditingField("refrigeration");
+                          setEditingEventId(request.id);
+                          setTempValues({
+                            refrigeration: getDisplayValue(
+                              request,
+                              "hasRefrigeration",
+                            ),
+                          });
+                        }}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
 
-            {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
-              <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
-                <span className="inline-block w-5 h-5 mr-2 bg-[#A31C41] rounded-full"></span>
-                Assignments
-              </h4>
-              <div className="space-y-4">
-                
-                {/* Toolkit Status */}
+          {/* Right Column: Status & Assignments */}
+          <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
+            <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
+              <span className="inline-block w-5 h-5 mr-2 bg-[#A31C41] rounded-full"></span>
+              Assignments
+            </h4>
+            <div className="space-y-4">
+              {/* Toolkit Status */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Toolkit
+                </span>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus().color}`}
+                >
+                  {getToolkitStatus().badge}
+                </span>
+              </div>
+
+              {/* Driver Status */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Drivers
+                </span>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}
+                >
+                  {getDriverStatus().badge}
+                </span>
+              </div>
+
+              {/* Driver Assignment Details */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Toolkit</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus().color}`}>
-                    {getToolkitStatus().badge}
-                  </span>
-                </div>
-
-                {/* Driver Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Drivers</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
-                    {getDriverStatus().badge}
-                  </span>
-                </div>
-
-                {/* Driver Assignment Details */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">
-                        Assigned: {(request as any).assignedDriverIds?.length || 0}/
-                      </span>
-                      {editingField === "driversNeeded" && editingEventId === request.id ? (
-                        <div className="flex items-center space-x-1">
-                          <input
-                            type="number"
-                            min="0"
-                            className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
-                            value={tempValues.driversNeeded || (request as any).driversNeeded || 0}
-                            onChange={(e) =>
-                              setTempValues((prev) => ({
-                                ...prev,
-                                driversNeeded: e.target.value,
-                              }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                handleTrackChange(
-                                  request.id,
-                                  "driversNeeded",
-                                  parseInt(tempValues.driversNeeded || e.target.value) || 0,
-                                );
-                                setEditingField(null);
-                                setEditingEventId(null);
-                                setTempValues({});
-                              }
-                              if (e.key === "Escape") handleFieldCancel();
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-600">
+                      Assigned:{" "}
+                      {(request as any).assignedDriverIds?.length || 0}/
+                    </span>
+                    {editingField === "driversNeeded" &&
+                    editingEventId === request.id ? (
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="number"
+                          min="0"
+                          className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
+                          value={
+                            tempValues.driversNeeded ||
+                            (request as any).driversNeeded ||
+                            0
+                          }
+                          onChange={(e) =>
+                            setTempValues((prev) => ({
+                              ...prev,
+                              driversNeeded: e.target.value,
+                            }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
                               handleTrackChange(
                                 request.id,
                                 "driversNeeded",
-                                parseInt(tempValues.driversNeeded) || 0,
+                                parseInt(
+                                  tempValues.driversNeeded || e.target.value,
+                                ) || 0,
                               );
                               setEditingField(null);
                               setEditingEventId(null);
                               setTempValues({});
-                            }}
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={handleFieldCancel}
-                          >
-                            ✗
-                          </Button>
-                        </div>
-                      ) : (
-                        <button
-                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                          onClick={() => {
-                            setEditingField("driversNeeded");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              driversNeeded: (request as any).driversNeeded || 0,
-                            });
-                          }}
-                        >
-                          {(request as any).driversNeeded || 0}
-                        </button>
-                      )}
-                    </div>
-                    {editingDriversFor === request.id ? (
-                      <div className="flex items-center space-x-1">
-                        <select
-                          value=""
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "__custom__") {
-                              setTempDriverInput("");
-                              // Focus will be on input field
-                            } else if (value) {
-                              // Add selected driver immediately
-                              const currentDrivers = (request as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, value];
-                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
                             }
+                            if (e.key === "Escape") handleFieldCancel();
                           }}
-                          className="text-xs border rounded px-2 py-1 min-w-32"
-                        >
-                          <option value="">Select driver...</option>
-                          {availableUsers?.map(user => (
-                            <option key={user.id} value={user.id}>
-                              {user.displayName}
-                            </option>
-                          ))}
-                          <option value="__custom__">+ Add custom driver</option>
-                        </select>
-                        <input
-                          type="text"
-                          placeholder="Type driver name..."
-                          value={tempDriverInput}
-                          onChange={(e) => setTempDriverInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && tempDriverInput.trim()) {
-                              const currentDrivers = (request as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
-                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                              setTempDriverInput("");
-                            }
-                            if (e.key === "Escape") {
-                              setEditingDriversFor(null);
-                              setTempDriverInput("");
-                            }
-                          }}
-                          className="text-xs border rounded px-2 py-1 w-32"
                         />
-                        <button
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
                           onClick={() => {
-                            setEditingDriversFor(null);
-                            setTempDriverInput("");
+                            handleTrackChange(
+                              request.id,
+                              "driversNeeded",
+                              parseInt(tempValues.driversNeeded) || 0,
+                            );
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
                           }}
-                          className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700"
                         >
                           ✓
-                        </button>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          onClick={handleFieldCancel}
+                        >
+                          ✗
+                        </Button>
                       </div>
                     ) : (
                       <button
-                        className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
                         onClick={() => {
-                          setEditingDriversFor(request.id);
-                          setTempDriverInput("");
+                          setEditingField("driversNeeded");
+                          setEditingEventId(request.id);
+                          setTempValues({
+                            driversNeeded: (request as any).driversNeeded || 0,
+                          });
                         }}
                       >
-                        {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
+                        {(request as any).driversNeeded || 0}
                       </button>
                     )}
                   </div>
-                  {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
-                    <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
+                  {editingDriversFor === request.id ? (
+                    <div className="flex items-center space-x-1">
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "__custom__") {
+                            setTempDriverInput("");
+                            // Focus will be on input field
+                          } else if (value) {
+                            // Add selected driver immediately
+                            const currentDrivers =
+                              (request as any).assignedDriverIds || [];
+                            const updatedDrivers = [...currentDrivers, value];
+                            handleAssignmentUpdate(
+                              request.id,
+                              "assignedDriverIds",
+                              updatedDrivers,
+                            );
+                          }
+                        }}
+                        className="text-xs border rounded px-2 py-1 min-w-32"
+                      >
+                        <option value="">Select driver...</option>
+                        {users?.map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.displayName}
+                          </option>
+                        ))}
+                        <option value="__custom__">+ Add custom driver</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Type driver name..."
+                        value={tempDriverInput}
+                        onChange={(e) => setTempDriverInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && tempDriverInput.trim()) {
+                            const currentDrivers =
+                              (request as any).assignedDriverIds || [];
+                            const updatedDrivers = [
+                              ...currentDrivers,
+                              tempDriverInput.trim(),
+                            ];
+                            handleAssignmentUpdate(
+                              request.id,
+                              "assignedDriverIds",
+                              updatedDrivers,
+                            );
+                            setTempDriverInput("");
+                          }
+                          if (e.key === "Escape") {
+                            setEditingDriversFor(null);
+                            setTempDriverInput("");
+                          }
+                        }}
+                        className="text-xs border rounded px-2 py-1 w-32"
+                      />
+                      <button
+                        onClick={() => {
+                          setEditingDriversFor(null);
+                          setTempDriverInput("");
+                        }}
+                        className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700"
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                      onClick={() => {
+                        setEditingDriversFor(request.id);
+                        setTempDriverInput("");
+                      }}
+                    >
+                      {(request as any).assignedDriverIds?.length > 0
+                        ? "Edit Drivers"
+                        : "+ Assign Driver"}
+                    </button>
+                  )}
+                </div>
+                {(request as any).assignedDriverIds?.map(
+                  (driverId: string, index: number) => (
+                    <div
+                      key={index}
+                      className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1"
+                    >
                       {getUserDisplayName(driverId)}
                       <button
                         className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
                         onClick={() => {
-                          const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
-                          handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                          const updatedDrivers =
+                            (request as any).assignedDriverIds?.filter(
+                              (id: string, i: number) => i !== index,
+                            ) || [];
+                          handleAssignmentUpdate(
+                            request.id,
+                            "assignedDriverIds",
+                            updatedDrivers,
+                          );
                         }}
                       >
                         ×
                       </button>
                     </div>
-                  ))}
-                </div>
+                  ),
+                )}
+              </div>
 
-                {/* TSP Contact Assignment */}
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">TSP Contact</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
-                      onClick={() => {
-                        setAssigningContactRequest(request);
-                        setShowTspContactDialog(true);
-                        const currentContacts = [
-                          (request as any).tspContact,
-                          (request as any).tspContactAssigned,
-                          (request as any).additionalContact1,
-                          (request as any).additionalContact2,
-                          (request as any).customTspContact,
-                        ].filter(Boolean);
-                        setSelectedTspContacts(currentContacts);
-                      }}
-                    >
-                      <Users className="w-3 h-3 mr-1" />
-                      Manage TSP Contact
-                    </Button>
+              {/* TSP Contact Assignment */}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">
+                      TSP Contact
+                    </span>
                   </div>
-                  
-                  {/* TSP Contact Display - Visually distinct and larger */}
-                  <div className="bg-white border-2 border-[#236383] rounded-lg p-4">
-                    {(() => {
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
+                    onClick={() => {
+                      setAssigningContactRequest(request);
+                      setShowTspContactDialog(true);
                       const currentContacts = [
                         (request as any).tspContact,
                         (request as any).tspContactAssigned,
@@ -2737,159 +2930,216 @@ export default function EventRequestsManagement() {
                         (request as any).additionalContact2,
                         (request as any).customTspContact,
                       ].filter(Boolean);
+                      setSelectedTspContacts(currentContacts);
+                    }}
+                  >
+                    <Users className="w-3 h-3 mr-1" />
+                    Manage TSP Contact
+                  </Button>
+                </div>
 
-                      if (currentContacts.length === 0) {
-                        return (
-                          <div className="text-center py-3">
-                            <span className="text-gray-400 text-sm italic">No TSP contact assigned</span>
-                          </div>
-                        );
-                      }
+                {/* TSP Contact Display - Visually distinct and larger */}
+                <div className="bg-white border-2 border-[#236383] rounded-lg p-4">
+                  {(() => {
+                    const currentContacts = [
+                      (request as any).tspContact,
+                      (request as any).tspContactAssigned,
+                      (request as any).additionalContact1,
+                      (request as any).additionalContact2,
+                      (request as any).customTspContact,
+                    ].filter(Boolean);
 
+                    if (currentContacts.length === 0) {
                       return (
-                        <div className="space-y-2">
-                          <div className="text-xs font-medium text-[#236383] uppercase tracking-wide mb-2">
-                            Assigned TSP Team ({currentContacts.length})
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {currentContacts.map((contactId: string, index: number) => (
-                              <div key={index} className="flex items-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm">
+                        <div className="text-center py-3">
+                          <span className="text-gray-400 text-sm italic">
+                            No TSP contact assigned
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-[#236383] uppercase tracking-wide mb-2">
+                          Assigned TSP Team ({currentContacts.length})
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {currentContacts.map(
+                            (contactId: string, index: number) => (
+                              <div
+                                key={index}
+                                className="flex items-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm"
+                              >
                                 <Users className="w-4 h-4 mr-2" />
                                 {getUserDisplayName(contactId)}
                               </div>
-                            ))}
-                          </div>
+                            ),
+                          )}
                         </div>
-                      );
-                    })()}
-                  </div>
+                      </div>
+                    );
+                  })()}
                 </div>
+              </div>
 
-                {/* Pickup Time Display */}
-                {(request as any).pickupTime && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Pickup Time</span>
-                    <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                      {formatTime((request as any).pickupTime)}
+              {/* Pickup Time Display */}
+              {(request as any).pickupTime && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">
+                    Pickup Time
+                  </span>
+                  <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                    {formatTime((request as any).pickupTime)}
+                  </span>
+                </div>
+              )}
+
+              {/* Speaker Assignment */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">
+                    Speakers
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-600">
+                      Assigned:{" "}
+                      {(request as any).assignedSpeakerIds?.length || 0}/
                     </span>
-                  </div>
-                )}
-
-                {/* Speaker Assignment */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Speakers</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">
-                        Assigned: {(request as any).assignedSpeakerIds?.length || 0}/
-                      </span>
-                      {editingField === "speakersNeeded" && editingEventId === request.id ? (
-                        <div className="flex items-center space-x-1">
-                          <input
-                            type="number"
-                            min="0"
-                            className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
-                            value={tempValues.speakersNeeded || (request as any).speakersNeeded || 0}
-                            onChange={(e) =>
-                              setTempValues((prev) => ({
-                                ...prev,
-                                speakersNeeded: e.target.value,
-                              }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                handleTrackChange(
-                                  request.id,
-                                  "speakersNeeded",
-                                  parseInt(tempValues.speakersNeeded || e.target.value) || 0,
-                                );
-                                setEditingField(null);
-                                setEditingEventId(null);
-                                setTempValues({});
-                              }
-                              if (e.key === "Escape") handleFieldCancel();
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
+                    {editingField === "speakersNeeded" &&
+                    editingEventId === request.id ? (
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="number"
+                          min="0"
+                          className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
+                          value={
+                            tempValues.speakersNeeded ||
+                            (request as any).speakersNeeded ||
+                            0
+                          }
+                          onChange={(e) =>
+                            setTempValues((prev) => ({
+                              ...prev,
+                              speakersNeeded: e.target.value,
+                            }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
                               handleTrackChange(
                                 request.id,
                                 "speakersNeeded",
-                                parseInt(tempValues.speakersNeeded) || 0,
+                                parseInt(
+                                  tempValues.speakersNeeded || e.target.value,
+                                ) || 0,
                               );
                               setEditingField(null);
                               setEditingEventId(null);
                               setTempValues({});
-                            }}
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={handleFieldCancel}
-                          >
-                            ✗
-                          </Button>
-                        </div>
-                      ) : (
-                        <button
-                          className="text-xs text-purple-600 hover:text-purple-800 hover:underline"
+                            }
+                            if (e.key === "Escape") handleFieldCancel();
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
                           onClick={() => {
-                            setEditingField("speakersNeeded");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              speakersNeeded: (request as any).speakersNeeded || 0,
-                            });
+                            handleTrackChange(
+                              request.id,
+                              "speakersNeeded",
+                              parseInt(tempValues.speakersNeeded) || 0,
+                            );
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
                           }}
                         >
-                          {(request as any).speakersNeeded || 0}
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200"
-                      onClick={() => {
-                        setAssigningSpeakerRequest(request);
-                        setShowSpeakerDialog(true);
-                        const currentSpeakers = (request as any).assignedSpeakerIds || [];
-                        setSelectedSpeakers(currentSpeakers);
-                      }}
-                    >
-                      {(request as any).assignedSpeakerIds?.length > 0 ? "Edit Speakers" : "+ Assign Speaker"}
-                    </button>
-                  </div>
-                  {(request as any).assignedSpeakerIds?.map((speakerId: string, index: number) => (
-                      <div key={index} className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200 mr-1">
-                        {getUserDisplayName(speakerId)}
-                        <button
-                          className="ml-1 hover:bg-purple-200 rounded-full w-4 h-4 flex items-center justify-center"
-                          onClick={() => {
-                            const updatedSpeakers = (request as any).assignedSpeakerIds?.filter((id: string, i: number) => i !== index) || [];
-                            handleAssignmentUpdate(request.id, 'assignedSpeakerIds', updatedSpeakers);
-                          }}
+                          ✓
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          onClick={handleFieldCancel}
                         >
-                          ×
-                        </button>
+                          ✗
+                        </Button>
                       </div>
-                    ))}
+                    ) : (
+                      <button
+                        className="text-xs text-purple-600 hover:text-purple-800 hover:underline"
+                        onClick={() => {
+                          setEditingField("speakersNeeded");
+                          setEditingEventId(request.id);
+                          setTempValues({
+                            speakersNeeded:
+                              (request as any).speakersNeeded || 0,
+                          });
+                        }}
+                      >
+                        {(request as any).speakersNeeded || 0}
+                      </button>
+                    )}
                   </div>
-
-                {/* Show volunteer notes if present */}
-                {(request as any).volunteerNotes && (
-                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                    <span className="font-medium text-yellow-800">Volunteer Notes: </span>
-                    <span className="text-yellow-700">{(request as any).volunteerNotes}</span>
-                  </div>
+                  <button
+                    className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200"
+                    onClick={() => {
+                      setAssigningSpeakerRequest(request);
+                      setShowSpeakerDialog(true);
+                      const currentSpeakers =
+                        (request as any).assignedSpeakerIds || [];
+                      setSelectedSpeakers(currentSpeakers);
+                    }}
+                  >
+                    {(request as any).assignedSpeakerIds?.length > 0
+                      ? "Edit Speakers"
+                      : "+ Assign Speaker"}
+                  </button>
+                </div>
+                {(request as any).assignedSpeakerIds?.map(
+                  (speakerId: string, index: number) => (
+                    <div
+                      key={index}
+                      className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200 mr-1"
+                    >
+                      {getUserDisplayName(speakerId)}
+                      <button
+                        className="ml-1 hover:bg-purple-200 rounded-full w-4 h-4 flex items-center justify-center"
+                        onClick={() => {
+                          const updatedSpeakers =
+                            (request as any).assignedSpeakerIds?.filter(
+                              (id: string, i: number) => i !== index,
+                            ) || [];
+                          handleAssignmentUpdate(
+                            request.id,
+                            "assignedSpeakerIds",
+                            updatedSpeakers,
+                          );
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ),
                 )}
               </div>
+
+              {/* Show volunteer notes if present */}
+              {(request as any).volunteerNotes && (
+                <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                  <span className="font-medium text-yellow-800">
+                    Volunteer Notes:{" "}
+                  </span>
+                  <span className="text-yellow-700">
+                    {(request as any).volunteerNotes}
+                  </span>
+                </div>
+              )}
             </div>
+          </div>
 
           {/* Planning Notes Section */}
           {(request as any).planningNotes && (
@@ -2923,22 +3173,23 @@ export default function EventRequestsManagement() {
               </Button>
             )}
 
-            {getDisplayValue(request, "email") && hasPermission(user, "EVENT_REQUESTS_EDIT") && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const subject = `Event Planning - ${request.organizationName}`;
-                  const body = `Hello ${request.firstName},\n\nI hope this message finds you well. I'm following up regarding your upcoming event.`;
-                  const emailLink = `mailto:${getDisplayValue(request, "email")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                  window.open(emailLink, "_blank");
-                }}
-                className="hover:bg-blue-50 hover:border-blue-300"
-              >
-                <Mail className="w-4 h-4 mr-1" />
-                Email
-              </Button>
-            )}
+            {getDisplayValue(request, "email") &&
+              hasPermission(user, "EVENT_REQUESTS_EDIT") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const subject = `Event Planning - ${request.organizationName}`;
+                    const body = `Hello ${request.firstName},\n\nI hope this message finds you well. I'm following up regarding your upcoming event.`;
+                    const emailLink = `mailto:${getDisplayValue(request, "email")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    window.open(emailLink, "_blank");
+                  }}
+                  className="hover:bg-blue-50 hover:border-blue-300"
+                >
+                  <Mail className="w-4 h-4 mr-1" />
+                  Email
+                </Button>
+              )}
 
             {hasPendingChanges(request.id) && (
               <Button
@@ -3138,15 +3389,23 @@ export default function EventRequestsManagement() {
       <CardContent>
         <div className="space-y-3">
           {/* Department Field - Hide if it contains invalid values like "Yes"/"No" from data mapping issues */}
-          {request.department && 
-           !["Yes", "No", "yes", "no", "Unknown", "unknown", "i_dont_know"].includes(request.department.toLowerCase()) && (
-            <p className="flex items-center">
-              <Building className="w-4 h-4 mr-2 text-gray-500" />
-              <strong>Department:</strong>
-              <span className="ml-2">{request.department}</span>
-            </p>
-          )}
-          
+          {request.department &&
+            ![
+              "Yes",
+              "No",
+              "yes",
+              "no",
+              "Unknown",
+              "unknown",
+              "i_dont_know",
+            ].includes(request.department.toLowerCase()) && (
+              <p className="flex items-center">
+                <Building className="w-4 h-4 mr-2 text-gray-500" />
+                <strong>Department:</strong>
+                <span className="ml-2">{request.department}</span>
+              </p>
+            )}
+
           {request.desiredEventDate && (
             <p className="flex items-center">
               <Calendar className="w-4 h-4 mr-2 text-gray-500" />
@@ -3161,7 +3420,7 @@ export default function EventRequestsManagement() {
               </span>
             </p>
           )}
-          
+
           {/* Previously Hosted - Enhanced display with icons and badges */}
           <div className="flex items-center">
             <History className="w-4 h-4 mr-2 text-gray-500" />
@@ -3170,31 +3429,42 @@ export default function EventRequestsManagement() {
               {(() => {
                 const previouslyHostedValue = request.previouslyHosted;
                 const matchedOption = previouslyHostedOptions.find(
-                  (opt) => opt.value === previouslyHostedValue
+                  (opt) => opt.value === previouslyHostedValue,
                 );
-                
+
                 if (matchedOption) {
                   return (
-                    <Badge 
-                      variant={matchedOption.value === "yes" ? "default" : "secondary"}
+                    <Badge
+                      variant={
+                        matchedOption.value === "yes" ? "default" : "secondary"
+                      }
                       className={`text-xs ${
-                        matchedOption.value === "yes" 
-                          ? "bg-green-100 text-green-800 border-green-300" 
-                          : matchedOption.value === "no" 
-                          ? "bg-orange-100 text-orange-800 border-orange-300"
-                          : "bg-gray-100 text-gray-700 border-gray-300"
+                        matchedOption.value === "yes"
+                          ? "bg-green-100 text-green-800 border-green-300"
+                          : matchedOption.value === "no"
+                            ? "bg-orange-100 text-orange-800 border-orange-300"
+                            : "bg-gray-100 text-gray-700 border-gray-300"
                       }`}
                     >
-                      {matchedOption.value === "yes" && <CheckCircle className="w-3 h-3 mr-1" />}
-                      {matchedOption.value === "no" && <XCircle className="w-3 h-3 mr-1" />}
-                      {matchedOption.value === "i_dont_know" && <HelpCircle className="w-3 h-3 mr-1" />}
+                      {matchedOption.value === "yes" && (
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                      )}
+                      {matchedOption.value === "no" && (
+                        <XCircle className="w-3 h-3 mr-1" />
+                      )}
+                      {matchedOption.value === "i_dont_know" && (
+                        <HelpCircle className="w-3 h-3 mr-1" />
+                      )}
                       {matchedOption.label}
                     </Badge>
                   );
                 } else {
                   // Handle case where data might be in wrong field due to import issues
                   return (
-                    <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700 border-gray-300">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-gray-100 text-gray-700 border-gray-300"
+                    >
                       <HelpCircle className="w-3 h-3 mr-1" />
                       Unknown
                     </Badge>
@@ -3384,11 +3654,18 @@ export default function EventRequestsManagement() {
               <div className="flex-1">
                 {/* Organization Name with inline editing */}
                 <div className="flex items-center space-x-2 mb-1">
-                  {isEditing(request.id, 'organizationName') ? (
+                  {isEditing(request.id, "organizationName") ? (
                     <div className="flex items-center space-x-2 flex-1">
                       <Input
-                        value={editValues[`${request.id}-organizationName`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-organizationName`]: e.target.value })}
+                        value={
+                          editValues[`${request.id}-organizationName`] || ""
+                        }
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            [`${request.id}-organizationName`]: e.target.value,
+                          })
+                        }
                         placeholder="Organization name"
                         className="h-8 text-sm font-semibold"
                       />
@@ -3396,7 +3673,9 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'organizationName')}
+                        onClick={() =>
+                          saveInlineEdit(request.id, "organizationName")
+                        }
                       >
                         <CheckCircle className="h-4 w-4" />
                       </Button>
@@ -3404,7 +3683,9 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'organizationName')}
+                        onClick={() =>
+                          cancelInlineEdit(request.id, "organizationName")
+                        }
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -3418,21 +3699,32 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                        onClick={() => startInlineEdit(request.id, 'organizationName', request.organizationName)}
+                        onClick={() =>
+                          startInlineEdit(
+                            request.id,
+                            "organizationName",
+                            request.organizationName,
+                          )
+                        }
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
                     </>
                   )}
                 </div>
-                
+
                 {/* Department with inline editing */}
                 <div className="flex items-center space-x-2">
-                  {isEditing(request.id, 'department') ? (
+                  {isEditing(request.id, "department") ? (
                     <div className="flex items-center space-x-2">
                       <Input
-                        value={editValues[`${request.id}-department`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-department`]: e.target.value })}
+                        value={editValues[`${request.id}-department`] || ""}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            [`${request.id}-department`]: e.target.value,
+                          })
+                        }
                         placeholder="Department (optional)"
                         className="h-6 text-xs"
                       />
@@ -3440,7 +3732,7 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'department')}
+                        onClick={() => saveInlineEdit(request.id, "department")}
                       >
                         <CheckCircle className="h-3 w-3" />
                       </Button>
@@ -3448,7 +3740,9 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'department')}
+                        onClick={() =>
+                          cancelInlineEdit(request.id, "department")
+                        }
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -3464,7 +3758,13 @@ export default function EventRequestsManagement() {
                             variant="ghost"
                             size="sm"
                             className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
-                            onClick={() => startInlineEdit(request.id, 'department', request.department || '')}
+                            onClick={() =>
+                              startInlineEdit(
+                                request.id,
+                                "department",
+                                request.department || "",
+                              )
+                            }
                           >
                             <Edit className="h-2 w-2" />
                           </Button>
@@ -3564,7 +3864,6 @@ export default function EventRequestsManagement() {
             ) : null;
           })()}
 
-
           {/* Organization Contact Information */}
           <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
             <h4 className="font-semibold text-teal-800 mb-2 flex items-center">
@@ -3593,27 +3892,34 @@ export default function EventRequestsManagement() {
 
           {/* Event Summary with all remaining details */}
           <div className="bg-orange-50 p-3 rounded-lg border border-[#FBAD3F]">
-            <h4 className="font-semibold text-[#FBAD3F] mb-2">
-              Event Summary
-            </h4>
+            <h4 className="font-semibold text-[#FBAD3F] mb-2">Event Summary</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {/* Event Start Time with inline editing */}
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  {isEditing(request.id, 'eventStartTime') ? (
+                  {isEditing(request.id, "eventStartTime") ? (
                     <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">Start Time:</span>
+                      <span className="font-semibold text-[#FBAD3F]">
+                        Start Time:
+                      </span>
                       <input
                         type="time"
-                        value={editValues[`${request.id}-eventStartTime`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventStartTime`]: e.target.value })}
+                        value={editValues[`${request.id}-eventStartTime`] || ""}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            [`${request.id}-eventStartTime`]: e.target.value,
+                          })
+                        }
                         className="h-6 px-2 text-xs border rounded"
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'eventStartTime')}
+                        onClick={() =>
+                          saveInlineEdit(request.id, "eventStartTime")
+                        }
                       >
                         <CheckCircle className="h-3 w-3" />
                       </Button>
@@ -3621,7 +3927,9 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'eventStartTime')}
+                        onClick={() =>
+                          cancelInlineEdit(request.id, "eventStartTime")
+                        }
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -3629,14 +3937,26 @@ export default function EventRequestsManagement() {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <span className="text-gray-800">
-                        <span className="font-semibold text-blue-700">Start Time:</span>{" "}
-                        <span className="text-gray-900 font-medium">{(request as any).eventStartTime ? formatTime12Hour((request as any).eventStartTime) : "Not set"}</span>
+                        <span className="font-semibold text-blue-700">
+                          Start Time:
+                        </span>{" "}
+                        <span className="text-gray-900 font-medium">
+                          {(request as any).eventStartTime
+                            ? formatTime12Hour((request as any).eventStartTime)
+                            : "Not set"}
+                        </span>
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
-                        onClick={() => startInlineEdit(request.id, 'eventStartTime', (request as any).eventStartTime || '')}
+                        onClick={() =>
+                          startInlineEdit(
+                            request.id,
+                            "eventStartTime",
+                            (request as any).eventStartTime || "",
+                          )
+                        }
                       >
                         <Edit className="h-2 w-2" />
                       </Button>
@@ -3648,20 +3968,29 @@ export default function EventRequestsManagement() {
               {/* Event End Time with inline editing */}
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  {isEditing(request.id, 'eventEndTime') ? (
+                  {isEditing(request.id, "eventEndTime") ? (
                     <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">End Time:</span>
+                      <span className="font-semibold text-[#FBAD3F]">
+                        End Time:
+                      </span>
                       <input
                         type="time"
-                        value={editValues[`${request.id}-eventEndTime`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-eventEndTime`]: e.target.value })}
+                        value={editValues[`${request.id}-eventEndTime`] || ""}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            [`${request.id}-eventEndTime`]: e.target.value,
+                          })
+                        }
                         className="h-6 px-2 text-xs border rounded"
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'eventEndTime')}
+                        onClick={() =>
+                          saveInlineEdit(request.id, "eventEndTime")
+                        }
                       >
                         <CheckCircle className="h-3 w-3" />
                       </Button>
@@ -3669,7 +3998,9 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'eventEndTime')}
+                        onClick={() =>
+                          cancelInlineEdit(request.id, "eventEndTime")
+                        }
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -3677,14 +4008,26 @@ export default function EventRequestsManagement() {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <span className="text-gray-800">
-                        <span className="font-semibold text-blue-700">End Time:</span>{" "}
-                        <span className="text-gray-900 font-medium">{(request as any).eventEndTime ? formatTime12Hour((request as any).eventEndTime) : "Not set"}</span>
+                        <span className="font-semibold text-blue-700">
+                          End Time:
+                        </span>{" "}
+                        <span className="text-gray-900 font-medium">
+                          {(request as any).eventEndTime
+                            ? formatTime12Hour((request as any).eventEndTime)
+                            : "Not set"}
+                        </span>
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
-                        onClick={() => startInlineEdit(request.id, 'eventEndTime', (request as any).eventEndTime || '')}
+                        onClick={() =>
+                          startInlineEdit(
+                            request.id,
+                            "eventEndTime",
+                            (request as any).eventEndTime || "",
+                          )
+                        }
                       >
                         <Edit className="h-2 w-2" />
                       </Button>
@@ -3696,20 +4039,27 @@ export default function EventRequestsManagement() {
               {/* Pickup Time with inline editing */}
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  {isEditing(request.id, 'pickupTime') ? (
+                  {isEditing(request.id, "pickupTime") ? (
                     <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">Pickup Time:</span>
+                      <span className="font-semibold text-[#FBAD3F]">
+                        Pickup Time:
+                      </span>
                       <input
                         type="time"
-                        value={editValues[`${request.id}-pickupTime`] || ''}
-                        onChange={(e) => setEditValues({ ...editValues, [`${request.id}-pickupTime`]: e.target.value })}
+                        value={editValues[`${request.id}-pickupTime`] || ""}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            [`${request.id}-pickupTime`]: e.target.value,
+                          })
+                        }
                         className="h-6 px-2 text-xs border rounded"
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-green-600 hover:text-green-800"
-                        onClick={() => saveInlineEdit(request.id, 'pickupTime')}
+                        onClick={() => saveInlineEdit(request.id, "pickupTime")}
                       >
                         <CheckCircle className="h-3 w-3" />
                       </Button>
@@ -3717,7 +4067,9 @@ export default function EventRequestsManagement() {
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0 text-red-600 hover:text-red-800"
-                        onClick={() => cancelInlineEdit(request.id, 'pickupTime')}
+                        onClick={() =>
+                          cancelInlineEdit(request.id, "pickupTime")
+                        }
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -3725,14 +4077,26 @@ export default function EventRequestsManagement() {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <span className="text-gray-800">
-                        <span className="font-semibold text-blue-700">Pickup Time:</span>{" "}
-                        <span className="text-gray-900 font-medium">{(request as any).pickupTime ? formatTime12Hour((request as any).pickupTime) : "Not set"}</span>
+                        <span className="font-semibold text-blue-700">
+                          Pickup Time:
+                        </span>{" "}
+                        <span className="text-gray-900 font-medium">
+                          {(request as any).pickupTime
+                            ? formatTime12Hour((request as any).pickupTime)
+                            : "Not set"}
+                        </span>
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
-                        onClick={() => startInlineEdit(request.id, 'pickupTime', (request as any).pickupTime || '')}
+                        onClick={() =>
+                          startInlineEdit(
+                            request.id,
+                            "pickupTime",
+                            (request as any).pickupTime || "",
+                          )
+                        }
                       >
                         <Edit className="h-2 w-2" />
                       </Button>
@@ -3744,36 +4108,52 @@ export default function EventRequestsManagement() {
               {/* Sandwich details */}
               {(request as any).sandwichTypes && (
                 <div className="text-gray-800">
-                  <span className="font-semibold text-green-700">Sandwich Types:</span>{" "}
-                  <span className="text-gray-900 font-medium">{(request as any).sandwichTypes}</span>
+                  <span className="font-semibold text-green-700">
+                    Sandwich Types:
+                  </span>{" "}
+                  <span className="text-gray-900 font-medium">
+                    {(request as any).sandwichTypes}
+                  </span>
                 </div>
               )}
 
               {/* Drivers section */}
               <div className="text-gray-800">
                 <span className="font-semibold text-purple-700">Drivers:</span>{" "}
-                <span className="text-gray-900 font-medium">{(request as any).driverDetails || "Not specified"}</span>
+                <span className="text-gray-900 font-medium">
+                  {(request as any).driverDetails || "Not specified"}
+                </span>
               </div>
 
               {/* Speakers section */}
               <div className="text-gray-800">
                 <span className="font-semibold text-indigo-700">Speakers:</span>{" "}
-                <span className="text-gray-900 font-medium">{(request as any).speakerDetails || "Not specified"}</span>
+                <span className="text-gray-900 font-medium">
+                  {(request as any).speakerDetails || "Not specified"}
+                </span>
               </div>
 
               {/* Other logistics */}
               <div className="text-gray-800">
-                <span className="font-semibold text-cyan-700">Refrigeration:</span>{" "}
-                <span className="text-gray-900 font-medium">{request.hasRefrigeration === true
-                  ? "Available"
-                  : request.hasRefrigeration === false
-                    ? "Not available"
-                    : "Not specified"}</span>
+                <span className="font-semibold text-cyan-700">
+                  Refrigeration:
+                </span>{" "}
+                <span className="text-gray-900 font-medium">
+                  {request.hasRefrigeration === true
+                    ? "Available"
+                    : request.hasRefrigeration === false
+                      ? "Not available"
+                      : "Not specified"}
+                </span>
               </div>
               {(request as any).additionalRequirements && (
                 <div className="text-gray-800">
-                  <span className="font-semibold text-red-700">Special Requirements:</span>{" "}
-                  <span className="text-gray-900 font-medium">{(request as any).additionalRequirements}</span>
+                  <span className="font-semibold text-red-700">
+                    Special Requirements:
+                  </span>{" "}
+                  <span className="text-gray-900 font-medium">
+                    {(request as any).additionalRequirements}
+                  </span>
                 </div>
               )}
 
@@ -3781,8 +4161,12 @@ export default function EventRequestsManagement() {
               {request.message &&
                 request.message !== "Imported from Excel file" && (
                   <div className="col-span-full text-gray-800 p-3 bg-gray-50 rounded border-l-4 border-orange-400">
-                    <span className="font-semibold text-orange-700">Event Details:</span>{" "}
-                    <span className="text-gray-900 font-medium">{request.message}</span>
+                    <span className="font-semibold text-orange-700">
+                      Event Details:
+                    </span>{" "}
+                    <span className="text-gray-900 font-medium">
+                      {request.message}
+                    </span>
                   </div>
                 )}
             </div>
@@ -3793,21 +4177,26 @@ export default function EventRequestsManagement() {
             const hasPrimaryContact = (request as any).tspContact;
             const hasSecondaryContact = (request as any).tspContactAssigned;
             const hasCustomContact = (request as any).customTspContact;
-            const hasAnyContact = hasPrimaryContact || hasSecondaryContact || hasCustomContact;
-            
+            const hasAnyContact =
+              hasPrimaryContact || hasSecondaryContact || hasCustomContact;
+
             if (!hasAnyContact) {
               return (
                 <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-4 rounded-lg border border-teal-300 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <UserCheck className="w-5 h-5 mr-2 text-teal-600" />
-                      <h4 className="font-bold text-teal-900">TSP Team Assignment</h4>
+                      <h4 className="font-bold text-teal-900">
+                        TSP Team Assignment
+                      </h4>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       className="text-teal-700 border-teal-300 hover:bg-teal-100"
-                      onClick={() => startInlineEdit(request.id, 'tspContact', '')}
+                      onClick={() =>
+                        startInlineEdit(request.id, "tspContact", "")
+                      }
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Assign TSP Contacts
@@ -3830,39 +4219,62 @@ export default function EventRequestsManagement() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
-                          <span className="font-semibold text-teal-900">Primary Contact</span>
+                          <span className="font-semibold text-teal-900">
+                            Primary Contact
+                          </span>
                         </div>
-                        {!isEditing(request.id, 'tspContact') && (
+                        {!isEditing(request.id, "tspContact") && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0 text-teal-600 hover:text-teal-800"
-                            onClick={() => startInlineEdit(request.id, 'tspContact', (request as any).tspContact || '')}
+                            onClick={() =>
+                              startInlineEdit(
+                                request.id,
+                                "tspContact",
+                                (request as any).tspContact || "",
+                              )
+                            }
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
                       <div className="mt-1">
-                        {isEditing(request.id, 'tspContact') ? (
+                        {isEditing(request.id, "tspContact") ? (
                           <div className="flex items-center space-x-2">
                             <select
-                              value={editValues[`${request.id}-tspContact`] || ''}
-                              onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContact`]: e.target.value })}
+                              value={
+                                editValues[`${request.id}-tspContact`] || ""
+                              }
+                              onChange={(e) =>
+                                setEditValues({
+                                  ...editValues,
+                                  [`${request.id}-tspContact`]: e.target.value,
+                                })
+                              }
                               className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
                             >
                               <option value="">Remove primary contact</option>
-                              {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
-                                <option key={user.id} value={user.id}>
-                                  {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                                </option>
-                              ))}
+                              {users
+                                .filter(
+                                  (user: any) => user.role !== "recipient",
+                                )
+                                .map((user: any) => (
+                                  <option key={user.id} value={user.id}>
+                                    {user.firstName && user.lastName
+                                      ? `${user.firstName} ${user.lastName}`
+                                      : user.email}
+                                  </option>
+                                ))}
                             </select>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                              onClick={() => saveInlineEdit(request.id, 'tspContact')}
+                              onClick={() =>
+                                saveInlineEdit(request.id, "tspContact")
+                              }
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -3870,7 +4282,9 @@ export default function EventRequestsManagement() {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                              onClick={() => cancelInlineEdit(request.id, 'tspContact')}
+                              onClick={() =>
+                                cancelInlineEdit(request.id, "tspContact")
+                              }
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -3890,39 +4304,65 @@ export default function EventRequestsManagement() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                          <span className="font-semibold text-blue-900">Secondary Contact</span>
+                          <span className="font-semibold text-blue-900">
+                            Secondary Contact
+                          </span>
                         </div>
-                        {!isEditing(request.id, 'tspContactAssigned') && (
+                        {!isEditing(request.id, "tspContactAssigned") && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
-                            onClick={() => startInlineEdit(request.id, 'tspContactAssigned', (request as any).tspContactAssigned || '')}
+                            onClick={() =>
+                              startInlineEdit(
+                                request.id,
+                                "tspContactAssigned",
+                                (request as any).tspContactAssigned || "",
+                              )
+                            }
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
                       <div className="mt-1">
-                        {isEditing(request.id, 'tspContactAssigned') ? (
+                        {isEditing(request.id, "tspContactAssigned") ? (
                           <div className="flex items-center space-x-2">
                             <select
-                              value={editValues[`${request.id}-tspContactAssigned`] || ''}
-                              onChange={(e) => setEditValues({ ...editValues, [`${request.id}-tspContactAssigned`]: e.target.value })}
+                              value={
+                                editValues[
+                                  `${request.id}-tspContactAssigned`
+                                ] || ""
+                              }
+                              onChange={(e) =>
+                                setEditValues({
+                                  ...editValues,
+                                  [`${request.id}-tspContactAssigned`]:
+                                    e.target.value,
+                                })
+                              }
                               className="flex h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-sm"
                             >
                               <option value="">Remove secondary contact</option>
-                              {users.filter((user: any) => user.role !== "recipient").map((user: any) => (
-                                <option key={user.id} value={user.id}>
-                                  {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
-                                </option>
-                              ))}
+                              {users
+                                .filter(
+                                  (user: any) => user.role !== "recipient",
+                                )
+                                .map((user: any) => (
+                                  <option key={user.id} value={user.id}>
+                                    {user.firstName && user.lastName
+                                      ? `${user.firstName} ${user.lastName}`
+                                      : user.email}
+                                  </option>
+                                ))}
                             </select>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                              onClick={() => saveInlineEdit(request.id, 'tspContactAssigned')}
+                              onClick={() =>
+                                saveInlineEdit(request.id, "tspContactAssigned")
+                              }
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -3930,14 +4370,21 @@ export default function EventRequestsManagement() {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                              onClick={() => cancelInlineEdit(request.id, 'tspContactAssigned')}
+                              onClick={() =>
+                                cancelInlineEdit(
+                                  request.id,
+                                  "tspContactAssigned",
+                                )
+                              }
                             >
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
                         ) : (
                           <div className="text-blue-800 font-medium">
-                            {getUserDisplayName((request as any).tspContactAssigned)}
+                            {getUserDisplayName(
+                              (request as any).tspContactAssigned,
+                            )}
                           </div>
                         )}
                       </div>
@@ -3950,25 +4397,42 @@ export default function EventRequestsManagement() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
-                          <span className="font-semibold text-gray-900">Custom Contact</span>
+                          <span className="font-semibold text-gray-900">
+                            Custom Contact
+                          </span>
                         </div>
-                        {!isEditing(request.id, 'customTspContact') && (
+                        {!isEditing(request.id, "customTspContact") && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
-                            onClick={() => startInlineEdit(request.id, 'customTspContact', (request as any).customTspContact || '')}
+                            onClick={() =>
+                              startInlineEdit(
+                                request.id,
+                                "customTspContact",
+                                (request as any).customTspContact || "",
+                              )
+                            }
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
                       <div className="mt-1">
-                        {isEditing(request.id, 'customTspContact') ? (
+                        {isEditing(request.id, "customTspContact") ? (
                           <div className="flex items-center space-x-2">
                             <Input
-                              value={editValues[`${request.id}-customTspContact`] || ''}
-                              onChange={(e) => setEditValues({ ...editValues, [`${request.id}-customTspContact`]: e.target.value })}
+                              value={
+                                editValues[`${request.id}-customTspContact`] ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                setEditValues({
+                                  ...editValues,
+                                  [`${request.id}-customTspContact`]:
+                                    e.target.value,
+                                })
+                              }
                               placeholder="External contact name or special instructions"
                               className="h-8 text-sm"
                             />
@@ -3976,7 +4440,9 @@ export default function EventRequestsManagement() {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                              onClick={() => saveInlineEdit(request.id, 'customTspContact')}
+                              onClick={() =>
+                                saveInlineEdit(request.id, "customTspContact")
+                              }
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -3984,7 +4450,9 @@ export default function EventRequestsManagement() {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                              onClick={() => cancelInlineEdit(request.id, 'customTspContact')}
+                              onClick={() =>
+                                cancelInlineEdit(request.id, "customTspContact")
+                              }
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -4007,7 +4475,9 @@ export default function EventRequestsManagement() {
                             variant="outline"
                             size="sm"
                             className="text-teal-600 border-teal-300 hover:bg-teal-50"
-                            onClick={() => startInlineEdit(request.id, 'tspContact', '')}
+                            onClick={() =>
+                              startInlineEdit(request.id, "tspContact", "")
+                            }
                           >
                             + Primary
                           </Button>
@@ -4017,7 +4487,13 @@ export default function EventRequestsManagement() {
                             variant="outline"
                             size="sm"
                             className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                            onClick={() => startInlineEdit(request.id, 'tspContactAssigned', '')}
+                            onClick={() =>
+                              startInlineEdit(
+                                request.id,
+                                "tspContactAssigned",
+                                "",
+                              )
+                            }
                           >
                             + Secondary
                           </Button>
@@ -4027,7 +4503,13 @@ export default function EventRequestsManagement() {
                             variant="outline"
                             size="sm"
                             className="text-gray-600 border-gray-300 hover:bg-gray-50"
-                            onClick={() => startInlineEdit(request.id, 'customTspContact', '')}
+                            onClick={() =>
+                              startInlineEdit(
+                                request.id,
+                                "customTspContact",
+                                "",
+                              )
+                            }
                           >
                             + Custom
                           </Button>
@@ -4220,12 +4702,12 @@ export default function EventRequestsManagement() {
         ? parseInt(formData.get("estimatedSandwichCount") as string)
         : null,
       sandwichTypes: formData.get("sandwichTypes") || null,
-      
+
       // Transportation workflow fields
       deliveryDestination: formData.get("deliveryDestination") || null,
       storageLocation: formData.get("storageLocation") || null,
       finalDeliveryMethod: formData.get("finalDeliveryMethod") || null,
-      
+
       driversNeeded: formData.get("driversNeeded")
         ? parseInt(formData.get("driversNeeded") as string)
         : 0,
@@ -4233,7 +4715,7 @@ export default function EventRequestsManagement() {
         ? parseInt(formData.get("speakersNeeded") as string)
         : 0,
       volunteerNotes: formData.get("volunteerNotes") || null,
-      
+
       // Driver and speaker assignments from component state
       assignedDriverIds: (detailsRequest as any).assignedDriverIds || [],
       assignedSpeakerIds: (detailsRequest as any).assignedSpeakerIds || [],
@@ -4282,85 +4764,83 @@ export default function EventRequestsManagement() {
                 className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0 font-semibold"
               >
                 <TrendingUp className="w-4 h-4" />
-                <span className="ml-2">
-                  Weekly Planning
-                </span>
+                <span className="ml-2">Weekly Planning</span>
               </Button>
             </div>
             {/* Data Management Buttons */}
             <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                window.open(
-                  `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_EVENT_REQUESTS_SHEET_ID || "1GsiY_Nafzt_AYr4lXd-Nc-tKiCcSIc4_FW3lDJWX_ss"}/edit`,
-                  "_blank",
-                )
-              }
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                Open Google Sheet
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => syncToSheetsMutation.mutate()}
-              disabled={syncToSheetsMutation.isPending}
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                {syncToSheetsMutation.isPending
-                  ? "Syncing..."
-                  : "Sync to Sheets"}
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => syncFromSheetsMutation.mutate()}
-              disabled={syncFromSheetsMutation.isPending}
-            >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                {syncFromSheetsMutation.isPending
-                  ? "Syncing..."
-                  : "Sync from Sheets"}
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => importExcelMutation.mutate()}
-              disabled={importExcelMutation.isPending}
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                {importExcelMutation.isPending
-                  ? "Importing..."
-                  : "Import Excel"}
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => importHistoricalMutation.mutate()}
-              disabled={importHistoricalMutation.isPending}
-              title="Import historical 2024 events"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                {importHistoricalMutation.isPending
-                  ? "Importing..."
-                  : "Import 2024 Data"}
-              </span>
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  window.open(
+                    `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_EVENT_REQUESTS_SHEET_ID || "1GsiY_Nafzt_AYr4lXd-Nc-tKiCcSIc4_FW3lDJWX_ss"}/edit`,
+                    "_blank",
+                  )
+                }
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="hidden sm:inline sm:ml-2">
+                  Open Google Sheet
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => syncToSheetsMutation.mutate()}
+                disabled={syncToSheetsMutation.isPending}
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline sm:ml-2">
+                  {syncToSheetsMutation.isPending
+                    ? "Syncing..."
+                    : "Sync to Sheets"}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => syncFromSheetsMutation.mutate()}
+                disabled={syncFromSheetsMutation.isPending}
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline sm:ml-2">
+                  {syncFromSheetsMutation.isPending
+                    ? "Syncing..."
+                    : "Sync from Sheets"}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => importExcelMutation.mutate()}
+                disabled={importExcelMutation.isPending}
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline sm:ml-2">
+                  {importExcelMutation.isPending
+                    ? "Importing..."
+                    : "Import Excel"}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => importHistoricalMutation.mutate()}
+                disabled={importHistoricalMutation.isPending}
+                title="Import historical 2024 events"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline sm:ml-2">
+                  {importHistoricalMutation.isPending
+                    ? "Importing..."
+                    : "Import 2024 Data"}
+                </span>
+              </Button>
             </div>
           </div>
         </div>
-        
+
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button>
@@ -4398,9 +4878,7 @@ export default function EventRequestsManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="organizationName">
-                    Organization Name
-                  </Label>
+                  <Label htmlFor="organizationName">Organization Name</Label>
                   <Input name="organizationName" required />
                 </div>
                 <div>
@@ -4410,27 +4888,24 @@ export default function EventRequestsManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="desiredEventDate">
-                    Desired Event Date
-                  </Label>
+                  <Label htmlFor="desiredEventDate">Desired Event Date</Label>
                   <Input name="desiredEventDate" type="date" />
                 </div>
                 <div>
                   <Label htmlFor="previouslyHosted">
                     Previously Hosted Event?
                   </Label>
-                  <Select name="previouslyHosted" defaultValue="no">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {previouslyHostedOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    name="previouslyHosted"
+                    defaultValue="no"
+                    className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
+                  >
+                    {previouslyHostedOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
@@ -4622,31 +5097,6 @@ export default function EventRequestsManagement() {
                 <Card>
                   <CardContent className="text-center py-8">
                     <p className="text-gray-500">No event requests found.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {filteredRequests.map((request: EventRequest) =>
-                    renderStandardEventCard(request),
-                  )}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="followed_up" className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm text-gray-600">
-                  {globalSearch && searchTerm
-                    ? `Showing ${filteredRequests.length} event${filteredRequests.length !== 1 ? "s" : ""} from global search`
-                    : `Showing ${filteredRequests.length} followed up event${filteredRequests.length !== 1 ? "s" : ""}`}
-                </div>
-              </div>
-              {filteredRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <p className="text-gray-500">
-                      No followed up events found.
-                    </p>
                   </CardContent>
                 </Card>
               ) : (
@@ -5093,7 +5543,6 @@ export default function EventRequestsManagement() {
               )}
             </TabsContent>
 
-
             <TabsContent value="forecast" className="space-y-4">
               <SandwichForecastWidget />
             </TabsContent>
@@ -5428,37 +5877,57 @@ export default function EventRequestsManagement() {
                 </div>
                 {/* Sandwich Destination */}
                 <div>
-                  <Label htmlFor="deliveryDestination">Sandwich Destination</Label>
+                  <Label htmlFor="deliveryDestination">
+                    Sandwich Destination
+                  </Label>
                   <Input
                     name="deliveryDestination"
-                    defaultValue={(selectedRequest as any).deliveryDestination || ""}
+                    defaultValue={
+                      (selectedRequest as any).deliveryDestination || ""
+                    }
                     placeholder="Final delivery location (organization, address, etc.)"
                   />
                 </div>
 
                 {/* Transportation Workflow - Simplified for Initial Contact */}
                 <div className="space-y-4 border rounded-lg p-4 bg-purple-50">
-                  <h3 className="text-lg font-semibold text-purple-800">🚛 Transportation Plan (Initial)</h3>
-                  
+                  <h3 className="text-lg font-semibold text-purple-800">
+                    🚛 Transportation Plan (Initial)
+                  </h3>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="finalDeliveryMethod">Delivery Timing</Label>
+                      <Label htmlFor="finalDeliveryMethod">
+                        Delivery Timing
+                      </Label>
                       <select
                         name="finalDeliveryMethod"
-                        defaultValue={(selectedRequest as any).finalDeliveryMethod || ""}
+                        defaultValue={
+                          (selectedRequest as any).finalDeliveryMethod || ""
+                        }
                         className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
                       >
                         <option value="">To be determined</option>
-                        <option value="direct_delivery">Same-day delivery</option>
-                        <option value="driver_delivery">Two-day with storage</option>
-                        <option value="pickup_by_recipient">Pickup from storage</option>
+                        <option value="direct_delivery">
+                          Same-day delivery
+                        </option>
+                        <option value="driver_delivery">
+                          Two-day with storage
+                        </option>
+                        <option value="pickup_by_recipient">
+                          Pickup from storage
+                        </option>
                       </select>
                     </div>
                     <div>
-                      <Label htmlFor="storageLocation">Storage Location (if needed)</Label>
+                      <Label htmlFor="storageLocation">
+                        Storage Location (if needed)
+                      </Label>
                       <Input
                         name="storageLocation"
-                        defaultValue={(selectedRequest as any).storageLocation || ""}
+                        defaultValue={
+                          (selectedRequest as any).storageLocation || ""
+                        }
                         placeholder="Host location for overnight"
                       />
                     </div>
@@ -5467,15 +5936,21 @@ export default function EventRequestsManagement() {
 
                 {/* Drivers Section */}
                 <div className="space-y-4 border rounded-lg p-4 bg-blue-50">
-                  <h3 className="text-lg font-semibold text-blue-800">🚗 Drivers</h3>
+                  <h3 className="text-lg font-semibold text-blue-800">
+                    🚗 Drivers
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="driversNeeded">How Many Drivers Needed?</Label>
+                      <Label htmlFor="driversNeeded">
+                        How Many Drivers Needed?
+                      </Label>
                       <Input
                         name="driversNeeded"
                         type="number"
                         min="0"
-                        defaultValue={(selectedRequest as any).driversNeeded || 0}
+                        defaultValue={
+                          (selectedRequest as any).driversNeeded || 0
+                        }
                         placeholder="Number of drivers needed"
                       />
                     </div>
@@ -5485,17 +5960,23 @@ export default function EventRequestsManagement() {
                         <select
                           onChange={(e) => {
                             if (e.target.value) {
-                              const currentDrivers = (selectedRequest as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, e.target.value];
+                              const currentDrivers =
+                                (selectedRequest as any).assignedDriverIds ||
+                                [];
+                              const updatedDrivers = [
+                                ...currentDrivers,
+                                e.target.value,
+                              ];
                               // Update the selectedRequest temporarily for display
-                              (selectedRequest as any).assignedDriverIds = updatedDrivers;
+                              (selectedRequest as any).assignedDriverIds =
+                                updatedDrivers;
                               e.target.value = "";
                             }
                           }}
                           className="w-full text-sm border rounded px-2 py-1"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {users?.map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -5507,22 +5988,39 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1"
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && e.target.value.trim()) {
-                              const currentDrivers = (selectedRequest as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, e.target.value.trim()];
-                              (selectedRequest as any).assignedDriverIds = updatedDrivers;
+                              const currentDrivers =
+                                (selectedRequest as any).assignedDriverIds ||
+                                [];
+                              const updatedDrivers = [
+                                ...currentDrivers,
+                                e.target.value.trim(),
+                              ];
+                              (selectedRequest as any).assignedDriverIds =
+                                updatedDrivers;
                               e.target.value = "";
                             }
                           }}
                         />
                         <div className="flex flex-wrap gap-1">
-                          {((selectedRequest as any).assignedDriverIds || []).map((driverId: string, index: number) => (
-                            <span key={index} className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                          {(
+                            (selectedRequest as any).assignedDriverIds || []
+                          ).map((driverId: string, index: number) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs"
+                            >
                               {getUserDisplayName(driverId)}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const updatedDrivers = (selectedRequest as any).assignedDriverIds?.filter((_: any, i: number) => i !== index) || [];
-                                  (selectedRequest as any).assignedDriverIds = updatedDrivers;
+                                  const updatedDrivers =
+                                    (
+                                      selectedRequest as any
+                                    ).assignedDriverIds?.filter(
+                                      (_: any, i: number) => i !== index,
+                                    ) || [];
+                                  (selectedRequest as any).assignedDriverIds =
+                                    updatedDrivers;
                                 }}
                                 className="ml-1 text-blue-600 hover:text-blue-800"
                               >
@@ -5538,15 +6036,21 @@ export default function EventRequestsManagement() {
 
                 {/* Speakers Section */}
                 <div className="space-y-4 border rounded-lg p-4 bg-green-50">
-                  <h3 className="text-lg font-semibold text-green-800">🎤 Speakers</h3>
+                  <h3 className="text-lg font-semibold text-green-800">
+                    🎤 Speakers
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
+                      <Label htmlFor="speakersNeeded">
+                        How Many Speakers Needed?
+                      </Label>
                       <Input
                         name="speakersNeeded"
                         type="number"
                         min="0"
-                        defaultValue={(selectedRequest as any).speakersNeeded || 0}
+                        defaultValue={
+                          (selectedRequest as any).speakersNeeded || 0
+                        }
                         placeholder="Number of speakers needed"
                       />
                     </div>
@@ -5556,16 +6060,22 @@ export default function EventRequestsManagement() {
                         <select
                           onChange={(e) => {
                             if (e.target.value) {
-                              const currentSpeakers = (selectedRequest as any).assignedSpeakerIds || [];
-                              const updatedSpeakers = [...currentSpeakers, e.target.value];
-                              (selectedRequest as any).assignedSpeakerIds = updatedSpeakers;
+                              const currentSpeakers =
+                                (selectedRequest as any).assignedSpeakerIds ||
+                                [];
+                              const updatedSpeakers = [
+                                ...currentSpeakers,
+                                e.target.value,
+                              ];
+                              (selectedRequest as any).assignedSpeakerIds =
+                                updatedSpeakers;
                               e.target.value = "";
                             }
                           }}
                           className="w-full text-sm border rounded px-2 py-1"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {users?.map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -5577,22 +6087,39 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1"
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && e.target.value.trim()) {
-                              const currentSpeakers = (selectedRequest as any).assignedSpeakerIds || [];
-                              const updatedSpeakers = [...currentSpeakers, e.target.value.trim()];
-                              (selectedRequest as any).assignedSpeakerIds = updatedSpeakers;
+                              const currentSpeakers =
+                                (selectedRequest as any).assignedSpeakerIds ||
+                                [];
+                              const updatedSpeakers = [
+                                ...currentSpeakers,
+                                e.target.value.trim(),
+                              ];
+                              (selectedRequest as any).assignedSpeakerIds =
+                                updatedSpeakers;
                               e.target.value = "";
                             }
                           }}
                         />
                         <div className="flex flex-wrap gap-1">
-                          {((selectedRequest as any).assignedSpeakerIds || []).map((speakerId: string, index: number) => (
-                            <span key={index} className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                          {(
+                            (selectedRequest as any).assignedSpeakerIds || []
+                          ).map((speakerId: string, index: number) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs"
+                            >
                               {getUserDisplayName(speakerId)}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const updatedSpeakers = (selectedRequest as any).assignedSpeakerIds?.filter((_: any, i: number) => i !== index) || [];
-                                  (selectedRequest as any).assignedSpeakerIds = updatedSpeakers;
+                                  const updatedSpeakers =
+                                    (
+                                      selectedRequest as any
+                                    ).assignedSpeakerIds?.filter(
+                                      (_: any, i: number) => i !== index,
+                                    ) || [];
+                                  (selectedRequest as any).assignedSpeakerIds =
+                                    updatedSpeakers;
                                 }}
                                 className="ml-1 text-green-600 hover:text-green-800"
                               >
@@ -6181,11 +6708,13 @@ export default function EventRequestsManagement() {
                       name="estimatedSandwichCount"
                       type="number"
                       min="0"
-                      value={detailsRequest?.estimatedSandwichCount || ''}
-                      onChange={(e) => setDetailsRequest(prev => ({
-                        ...prev,
-                        estimatedSandwichCount: parseInt(e.target.value) || 0
-                      }))}
+                      value={detailsRequest?.estimatedSandwichCount || ""}
+                      onChange={(e) =>
+                        setDetailsRequest((prev) => ({
+                          ...prev,
+                          estimatedSandwichCount: parseInt(e.target.value) || 0,
+                        }))
+                      }
                       placeholder="How many sandwiches to be made?"
                     />
                   </div>
@@ -6194,15 +6723,19 @@ export default function EventRequestsManagement() {
                       Sandwich Type (optional)
                     </Label>
                     <select
-                      value={detailsRequest?.sandwichType || 'Unknown'}
-                      onChange={(e) => setDetailsRequest(prev => ({
-                        ...prev,
-                        sandwichType: e.target.value
-                      }))}
+                      value={detailsRequest?.sandwichType || "Unknown"}
+                      onChange={(e) =>
+                        setDetailsRequest((prev) => ({
+                          ...prev,
+                          sandwichType: e.target.value,
+                        }))
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mt-1"
                     >
                       <option value="Unknown">Unknown</option>
-                      <option value="Deli (Turkey, Ham, etc.)">Deli (Turkey, Ham, etc.)</option>
+                      <option value="Deli (Turkey, Ham, etc.)">
+                        Deli (Turkey, Ham, etc.)
+                      </option>
                       <option value="Turkey">Turkey</option>
                       <option value="Ham">Ham</option>
                       <option value="PB&J">PB&J</option>
@@ -6216,22 +6749,28 @@ export default function EventRequestsManagement() {
 
                 {/* Sandwich Destination */}
                 <div>
-                  <Label htmlFor="deliveryDestination">Sandwich Destination</Label>
+                  <Label htmlFor="deliveryDestination">
+                    Sandwich Destination
+                  </Label>
                   <Input
                     name="deliveryDestination"
                     value={(detailsRequest as any).deliveryDestination || ""}
-                    onChange={(e) => setDetailsRequest(prev => ({
-                      ...prev,
-                      deliveryDestination: e.target.value
-                    }))}
+                    onChange={(e) =>
+                      setDetailsRequest((prev) => ({
+                        ...prev,
+                        deliveryDestination: e.target.value,
+                      }))
+                    }
                     placeholder="Final delivery location (organization, address, etc.)"
                   />
                 </div>
 
                 {/* Transportation Workflow - Redesigned */}
                 <div className="space-y-4 border rounded-lg p-4 bg-purple-50">
-                  <h3 className="text-lg font-semibold text-purple-800">🚛 Transportation Plan</h3>
-                  
+                  <h3 className="text-lg font-semibold text-purple-800">
+                    🚛 Transportation Plan
+                  </h3>
+
                   {/* Primary Question */}
                   <div className="bg-white rounded-lg p-3 border border-purple-200">
                     <Label className="text-sm font-medium mb-2 block">
@@ -6243,12 +6782,17 @@ export default function EventRequestsManagement() {
                           type="radio"
                           name="sameDayDelivery"
                           value="yes"
-                          checked={(detailsRequest as any).finalDeliveryMethod === 'direct_delivery'}
-                          onChange={() => setDetailsRequest(prev => ({
-                            ...prev,
-                            finalDeliveryMethod: 'direct_delivery',
-                            storageLocation: '' // Clear storage if same-day
-                          }))}
+                          checked={
+                            (detailsRequest as any).finalDeliveryMethod ===
+                            "direct_delivery"
+                          }
+                          onChange={() =>
+                            setDetailsRequest((prev) => ({
+                              ...prev,
+                              finalDeliveryMethod: "direct_delivery",
+                              storageLocation: "", // Clear storage if same-day
+                            }))
+                          }
                           className="mr-2"
                         />
                         <span className="text-sm">Yes - Same day delivery</span>
@@ -6258,47 +6802,75 @@ export default function EventRequestsManagement() {
                           type="radio"
                           name="sameDayDelivery"
                           value="no"
-                          checked={!!((detailsRequest as any).storageLocation || ((detailsRequest as any).finalDeliveryMethod && (detailsRequest as any).finalDeliveryMethod !== 'direct_delivery'))}
-                          onChange={() => setDetailsRequest(prev => ({
-                            ...prev,
-                            finalDeliveryMethod: prev.finalDeliveryMethod === 'direct_delivery' ? '' : prev.finalDeliveryMethod,
-                            storageLocation: prev.storageLocation || 'TBD' // Set placeholder to trigger the storage fields
-                          }))}
+                          checked={
+                            !!(
+                              (detailsRequest as any).storageLocation ||
+                              ((detailsRequest as any).finalDeliveryMethod &&
+                                (detailsRequest as any).finalDeliveryMethod !==
+                                  "direct_delivery")
+                            )
+                          }
+                          onChange={() =>
+                            setDetailsRequest((prev) => ({
+                              ...prev,
+                              finalDeliveryMethod:
+                                prev.finalDeliveryMethod === "direct_delivery"
+                                  ? ""
+                                  : prev.finalDeliveryMethod,
+                              storageLocation: prev.storageLocation || "TBD", // Set placeholder to trigger the storage fields
+                            }))
+                          }
                           className="mr-2"
                         />
-                        <span className="text-sm">No - Need overnight storage</span>
+                        <span className="text-sm">
+                          No - Need overnight storage
+                        </span>
                       </label>
                     </div>
                   </div>
 
                   {/* Same-Day Delivery Scenario */}
-                  {(detailsRequest as any).finalDeliveryMethod === 'direct_delivery' && (
+                  {(detailsRequest as any).finalDeliveryMethod ===
+                    "direct_delivery" && (
                     <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                      <h4 className="font-medium text-green-800 text-sm mb-2">Same-Day Delivery Plan</h4>
+                      <h4 className="font-medium text-green-800 text-sm mb-2">
+                        Same-Day Delivery Plan
+                      </h4>
                       <p className="text-xs text-gray-600 mb-2">
-                        ✅ 1 driver needed to transport sandwiches directly from event to recipient
+                        ✅ 1 driver needed to transport sandwiches directly from
+                        event to recipient
                       </p>
                       <div className="text-xs text-gray-700">
                         <span className="font-medium">Destination: </span>
-                        {(detailsRequest as any).deliveryDestination || 
-                          <span className="text-orange-600">Please specify destination in field above</span>}
+                        {(detailsRequest as any).deliveryDestination || (
+                          <span className="text-orange-600">
+                            Please specify destination in field above
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
 
                   {/* Two-Day Process with Storage */}
-                  {((detailsRequest as any).storageLocation || ((detailsRequest as any).finalDeliveryMethod && (detailsRequest as any).finalDeliveryMethod !== 'direct_delivery')) && (
+                  {((detailsRequest as any).storageLocation ||
+                    ((detailsRequest as any).finalDeliveryMethod &&
+                      (detailsRequest as any).finalDeliveryMethod !==
+                        "direct_delivery")) && (
                     <div className="space-y-3">
                       {/* Storage Location */}
                       <div>
-                        <Label htmlFor="storageLocation">Overnight Storage Location</Label>
+                        <Label htmlFor="storageLocation">
+                          Overnight Storage Location
+                        </Label>
                         <Input
                           name="storageLocation"
                           value={(detailsRequest as any).storageLocation || ""}
-                          onChange={(e) => setDetailsRequest(prev => ({
-                            ...prev,
-                            storageLocation: e.target.value
-                          }))}
+                          onChange={(e) =>
+                            setDetailsRequest((prev) => ({
+                              ...prev,
+                              storageLocation: e.target.value,
+                            }))
+                          }
                           placeholder="Host home address for overnight storage"
                           className="mt-1"
                         />
@@ -6306,36 +6878,50 @@ export default function EventRequestsManagement() {
 
                       {/* Next Day Plan */}
                       <div>
-                        <Label htmlFor="finalDeliveryMethod">Next Day Delivery Plan</Label>
+                        <Label htmlFor="finalDeliveryMethod">
+                          Next Day Delivery Plan
+                        </Label>
                         <select
                           name="finalDeliveryMethod"
-                          value={(detailsRequest as any).finalDeliveryMethod || ""}
-                          onChange={(e) => setDetailsRequest(prev => ({
-                            ...prev,
-                            finalDeliveryMethod: e.target.value
-                          }))}
+                          value={
+                            (detailsRequest as any).finalDeliveryMethod || ""
+                          }
+                          onChange={(e) =>
+                            setDetailsRequest((prev) => ({
+                              ...prev,
+                              finalDeliveryMethod: e.target.value,
+                            }))
+                          }
                           className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm mt-1"
                         >
                           <option value="">Select next day plan...</option>
-                          <option value="driver_delivery">Driver delivers from storage to recipient</option>
-                          <option value="pickup_by_recipient">Recipient picks up from storage location</option>
+                          <option value="driver_delivery">
+                            Driver delivers from storage to recipient
+                          </option>
+                          <option value="pickup_by_recipient">
+                            Recipient picks up from storage location
+                          </option>
                         </select>
                       </div>
 
                       {/* Show summary of two-day plan */}
                       {(detailsRequest as any).finalDeliveryMethod && (
                         <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                          <h4 className="font-medium text-blue-800 text-sm mb-2">Two-Day Transportation Plan</h4>
+                          <h4 className="font-medium text-blue-800 text-sm mb-2">
+                            Two-Day Transportation Plan
+                          </h4>
                           <div className="space-y-1 text-xs">
                             <div>
-                              <span className="font-medium">Day 1:</span> Driver 1 transports from event → {(detailsRequest as any).storageLocation}
+                              <span className="font-medium">Day 1:</span> Driver
+                              1 transports from event →{" "}
+                              {(detailsRequest as any).storageLocation}
                             </div>
                             <div>
-                              <span className="font-medium">Day 2:</span> {
-                                (detailsRequest as any).finalDeliveryMethod === 'pickup_by_recipient' 
-                                  ? `Recipient picks up from ${(detailsRequest as any).storageLocation}`
-                                  : `Driver 2 delivers from storage → ${(detailsRequest as any).deliveryDestination || 'destination'}`
-                              }
+                              <span className="font-medium">Day 2:</span>{" "}
+                              {(detailsRequest as any).finalDeliveryMethod ===
+                              "pickup_by_recipient"
+                                ? `Recipient picks up from ${(detailsRequest as any).storageLocation}`
+                                : `Driver 2 delivers from storage → ${(detailsRequest as any).deliveryDestination || "destination"}`}
                             </div>
                             <div className="mt-2 text-orange-600 font-medium">
                               ⚠️ 2 drivers needed for this plan
@@ -6349,15 +6935,21 @@ export default function EventRequestsManagement() {
 
                 {/* Drivers Section */}
                 <div className="space-y-3 border rounded-lg p-3 bg-blue-50">
-                  <h3 className="text-base font-semibold text-blue-800">🚗 Drivers</h3>
+                  <h3 className="text-base font-semibold text-blue-800">
+                    🚗 Drivers
+                  </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="driversNeeded">How Many Drivers Needed?</Label>
+                      <Label htmlFor="driversNeeded">
+                        How Many Drivers Needed?
+                      </Label>
                       <Input
                         name="driversNeeded"
                         type="number"
                         min="0"
-                        defaultValue={(detailsRequest as any).driversNeeded || 0}
+                        defaultValue={
+                          (detailsRequest as any).driversNeeded || 0
+                        }
                         placeholder="Number of drivers needed"
                         className="h-8"
                       />
@@ -6368,11 +6960,15 @@ export default function EventRequestsManagement() {
                         <select
                           onChange={(e) => {
                             if (e.target.value) {
-                              const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, e.target.value];
-                              setDetailsRequest(prev => ({
+                              const currentDrivers =
+                                (detailsRequest as any).assignedDriverIds || [];
+                              const updatedDrivers = [
+                                ...currentDrivers,
+                                e.target.value,
+                              ];
+                              setDetailsRequest((prev) => ({
                                 ...prev,
-                                assignedDriverIds: updatedDrivers
+                                assignedDriverIds: updatedDrivers,
                               }));
                               e.target.value = "";
                             }
@@ -6380,7 +6976,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {users?.map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -6394,11 +6990,16 @@ export default function EventRequestsManagement() {
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && e.target.value.trim()) {
                                 e.preventDefault();
-                                const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
-                                const updatedDrivers = [...currentDrivers, e.target.value.trim()];
-                                setDetailsRequest(prev => ({
+                                const currentDrivers =
+                                  (detailsRequest as any).assignedDriverIds ||
+                                  [];
+                                const updatedDrivers = [
+                                  ...currentDrivers,
+                                  e.target.value.trim(),
+                                ];
+                                setDetailsRequest((prev) => ({
                                   ...prev,
-                                  assignedDriverIds: updatedDrivers
+                                  assignedDriverIds: updatedDrivers,
                                 }));
                                 e.target.value = "";
                               }
@@ -6408,13 +7009,19 @@ export default function EventRequestsManagement() {
                             type="button"
                             className="bg-green-500 hover:bg-green-600 text-white px-2 rounded-r text-sm h-8"
                             onClick={(e) => {
-                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              const input = e.currentTarget
+                                .previousElementSibling as HTMLInputElement;
                               if (input.value.trim()) {
-                                const currentDrivers = (detailsRequest as any).assignedDriverIds || [];
-                                const updatedDrivers = [...currentDrivers, input.value.trim()];
-                                setDetailsRequest(prev => ({
+                                const currentDrivers =
+                                  (detailsRequest as any).assignedDriverIds ||
+                                  [];
+                                const updatedDrivers = [
+                                  ...currentDrivers,
+                                  input.value.trim(),
+                                ];
+                                setDetailsRequest((prev) => ({
                                   ...prev,
-                                  assignedDriverIds: updatedDrivers
+                                  assignedDriverIds: updatedDrivers,
                                 }));
                                 input.value = "";
                               }
@@ -6424,16 +7031,26 @@ export default function EventRequestsManagement() {
                           </button>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {((detailsRequest as any).assignedDriverIds || []).map((driverId: string, index: number) => (
-                            <span key={index} className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                          {(
+                            (detailsRequest as any).assignedDriverIds || []
+                          ).map((driverId: string, index: number) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs"
+                            >
                               {getUserDisplayName(driverId)}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const updatedDrivers = (detailsRequest as any).assignedDriverIds?.filter((_: any, i: number) => i !== index) || [];
-                                  setDetailsRequest(prev => ({
+                                  const updatedDrivers =
+                                    (
+                                      detailsRequest as any
+                                    ).assignedDriverIds?.filter(
+                                      (_: any, i: number) => i !== index,
+                                    ) || [];
+                                  setDetailsRequest((prev) => ({
                                     ...prev,
-                                    assignedDriverIds: updatedDrivers
+                                    assignedDriverIds: updatedDrivers,
                                   }));
                                 }}
                                 className="ml-1 text-blue-600 hover:text-blue-800"
@@ -6450,15 +7067,21 @@ export default function EventRequestsManagement() {
 
                 {/* Speakers Section */}
                 <div className="space-y-3 border rounded-lg p-3 bg-green-50">
-                  <h3 className="text-base font-semibold text-green-800">🎤 Speakers</h3>
+                  <h3 className="text-base font-semibold text-green-800">
+                    🎤 Speakers
+                  </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
+                      <Label htmlFor="speakersNeeded">
+                        How Many Speakers Needed?
+                      </Label>
                       <Input
                         name="speakersNeeded"
                         type="number"
                         min="0"
-                        defaultValue={(detailsRequest as any).speakersNeeded || 0}
+                        defaultValue={
+                          (detailsRequest as any).speakersNeeded || 0
+                        }
                         placeholder="Number of speakers needed"
                         className="h-8"
                       />
@@ -6469,11 +7092,16 @@ export default function EventRequestsManagement() {
                         <select
                           onChange={(e) => {
                             if (e.target.value) {
-                              const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
-                              const updatedSpeakers = [...currentSpeakers, e.target.value];
-                              setDetailsRequest(prev => ({
+                              const currentSpeakers =
+                                (detailsRequest as any).assignedSpeakerIds ||
+                                [];
+                              const updatedSpeakers = [
+                                ...currentSpeakers,
+                                e.target.value,
+                              ];
+                              setDetailsRequest((prev) => ({
                                 ...prev,
-                                assignedSpeakerIds: updatedSpeakers
+                                assignedSpeakerIds: updatedSpeakers,
                               }));
                               e.target.value = "";
                             }
@@ -6481,7 +7109,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {users?.map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -6495,11 +7123,16 @@ export default function EventRequestsManagement() {
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && e.target.value.trim()) {
                                 e.preventDefault();
-                                const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
-                                const updatedSpeakers = [...currentSpeakers, e.target.value.trim()];
-                                setDetailsRequest(prev => ({
+                                const currentSpeakers =
+                                  (detailsRequest as any).assignedSpeakerIds ||
+                                  [];
+                                const updatedSpeakers = [
+                                  ...currentSpeakers,
+                                  e.target.value.trim(),
+                                ];
+                                setDetailsRequest((prev) => ({
                                   ...prev,
-                                  assignedSpeakerIds: updatedSpeakers
+                                  assignedSpeakerIds: updatedSpeakers,
                                 }));
                                 e.target.value = "";
                               }
@@ -6509,13 +7142,19 @@ export default function EventRequestsManagement() {
                             type="button"
                             className="bg-green-500 hover:bg-green-600 text-white px-2 rounded-r text-sm h-8"
                             onClick={(e) => {
-                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              const input = e.currentTarget
+                                .previousElementSibling as HTMLInputElement;
                               if (input.value.trim()) {
-                                const currentSpeakers = (detailsRequest as any).assignedSpeakerIds || [];
-                                const updatedSpeakers = [...currentSpeakers, input.value.trim()];
-                                setDetailsRequest(prev => ({
+                                const currentSpeakers =
+                                  (detailsRequest as any).assignedSpeakerIds ||
+                                  [];
+                                const updatedSpeakers = [
+                                  ...currentSpeakers,
+                                  input.value.trim(),
+                                ];
+                                setDetailsRequest((prev) => ({
                                   ...prev,
-                                  assignedSpeakerIds: updatedSpeakers
+                                  assignedSpeakerIds: updatedSpeakers,
                                 }));
                                 input.value = "";
                               }
@@ -6525,16 +7164,26 @@ export default function EventRequestsManagement() {
                           </button>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {((detailsRequest as any).assignedSpeakerIds || []).map((speakerId: string, index: number) => (
-                            <span key={index} className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                          {(
+                            (detailsRequest as any).assignedSpeakerIds || []
+                          ).map((speakerId: string, index: number) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs"
+                            >
                               {getUserDisplayName(speakerId)}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const updatedSpeakers = (detailsRequest as any).assignedSpeakerIds?.filter((_: any, i: number) => i !== index) || [];
-                                  setDetailsRequest(prev => ({
+                                  const updatedSpeakers =
+                                    (
+                                      detailsRequest as any
+                                    ).assignedSpeakerIds?.filter(
+                                      (_: any, i: number) => i !== index,
+                                    ) || [];
+                                  setDetailsRequest((prev) => ({
                                     ...prev,
-                                    assignedSpeakerIds: updatedSpeakers
+                                    assignedSpeakerIds: updatedSpeakers,
                                   }));
                                 }}
                                 className="ml-1 text-green-600 hover:text-green-800"
@@ -6748,19 +7397,14 @@ export default function EventRequestsManagement() {
           </Dialog>
         )}
 
-
         {/* Speaker Assignment Dialog */}
         {showSpeakerDialog && assigningSpeakerRequest && (
-          <Dialog
-            open={showSpeakerDialog}
-            onOpenChange={setShowSpeakerDialog}
-          >
+          <Dialog open={showSpeakerDialog} onOpenChange={setShowSpeakerDialog}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Assign Speakers</DialogTitle>
                 <p className="text-sm text-gray-600">
-                  Assign speakers for{" "}
-                  {assigningSpeakerRequest.organizationName}
+                  Assign speakers for {assigningSpeakerRequest.organizationName}
                 </p>
               </DialogHeader>
 
@@ -6770,10 +7414,11 @@ export default function EventRequestsManagement() {
                     Available Team Members
                   </Label>
                   <p className="text-sm text-gray-600 mb-3">
-                    Speakers needed: {(assigningSpeakerRequest as any).speakersNeeded || 0}
+                    Speakers needed:{" "}
+                    {(assigningSpeakerRequest as any).speakersNeeded || 0}
                   </p>
                   <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                    {availableUsers?.map((user: any) => (
+                    {users?.map((user: any) => (
                       <div
                         key={user.id}
                         className="flex items-center space-x-2"
@@ -6784,10 +7429,13 @@ export default function EventRequestsManagement() {
                           checked={selectedSpeakers.includes(user.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedSpeakers([...selectedSpeakers, user.id]);
+                              setSelectedSpeakers([
+                                ...selectedSpeakers,
+                                user.id,
+                              ]);
                             } else {
                               setSelectedSpeakers(
-                                selectedSpeakers.filter((id) => id !== user.id)
+                                selectedSpeakers.filter((id) => id !== user.id),
                               );
                             }
                           }}
@@ -6848,7 +7496,7 @@ export default function EventRequestsManagement() {
             eventRequest={emailComposerRequest}
             onEmailSent={() => {
               // Optionally refresh data or show success message
-              console.log('Email sent successfully');
+              console.log("Email sent successfully");
             }}
           />
         )}
@@ -7183,7 +7831,10 @@ export default function EventRequestsManagement() {
         )}
 
         {/* Delete Confirmation Dialog */}
-        <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
+        <Dialog
+          open={showDeleteConfirmDialog}
+          onOpenChange={setShowDeleteConfirmDialog}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2 text-red-600">
@@ -7191,10 +7842,11 @@ export default function EventRequestsManagement() {
                 <span>Delete Event Request</span>
               </DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this event request? This action cannot be undone.
+                Are you sure you want to delete this event request? This action
+                cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            
+
             {deletingRequest && (
               <div className="py-4">
                 <div className="bg-gray-50 p-3 rounded-lg">
