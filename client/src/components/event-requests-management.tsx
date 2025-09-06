@@ -278,6 +278,9 @@ export default function EventRequestsManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [globalSearch, setGlobalSearch] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(
     null,
@@ -1232,6 +1235,42 @@ export default function EventRequestsManagement() {
       endItem: Math.min(pastEventsPage * pastEventsPerPage, totalItems),
     };
   }, [filteredRequests, activeTab, pastEventsPage, pastEventsPerPage]);
+
+  // Add missing calculated values
+  const pastEventsCount = pastEvents.length;
+  const closedEventsCount = declinedEvents.length + unresponsiveEvents.length + otherEvents.length;
+
+  // Missing render functions - basic implementations
+  const renderEventCard = (request: EventRequest) => {
+    return (
+      <Card key={request.id} className="p-4">
+        <div className="space-y-2">
+          <h3 className="font-semibold">{request.organizationName}</h3>
+          <p className="text-sm text-gray-600">
+            Contact: {request.firstName} {request.lastName}
+          </p>
+          <p className="text-sm text-gray-600">
+            Date: {formatEventDate(request.desiredEventDate).text}
+          </p>
+        </div>
+      </Card>
+    );
+  };
+
+  const renderPastEventCard = (request: EventRequest) => {
+    return renderEventCard(request);
+  };
+
+  // Import missing WeeklyForecast component
+  const WeeklyForecast = () => {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-gray-500">Weekly forecast coming soon...</p>
+        </CardContent>
+      </Card>
+    );
+  };
 
   // Status explanations for tooltips
   const statusExplanations = {
