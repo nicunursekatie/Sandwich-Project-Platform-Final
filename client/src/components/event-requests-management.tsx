@@ -62,6 +62,7 @@ import {
   Mail,
   Phone,
   AlertTriangle,
+  TrendingUp,
   CheckCircle,
   Clock,
   XCircle,
@@ -281,6 +282,7 @@ export default function EventRequestsManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRangeFilter, setDateRangeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showForecastModal, setShowForecastModal] = useState(false);
   const [itemsPerPage] = useState(10);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(
@@ -3142,23 +3144,18 @@ export default function EventRequestsManagement() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-3xl font-bold">Event Planning</h1>
-          <div className="flex flex-col gap-3">
-            {/* Weekly Planning Button - Separated for prominence */}
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => setActiveTab("forecast")}
-                className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0 font-semibold"
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span className="ml-2">
-                  Weekly Planning
-                </span>
-              </Button>
-            </div>
-            {/* Data Management Buttons */}
-            <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            {/* Weekly Planning Button - Prominent Orange Color */}
+            <Button
+              size="default"
+              onClick={() => setShowForecastModal(true)}
+              className="bg-[#FBAD3F] hover:bg-[#f39e2f] text-white font-semibold shadow-md"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Weekly Planning
+            </Button>
+            
+            {/* Google Sheets Button */}
             <Button
               variant="outline"
               size="sm"
@@ -3188,7 +3185,6 @@ export default function EventRequestsManagement() {
               )}
               {syncToSheetsMutation.isPending ? "Syncing..." : "Force Sync"}
             </Button>
-            </div>
           </div>
         </div>
 
@@ -3562,23 +3558,23 @@ export default function EventRequestsManagement() {
 
         </Tabs>
 
-        {/* Weekly Forecast - Separate from Event Tabs */}
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2 text-[#236383]" />
+        {/* Weekly Planning Forecast Modal */}
+        <Dialog open={showForecastModal} onOpenChange={setShowForecastModal}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center text-xl">
+                <TrendingUp className="w-5 h-5 mr-2 text-[#FBAD3F]" />
                 Weekly Planning Forecast
-              </CardTitle>
-              <CardDescription>
-                Overview of upcoming events and resource planning needs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </DialogTitle>
+              <DialogDescription>
+                Overview of upcoming events and resource planning needs for the week
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4">
               <WeeklyForecast />
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
