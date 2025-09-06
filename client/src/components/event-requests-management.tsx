@@ -1886,52 +1886,67 @@ export default function EventRequestsManagement() {
     return (
       <Card
         key={request.id}
-        className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-white ${highlightedEventId === request.id ? "ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100" : ""} ${hasPendingChanges(request.id) ? "ring-2 ring-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50" : ""}`}
+        className={`group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-l-4 border-l-teal-500 bg-white overflow-hidden ${highlightedEventId === request.id ? "ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100 shadow-lg" : ""} ${hasPendingChanges(request.id) ? "ring-2 ring-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50" : ""}`}
       >
-        {/* Header Section: Organization Name, Date, and Status Badge */}
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              {/* Condensed Header - All key info in one line */}
-              <div className="text-lg font-bold text-gray-900 leading-tight mb-3">
-                <span className="text-xl">{request.organizationName}</span>
-                {request.department && <span className="text-gray-600 font-medium"> • {request.department}</span>}
+        {/* Header Section with improved visual hierarchy */}
+        <CardHeader className="pb-3 bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              {/* Organization Name with Department */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-xl font-bold text-gray-900">{request.organizationName}</h3>
+                {request.department && (
+                  <span className="text-sm text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                    {request.department}
+                  </span>
+                )}
+              </div>
+              
+              {/* Event Info Row with Icons */}
+              <div className="flex items-center gap-4 text-sm flex-wrap">
                 {request.desiredEventDate && (
-                  <>
-                    <span className="text-[#FBAD3F]"> | {(() => {
-                      const dateInfo = formatEventDate(request.desiredEventDate);
-                      return dateInfo.text;
-                    })()}</span>
-                  </>
+                  <div className="flex items-center gap-1.5 text-[#FBAD3F]">
+                    <Calendar className="w-4 h-4" />
+                    <span className="font-medium">{formatEventDate(request.desiredEventDate).text}</span>
+                  </div>
                 )}
                 {(request as any).eventStartTime && (
-                  <span className="text-[#FBAD3F]"> | {formatTime((request as any).eventStartTime)}</span>
+                  <div className="flex items-center gap-1.5 text-[#FBAD3F]">
+                    <Clock className="w-4 h-4" />
+                    <span className="font-medium">{formatTime((request as any).eventStartTime)}</span>
+                  </div>
                 )}
                 {(() => {
                   const summary = getSandwichTypesSummary(request);
                   return summary.total > 0 ? (
-                    <span className="text-[#236383]"> | {summary.total} sandwiches</span>
+                    <div className="flex items-center gap-1.5 text-[#236383]">
+                      <Package className="w-4 h-4" />
+                      <span className="font-medium">{summary.total} sandwiches</span>
+                    </div>
                   ) : null;
                 })()}
               </div>
             </div>
-            {/* Status Badge in Top-Right */}
-            <div className="ml-4">
+            
+            {/* Status Badge */}
+            <div className="flex-shrink-0">
               {getStatusDisplay(request.status)}
             </div>
           </div>
         </CardHeader>
 
 
-        {/* Body Section: Three Column Layout */}
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Body Section with improved spacing */}
+        <CardContent className="pt-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
             
             {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
-              <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
-                <User className="w-5 h-5 mr-2 text-[#236383]" />
-                Contact
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200 shadow-sm hover:shadow-md transition-shadow">
+              <h4 className="font-bold text-[#236383] text-base mb-3 flex items-center">
+                <div className="w-8 h-8 rounded-full bg-[#236383] flex items-center justify-center mr-2">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                Contact Information
               </h4>
               <div className="space-y-4">
 
@@ -2166,9 +2181,11 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
-              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
-                <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+              <h4 className="font-bold text-[#FBAD3F] text-base mb-3 flex items-center">
+                <div className="w-8 h-8 rounded-full bg-[#FBAD3F] flex items-center justify-center mr-2">
+                  <Building className="w-4 h-4 text-white" />
+                </div>
                 Event Details
               </h4>
               <div className="space-y-4">
@@ -2641,345 +2658,13 @@ export default function EventRequestsManagement() {
               </div>
             </div>
 
-            {/* Middle Column: Event Details */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
-              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
-                <Calendar className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                Event Details
-              </h4>
-              <div className="space-y-4">
-
-                {/* Event Address */}
-                {(request as any).eventAddress && (
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📍</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Event Location: </span>
-                      <span className="text-gray-600">{(request as any).eventAddress}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Sandwich Count */}
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium text-gray-700">Sandwich Count: </span>
-                    <span className="text-gray-600">{request.sandwichCount || 'Not specified'}</span>
-                  </div>
-                </div>
-
-                {/* Delivery Destination */}
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📦</span>
-                  {editingField === "deliveryDestination" &&
-                  editingEventId === request.id ? (
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={tempValues.deliveryDestination || ""}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            deliveryDestination: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "deliveryDestination",
-                              tempValues.deliveryDestination,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                        className="w-full text-sm border rounded px-2 py-1"
-                        placeholder="Enter destination..."
-                      />
-                      <div className="flex space-x-1 mt-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 w-6 p-0"
-                          onClick={() => {
-                            handleTrackChange(
-                              request.id,
-                              "deliveryDestination",
-                              tempValues.deliveryDestination,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }}
-                        >
-                          ✓
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 w-6 p-0"
-                          onClick={handleFieldCancel}
-                        >
-                          ✗
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <div className="text-sm text-gray-600 flex-1">
-                        <span className="font-medium text-gray-700">Sandwich Destination: </span>
-                        <span className="text-gray-600">
-                          {(request as any).deliveryDestination || "Not specified"}
-                        </span>
-                      </div>
-                      {canEditField("deliveryDestination") ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("deliveryDestination");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              deliveryDestination: (request as any).deliveryDestination || "",
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Edit Destination
-                        </Button>
-                      ) : (
-                        <div className="text-xs text-gray-400 italic">Edit requires admin permissions</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Transportation Plan Section - New Workflow */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-                  <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
-                    🚛 Transportation Plan
-                  </h5>
-                  <div className="space-y-2">
-                    {(() => {
-                      const hasOvernightStorage = (request as any).overnightStorageRequired;
-                      const isPickup = (request as any).finalDeliveryMethod === "pickup_by_recipient";
-                      const pickupOrg = (request as any).pickupOrganization;
-                      const storageLocation = (request as any).storageLocation;
-                      const driver1 = (request as any).transportDriver1;
-                      const driver2 = (request as any).transportDriver2;
-                      const finalRecipient = (request as any).finalRecipientOrg;
-                      
-                      if (isPickup) {
-                        return (
-                          <div className="flex items-start space-x-3">
-                            <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏃‍♂️</span>
-                            <div className="text-xs">
-                              <span className="font-medium text-purple-700">Organization Pickup</span>
-                              {pickupOrg && (
-                                <div className="text-gray-600 mt-1">{pickupOrg} will pick up sandwiches</div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      } else if (hasOvernightStorage) {
-                        return (
-                          <div className="space-y-2">
-                            <div className="flex items-start space-x-3">
-                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                              <div className="text-xs">
-                                <span className="font-medium text-purple-700">Two-Step Process</span>
-                                <div className="text-gray-600 mt-1">Overnight storage required</div>
-                              </div>
-                            </div>
-                            {storageLocation && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📍</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Storage:</span> {storageLocation}
-                                </div>
-                              </div>
-                            )}
-                            {driver1 && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Day 1 Driver:</span> {getUserDisplayName(driver1)}
-                                </div>
-                              </div>
-                            )}
-                            {driver2 && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚚</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Day 2 Driver:</span> {getUserDisplayName(driver2)}
-                                </div>
-                              </div>
-                            )}
-                            {finalRecipient && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Final Recipient:</span> {finalRecipient}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      } else if (driver1 || (request as any).finalDeliveryMethod === "direct_delivery") {
-                        return (
-                          <div className="space-y-2">
-                            <div className="flex items-start space-x-3">
-                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">⚡</span>
-                              <div className="text-xs">
-                                <span className="font-medium text-purple-700">Direct Delivery</span>
-                                <div className="text-gray-600 mt-1">Same day delivery from event to recipient</div>
-                              </div>
-                            </div>
-                            {driver1 && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Driver:</span> {getUserDisplayName(driver1)}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <div className="flex items-start space-x-3">
-                            <span className="text-gray-500 text-xs mt-1 flex-shrink-0">❓</span>
-                            <div className="text-xs text-gray-500 italic">
-                              Transportation plan not yet specified
-                            </div>
-                          </div>
-                        );
-                      }
-                    })()}
-                  </div>
-                </div>
-
-                {/* Planning Notes */}
-                {(request as any).planningNotes && (
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Planning Notes: </span>
-                      <span className="text-gray-600">{(request as any).planningNotes}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Refrigeration */}
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">❄️</span>
-                  {editingField === "refrigeration" &&
-                  editingEventId === request.id ? (
-                    <div className="flex space-x-2 items-center">
-                      <div className="flex space-x-1">
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600 hover:bg-green-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: true,
-                            }))
-                          }
-                        >
-                          ✓ Available
-                        </button>
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600 hover:bg-red-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: false,
-                            }))
-                          }
-                        >
-                          ❌ None
-                        </button>
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === null || tempValues.refrigeration === undefined ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600 hover:bg-yellow-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: null,
-                            }))
-                          }
-                        >
-                          ❓ Unknown
-                        </button>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "hasRefrigeration",
-                            tempValues.refrigeration,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "hasRefrigeration") === true
-                          ? "✓ Available"
-                          : getDisplayValue(request, "hasRefrigeration") === false
-                            ? "❌ None"
-                            : "❓ Unknown"}
-                      </span>
-                      {canEditField("hasRefrigeration") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("refrigeration");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              refrigeration: getDisplayValue(
-                                request,
-                                "hasRefrigeration",
-                              ),
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
             {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
-              <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
-                <span className="inline-block w-5 h-5 mr-2 bg-[#A31C41] rounded-full"></span>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm hover:shadow-md transition-shadow">
+              <h4 className="font-bold text-[#A31C41] text-base mb-3 flex items-center">
+                <div className="w-8 h-8 rounded-full bg-[#A31C41] flex items-center justify-center mr-2">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
                 Assignments
               </h4>
               <div className="space-y-4">
