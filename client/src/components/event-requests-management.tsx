@@ -72,6 +72,8 @@ import {
   History,
   HelpCircle,
   Shield,
+  Package,
+  Car,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -1347,8 +1349,8 @@ export default function EventRequestsManagement() {
       <Badge
         className={
           status === "declined"
-            ? "text-white border-2 font-bold shadow-lg"
-            : statusColors[status as keyof typeof statusColors]
+            ? "text-white border-2 font-bold shadow-lg px-3 py-1.5"
+            : `${statusColors[status as keyof typeof statusColors]} px-3 py-1.5 shadow-sm hover:shadow-md transition-shadow`
         }
         style={
           status === "declined"
@@ -1359,8 +1361,8 @@ export default function EventRequestsManagement() {
             : {}
         }
       >
-        <Icon className="w-3 h-3 mr-1" />
-        {option?.label || status}
+        <Icon className="w-4 h-4 mr-1.5" />
+        <span className="font-medium">{option?.label || status}</span>
       </Badge>
     );
 
@@ -1850,27 +1852,27 @@ export default function EventRequestsManagement() {
       const driverIds = (request as any).assignedDriverIds || [];
       const driversNeeded = (request as any).driversNeeded || 0;
       if (driversNeeded === 0)
-        return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
+        return { badge: "N/A", color: "bg-gray-100 text-gray-600 border-gray-200" };
       if (driverIds.length >= driversNeeded)
-        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700" };
-      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
+        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700 border-green-200" };
+      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F] border-orange-200" };
     };
 
     const getToolkitStatus = () => {
       const status = (request as any).toolkitStatus || "not_sent";
       switch (status) {
         case "sent":
-          return { badge: "✓ Delivered", color: "bg-green-100 text-green-700" };
+          return { badge: "✓ Delivered", color: "bg-green-100 text-green-700 border-green-200" };
         case "received_confirmed":
-          return { badge: "✓ Confirmed", color: "bg-green-100 text-green-700" };
+          return { badge: "✓ Confirmed", color: "bg-green-100 text-green-700 border-green-200" };
         case "not_needed":
-          return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
+          return { badge: "N/A", color: "bg-gray-100 text-gray-600 border-gray-200" };
         case "not_sent":
-          return { badge: "Not Sent", color: "bg-gray-200 text-gray-700" };
+          return { badge: "Not Sent", color: "bg-gray-200 text-gray-700 border-gray-300" };
         default:
           return {
             badge: "⚠️ Pending",
-            color: "bg-orange-100 text-[#FBAD3F]",
+            color: "bg-orange-100 text-[#FBAD3F] border-orange-200",
           };
       }
     };
@@ -2993,9 +2995,9 @@ export default function EventRequestsManagement() {
           )}
         </CardContent>
 
-        {/* Footer Section: Action Buttons */}
-        <div className="px-6 pb-4">
-          <div className="flex flex-wrap gap-2">
+        {/* Footer Section: Enhanced Action Buttons */}
+        <div className="px-6 pb-4 bg-gradient-to-b from-white to-gray-50 border-t border-gray-100">
+          <div className="flex flex-wrap gap-2 pt-4">
             {hasPermission(user, "EVENT_REQUESTS_EDIT") && (
               <Button
                 size="sm"
@@ -3004,9 +3006,9 @@ export default function EventRequestsManagement() {
                   setDetailsRequest(request);
                   setShowEventDetailsDialog(true);
                 }}
-                className="hover:bg-teal-50 hover:border-teal-300"
+                className="group hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 hover:border-teal-300 hover:shadow-sm transition-all duration-200"
               >
-                <Edit className="w-4 h-4 mr-1" />
+                <Edit className="w-4 h-4 mr-1.5 group-hover:rotate-12 transition-transform" />
                 Edit Details
               </Button>
             )}
@@ -3021,9 +3023,9 @@ export default function EventRequestsManagement() {
                   const emailLink = `mailto:${getDisplayValue(request, "email")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                   window.open(emailLink, "_blank");
                 }}
-                className="hover:bg-blue-50 hover:border-blue-300"
+                className="group hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 hover:shadow-sm transition-all duration-200"
               >
-                <Mail className="w-4 h-4 mr-1" />
+                <Mail className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
                 Email
               </Button>
             )}
@@ -3032,9 +3034,9 @@ export default function EventRequestsManagement() {
               <Button
                 size="sm"
                 onClick={() => handleSaveAllChanges(request.id)}
-                className="bg-teal-600 hover:bg-teal-700 text-white"
+                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
               >
-                <Save className="w-4 h-4 mr-1" />
+                <Save className="w-4 h-4 mr-1.5 animate-pulse" />
                 Save Changes
               </Button>
             )}
@@ -3063,15 +3065,17 @@ export default function EventRequestsManagement() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-[#FBAD3F] hover:text-[#FBAD3F] border-[#FBAD3F] hover:bg-orange-50"
+                    className="text-[#FBAD3F] hover:text-[#FBAD3F] border-[#FBAD3F] hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 hover:shadow-sm transition-all duration-200"
                   >
+                    <Clock className="w-4 h-4 mr-1.5" />
                     1 Week Check-in
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-amber-600 hover:text-amber-800 border-amber-200 hover:bg-amber-50"
+                    className="text-amber-600 hover:text-amber-800 border-amber-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-sm transition-all duration-200"
                   >
+                    <Clock className="w-4 h-4 mr-1.5" />
                     1 Day Check-in
                   </Button>
                 </>
