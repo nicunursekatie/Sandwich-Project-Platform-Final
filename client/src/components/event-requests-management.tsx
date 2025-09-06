@@ -1850,16 +1850,10 @@ export default function EventRequestsManagement() {
       const driverIds = (request as any).assignedDriverIds || [];
       const driversNeeded = (request as any).driversNeeded || 0;
       if (driversNeeded === 0)
-        return { badge: "N/A", color: "bg-gray-100 text-gray-600", isUrgent: false };
+        return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
       if (driverIds.length >= driversNeeded)
-        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700", isUrgent: false };
-      return { 
-        badge: "🚨 DRIVERS NEEDED", 
-        color: "bg-red-500 text-white font-bold", 
-        isUrgent: true,
-        driversNeeded: driversNeeded,
-        driversAssigned: driverIds.length
-      };
+        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700" };
+      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
     };
 
     const getToolkitStatus = () => {
@@ -1928,37 +1922,18 @@ export default function EventRequestsManagement() {
           </div>
         </CardHeader>
 
-        {/* Urgent Driver Alert Banner */}
-        {getDriverStatus().isUrgent && (
-          <div className="bg-gradient-to-r from-red-600 to-red-500 text-white p-4 -mx-6 -mt-2 mb-4 shadow-lg">
-            <div className="flex items-center justify-center space-x-4 text-center">
-              <div className="animate-pulse text-2xl">🚨</div>
-              <div>
-                <div className="text-xl font-bold">DRIVERS NEEDED URGENTLY!</div>
-                <div className="text-sm opacity-90">
-                  Need {getDriverStatus().driversNeeded} driver{getDriverStatus().driversNeeded !== 1 ? 's' : ''} • 
-                  {getDriverStatus().driversAssigned > 0 
-                    ? ` ${getDriverStatus().driversAssigned} assigned` 
-                    : ' None assigned yet'
-                  }
-                </div>
-              </div>
-              <div className="animate-pulse text-2xl">🚨</div>
-            </div>
-          </div>
-        )}
 
-        {/* Body Section: Two Column Layout - Merged Contact + Event Details */}
+        {/* Body Section: Three Column Layout */}
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             
-            {/* Left Column: Contact & Event Information Merged */}
+            {/* Left Column: Contact Information */}
             <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
               <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
                 <User className="w-5 h-5 mr-2 text-[#236383]" />
-                Contact & Event Details
+                Contact
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-4">
 
                 {/* Contact Name */}
                 <div className="flex items-start space-x-3">
@@ -2666,6 +2641,341 @@ export default function EventRequestsManagement() {
               </div>
             </div>
 
+            {/* Middle Column: Event Details */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
+              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
+                <Calendar className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                Event Details
+              </h4>
+              <div className="space-y-4">
+
+                {/* Event Address */}
+                {(request as any).eventAddress && (
+                  <div className="flex items-start space-x-3">
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📍</span>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Event Location: </span>
+                      <span className="text-gray-600">{(request as any).eventAddress}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sandwich Count */}
+                <div className="flex items-start space-x-3">
+                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium text-gray-700">Sandwich Count: </span>
+                    <span className="text-gray-600">{request.sandwichCount || 'Not specified'}</span>
+                  </div>
+                </div>
+
+                {/* Delivery Destination */}
+                <div className="flex items-start space-x-3">
+                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📦</span>
+                  {editingField === "deliveryDestination" &&
+                  editingEventId === request.id ? (
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={tempValues.deliveryDestination || ""}
+                        onChange={(e) =>
+                          setTempValues((prev) => ({
+                            ...prev,
+                            deliveryDestination: e.target.value,
+                          }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleTrackChange(
+                              request.id,
+                              "deliveryDestination",
+                              tempValues.deliveryDestination,
+                            );
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }
+                          if (e.key === "Escape") handleFieldCancel();
+                        }}
+                        className="w-full text-sm border rounded px-2 py-1"
+                        placeholder="Enter destination..."
+                      />
+                      <div className="flex space-x-1 mt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          onClick={() => {
+                            handleTrackChange(
+                              request.id,
+                              "deliveryDestination",
+                              tempValues.deliveryDestination,
+                            );
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }}
+                        >
+                          ✓
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          onClick={handleFieldCancel}
+                        >
+                          ✗
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 flex-1">
+                      <div className="text-sm text-gray-600 flex-1">
+                        <span className="font-medium text-gray-700">Sandwich Destination: </span>
+                        <span className="text-gray-600">
+                          {(request as any).deliveryDestination || "Not specified"}
+                        </span>
+                      </div>
+                      {canEditField("deliveryDestination") ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField("deliveryDestination");
+                            setEditingEventId(request.id);
+                            setTempValues({
+                              deliveryDestination: (request as any).deliveryDestination || "",
+                            });
+                          }}
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          Edit Destination
+                        </Button>
+                      ) : (
+                        <div className="text-xs text-gray-400 italic">Edit requires admin permissions</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Transportation Plan Section - New Workflow */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
+                  <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
+                    🚛 Transportation Plan
+                  </h5>
+                  <div className="space-y-2">
+                    {(() => {
+                      const hasOvernightStorage = (request as any).overnightStorageRequired;
+                      const isPickup = (request as any).finalDeliveryMethod === "pickup_by_recipient";
+                      const pickupOrg = (request as any).pickupOrganization;
+                      const storageLocation = (request as any).storageLocation;
+                      const driver1 = (request as any).transportDriver1;
+                      const driver2 = (request as any).transportDriver2;
+                      const finalRecipient = (request as any).finalRecipientOrg;
+                      
+                      if (isPickup) {
+                        return (
+                          <div className="flex items-start space-x-3">
+                            <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏃‍♂️</span>
+                            <div className="text-xs">
+                              <span className="font-medium text-purple-700">Organization Pickup</span>
+                              {pickupOrg && (
+                                <div className="text-gray-600 mt-1">{pickupOrg} will pick up sandwiches</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      } else if (hasOvernightStorage) {
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-start space-x-3">
+                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
+                              <div className="text-xs">
+                                <span className="font-medium text-purple-700">Two-Step Process</span>
+                                <div className="text-gray-600 mt-1">Overnight storage required</div>
+                              </div>
+                            </div>
+                            {storageLocation && (
+                              <div className="flex items-start space-x-3 ml-4">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📍</span>
+                                <div className="text-xs text-gray-600">
+                                  <span className="font-medium">Storage:</span> {storageLocation}
+                                </div>
+                              </div>
+                            )}
+                            {driver1 && (
+                              <div className="flex items-start space-x-3 ml-4">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
+                                <div className="text-xs text-gray-600">
+                                  <span className="font-medium">Day 1 Driver:</span> {getUserDisplayName(driver1)}
+                                </div>
+                              </div>
+                            )}
+                            {driver2 && (
+                              <div className="flex items-start space-x-3 ml-4">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚚</span>
+                                <div className="text-xs text-gray-600">
+                                  <span className="font-medium">Day 2 Driver:</span> {getUserDisplayName(driver2)}
+                                </div>
+                              </div>
+                            )}
+                            {finalRecipient && (
+                              <div className="flex items-start space-x-3 ml-4">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
+                                <div className="text-xs text-gray-600">
+                                  <span className="font-medium">Final Recipient:</span> {finalRecipient}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      } else if (driver1 || (request as any).finalDeliveryMethod === "direct_delivery") {
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-start space-x-3">
+                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">⚡</span>
+                              <div className="text-xs">
+                                <span className="font-medium text-purple-700">Direct Delivery</span>
+                                <div className="text-gray-600 mt-1">Same day delivery from event to recipient</div>
+                              </div>
+                            </div>
+                            {driver1 && (
+                              <div className="flex items-start space-x-3 ml-4">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
+                                <div className="text-xs text-gray-600">
+                                  <span className="font-medium">Driver:</span> {getUserDisplayName(driver1)}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="flex items-start space-x-3">
+                            <span className="text-gray-500 text-xs mt-1 flex-shrink-0">❓</span>
+                            <div className="text-xs text-gray-500 italic">
+                              Transportation plan not yet specified
+                            </div>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+
+                {/* Planning Notes */}
+                {(request as any).planningNotes && (
+                  <div className="flex items-start space-x-3">
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Planning Notes: </span>
+                      <span className="text-gray-600">{(request as any).planningNotes}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Refrigeration */}
+                <div className="flex items-start space-x-3">
+                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">❄️</span>
+                  {editingField === "refrigeration" &&
+                  editingEventId === request.id ? (
+                    <div className="flex space-x-2 items-center">
+                      <div className="flex space-x-1">
+                        <button
+                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600 hover:bg-green-50"}`}
+                          onClick={() =>
+                            setTempValues((prev) => ({
+                              ...prev,
+                              refrigeration: true,
+                            }))
+                          }
+                        >
+                          ✓ Available
+                        </button>
+                        <button
+                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600 hover:bg-red-50"}`}
+                          onClick={() =>
+                            setTempValues((prev) => ({
+                              ...prev,
+                              refrigeration: false,
+                            }))
+                          }
+                        >
+                          ❌ None
+                        </button>
+                        <button
+                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === null || tempValues.refrigeration === undefined ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600 hover:bg-yellow-50"}`}
+                          onClick={() =>
+                            setTempValues((prev) => ({
+                              ...prev,
+                              refrigeration: null,
+                            }))
+                          }
+                        >
+                          ❓ Unknown
+                        </button>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          handleTrackChange(
+                            request.id,
+                            "hasRefrigeration",
+                            tempValues.refrigeration,
+                          );
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={handleFieldCancel}
+                      >
+                        ✗
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 flex-1">
+                      <span className="text-sm text-gray-600 flex-1">
+                        {getDisplayValue(request, "hasRefrigeration") === true
+                          ? "✓ Available"
+                          : getDisplayValue(request, "hasRefrigeration") === false
+                            ? "❌ None"
+                            : "❓ Unknown"}
+                      </span>
+                      {canEditField("hasRefrigeration") && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => {
+                            setEditingField("refrigeration");
+                            setEditingEventId(request.id);
+                            setTempValues({
+                              refrigeration: getDisplayValue(
+                                request,
+                                "hasRefrigeration",
+                              ),
+                            });
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Right Column: Status & Assignments */}
             <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
               <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
@@ -2683,14 +2993,12 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Driver Status */}
-                {!getDriverStatus().isUrgent && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Drivers</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
-                      {getDriverStatus().badge}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Drivers</span>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
+                    {getDriverStatus().badge}
+                  </span>
+                </div>
 
                 {/* Driver Assignment Details */}
                 <div className="space-y-2">
