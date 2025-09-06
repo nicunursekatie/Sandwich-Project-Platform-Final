@@ -1905,7 +1905,7 @@ export default function EventRequestsManagement() {
               </div>
               
               {/* Event Info Row with Icons */}
-              <div className="flex items-center gap-4 text-sm flex-wrap">
+              <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
                 {request.desiredEventDate && (
                   <div className="flex items-center gap-1.5 text-[#FBAD3F]">
                     <Calendar className="w-4 h-4" />
@@ -1940,15 +1940,15 @@ export default function EventRequestsManagement() {
 
         {/* Body Section with improved spacing */}
         <CardContent className="pt-5">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
             
             {/* Left Column: Contact Information */}
             <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200 shadow-sm hover:shadow-md transition-shadow">
-              <h4 className="font-bold text-[#236383] text-base mb-3 flex items-center">
-                <div className="w-8 h-8 rounded-full bg-[#236383] flex items-center justify-center mr-2">
-                  <User className="w-4 h-4 text-white" />
+              <h4 className="font-bold text-[#236383] text-sm sm:text-base mb-3 flex items-center">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#236383] flex items-center justify-center mr-2">
+                  <User className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                Contact Information
+                <span className="text-sm sm:text-base">Contact Information</span>
               </h4>
               <div className="space-y-4">
 
@@ -2184,11 +2184,11 @@ export default function EventRequestsManagement() {
 
             {/* Center Column: Event Logistics */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-              <h4 className="font-bold text-[#FBAD3F] text-base mb-3 flex items-center">
-                <div className="w-8 h-8 rounded-full bg-[#FBAD3F] flex items-center justify-center mr-2">
-                  <Building className="w-4 h-4 text-white" />
+              <h4 className="font-bold text-[#FBAD3F] text-sm sm:text-base mb-3 flex items-center">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FBAD3F] flex items-center justify-center mr-2">
+                  <Building className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                Event Details
+                <span className="text-sm sm:text-base">Event Details</span>
               </h4>
               <div className="space-y-4">
                 
@@ -2663,11 +2663,11 @@ export default function EventRequestsManagement() {
 
             {/* Right Column: Status & Assignments */}
             <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm hover:shadow-md transition-shadow">
-              <h4 className="font-bold text-[#A31C41] text-base mb-3 flex items-center">
-                <div className="w-8 h-8 rounded-full bg-[#A31C41] flex items-center justify-center mr-2">
-                  <Users className="w-4 h-4 text-white" />
+              <h4 className="font-bold text-[#A31C41] text-sm sm:text-base mb-3 flex items-center">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#A31C41] flex items-center justify-center mr-2">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                Assignments
+                <span className="text-sm sm:text-base">Assignments</span>
               </h4>
               <div className="space-y-4">
                 
@@ -2996,8 +2996,8 @@ export default function EventRequestsManagement() {
         </CardContent>
 
         {/* Footer Section: Enhanced Action Buttons */}
-        <div className="px-6 pb-4 bg-gradient-to-b from-white to-gray-50 border-t border-gray-100">
-          <div className="flex flex-wrap gap-2 pt-4">
+        <div className="px-4 sm:px-6 pb-4 bg-gradient-to-b from-white to-gray-50 border-t border-gray-100">
+          <div className="flex flex-wrap gap-2 pt-3 sm:pt-4">
             {hasPermission(user, "EVENT_REQUESTS_EDIT") && (
               <Button
                 size="sm"
