@@ -2989,16 +2989,16 @@ export default function EventRequestsManagement() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => syncMutation.mutate()}
-              disabled={syncMutation.isPending}
+              onClick={() => syncToSheetsMutation.mutate()}
+              disabled={syncToSheetsMutation.isPending}
               className="text-xs"
             >
-              {syncMutation.isPending ? (
+              {syncToSheetsMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               ) : (
                 <RefreshCw className="w-4 h-4 mr-1" />
               )}
-              {syncMutation.isPending ? "Syncing..." : "Force Sync"}
+              {syncToSheetsMutation.isPending ? "Syncing..." : "Force Sync"}
             </Button>
             </div>
           </div>
