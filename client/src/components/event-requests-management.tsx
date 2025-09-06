@@ -3397,6 +3397,3 @@ export default function EventRequestsManagement() {
     </TooltipProvider>
   );
 }
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Speakers</span>
