@@ -1850,414 +1850,71 @@ export default function EventRequestsManagement() {
     );
   };
 
-  // New UX-optimized scheduled event card following specification
+  // Simple, functional scheduled event card
   const renderScheduledEventCard = (request: EventRequest) => {
-    const driverIds = (request as any).assignedDriverIds || [];
-    const speakerIds = (request as any).assignedSpeakerIds || [];
-    
-    // Helper functions for status chips
-    const getDriverChip = () => {
-      if (driverIds.length > 0) {
-        const driverName = driverIds.map((id: string) => getUserDisplayName(id)).join(", ");
-        return {
-          text: `Driver: Assigned – ${driverName}`,
-          className: "bg-green-100 text-green-800 border-green-200"
-        };
-      }
-      return {
-        text: "Driver: Needed",
-        className: "bg-red-100 text-red-800 border-red-200"
-      };
-    };
-    
-    const getSpeakerChip = () => {
-      if (speakerIds.length > 0) {
-        const speakerName = speakerIds.map((id: string) => getUserDisplayName(id)).join(", ");
-        return {
-          text: `Speaker: Assigned – ${speakerName}`,
-          className: "bg-green-100 text-green-800 border-green-200"
-        };
-      }
-      return {
-        text: "Speaker: Needed",
-        className: "bg-amber-100 text-amber-800 border-amber-200"
-      };
-    };
-    
-    const getVanStatus = () => {
-      const needsVan = (request as any).vanRequired || false;
-      return needsVan ? "Van? Yes" : "Van? No";
-    };
-    
-    // Check if header should be amber-tinted (any "Needed" status)
-    const hasNeededItems = driverIds.length === 0 || speakerIds.length === 0;
-    
-    const getPathType = () => {
-      const storageLocation = (request as any).storageLocation;
-      const deliveryMethod = (request as any).finalDeliveryMethod;
-      
-      if (storageLocation || deliveryMethod === 'pickup_by_recipient' || deliveryMethod === 'driver_delivery') {
-        return 'overnight';
-      }
-      return 'same_day';
-    };
-    
-    const pathType = getPathType();
-
     return (
-      <Card
-        key={request.id}
-        className={`transition-all duration-300 border rounded-lg shadow-sm hover:shadow-lg ${
-          hasNeededItems ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'
-        } ${
-          highlightedEventId === request.id ? "ring-4 ring-yellow-400" : ""
-        }`}
-      >
-        {/* Header (always visible) - Organization Name + Chips */}
-        <CardHeader className="pb-3">
-          {/* Organization Name - large, bold */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            {request.organizationName}
-          </h2>
-          
-          {/* Chips Row */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Date & pickup time chip */}
-            {request.desiredEventDate && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                <Calendar className="w-4 h-4 mr-1" />
-                {(() => {
-                  const dateInfo = formatEventDate(request.desiredEventDate);
-                  const pickupTime = (request as any).pickupTime ? ` • ${formatTime((request as any).pickupTime)}` : '';
-                  return `${dateInfo.text}${pickupTime}`;
-                })()}
-              </span>
-            )}
-            
-            {/* Sandwich count chip */}
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-              {request.estimatedSandwichCount || 'TBD'} sandwiches
-            </span>
-            
-            {/* Driver status chip */}
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border cursor-pointer hover:opacity-80 ${getDriverChip().className}`}>
-              <Truck className="w-4 h-4 mr-1" />
-              {getDriverChip().text}
-            </span>
-            
-            {/* Speaker status chip */}
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border cursor-pointer hover:opacity-80 ${getSpeakerChip().className}`}>
-              <User className="w-4 h-4 mr-1" />
-              {getSpeakerChip().text}
-            </span>
-            
-            {/* Van requirement chip */}
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200">
-              <Truck className="w-4 h-4 mr-1" />
-              {getVanStatus()}
-            </span>
+      <Card key={request.id} className="border-l-4 border-l-green-500 hover:shadow-lg transition-all duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-bold text-gray-900 mb-2">
+                {request.organizationName}
+              </CardTitle>
+              {request.department && (
+                <p className="text-sm text-gray-600">{request.department}</p>
+              )}
+            </div>
+            <Badge className="bg-green-100 text-green-800 border-green-200">
+              Scheduled
+            </Badge>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Section 1 - "Where & who" */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Where & who</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Event Location */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Event Location</label>
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-gray-500" />
-                  {(request as any).eventAddress ? (
-                    <a 
-                      href={`https://maps.google.com/?q=${encodeURIComponent((request as any).eventAddress)}`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      {(request as any).eventAddress}
-                    </a>
-                  ) : (
-                    <span className="text-gray-500 text-sm">No address provided</span>
-                  )}
-                </div>
+        <CardContent className="space-y-4">
+          {/* Event Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Event Info</h4>
+              <div className="space-y-1 text-sm">
+                <div>📅 {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'Date TBD'}</div>
+                <div>🥪 {request.estimatedSandwichCount || 'TBD'} sandwiches</div>
+                <div>📍 {request.eventAddress || 'Address TBD'}</div>
               </div>
-              
-              {/* Primary Contact */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Primary Contact</label>
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <User className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium">{request.firstName} {request.lastName}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 ml-6">
-                    <button 
-                      onClick={() => navigator.clipboard?.writeText(request.phone || '')}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      {request.phone || 'No phone'}
-                    </button>
-                    <span className="text-gray-400">•</span>
-                    <button 
-                      onClick={() => navigator.clipboard?.writeText(request.email || '')}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      {request.email || 'No email'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Toolkit Status */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Toolkit Status</label>
-                <div className="flex items-center space-x-2">
-                  {(() => {
-                    const status = (request as any).toolkitStatus || "not_sent";
-                    if (status === "sent" || status === "received_confirmed") {
-                      return (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
-                          ✓ Delivered
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Pending
-                      </span>
-                    );
-                  })()}
-                </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Contact</h4>
+              <div className="space-y-1 text-sm">
+                <div>{request.firstName} {request.lastName}</div>
+                <div className="text-blue-600">{request.email}</div>
+                {request.phone && <div>{request.phone}</div>}
               </div>
             </div>
           </div>
-          
-          {/* Section 2 - "Plan at a glance" (Timeline) */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Plan at a glance</h3>
-            
-            {/* Timeline Visualization */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-5 items-center gap-2">
-                {/* Leg 1: Pickup @ Event */}
-                <div className="text-center">
-                  <div className="bg-blue-100 rounded-lg p-3 border border-blue-200">
-                    <MapPin className="w-5 h-5 mx-auto text-blue-600 mb-1" />
-                    <div className="text-xs font-medium text-blue-800">Pickup @ Event</div>
-                    <div className="text-xs text-blue-600">
-                      {(request as any).pickupTime ? formatTime((request as any).pickupTime) : 'TBD'}
-                    </div>
-                    {/* Driver assignment for leg 1 */}
-                    <div className="mt-2">
-                      {driverIds.length > 0 ? (
-                        <div className="bg-blue-200 rounded-full px-2 py-1 text-xs text-blue-800">
-                          {getUserDisplayName(driverIds[0])}
-                        </div>
-                      ) : (
-                        <button className="bg-gray-200 hover:bg-gray-300 rounded-full px-2 py-1 text-xs text-gray-600">
-                          Assign driver
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Arrow */}
-                <div className="flex justify-center">
-                  <ArrowRight className="w-5 h-5 text-gray-400" />
-                </div>
-                
-                {/* Destination Node */}
-                <div className="text-center">
-                  {pathType === 'overnight' ? (
-                    <div className="bg-purple-100 rounded-lg p-3 border border-purple-200">
-                      <Home className="w-5 h-5 mx-auto text-purple-600 mb-1" />
-                      <div className="text-xs font-medium text-purple-800">Host (Overnight)</div>
-                      <div className="text-xs text-purple-600">
-                        {(request as any).storageLocation || 'Storage location'}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-green-100 rounded-lg p-3 border border-green-200">
-                      <Building className="w-5 h-5 mx-auto text-green-600 mb-1" />
-                      <div className="text-xs font-medium text-green-800">Recipient (Same-day)</div>
-                      <div className="text-xs text-green-600">
-                        {(request as any).deliveryDestination || 'Direct delivery'}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Second Arrow (only for overnight) */}
-                {pathType === 'overnight' && (
-                  <div className="flex justify-center">
-                    <ArrowRight className="w-5 h-5 text-gray-400" />
-                  </div>
-                )}
-                
-                {/* Leg 2: Next-day delivery (only for overnight) */}
-                {pathType === 'overnight' && (
-                  <div className="text-center">
-                    <div className="bg-green-100 rounded-lg p-3 border border-green-200">
-                      <Building className="w-5 h-5 mx-auto text-green-600 mb-1" />
-                      <div className="text-xs font-medium text-green-800">Next-day delivery</div>
-                      <div className="text-xs text-green-600">
-                        {(request as any).deliveryDestination || 'Recipient location'}
-                      </div>
-                      {/* Driver assignment for leg 2 */}
-                      <div className="mt-2">
-                        {driverIds.length > 1 ? (
-                          <div className="bg-green-200 rounded-full px-2 py-1 text-xs text-green-800">
-                            {getUserDisplayName(driverIds[1])}
-                          </div>
-                        ) : (
-                          <button className="bg-gray-200 hover:bg-gray-300 rounded-full px-2 py-1 text-xs text-gray-600">
-                            Assign driver
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Connection indicator for overnight */}
-              {pathType === 'overnight' && (
-                <div className="flex items-center justify-center mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex items-center space-x-2 text-xs text-gray-600">
-                    <Moon className="w-4 h-4" />
-                    <span>Overnight at {(request as any).storageLocation || 'host location'}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
+            <Button size="sm" className="bg-[#236383] hover:bg-[#1e5470]">
+              <Edit className="w-4 h-4 mr-1" />
+              Edit Event
+            </Button>
+            <Button size="sm" variant="outline">
+              <User className="w-4 h-4 mr-1" />
+              Assign Driver
+            </Button>
+            <Button size="sm" variant="outline">
+              <MessageCircle className="w-4 h-4 mr-1" />
+              Message
+            </Button>
           </div>
-          
-          {/* Section 3 - Actions (Primary buttons) */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Actions</h3>
-            
-            <div className="flex flex-wrap gap-3">
-              <Button 
-                variant="default" 
-                size="sm"
-                className="bg-[#236383] hover:bg-[#1e5470] text-white"
-                onClick={() => {
-                  // TODO: Add driver self-assignment
-                  console.log("I'll Drive clicked for event:", request.id);
-                }}
-              >
-                <Truck className="w-4 h-4 mr-2" />
-                I'll Drive
-              </Button>
-              
-              <Button 
-                variant="default" 
-                size="sm"
-                className="bg-[#FBAD3F] hover:bg-[#e89d35] text-white"
-                onClick={() => {
-                  // TODO: Add speaker self-assignment
-                  console.log("I'll Speak clicked for event:", request.id);
-                }}
-              >
-                <User className="w-4 h-4 mr-2" />
-                I'll Speak
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="border-gray-300 hover:bg-gray-50"
-                onClick={() => {
-                  // TODO: Open assignment modal
-                  console.log("Assign clicked for event:", request.id);
-                }}
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Assign…
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="border-gray-300 hover:bg-gray-50"
-                onClick={() => {
-                  // TODO: Open message group functionality
-                  console.log("Message group clicked for event:", request.id);
-                }}
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Message group
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
-                onClick={() => {
-                  // TODO: Toggle edit mode
-                  console.log("Edit mode clicked for event:", request.id);
-                }}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Details
-              </Button>
+
+          {/* Planning Notes */}
+          {request.planningNotes && (
+            <div className="bg-gray-50 rounded-lg p-3 mt-4">
+              <h5 className="font-medium text-gray-900 mb-2">Planning Notes</h5>
+              <p className="text-sm text-gray-700">{request.planningNotes}</p>
             </div>
-          </div>
-          
-          {/* Section 4 - Planning notes (editable) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-              <span className="text-lg font-semibold text-gray-900">Planning Notes</span>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={() => {
-                  // TODO: Implement inline editing for planning notes
-                  console.log("Edit planning notes for event:", request.id);
-                }}
-                className="text-[#236383] hover:bg-[#236383] hover:text-white"
-              >
-                <Edit className="w-4 h-4 mr-1" />
-                Edit
-              </Button>
-            </div>
-            
-            {/* Notes content - clickable to edit */}
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              <div 
-                className="text-sm text-gray-700 cursor-pointer hover:bg-gray-100 p-2 rounded border-dashed border-2 border-transparent hover:border-[#236383] transition-all"
-                onClick={() => {
-                  // TODO: Toggle to edit mode
-                  console.log("Click to edit notes for event:", request.id);
-                }}
-              >
-                {(request as any).planningNotes ? (
-                  <div className="whitespace-pre-wrap">{(request as any).planningNotes}</div>
-                ) : (
-                  <div className="text-gray-500 italic">Click to add planning notes...</div>
-                )}
-              </div>
-              
-              {/* System notes */}
-              <div className="text-xs text-gray-500 border-t border-gray-200 pt-2 mt-2">
-                <div className="space-y-1">
-                  {driverIds.length > 0 && (
-                    <div>🚗 Driver: {getUserDisplayName(driverIds[0])}</div>
-                  )}
-                  {speakerIds.length > 0 && (
-                    <div>🎤 Speaker: {getUserDisplayName(speakerIds[0])}</div>
-                  )}
-                  <div className="text-xs text-gray-400 mt-1">
-                    Last updated: {request.updatedAt ? formatEventDate(request.updatedAt).text : 'Never'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     );
