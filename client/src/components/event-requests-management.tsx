@@ -2381,79 +2381,25 @@ export default function EventRequestsManagement() {
               <ContactSection request={request} />
 
 
-                {/* Contact Name */}
-                <div className="flex items-start space-x-3">
-                  <User className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "contact" && editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.contact || `${request.firstName} ${request.lastName}`}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            contact: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const [firstName, ...lastNameParts] = (
-                              tempValues.contact || e.target.value
-                            ).split(" ");
-                            handleTrackChange(request.id, "firstName", firstName);
-                            handleTrackChange(request.id, "lastName", lastNameParts.join(" "));
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                      />
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0"
-                        onClick={() => {
-                          const [firstName, ...lastNameParts] = tempValues.contact.split(" ");
-                          handleTrackChange(request.id, "firstName", firstName);
-                          handleTrackChange(request.id, "lastName", lastNameParts.join(" "));
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={handleFieldCancel}>
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm font-medium text-gray-900 flex-1">
-                        {getDisplayValue(request, "firstName")} {getDisplayValue(request, "lastName")}
-                      </span>
-                      {canEditField("contact") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("contact");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              contact: `${getDisplayValue(request, "firstName")} ${getDisplayValue(request, "lastName")}`,
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                {/* Email */}
-                <div className="flex items-start space-x-3">
-                  <Mail className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "email" && editingEventId === request.id ? (
+              {/* Event Location Section - Now using extracted component */}
+              <EventLocationSection request={request} />
+            </div>
+
+            {/* Right Column: Event Details & Assignments */}
+            <div className="space-y-4">
+              {/* Event Details Section */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                <h4 className="font-bold text-gray-700 text-sm mb-3 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Event Planning
+                </h4>
+                <div className="space-y-3">
+                  {/* Sandwich Count */}
+                  <div className="flex items-start space-x-3">
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
+                  {editingField === "sandwichTypes" &&
+                  editingEventId === request.id ? (
                     <div className="flex space-x-2 flex-1 items-center">
                       <input
                         className="text-sm border rounded px-2 py-1 flex-1 bg-white"
@@ -2975,185 +2921,36 @@ export default function EventRequestsManagement() {
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8">
+          <p>Loading event requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8 text-red-600">
+          <p>
+            Error loading event requests:{" "}
+            {(error as any)?.message || "Unknown error"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider>
-                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏃‍♂️</span>
-                              <div className="text-xs">
-                                <span className="font-medium text-purple-700">Organization Pickup</span>
-                                {pickupOrg && (
-                                  <div className="text-gray-600 mt-1">{pickupOrg} will pick up sandwiches</div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        } else if (hasOvernightStorage) {
-                          return (
-                            <div className="space-y-2">
-                              <div className="flex items-start space-x-3">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                                <div className="text-xs">
-                                  <span className="font-medium text-purple-700">Two-Step Process</span>
-                                  <div className="text-gray-600 mt-1">Overnight storage required</div>
-                                </div>
-                              </div>
-                              {storageLocation && (
-                                <div className="flex items-start space-x-3 ml-4">
-                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📍</span>
-                                  <div className="text-xs text-gray-600">
-                                    <span className="font-medium">Storage:</span> {storageLocation}
-                                  </div>
-                                </div>
-                              )}
-                              {driver1 && (
-                                <div className="flex items-start space-x-3 ml-4">
-                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
-                                  <div className="text-xs text-gray-600">
-                                    <span className="font-medium">Day 1 Driver:</span> {getUserDisplayName(driver1)}
-                                  </div>
-                                </div>
-                              )}
-                              {driver2 && (
-                                <div className="flex items-start space-x-3 ml-4">
-                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚚</span>
-                                  <div className="text-xs text-gray-600">
-                                    <span className="font-medium">Day 2 Driver:</span> {getUserDisplayName(driver2)}
-                                  </div>
-                                </div>
-                              )}
-                              {finalRecipient && (
-                                <div className="flex items-start space-x-3 ml-4">
-                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
-                                  <div className="text-xs text-gray-600">
-                                    <span className="font-medium">Final Recipient:</span> {finalRecipient}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        } else if ((request as any).finalDeliveryMethod === "direct_delivery") {
-                          return (
-                            <div className="space-y-2">
-                              <div className="flex items-start space-x-3">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">⚡</span>
-                                <div className="text-xs">
-                                  <span className="font-medium text-purple-700">Direct Delivery</span>
-                                  <div className="text-gray-600 mt-1">Same day delivery from event to recipient</div>
-                                </div>
-                              </div>
-                              {driver1 && (
-                                <div className="flex items-start space-x-3 ml-4">
-                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
-                                  <div className="text-xs text-gray-600">
-                                    <span className="font-medium">Driver:</span> {getUserDisplayName(driver1)}
-                                  </div>
-                                </div>
-                              )}
-                              {finalRecipient && (
-                                <div className="flex items-start space-x-3 ml-4">
-                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
-                                  <div className="text-xs text-gray-600">
-                                    <span className="font-medium">Deliver to:</span> {finalRecipient}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <div className="flex items-start space-x-3">
-                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">❓</span>
-                              <div className="text-xs text-gray-500 italic">
-                                Transportation plan not yet specified
-                              </div>
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                  </div>
-                
-                {/* Toolkit Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Toolkit</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus().color}`}>
-                    {getToolkitStatus().badge}
-                  </span>
-                </div>
-
-                {/* Driver Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Drivers</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
-                    {getDriverStatus().badge}
-                  </span>
-                </div>
-
-                {/* Driver Assignment Details */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">
-                        Assigned: {(request as any).assignedDriverIds?.length || 0}/
-                      </span>
-                      {editingField === "driversNeeded" && editingEventId === request.id ? (
-                        <div className="flex items-center space-x-1">
-                          <input
-                            type="number"
-                            min="0"
-                            className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
-                            value={tempValues.driversNeeded || (request as any).driversNeeded || 0}
-                            onChange={(e) =>
-                              setTempValues((prev) => ({
-                                ...prev,
-                                driversNeeded: e.target.value,
-                              }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                handleTrackChange(
-                                  request.id,
-                                  "driversNeeded",
-                                  parseInt(tempValues.driversNeeded || e.target.value) || 0,
-                                );
-                                setEditingField(null);
-                                setEditingEventId(null);
-                                setTempValues({});
-                              }
-                              if (e.key === "Escape") handleFieldCancel();
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
-                              handleTrackChange(
-                                request.id,
-                                "driversNeeded",
-                                parseInt(tempValues.driversNeeded) || 0,
-                              );
-                              setEditingField(null);
-                              setEditingEventId(null);
-                              setTempValues({});
-                            }}
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={handleFieldCancel}
-                          >
-                            ✗
-                          </Button>
-                        </div>
-                      ) : (
-                        <button
-                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                          onClick={() => {
-                            setEditingField("driversNeeded");
-                            setEditingEventId(request.id);
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-3xl font-bold">Event Planning</h1>
                             setTempValues({
                               driversNeeded: (request as any).driversNeeded || 0,
                             });
