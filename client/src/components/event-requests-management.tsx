@@ -2693,7 +2693,7 @@ export default function EventRequestsManagement() {
                           className="text-xs border rounded px-2 py-1 min-w-32"
                         >
                           <option value="">Select driver...</option>
-                          {availableUsers?.map(user => (
+                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -5545,7 +5545,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -5615,7 +5615,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -6337,7 +6337,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -6438,7 +6438,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
-                          {availableUsers?.map(user => (
+                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -6730,7 +6730,7 @@ export default function EventRequestsManagement() {
                     Speakers needed: {(assigningSpeakerRequest as any).speakersNeeded || 0}
                   </p>
                   <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                    {availableUsers?.map((user: any) => (
+                    {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
                       <div
                         key={user.id}
                         className="flex items-center space-x-2"
