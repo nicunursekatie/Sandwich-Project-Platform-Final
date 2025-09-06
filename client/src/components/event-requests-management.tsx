@@ -1957,7 +1957,7 @@ export default function EventRequestsManagement() {
                   <User className="w-4 h-4 mr-1" />
                   Location & Contact
                 </h5>
-              <div className="space-y-4">
+                <div className="space-y-4">
 
                 {/* Contact Name */}
                 <div className="flex items-start space-x-3">
