@@ -6328,39 +6328,143 @@ export default function EventRequestsManagement() {
                 {/* Transportation Workflow */}
                 <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
                   <h3 className="text-lg font-semibold text-gray-800">🚛 Transportation Plan</h3>
-                  <p className="text-sm text-gray-600">Many events involve temporary storage at a host location before final delivery</p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="storageLocation">Overnight Storage Location (Optional)</Label>
-                      <Input
-                        name="storageLocation"
-                        value={(detailsRequest as any).storageLocation || ""}
-                        onChange={(e) => setDetailsRequest(prev => ({
-                          ...prev,
-                          storageLocation: e.target.value
-                        }))}
-                        placeholder="Host location for overnight storage"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="finalDeliveryMethod">Final Delivery Method</Label>
-                      <select
-                        name="finalDeliveryMethod"
-                        value={(detailsRequest as any).finalDeliveryMethod || ""}
-                        onChange={(e) => setDetailsRequest(prev => ({
-                          ...prev,
-                          finalDeliveryMethod: e.target.value
-                        }))}
-                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="">Select delivery method</option>
-                        <option value="direct_delivery">Direct from event to recipient</option>
-                        <option value="pickup_by_recipient">Pickup by recipient from storage</option>
-                        <option value="driver_delivery">Driver delivery from storage</option>
-                      </select>
+                  {/* Step 1: Overnight Storage Required? */}
+                  <div>
+                    <Label className="text-base font-medium">Does this event need overnight storage?</Label>
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id="no-storage-details"
+                          name="overnightStorageRequired"
+                          value="false"
+                          checked={(detailsRequest as any).overnightStorageRequired === false}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            overnightStorageRequired: e.target.value === "true"
+                          }))}
+                          className="mr-2"
+                        />
+                        <label htmlFor="no-storage-details">No - Direct delivery same day</label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id="yes-storage-details"
+                          name="overnightStorageRequired"
+                          value="true"
+                          checked={(detailsRequest as any).overnightStorageRequired === true}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            overnightStorageRequired: e.target.value === "true"
+                          }))}
+                          className="mr-2"
+                        />
+                        <label htmlFor="yes-storage-details">Yes - Two-step process with overnight storage</label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id="pickup-details"
+                          name="overnightStorageRequired"
+                          value="pickup"
+                          checked={(detailsRequest as any).finalDeliveryMethod === "pickup_by_recipient"}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            finalDeliveryMethod: "pickup_by_recipient",
+                            overnightStorageRequired: false
+                          }))}
+                          className="mr-2"
+                        />
+                        <label htmlFor="pickup-details">Organization will pick up sandwiches</label>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Show different fields based on selection */}
+                  {(detailsRequest as any).overnightStorageRequired === false && (detailsRequest as any).finalDeliveryMethod !== "pickup_by_recipient" && (
+                    <div>
+                      <Label htmlFor="transportDriver1">Driver for Direct Delivery</Label>
+                      <Input
+                        name="transportDriver1"
+                        value={(detailsRequest as any).transportDriver1 || ""}
+                        onChange={(e) => setDetailsRequest(prev => ({
+                          ...prev,
+                          transportDriver1: e.target.value
+                        }))}
+                        placeholder="Driver name or assignment"
+                      />
+                    </div>
+                  )}
+
+                  {(detailsRequest as any).overnightStorageRequired === true && (
+                    <>
+                      <div>
+                        <Label htmlFor="storageLocation">Overnight Storage Location</Label>
+                        <Input
+                          name="storageLocation"
+                          value={(detailsRequest as any).storageLocation || ""}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            storageLocation: e.target.value
+                          }))}
+                          placeholder="Host location for overnight storage"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="transportDriver1">Driver for Day 1 (Event → Storage)</Label>
+                        <Input
+                          name="transportDriver1"
+                          value={(detailsRequest as any).transportDriver1 || ""}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            transportDriver1: e.target.value
+                          }))}
+                          placeholder="Driver name for event pickup"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="transportDriver2">Driver for Day 2 (Storage → Recipient)</Label>
+                        <Input
+                          name="transportDriver2"
+                          value={(detailsRequest as any).transportDriver2 || ""}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            transportDriver2: e.target.value
+                          }))}
+                          placeholder="Driver name for final delivery"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="finalRecipientOrg">Final Recipient Organization</Label>
+                        <Input
+                          name="finalRecipientOrg"
+                          value={(detailsRequest as any).finalRecipientOrg || ""}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            finalRecipientOrg: e.target.value
+                          }))}
+                          placeholder="Organization receiving sandwiches on day 2"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {(detailsRequest as any).finalDeliveryMethod === "pickup_by_recipient" && (
+                    <div>
+                      <Label htmlFor="pickupOrganization">Organization Picking Up</Label>
+                      <Input
+                        name="pickupOrganization"
+                        value={(detailsRequest as any).pickupOrganization || ""}
+                        onChange={(e) => setDetailsRequest(prev => ({
+                          ...prev,
+                          pickupOrganization: e.target.value
+                        }))}
+                        placeholder="Name of organization that will pick up sandwiches"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Drivers Section */}
