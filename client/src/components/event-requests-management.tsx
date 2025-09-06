@@ -2689,6 +2689,12 @@ export default function EventRequestsManagement() {
                                 const currentDrivers = (request as any).assignedDriverIds || [];
                                 const updatedDrivers = [...currentDrivers, value];
                                 handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                                setEditingDriversFor(null); // Close the editor
+                                setTempDriverInput(""); // Clear input
+                                toast({
+                                  title: "Driver assigned successfully",
+                                  description: "Driver has been added to the event",
+                                });
                               }
                             }}
                             className="text-xs border rounded px-1 py-1 flex-1 max-w-28"
@@ -2722,6 +2728,11 @@ export default function EventRequestsManagement() {
                               const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
                               handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
                               setTempDriverInput("");
+                              setEditingDriversFor(null); // Close the editor
+                              toast({
+                                title: "Driver added successfully",
+                                description: `Added ${tempDriverInput.trim()} as driver`,
+                              });
                             }
                             if (e.key === "Escape") {
                               setEditingDriversFor(null);
