@@ -2738,14 +2738,20 @@ export default function EventRequestsManagement() {
                           onChange={(e) => setTempDriverInput(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && tempDriverInput.trim()) {
+                              const driverName = tempDriverInput.trim();
                               const currentDrivers = (request as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
+                              const updatedDrivers = [...currentDrivers, driverName];
+                              
+                              console.log('Adding driver:', driverName);
+                              console.log('Current drivers:', currentDrivers);
+                              console.log('Updated drivers:', updatedDrivers);
+                              
                               handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
                               setTempDriverInput("");
                               setEditingDriversFor(null); // Close the editor
                               toast({
                                 title: "Driver added successfully",
-                                description: `Added ${tempDriverInput.trim()} as driver`,
+                                description: `Added ${driverName} as driver`,
                               });
                             }
                             if (e.key === "Escape") {
