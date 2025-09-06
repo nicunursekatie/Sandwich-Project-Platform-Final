@@ -2675,34 +2675,45 @@ export default function EventRequestsManagement() {
                       )}
                     </div>
                     {editingDriversFor === request.id ? (
-                      <div className="flex items-center space-x-1">
-                        <select
-                          value=""
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "__custom__") {
+                      <div className="space-y-1 w-full">
+                        <div className="flex items-center space-x-1">
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === "__custom__") {
+                                setTempDriverInput("");
+                                // Focus will be on input field
+                              } else if (value) {
+                                // Add selected driver immediately
+                                const currentDrivers = (request as any).assignedDriverIds || [];
+                                const updatedDrivers = [...currentDrivers, value];
+                                handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                              }
+                            }}
+                            className="text-xs border rounded px-1 py-1 flex-1 max-w-28"
+                          >
+                            <option value="">Select...</option>
+                            {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
+                              <option key={user.id} value={user.id}>
+                                {user.displayName}
+                              </option>
+                            ))}
+                            <option value="__custom__">+ Custom</option>
+                          </select>
+                          <button
+                            onClick={() => {
+                              setEditingDriversFor(null);
                               setTempDriverInput("");
-                              // Focus will be on input field
-                            } else if (value) {
-                              // Add selected driver immediately
-                              const currentDrivers = (request as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, value];
-                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                            }
-                          }}
-                          className="text-xs border rounded px-2 py-1 min-w-32"
-                        >
-                          <option value="">Select driver...</option>
-                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
-                            <option key={user.id} value={user.id}>
-                              {user.displayName}
-                            </option>
-                          ))}
-                          <option value="__custom__">+ Add custom driver</option>
-                        </select>
+                            }}
+                            className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700 border rounded"
+                          >
+                            ✓
+                          </button>
+                        </div>
                         <input
                           type="text"
-                          placeholder="Type driver name..."
+                          placeholder="Or type driver name..."
                           value={tempDriverInput}
                           onChange={(e) => setTempDriverInput(e.target.value)}
                           onKeyDown={(e) => {
@@ -2717,17 +2728,8 @@ export default function EventRequestsManagement() {
                               setTempDriverInput("");
                             }
                           }}
-                          className="text-xs border rounded px-2 py-1 w-32"
+                          className="text-xs border rounded px-1 py-1 w-full"
                         />
-                        <button
-                          onClick={() => {
-                            setEditingDriversFor(null);
-                            setTempDriverInput("");
-                          }}
-                          className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700"
-                        >
-                          ✓
-                        </button>
                       </div>
                     ) : (
                       <button
