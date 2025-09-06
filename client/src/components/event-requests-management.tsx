@@ -1993,6 +1993,39 @@ export default function EventRequestsManagement() {
     );
   };
 
+  // Inline EventLocationSection Component
+  const EventLocationSection = ({ request }: { request: EventRequest }) => {
+    const eventAddress = (request as any).eventAddress;
+    
+    // Only render if eventAddress exists
+    if (!eventAddress) {
+      return null;
+    }
+    
+    return (
+      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm">
+        <h4 className="font-bold text-[#FBAD3F] text-sm mb-3 flex items-center">
+          <MapPin className="w-4 h-4 mr-2" />
+          Event Location
+        </h4>
+        <div className="space-y-2">
+          <div className="text-sm text-gray-700">
+            {eventAddress}
+          </div>
+          <a
+            href={`https://maps.google.com/?q=${encodeURIComponent(eventAddress || '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium"
+          >
+            <ExternalLink className="w-3 h-3 mr-1" />
+            View on Google Maps
+          </a>
+        </div>
+      </div>
+    );
+  };
+
   const renderScheduledEventCard = (request: EventRequest) => {
     const getDriverStatus = () => {
       const driverIds = (request as any).assignedDriverIds || [];
@@ -2323,29 +2356,8 @@ export default function EventRequestsManagement() {
                 </div>
               </div>
 
-              {/* Event Location Section */}
-              {(request as any).eventAddress && (
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm">
-                  <h4 className="font-bold text-[#FBAD3F] text-sm mb-3 flex items-center">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    Event Location
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="text-sm text-gray-700">
-                      {(request as any).eventAddress}
-                    </div>
-                    <a
-                      href={`https://maps.google.com/?q=${encodeURIComponent((request as any).eventAddress || '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      View on Google Maps
-                    </a>
-                  </div>
-                </div>
-              )}
+              {/* Event Location Section - Now using extracted component */}
+              <EventLocationSection request={request} />
             </div>
 
             {/* Right Column: Event Details & Assignments */}
