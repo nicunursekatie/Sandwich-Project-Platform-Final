@@ -1888,78 +1888,75 @@ export default function EventRequestsManagement() {
         key={request.id}
         className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-white ${highlightedEventId === request.id ? "ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100" : ""} ${hasPendingChanges(request.id) ? "ring-2 ring-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50" : ""}`}
       >
-        {/* Header Section: Organization Name, Date, and Status Badge */}
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
+        {/* 1. HEADER: At-a-Glance Essentials */}
+        <CardHeader className="bg-gray-50 border-b pb-3">
+          <div className="flex justify-between items-start">
             <div className="flex-1">
-              <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-2">
-                {request.organizationName}
-              </h3>
-              {request.department && (
-                <p className="text-gray-600 font-medium text-lg mb-3">
-                  {request.department}
-                </p>
-              )}
-              {/* Event Date as Styled Subtitle */}
-              {request.desiredEventDate && (
-                <div className="flex items-center text-xl font-semibold text-[#FBAD3F] mb-2">
-                  <Calendar className="w-6 h-6 mr-2" />
-                  <span>
-                    {(() => {
-                      const dateInfo = formatEventDate(request.desiredEventDate);
-                      return dateInfo.text;
-                    })()}
+              {/* Top Row: Event Name, Sandwich Count */}
+              <div className="flex items-center gap-4 mb-2">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {request.organizationName}
+                </h3>
+                <div className="flex items-center bg-orange-100 px-3 py-1 rounded-full">
+                  <span className="text-sm">🥪</span>
+                  <span className="ml-1 font-semibold text-sm text-orange-800">
+                    {request.estimatedSandwichCount || 'TBD'} sandwiches
                   </span>
                 </div>
-              )}
-              {/* Event Times Row */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                {(request as any).eventStartTime && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Starts:</span>
-                    <span className="ml-1 font-semibold">
-                      {formatTime((request as any).eventStartTime)}
-                    </span>
-                  </div>
-                )}
-                {(request as any).eventEndTime && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Ends:</span>
-                    <span className="ml-1 font-semibold">
-                      {formatTime((request as any).eventEndTime)}
-                    </span>
-                  </div>
-                )}
+              </div>
+              
+              {/* Bottom Row: Date & Pickup Time */}
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center">
+                  <CalendarDays className="w-4 h-4 text-teal-600 mr-1" />
+                  <span className="font-medium text-gray-800">
+                    {formatEventDate(request.desiredEventDate).text}
+                  </span>
+                </div>
                 {(request as any).pickupTime && (
                   <div className="flex items-center text-teal-700">
-                    <Truck className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Pickup:</span>
-                    <span className="ml-1 font-semibold">
-                      {formatTime((request as any).pickupTime)}
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span className="font-medium">
+                      Pickup: {formatTime((request as any).pickupTime)}
                     </span>
                   </div>
                 )}
               </div>
             </div>
-            {/* Status Badge in Top-Right */}
-            <div className="ml-4">
+            
+            {/* Right Side: Status Badges */}
+            <div className="flex flex-col items-end gap-2">
               {getStatusDisplay(request.status)}
+              
+              {/* Driver Status Chip */}
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                (request as any).assignedDriverIds?.length > 0 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {(request as any).assignedDriverIds?.length > 0 
+                  ? `✓ ${(request as any).assignedDriverIds.length} Driver${(request as any).assignedDriverIds.length > 1 ? 's' : ''} Assigned` 
+                  : '⚠️ Driver Needed'}
+              </div>
             </div>
           </div>
         </CardHeader>
 
-        {/* Body Section: Three Column Layout */}
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Body Section */}
+        <CardContent className="pt-4">
+          {/* 2. LOGISTICS Section */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 border-b pb-1">
+              Logistics
+            </h4>
             
-            {/* Left Column: Contact Information, Address & Transportation */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
-              <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
-                <User className="w-5 h-5 mr-2 text-[#236383]" />
-                Contact & Location
-              </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Location & Contact */}
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <h5 className="font-semibold text-blue-900 text-sm mb-2 flex items-center">
+                  <User className="w-4 h-4 mr-1" />
+                  Location & Contact
+                </h5>
               <div className="space-y-4">
 
                 {/* Contact Name */}
