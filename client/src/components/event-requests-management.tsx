@@ -74,6 +74,7 @@ import {
   Shield,
   Package,
   Car,
+  MapPin,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -1938,18 +1939,18 @@ export default function EventRequestsManagement() {
         </CardHeader>
 
 
-        {/* Body Section with improved spacing */}
+        {/* Body Section with cleaner two-column layout */}
         <CardContent className="pt-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-5">
             
-            {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200 shadow-sm hover:shadow-md transition-shadow">
-              <h4 className="font-bold text-[#236383] text-sm sm:text-base mb-3 flex items-center">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#236383] flex items-center justify-center mr-2">
-                  <User className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <span className="text-sm sm:text-base">Contact Information</span>
-              </h4>
+            {/* Left Column: Contact & Location */}
+            <div className="space-y-4">
+              {/* Contact Section */}
+              <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200 shadow-sm">
+                <h4 className="font-bold text-[#236383] text-sm mb-3 flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  Contact Person
+                </h4>
               <div className="space-y-4">
 
                 {/* Contact Name */}
@@ -2180,104 +2181,44 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
               </div>
+
+              {/* Event Location Section */}
+              {(request as any).eventAddress && (
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm">
+                  <h4 className="font-bold text-[#FBAD3F] text-sm mb-3 flex items-center">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Event Location
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-700">
+                      {(request as any).eventAddress}
+                    </div>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent((request as any).eventAddress || '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      View on Google Maps
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-              <h4 className="font-bold text-[#FBAD3F] text-sm sm:text-base mb-3 flex items-center">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FBAD3F] flex items-center justify-center mr-2">
-                  <Building className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <span className="text-sm sm:text-base">Event Details</span>
-              </h4>
-              <div className="space-y-4">
-                
-                {/* Address */}
-                <div className="flex items-start space-x-3">
-                  <Building className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "address" &&
-                  editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.address || request.eventAddress || ""}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            address: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "eventAddress",
-                              tempValues.address || e.target.value,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                        placeholder="Enter event address"
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "eventAddress",
-                            tempValues.address,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "eventAddress") ||
-                          "No address provided"}
-                      </span>
-                      {canEditField("eventAddress") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("address");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              address:
-                                getDisplayValue(request, "eventAddress") || "",
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Sandwich Count */}
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
+            {/* Right Column: Event Details & Assignments */}
+            <div className="space-y-4">
+              {/* Event Details Section */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                <h4 className="font-bold text-gray-700 text-sm mb-3 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Event Planning
+                </h4>
+                <div className="space-y-3">
+                  {/* Sandwich Count */}
+                  <div className="flex items-start space-x-3">
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
                   {editingField === "sandwichTypes" &&
                   editingEventId === request.id ? (
                     <div className="w-full bg-white border rounded-lg p-3 shadow-sm">
