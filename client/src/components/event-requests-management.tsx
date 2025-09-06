@@ -2462,54 +2462,6 @@ export default function EventRequestsManagement() {
                 </div>
 
 
-                {/* Transportation Workflow Section */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-                  <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
-                    🚛 Transportation Plan
-                  </h5>
-                  <div className="space-y-2">
-                    {/* Storage Location */}
-                    {(request as any).storageLocation ? (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-700">Overnight Storage: </span>
-                          <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                        <div className="text-xs text-gray-500 italic">
-                          Overnight storage location not specified
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Final Delivery Method */}
-                    {(request as any).finalDeliveryMethod ? (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-700">Final Delivery: </span>
-                          <span className="text-purple-700 font-medium">
-                            {(request as any).finalDeliveryMethod === 'direct_delivery' && '🚚 Direct Delivery'}
-                            {(request as any).finalDeliveryMethod === 'pickup_by_recipient' && '🎯 Recipient Pickup'}
-                            {(request as any).finalDeliveryMethod === 'driver_delivery' && '👤 Driver Delivery'}
-                            {!(request as any).finalDeliveryMethod && 'Not specified'}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
-                        <div className="text-xs text-gray-500 italic">
-                          Final delivery method not specified
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
                 {/* Planning Notes */}
                 {(request as any).planningNotes && (
