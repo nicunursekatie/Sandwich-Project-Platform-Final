@@ -2203,35 +2203,142 @@ export default function EventRequestsManagement() {
 
                 {/* Transportation Workflow Section - Redesigned */}
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-                  <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
-                    🚛 Transportation & Destination
-                  </h5>
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-semibold text-purple-800 text-sm flex items-center">
+                      🚛 Transportation & Destination
+                    </h5>
+                    {canEditField("deliveryDestination") && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-xs opacity-60 hover:opacity-100"
+                        onClick={() => {
+                          setEditingField("transportationPlan");
+                          setEditingEventId(request.id);
+                          setTempValues({
+                            deliveryDestination: (request as any).deliveryDestination || "",
+                            storageLocation: (request as any).storageLocation || "",
+                            finalDeliveryMethod: (request as any).finalDeliveryMethod || ""
+                          });
+                        }}
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                   
-                  {/* Sandwich Destination */}
-                  {(request as any).deliveryDestination && (
-                    <div className="flex items-start space-x-2 mb-3">
-                      <span className="text-xs mt-0.5">📍</span>
-                      <div className="text-xs">
-                        <span className="font-medium text-gray-700">Final Destination: </span>
-                        <span className="text-purple-700 font-medium">
-                          {(request as any).deliveryDestination}
-                          {(request as any).deliveryDestination.match(/\d{5}/) && (
-                            <a 
-                              href={`https://maps.google.com/?q=${encodeURIComponent((request as any).deliveryDestination)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-2 text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Map
-                            </a>
-                          )}
-                        </span>
+                  {/* Inline Editing Mode */}
+                  {editingField === "transportationPlan" && editingEventId === request.id ? (
+                    <div className="space-y-3 bg-white p-3 rounded border border-purple-300">
+                      {/* Destination Field */}
+                      <div>
+                        <Label className="text-xs font-medium">Final Destination</Label>
+                        <Input
+                          value={tempValues.deliveryDestination || ""}
+                          onChange={(e) => setTempValues(prev => ({ ...prev, deliveryDestination: e.target.value }))}
+                          placeholder="Organization name and address"
+                          className="h-7 text-xs mt-1"
+                        />
+                      </div>
+                      
+                      {/* Delivery Method */}
+                      <div>
+                        <Label className="text-xs font-medium">Delivery Method</Label>
+                        <select
+                          value={tempValues.finalDeliveryMethod || ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setTempValues(prev => ({
+                              ...prev,
+                              finalDeliveryMethod: value,
+                              // Clear storage if switching to same-day
+                              storageLocation: value === 'direct_delivery' ? '' : prev.storageLocation
+                            }));
+                          }}
+                          className="w-full h-7 text-xs border rounded px-2 mt-1"
+                        >
+                          <option value="">Select...</option>
+                          <option value="direct_delivery">Same-day delivery</option>
+                          <option value="driver_delivery">Two-day with storage (driver delivers)</option>
+                          <option value="pickup_by_recipient">Two-day with storage (recipient pickup)</option>
+                        </select>
+                      </div>
+                      
+                      {/* Storage Location (show only if not same-day) */}
+                      {tempValues.finalDeliveryMethod !== 'direct_delivery' && (
+                        <div>
+                          <Label className="text-xs font-medium">Overnight Storage Location</Label>
+                          <Input
+                            value={tempValues.storageLocation || ""}
+                            onChange={(e) => setTempValues(prev => ({ ...prev, storageLocation: e.target.value }))}
+                            placeholder="Host home for overnight storage"
+                            className="h-7 text-xs mt-1"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Save/Cancel Buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            handleAutosave(request.id, "deliveryDestination", tempValues.deliveryDestination);
+                            handleAutosave(request.id, "storageLocation", tempValues.storageLocation);
+                            handleAutosave(request.id, "finalDeliveryMethod", tempValues.finalDeliveryMethod);
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }}
+                        >
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setEditingField(null);
+                            setEditingEventId(null);
+                            setTempValues({});
+                          }}
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      {/* Sandwich Destination Display */}
+                      {(request as any).deliveryDestination && (
+                        <div className="flex items-start space-x-2 mb-3">
+                          <span className="text-xs mt-0.5">📍</span>
+                          <div className="text-xs">
+                            <span className="font-medium text-gray-700">Final Destination: </span>
+                            <span className="text-purple-700 font-medium">
+                              {(request as any).deliveryDestination}
+                              {(request as any).deliveryDestination.match(/\d{5}/) && (
+                                <a 
+                                  href={`https://maps.google.com/?q=${encodeURIComponent((request as any).deliveryDestination)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  View Map
+                                </a>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                   
-                  {/* Determine delivery scenario */}
-                  {(() => {
+                  {/* Determine delivery scenario - hide when editing */}
+                  {editingField !== "transportationPlan" || editingEventId !== request.id ? (() => {
                     const isSameDayDelivery = (request as any).finalDeliveryMethod === 'direct_delivery' || 
                                             !(request as any).storageLocation;
                     const hasStorageLocation = !!(request as any).storageLocation;
@@ -2345,7 +2452,7 @@ export default function EventRequestsManagement() {
                         </div>
                       );
                     }
-                  })()}
+                  })() : null}
                 </div>
               </div>
             </div>
