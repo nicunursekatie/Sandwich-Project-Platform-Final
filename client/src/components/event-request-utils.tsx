@@ -54,37 +54,74 @@ export const getSandwichTypesSummary = (request: any) => {
   return { total: 0, breakdown: '' };
 };
 
-// Format event date for display
+// Enhanced date formatting with day-of-week and color coding
 export const formatEventDate = (dateString: string) => {
   try {
+    if (!dateString)
+      return { text: "No date provided", className: "text-gray-500" };
+
+    // Parse the date string safely - handle database timestamps, YYYY-MM-DD, and ISO dates
     let date: Date;
-    
-    // Handle MM/DD/YYYY format
-    if (dateString.includes('/')) {
-      const [month, day, year] = dateString.split('/');
-      date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (
+      dateString &&
+      typeof dateString === "string" &&
+      dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    ) {
+      // Database timestamp format: "2025-09-03 00:00:00"
+      // Extract just the date part and create at noon to avoid timezone issues
+      const dateOnly = dateString.split(" ")[0];
+      date = new Date(dateOnly + "T12:00:00");
+    } else if (
+      dateString &&
+      typeof dateString === "string" &&
+      dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)
+    ) {
+      // ISO format with midnight time (e.g., "2025-09-03T00:00:00.000Z")
+      // Extract just the date part and create at noon to avoid timezone issues
+      const dateOnly = dateString.split("T")[0];
+      date = new Date(dateOnly + "T12:00:00");
+    } else if (dateString.includes("T") || dateString.includes("Z")) {
+      date = new Date(dateString);
+    } else if (
+      dateString &&
+      typeof dateString === "string" &&
+      dateString.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
+      // For YYYY-MM-DD format, add noon to prevent timezone shift
+      date = new Date(dateString + "T12:00:00");
     } else {
-      // Handle YYYY-MM-DD format
       date = new Date(dateString);
     }
-    
-    if (isNaN(date.getTime())) {
-      return { text: dateString, isValid: false };
+
+    if (isNaN(date.getTime())) return { text: "Invalid date", className: "" };
+
+    const dayOfWeek = date.getDay();
+    const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
+    const dateFormatted = date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
+    let className = "";
+    if (dayOfWeek === 2) {
+      className = "text-gray-700 font-medium";
+    } else if (isWedOrThu) {
+      className = "text-orange-600 font-medium";
+    } else {
+      className = "text-[#236383] font-bold";
     }
-    
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    };
-    
+
     return {
-      text: date.toLocaleDateString('en-US', options),
-      isValid: true
+      text: dateFormatted,
+      className,
+      dayName,
+      isWedOrThu,
     };
   } catch (error) {
-    return { text: dateString, isValid: false };
+    return { text: "Invalid date", className: "" };
   }
 };
 

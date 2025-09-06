@@ -31,6 +31,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
 import { EventEmailComposer } from "@/components/event-email-composer";
 import {
+  formatTime12Hour,
+  formatTime,
+  getSandwichTypesSummary,
+  formatEventDate,
+  getDriverStatus,
+  getToolkitStatus,
+  getRefrigerationStatus,
+  getSpeakerStatus
+} from "./event-request-utils";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -82,18 +92,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 // Utility function to convert 24-hour time to 12-hour format
-const formatTime12Hour = (time24: string): string => {
-  if (!time24) return "";
-
-  const [hours, minutes] = time24.split(":");
-  const hour24 = parseInt(hours);
-
-  if (hour24 === 0) return `12:${minutes} AM`;
-  if (hour24 < 12) return `${hour24}:${minutes} AM`;
-  if (hour24 === 12) return `12:${minutes} PM`;
-
-  return `${hour24 - 12}:${minutes} PM`;
-};
+// formatTime12Hour function moved to event-request-utils.tsx
 
 // Sandwich Destination Tracker Component - Simplified Free Text Entry
 interface SandwichDestinationTrackerProps {
@@ -164,90 +163,9 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
 };
 
 // Helper function to get sandwich types summary
-const getSandwichTypesSummary = (request: any) => {
-  if (request.estimatedSandwichCount) {
-    const total = request.estimatedSandwichCount;
-    const type = request.sandwichType || 'Unknown';
-    return { 
-      total, 
-      breakdown: type !== 'Unknown' ? `${total} ${type}` : `${total} sandwiches`,
-      hasBreakdown: type !== 'Unknown'
-    };
-  }
-  
-  return { total: 0, breakdown: 'Unknown', hasBreakdown: false };
-};
+// getSandwichTypesSummary function moved to event-request-utils.tsx
 
-// Enhanced date formatting with day-of-week and color coding
-const formatEventDate = (dateString: string) => {
-  try {
-    if (!dateString)
-      return { text: "No date provided", className: "text-gray-500" };
-
-    // Parse the date string safely - handle database timestamps, YYYY-MM-DD, and ISO dates
-    let date: Date;
-    if (
-      dateString &&
-      typeof dateString === "string" &&
-      dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
-    ) {
-      // Database timestamp format: "2025-09-03 00:00:00"
-      // Extract just the date part and create at noon to avoid timezone issues
-      const dateOnly = dateString.split(" ")[0];
-      date = new Date(dateOnly + "T12:00:00");
-    } else if (
-      dateString &&
-      typeof dateString === "string" &&
-      dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)
-    ) {
-      // ISO format with midnight time (e.g., "2025-09-03T00:00:00.000Z")
-      // Extract just the date part and create at noon to avoid timezone issues
-      const dateOnly = dateString.split("T")[0];
-      date = new Date(dateOnly + "T12:00:00");
-    } else if (dateString.includes("T") || dateString.includes("Z")) {
-      date = new Date(dateString);
-    } else if (
-      dateString &&
-      typeof dateString === "string" &&
-      dateString.match(/^\d{4}-\d{2}-\d{2}$/)
-    ) {
-      // For YYYY-MM-DD format, add noon to prevent timezone shift
-      date = new Date(dateString + "T12:00:00");
-    } else {
-      date = new Date(dateString);
-    }
-
-    if (isNaN(date.getTime())) return { text: "Invalid date", className: "" };
-
-    const dayOfWeek = date.getDay();
-    const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
-    const dateFormatted = date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-    const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
-    let className = "";
-    if (dayOfWeek === 2) {
-      className = "text-gray-700 font-medium";
-    } else if (isWedOrThu) {
-      className = "text-orange-600 font-medium";
-    } else {
-      className = "text-[#236383] font-bold";
-    }
-
-    return {
-      text: dateFormatted,
-      className,
-      dayName,
-      isWedOrThu,
-    };
-  } catch (error) {
-    return { text: "Invalid date", className: "" };
-  }
-};
+// formatEventDate function moved to event-request-utils.tsx (enhanced version needed)
 
 interface EventRequest {
   id: number;
@@ -510,23 +428,7 @@ export default function EventRequestsManagement() {
 
   // Organization counts debug logging (removed for production)
 
-  // Helper function to convert military time to 12-hour format
-  const formatTime = (militaryTime: string | null | undefined) => {
-    if (!militaryTime) return "Not specified";
-    
-    try {
-      const [hours, minutes] = militaryTime.split(":");
-      const time = new Date();
-      time.setHours(parseInt(hours), parseInt(minutes));
-      return time.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    } catch {
-      return militaryTime; // Return original if parsing fails
-    }
-  };
+  // formatTime function moved to event-request-utils.tsx
 
   // Helper function to get user display name
   const getUserDisplayName = (userId: string | null | undefined) => {
