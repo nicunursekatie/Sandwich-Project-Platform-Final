@@ -2204,8 +2204,31 @@ export default function EventRequestsManagement() {
                 {/* Transportation Workflow Section - Redesigned */}
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
                   <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
-                    🚛 Transportation Plan
+                    🚛 Transportation & Destination
                   </h5>
+                  
+                  {/* Sandwich Destination */}
+                  {(request as any).deliveryDestination && (
+                    <div className="flex items-start space-x-2 mb-3">
+                      <span className="text-xs mt-0.5">📍</span>
+                      <div className="text-xs">
+                        <span className="font-medium text-gray-700">Final Destination: </span>
+                        <span className="text-purple-700 font-medium">
+                          {(request as any).deliveryDestination}
+                          {(request as any).deliveryDestination.match(/\d{5}/) && (
+                            <a 
+                              href={`https://maps.google.com/?q=${encodeURIComponent((request as any).deliveryDestination)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                            >
+                              View Map
+                            </a>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Determine delivery scenario */}
                   {(() => {
@@ -2438,59 +2461,41 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
 
-                {/* Sandwich Destination Tracker */}
+                {/* Event Times */}
                 <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🚚</span>
-                  {editingField === "deliveryDestination" && editingEventId === request.id ? (
-                    <SandwichDestinationTracker
-                      value={tempValues.deliveryDestination || (request as any).deliveryDestination || ""}
-                      onChange={(value) => 
-                        setTempValues((prev) => ({
-                          ...prev,
-                          deliveryDestination: value,
-                        }))
+                  <Clock className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                  <div className="text-sm text-gray-600">
+                    {(() => {
+                      const eventDate = getDisplayValue(request, "eventDate");
+                      const startTime = (request as any).eventStartTime;
+                      const endTime = (request as any).eventEndTime;
+                      
+                      if (!eventDate && !startTime && !endTime) {
+                        return <span className="text-gray-500 italic">Event timing not specified</span>;
                       }
-                      onSave={() => {
-                        handleAutosave(
-                          request.id,
-                          "deliveryDestination",
-                          tempValues.deliveryDestination || "",
-                        );
-                        setEditingField(null);
-                        setEditingEventId(null);
-                        setTempValues({});
-                      }}
-                      onCancel={handleFieldCancel}
-                    />
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        <span className="font-medium text-gray-700">🎯 Sandwich Destination: </span>
-                        <span className={`${(request as any).deliveryDestination ? 'text-green-700 font-medium' : 'text-orange-600 italic'}`}>
-                          {(request as any).deliveryDestination || "⚠️ Not specified"}
-                        </span>
-                      </span>
-                      {canEditField("deliveryDestination") ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-2 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
-                          onClick={() => {
-                            setEditingField("deliveryDestination");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              deliveryDestination: (request as any).deliveryDestination || "",
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Edit Destination
-                        </Button>
-                      ) : (
-                        <div className="text-xs text-gray-400 italic">Edit requires admin permissions</div>
-                      )}
-                    </div>
-                  )}
+                      
+                      return (
+                        <div>
+                          {eventDate && (
+                            <div>
+                              <span className="font-medium text-gray-700">Date: </span>
+                              <span>{eventDate}</span>
+                            </div>
+                          )}
+                          {(startTime || endTime) && (
+                            <div>
+                              <span className="font-medium text-gray-700">Time: </span>
+                              <span>
+                                {startTime && formatTime(startTime)}
+                                {startTime && endTime && " - "}
+                                {endTime && formatTime(endTime)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
 
 
@@ -6352,7 +6357,7 @@ export default function EventRequestsManagement() {
                           onChange={() => setDetailsRequest(prev => ({
                             ...prev,
                             finalDeliveryMethod: prev.finalDeliveryMethod === 'direct_delivery' ? '' : prev.finalDeliveryMethod,
-                            storageLocation: prev.storageLocation || ' ' // Set a space to trigger the storage fields
+                            storageLocation: prev.storageLocation || 'TBD' // Set placeholder to trigger the storage fields
                           }))}
                           className="mr-2"
                         />
