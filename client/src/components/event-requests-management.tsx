@@ -78,7 +78,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Truck,
-  TrendingUp,
   Save,
   X,
   History,
@@ -1254,158 +1253,10 @@ export default function EventRequestsManagement() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  // Use the FULL card layout for ALL tabs - not the simple version
   const renderEventCard = (request: EventRequest) => {
-    const eventDate = formatEventDate(request.desiredEventDate);
-    const toolkitStatus = getToolkitStatus(request);
-    const driverStatus = getDriverStatus(request);
-    
-    return (
-      <Card 
-        key={request.id} 
-        className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383]"
-      >
-        <div className="p-4">
-          {/* Header Row */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <h3 className="font-bold text-lg text-gray-900">
-                {request.organizationName}
-              </h3>
-              {request.department && (
-                <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
-                  {request.department}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {getStatusDisplay(request.status)}
-            </div>
-          </div>
-
-          {/* Main Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            {/* Left Column */}
-            <div className="space-y-2">
-              {/* Contact Info */}
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-700">
-                  {request.firstName} {request.lastName}
-                </span>
-              </div>
-              
-              {/* Email */}
-              {request.email && (
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <a href={`mailto:${request.email}`} className="text-blue-600 hover:underline">
-                    {request.email}
-                  </a>
-                </div>
-              )}
-              
-              {/* Phone */}
-              {request.phone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-700">{request.phone}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-2">
-              {/* Event Date */}
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#FBAD3F]" />
-                <span className={`font-semibold ${eventDate.isPastEvent ? 'text-gray-500' : 'text-gray-900'}`}>
-                  {eventDate.text}
-                </span>
-              </div>
-              
-              {/* Event Time if available */}
-              {(request as any).eventStartTime && (
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-700">
-                    {formatEventTime((request as any).eventStartTime)}
-                    {(request as any).eventEndTime && ` - ${formatEventTime((request as any).eventEndTime)}`}
-                  </span>
-                </div>
-              )}
-              
-              {/* Sandwich Count */}
-              <div className="flex items-center gap-2">
-                <span className="text-base">🥪</span>
-                <span className="text-gray-700">
-                  {request.estimatedSandwichCount || "TBD"} sandwiches
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Status Badges Row */}
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
-            {/* Toolkit Badge */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-600">Toolkit:</span>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${toolkitStatus.color}`}>
-                {toolkitStatus.badge}
-              </span>
-            </div>
-            
-            {/* Driver Badge */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-600">Drivers:</span>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${driverStatus.color}`}>
-                {driverStatus.badge}
-              </span>
-            </div>
-            
-            {/* Refrigeration if available */}
-            {request.hasRefrigeration !== null && request.hasRefrigeration !== undefined && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-600">Fridge:</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  request.hasRefrigeration 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-700'
-                }`}>
-                  {request.hasRefrigeration ? '✓ Yes' : '✗ No'}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 mt-3">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setSelectedEvent(request)}
-              className="text-xs"
-            >
-              <Eye className="w-3 h-3 mr-1" />
-              View Details
-            </Button>
-            {canEditEventRequest() && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setEditingEventId(request.id);
-                  setSelectedEvent(request);
-                }}
-                className="text-xs"
-              >
-                <Edit className="w-3 h-3 mr-1" />
-                Edit
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
-    );
+    // Just delegate to the full card implementation
+    return renderScheduledEventCard(request);
   };
 
   const renderPastEventCard = (request: EventRequest) => {
