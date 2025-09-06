@@ -1928,15 +1928,27 @@ export default function EventRequestsManagement() {
             <div className="flex flex-col items-end gap-2">
               {getStatusDisplay(request.status)}
               
-              {/* Driver Status Chip */}
+              {/* Transportation Status Chip - Smart check */}
               <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                (request as any).assignedDriverIds?.length > 0 
+                ((request as any).deliveryDestination && (request as any).deliveryDestination !== 'Not specified') ||
+                ((request as any).storageLocation && (request as any).storageLocation !== 'Not specified')
                   ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
+                  : 'bg-yellow-100 text-yellow-800'
               }`}>
-                {(request as any).assignedDriverIds?.length > 0 
-                  ? `✓ ${(request as any).assignedDriverIds.length} Driver${(request as any).assignedDriverIds.length > 1 ? 's' : ''} Assigned` 
-                  : '⚠️ Driver Needed'}
+                {(() => {
+                  const hasDestination = (request as any).deliveryDestination && (request as any).deliveryDestination !== 'Not specified';
+                  const hasStorage = (request as any).storageLocation && (request as any).storageLocation !== 'Not specified';
+                  
+                  if (hasDestination && hasStorage) {
+                    return '✓ 2-Day Delivery Plan';
+                  } else if (hasDestination) {
+                    return '✓ Direct Delivery';
+                  } else if (hasStorage) {
+                    return '✓ Host Storage';
+                  } else {
+                    return '📍 Plan Needed';
+                  }
+                })()}
               </div>
             </div>
           </div>
