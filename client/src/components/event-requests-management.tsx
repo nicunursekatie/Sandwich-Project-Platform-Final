@@ -2201,53 +2201,128 @@ export default function EventRequestsManagement() {
                   </div>
                 )}
 
-                {/* Transportation Workflow Section */}
+                {/* Transportation Workflow Section - Redesigned */}
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
                   <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
                     🚛 Transportation Plan
                   </h5>
-                  <div className="space-y-2">
-                    {/* Storage Location */}
-                    {(request as any).storageLocation ? (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-700">Overnight Storage: </span>
-                          <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
+                  
+                  {/* Determine delivery scenario */}
+                  {(() => {
+                    const isSameDayDelivery = (request as any).finalDeliveryMethod === 'direct_delivery' || 
+                                            !(request as any).storageLocation;
+                    const hasStorageLocation = !!(request as any).storageLocation;
+                    const deliveryDestination = (request as any).deliveryDestination;
+                    const finalDeliveryMethod = (request as any).finalDeliveryMethod;
+                    
+                    if (isSameDayDelivery && !hasStorageLocation) {
+                      // Scenario 1: Same-day delivery direct from event
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex items-start space-x-2">
+                            <span className="text-xs mt-0.5">🚚</span>
+                            <div className="text-xs">
+                              <span className="font-medium text-gray-700">Same-Day Delivery</span>
+                              {deliveryDestination && (
+                                <div className="text-purple-700 font-medium mt-1">
+                                  To: {deliveryDestination}
+                                  {deliveryDestination.match(/\d{5}/) && (
+                                    <a 
+                                      href={`https://maps.google.com/?q=${encodeURIComponent(deliveryDestination)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                                    >
+                                      📍 Map
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <span className="text-xs mt-0.5">👤</span>
+                            <div className="text-xs">
+                              <span className="font-medium text-gray-700">Driver Needed: </span>
+                              <span className="text-purple-700">1 driver for event day</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
+                      );
+                    } else if (hasStorageLocation) {
+                      // Scenario 2: Two-day process with overnight storage
+                      return (
+                        <div className="space-y-2">
+                          {/* Day 1: Event to Storage */}
+                          <div className="bg-white/50 rounded p-2">
+                            <div className="text-xs font-medium text-gray-700 mb-1">Day 1: Event Day</div>
+                            <div className="flex items-start space-x-2 ml-2">
+                              <span className="text-xs mt-0.5">🏠</span>
+                              <div className="text-xs">
+                                <span className="text-gray-600">Transport to storage: </span>
+                                <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-start space-x-2 ml-2 mt-1">
+                              <span className="text-xs mt-0.5">👤</span>
+                              <div className="text-xs text-gray-600">
+                                Driver 1 needed (event → storage)
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Day 2: Storage to Final Destination */}
+                          <div className="bg-white/50 rounded p-2">
+                            <div className="text-xs font-medium text-gray-700 mb-1">Day 2: Next Day</div>
+                            {finalDeliveryMethod === 'pickup_by_recipient' ? (
+                              <div className="flex items-start space-x-2 ml-2">
+                                <span className="text-xs mt-0.5">🎯</span>
+                                <div className="text-xs">
+                                  <span className="text-gray-600">Recipient pickup from: </span>
+                                  <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-start space-x-2 ml-2">
+                                  <span className="text-xs mt-0.5">📦</span>
+                                  <div className="text-xs">
+                                    <span className="text-gray-600">Deliver to: </span>
+                                    <span className="text-purple-700 font-medium">
+                                      {deliveryDestination || 'Destination needed'}
+                                    </span>
+                                    {deliveryDestination && deliveryDestination.match(/\d{5}/) && (
+                                      <a 
+                                        href={`https://maps.google.com/?q=${encodeURIComponent(deliveryDestination)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                                      >
+                                        📍 Map
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-start space-x-2 ml-2 mt-1">
+                                  <span className="text-xs mt-0.5">👤</span>
+                                  <div className="text-xs text-gray-600">
+                                    Driver 2 needed (storage → recipient)
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // No transportation plan specified
+                      return (
                         <div className="text-xs text-gray-500 italic">
-                          Overnight storage location not specified
+                          Transportation plan not yet specified
                         </div>
-                      </div>
-                    )}
-
-                    {/* Final Delivery Method */}
-                    {(request as any).finalDeliveryMethod ? (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-700">Final Delivery: </span>
-                          <span className="text-purple-700 font-medium">
-                            {(request as any).finalDeliveryMethod === 'direct_delivery' && '🚚 Direct Delivery'}
-                            {(request as any).finalDeliveryMethod === 'pickup_by_recipient' && '🎯 Recipient Pickup'}
-                            {(request as any).finalDeliveryMethod === 'driver_delivery' && '👤 Driver Delivery'}
-                            {!(request as any).finalDeliveryMethod && 'Not specified'}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
-                        <div className="text-xs text-gray-500 italic">
-                          Final delivery method not specified
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
             </div>
