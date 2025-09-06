@@ -1954,11 +1954,11 @@ export default function EventRequestsManagement() {
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             
-            {/* Left Column: Contact Information */}
+            {/* Left Column: Contact Information, Address & Transportation */}
             <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
               <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
                 <User className="w-5 h-5 mr-2 text-[#236383]" />
-                Contact
+                Contact & Location
               </h4>
               <div className="space-y-4">
 
@@ -2189,6 +2189,66 @@ export default function EventRequestsManagement() {
                     </div>
                   )}
                 </div>
+
+                {/* Event Address */}
+                {(request as any).eventAddress && (
+                  <div className="flex items-start space-x-3">
+                    <Building className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Event Location: </span>
+                      <span className="text-gray-600">{(request as any).eventAddress}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transportation Workflow Section */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
+                  <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
+                    🚛 Transportation Plan
+                  </h5>
+                  <div className="space-y-2">
+                    {/* Storage Location */}
+                    {(request as any).storageLocation ? (
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
+                        <div className="text-xs text-gray-600">
+                          <span className="font-medium text-gray-700">Overnight Storage: </span>
+                          <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
+                        <div className="text-xs text-gray-500 italic">
+                          Overnight storage location not specified
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Final Delivery Method */}
+                    {(request as any).finalDeliveryMethod ? (
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
+                        <div className="text-xs text-gray-600">
+                          <span className="font-medium text-gray-700">Final Delivery: </span>
+                          <span className="text-purple-700 font-medium">
+                            {(request as any).finalDeliveryMethod === 'direct_delivery' && '🚚 Direct Delivery'}
+                            {(request as any).finalDeliveryMethod === 'pickup_by_recipient' && '🎯 Recipient Pickup'}
+                            {(request as any).finalDeliveryMethod === 'driver_delivery' && '👤 Driver Delivery'}
+                            {!(request as any).finalDeliveryMethod && 'Not specified'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
+                        <div className="text-xs text-gray-500 italic">
+                          Final delivery method not specified
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -2200,88 +2260,6 @@ export default function EventRequestsManagement() {
               </h4>
               <div className="space-y-4">
                 
-                {/* Address */}
-                <div className="flex items-start space-x-3">
-                  <Building className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "address" &&
-                  editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.address || request.eventAddress || ""}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            address: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "eventAddress",
-                              tempValues.address || e.target.value,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                        placeholder="Enter event address"
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "eventAddress",
-                            tempValues.address,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "eventAddress") ||
-                          "No address provided"}
-                      </span>
-                      {canEditField("eventAddress") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("address");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              address:
-                                getDisplayValue(request, "eventAddress") || "",
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
 
                 {/* Sandwich Count */}
                 <div className="flex items-start space-x-3">
@@ -2440,65 +2418,6 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
 
-                {/* Event Address */}
-                {(request as any).eventAddress && (
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📍</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Event Location: </span>
-                      <span className="text-gray-600">{(request as any).eventAddress}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Transportation Workflow Section */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-                  <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
-                    🚛 Transportation Plan
-                  </h5>
-                  <div className="space-y-2">
-                    {/* Storage Location */}
-                    {(request as any).storageLocation ? (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-700">Overnight Storage: </span>
-                          <span className="text-purple-700 font-medium">{(request as any).storageLocation}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                        <div className="text-xs text-gray-500 italic">
-                          Overnight storage location not specified
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Final Delivery Method */}
-                    {(request as any).finalDeliveryMethod ? (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-700">Final Delivery: </span>
-                          <span className="text-purple-700 font-medium">
-                            {(request as any).finalDeliveryMethod === 'direct_delivery' && '🚚 Direct Delivery'}
-                            {(request as any).finalDeliveryMethod === 'pickup_by_recipient' && '🎯 Recipient Pickup'}
-                            {(request as any).finalDeliveryMethod === 'driver_delivery' && '👤 Driver Delivery'}
-                            {!(request as any).finalDeliveryMethod && 'Not specified'}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📦</span>
-                        <div className="text-xs text-gray-500 italic">
-                          Final delivery method not specified
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
                 {/* Planning Notes */}
                 {(request as any).planningNotes && (
