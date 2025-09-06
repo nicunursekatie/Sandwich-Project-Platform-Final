@@ -1957,261 +1957,33 @@ export default function EventRequestsManagement() {
         {/* Body Section */}
         <CardContent className="pt-4">
           {/* 2. LOGISTICS Section */}
-          <div className="mb-6">
+          <div className="mb-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 border-b pb-1">
-              Logistics
+              2. Logistics
             </h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Location & Contact */}
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <h5 className="font-semibold text-blue-900 text-sm mb-2 flex items-center">
-                  <User className="w-4 h-4 mr-1" />
-                  Location & Contact
-                </h5>
-                <div className="space-y-4">
-
-                {/* Contact Name */}
-                <div className="flex items-start space-x-3">
-                  <User className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "contact" && editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.contact || `${request.firstName} ${request.lastName}`}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            contact: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const [firstName, ...lastNameParts] = (
-                              tempValues.contact || e.target.value
-                            ).split(" ");
-                            handleTrackChange(request.id, "firstName", firstName);
-                            handleTrackChange(request.id, "lastName", lastNameParts.join(" "));
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                      />
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0"
-                        onClick={() => {
-                          const [firstName, ...lastNameParts] = tempValues.contact.split(" ");
-                          handleTrackChange(request.id, "firstName", firstName);
-                          handleTrackChange(request.id, "lastName", lastNameParts.join(" "));
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={handleFieldCancel}>
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm font-medium text-gray-900 flex-1">
-                        {getDisplayValue(request, "firstName")} {getDisplayValue(request, "lastName")}
-                      </span>
-                      {canEditField("contact") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("contact");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              contact: `${getDisplayValue(request, "firstName")} ${getDisplayValue(request, "lastName")}`,
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Event Location */}
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="text-xs font-semibold text-gray-600 mb-2">Event Location</div>
+                <div className="text-sm">
+                  {(request as any).eventAddress || "No address specified"}
                 </div>
-
-                {/* Email */}
-                <div className="flex items-start space-x-3">
-                  <Mail className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "email" && editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.email || request.email}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "email",
-                              tempValues.email || e.target.value,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "email",
-                            tempValues.email,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1 break-all">
-                        {getDisplayValue(request, "email")}
-                      </span>
-                      {canEditField("email") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("email");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              email: getDisplayValue(request, "email"),
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
+              </div>
+              
+              {/* Contact Info */}
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="text-xs font-semibold text-gray-600 mb-2">Contact</div>
+                <div className="space-y-1">
+                  <div className="text-sm">{getDisplayValue(request, "firstName")} {getDisplayValue(request, "lastName")}</div>
+                  <div className="text-xs text-gray-600">{getDisplayValue(request, "email")}</div>
+                  <div className="text-xs text-gray-600">{getDisplayValue(request, "phone") || "No phone"}</div>
                 </div>
+              </div>
 
-                {/* Phone */}
-                <div className="flex items-start space-x-3">
-                  <Phone className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "phone" && editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.phone || request.phone || ""}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "phone",
-                              tempValues.phone || e.target.value,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                        placeholder="Enter phone number"
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "phone",
-                            tempValues.phone,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "phone") || "No phone number"}
-                      </span>
-                      {canEditField("phone") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("phone");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              phone: getDisplayValue(request, "phone") || "",
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Event Address */}
-                {(request as any).eventAddress && (
-                  <div className="flex items-start space-x-3">
-                    <Building className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Event Location: </span>
-                      <span className="text-gray-600">{(request as any).eventAddress}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Transportation Workflow Section - Redesigned */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
+              {/* Transportation */}
+              <div className="bg-gray-50 p-3 rounded md:col-span-2">
+                <div className="text-xs font-semibold text-gray-600 mb-2">Transportation Plan</div>
                   <div className="flex items-center justify-between mb-3">
                     <h5 className="font-semibold text-purple-800 text-sm flex items-center">
                       🚛 Transportation & Destination
