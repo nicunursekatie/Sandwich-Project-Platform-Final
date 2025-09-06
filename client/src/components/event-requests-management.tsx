@@ -1908,7 +1908,7 @@ export default function EventRequestsManagement() {
               {/* Bottom Row: Date & Pickup Time */}
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center">
-                  <CalendarDays className="w-4 h-4 text-teal-600 mr-1" />
+                  <Calendar className="w-4 h-4 text-teal-600 mr-1" />
                   <span className="font-medium text-gray-800">
                     {formatEventDate(request.desiredEventDate).text}
                   </span>
