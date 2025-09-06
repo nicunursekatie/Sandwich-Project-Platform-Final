@@ -246,6 +246,9 @@ const formatEventDate = (dateString: string) => {
   }
 };
 
+type ToolkitStatus = "not_sent" | "sent" | "received_confirmed" | "not_needed";
+type FinalDeliveryMethod = "direct_delivery" | "driver_delivery" | "pickup_by_recipient";
+
 interface EventRequest {
   id: number;
   firstName: string;
@@ -263,7 +266,9 @@ interface EventRequest {
     | "in_process"
     | "scheduled"
     | "completed"
-    | "declined";
+    | "declined"
+    | "contact_completed"
+    | "unresponsive";
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
@@ -294,10 +299,19 @@ interface EventRequest {
   pickupTime?: string;
   additionalRequirements?: string;
   planningNotes?: string;
-  toolkitStatus?: string;
+  toolkitStatus?: ToolkitStatus;
   tspContact?: string;
   additionalTspContacts?: string;
   additionalContact1?: string;
+  driversNeeded?: number;
+  speakersNeeded?: number;
+  assignedDriverIds?: string[];
+  assignedSpeakerIds?: string[];
+  deliveryDestination?: string;
+  storageLocation?: string;
+  finalDeliveryMethod?: FinalDeliveryMethod;
+  sandwichType?: string;
+  volunteerNotes?: string;
   additionalContact2?: string;
   customTspContact?: string;
   followUpMethod?: string;
@@ -317,7 +331,9 @@ const statusColors = {
     "bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200",
   declined:
     "bg-gradient-to-r from-[#A31C41] to-red-700 text-white border-2 font-bold shadow-lg",
-};
+  contact_completed: "bg-gradient-to-r from-blue-50 to-indigo-100 text-indigo-700 border border-indigo-200",
+  unresponsive: "bg-gradient-to-r from-rose-50 to-rose-100 text-rose-700 border border-rose-200",
+} as const;
 
 const statusIcons = {
   new: Clock,
@@ -326,7 +342,9 @@ const statusIcons = {
   scheduled: Calendar,
   completed: CheckCircle,
   declined: XCircle,
-};
+  contact_completed: Phone,
+  unresponsive: AlertTriangle,
+} as const;
 
 const previouslyHostedOptions = [
   { value: "yes", label: "Yes" },
@@ -2237,7 +2255,6 @@ export default function EventRequestsManagement() {
                 </div>
               </div>
             </div>
-          </div>
 
             {/* Center Column: Event Logistics */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
