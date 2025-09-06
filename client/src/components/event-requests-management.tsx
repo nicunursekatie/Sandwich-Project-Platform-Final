@@ -1850,10 +1850,16 @@ export default function EventRequestsManagement() {
       const driverIds = (request as any).assignedDriverIds || [];
       const driversNeeded = (request as any).driversNeeded || 0;
       if (driversNeeded === 0)
-        return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
+        return { badge: "N/A", color: "bg-gray-100 text-gray-600", isUrgent: false };
       if (driverIds.length >= driversNeeded)
-        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700" };
-      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
+        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700", isUrgent: false };
+      return { 
+        badge: "🚨 DRIVERS NEEDED", 
+        color: "bg-red-500 text-white font-bold", 
+        isUrgent: true,
+        driversNeeded: driversNeeded,
+        driversAssigned: driverIds.length
+      };
     };
 
     const getToolkitStatus = () => {
@@ -1892,55 +1898,27 @@ export default function EventRequestsManagement() {
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-2">
-                {request.organizationName}
-              </h3>
-              {request.department && (
-                <p className="text-gray-600 font-medium text-lg mb-3">
-                  {request.department}
-                </p>
-              )}
-              {/* Event Date as Styled Subtitle */}
-              {request.desiredEventDate && (
-                <div className="flex items-center text-xl font-semibold text-[#FBAD3F] mb-2">
-                  <Calendar className="w-6 h-6 mr-2" />
-                  <span>
-                    {(() => {
+              {/* Condensed Header - All key info in one line */}
+              <div className="text-lg font-bold text-gray-900 leading-tight mb-3">
+                <span className="text-xl">{request.organizationName}</span>
+                {request.department && <span className="text-gray-600 font-medium"> • {request.department}</span>}
+                {request.desiredEventDate && (
+                  <>
+                    <span className="text-[#FBAD3F]"> | {(() => {
                       const dateInfo = formatEventDate(request.desiredEventDate);
                       return dateInfo.text;
-                    })()}
-                  </span>
-                </div>
-              )}
-              {/* Event Times Row */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                    })()}</span>
+                  </>
+                )}
                 {(request as any).eventStartTime && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Starts:</span>
-                    <span className="ml-1 font-semibold">
-                      {formatTime((request as any).eventStartTime)}
-                    </span>
-                  </div>
+                  <span className="text-[#FBAD3F]"> | {formatTime((request as any).eventStartTime)}</span>
                 )}
-                {(request as any).eventEndTime && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Ends:</span>
-                    <span className="ml-1 font-semibold">
-                      {formatTime((request as any).eventEndTime)}
-                    </span>
-                  </div>
-                )}
-                {(request as any).pickupTime && (
-                  <div className="flex items-center text-teal-700">
-                    <Truck className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Pickup:</span>
-                    <span className="ml-1 font-semibold">
-                      {formatTime((request as any).pickupTime)}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const summary = getSandwichTypesSummary(request);
+                  return summary.total > 0 ? (
+                    <span className="text-[#236383]"> | {summary.total} sandwiches</span>
+                  ) : null;
+                })()}
               </div>
             </div>
             {/* Status Badge in Top-Right */}
@@ -1950,17 +1928,37 @@ export default function EventRequestsManagement() {
           </div>
         </CardHeader>
 
-        {/* Body Section: Three Column Layout */}
+        {/* Urgent Driver Alert Banner */}
+        {getDriverStatus().isUrgent && (
+          <div className="bg-gradient-to-r from-red-600 to-red-500 text-white p-4 -mx-6 -mt-2 mb-4 shadow-lg">
+            <div className="flex items-center justify-center space-x-4 text-center">
+              <div className="animate-pulse text-2xl">🚨</div>
+              <div>
+                <div className="text-xl font-bold">DRIVERS NEEDED URGENTLY!</div>
+                <div className="text-sm opacity-90">
+                  Need {getDriverStatus().driversNeeded} driver{getDriverStatus().driversNeeded !== 1 ? 's' : ''} • 
+                  {getDriverStatus().driversAssigned > 0 
+                    ? ` ${getDriverStatus().driversAssigned} assigned` 
+                    : ' None assigned yet'
+                  }
+                </div>
+              </div>
+              <div className="animate-pulse text-2xl">🚨</div>
+            </div>
+          </div>
+        )}
+
+        {/* Body Section: Two Column Layout - Merged Contact + Event Details */}
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             
-            {/* Left Column: Contact Information */}
+            {/* Left Column: Contact & Event Information Merged */}
             <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
               <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
                 <User className="w-5 h-5 mr-2 text-[#236383]" />
-                Contact
+                Contact & Event Details
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
 
                 {/* Contact Name */}
                 <div className="flex items-start space-x-3">
@@ -2629,12 +2627,14 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Driver Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Drivers</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
-                    {getDriverStatus().badge}
-                  </span>
-                </div>
+                {!getDriverStatus().isUrgent && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Drivers</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
+                      {getDriverStatus().badge}
+                    </span>
+                  </div>
+                )}
 
                 {/* Driver Assignment Details */}
                 <div className="space-y-2">
