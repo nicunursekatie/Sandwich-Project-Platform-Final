@@ -274,7 +274,7 @@ interface SandwichType {
 }
 
 export default function EventRequestsManagement() {
-  const [activeTab, setActiveTab] = useState("requests");
+  const [activeTab, setActiveTab] = useState("need_follow_up");
   const [searchTerm, setSearchTerm] = useState("");
   const [globalSearch, setGlobalSearch] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -2193,16 +2193,16 @@ export default function EventRequestsManagement() {
           {/* Toolkit Status */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">Toolkit</span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus().color}`}>
-              {getToolkitStatus().badge}
+            <span className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus(request).color}`}>
+              {getToolkitStatus(request).badge}
             </span>
           </div>
 
           {/* Driver Status */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">Drivers</span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
-              {getDriverStatus().badge}
+            <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus(request).color}`}>
+              {getDriverStatus(request).badge}
             </span>
           </div>
 
