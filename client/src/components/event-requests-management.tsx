@@ -1908,9 +1908,9 @@ export default function EventRequestsManagement() {
               {/* Event Info Row with Icons */}
               <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
                 {request.desiredEventDate && (
-                  <div className="flex items-center gap-1.5 text-[#FBAD3F]">
-                    <Calendar className="w-4 h-4" />
-                    <span className="font-medium">{formatEventDate(request.desiredEventDate).text}</span>
+                  <div className="flex items-center gap-2 bg-[#FBAD3F] text-white px-3 py-1.5 rounded-lg shadow-sm">
+                    <Calendar className="w-5 h-5" />
+                    <span className="font-bold text-base">{formatEventDate(request.desiredEventDate).text}</span>
                   </div>
                 )}
                 {(request as any).eventStartTime && (
@@ -1922,9 +1922,9 @@ export default function EventRequestsManagement() {
                 {(() => {
                   const summary = getSandwichTypesSummary(request);
                   return summary.total > 0 ? (
-                    <div className="flex items-center gap-1.5 text-[#236383]">
-                      <Package className="w-4 h-4" />
-                      <span className="font-medium">{summary.total} sandwiches</span>
+                    <div className="flex items-center gap-2 bg-[#236383] text-white px-3 py-1.5 rounded-lg shadow-sm">
+                      <Package className="w-5 h-5" />
+                      <span className="font-bold text-base">{summary.total} sandwiches</span>
                     </div>
                   ) : null;
                 })()}
