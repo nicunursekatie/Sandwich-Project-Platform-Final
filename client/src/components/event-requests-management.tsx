@@ -2387,119 +2387,6 @@ export default function EventRequestsManagement() {
               </div>
             </div>
             
-            {/* Transportation Plan Section */}
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
-                🚛 Transportation Plan
-              </h5>
-                  <div className="space-y-2">
-                    {(() => {
-                      const hasOvernightStorage = (request as any).overnightStorageRequired;
-                      const isPickup = (request as any).finalDeliveryMethod === "pickup_by_recipient";
-                      const pickupOrg = (request as any).pickupOrganization;
-                      const storageLocation = (request as any).storageLocation;
-                      const driver1 = (request as any).transportDriverDay1;
-                      const driver2 = (request as any).transportDriverDay2;
-                      const finalRecipient = (request as any).finalRecipientOrg;
-                      
-                      if (isPickup) {
-                        return (
-                          <div className="flex items-start space-x-3">
-                            <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏃‍♂️</span>
-                            <div className="text-xs">
-                              <span className="font-medium text-purple-700">Organization Pickup</span>
-                              {pickupOrg && (
-                                <div className="text-gray-600 mt-1">{pickupOrg} will pick up sandwiches</div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      } else if (hasOvernightStorage) {
-                        return (
-                          <div className="space-y-2">
-                            <div className="flex items-start space-x-3">
-                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
-                              <div className="text-xs">
-                                <span className="font-medium text-purple-700">Two-Step Process</span>
-                                <div className="text-gray-600 mt-1">Overnight storage required</div>
-                              </div>
-                            </div>
-                            {storageLocation && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📍</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Storage:</span> {storageLocation}
-                                </div>
-                              </div>
-                            )}
-                            {driver1 && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Day 1 Driver:</span> {getUserDisplayName(driver1)}
-                                </div>
-                              </div>
-                            )}
-                            {driver2 && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚚</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Day 2 Driver:</span> {getUserDisplayName(driver2)}
-                                </div>
-                              </div>
-                            )}
-                            {finalRecipient && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Final Recipient:</span> {finalRecipient}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      } else if ((request as any).finalDeliveryMethod === "direct_delivery") {
-                        return (
-                          <div className="space-y-2">
-                            <div className="flex items-start space-x-3">
-                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">⚡</span>
-                              <div className="text-xs">
-                                <span className="font-medium text-purple-700">Direct Delivery</span>
-                                <div className="text-gray-600 mt-1">Same day delivery from event to recipient</div>
-                              </div>
-                            </div>
-                            {driver1 && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Driver:</span> {getUserDisplayName(driver1)}
-                                </div>
-                              </div>
-                            )}
-                            {finalRecipient && (
-                              <div className="flex items-start space-x-3 ml-4">
-                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
-                                <div className="text-xs text-gray-600">
-                                  <span className="font-medium">Deliver to:</span> {finalRecipient}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <div className="flex items-start space-x-3">
-                            <span className="text-gray-500 text-xs mt-1 flex-shrink-0">❓</span>
-                            <div className="text-xs text-gray-500 italic">
-                              Transportation plan not yet specified
-                            </div>
-                          </div>
-                        );
-                      }
-                    })()}
-              </div>
-            </div>
-
             {/* Refrigeration Section */}
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
               <h4 className="font-bold text-blue-700 text-sm mb-3 flex items-center">
@@ -2608,15 +2495,124 @@ export default function EventRequestsManagement() {
           </div>
 
 
-            {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm hover:shadow-md transition-shadow">
-              <h4 className="font-bold text-[#A31C41] text-sm sm:text-base mb-3 flex items-center">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#A31C41] flex items-center justify-center mr-2">
-                  <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <span className="text-sm sm:text-base">Assignments</span>
-              </h4>
-              <div className="space-y-4">
+              <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm">
+                <h4 className="font-bold text-[#A31C41] text-sm mb-3 flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
+                  Assignments & Transportation
+                </h4>
+                <div className="space-y-4">
+                  {/* Transportation Plan */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <h5 className="font-semibold text-gray-700 text-xs mb-2 flex items-center">
+                      🚛 Transportation Plan
+                    </h5>
+                    <div className="space-y-2">
+                      {(() => {
+                        const hasOvernightStorage = (request as any).overnightStorageRequired;
+                        const isPickup = (request as any).finalDeliveryMethod === "pickup_by_recipient";
+                        const pickupOrg = (request as any).pickupOrganization;
+                        const storageLocation = (request as any).storageLocation;
+                        const driver1 = (request as any).transportDriverDay1;
+                        const driver2 = (request as any).transportDriverDay2;
+                        const finalRecipient = (request as any).finalRecipientOrg;
+                        
+                        if (isPickup) {
+                          return (
+                            <div className="flex items-start space-x-3">
+                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏃‍♂️</span>
+                              <div className="text-xs">
+                                <span className="font-medium text-purple-700">Organization Pickup</span>
+                                {pickupOrg && (
+                                  <div className="text-gray-600 mt-1">{pickupOrg} will pick up sandwiches</div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        } else if (hasOvernightStorage) {
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-start space-x-3">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
+                                <div className="text-xs">
+                                  <span className="font-medium text-purple-700">Two-Step Process</span>
+                                  <div className="text-gray-600 mt-1">Overnight storage required</div>
+                                </div>
+                              </div>
+                              {storageLocation && (
+                                <div className="flex items-start space-x-3 ml-4">
+                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📍</span>
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Storage:</span> {storageLocation}
+                                  </div>
+                                </div>
+                              )}
+                              {driver1 && (
+                                <div className="flex items-start space-x-3 ml-4">
+                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Day 1 Driver:</span> {getUserDisplayName(driver1)}
+                                  </div>
+                                </div>
+                              )}
+                              {driver2 && (
+                                <div className="flex items-start space-x-3 ml-4">
+                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚚</span>
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Day 2 Driver:</span> {getUserDisplayName(driver2)}
+                                  </div>
+                                </div>
+                              )}
+                              {finalRecipient && (
+                                <div className="flex items-start space-x-3 ml-4">
+                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Final Recipient:</span> {finalRecipient}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        } else if ((request as any).finalDeliveryMethod === "direct_delivery") {
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-start space-x-3">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">⚡</span>
+                                <div className="text-xs">
+                                  <span className="font-medium text-purple-700">Direct Delivery</span>
+                                  <div className="text-gray-600 mt-1">Same day delivery from event to recipient</div>
+                                </div>
+                              </div>
+                              {driver1 && (
+                                <div className="flex items-start space-x-3 ml-4">
+                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Driver:</span> {getUserDisplayName(driver1)}
+                                  </div>
+                                </div>
+                              )}
+                              {finalRecipient && (
+                                <div className="flex items-start space-x-3 ml-4">
+                                  <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Deliver to:</span> {finalRecipient}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="flex items-start space-x-3">
+                              <span className="text-gray-500 text-xs mt-1 flex-shrink-0">❓</span>
+                              <div className="text-xs text-gray-500 italic">
+                                Transportation plan not yet specified
+                              </div>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+                  </div>
                 
                 {/* Toolkit Status */}
                 <div className="flex items-center justify-between">
