@@ -1119,13 +1119,8 @@ export const eventRequests = pgTable("event_requests", {
   deliveryDestination: text("delivery_destination"), // Organization/host location where sandwiches will be delivered
   
   // Transportation workflow fields
-  overnightStorageRequired: boolean("overnight_storage_required").default(false), // Whether overnight storage is needed
   storageLocation: text("storage_location"), // Host location for overnight storage before final delivery
   finalDeliveryMethod: varchar("final_delivery_method"), // 'direct_delivery', 'pickup_by_recipient', 'driver_delivery'
-  transportDriver1: varchar("transport_driver_1"), // First driver (or only driver for direct delivery)
-  transportDriver2: varchar("transport_driver_2"), // Second driver (for day 2 of two-step process)
-  pickupOrganization: varchar("pickup_organization"), // Organization name that will pick up sandwiches
-  finalRecipientOrg: varchar("final_recipient_org"), // Final recipient organization for two-step process
   // Driver and speaker requirements
   driversNeeded: integer("drivers_needed").default(0), // How many drivers this event needs
   speakersNeeded: integer("speakers_needed").default(0), // How many speakers this event needs
