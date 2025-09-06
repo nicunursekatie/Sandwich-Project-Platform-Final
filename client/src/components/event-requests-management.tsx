@@ -1750,6 +1750,249 @@ export default function EventRequestsManagement() {
   };
 
   // Function to render modern scheduled event cards with improved visual hierarchy
+  // Inline Contact Section Component  
+  const ContactSection = ({ request }: { request: EventRequest }) => {
+    return (
+      <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200 shadow-sm">
+        <h4 className="font-bold text-[#236383] text-sm mb-3 flex items-center">
+          <User className="w-4 h-4 mr-2" />
+          Contact Person
+        </h4>
+        <div className="space-y-4">
+
+          {/* Contact Name */}
+          <div className="flex items-start space-x-3">
+            <User className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+            {editingField === "contact" && editingEventId === request.id ? (
+              <div className="flex space-x-2 flex-1 items-center">
+                <input
+                  className="text-sm border rounded px-2 py-1 flex-1 bg-white"
+                  value={tempValues.contact || `${request.firstName} ${request.lastName}`}
+                  onChange={(e) =>
+                    setTempValues((prev) => ({
+                      ...prev,
+                      contact: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const [firstName, ...lastNameParts] = (
+                        tempValues.contact || e.target.value
+                      ).split(" ");
+                      handleTrackChange(request.id, "firstName", firstName);
+                      handleTrackChange(request.id, "lastName", lastNameParts.join(" "));
+                      setEditingField(null);
+                      setEditingEventId(null);
+                      setTempValues({});
+                    }
+                    if (e.key === "Escape") handleFieldCancel();
+                  }}
+                />
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0"
+                  onClick={() => {
+                    const [firstName, ...lastNameParts] = tempValues.contact.split(" ");
+                    handleTrackChange(request.id, "firstName", firstName);
+                    handleTrackChange(request.id, "lastName", lastNameParts.join(" "));
+                    setEditingField(null);
+                    setEditingEventId(null);
+                    setTempValues({});
+                  }}
+                >
+                  ✓
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={handleFieldCancel}>
+                  ✗
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 flex-1">
+                <span className="text-sm font-medium text-gray-900 flex-1">
+                  {getDisplayValue(request, "firstName")} {getDisplayValue(request, "lastName")}
+                </span>
+                {canEditField("contact") && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                    onClick={() => {
+                      setEditingField("contact");
+                      setEditingEventId(request.id);
+                      setTempValues({
+                        contact: `${getDisplayValue(request, "firstName")} ${getDisplayValue(request, "lastName")}`,
+                      });
+                    }}
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Email */}
+          <div className="flex items-start space-x-3">
+            <Mail className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+            {editingField === "email" && editingEventId === request.id ? (
+              <div className="flex space-x-2 flex-1 items-center">
+                <input
+                  className="text-sm border rounded px-2 py-1 flex-1 bg-white"
+                  value={tempValues.email || request.email}
+                  onChange={(e) =>
+                    setTempValues((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleTrackChange(
+                        request.id,
+                        "email",
+                        tempValues.email || e.target.value,
+                      );
+                      setEditingField(null);
+                      setEditingEventId(null);
+                      setTempValues({});
+                    }
+                    if (e.key === "Escape") handleFieldCancel();
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => {
+                    handleTrackChange(
+                      request.id,
+                      "email",
+                      tempValues.email,
+                    );
+                    setEditingField(null);
+                    setEditingEventId(null);
+                    setTempValues({});
+                  }}
+                >
+                  ✓
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={handleFieldCancel}
+                >
+                  ✗
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 flex-1">
+                <span className="text-sm text-gray-600 flex-1 break-all">
+                  {getDisplayValue(request, "email")}
+                </span>
+                {canEditField("email") && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                    onClick={() => {
+                      setEditingField("email");
+                      setEditingEventId(request.id);
+                      setTempValues({
+                        email: getDisplayValue(request, "email"),
+                      });
+                    }}
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div className="flex items-start space-x-3">
+            <Phone className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+            {editingField === "phone" && editingEventId === request.id ? (
+              <div className="flex space-x-2 flex-1 items-center">
+                <input
+                  className="text-sm border rounded px-2 py-1 flex-1 bg-white"
+                  value={tempValues.phone || request.phone || ""}
+                  onChange={(e) =>
+                    setTempValues((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleTrackChange(
+                        request.id,
+                        "phone",
+                        tempValues.phone || e.target.value,
+                      );
+                      setEditingField(null);
+                      setEditingEventId(null);
+                      setTempValues({});
+                    }
+                    if (e.key === "Escape") handleFieldCancel();
+                  }}
+                  placeholder="Enter phone number"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => {
+                    handleTrackChange(
+                      request.id,
+                      "phone",
+                      tempValues.phone,
+                    );
+                    setEditingField(null);
+                    setEditingEventId(null);
+                    setTempValues({});
+                  }}
+                >
+                  ✓
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={handleFieldCancel}
+                >
+                  ✗
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 flex-1">
+                <span className="text-sm text-gray-600 flex-1">
+                  {getDisplayValue(request, "phone") || "Not provided"}
+                </span>
+                {canEditField("phone") && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                    onClick={() => {
+                      setEditingField("phone");
+                      setEditingEventId(request.id);
+                      setTempValues({
+                        phone: getDisplayValue(request, "phone") || "",
+                      });
+                    }}
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
   const renderScheduledEventCard = (request: EventRequest) => {
     const getDriverStatus = () => {
       const driverIds = (request as any).assignedDriverIds || [];
@@ -1847,7 +2090,10 @@ export default function EventRequestsManagement() {
             
             {/* Left Column: Contact & Location */}
             <div className="space-y-4">
-              {/* Contact Section */}
+              {/* Contact Section - Now using extracted component */}
+              <ContactSection request={request} />
+
+              {/* Old contact section (to be removed) */}
               <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200 shadow-sm">
                 <h4 className="font-bold text-[#236383] text-sm mb-3 flex items-center">
                   <User className="w-4 h-4 mr-2" />
