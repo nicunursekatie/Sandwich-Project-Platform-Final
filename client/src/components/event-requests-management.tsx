@@ -2890,7 +2890,6 @@ export default function EventRequestsManagement() {
                 )}
               </div>
             </div>
-          </div>
 
           {/* Planning Notes Section */}
           {(request as any).planningNotes && (
