@@ -1974,10 +1974,10 @@ export default function EventRequestsManagement() {
 
         {/* Body Section */}
         <CardContent className="pt-4">
-          {/* 2. LOGISTICS Section */}
+          {/* LOGISTICS Section */}
           <div className="mb-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 border-b pb-1">
-              2. Logistics
+              Logistics
             </h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
