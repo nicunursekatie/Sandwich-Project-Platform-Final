@@ -962,15 +962,26 @@ export default function EventRequestsManagement() {
 
   // Assignment update function with optimistic updates
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
+    console.log('handleAssignmentUpdate called:', { eventId, field, value });
+    
     // Optimistically update the cache immediately
     queryClient.setQueryData(["/api/event-requests"], (oldData: any) => {
-      if (!oldData) return oldData;
-      return oldData.map((event: any) => {
+      if (!oldData) {
+        console.log('No old data found');
+        return oldData;
+      }
+      
+      const newData = oldData.map((event: any) => {
         if (event.id === eventId) {
-          return { ...event, [field]: value };
+          const updatedEvent = { ...event, [field]: value };
+          console.log('Updated event:', updatedEvent);
+          return updatedEvent;
         }
         return event;
       });
+      
+      console.log('New data array length:', newData.length);
+      return newData;
     });
 
     updateMutation.mutate({
@@ -985,11 +996,13 @@ export default function EventRequestsManagement() {
     mutationFn: ({ eventId, speakerIds }: { eventId: number; speakerIds: string[] }) =>
       apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedSpeakerIds: speakerIds }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      // Don't invalidate cache - use optimistic updates instead
       setShowSpeakerDialog(false);
       toast({ title: "Speaker assignments updated successfully" });
     },
     onError: (error: any) => {
+      // On error, revert by refetching
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({
         title: "Error updating speaker assignments",
         description: error.message,
@@ -6810,17 +6823,14 @@ export default function EventRequestsManagement() {
                 <Button
                   type="button"
                   onClick={() => {
-                    saveSpeakerAssignmentMutation.mutate({
-                      eventId: assigningSpeakerRequest.id,
-                      speakerIds: selectedSpeakers,
-                    });
+                    // Use optimistic update for immediate UI feedback
+                    handleAssignmentUpdate(assigningSpeakerRequest.id, 'assignedSpeakerIds', selectedSpeakers);
+                    setShowSpeakerDialog(false);
+                    toast({ title: "Speaker assignments updated successfully" });
                   }}
-                  disabled={saveSpeakerAssignmentMutation.isPending}
                   className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  {saveSpeakerAssignmentMutation.isPending
-                    ? "Assigning..."
-                    : "Assign Speakers"}
+                  Assign Speakers
                 </Button>
               </div>
             </DialogContent>
