@@ -2767,72 +2767,15 @@ export default function EventRequestsManagement() {
                         </button>
                       )}
                     </div>
-                    {editingDriversFor === request.id ? (
-                      <div className="flex items-center space-x-1">
-                        <select
-                          value=""
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "__custom__") {
-                              setTempDriverInput("");
-                              // Focus will be on input field
-                            } else if (value) {
-                              // Add selected driver immediately
-                              const currentDrivers = (request as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, value];
-                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                            }
-                          }}
-                          className="text-xs border rounded px-2 py-1 min-w-32"
-                        >
-                          <option value="">Select driver...</option>
-                          {availableUsers?.map(user => (
-                            <option key={user.id} value={user.id}>
-                              {user.displayName}
-                            </option>
-                          ))}
-                          <option value="__custom__">+ Add custom driver</option>
-                        </select>
-                        <input
-                          type="text"
-                          placeholder="Type driver name..."
-                          value={tempDriverInput}
-                          onChange={(e) => setTempDriverInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && tempDriverInput.trim()) {
-                              const currentDrivers = (request as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
-                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                              setTempDriverInput("");
-                            }
-                            if (e.key === "Escape") {
-                              setEditingDriversFor(null);
-                              setTempDriverInput("");
-                            }
-                          }}
-                          className="text-xs border rounded px-2 py-1 w-32"
-                        />
-                        <button
-                          onClick={() => {
-                            setEditingDriversFor(null);
-                            setTempDriverInput("");
-                          }}
-                          className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700"
-                        >
-                          ✓
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
-                        onClick={() => {
-                          setEditingDriversFor(request.id);
-                          setTempDriverInput("");
-                        }}
-                      >
-                        {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
-                      </button>
-                    )}
+                    <button
+                      className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                      onClick={() => {
+                        setEditingDriversFor(request.id);
+                        setTempDriverInput("");
+                      }}
+                    >
+                      {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
+                    </button>
                   </div>
                   {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
                     <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
@@ -7409,6 +7352,135 @@ export default function EventRequestsManagement() {
                 className="bg-red-600 hover:bg-red-700"
               >
                 {deleteMutation.isPending ? "Deleting..." : "Delete Event"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Driver Assignment Modal */}
+        <Dialog open={editingDriversFor !== null} onOpenChange={(open) => {
+          if (!open) {
+            setEditingDriversFor(null);
+            setTempDriverInput("");
+          }
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Assign Drivers</DialogTitle>
+              <DialogDescription>
+                Add or remove drivers for this event
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Current Drivers */}
+              {editingDriversFor && eventRequests?.find(r => r.id === editingDriversFor)?.assignedDriverIds?.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">Current Drivers:</span>
+                  <div className="space-y-2">
+                    {(eventRequests.find(r => r.id === editingDriversFor) as any)?.assignedDriverIds?.map((driverId: string, index: number) => (
+                      <div key={index} className="flex items-center justify-between bg-blue-50 text-blue-700 px-3 py-2 rounded border border-blue-200">
+                        <span>{getUserDisplayName(driverId)}</span>
+                        <button
+                          className="ml-2 hover:bg-blue-200 rounded-full w-6 h-6 flex items-center justify-center"
+                          onClick={() => {
+                            const currentRequest = eventRequests.find(r => r.id === editingDriversFor);
+                            const updatedDrivers = (currentRequest as any)?.assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
+                            handleAssignmentUpdate(editingDriversFor, 'assignedDriverIds', updatedDrivers);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add New Driver */}
+              <div className="space-y-3">
+                <span className="text-sm font-medium">Add Driver:</span>
+                
+                {/* Select from existing users */}
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Select from registered users:</label>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value) {
+                        const currentRequest = eventRequests?.find(r => r.id === editingDriversFor);
+                        const currentDrivers = (currentRequest as any)?.assignedDriverIds || [];
+                        if (!currentDrivers.includes(value)) {
+                          const updatedDrivers = [...currentDrivers, value];
+                          handleAssignmentUpdate(editingDriversFor, 'assignedDriverIds', updatedDrivers);
+                        }
+                      }
+                    }}
+                    className="w-full text-sm border rounded px-3 py-2"
+                  >
+                    <option value="">Choose a user...</option>
+                    {availableUsers?.filter(user => {
+                      const currentRequest = eventRequests?.find(r => r.id === editingDriversFor);
+                      const currentDrivers = (currentRequest as any)?.assignedDriverIds || [];
+                      return !currentDrivers.includes(user.id);
+                    }).map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Or add custom driver */}
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Or add custom driver name:</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Enter driver name..."
+                      value={tempDriverInput}
+                      onChange={(e) => setTempDriverInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && tempDriverInput.trim()) {
+                          const currentRequest = eventRequests?.find(r => r.id === editingDriversFor);
+                          const currentDrivers = (currentRequest as any)?.assignedDriverIds || [];
+                          const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
+                          handleAssignmentUpdate(editingDriversFor, 'assignedDriverIds', updatedDrivers);
+                          setTempDriverInput("");
+                        }
+                      }}
+                      className="flex-1 text-sm border rounded px-3 py-2"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        if (tempDriverInput.trim()) {
+                          const currentRequest = eventRequests?.find(r => r.id === editingDriversFor);
+                          const currentDrivers = (currentRequest as any)?.assignedDriverIds || [];
+                          const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
+                          handleAssignmentUpdate(editingDriversFor, 'assignedDriverIds', updatedDrivers);
+                          setTempDriverInput("");
+                        }
+                      }}
+                      disabled={!tempDriverInput.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditingDriversFor(null);
+                  setTempDriverInput("");
+                }}
+              >
+                Done
               </Button>
             </div>
           </DialogContent>
