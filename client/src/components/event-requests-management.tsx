@@ -6337,7 +6337,11 @@ export default function EventRequestsManagement() {
                   <Label htmlFor="deliveryDestination">Sandwich Destination</Label>
                   <Input
                     name="deliveryDestination"
-                    defaultValue={(detailsRequest as any).deliveryDestination || ""}
+                    value={(detailsRequest as any).deliveryDestination || ""}
+                    onChange={(e) => setDetailsRequest(prev => ({
+                      ...prev,
+                      deliveryDestination: e.target.value
+                    }))}
                     placeholder="Final delivery location (organization, address, etc.)"
                   />
                 </div>
@@ -6352,7 +6356,11 @@ export default function EventRequestsManagement() {
                       <Label htmlFor="storageLocation">Overnight Storage Location (Optional)</Label>
                       <Input
                         name="storageLocation"
-                        defaultValue={(detailsRequest as any).storageLocation || ""}
+                        value={(detailsRequest as any).storageLocation || ""}
+                        onChange={(e) => setDetailsRequest(prev => ({
+                          ...prev,
+                          storageLocation: e.target.value
+                        }))}
                         placeholder="Host location for overnight storage"
                       />
                     </div>
@@ -6360,7 +6368,11 @@ export default function EventRequestsManagement() {
                       <Label htmlFor="finalDeliveryMethod">Final Delivery Method</Label>
                       <select
                         name="finalDeliveryMethod"
-                        defaultValue={(detailsRequest as any).finalDeliveryMethod || ""}
+                        value={(detailsRequest as any).finalDeliveryMethod || ""}
+                        onChange={(e) => setDetailsRequest(prev => ({
+                          ...prev,
+                          finalDeliveryMethod: e.target.value
+                        }))}
                         className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">Select delivery method</option>
