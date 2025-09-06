@@ -957,8 +957,19 @@ export default function EventRequestsManagement() {
     },
   });
 
-  // Assignment update function
+  // Assignment update function with optimistic updates
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
+    // Optimistically update the cache immediately
+    queryClient.setQueryData(["/api/event-requests"], (oldData: any) => {
+      if (!oldData) return oldData;
+      return oldData.map((event: any) => {
+        if (event.id === eventId) {
+          return { ...event, [field]: value };
+        }
+        return event;
+      });
+    });
+
     updateMutation.mutate({
       id: eventId,
       [field]: value,
