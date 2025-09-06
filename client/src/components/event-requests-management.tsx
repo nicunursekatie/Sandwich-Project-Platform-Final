@@ -942,13 +942,16 @@ export default function EventRequestsManagement() {
     mutationFn: ({ id, ...data }: any) =>
       apiRequest("PUT", `/api/event-requests/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      // Don't invalidate cache - we're using optimistic updates
+      // The optimistic update already shows the change immediately
       toast({
         title: "Event request updated",
         description: "The event request has been updated successfully",
       });
     },
     onError: (error: any) => {
+      // On error, revert the optimistic update by refetching
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({
         title: "Error updating event request",
         description: error.message,
