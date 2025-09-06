@@ -2324,7 +2324,7 @@ export default function EventRequestsManagement() {
     );
   };
 
-  // Create a clean, compact card layout for all event statuses
+  // Create a comprehensive card layout showing ALL database fields
   const renderScheduledEventCard = (request: EventRequest) => {
     const eventDate = formatEventDate(request.desiredEventDate);
     const toolkitStatus = getToolkitStatus(request);
@@ -2335,76 +2335,245 @@ export default function EventRequestsManagement() {
         key={request.id}
         className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383] ${highlightedEventId === request.id ? "ring-2 ring-yellow-400" : ""}`}
       >
-        <div className="p-3">
-          {/* Compact Header Row */}
-          <div className="flex items-start justify-between mb-2">
+        <div className="p-4">
+          {/* Header Row with Organization and Status */}
+          <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
-              <h3 className="text-base font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-gray-900">
                 {request.organizationName}
                 {request.department && (
-                  <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                  <span className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
                     {request.department}
                   </span>
                 )}
               </h3>
+              {request.previouslyHosted && request.previouslyHosted !== 'i_dont_know' && (
+                <span className="text-xs text-gray-500">Previously hosted: {request.previouslyHosted}</span>
+              )}
             </div>
             {getStatusDisplay(request.status)}
           </div>
 
-          {/* Two Column Info Grid - Very Compact */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            {/* Left Column */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1">
-                <User className="w-3 h-3 text-gray-400" />
-                <span className="text-gray-700 text-xs">{request.firstName} {request.lastName}</span>
-              </div>
-              {request.email && (
+          {/* Main Information Grid */}
+          <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
+            {/* Contact Information Column */}
+            <div className="space-y-2">
+              <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Contact Info</div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <User className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-700">{request.firstName} {request.lastName}</span>
+                </div>
                 <div className="flex items-center gap-1">
                   <Mail className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-600 text-xs truncate">{request.email}</span>
+                  <span className="text-gray-600 text-xs">{request.email}</span>
                 </div>
-              )}
-              {request.phone && (
-                <div className="flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-600 text-xs">{request.phone}</span>
-                </div>
-              )}
-              {request.eventLocation && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-600 text-xs truncate">{request.eventLocation}</span>
-                </div>
-              )}
+                {(request as any).updatedEmail && (
+                  <div className="flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-green-400" />
+                    <span className="text-gray-600 text-xs">Updated: {(request as any).updatedEmail}</span>
+                  </div>
+                )}
+                {request.phone && (
+                  <div className="flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-gray-400" />
+                    <span className="text-gray-600 text-xs">{request.phone}</span>
+                  </div>
+                )}
+                {(request as any).contactMethod && (
+                  <div className="text-xs text-gray-500">
+                    Preferred: {(request as any).contactMethod}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Right Column */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-[#FBAD3F]" />
-                <span className="font-semibold text-gray-900 text-xs">{eventDate.text}</span>
-              </div>
-              {(request as any).eventStartTime && (
+            {/* Event Details Column */}
+            <div className="space-y-2">
+              <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Event Details</div>
+              <div className="space-y-1">
                 <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-700 text-xs">
-                    {formatEventTime((request as any).eventStartTime)}
-                    {(request as any).eventEndTime && ` - ${formatEventTime((request as any).eventEndTime)}`}
+                  <Calendar className="w-3 h-3 text-[#FBAD3F]" />
+                  <span className="font-semibold text-gray-900">{eventDate.text}</span>
+                </div>
+                {(request as any).eventStartTime && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-gray-400" />
+                    <span className="text-gray-700 text-xs">
+                      Start: {formatEventTime((request as any).eventStartTime)}
+                    </span>
+                  </div>
+                )}
+                {(request as any).eventEndTime && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-gray-400" />
+                    <span className="text-gray-700 text-xs">
+                      End: {formatEventTime((request as any).eventEndTime)}
+                    </span>
+                  </div>
+                )}
+                {(request as any).pickupTime && (
+                  <div className="flex items-center gap-1">
+                    <Truck className="w-3 h-3 text-blue-400" />
+                    <span className="text-gray-700 text-xs">
+                      Pickup: {formatEventTime((request as any).pickupTime)}
+                    </span>
+                  </div>
+                )}
+                {(request as any).eventAddress && (
+                  <div className="flex items-start gap-1">
+                    <MapPin className="w-3 h-3 text-gray-400 mt-0.5" />
+                    <span className="text-gray-600 text-xs">{(request as any).eventAddress}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sandwich & Logistics Column */}
+            <div className="space-y-2">
+              <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Logistics</div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm">🥪</span>
+                  <span className="text-gray-700 font-semibold">
+                    {request.estimatedSandwichCount || "TBD"} sandwiches
                   </span>
                 </div>
-              )}
-              <div className="flex items-center gap-1">
-                <span className="text-xs">🥪</span>
-                <span className="text-gray-700 text-xs font-semibold">
-                  {request.estimatedSandwichCount || "TBD"} sandwiches
-                </span>
+                {(request as any).sandwichTypes && (
+                  <div className="text-xs text-gray-600">
+                    Types: {JSON.stringify((request as any).sandwichTypes)}
+                  </div>
+                )}
+                {request.hasRefrigeration !== null && request.hasRefrigeration !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500">Refrigeration:</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                      request.hasRefrigeration 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {request.hasRefrigeration ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                )}
+                {(request as any).driversNeeded > 0 && (
+                  <div className="text-xs text-gray-600">
+                    Drivers needed: {(request as any).driversNeeded}
+                  </div>
+                )}
+                {(request as any).speakersNeeded > 0 && (
+                  <div className="text-xs text-gray-600">
+                    Speakers needed: {(request as any).speakersNeeded}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Status Badges Row - Very Compact */}
-          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+          {/* TSP Assignments Section */}
+          {((request as any).tspContact || (request as any).additionalContact1 || (request as any).additionalContact2 || (request as any).customTspContact) && (
+            <div className="border-t pt-2 mb-2">
+              <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">TSP Team</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {(request as any).tspContact && (
+                  <div className="flex items-center gap-1">
+                    <User className="w-3 h-3 text-teal-500" />
+                    <span>Primary: {(request as any).tspContact}</span>
+                  </div>
+                )}
+                {(request as any).additionalContact1 && (
+                  <div className="flex items-center gap-1">
+                    <User className="w-3 h-3 text-teal-400" />
+                    <span>Contact 2: {(request as any).additionalContact1}</span>
+                  </div>
+                )}
+                {(request as any).additionalContact2 && (
+                  <div className="flex items-center gap-1">
+                    <User className="w-3 h-3 text-teal-400" />
+                    <span>Contact 3: {(request as any).additionalContact2}</span>
+                  </div>
+                )}
+                {(request as any).customTspContact && (
+                  <div className="col-span-2 text-gray-600">
+                    Custom: {(request as any).customTspContact}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Transportation Section */}
+          {((request as any).transportDriver1 || (request as any).transportDriver2 || (request as any).deliveryDestination || (request as any).overnightStorageRequired) && (
+            <div className="border-t pt-2 mb-2">
+              <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">Transportation</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {(request as any).transportDriver1 && (
+                  <div className="flex items-center gap-1">
+                    <Truck className="w-3 h-3 text-blue-500" />
+                    <span>Driver 1: {(request as any).transportDriver1}</span>
+                  </div>
+                )}
+                {(request as any).transportDriver2 && (
+                  <div className="flex items-center gap-1">
+                    <Truck className="w-3 h-3 text-blue-400" />
+                    <span>Driver 2: {(request as any).transportDriver2}</span>
+                  </div>
+                )}
+                {(request as any).deliveryDestination && (
+                  <div className="col-span-2">
+                    Delivery to: {(request as any).deliveryDestination}
+                  </div>
+                )}
+                {(request as any).overnightStorageRequired && (
+                  <div className="col-span-2 text-orange-600">
+                    ⚠️ Overnight storage at: {(request as any).storageLocation || "TBD"}
+                  </div>
+                )}
+                {(request as any).finalDeliveryMethod && (
+                  <div className="col-span-2">
+                    Method: {(request as any).finalDeliveryMethod}
+                  </div>
+                )}
+                {(request as any).pickupOrganization && (
+                  <div className="col-span-2">
+                    Pickup by: {(request as any).pickupOrganization}
+                  </div>
+                )}
+                {(request as any).finalRecipientOrg && (
+                  <div className="col-span-2">
+                    Final recipient: {(request as any).finalRecipientOrg}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Notes Section */}
+          {(request.message || (request as any).additionalRequirements || (request as any).planningNotes || (request as any).volunteerNotes || (request as any).contactCompletionNotes) && (
+            <div className="border-t pt-2 mb-2">
+              <div className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">Notes</div>
+              <div className="space-y-1 text-xs text-gray-600">
+                {request.message && (
+                  <div><span className="font-medium">Message:</span> {request.message}</div>
+                )}
+                {(request as any).additionalRequirements && (
+                  <div><span className="font-medium">Requirements:</span> {(request as any).additionalRequirements}</div>
+                )}
+                {(request as any).planningNotes && (
+                  <div><span className="font-medium">Planning:</span> {(request as any).planningNotes}</div>
+                )}
+                {(request as any).volunteerNotes && (
+                  <div><span className="font-medium">Volunteers:</span> {(request as any).volunteerNotes}</div>
+                )}
+                {(request as any).contactCompletionNotes && (
+                  <div><span className="font-medium">Contact notes:</span> {(request as any).contactCompletionNotes}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Status Tracking Row */}
+          <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100">
             <div className="flex items-center gap-1">
               <span className="text-xs text-gray-500">Toolkit:</span>
               <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${toolkitStatus.color}`}>
@@ -2417,30 +2586,45 @@ export default function EventRequestsManagement() {
                 {driverStatus.badge}
               </span>
             </div>
-            {request.hasRefrigeration !== null && request.hasRefrigeration !== undefined && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-500">Fridge:</span>
-                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                  request.hasRefrigeration 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-700'
-                }`}>
-                  {request.hasRefrigeration ? '✓' : '✗'}
-                </span>
+            {(request as any).assignedTo && (
+              <div className="text-xs text-gray-500">
+                Assigned to: {(request as any).assignedTo}
               </div>
+            )}
+            {(request as any).contactAttempts > 0 && (
+              <div className="text-xs text-orange-600">
+                Contact attempts: {(request as any).contactAttempts}
+              </div>
+            )}
+            {(request as any).isUnresponsive && (
+              <Badge className="bg-red-100 text-red-700 text-xs">
+                Unresponsive
+              </Badge>
             )}
           </div>
 
-          {/* Action Buttons - Compact */}
-          <div className="flex items-center justify-end gap-2 mt-2">
+          {/* Follow-up Tracking for Completed Events */}
+          {request.status === 'completed' && (
+            <div className="flex items-center gap-3 mt-1 text-xs">
+              {(request as any).followUpOneDayCompleted && (
+                <span className="text-green-600">✓ 1-day follow-up</span>
+              )}
+              {(request as any).followUpOneMonthCompleted && (
+                <span className="text-green-600">✓ 1-month follow-up</span>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 mt-3">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setSelectedEvent(request)}
-              className="text-xs h-7 px-2"
+              className="text-xs"
             >
               <Eye className="w-3 h-3 mr-1" />
-              View
+              View Details
             </Button>
             {canEditEventRequest() && (
               <Button
@@ -2450,7 +2634,7 @@ export default function EventRequestsManagement() {
                   setEditingEventId(request.id);
                   setSelectedEvent(request);
                 }}
-                className="text-xs h-7 px-2"
+                className="text-xs"
               >
                 <Edit className="w-3 h-3 mr-1" />
                 Edit
