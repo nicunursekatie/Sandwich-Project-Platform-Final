@@ -2324,105 +2324,60 @@ export default function EventRequestsManagement() {
     );
   };
 
+  // Create a clean, compact card layout for all event statuses
   const renderScheduledEventCard = (request: EventRequest) => {
-    const getDriverStatus = () => {
-      const driverIds = (request as any).assignedDriverIds || [];
-      const driversNeeded = (request as any).driversNeeded || 0;
-      if (driversNeeded === 0)
-        return { badge: "N/A", color: "bg-gray-100 text-gray-600 border-gray-200" };
-      if (driverIds.length >= driversNeeded)
-        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700 border-green-200" };
-      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F] border-orange-200" };
-    };
-
-    const getToolkitStatus = () => {
-      const status = (request as any).toolkitStatus || "not_sent";
-      switch (status) {
-        case "sent":
-          return { badge: "✓ Delivered", color: "bg-green-100 text-green-700 border-green-200" };
-        case "received_confirmed":
-          return { badge: "✓ Confirmed", color: "bg-green-100 text-green-700 border-green-200" };
-        case "not_needed":
-          return { badge: "N/A", color: "bg-gray-100 text-gray-600 border-gray-200" };
-        case "not_sent":
-          return { badge: "Not Sent", color: "bg-gray-200 text-gray-700 border-gray-300" };
-        default:
-          return {
-            badge: "⚠️ Pending",
-            color: "bg-orange-100 text-[#FBAD3F] border-orange-200",
-          };
-      }
-    };
-
-    const getRefrigerationStatus = () => {
-      if (request.hasRefrigeration === true)
-        return { badge: "✓ Available", color: "bg-green-100 text-green-700" };
-      if (request.hasRefrigeration === false)
-        return { badge: "❌ None", color: "bg-red-100 text-red-700" };
-      return { badge: "❓ Unknown", color: "bg-yellow-100 text-yellow-700" };
-    };
+    const eventDate = formatEventDate(request.desiredEventDate);
+    const toolkitStatus = getToolkitStatus(request);
+    const driverStatus = getDriverStatus(request);
 
     return (
       <Card
         key={request.id}
-        className={`group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-l-4 border-l-teal-500 bg-white overflow-hidden ${highlightedEventId === request.id ? "ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100 shadow-lg" : ""} ${hasPendingChanges(request.id) ? "ring-2 ring-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50" : ""}`}
+        className={`hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#236383] ${highlightedEventId === request.id ? "ring-2 ring-yellow-400" : ""}`}
       >
-        {/* Header Section with improved visual hierarchy */}
-        <CardHeader className="pb-3 bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-2">
-              {/* Organization Name with Department */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-xl font-bold text-gray-900">{request.organizationName}</h3>
+        <div className="p-3">
+          {/* Compact Header Row */}
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-gray-900">
+                {request.organizationName}
                 {request.department && (
-                  <span className="text-sm text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                  <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                     {request.department}
                   </span>
                 )}
-              </div>
-              
-              {/* Event Info Row with Icons */}
-              <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
-                {request.desiredEventDate && (
-                  <div className="flex items-center gap-2 bg-[#FBAD3F] text-white px-3 py-1.5 rounded-lg shadow-sm">
-                    <Calendar className="w-5 h-5" />
-                    <span className="font-bold text-base">{formatEventDate(request.desiredEventDate).text}</span>
-                  </div>
-                )}
-                {(request as any).eventStartTime && (
-                  <div className="flex items-center gap-1.5 text-[#FBAD3F]">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-medium">{formatTime((request as any).eventStartTime)}</span>
-                  </div>
-                )}
-                {(() => {
-                  const summary = getSandwichTypesSummary(request);
-                  return summary.total > 0 ? (
-                    <div className="flex items-center gap-2 bg-[#236383] text-white px-3 py-1.5 rounded-lg shadow-sm">
-                      <Package className="w-5 h-5" />
-                      <span className="font-bold text-base">{summary.total} sandwiches</span>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
+              </h3>
             </div>
-            
-            {/* Status Badge */}
-            <div className="flex-shrink-0">
-              {getStatusDisplay(request.status)}
-            </div>
+            {getStatusDisplay(request.status)}
           </div>
-        </CardHeader>
 
-
-        {/* Body Section with cleaner two-column layout */}
-        <CardContent className="pt-5">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-5">
-            
-            {/* Left Column: Contact & Location */}
-            <div className="space-y-4">
-              {/* Contact Section - Now using extracted component */}
-              <ContactSection request={request} />
+          {/* Two Column Info Grid - Very Compact */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {/* Left Column */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <User className="w-3 h-3 text-gray-400" />
+                <span className="text-gray-700 text-xs">{request.firstName} {request.lastName}</span>
+              </div>
+              {request.email && (
+                <div className="flex items-center gap-1">
+                  <Mail className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-600 text-xs truncate">{request.email}</span>
+                </div>
+              )}
+              {request.phone && (
+                <div className="flex items-center gap-1">
+                  <Phone className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-600 text-xs">{request.phone}</span>
+                </div>
+              )}
+              {request.eventLocation && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-600 text-xs truncate">{request.eventLocation}</span>
+                </div>
+              )}
+            </div>
 
 
 
@@ -2430,535 +2385,88 @@ export default function EventRequestsManagement() {
               <EventLocationSection request={request} />
             </div>
 
-            {/* Right Column: Event Details & Assignments */}
-            <div className="space-y-4">
-              {/* Event Details Section */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
-                <h4 className="font-bold text-gray-700 text-sm mb-3 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Event Planning
-                </h4>
-                <div className="space-y-3">
-                  {/* Sandwich Count */}
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
-                  {editingField === "sandwichTypes" &&
-                  editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.email || request.email}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "email",
-                              tempValues.email || e.target.value,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "email",
-                            tempValues.email,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1 break-all">
-                        {getDisplayValue(request, "email")}
-                      </span>
-                      {canEditField("email") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("email");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              email: getDisplayValue(request, "email"),
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Phone */}
-                <div className="flex items-start space-x-3">
-                  <Phone className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === "phone" && editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={tempValues.phone || request.phone || ""}
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleTrackChange(
-                              request.id,
-                              "phone",
-                              tempValues.phone || e.target.value,
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === "Escape") handleFieldCancel();
-                        }}
-                        placeholder="Enter phone number"
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "phone",
-                            tempValues.phone,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "phone") || "No phone number"}
-                      </span>
-                      {canEditField("phone") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("phone");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              phone: getDisplayValue(request, "phone") || "",
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
+            {/* Right Column */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-[#FBAD3F]" />
+                <span className="font-semibold text-gray-900 text-xs">{eventDate.text}</span>
               </div>
-
-              {/* Event Location Section - Now using extracted component */}
-              <EventLocationSection request={request} />
-            </div>
-
-            {/* Right Column: Event Details & Assignments */}
-            <div className="space-y-4">
-              {/* Event Details Section */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
-                <h4 className="font-bold text-gray-700 text-sm mb-3 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Event Planning
-                </h4>
-                <div className="space-y-3">
-                  {/* Sandwich Count */}
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
-                  {editingField === "sandwichTypes" &&
-                  editingEventId === request.id ? (
-                    <div className="w-full bg-white border rounded-lg p-3 shadow-sm">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            value={tempValues.estimatedSandwichCount || 0}
-                            onChange={(e) => setTempValues(prev => ({ ...prev, estimatedSandwichCount: parseInt(e.target.value) || 0 }))}
-                            className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm text-center"
-                            placeholder="0"
-                          />
-                          <span className="text-sm text-gray-600">sandwiches</span>
-                        </div>
-                        <div>
-                          <Label className="text-sm text-gray-600">Type (optional):</Label>
-                          <select
-                            value={tempValues.sandwichType || 'Unknown'}
-                            onChange={(e) => setTempValues(prev => ({ ...prev, sandwichType: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mt-1"
-                          >
-                            <option value="Unknown">Unknown</option>
-                            <option value="Deli (Turkey, Ham, etc.)">Deli (Turkey, Ham, etc.)</option>
-                            <option value="Turkey">Turkey</option>
-                            <option value="Ham">Ham</option>
-                            <option value="PB&J">PB&J</option>
-                            <option value="Vegetarian">Vegetarian</option>
-                            <option value="Vegan">Vegan</option>
-                            <option value="Gluten-Free">Gluten-Free</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 mt-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            handleTrackChange(request.id, "estimatedSandwichCount", tempValues.estimatedSandwichCount);
-                            handleTrackChange(request.id, "sandwichType", tempValues.sandwichType || 'Unknown');
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }}
-                        >
-                          <Save className="w-4 h-4 mr-1" />
-                          Save Changes
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }}
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {(() => {
-                          const summary = getSandwichTypesSummary(request);
-                          return summary.hasBreakdown ? (
-                            <div>
-                              <span className="font-medium text-[#236383]">{summary.total}</span> sandwiches to be made
-                              <div className="text-xs text-gray-500 mt-1">{summary.breakdown}</div>
-                            </div>
-                          ) : (
-                            <span><span className="font-medium">{summary.total || "Unknown"}</span> sandwiches to be made</span>
-                          );
-                        })()}
-                      </span>
-                      {canEditField("estimatedSandwichCount") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("sandwichTypes");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              estimatedSandwichCount: request.estimatedSandwichCount || 0,
-                              sandwichType: request.sandwichType || 'Unknown'
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
+              {(request as any).eventStartTime && (
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-700 text-xs">
+                    {formatEventTime((request as any).eventStartTime)}
+                    {(request as any).eventEndTime && ` - ${formatEventTime((request as any).eventEndTime)}`}
+                  </span>
                 </div>
-
-                {/* Sandwich Destination Tracker */}
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🚚</span>
-                  {editingField === "deliveryDestination" && editingEventId === request.id ? (
-                    <SandwichDestinationTracker
-                      value={tempValues.deliveryDestination || (request as any).deliveryDestination || ""}
-                      onChange={(value) => 
-                        setTempValues((prev) => ({
-                          ...prev,
-                          deliveryDestination: value,
-                        }))
-                      }
-                      onSave={() => {
-                        handleAutosave(
-                          request.id,
-                          "deliveryDestination",
-                          tempValues.deliveryDestination || "",
-                        );
-                        setEditingField(null);
-                        setEditingEventId(null);
-                        setTempValues({});
-                      }}
-                      onCancel={handleFieldCancel}
-                    />
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        <span className="font-medium text-gray-700">🎯 Sandwich Destination: </span>
-                        <span className={`${(request as any).deliveryDestination ? 'text-green-700 font-medium' : 'text-orange-600 italic'}`}>
-                          {(request as any).deliveryDestination || "⚠️ Not specified"}
-                        </span>
-                      </span>
-                      {canEditField("deliveryDestination") ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-2 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
-                          onClick={() => {
-                            setEditingField("deliveryDestination");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              deliveryDestination: (request as any).deliveryDestination || "",
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Edit Destination
-                        </Button>
-                      ) : (
-                        <div className="text-xs text-gray-400 italic">Edit requires admin permissions</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Planning Notes */}
-                {(request as any).planningNotes && (
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Planning Notes: </span>
-                      <span className="text-gray-600">{(request as any).planningNotes}</span>
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            </div>
-            
-            {/* Refrigeration Section */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
-              <h4 className="font-bold text-blue-700 text-sm mb-3 flex items-center">
-                <span className="text-base mr-2">❄️</span>
-                Refrigeration Status
-              </h4>
-              <div className="flex items-start space-x-3">
-                  <span className="text-gray-500 text-sm mt-1 flex-shrink-0">❄️</span>
-                  {editingField === "refrigeration" &&
-                  editingEventId === request.id ? (
-                    <div className="flex space-x-2 items-center">
-                      <div className="flex space-x-1">
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600 hover:bg-green-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: true,
-                            }))
-                          }
-                        >
-                          ✓ Available
-                        </button>
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600 hover:bg-red-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: false,
-                            }))
-                          }
-                        >
-                          ❌ None
-                        </button>
-                        <button
-                          className={`px-2 py-1 text-xs rounded ${tempValues.refrigeration === null || tempValues.refrigeration === undefined ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600 hover:bg-yellow-50"}`}
-                          onClick={() =>
-                            setTempValues((prev) => ({
-                              ...prev,
-                              refrigeration: null,
-                            }))
-                          }
-                        >
-                          ❓ Unknown
-                        </button>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleTrackChange(
-                            request.id,
-                            "hasRefrigeration",
-                            tempValues.refrigeration,
-                          );
-                          setEditingField(null);
-                          setEditingEventId(null);
-                          setTempValues({});
-                        }}
-                      >
-                        ✓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={handleFieldCancel}
-                      >
-                        ✗
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "hasRefrigeration") === true
-                          ? "✓ Available"
-                          : getDisplayValue(request, "hasRefrigeration") === false
-                            ? "❌ None"
-                            : "❓ Unknown"}
-                      </span>
-                      {canEditField("hasRefrigeration") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                          onClick={() => {
-                            setEditingField("refrigeration");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              refrigeration: getDisplayValue(
-                                request,
-                                "hasRefrigeration",
-                              ),
-                            });
-                          }}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <span className="text-xs">🥪</span>
+                <span className="text-gray-700 text-xs font-semibold">
+                  {request.estimatedSandwichCount || "TBD"} sandwiches
+                </span>
               </div>
             </div>
           </div>
 
-
-              {/* Assignments & Transportation Section - Now using extracted component */}
-              <TransportationSection request={request} />
+          {/* Status Badges Row - Very Compact */}
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500">Toolkit:</span>
+              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${toolkitStatus.color}`}>
+                {toolkitStatus.badge}
+              </span>
             </div>
-
-          {/* Planning Notes Section */}
-          {(request as any).planningNotes && (
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
-              <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                <span className="w-4 h-4 mr-2">📝</span>
-                Planning Notes
-              </h4>
-              <p className="text-sm text-gray-700">
-                {(request as any).planningNotes}
-              </p>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500">Drivers:</span>
+              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${driverStatus.color}`}>
+                {driverStatus.badge}
+              </span>
             </div>
-          )}
-        </CardContent>
+            {request.hasRefrigeration !== null && request.hasRefrigeration !== undefined && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500">Fridge:</span>
+                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                  request.hasRefrigeration 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {request.hasRefrigeration ? '✓' : '✗'}
+                </span>
+              </div>
+            )}
+          </div>
 
-        {/* Footer Section: Enhanced Action Buttons */}
-        <div className="px-4 sm:px-6 pb-4 bg-gradient-to-b from-white to-gray-50 border-t border-gray-100">
-          <div className="flex flex-wrap gap-2 pt-3 sm:pt-4">
-            {hasPermission(user, "EVENT_REQUESTS_EDIT") && (
+          {/* Action Buttons - Compact */}
+          <div className="flex items-center justify-end gap-2 mt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedEvent(request)}
+              className="text-xs h-7 px-2"
+            >
+              <Eye className="w-3 h-3 mr-1" />
+              View
+            </Button>
+            {canEditEventRequest() && (
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
                 onClick={() => {
-                  setDetailsRequest(request);
-                  setShowEventDetailsDialog(true);
+                  setEditingEventId(request.id);
+                  setSelectedEvent(request);
                 }}
-                className="group hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 hover:border-teal-300 hover:shadow-sm transition-all duration-200"
+                className="text-xs h-7 px-2"
               >
-                <Edit className="w-4 h-4 mr-1.5 group-hover:rotate-12 transition-transform" />
-                Edit Details
+                <Edit className="w-3 h-3 mr-1" />
+                Edit
               </Button>
             )}
-
-            {getDisplayValue(request, "email") && hasPermission(user, "EVENT_REQUESTS_EDIT") && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const subject = `Event Planning - ${request.organizationName}`;
-                  const body = `Hello ${request.firstName},\n\nI hope this message finds you well. I'm following up regarding your upcoming event.`;
-                  const emailLink = `mailto:${getDisplayValue(request, "email")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                  window.open(emailLink, "_blank");
-                }}
-                className="group hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 hover:shadow-sm transition-all duration-200"
-              >
-                <Mail className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                Email Contact
-              </Button>
-            )}
-
-            {hasPermission(user, "EVENT_REQUESTS_WORKFLOW") && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setUnresponsiveRequest(request);
-                  setShowUnresponsiveDialog(true);
-                }}
-                className="group hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:border-amber-300 hover:shadow-sm transition-all duration-200"
-              >
-                <AlertTriangle className="w-4 h-4 mr-1.5 group-hover:rotate-12 transition-transform" />
-                Unresponsive
-              </Button>
-            )}
+          </div>
+        </div>
+      </Card>
+    );
+  };
           </div>
         </div>
       </Card>
