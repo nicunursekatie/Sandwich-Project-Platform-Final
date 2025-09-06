@@ -507,6 +507,24 @@ export default function EventRequestsManagement() {
 
   // Organization counts debug logging (removed for production)
 
+  // Helper function to convert military time to 12-hour format
+  const formatTime = (militaryTime: string | null | undefined) => {
+    if (!militaryTime) return "Not specified";
+    
+    try {
+      const [hours, minutes] = militaryTime.split(":");
+      const time = new Date();
+      time.setHours(parseInt(hours), parseInt(minutes));
+      return time.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch {
+      return militaryTime; // Return original if parsing fails
+    }
+  };
+
   // Helper function to get user display name
   const getUserDisplayName = (userId: string | null | undefined) => {
     if (!userId) return "Not specified";
@@ -1901,20 +1919,7 @@ export default function EventRequestsManagement() {
                     <Clock className="w-4 h-4 mr-1" />
                     <span className="font-medium">Starts:</span>
                     <span className="ml-1 font-semibold">
-                      {(() => {
-                        try {
-                          const [hours, minutes] = (request as any).eventStartTime.split(":");
-                          const time = new Date();
-                          time.setHours(parseInt(hours), parseInt(minutes));
-                          return time.toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          });
-                        } catch {
-                          return (request as any).eventStartTime;
-                        }
-                      })()}
+                      {formatTime((request as any).eventStartTime)}
                     </span>
                   </div>
                 )}
@@ -1923,20 +1928,7 @@ export default function EventRequestsManagement() {
                     <Clock className="w-4 h-4 mr-1" />
                     <span className="font-medium">Ends:</span>
                     <span className="ml-1 font-semibold">
-                      {(() => {
-                        try {
-                          const [hours, minutes] = (request as any).eventEndTime.split(":");
-                          const time = new Date();
-                          time.setHours(parseInt(hours), parseInt(minutes));
-                          return time.toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          });
-                        } catch {
-                          return (request as any).eventEndTime;
-                        }
-                      })()}
+                      {formatTime((request as any).eventEndTime)}
                     </span>
                   </div>
                 )}
@@ -1945,20 +1937,7 @@ export default function EventRequestsManagement() {
                     <Truck className="w-4 h-4 mr-1" />
                     <span className="font-medium">Pickup:</span>
                     <span className="ml-1 font-semibold">
-                      {(() => {
-                        try {
-                          const [hours, minutes] = (request as any).pickupTime.split(":");
-                          const time = new Date();
-                          time.setHours(parseInt(hours), parseInt(minutes));
-                          return time.toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          });
-                        } catch {
-                          return (request as any).pickupTime;
-                        }
-                      })()}
+                      {formatTime((request as any).pickupTime)}
                     </span>
                   </div>
                 )}
@@ -2886,7 +2865,7 @@ export default function EventRequestsManagement() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Pickup Time</span>
                     <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                      {(request as any).pickupTime}
+                      {formatTime((request as any).pickupTime)}
                     </span>
                   </div>
                 )}
