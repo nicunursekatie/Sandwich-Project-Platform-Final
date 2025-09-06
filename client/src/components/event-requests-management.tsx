@@ -5526,32 +5526,31 @@ export default function EventRequestsManagement() {
                   />
                 </div>
 
-                {/* Transportation Workflow */}
-                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
-                  <h3 className="text-lg font-semibold text-gray-800">🚛 Transportation Plan</h3>
-                  <p className="text-sm text-gray-600">Many events involve temporary storage at a host location before final delivery</p>
+                {/* Transportation Workflow - Simplified for Initial Contact */}
+                <div className="space-y-4 border rounded-lg p-4 bg-purple-50">
+                  <h3 className="text-lg font-semibold text-purple-800">🚛 Transportation Plan (Initial)</h3>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="storageLocation">Overnight Storage Location (Optional)</Label>
-                      <Input
-                        name="storageLocation"
-                        defaultValue={(selectedRequest as any).storageLocation || ""}
-                        placeholder="Host location for overnight storage"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="finalDeliveryMethod">Final Delivery Method</Label>
+                      <Label htmlFor="finalDeliveryMethod">Delivery Timing</Label>
                       <select
                         name="finalDeliveryMethod"
                         defaultValue={(selectedRequest as any).finalDeliveryMethod || ""}
-                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
                       >
-                        <option value="">Select delivery method</option>
-                        <option value="direct_delivery">Direct from event to recipient</option>
-                        <option value="pickup_by_recipient">Pickup by recipient from storage</option>
-                        <option value="driver_delivery">Driver delivery from storage</option>
+                        <option value="">To be determined</option>
+                        <option value="direct_delivery">Same-day delivery</option>
+                        <option value="driver_delivery">Two-day with storage</option>
+                        <option value="pickup_by_recipient">Pickup from storage</option>
                       </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="storageLocation">Storage Location (if needed)</Label>
+                      <Input
+                        name="storageLocation"
+                        defaultValue={(selectedRequest as any).storageLocation || ""}
+                        placeholder="Host location for overnight"
+                      />
                     </div>
                   </div>
                 </div>
@@ -6319,42 +6318,123 @@ export default function EventRequestsManagement() {
                   />
                 </div>
 
-                {/* Transportation Workflow */}
-                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
-                  <h3 className="text-lg font-semibold text-gray-800">🚛 Transportation Plan</h3>
-                  <p className="text-sm text-gray-600">Many events involve temporary storage at a host location before final delivery</p>
+                {/* Transportation Workflow - Redesigned */}
+                <div className="space-y-4 border rounded-lg p-4 bg-purple-50">
+                  <h3 className="text-lg font-semibold text-purple-800">🚛 Transportation Plan</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="storageLocation">Overnight Storage Location (Optional)</Label>
-                      <Input
-                        name="storageLocation"
-                        value={(detailsRequest as any).storageLocation || ""}
-                        onChange={(e) => setDetailsRequest(prev => ({
-                          ...prev,
-                          storageLocation: e.target.value
-                        }))}
-                        placeholder="Host location for overnight storage"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="finalDeliveryMethod">Final Delivery Method</Label>
-                      <select
-                        name="finalDeliveryMethod"
-                        value={(detailsRequest as any).finalDeliveryMethod || ""}
-                        onChange={(e) => setDetailsRequest(prev => ({
-                          ...prev,
-                          finalDeliveryMethod: e.target.value
-                        }))}
-                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="">Select delivery method</option>
-                        <option value="direct_delivery">Direct from event to recipient</option>
-                        <option value="pickup_by_recipient">Pickup by recipient from storage</option>
-                        <option value="driver_delivery">Driver delivery from storage</option>
-                      </select>
+                  {/* Primary Question */}
+                  <div className="bg-white rounded-lg p-3 border border-purple-200">
+                    <Label className="text-sm font-medium mb-2 block">
+                      Can sandwiches be delivered on the day of the event?
+                    </Label>
+                    <div className="flex gap-3">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="sameDayDelivery"
+                          value="yes"
+                          checked={(detailsRequest as any).finalDeliveryMethod === 'direct_delivery'}
+                          onChange={() => setDetailsRequest(prev => ({
+                            ...prev,
+                            finalDeliveryMethod: 'direct_delivery',
+                            storageLocation: '' // Clear storage if same-day
+                          }))}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Yes - Same day delivery</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="sameDayDelivery"
+                          value="no"
+                          checked={!!((detailsRequest as any).storageLocation || ((detailsRequest as any).finalDeliveryMethod && (detailsRequest as any).finalDeliveryMethod !== 'direct_delivery'))}
+                          onChange={() => setDetailsRequest(prev => ({
+                            ...prev,
+                            finalDeliveryMethod: prev.finalDeliveryMethod === 'direct_delivery' ? '' : prev.finalDeliveryMethod,
+                            storageLocation: prev.storageLocation || ' ' // Set a space to trigger the storage fields
+                          }))}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">No - Need overnight storage</span>
+                      </label>
                     </div>
                   </div>
+
+                  {/* Same-Day Delivery Scenario */}
+                  {(detailsRequest as any).finalDeliveryMethod === 'direct_delivery' && (
+                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                      <h4 className="font-medium text-green-800 text-sm mb-2">Same-Day Delivery Plan</h4>
+                      <p className="text-xs text-gray-600 mb-2">
+                        ✅ 1 driver needed to transport sandwiches directly from event to recipient
+                      </p>
+                      <div className="text-xs text-gray-700">
+                        <span className="font-medium">Destination: </span>
+                        {(detailsRequest as any).deliveryDestination || 
+                          <span className="text-orange-600">Please specify destination in field above</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Two-Day Process with Storage */}
+                  {((detailsRequest as any).storageLocation || ((detailsRequest as any).finalDeliveryMethod && (detailsRequest as any).finalDeliveryMethod !== 'direct_delivery')) && (
+                    <div className="space-y-3">
+                      {/* Storage Location */}
+                      <div>
+                        <Label htmlFor="storageLocation">Overnight Storage Location</Label>
+                        <Input
+                          name="storageLocation"
+                          value={(detailsRequest as any).storageLocation || ""}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            storageLocation: e.target.value
+                          }))}
+                          placeholder="Host home address for overnight storage"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      {/* Next Day Plan */}
+                      <div>
+                        <Label htmlFor="finalDeliveryMethod">Next Day Delivery Plan</Label>
+                        <select
+                          name="finalDeliveryMethod"
+                          value={(detailsRequest as any).finalDeliveryMethod || ""}
+                          onChange={(e) => setDetailsRequest(prev => ({
+                            ...prev,
+                            finalDeliveryMethod: e.target.value
+                          }))}
+                          className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm mt-1"
+                        >
+                          <option value="">Select next day plan...</option>
+                          <option value="driver_delivery">Driver delivers from storage to recipient</option>
+                          <option value="pickup_by_recipient">Recipient picks up from storage location</option>
+                        </select>
+                      </div>
+
+                      {/* Show summary of two-day plan */}
+                      {(detailsRequest as any).finalDeliveryMethod && (
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                          <h4 className="font-medium text-blue-800 text-sm mb-2">Two-Day Transportation Plan</h4>
+                          <div className="space-y-1 text-xs">
+                            <div>
+                              <span className="font-medium">Day 1:</span> Driver 1 transports from event → {(detailsRequest as any).storageLocation}
+                            </div>
+                            <div>
+                              <span className="font-medium">Day 2:</span> {
+                                (detailsRequest as any).finalDeliveryMethod === 'pickup_by_recipient' 
+                                  ? `Recipient picks up from ${(detailsRequest as any).storageLocation}`
+                                  : `Driver 2 delivers from storage → ${(detailsRequest as any).deliveryDestination || 'destination'}`
+                              }
+                            </div>
+                            <div className="mt-2 text-orange-600 font-medium">
+                              ⚠️ 2 drivers needed for this plan
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Drivers Section */}
