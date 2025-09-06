@@ -2454,8 +2454,8 @@ export default function EventRequestsManagement() {
                       const isPickup = (request as any).finalDeliveryMethod === "pickup_by_recipient";
                       const pickupOrg = (request as any).pickupOrganization;
                       const storageLocation = (request as any).storageLocation;
-                      const driver1 = (request as any).transportDriver1;
-                      const driver2 = (request as any).transportDriver2;
+                      const driver1 = (request as any).transportDriverDay1;
+                      const driver2 = (request as any).transportDriverDay2;
                       const finalRecipient = (request as any).finalRecipientOrg;
                       
                       if (isPickup) {
@@ -2514,7 +2514,7 @@ export default function EventRequestsManagement() {
                             )}
                           </div>
                         );
-                      } else if (driver1 || (request as any).finalDeliveryMethod === "direct_delivery") {
+                      } else if ((request as any).finalDeliveryMethod === "direct_delivery") {
                         return (
                           <div className="space-y-2">
                             <div className="flex items-start space-x-3">
@@ -2529,6 +2529,14 @@ export default function EventRequestsManagement() {
                                 <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
                                 <div className="text-xs text-gray-600">
                                   <span className="font-medium">Driver:</span> {getUserDisplayName(driver1)}
+                                </div>
+                              </div>
+                            )}
+                            {finalRecipient && (
+                              <div className="flex items-start space-x-3 ml-4">
+                                <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
+                                <div className="text-xs text-gray-600">
+                                  <span className="font-medium">Deliver to:</span> {finalRecipient}
                                 </div>
                               </div>
                             )}
@@ -6381,13 +6389,13 @@ export default function EventRequestsManagement() {
                   {/* Show different fields based on selection */}
                   {(detailsRequest as any).overnightStorageRequired === false && (detailsRequest as any).finalDeliveryMethod !== "pickup_by_recipient" && (
                     <div>
-                      <Label htmlFor="transportDriver1">Driver for Direct Delivery</Label>
+                      <Label htmlFor="transportDriverDay1">Driver for Direct Delivery</Label>
                       <Input
-                        name="transportDriver1"
-                        value={(detailsRequest as any).transportDriver1 || ""}
+                        name="transportDriverDay1"
+                        value={(detailsRequest as any).transportDriverDay1 || ""}
                         onChange={(e) => setDetailsRequest(prev => ({
                           ...prev,
-                          transportDriver1: e.target.value
+                          transportDriverDay1: e.target.value
                         }))}
                         placeholder="Driver name or assignment"
                       />
@@ -6409,25 +6417,25 @@ export default function EventRequestsManagement() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="transportDriver1">Driver for Day 1 (Event → Storage)</Label>
+                        <Label htmlFor="transportDriverDay1">Driver for Day 1 (Event → Storage)</Label>
                         <Input
-                          name="transportDriver1"
-                          value={(detailsRequest as any).transportDriver1 || ""}
+                          name="transportDriverDay1"
+                          value={(detailsRequest as any).transportDriverDay1 || ""}
                           onChange={(e) => setDetailsRequest(prev => ({
                             ...prev,
-                            transportDriver1: e.target.value
+                            transportDriverDay1: e.target.value
                           }))}
                           placeholder="Driver name for event pickup"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="transportDriver2">Driver for Day 2 (Storage → Recipient)</Label>
+                        <Label htmlFor="transportDriverDay2">Driver for Day 2 (Storage → Recipient)</Label>
                         <Input
-                          name="transportDriver2"
-                          value={(detailsRequest as any).transportDriver2 || ""}
+                          name="transportDriverDay2"
+                          value={(detailsRequest as any).transportDriverDay2 || ""}
                           onChange={(e) => setDetailsRequest(prev => ({
                             ...prev,
-                            transportDriver2: e.target.value
+                            transportDriverDay2: e.target.value
                           }))}
                           placeholder="Driver name for final delivery"
                         />
