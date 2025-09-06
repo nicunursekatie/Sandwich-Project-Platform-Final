@@ -3096,7 +3096,7 @@ export default function EventRequestsManagement() {
         {/* Event Request Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-6 lg:grid-cols-7">
+            <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-5 lg:grid-cols-5">
               <TabsTrigger value="need_follow_up" className="text-xs">
                 Need Follow-up
                 {filteredRequests.filter(req => 
@@ -3113,22 +3113,16 @@ export default function EventRequestsManagement() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="followed_up" className="text-xs">
-                Followed Up
-                {filteredRequests.filter(req => req.status === "contacted").length > 0 && (
-                  <Badge variant="secondary" className="ml-1 bg-yellow-100 text-yellow-700 text-xs">
-                    {filteredRequests.filter(req => req.status === "contacted").length}
-                  </Badge>
-                )}
-              </TabsTrigger>
               <TabsTrigger value="in_process" className="text-xs">
                 In Process
                 {filteredRequests.filter(req => 
+                  req.status === "contacted" ||
                   req.status === "confirmed" || 
                   req.status === "planning"
                 ).length > 0 && (
                   <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700 text-xs">
                     {filteredRequests.filter(req => 
+                      req.status === "contacted" ||
                       req.status === "confirmed" || 
                       req.status === "planning"
                     ).length}
@@ -3158,9 +3152,6 @@ export default function EventRequestsManagement() {
                     {closedEventsCount}
                   </Badge>
                 )}
-              </TabsTrigger>
-              <TabsTrigger value="forecast" className="text-xs">
-                Weekly Forecast
               </TabsTrigger>
             </TabsList>
           </div>
@@ -3199,37 +3190,22 @@ export default function EventRequestsManagement() {
             </div>
           </TabsContent>
 
-          <TabsContent value="followed_up">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Events Followed Up ({filteredRequests.filter(req => req.status === "contacted").length})
-                </h3>
-              </div>
-              {filteredRequests.filter(req => req.status === "contacted").length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <p className="text-gray-500">
-                      No followed up events found.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {filteredRequests.filter(req => req.status === "contacted").map((request) => renderEventCard(request))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
           <TabsContent value="in_process">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Events In Process ({filteredRequests.filter(req => req.status === "confirmed" || req.status === "planning").length})
+                  Events In Process ({filteredRequests.filter(req => 
+                    req.status === "contacted" ||
+                    req.status === "confirmed" || 
+                    req.status === "planning"
+                  ).length})
                 </h3>
               </div>
-              {filteredRequests.filter(req => req.status === "confirmed" || req.status === "planning").length === 0 ? (
+              {filteredRequests.filter(req => 
+                req.status === "contacted" ||
+                req.status === "confirmed" || 
+                req.status === "planning"
+              ).length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-8">
                     <p className="text-gray-500">No in process events found.</p>
@@ -3237,7 +3213,11 @@ export default function EventRequestsManagement() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {filteredRequests.filter(req => req.status === "confirmed" || req.status === "planning").map((request) => renderEventCard(request))}
+                  {filteredRequests.filter(req => 
+                    req.status === "contacted" ||
+                    req.status === "confirmed" || 
+                    req.status === "planning"
+                  ).map((request) => renderEventCard(request))}
                 </div>
               )}
             </div>
@@ -3431,10 +3411,25 @@ export default function EventRequestsManagement() {
             </div>
           </TabsContent>
 
-          <TabsContent value="forecast">
-            <WeeklyForecast />
-          </TabsContent>
         </Tabs>
+
+        {/* Weekly Forecast - Separate from Event Tabs */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2 text-[#236383]" />
+                Weekly Planning Forecast
+              </CardTitle>
+              <CardDescription>
+                Overview of upcoming events and resource planning needs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WeeklyForecast />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </TooltipProvider>
   );
