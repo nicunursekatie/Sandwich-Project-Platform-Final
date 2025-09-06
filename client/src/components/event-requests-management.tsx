@@ -2501,17 +2501,12 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Refrigeration Section */}
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Planning Notes: </span>
-                      <span className="text-gray-600">{(request as any).planningNotes}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Refrigeration */}
-                <div className="flex items-start space-x-3">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
+              <h4 className="font-bold text-blue-700 text-sm mb-3 flex items-center">
+                <span className="text-base mr-2">❄️</span>
+                Refrigeration Status
+              </h4>
+              <div className="flex items-start space-x-3">
                   <span className="text-gray-500 text-sm mt-1 flex-shrink-0">❄️</span>
                   {editingField === "refrigeration" &&
                   editingEventId === request.id ? (
@@ -2610,6 +2605,7 @@ export default function EventRequestsManagement() {
                 </div>
               </div>
             </div>
+          </div>
 
 
             {/* Right Column: Status & Assignments */}
