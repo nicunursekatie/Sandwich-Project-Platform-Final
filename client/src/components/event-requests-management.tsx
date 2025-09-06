@@ -2453,6 +2453,7 @@ export default function EventRequestsManagement() {
                 </div>
               </div>
             </div>
+          </div>
 
             {/* Center Column: Event Logistics */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
