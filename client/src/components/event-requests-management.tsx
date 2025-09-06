@@ -2373,22 +2373,25 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
 
-                {/* Event Address */}
-                {(request as any).eventAddress && (
+                {/* Planning Notes */}
+                {(request as any).planningNotes && (
                   <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📍</span>
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Event Location: </span>
-                      <span className="text-gray-600">{(request as any).eventAddress}</span>
+                      <span className="font-medium text-gray-700">Planning Notes: </span>
+                      <span className="text-gray-600">{(request as any).planningNotes}</span>
                     </div>
                   </div>
                 )}
 
-                {/* Transportation Plan Section - New Workflow */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-                  <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
-                    🚛 Transportation Plan
-                  </h5>
+              </div>
+            </div>
+            
+            {/* Transportation Plan Section */}
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <h5 className="font-semibold text-purple-800 text-sm mb-3 flex items-center">
+                🚛 Transportation Plan
+              </h5>
                   <div className="space-y-2">
                     {(() => {
                       const hasOvernightStorage = (request as any).overnightStorageRequired;
@@ -2494,11 +2497,10 @@ export default function EventRequestsManagement() {
                         );
                       }
                     })()}
-                  </div>
-                </div>
+              </div>
+            </div>
 
-                {/* Planning Notes */}
-                {(request as any).planningNotes && (
+            {/* Refrigeration Section */}
                   <div className="flex items-start space-x-3">
                     <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
                     <div className="text-sm text-gray-600">
