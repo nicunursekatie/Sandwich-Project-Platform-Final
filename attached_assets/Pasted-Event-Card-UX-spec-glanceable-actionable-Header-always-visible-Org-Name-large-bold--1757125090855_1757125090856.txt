@@ -1,0 +1,93 @@
+Event Card — UX spec (glanceable, actionable)
+
+Header (always visible)
+	•	[Org Name] — large, bold (e.g., St. Mary’s Church)
+	•	Date & pickup time — chip: Sun • Sep 7 • 1:30 PM
+	•	Sandwich count — chip: 200 sandwiches
+	•	Status chips (left to right):
+	•	Driver: Needed / Driver: Assigned – Luz C. (click to assign/self-assign)
+	•	Speaker: Needed / Speaker: Assigned – Juliet (click to assign/self-assign)
+	•	Van? Yes/No (auto-flag if destination requires van / if assigned driver is van-eligible)
+
+Visual: one line, big title + three compact chips. If any Required chip = Needed, tint the header subtle amber.
+
+Section 1 — “Where & who”
+	•	Event location (link to Maps)
+	•	Primary contact (name, phone/email quick-copy)
+	•	Toolkit status (Delivered / Pending) with resend/mark delivered
+
+Section 2 — “Plan at a glance” (the part people actually need)
+
+A single timeline row with up to two legs:
+	•	Leg 1 (pickup): Pickup @ Event • 1:30 PM
+→ handoff to either:
+	•	Recipient (same-day), or
+	•	Host (Overnight) (name + area)
+	•	Leg 2 (next day) (only if overnight): Next-day delivery → [Recipient] (window/time)
+
+Each node shows: place + window, and a small avatar chip for assigned driver for that leg. If unassigned, chip = “Assign driver”.
+Add a tiny cooler icon if the leg requires coolers; van icon if van-only. (Your team explicitly tracks cooler pain and van eligibility.)
+
+Edit pattern: click any node → modal with structured fields (below). No scrolling around columns to find where to change things.
+
+Section 3 — Actions (primary buttons)
+	•	I’ll Drive (fills current user into the unfilled leg; permission-aware)
+	•	I’ll Speak
+	•	Assign… (admin: pick from list; filters to van-approved if “van” flagged)
+	•	Message group (one-click “connection email/text” to driver ↔ host ↔ recipient)
+
+Section 4 — Planning notes (collapsible)
+	•	Short, timestamped entries. Auto-add system notes like “Driver assigned: Luz (9/5 10:22)”.
+
+⸻
+
+Field model (what the modal edits)
+
+Event basics
+	•	org_name, event_date, pickup_time, location_address, contact_name/phone/email
+
+Counts
+	•	sandwiches_planned (int)
+
+Staffing
+	•	speaker_needed (bool) / speaker_user_id
+	•	driver_leg1_user_id
+	•	driver_leg2_user_id (if overnight)
+	•	van_required (bool); van_eligible_only (derived)
+
+Transport plan
+	•	path_type: same_day | overnight
+	•	leg1: { from: Event, to: Host|Recipient, time_window, coolers_needed (bool) }
+	•	leg2: { from: Host, to: Recipient, date/time_window }  // only if overnight
+
+Destination
+	•	recipient_id (FK) OR free-text recipient_name + address
+	•	host_id (FK) for overnight (or free-text)
+
+This maps cleanly to your two typical flows (same-day vs overnight).
+
+⸻
+
+States & microcopy (so it reads clearly)
+	•	Driver: Needed → red-tinted chip, tooltip “3 days out: auto-assign to Luz if open” (matches your rule).
+	•	Driver: Assigned – Luz C. → neutral chip; hover shows phone; click = reassign.
+	•	Speaker: Needed → amber, “Typical speakers: Juliet/Kim”.
+	•	Plan timeline: if path = overnight, the connector between Leg 1 and Leg 2 shows a moon icon with “Overnight at [Host]”.
+
+⸻
+
+Why this works
+	•	Hierarchy: title/date/count + staffing chips first—what people scan for. Then the transport timeline, which visually encodes the 2-step storage/next-day reality you described.
+	•	Fewer clicks: self-assignment from the card; admins can “Assign” from the same place (no SignUpGenius detour).
+	•	Systematized storage/recipient logic: explicit legs prevent the “lost in texts” problem; the connection action sends the 3-way info automatically.
+
+⸻
+
+Implementation notes for your agent
+	•	Card layout: single column on mobile; two-row header; timeline row uses CSS grid (5 columns: Node–Arrow–Node–(optional)Arrow–Node).
+	•	Chips: small, high-contrast labels with icons; use status color tokens only on “Needed / Missing”.
+	•	Data fetch: include computed fields (driver_needed, speaker_needed, path_type) server-side so the UI stays dumb and fast.
+	•	Permissions: show “I’ll Drive / I’ll Speak” only if role can self-assign; otherwise show “Request to Volunteer”.
+
+⸻
+
