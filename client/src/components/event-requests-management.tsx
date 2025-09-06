@@ -2145,6 +2145,10 @@ export default function EventRequestsManagement() {
                 variant="default" 
                 size="sm"
                 className="bg-[#236383] hover:bg-[#1e5470] text-white"
+                onClick={() => {
+                  // TODO: Add driver self-assignment
+                  console.log("I'll Drive clicked for event:", request.id);
+                }}
               >
                 <Truck className="w-4 h-4 mr-2" />
                 I'll Drive
@@ -2154,6 +2158,10 @@ export default function EventRequestsManagement() {
                 variant="default" 
                 size="sm"
                 className="bg-[#FBAD3F] hover:bg-[#e89d35] text-white"
+                onClick={() => {
+                  // TODO: Add speaker self-assignment
+                  console.log("I'll Speak clicked for event:", request.id);
+                }}
               >
                 <User className="w-4 h-4 mr-2" />
                 I'll Speak
@@ -2163,6 +2171,10 @@ export default function EventRequestsManagement() {
                 variant="outline" 
                 size="sm"
                 className="border-gray-300 hover:bg-gray-50"
+                onClick={() => {
+                  // TODO: Open assignment modal
+                  console.log("Assign clicked for event:", request.id);
+                }}
               >
                 <UserPlus className="w-4 h-4 mr-2" />
                 Assign…
@@ -2172,42 +2184,76 @@ export default function EventRequestsManagement() {
                 variant="outline" 
                 size="sm"
                 className="border-gray-300 hover:bg-gray-50"
+                onClick={() => {
+                  // TODO: Open message group functionality
+                  console.log("Message group clicked for event:", request.id);
+                }}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Message group
               </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                onClick={() => {
+                  // TODO: Toggle edit mode
+                  console.log("Edit mode clicked for event:", request.id);
+                }}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Details
+              </Button>
             </div>
           </div>
           
-          {/* Section 4 - Planning notes (collapsible) */}
+          {/* Section 4 - Planning notes (editable) */}
           <div className="space-y-3">
-            <button 
-              className="flex items-center space-x-2 text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2 hover:text-[#236383] transition-colors"
-              onClick={() => {
-                // Toggle notes visibility - you can implement this state
-              }}
-            >
-              <ChevronRight className="w-4 h-4" />
-              <span>Planning notes</span>
-            </button>
+            <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+              <span className="text-lg font-semibold text-gray-900">Planning Notes</span>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={() => {
+                  // TODO: Implement inline editing for planning notes
+                  console.log("Edit planning notes for event:", request.id);
+                }}
+                className="text-[#236383] hover:bg-[#236383] hover:text-white"
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+            </div>
             
-            {/* Notes content - you can make this collapsible */}
+            {/* Notes content - clickable to edit */}
             <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              {(request as any).planningNotes ? (
-                <div className="text-sm text-gray-700">{(request as any).planningNotes}</div>
-              ) : (
-                <div className="text-sm text-gray-500 italic">No planning notes yet.</div>
-              )}
+              <div 
+                className="text-sm text-gray-700 cursor-pointer hover:bg-gray-100 p-2 rounded border-dashed border-2 border-transparent hover:border-[#236383] transition-all"
+                onClick={() => {
+                  // TODO: Toggle to edit mode
+                  console.log("Click to edit notes for event:", request.id);
+                }}
+              >
+                {(request as any).planningNotes ? (
+                  <div className="whitespace-pre-wrap">{(request as any).planningNotes}</div>
+                ) : (
+                  <div className="text-gray-500 italic">Click to add planning notes...</div>
+                )}
+              </div>
               
-              {/* System notes can be added here */}
+              {/* System notes */}
               <div className="text-xs text-gray-500 border-t border-gray-200 pt-2 mt-2">
                 <div className="space-y-1">
                   {driverIds.length > 0 && (
-                    <div>Driver assigned: {getUserDisplayName(driverIds[0])} (system)</div>
+                    <div>🚗 Driver: {getUserDisplayName(driverIds[0])}</div>
                   )}
                   {speakerIds.length > 0 && (
-                    <div>Speaker assigned: {getUserDisplayName(speakerIds[0])} (system)</div>
+                    <div>🎤 Speaker: {getUserDisplayName(speakerIds[0])}</div>
                   )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    Last updated: {request.updatedAt ? formatDate(request.updatedAt) : 'Never'}
+                  </div>
                 </div>
               </div>
             </div>
