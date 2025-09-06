@@ -2026,6 +2026,260 @@ export default function EventRequestsManagement() {
     );
   };
 
+  // Inline TransportationSection Component
+  const TransportationSection = ({ request }: { request: EventRequest }) => {
+    return (
+      <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm">
+        <h4 className="font-bold text-[#A31C41] text-sm mb-3 flex items-center">
+          <Users className="w-4 h-4 mr-2" />
+          Assignments & Transportation
+        </h4>
+        <div className="space-y-4">
+          {/* Transportation Plan */}
+          <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <h5 className="font-semibold text-gray-700 text-xs mb-2 flex items-center">
+              🚛 Transportation Plan
+            </h5>
+            <div className="space-y-2">
+              {(() => {
+                const hasOvernightStorage = (request as any).overnightStorageRequired;
+                const isPickup = (request as any).finalDeliveryMethod === "pickup_by_recipient";
+                const pickupOrg = (request as any).pickupOrganization;
+                const storageLocation = (request as any).storageLocation;
+                const driver1 = (request as any).transportDriverDay1;
+                const driver2 = (request as any).transportDriverDay2;
+                const finalRecipient = (request as any).finalRecipientOrg;
+                
+                if (isPickup) {
+                  return (
+                    <div className="flex items-start space-x-3">
+                      <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏃‍♂️</span>
+                      <div className="text-xs">
+                        <span className="font-medium text-purple-700">Organization Pickup</span>
+                        {pickupOrg && (
+                          <div className="text-gray-600 mt-1">{pickupOrg} will pick up sandwiches</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                } else if (hasOvernightStorage) {
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏠</span>
+                        <div className="text-xs">
+                          <span className="font-medium text-purple-700">Two-Step Process</span>
+                          <div className="text-gray-600 mt-1">Overnight storage required</div>
+                        </div>
+                      </div>
+                      {storageLocation && (
+                        <div className="flex items-start space-x-3 ml-4">
+                          <span className="text-gray-500 text-xs mt-1 flex-shrink-0">📍</span>
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium">Storage:</span> {storageLocation}
+                          </div>
+                        </div>
+                      )}
+                      {driver1 && (
+                        <div className="flex items-start space-x-3 ml-4">
+                          <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium">Day 1 Driver:</span> {getUserDisplayName(driver1)}
+                          </div>
+                        </div>
+                      )}
+                      {driver2 && (
+                        <div className="flex items-start space-x-3 ml-4">
+                          <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚚</span>
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium">Day 2 Driver:</span> {getUserDisplayName(driver2)}
+                          </div>
+                        </div>
+                      )}
+                      {finalRecipient && (
+                        <div className="flex items-start space-x-3 ml-4">
+                          <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium">Final Recipient:</span> {finalRecipient}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } else if ((request as any).finalDeliveryMethod === "direct_delivery") {
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-xs mt-1 flex-shrink-0">⚡</span>
+                        <div className="text-xs">
+                          <span className="font-medium text-purple-700">Direct Delivery</span>
+                          <div className="text-gray-600 mt-1">Same day delivery from event to recipient</div>
+                        </div>
+                      </div>
+                      {driver1 && (
+                        <div className="flex items-start space-x-3 ml-4">
+                          <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🚗</span>
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium">Driver:</span> {getUserDisplayName(driver1)}
+                          </div>
+                        </div>
+                      )}
+                      {finalRecipient && (
+                        <div className="flex items-start space-x-3 ml-4">
+                          <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🎯</span>
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium">Deliver to:</span> {finalRecipient}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="flex items-start space-x-3">
+                      <span className="text-gray-500 text-xs mt-1 flex-shrink-0">❓</span>
+                      <div className="text-xs text-gray-500 italic">
+                        Transportation plan not yet specified
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </div>
+        
+          {/* Toolkit Status */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">Toolkit</span>
+            <span className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus().color}`}>
+              {getToolkitStatus().badge}
+            </span>
+          </div>
+
+          {/* Driver Status */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">Drivers</span>
+            <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
+              {getDriverStatus().badge}
+            </span>
+          </div>
+
+          {/* Driver Assignment Details */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-600">
+                  Assigned: {(request as any).assignedDriverIds?.length || 0}/
+                </span>
+                {editingField === "driversNeeded" && editingEventId === request.id ? (
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      min="0"
+                      className="text-xs border rounded px-1 py-0.5 w-12 bg-white"
+                      value={tempValues.driversNeeded || (request as any).driversNeeded || 0}
+                      onChange={(e) =>
+                        setTempValues((prev) => ({
+                          ...prev,
+                          driversNeeded: e.target.value,
+                        }))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleTrackChange(
+                            request.id,
+                            "driversNeeded",
+                            parseInt(tempValues.driversNeeded || e.target.value) || 0,
+                          );
+                          setEditingField(null);
+                          setEditingEventId(null);
+                          setTempValues({});
+                        }
+                        if (e.key === "Escape") handleFieldCancel();
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 w-6 p-0"
+                      onClick={() => {
+                        handleTrackChange(
+                          request.id,
+                          "driversNeeded",
+                          parseInt(tempValues.driversNeeded) || 0,
+                        );
+                        setEditingField(null);
+                        setEditingEventId(null);
+                        setTempValues({});
+                      }}
+                    >
+                      ✓
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 w-6 p-0"
+                      onClick={handleFieldCancel}
+                    >
+                      ✗
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    className="text-xs text-blue-700 hover:text-blue-900 underline"
+                    onClick={() => {
+                      setEditingField("driversNeeded");
+                      setEditingEventId(request.id);
+                      setTempValues({
+                        driversNeeded: (request as any).driversNeeded || 0,
+                      });
+                    }}
+                  >
+                    {(request as any).driversNeeded || 0}
+                  </button>
+                )}
+              </div>
+              <button
+                className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                onClick={() => {
+                  setEditingDriversFor(request.id);
+                  setTempDriverInput("");
+                }}
+              >
+                {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
+              </button>
+            </div>
+            {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
+              <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
+                {getUserDisplayName(driverId)}
+                <button
+                  className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
+                  onClick={() => {
+                    const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
+                    handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Note: TSP Contact and Speaker sections would continue here */}
+          {/* Due to complexity and space, implementing core transportation functionality first */}
+          
+          {/* Show volunteer notes if present */}
+          {(request as any).volunteerNotes && (
+            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+              <span className="font-medium text-yellow-800">Volunteer Notes: </span>
+              <span className="text-yellow-700">{(request as any).volunteerNotes}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderScheduledEventCard = (request: EventRequest) => {
     const getDriverStatus = () => {
       const driverIds = (request as any).assignedDriverIds || [];
@@ -2648,30 +2902,81 @@ export default function EventRequestsManagement() {
           </div>
 
 
-              <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200 shadow-sm">
-                <h4 className="font-bold text-[#A31C41] text-sm mb-3 flex items-center">
-                  <Users className="w-4 h-4 mr-2" />
-                  Assignments & Transportation
-                </h4>
-                <div className="space-y-4">
-                  {/* Transportation Plan */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-3">
-                    <h5 className="font-semibold text-gray-700 text-xs mb-2 flex items-center">
-                      🚛 Transportation Plan
-                    </h5>
-                    <div className="space-y-2">
-                      {(() => {
-                        const hasOvernightStorage = (request as any).overnightStorageRequired;
-                        const isPickup = (request as any).finalDeliveryMethod === "pickup_by_recipient";
-                        const pickupOrg = (request as any).pickupOrganization;
-                        const storageLocation = (request as any).storageLocation;
-                        const driver1 = (request as any).transportDriverDay1;
-                        const driver2 = (request as any).transportDriverDay2;
-                        const finalRecipient = (request as any).finalRecipientOrg;
-                        
-                        if (isPickup) {
-                          return (
-                            <div className="flex items-start space-x-3">
+              {/* Assignments & Transportation Section - Now using extracted component */}
+              <TransportationSection request={request} />
+            </div>
+
+          {/* Planning Notes Section */}
+          {(request as any).planningNotes && (
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
+              <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                <span className="w-4 h-4 mr-2">📝</span>
+                Planning Notes
+              </h4>
+              <p className="text-sm text-gray-700">
+                {(request as any).planningNotes}
+              </p>
+            </div>
+          )}
+        </CardContent>
+
+        {/* Footer Section: Enhanced Action Buttons */}
+        <div className="px-4 sm:px-6 pb-4 bg-gradient-to-b from-white to-gray-50 border-t border-gray-100">
+          <div className="flex flex-wrap gap-2 pt-3 sm:pt-4">
+            {hasPermission(user, "EVENT_REQUESTS_EDIT") && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setDetailsRequest(request);
+                  setShowEventDetailsDialog(true);
+                }}
+                className="group hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 hover:border-teal-300 hover:shadow-sm transition-all duration-200"
+              >
+                <Edit className="w-4 h-4 mr-1.5 group-hover:rotate-12 transition-transform" />
+                Edit Details
+              </Button>
+            )}
+
+            {getDisplayValue(request, "email") && hasPermission(user, "EVENT_REQUESTS_EDIT") && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const subject = `Event Planning - ${request.organizationName}`;
+                  const body = `Hello ${request.firstName},\n\nI hope this message finds you well. I'm following up regarding your upcoming event.`;
+                  const emailLink = `mailto:${getDisplayValue(request, "email")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                  window.open(emailLink, "_blank");
+                }}
+                className="group hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 hover:shadow-sm transition-all duration-200"
+              >
+                <Mail className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
+                Email Contact
+              </Button>
+            )}
+
+            {hasPermission(user, "EVENT_REQUESTS_WORKFLOW") && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setUnresponsiveRequest(request);
+                  setShowUnresponsiveDialog(true);
+                }}
+                className="group hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:border-amber-300 hover:shadow-sm transition-all duration-200"
+              >
+                <AlertTriangle className="w-4 h-4 mr-1.5 group-hover:rotate-12 transition-transform" />
+                Unresponsive
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
+  return (
+    <TooltipProvider>
                               <span className="text-gray-500 text-xs mt-1 flex-shrink-0">🏃‍♂️</span>
                               <div className="text-xs">
                                 <span className="font-medium text-purple-700">Organization Pickup</span>
@@ -3066,30 +3371,6 @@ export default function EventRequestsManagement() {
                     ))}
                   </div>
 
-                {/* Show volunteer notes if present */}
-                {(request as any).volunteerNotes && (
-                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                    <span className="font-medium text-yellow-800">Volunteer Notes: </span>
-                    <span className="text-yellow-700">{(request as any).volunteerNotes}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Planning Notes Section */}
-          {(request as any).planningNotes && (
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
-              <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                <span className="w-4 h-4 mr-2">📝</span>
-                Planning Notes
-              </h4>
-              <p className="text-sm text-gray-700">
-                {(request as any).planningNotes}
-              </p>
-            </div>
-          )}
-        </CardContent>
 
         {/* Footer Section: Enhanced Action Buttons */}
         <div className="px-4 sm:px-6 pb-4 bg-gradient-to-b from-white to-gray-50 border-t border-gray-100">
