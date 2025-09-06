@@ -2252,7 +2252,7 @@ export default function EventRequestsManagement() {
                     <div>🎤 Speaker: {getUserDisplayName(speakerIds[0])}</div>
                   )}
                   <div className="text-xs text-gray-400 mt-1">
-                    Last updated: {request.updatedAt ? formatDate(request.updatedAt) : 'Never'}
+                    Last updated: {request.updatedAt ? formatEventDate(request.updatedAt) : 'Never'}
                   </div>
                 </div>
               </div>
