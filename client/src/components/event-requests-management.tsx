@@ -2379,12 +2379,6 @@ export default function EventRequestsManagement() {
               )}
             </div>
 
-
-
-              {/* Event Location Section - Now using extracted component */}
-              <EventLocationSection request={request} />
-            </div>
-
             {/* Right Column */}
             <div className="space-y-1">
               <div className="flex items-center gap-1">
@@ -2462,11 +2456,6 @@ export default function EventRequestsManagement() {
                 Edit
               </Button>
             )}
-          </div>
-        </div>
-      </Card>
-    );
-  };
           </div>
         </div>
       </Card>
@@ -2666,16 +2655,12 @@ export default function EventRequestsManagement() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Events Needing Follow-up ({filteredRequests.filter(req => 
-                    req.status === "initial_contact" || 
-                    req.status === "pending" || 
-                    req.status === "follow_up_needed"
+                    req.status === "new"
                   ).length})
                 </h3>
               </div>
               {filteredRequests.filter(req => 
-                req.status === "initial_contact" || 
-                req.status === "pending" || 
-                req.status === "follow_up_needed"
+                req.status === "new"
               ).length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-8">
@@ -2685,9 +2670,7 @@ export default function EventRequestsManagement() {
               ) : (
                 <div className="space-y-4">
                   {filteredRequests.filter(req => 
-                    req.status === "initial_contact" || 
-                    req.status === "pending" || 
-                    req.status === "follow_up_needed"
+                    req.status === "new"
                   ).map((request) => renderEventCard(request))}
                 </div>
               )}
@@ -2699,16 +2682,16 @@ export default function EventRequestsManagement() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Events In Process ({filteredRequests.filter(req => 
-                    req.status === "contacted" ||
-                    req.status === "confirmed" || 
-                    req.status === "planning"
+                    req.status === "followed_up" ||
+                    req.status === "in_process" || 
+                    req.status === "contact_completed"
                   ).length})
                 </h3>
               </div>
               {filteredRequests.filter(req => 
-                req.status === "contacted" ||
-                req.status === "confirmed" || 
-                req.status === "planning"
+                req.status === "followed_up" ||
+                req.status === "in_process" || 
+                req.status === "contact_completed"
               ).length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-8">
@@ -2718,9 +2701,9 @@ export default function EventRequestsManagement() {
               ) : (
                 <div className="space-y-4">
                   {filteredRequests.filter(req => 
-                    req.status === "contacted" ||
-                    req.status === "confirmed" || 
-                    req.status === "planning"
+                    req.status === "followed_up" ||
+                    req.status === "in_process" || 
+                    req.status === "contact_completed"
                   ).map((request) => renderEventCard(request))}
                 </div>
               )}
