@@ -2093,13 +2093,6 @@ export default function EventRequestsManagement() {
               {/* Contact Section - Now using extracted component */}
               <ContactSection request={request} />
 
-              {/* Old contact section (to be removed) */}
-              <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200 shadow-sm">
-                <h4 className="font-bold text-[#236383] text-sm mb-3 flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  Contact Person
-                </h4>
-              <div className="space-y-4">
 
                 {/* Contact Name */}
                 <div className="flex items-start space-x-3">
