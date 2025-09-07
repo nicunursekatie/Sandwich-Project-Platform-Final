@@ -942,15 +942,15 @@ export default function EventRequestsManagement() {
     mutationFn: ({ id, ...data }: any) =>
       apiRequest("PUT", `/api/event-requests/${id}`, data),
     onSuccess: () => {
-      // Don't invalidate cache - we're using optimistic updates
-      // The optimistic update already shows the change immediately
+      // Invalidate cache to refresh UI with latest data
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({
         title: "Event request updated",
         description: "The event request has been updated successfully",
       });
     },
     onError: (error: any) => {
-      // On error, revert the optimistic update by refetching
+      // On error, also refresh to ensure consistent state
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({
         title: "Error updating event request",
@@ -960,30 +960,10 @@ export default function EventRequestsManagement() {
     },
   });
 
-  // Assignment update function with optimistic updates
+  // Assignment update function with reliable cache invalidation
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
     console.log('handleAssignmentUpdate called:', { eventId, field, value });
     
-    // Optimistically update the cache immediately
-    queryClient.setQueryData(["/api/event-requests"], (oldData: any) => {
-      if (!oldData) {
-        console.log('No old data found');
-        return oldData;
-      }
-      
-      const newData = oldData.map((event: any) => {
-        if (event.id === eventId) {
-          const updatedEvent = { ...event, [field]: value };
-          console.log('Updated event:', updatedEvent);
-          return updatedEvent;
-        }
-        return event;
-      });
-      
-      console.log('New data array length:', newData.length);
-      return newData;
-    });
-
     updateMutation.mutate({
       id: eventId,
       [field]: value,
