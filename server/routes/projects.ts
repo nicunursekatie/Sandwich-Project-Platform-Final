@@ -4,27 +4,7 @@ import multer from "multer";
 import path from "path";
 import { storage } from "../storage-wrapper";
 import { sanitizeMiddleware } from "../middleware/sanitizer";
-// Temporary inline schemas until proper schema exports are added
-const insertProjectSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  status: z.string().optional(),
-  priority: z.string().optional()
-});
-
-const insertProjectTaskSchema = z.object({
-  projectId: z.number(),
-  title: z.string(),
-  description: z.string().optional(),
-  status: z.string().optional(),
-  priority: z.string().optional()
-});
-
-const insertProjectCommentSchema = z.object({
-  projectId: z.number(),
-  content: z.string(),
-  authorId: z.string()
-});
+import { insertProjectSchema, insertProjectTaskSchema, insertProjectCommentSchema } from "@shared/schema";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 // Configure multer for file uploads

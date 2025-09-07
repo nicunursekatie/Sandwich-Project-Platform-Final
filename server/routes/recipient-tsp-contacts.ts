@@ -2,20 +2,7 @@ import { Router } from "express";
 import { db } from "../db";
 import { recipientTspContacts, users } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
-// Temporary inline schema until proper schema exports are added
-const insertRecipientTspContactSchema = z.object({
-  recipientId: z.number(),
-  userId: z.string().optional(),
-  userName: z.string().optional(),
-  userEmail: z.string().optional(),
-  contactName: z.string(),
-  contactEmail: z.string().optional(),
-  contactPhone: z.string().optional(),
-  role: z.string().optional(),
-  notes: z.string().optional(),
-  isActive: z.boolean().optional(),
-  isPrimary: z.boolean().optional()
-});
+import { insertRecipientTspContactSchema } from "@shared/schema";
 import { z } from "zod";
 
 import { PERMISSIONS } from "@shared/auth-utils";

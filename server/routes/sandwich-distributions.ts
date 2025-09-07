@@ -1,15 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage-wrapper";
-// Temporary inline schema until proper schema exports are added
-const insertSandwichDistributionSchema = z.object({
-  hostId: z.number(),
-  recipientId: z.number(),
-  sandwichCount: z.number(),
-  distributionDate: z.string(),
-  notes: z.string().optional(),
-  deliveredBy: z.string().optional()
-});
+import { insertSandwichDistributionSchema } from "@shared/schema";
 
 const router = Router();
 

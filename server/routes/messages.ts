@@ -2,14 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage-wrapper";
 import { sanitizeMiddleware } from "../middleware/sanitizer";
-// Temporary inline schema until proper schema exports are added
-const insertMessageSchema = z.object({
-  senderId: z.string(),
-  content: z.string(),
-  contextType: z.string().optional(),
-  contextId: z.string().optional(),
-  replyToId: z.number().optional()
-});
+import { insertMessageSchema } from "@shared/schema";
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 
 const router = Router();
