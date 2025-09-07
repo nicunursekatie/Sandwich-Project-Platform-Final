@@ -2629,14 +2629,39 @@ export class DatabaseStorage implements IStorage {
 
   // Event Request Management Methods
   async getAllEventRequests(): Promise<EventRequest[]> {
-    return await db.select().from(eventRequests).orderBy(desc(eventRequests.createdAt));
+    const results = await db.select().from(eventRequests).orderBy(desc(eventRequests.createdAt));
+    return results.map(this.parseEventRequestJsonFields.bind(this));
   }
 
   async getEventRequest(id: number): Promise<EventRequest | undefined> {
     const [result] = await db.select()
       .from(eventRequests)
       .where(eq(eventRequests.id, id));
-    return result || undefined;
+    return result ? this.parseEventRequestJsonFields(result) : undefined;
+  }
+
+  // Helper method to parse JSON fields back to arrays
+  private parseEventRequestJsonFields(eventRequest: any): EventRequest {
+    const parsed = { ...eventRequest };
+    
+    // Parse JSONB fields from strings back to arrays
+    if (parsed.assignedDriverIds && typeof parsed.assignedDriverIds === 'string') {
+      try {
+        parsed.assignedDriverIds = JSON.parse(parsed.assignedDriverIds);
+      } catch {
+        parsed.assignedDriverIds = [];
+      }
+    }
+    
+    if (parsed.assignedSpeakerIds && typeof parsed.assignedSpeakerIds === 'string') {
+      try {
+        parsed.assignedSpeakerIds = JSON.parse(parsed.assignedSpeakerIds);
+      } catch {
+        parsed.assignedSpeakerIds = [];
+      }
+    }
+    
+    return parsed;
   }
 
   async createEventRequest(insertEventRequest: InsertEventRequest): Promise<EventRequest> {
@@ -2646,19 +2671,19 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .returning();
-    return result;
+    return this.parseEventRequestJsonFields(result);
   }
 
   async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
-    // Handle JSONB fields properly
+    // Handle JSONB fields properly - convert arrays to JSON strings for PostgreSQL
     const processedUpdates = { ...updates };
     
     // Convert array fields to proper JSONB format
     if (processedUpdates.assignedDriverIds !== undefined) {
-      processedUpdates.assignedDriverIds = processedUpdates.assignedDriverIds || [];
+      processedUpdates.assignedDriverIds = JSON.stringify(processedUpdates.assignedDriverIds || []) as any;
     }
     if (processedUpdates.assignedSpeakerIds !== undefined) {
-      processedUpdates.assignedSpeakerIds = processedUpdates.assignedSpeakerIds || [];
+      processedUpdates.assignedSpeakerIds = JSON.stringify(processedUpdates.assignedSpeakerIds || []) as any;
     }
     
     const [result] = await db.update(eventRequests)
@@ -2668,7 +2693,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(eventRequests.id, id))
       .returning();
-    return result || undefined;
+    return result ? this.parseEventRequestJsonFields(result) : undefined;
   }
 
   async deleteEventRequest(id: number): Promise<boolean> {
@@ -2678,17 +2703,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEventRequestsByStatus(status: string): Promise<EventRequest[]> {
-    return await db.select()
+    const results = await db.select()
       .from(eventRequests)
       .where(eq(eventRequests.status, status))
       .orderBy(desc(eventRequests.createdAt));
+    return results.map(this.parseEventRequestJsonFields.bind(this));
   }
 
   async getEventRequestsByOrganization(organizationName: string): Promise<EventRequest[]> {
-    return await db.select()
+    const results = await db.select()
       .from(eventRequests)
       .where(ilike(eventRequests.organizationName, `%${organizationName}%`))
       .orderBy(desc(eventRequests.createdAt));
+    return results.map(this.parseEventRequestJsonFields.bind(this));
   }
 
   async checkOrganizationDuplicates(organizationName: string): Promise<{ exists: boolean; matches: Organization[] }> {
