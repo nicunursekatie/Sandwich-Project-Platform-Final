@@ -15,28 +15,33 @@ import { AuditLogger } from "../audit-logger";
 const router = Router();
 
 // Get complete event details by organization and contact
-router.get("/details/:organizationName/:contactName", isAuthenticated, async (req, res) => {
-  try {
-    const { organizationName, contactName } = req.params;
-    
-    // Get event request matching the organization and contact
-    const allEventRequests = await storage.getAllEventRequests();
-    const eventRequest = allEventRequests.find((request: any) => 
-      request.organizationName === organizationName && 
-      (request.firstName + ' ' + request.lastName) === contactName
-    );
+router.get(
+  "/details/:organizationName/:contactName",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const { organizationName, contactName } = req.params;
 
-    if (!eventRequest) {
-      return res.status(404).json({ error: "Event request not found" });
+      // Get event request matching the organization and contact
+      const allEventRequests = await storage.getAllEventRequests();
+      const eventRequest = allEventRequests.find(
+        (request: any) =>
+          request.organizationName === organizationName &&
+          request.firstName + " " + request.lastName === contactName,
+      );
+
+      if (!eventRequest) {
+        return res.status(404).json({ error: "Event request not found" });
+      }
+
+      // Return complete event details
+      res.json(eventRequest);
+    } catch (error) {
+      console.error("Error fetching event details:", error);
+      res.status(500).json({ error: "Failed to fetch event details" });
     }
-
-    // Return complete event details
-    res.json(eventRequest);
-  } catch (error) {
-    console.error("Error fetching event details:", error);
-    res.status(500).json({ error: "Failed to fetch event details" });
-  }
-});
+  },
+);
 
 // Debug middleware to catch all requests to this router
 router.use((req, res, next) => {
@@ -54,14 +59,17 @@ const logActivity = async (
   res: any,
   permission: string,
   message: string,
-  metadata?: any
+  metadata?: any,
 ) => {
   // Store audit details in res.locals for the activity logger middleware to capture
   if (metadata) {
     res.locals.eventRequestAuditDetails = metadata;
   }
   // Activity logging will be handled by the global middleware
-  console.log(`Activity: ${permission} - ${message}`, metadata ? `(with ${Object.keys(metadata).length} metadata fields)` : '');
+  console.log(
+    `Activity: ${permission} - ${message}`,
+    metadata ? `(with ${Object.keys(metadata).length} metadata fields)` : "",
+  );
 };
 
 // Enhanced audit logging for event request actions
@@ -71,14 +79,14 @@ const logEventRequestAudit = async (
   oldData: any,
   newData: any,
   req: any,
-  additionalContext?: any
+  additionalContext?: any,
 ) => {
   try {
     const context = {
       userId: req.user?.id,
       ipAddress: req.ip || req.connection?.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      sessionId: req.session?.id || req.sessionID
+      userAgent: req.get("User-Agent"),
+      sessionId: req.session?.id || req.sessionID,
     };
 
     // Enhanced logging with action-specific details
@@ -86,21 +94,23 @@ const logEventRequestAudit = async (
       ...newData,
       actionContext: additionalContext || {},
       actionTimestamp: new Date().toISOString(),
-      performedBy: req.user?.email || req.user?.displayName || 'Unknown User'
+      performedBy: req.user?.email || req.user?.displayName || "Unknown User",
     };
 
     await AuditLogger.log(
       action,
-      'event_requests',
+      "event_requests",
       eventId,
       oldData,
       enhancedNewData,
-      context
+      context,
     );
 
-    console.log(`🔍 AUDIT LOG: ${action} on Event ${eventId} by ${req.user?.email}`);
+    console.log(
+      `🔍 AUDIT LOG: ${action} on Event ${eventId} by ${req.user?.email}`,
+    );
   } catch (error) {
-    console.error('Failed to log audit entry:', error);
+    console.error("Failed to log audit entry:", error);
   }
 };
 
@@ -111,112 +121,131 @@ router.get("/assigned", isAuthenticated, async (req, res) => {
     if (!userId) {
       return res.status(400).json({ error: "User ID required" });
     }
-    
+
     const allEventRequests = await storage.getAllEventRequests();
     const users = await storage.getAllUsers();
     const currentUser = users.find((u: any) => u.id === userId);
-    
+
     // Filter event requests assigned to this user via multiple assignment methods
     const assignedEvents = allEventRequests.filter((event: any) => {
       // Method 1: Direct assignment via assignedTo field
       if (event.assignedTo === userId) return true;
-      
+
       // Method 2: TSP contact assignment
-      if (event.tspContact === userId || event.tspContactAssigned === userId) return true;
-      
+      if (event.tspContact === userId || event.tspContactAssigned === userId)
+        return true;
+
       // Method 2b: Additional TSP contacts (check if user email or name appears in additional contacts)
       if (event.additionalTspContacts && currentUser) {
         const additionalContacts = event.additionalTspContacts.toLowerCase();
         const userEmail = currentUser.email.toLowerCase();
-        const userName = currentUser.displayName?.toLowerCase() || '';
-        const userFirstName = currentUser.firstName?.toLowerCase() || '';
-        const userLastName = currentUser.lastName?.toLowerCase() || '';
-        
-        if (additionalContacts.includes(userEmail) || 
-            (userName && additionalContacts.includes(userName)) ||
-            (userFirstName && userLastName && 
-             (additionalContacts.includes(userFirstName) || additionalContacts.includes(userLastName)))) {
+        const userName = currentUser.displayName?.toLowerCase() || "";
+        const userFirstName = currentUser.firstName?.toLowerCase() || "";
+        const userLastName = currentUser.lastName?.toLowerCase() || "";
+
+        if (
+          additionalContacts.includes(userEmail) ||
+          (userName && additionalContacts.includes(userName)) ||
+          (userFirstName &&
+            userLastName &&
+            (additionalContacts.includes(userFirstName) ||
+              additionalContacts.includes(userLastName)))
+        ) {
           return true;
         }
       }
-      
+
       // Method 3: Listed in driver details (check if user's name or email appears in driver details)
       if (event.driverDetails && currentUser) {
         const driverText = event.driverDetails.toLowerCase();
         const userEmail = currentUser.email.toLowerCase();
-        const userName = currentUser.displayName?.toLowerCase() || '';
-        const userFirstName = currentUser.firstName?.toLowerCase() || '';
-        const userLastName = currentUser.lastName?.toLowerCase() || '';
-        
-        if (driverText.includes(userEmail) || 
-            (userName && driverText.includes(userName)) ||
-            (userFirstName && userLastName && 
-             (driverText.includes(userFirstName) || driverText.includes(userLastName)))) {
+        const userName = currentUser.displayName?.toLowerCase() || "";
+        const userFirstName = currentUser.firstName?.toLowerCase() || "";
+        const userLastName = currentUser.lastName?.toLowerCase() || "";
+
+        if (
+          driverText.includes(userEmail) ||
+          (userName && driverText.includes(userName)) ||
+          (userFirstName &&
+            userLastName &&
+            (driverText.includes(userFirstName) ||
+              driverText.includes(userLastName)))
+        ) {
           return true;
         }
       }
-      
+
       // Method 4: Listed in speaker details (check if user's name or email appears in speaker details)
       if (event.speakerDetails && currentUser) {
         const speakerText = event.speakerDetails.toLowerCase();
         const userEmail = currentUser.email.toLowerCase();
-        const userName = currentUser.displayName?.toLowerCase() || '';
-        const userFirstName = currentUser.firstName?.toLowerCase() || '';
-        const userLastName = currentUser.lastName?.toLowerCase() || '';
-        
-        if (speakerText.includes(userEmail) || 
-            (userName && speakerText.includes(userName)) ||
-            (userFirstName && userLastName && 
-             (speakerText.includes(userFirstName) || speakerText.includes(userLastName)))) {
+        const userName = currentUser.displayName?.toLowerCase() || "";
+        const userFirstName = currentUser.firstName?.toLowerCase() || "";
+        const userLastName = currentUser.lastName?.toLowerCase() || "";
+
+        if (
+          speakerText.includes(userEmail) ||
+          (userName && speakerText.includes(userName)) ||
+          (userFirstName &&
+            userLastName &&
+            (speakerText.includes(userFirstName) ||
+              speakerText.includes(userLastName)))
+        ) {
           return true;
         }
       }
-      
+
       return false;
     });
-    
+
     // Add follow-up tracking for past events
     const now = new Date();
     const eventsWithFollowUp = assignedEvents.map((event: any) => {
       let followUpNeeded = false;
-      let followUpReason = '';
-      
-      if (event.status === 'completed' && event.desiredEventDate) {
+      let followUpReason = "";
+
+      if (event.status === "completed" && event.desiredEventDate) {
         try {
           const eventDate = new Date(event.desiredEventDate);
-          const daysSinceEvent = Math.floor((now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
-          
+          const daysSinceEvent = Math.floor(
+            (now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
           // Follow-up needed 1 day after event (if not already done)
           if (daysSinceEvent === 1 && !event.followUpOneDayCompleted) {
             followUpNeeded = true;
-            followUpReason = '1-day follow-up needed';
+            followUpReason = "1-day follow-up needed";
           }
-          
+
           // Follow-up needed 1 month after event (if not already done)
-          if (daysSinceEvent >= 30 && daysSinceEvent <= 32 && !event.followUpOneMonthCompleted) {
+          if (
+            daysSinceEvent >= 30 &&
+            daysSinceEvent <= 32 &&
+            !event.followUpOneMonthCompleted
+          ) {
             followUpNeeded = true;
-            followUpReason = '1-month follow-up needed';
+            followUpReason = "1-month follow-up needed";
           }
         } catch (error) {
-          console.error('Error parsing event date for follow-up:', error);
+          console.error("Error parsing event date for follow-up:", error);
         }
       }
-      
+
       return {
         ...event,
         followUpNeeded,
         followUpReason,
-        assignmentType: getAssignmentType(event, userId, currentUser)
+        assignmentType: getAssignmentType(event, userId, currentUser),
       };
     });
-    
+
     await logActivity(
       req,
       res,
-      "EVENT_REQUESTS_VIEW", 
+      "EVENT_REQUESTS_VIEW",
       `Retrieved ${eventsWithFollowUp.length} assigned event requests`,
     );
-    
+
     res.json(eventsWithFollowUp);
   } catch (error) {
     console.error("Error fetching assigned event requests:", error);
@@ -225,58 +254,75 @@ router.get("/assigned", isAuthenticated, async (req, res) => {
 });
 
 // Helper function to determine assignment type
-function getAssignmentType(event: any, userId: string, currentUser: any): string[] {
+function getAssignmentType(
+  event: any,
+  userId: string,
+  currentUser: any,
+): string[] {
   const types: string[] = [];
-  
-  if (event.assignedTo === userId) types.push('Direct Assignment');
-  if (event.tspContact === userId || event.tspContactAssigned === userId) types.push('TSP Contact');
-  
+
+  if (event.assignedTo === userId) types.push("Direct Assignment");
+  if (event.tspContact === userId || event.tspContactAssigned === userId)
+    types.push("TSP Contact");
+
   // Check additional TSP contacts
   if (event.additionalTspContacts && currentUser) {
     const additionalContacts = event.additionalTspContacts.toLowerCase();
     const userEmail = currentUser.email.toLowerCase();
-    const userName = currentUser.displayName?.toLowerCase() || '';
-    const userFirstName = currentUser.firstName?.toLowerCase() || '';
-    const userLastName = currentUser.lastName?.toLowerCase() || '';
-    
-    if (additionalContacts.includes(userEmail) || 
-        (userName && additionalContacts.includes(userName)) ||
-        (userFirstName && userLastName && 
-         (additionalContacts.includes(userFirstName) || additionalContacts.includes(userLastName)))) {
-      types.push('TSP Contact');
+    const userName = currentUser.displayName?.toLowerCase() || "";
+    const userFirstName = currentUser.firstName?.toLowerCase() || "";
+    const userLastName = currentUser.lastName?.toLowerCase() || "";
+
+    if (
+      additionalContacts.includes(userEmail) ||
+      (userName && additionalContacts.includes(userName)) ||
+      (userFirstName &&
+        userLastName &&
+        (additionalContacts.includes(userFirstName) ||
+          additionalContacts.includes(userLastName)))
+    ) {
+      types.push("TSP Contact");
     }
   }
-  
+
   if (event.driverDetails && currentUser) {
     const driverText = event.driverDetails.toLowerCase();
     const userEmail = currentUser.email.toLowerCase();
-    const userName = currentUser.displayName?.toLowerCase() || '';
-    const userFirstName = currentUser.firstName?.toLowerCase() || '';
-    const userLastName = currentUser.lastName?.toLowerCase() || '';
-    
-    if (driverText.includes(userEmail) || 
-        (userName && driverText.includes(userName)) ||
-        (userFirstName && userLastName && 
-         (driverText.includes(userFirstName) || driverText.includes(userLastName)))) {
-      types.push('Driver');
+    const userName = currentUser.displayName?.toLowerCase() || "";
+    const userFirstName = currentUser.firstName?.toLowerCase() || "";
+    const userLastName = currentUser.lastName?.toLowerCase() || "";
+
+    if (
+      driverText.includes(userEmail) ||
+      (userName && driverText.includes(userName)) ||
+      (userFirstName &&
+        userLastName &&
+        (driverText.includes(userFirstName) ||
+          driverText.includes(userLastName)))
+    ) {
+      types.push("Driver");
     }
   }
-  
+
   if (event.speakerDetails && currentUser) {
     const speakerText = event.speakerDetails.toLowerCase();
     const userEmail = currentUser.email.toLowerCase();
-    const userName = currentUser.displayName?.toLowerCase() || '';
-    const userFirstName = currentUser.firstName?.toLowerCase() || '';
-    const userLastName = currentUser.lastName?.toLowerCase() || '';
-    
-    if (speakerText.includes(userEmail) || 
-        (userName && speakerText.includes(userName)) ||
-        (userFirstName && userLastName && 
-         (speakerText.includes(userFirstName) || speakerText.includes(userLastName)))) {
-      types.push('Speaker');
+    const userName = currentUser.displayName?.toLowerCase() || "";
+    const userFirstName = currentUser.firstName?.toLowerCase() || "";
+    const userLastName = currentUser.lastName?.toLowerCase() || "";
+
+    if (
+      speakerText.includes(userEmail) ||
+      (userName && speakerText.includes(userName)) ||
+      (userFirstName &&
+        userLastName &&
+        (speakerText.includes(userFirstName) ||
+          speakerText.includes(userLastName)))
+    ) {
+      types.push("Speaker");
     }
   }
-  
+
   return types;
 }
 
@@ -328,34 +374,41 @@ router.get(
 // Get organization event counts (completed events only) - MUST BE BEFORE /:id route
 router.get("/organization-counts", isAuthenticated, async (req, res) => {
   try {
-    console.log('🔍 Organization Counts API called by user:', req.user?.email);
-    console.log('🔍 User permissions:', req.user?.permissions);
-    
+    console.log("🔍 Organization Counts API called by user:", req.user?.email);
+    console.log("🔍 User permissions:", req.user?.permissions);
+
     const allEventRequests = await storage.getAllEventRequests();
-    console.log('📊 Total event requests retrieved:', allEventRequests.length);
-    
+    console.log("📊 Total event requests retrieved:", allEventRequests.length);
+
     // Count completed events by organization
     const organizationCounts = new Map();
-    
+
     allEventRequests.forEach((event: any) => {
       // Only count completed events
-      if (event.status === 'completed' && event.organizationName) {
+      if (event.status === "completed" && event.organizationName) {
         const orgName = event.organizationName.trim();
         if (orgName) {
-          organizationCounts.set(orgName, (organizationCounts.get(orgName) || 0) + 1);
+          organizationCounts.set(
+            orgName,
+            (organizationCounts.get(orgName) || 0) + 1,
+          );
         }
       }
     });
-    
+
     // Convert to array and sort by count (descending)
     const sortedCounts = Array.from(organizationCounts.entries())
       .map(([name, count]) => ({ organizationName: name, eventCount: count }))
       .sort((a, b) => b.eventCount - a.eventCount);
-    
-    console.log('📊 Organization counts calculated:', sortedCounts.length, 'organizations');
+
+    console.log(
+      "📊 Organization counts calculated:",
+      sortedCounts.length,
+      "organizations",
+    );
     res.json(sortedCounts);
   } catch (error) {
-    console.error('❌ Error in organization counts API:', error);
+    console.error("❌ Error in organization counts API:", error);
     res.status(500).json({ error: "Failed to fetch organization counts" });
   }
 });
@@ -417,17 +470,17 @@ router.post(
 
       // Enhanced audit logging for create operation
       await logEventRequestAudit(
-        'CREATE',
-        newEventRequest.id?.toString() || 'unknown',
+        "CREATE",
+        newEventRequest.id?.toString() || "unknown",
         null,
         newEventRequest,
         req,
         {
-          action: 'Event Request Created',
+          action: "Event Request Created",
           organizationName: validatedData.organizationName,
           contactName: `${validatedData.firstName} ${validatedData.lastName}`,
-          createdBy: user?.email || user?.displayName || 'Unknown User'
-        }
+          createdBy: user?.email || user?.displayName || "Unknown User",
+        },
       );
 
       await logActivity(
@@ -487,17 +540,19 @@ router.patch(
 
       // Update Google Sheets with the new status
       try {
-        const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
+        const googleSheetsService =
+          getEventRequestsGoogleSheetsService(storage);
         if (googleSheetsService && updatedEventRequest) {
-          const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+          const contactName =
+            `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
           await googleSheetsService.updateEventRequestStatus(
             updatedEventRequest.organizationName,
             contactName,
-            "contact_completed"
+            "contact_completed",
           );
         }
       } catch (error) {
-        console.warn('Failed to update Google Sheets status:', error);
+        console.warn("Failed to update Google Sheets status:", error);
       }
 
       if (!updatedEventRequest) {
@@ -506,20 +561,21 @@ router.patch(
 
       // Enhanced audit logging for contact completion
       await logEventRequestAudit(
-        'PRIMARY_CONTACT_COMPLETED',
+        "PRIMARY_CONTACT_COMPLETED",
         id.toString(),
         originalEvent,
         updatedEventRequest,
         req,
         {
-          action: 'Primary Contact Completed',
+          action: "Primary Contact Completed",
           organizationName: originalEvent.organizationName,
           contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          completedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          completedBy:
+            req.user?.email || req.user?.displayName || "Unknown User",
           communicationMethod: validatedData.communicationMethod,
           estimatedSandwichCount: validatedData.estimatedSandwichCount,
-          statusChange: `${originalEvent.status} → contact_completed`
-        }
+          statusChange: `${originalEvent.status} → contact_completed`,
+        },
       );
 
       await logActivity(
@@ -569,17 +625,19 @@ router.post(
       // Update Google Sheets with the new status if status was provided
       if (updates.status) {
         try {
-          const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
+          const googleSheetsService =
+            getEventRequestsGoogleSheetsService(storage);
           if (googleSheetsService) {
-            const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+            const contactName =
+              `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
             await googleSheetsService.updateEventRequestStatus(
               updatedEventRequest.organizationName,
               contactName,
-              updates.status
+              updates.status,
             );
           }
         } catch (error) {
-          console.warn('Failed to update Google Sheets status:', error);
+          console.warn("Failed to update Google Sheets status:", error);
         }
       }
 
@@ -634,7 +692,10 @@ router.post(
         console.error("Validation error:", error.errors);
         return res
           .status(400)
-          .json({ message: "Invalid event details data", errors: error.errors });
+          .json({
+            message: "Invalid event details data",
+            errors: error.errors,
+          });
       }
       console.error("Error completing event details:", error);
       res.status(500).json({ message: "Failed to complete event details" });
@@ -669,15 +730,17 @@ router.post(
       };
 
       // Both email and call follow-ups should move event to in_process
-      updates.status = 'in_process';
-      if (method === 'call') {
+      updates.status = "in_process";
+      if (method === "call") {
         updates.updatedEmail = updatedEmail;
       }
 
       // Add notes to existing followUpNotes if provided
       if (notes) {
-        const existingNotes = originalEvent?.followUpNotes || '';
-        updates.followUpNotes = existingNotes ? `${existingNotes}\n\n${notes}` : notes;
+        const existingNotes = originalEvent?.followUpNotes || "";
+        updates.followUpNotes = existingNotes
+          ? `${existingNotes}\n\n${notes}`
+          : notes;
       }
 
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
@@ -688,20 +751,23 @@ router.post(
 
       // Enhanced audit logging with detailed context
       await logEventRequestAudit(
-        'FOLLOW_UP_RECORDED',
+        "FOLLOW_UP_RECORDED",
         id.toString(),
         originalEvent,
         updatedEventRequest,
         req,
         {
           followUpMethod: method,
-          followUpAction: method === 'email' ? 'Email Follow-up Sent' : 'Call Follow-up Scheduled',
+          followUpAction:
+            method === "email"
+              ? "Email Follow-up Sent"
+              : "Call Follow-up Scheduled",
           statusChange: `${originalEvent.status} → ${updatedEventRequest.status}`,
           organizationName: originalEvent.organizationName,
           contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
           notes: notes || null,
-          updatedEmail: updatedEmail || null
-        }
+          updatedEmail: updatedEmail || null,
+        },
       );
 
       console.log("Successfully recorded follow-up for:", id);
@@ -748,46 +814,51 @@ router.patch(
       // Update Google Sheets if status was changed
       if (updates.status) {
         try {
-          const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
+          const googleSheetsService =
+            getEventRequestsGoogleSheetsService(storage);
           if (googleSheetsService) {
-            const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+            const contactName =
+              `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
             await googleSheetsService.updateEventRequestStatus(
               updatedEventRequest.organizationName,
               contactName,
-              updates.status
+              updates.status,
             );
           }
         } catch (error) {
-          console.warn('Failed to update Google Sheets status:', error);
+          console.warn("Failed to update Google Sheets status:", error);
         }
       }
 
       // Enhanced audit logging for event details update
       await logEventRequestAudit(
-        'EVENT_DETAILS_UPDATED',
+        "EVENT_DETAILS_UPDATED",
         id.toString(),
         originalEvent,
         updatedEventRequest,
         req,
         {
-          action: 'Event Details Updated',
+          action: "Event Details Updated",
           organizationName: originalEvent.organizationName,
           contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          updatedBy: req.user?.email || req.user?.displayName || "Unknown User",
           updatedFields: Object.keys(updates),
-          statusChange: updates.status ? `${originalEvent.status} → ${updates.status}` : null
-        }
+          statusChange: updates.status
+            ? `${originalEvent.status} → ${updates.status}`
+            : null,
+        },
       );
 
       // Prepare audit details for activity logging
       const auditDetails: any = {};
       for (const [key, newValue] of Object.entries(updates)) {
-        if (key !== 'updatedAt') { // Skip timestamp field
+        if (key !== "updatedAt") {
+          // Skip timestamp field
           const oldValue = (originalEvent as any)[key];
           if (oldValue !== newValue && newValue !== undefined) {
             auditDetails[key] = {
               from: oldValue,
-              to: newValue
+              to: newValue,
             };
           }
         }
@@ -797,8 +868,8 @@ router.patch(
         req,
         res,
         "EVENT_REQUESTS_EDIT",
-        `Updated event request details: ${Object.keys(auditDetails).join(', ')}`,
-        { auditDetails: auditDetails }
+        `Updated event request details: ${Object.keys(auditDetails).join(", ")}`,
+        { auditDetails: auditDetails },
       );
       res.json(updatedEventRequest);
     } catch (error) {
@@ -832,20 +903,67 @@ router.put(
 
       // Process ALL date/timestamp fields to ensure they're proper Date objects
       const processedUpdates = { ...updates };
-      
+
       // Convert timestamp fields that might come as strings to Date objects
       const timestampFields = [
-        'desiredEventDate', 'contactedAt', 'toolkitSentDate', 'duplicateCheckDate',
-        'markedUnresponsiveAt', 'lastContactAttempt', 'nextFollowUpDate',
-        'contactCompletedAt', 'callScheduledAt', 'callCompletedAt'
+        "desiredEventDate",
+        "contactedAt",
+        "toolkitSentDate",
+        "duplicateCheckDate",
+        "markedUnresponsiveAt",
+        "lastContactAttempt",
+        "nextFollowUpDate",
+        "contactCompletedAt",
+        "callScheduledAt",
+        "callCompletedAt",
       ];
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] && typeof processedUpdates[field] === 'string') {
+      timestampFields.forEach((field) => {
+        if (
+          processedUpdates[field] &&
+          typeof processedUpdates[field] === "string"
+        ) {
           try {
             processedUpdates[field] = new Date(processedUpdates[field]);
           } catch (error) {
-            console.error(`Failed to parse date field ${field}:`, processedUpdates[field]);
+            console.error(
+              `Failed to parse date field ${field}:`,
+              processedUpdates[field],
+            );
             delete processedUpdates[field]; // Remove invalid date fields
+          }
+        }
+      });
+      // Process JSONB array fields - ensure they're actual arrays, not strings
+      const jsonbArrayFields = ["assignedDriverIds", "assignedSpeakerIds"];
+      jsonbArrayFields.forEach((field) => {
+        if (processedUpdates[field] !== undefined) {
+          // If it's already an array, leave it alone
+          if (Array.isArray(processedUpdates[field])) {
+            console.log(
+              `${field} is already an array:`,
+              processedUpdates[field],
+            );
+          }
+          // If it's a string that looks like JSON, parse it
+          else if (typeof processedUpdates[field] === "string") {
+            try {
+              const parsed = JSON.parse(processedUpdates[field]);
+              if (Array.isArray(parsed)) {
+                processedUpdates[field] = parsed;
+                console.log(`Parsed ${field} from string to array:`, parsed);
+              }
+            } catch (error) {
+              console.error(
+                `Failed to parse ${field} as JSON:`,
+                processedUpdates[field],
+              );
+              // If it's a single string value, wrap it in an array
+              processedUpdates[field] = [processedUpdates[field]];
+            }
+          }
+          // If it's null or some other type, handle appropriately
+          else if (processedUpdates[field] === null) {
+            processedUpdates[field] = [];
           }
         }
       });
@@ -861,22 +979,22 @@ router.put(
       }
 
       // Determine action type based on changes
-      let actionType = 'EVENT_REQUEST_UPDATED';
+      let actionType = "EVENT_REQUEST_UPDATED";
       let actionContext: any = {
         organizationName: originalEvent.organizationName,
         contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-        fieldsUpdated: Object.keys(processedUpdates)
+        fieldsUpdated: Object.keys(processedUpdates),
       };
 
       // Check for specific status changes
       if (originalEvent.status !== updatedEventRequest.status) {
-        actionType = 'STATUS_CHANGED';
+        actionType = "STATUS_CHANGED";
         actionContext.statusChange = `${originalEvent.status} → ${updatedEventRequest.status}`;
       }
 
       // Check for unresponsive marking
       if (updates.isUnresponsive && !originalEvent.isUnresponsive) {
-        actionType = 'MARKED_UNRESPONSIVE';
+        actionType = "MARKED_UNRESPONSIVE";
         actionContext.unresponsiveReason = updates.unresponsiveReason;
         actionContext.contactMethod = updates.contactMethod;
       }
@@ -888,7 +1006,7 @@ router.put(
         originalEvent,
         updatedEventRequest,
         req,
-        actionContext
+        actionContext,
       );
 
       console.log(
@@ -907,12 +1025,12 @@ router.put(
       console.error("Error details:", {
         message: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
       });
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to update event request",
         error: error.message,
-        details: "Check server logs for full error details"
+        details: "Check server logs for full error details",
       });
     }
   },
@@ -926,7 +1044,7 @@ router.delete(
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Get original data for audit logging before deletion
       const originalEvent = await storage.getEventRequestById(id);
       if (!originalEvent) {
@@ -941,18 +1059,18 @@ router.delete(
 
       // Enhanced audit logging for deletion
       await logEventRequestAudit(
-        'DELETE',
+        "DELETE",
         id.toString(),
         originalEvent,
         null,
         req,
         {
-          action: 'Event Request Deleted',
+          action: "Event Request Deleted",
           organizationName: originalEvent.organizationName,
           contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          deletedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-          deletionReason: 'Manual deletion via UI'
-        }
+          deletedBy: req.user?.email || req.user?.displayName || "Unknown User",
+          deletionReason: "Manual deletion via UI",
+        },
       );
 
       await logActivity(
@@ -997,86 +1115,95 @@ router.post("/check-duplicates", async (req, res) => {
 });
 
 // Get recent audit logs for event requests - useful for tracking specific actions
-router.get("/audit-logs", isAuthenticated, requirePermission("EVENT_REQUESTS_VIEW"), async (req, res) => {
-  try {
-    const { 
-      limit = 50, 
-      offset = 0, 
-      eventId, 
-      action, 
-      userId,
-      hours = 24 
-    } = req.query;
+router.get(
+  "/audit-logs",
+  isAuthenticated,
+  requirePermission("EVENT_REQUESTS_VIEW"),
+  async (req, res) => {
+    try {
+      const {
+        limit = 50,
+        offset = 0,
+        eventId,
+        action,
+        userId,
+        hours = 24,
+      } = req.query;
 
-    // Calculate time filter for recent actions (default last 24 hours)
-    const sinceTime = new Date();
-    sinceTime.setHours(sinceTime.getHours() - parseInt(hours as string));
+      // Calculate time filter for recent actions (default last 24 hours)
+      const sinceTime = new Date();
+      sinceTime.setHours(sinceTime.getHours() - parseInt(hours as string));
 
-    const auditHistory = await AuditLogger.getAuditHistory(
-      'event_requests',
-      eventId as string,
-      userId as string,
-      parseInt(limit as string),
-      parseInt(offset as string)
-    );
+      const auditHistory = await AuditLogger.getAuditHistory(
+        "event_requests",
+        eventId as string,
+        userId as string,
+        parseInt(limit as string),
+        parseInt(offset as string),
+      );
 
-    // Filter for recent actions and enhance with readable context
-    const recentLogs = auditHistory
-      .filter(log => new Date(log.timestamp) > sinceTime)
-      .filter(log => action ? log.action === action : true)
-      .map(log => {
-        let parsedNewData = null;
-        let parsedOldData = null;
-        
-        try {
-          parsedNewData = log.newData ? JSON.parse(log.newData) : null;
-          parsedOldData = log.oldData ? JSON.parse(log.oldData) : null;
-        } catch (e) {
-          // Handle parsing errors gracefully
-        }
+      // Filter for recent actions and enhance with readable context
+      const recentLogs = auditHistory
+        .filter((log) => new Date(log.timestamp) > sinceTime)
+        .filter((log) => (action ? log.action === action : true))
+        .map((log) => {
+          let parsedNewData = null;
+          let parsedOldData = null;
 
-        return {
-          id: log.id,
-          action: log.action,
-          eventId: log.recordId,
-          timestamp: log.timestamp,
-          userId: log.userId,
-          userEmail: parsedNewData?.performedBy || 'Unknown User',
-          organizationName: parsedNewData?.actionContext?.organizationName || 'Unknown',
-          contactName: parsedNewData?.actionContext?.contactName || 'Unknown',
-          actionDescription: getActionDescription(log.action, parsedNewData?.actionContext),
-          details: parsedNewData?.actionContext || null,
-          statusChange: parsedNewData?.actionContext?.statusChange || null,
-          followUpMethod: parsedNewData?.actionContext?.followUpMethod || null
-        };
+          try {
+            parsedNewData = log.newData ? JSON.parse(log.newData) : null;
+            parsedOldData = log.oldData ? JSON.parse(log.oldData) : null;
+          } catch (e) {
+            // Handle parsing errors gracefully
+          }
+
+          return {
+            id: log.id,
+            action: log.action,
+            eventId: log.recordId,
+            timestamp: log.timestamp,
+            userId: log.userId,
+            userEmail: parsedNewData?.performedBy || "Unknown User",
+            organizationName:
+              parsedNewData?.actionContext?.organizationName || "Unknown",
+            contactName: parsedNewData?.actionContext?.contactName || "Unknown",
+            actionDescription: getActionDescription(
+              log.action,
+              parsedNewData?.actionContext,
+            ),
+            details: parsedNewData?.actionContext || null,
+            statusChange: parsedNewData?.actionContext?.statusChange || null,
+            followUpMethod:
+              parsedNewData?.actionContext?.followUpMethod || null,
+          };
+        });
+
+      res.json({
+        logs: recentLogs,
+        total: recentLogs.length,
+        timeRange: `Last ${hours} hours`,
+        filters: { eventId, action, userId },
       });
-
-    res.json({
-      logs: recentLogs,
-      total: recentLogs.length,
-      timeRange: `Last ${hours} hours`,
-      filters: { eventId, action, userId }
-    });
-
-  } catch (error) {
-    console.error("Error fetching audit logs:", error);
-    res.status(500).json({ message: "Failed to fetch audit logs" });
-  }
-});
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  },
+);
 
 // Helper function to generate readable action descriptions
 function getActionDescription(action: string, context: any): string {
   switch (action) {
-    case 'FOLLOW_UP_RECORDED':
-      return `${context?.followUpAction || 'Follow-up recorded'} - ${context?.statusChange || ''}`;
-    case 'STATUS_CHANGED':
-      return `Status changed: ${context?.statusChange || 'Status updated'}`;
-    case 'MARKED_UNRESPONSIVE':
-      return `Marked unresponsive: ${context?.unresponsiveReason || 'No reason provided'}`;
-    case 'EVENT_REQUEST_UPDATED':
-      return `Updated fields: ${context?.fieldsUpdated?.join(', ') || 'Multiple fields'}`;
+    case "FOLLOW_UP_RECORDED":
+      return `${context?.followUpAction || "Follow-up recorded"} - ${context?.statusChange || ""}`;
+    case "STATUS_CHANGED":
+      return `Status changed: ${context?.statusChange || "Status updated"}`;
+    case "MARKED_UNRESPONSIVE":
+      return `Marked unresponsive: ${context?.unresponsiveReason || "No reason provided"}`;
+    case "EVENT_REQUEST_UPDATED":
+      return `Updated fields: ${context?.fieldsUpdated?.join(", ") || "Multiple fields"}`;
     default:
-      return action.replace(/_/g, ' ').toLowerCase();
+      return action.replace(/_/g, " ").toLowerCase();
   }
 }
 
@@ -1351,43 +1478,50 @@ router.patch("/:id/follow-up", isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { followUpType, notes } = req.body;
-    
-    if (!followUpType || !['one_day', 'one_month'].includes(followUpType)) {
-      return res.status(400).json({ error: "Invalid follow-up type. Must be 'one_day' or 'one_month'" });
+
+    if (!followUpType || !["one_day", "one_month"].includes(followUpType)) {
+      return res
+        .status(400)
+        .json({
+          error: "Invalid follow-up type. Must be 'one_day' or 'one_month'",
+        });
     }
-    
+
     const userId = req.user?.id;
     if (!userId) {
       return res.status(400).json({ error: "User ID required" });
     }
-    
+
     const eventRequest = await storage.getEventRequest(id);
     if (!eventRequest) {
       return res.status(404).json({ error: "Event request not found" });
     }
-    
+
     // Prepare update data based on follow-up type
     const updateData: any = {
-      followUpNotes: notes || eventRequest.followUpNotes
+      followUpNotes: notes || eventRequest.followUpNotes,
     };
-    
-    if (followUpType === 'one_day') {
+
+    if (followUpType === "one_day") {
       updateData.followUpOneDayCompleted = true;
       updateData.followUpOneDayDate = new Date();
-    } else if (followUpType === 'one_month') {
+    } else if (followUpType === "one_month") {
       updateData.followUpOneMonthCompleted = true;
       updateData.followUpOneMonthDate = new Date();
     }
-    
-    const updatedEventRequest = await storage.updateEventRequest(id, updateData);
-    
+
+    const updatedEventRequest = await storage.updateEventRequest(
+      id,
+      updateData,
+    );
+
     await logActivity(
       req,
       res,
       "EVENT_REQUESTS_EDIT",
       `Marked ${followUpType} follow-up as completed for event: ${eventRequest.organizationName}`,
     );
-    
+
     res.json(updatedEventRequest);
   } catch (error) {
     console.error("Error marking follow-up as completed:", error);
@@ -1398,9 +1532,9 @@ router.patch("/:id/follow-up", isAuthenticated, async (req, res) => {
 // Get organization event counts (completed events only)
 router.get("/organization-counts", isAuthenticated, async (req, res) => {
   try {
-    console.log('🔍 Organization Counts API called by user:', req.user?.email);
-    console.log('🔍 User permissions:', req.user?.permissions);
-    
+    console.log("🔍 Organization Counts API called by user:", req.user?.email);
+    console.log("🔍 User permissions:", req.user?.permissions);
+
     // Super admins can access this data, and it's general event statistics
     // Remove restrictive permission check for now
     // if (!hasPermission(req.user!, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)) {
@@ -1409,24 +1543,27 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
     // }
 
     const allEventRequests = await storage.getAllEventRequests();
-    console.log('📊 Total event requests retrieved:', allEventRequests.length);
-    
+    console.log("📊 Total event requests retrieved:", allEventRequests.length);
+
     // Count completed events by organization
     const organizationCounts = new Map();
-    
+
     allEventRequests.forEach((event: any) => {
       // Only count completed events
-      if (event.status === 'completed' && event.organizationName) {
+      if (event.status === "completed" && event.organizationName) {
         const orgName = event.organizationName.trim();
         const currentCount = organizationCounts.get(orgName) || 0;
         organizationCounts.set(orgName, currentCount + 1);
-        
+
         // Debug specific organizations
-        if (orgName === 'Volunteer Emory' || orgName === 'Christ the King School (August)') {
-          console.log('🔍 Counting completed event:', {
+        if (
+          orgName === "Volunteer Emory" ||
+          orgName === "Christ the King School (August)"
+        ) {
+          console.log("🔍 Counting completed event:", {
             organization: orgName,
             status: event.status,
-            newCount: currentCount + 1
+            newCount: currentCount + 1,
           });
         }
       }
@@ -1434,7 +1571,7 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
 
     // Convert to object for easier consumption
     const countsObject = Object.fromEntries(organizationCounts);
-    console.log('📈 Final organization counts:', countsObject);
+    console.log("📈 Final organization counts:", countsObject);
 
     // logActivity(
     //   req,
@@ -1442,11 +1579,13 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
     //   PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
     //   `Retrieved event counts for ${organizationCounts.size} organizations`,
     // );
-    
+
     res.json(countsObject);
   } catch (error) {
     console.error("Error fetching organization event counts:", error);
-    res.status(500).json({ message: "Failed to fetch organization event counts" });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch organization event counts" });
   }
 });
 
@@ -1454,7 +1593,7 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
 router.get("/drivers/available", isAuthenticated, async (req, res) => {
   try {
     const allDrivers = await storage.getAllDrivers();
-    
+
     // Filter to only active drivers
     const availableDrivers = allDrivers
       .filter((driver: any) => driver.isActive)
@@ -1468,9 +1607,9 @@ router.get("/drivers/available", isAuthenticated, async (req, res) => {
         hostLocation: driver.hostLocation,
         routeDescription: driver.routeDescription,
         vanApproved: driver.vanApproved,
-        vehicleType: driver.vehicleType
+        vehicleType: driver.vehicleType,
       }));
-    
+
     console.log(`Found ${availableDrivers.length} available drivers`);
     res.json(availableDrivers);
   } catch (error) {
@@ -1483,34 +1622,42 @@ router.get("/drivers/available", isAuthenticated, async (req, res) => {
 router.patch("/:id/drivers", isAuthenticated, async (req, res) => {
   try {
     const eventId = parseInt(req.params.id);
-    const { assignedDriverIds, driverPickupTime, driverNotes, driversArranged } = req.body;
-    
+    const {
+      assignedDriverIds,
+      driverPickupTime,
+      driverNotes,
+      driversArranged,
+    } = req.body;
+
     // Validate that the event exists first
     const existingEvent = await storage.getEventRequestById(eventId);
     if (!existingEvent) {
       return res.status(404).json({ error: "Event request not found" });
     }
-    
+
     // Update the event with driver assignments
     const updateData = {
       assignedDriverIds: assignedDriverIds || [],
       driverPickupTime: driverPickupTime || null,
       driverNotes: driverNotes || null,
-      driversArranged: driversArranged !== undefined ? driversArranged : (assignedDriverIds && assignedDriverIds.length > 0)
+      driversArranged:
+        driversArranged !== undefined
+          ? driversArranged
+          : assignedDriverIds && assignedDriverIds.length > 0,
     };
-    
+
     const updatedEvent = await storage.updateEventRequest(eventId, updateData);
-    
+
     console.log(`Updated driver assignments for event ${eventId}:`, updateData);
-    
+
     // Log activity
     await logActivity(
       req,
       res,
       "update_event_drivers",
-      `Updated driver assignments for event: ${existingEvent.organizationName}`
+      `Updated driver assignments for event: ${existingEvent.organizationName}`,
     );
-    
+
     res.json(updatedEvent);
   } catch (error) {
     console.error("Error updating driver assignments:", error);
@@ -1524,14 +1671,16 @@ router.patch("/:id/drivers", isAuthenticated, async (req, res) => {
 router.get("/:eventId/volunteers", isAuthenticated, async (req, res) => {
   try {
     const eventId = parseInt(req.params.eventId);
-    
+
     if (!eventId || isNaN(eventId)) {
       return res.status(400).json({ error: "Valid event ID required" });
     }
-    
+
     const volunteers = await storage.getEventVolunteersByEventId(eventId);
-    
-    console.log(`Retrieved ${volunteers.length} volunteers for event ${eventId}`);
+
+    console.log(
+      `Retrieved ${volunteers.length} volunteers for event ${eventId}`,
+    );
     res.json(volunteers);
   } catch (error) {
     console.error("Error fetching event volunteers:", error);
@@ -1544,48 +1693,51 @@ router.post("/:eventId/volunteers", isAuthenticated, async (req, res) => {
   try {
     const eventId = parseInt(req.params.eventId);
     const userId = req.user?.id;
-    
+
     if (!eventId || isNaN(eventId)) {
       return res.status(400).json({ error: "Valid event ID required" });
     }
-    
+
     if (!userId) {
       return res.status(400).json({ error: "User authentication required" });
     }
-    
+
     // Validate request body against schema
     const volunteerData = insertEventVolunteerSchema.parse({
       ...req.body,
       eventRequestId: eventId,
-      volunteerUserId: userId
+      volunteerUserId: userId,
     });
-    
+
     // Check if user is already signed up for this event with the same role
-    const existingVolunteers = await storage.getEventVolunteersByEventId(eventId);
-    const alreadySignedUp = existingVolunteers.find(v => 
-      v.volunteerUserId === userId && v.role === volunteerData.role
+    const existingVolunteers =
+      await storage.getEventVolunteersByEventId(eventId);
+    const alreadySignedUp = existingVolunteers.find(
+      (v) => v.volunteerUserId === userId && v.role === volunteerData.role,
     );
-    
+
     if (alreadySignedUp) {
-      return res.status(400).json({ 
-        error: `You are already signed up as a ${volunteerData.role} for this event` 
+      return res.status(400).json({
+        error: `You are already signed up as a ${volunteerData.role} for this event`,
       });
     }
-    
+
     const newVolunteer = await storage.createEventVolunteer(volunteerData);
-    
+
     await logActivity(
       req,
       res,
       "volunteer_signup",
-      `Signed up as ${volunteerData.role} for event: ${eventId}`
+      `Signed up as ${volunteerData.role} for event: ${eventId}`,
     );
-    
+
     res.status(201).json(newVolunteer);
   } catch (error) {
     console.error("Error creating event volunteer signup:", error);
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: "Invalid volunteer data", details: error.errors });
+      return res
+        .status(400)
+        .json({ error: "Invalid volunteer data", details: error.errors });
     }
     res.status(500).json({ error: "Failed to sign up for event" });
   }
@@ -1595,26 +1747,29 @@ router.post("/:eventId/volunteers", isAuthenticated, async (req, res) => {
 router.patch("/volunteers/:volunteerId", isAuthenticated, async (req, res) => {
   try {
     const volunteerId = parseInt(req.params.volunteerId);
-    
+
     if (!volunteerId || isNaN(volunteerId)) {
       return res.status(400).json({ error: "Valid volunteer ID required" });
     }
-    
+
     const updates = req.body;
-    
-    const updatedVolunteer = await storage.updateEventVolunteer(volunteerId, updates);
-    
+
+    const updatedVolunteer = await storage.updateEventVolunteer(
+      volunteerId,
+      updates,
+    );
+
     if (!updatedVolunteer) {
       return res.status(404).json({ error: "Volunteer assignment not found" });
     }
-    
+
     await logActivity(
       req,
       res,
       "volunteer_update",
-      `Updated volunteer assignment: ${volunteerId}`
+      `Updated volunteer assignment: ${volunteerId}`,
     );
-    
+
     res.json(updatedVolunteer);
   } catch (error) {
     console.error("Error updating event volunteer:", error);
@@ -1626,24 +1781,24 @@ router.patch("/volunteers/:volunteerId", isAuthenticated, async (req, res) => {
 router.delete("/volunteers/:volunteerId", isAuthenticated, async (req, res) => {
   try {
     const volunteerId = parseInt(req.params.volunteerId);
-    
+
     if (!volunteerId || isNaN(volunteerId)) {
       return res.status(400).json({ error: "Valid volunteer ID required" });
     }
-    
+
     const deleted = await storage.deleteEventVolunteer(volunteerId);
-    
+
     if (!deleted) {
       return res.status(404).json({ error: "Volunteer assignment not found" });
     }
-    
+
     await logActivity(
       req,
       res,
       "volunteer_removal",
-      `Removed volunteer assignment: ${volunteerId}`
+      `Removed volunteer assignment: ${volunteerId}`,
     );
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error("Error removing event volunteer:", error);
@@ -1655,25 +1810,29 @@ router.delete("/volunteers/:volunteerId", isAuthenticated, async (req, res) => {
 router.get("/my-volunteers", isAuthenticated, async (req, res) => {
   try {
     const userId = req.user?.id;
-    
+
     if (!userId) {
       return res.status(400).json({ error: "User authentication required" });
     }
-    
+
     const userVolunteers = await storage.getEventVolunteersByUserId(userId);
-    
+
     // Enrich with event details
     const enrichedVolunteers = await Promise.all(
       userVolunteers.map(async (volunteer) => {
-        const eventRequest = await storage.getEventRequestById(volunteer.eventRequestId);
+        const eventRequest = await storage.getEventRequestById(
+          volunteer.eventRequestId,
+        );
         return {
           ...volunteer,
-          eventRequest
+          eventRequest,
         };
-      })
+      }),
     );
-    
-    console.log(`Retrieved ${userVolunteers.length} volunteer signups for user ${userId}`);
+
+    console.log(
+      `Retrieved ${userVolunteers.length} volunteer signups for user ${userId}`,
+    );
     res.json(enrichedVolunteers);
   } catch (error) {
     console.error("Error fetching user volunteers:", error);
