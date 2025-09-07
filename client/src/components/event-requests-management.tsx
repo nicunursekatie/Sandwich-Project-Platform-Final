@@ -2461,16 +2461,6 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
 
-                {/* Event Address */}
-                {(request as any).eventAddress && (
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📍</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Event Location: </span>
-                      <span className="text-gray-600">{(request as any).eventAddress}</span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Planning Notes */}
                 {(request as any).planningNotes && (
@@ -2959,18 +2949,6 @@ export default function EventRequestsManagement() {
             </div>
           </div>
 
-          {/* Planning Notes Section */}
-          {(request as any).planningNotes && (
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
-              <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                <span className="w-4 h-4 mr-2">📝</span>
-                Planning Notes
-              </h4>
-              <p className="text-sm text-gray-700">
-                {(request as any).planningNotes}
-              </p>
-            </div>
-          )}
         </CardContent>
 
         {/* Footer Section: Action Buttons */}
