@@ -1978,10 +1978,10 @@ export default function EventRequestsManagement() {
 
         {/* Body Section: Three Column Layout */}
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6">
             
             {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-3 md:p-4 rounded-lg border border-[#236383]">
               <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
                 <User className="w-5 h-5 mr-2 text-[#236383]" />
                 Contact
@@ -2219,7 +2219,7 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 md:p-4 rounded-lg border border-[#FBAD3F]">
               <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
                 <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
                 Event Details
@@ -2581,7 +2581,7 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-3 md:p-4 rounded-lg border border-[#A31C41]">
               <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
                 <span className="inline-block w-5 h-5 mr-2 bg-[#A31C41] rounded-full"></span>
                 Assignments
@@ -5861,7 +5861,7 @@ export default function EventRequestsManagement() {
             open={showCompleteContactDialog}
             onOpenChange={setShowCompleteContactDialog}
           >
-            <DialogContent className="max-w-4xl">
+            <DialogContent className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl">
               <DialogHeader>
                 <DialogTitle>Complete Contact & Event Details</DialogTitle>
                 <DialogDescription>
@@ -6147,7 +6147,7 @@ export default function EventRequestsManagement() {
             open={showEventDetailsDialog}
             onOpenChange={setShowEventDetailsDialog}
           >
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-[95vw] md:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   Event Details for {detailsRequest.organizationName}
