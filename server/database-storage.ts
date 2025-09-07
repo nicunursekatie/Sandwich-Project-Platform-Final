@@ -2650,9 +2650,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
+    // Handle JSONB fields properly
+    const processedUpdates = { ...updates };
+    
+    // Convert array fields to proper JSONB format
+    if (processedUpdates.assignedDriverIds !== undefined) {
+      processedUpdates.assignedDriverIds = processedUpdates.assignedDriverIds || [];
+    }
+    if (processedUpdates.assignedSpeakerIds !== undefined) {
+      processedUpdates.assignedSpeakerIds = processedUpdates.assignedSpeakerIds || [];
+    }
+    
     const [result] = await db.update(eventRequests)
       .set({
-        ...updates,
+        ...processedUpdates,
         updatedAt: new Date()
       })
       .where(eq(eventRequests.id, id))
