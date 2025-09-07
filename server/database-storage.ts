@@ -2675,15 +2675,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
-    // Handle JSONB fields properly - convert arrays to JSON strings for PostgreSQL
+    // Handle JSONB fields properly for Drizzle - ensure arrays stay as arrays
     const processedUpdates = { ...updates };
     
-    // Convert array fields to proper JSONB format
+    // Ensure JSONB fields are proper arrays (Drizzle handles serialization automatically)
     if (processedUpdates.assignedDriverIds !== undefined) {
-      processedUpdates.assignedDriverIds = JSON.stringify(processedUpdates.assignedDriverIds || []) as any;
+      processedUpdates.assignedDriverIds = Array.isArray(processedUpdates.assignedDriverIds) 
+        ? processedUpdates.assignedDriverIds 
+        : [];
     }
     if (processedUpdates.assignedSpeakerIds !== undefined) {
-      processedUpdates.assignedSpeakerIds = JSON.stringify(processedUpdates.assignedSpeakerIds || []) as any;
+      processedUpdates.assignedSpeakerIds = Array.isArray(processedUpdates.assignedSpeakerIds) 
+        ? processedUpdates.assignedSpeakerIds 
+        : [];
     }
     
     const [result] = await db.update(eventRequests)
