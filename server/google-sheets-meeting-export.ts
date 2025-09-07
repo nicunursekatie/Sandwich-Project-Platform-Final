@@ -327,24 +327,89 @@ export class GoogleSheetsMeetingExporter {
   }
 
   /**
-   * Clear sheet and write new data
+   * Smart sync: Preserve manual columns while updating app-managed columns
    */
   private async clearAndWriteSheetData(sheetId: string, data: any[][]): Promise<void> {
+    // First, try to read existing data to preserve manual edits
+    let existingData: any[][] = [];
+    try {
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: 'A:L',
+      });
+      existingData = response.data.values || [];
+    } catch (error) {
+      console.warn('Could not read existing sheet data, proceeding with full overwrite:', error);
+    }
+
+    // Merge data intelligently: preserve manual columns (I, J, K, L)
+    const mergedData = this.mergeSheetData(data, existingData);
+
     // Clear existing content
     await this.sheets.spreadsheets.values.clear({
       spreadsheetId: sheetId,
       range: 'A:L',
     });
 
-    // Write new data
+    // Write merged data
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
       range: 'A1',
       valueInputOption: 'USER_ENTERED',
       resource: {
-        values: data,
+        values: mergedData,
       },
     });
+  }
+
+  /**
+   * Merge new app data with existing manual edits
+   * Preserves columns: I (Notes), J (Action Items), K (Follow Up), L (Decision)
+   * Updates columns: A-H (app-managed data)
+   */
+  private mergeSheetData(newData: any[][], existingData: any[][]): any[][] {
+    const merged: any[][] = [];
+    
+    // Always use new data for headers and meeting info (first 6 rows)
+    for (let i = 0; i < 6 && i < newData.length; i++) {
+      merged[i] = [...newData[i]];
+    }
+
+    // For data rows (starting from row 6), merge intelligently
+    for (let i = 6; i < newData.length; i++) {
+      const newRow = newData[i] || [];
+      const existingRow = existingData[i] || [];
+      
+      // Create merged row: app data (A-H) + preserved manual data (I-L)
+      const mergedRow = [
+        // App-managed columns (A-H): Section, Item, Description, Owner, Support, Priority, Time, Status
+        newRow[0] || '', // A - Section
+        newRow[1] || '', // B - Item
+        newRow[2] || '', // C - Description  
+        newRow[3] || '', // D - Owner
+        newRow[4] || '', // E - Support People
+        newRow[5] || '', // F - Priority
+        newRow[6] || '', // G - Time Estimate
+        newRow[7] || '', // H - Status
+        
+        // Manual columns (I-L): preserve existing user input
+        existingRow[8] || newRow[8] || '', // I - Notes (preserve existing)
+        existingRow[9] || newRow[9] || '', // J - Action Items (preserve existing)
+        existingRow[10] || newRow[10] || '', // K - Follow Up (preserve existing)
+        existingRow[11] || newRow[11] || ''  // L - Decision (preserve existing)
+      ];
+      
+      merged[i] = mergedRow;
+    }
+
+    // If existing data has more rows than new data, preserve them
+    for (let i = newData.length; i < existingData.length; i++) {
+      if (existingData[i] && existingData[i].some(cell => cell && cell.toString().trim())) {
+        merged[i] = existingData[i];
+      }
+    }
+
+    return merged;
   }
 
   /**
