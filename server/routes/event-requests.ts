@@ -1,11 +1,27 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage-wrapper";
-import {
-  insertEventRequestSchema,
-  insertOrganizationSchema,
-  insertEventVolunteerSchema,
-} from "@shared/schema";
+// Temporary inline schemas until proper schema exports are added
+const insertEventRequestSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string(),
+  organizationName: z.string(),
+  desiredEventDate: z.string(),
+  message: z.string().optional()
+});
+
+const insertOrganizationSchema = z.object({
+  name: z.string(),
+  contactPerson: z.string().optional(),
+  email: z.string().optional()
+});
+
+const insertEventVolunteerSchema = z.object({
+  eventRequestId: z.number(),
+  volunteerName: z.string(),
+  role: z.string().optional()
+});
 import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
 import { requirePermission } from "../middleware/auth";
 import { isAuthenticated } from "../temp-auth";

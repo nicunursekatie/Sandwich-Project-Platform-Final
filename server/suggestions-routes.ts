@@ -1,7 +1,19 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from './storage';
-import { insertSuggestionSchema, insertSuggestionResponseSchema } from "@shared/schema";
+// Temporary inline schemas until proper schema exports are added
+const insertSuggestionSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  status: z.string().optional(),
+  submittedBy: z.string()
+});
+
+const insertSuggestionResponseSchema = z.object({
+  suggestionId: z.number(),
+  response: z.string(),
+  respondedBy: z.string()
+});
 import { isAuthenticated } from './temp-auth';
 import { requirePermission, requireOwnershipPermission } from './middleware/auth';
 import { PERMISSIONS } from "@shared/auth-utils";

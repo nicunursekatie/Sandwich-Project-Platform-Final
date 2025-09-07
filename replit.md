@@ -12,6 +12,20 @@ Documentation: All technical findings and fixes must be documented in replit.md 
 Navigation Icons: Collections log icon in simple-nav should use sandwich logo.png from LOGOS folder.
 Desktop Chat UX: Desktop users require proper scrolling behavior without nested scrolling containers that cause page focus issues - chat layout must handle desktop and mobile differently.
 
+## Recent Technical Fixes
+
+### Driver Assignment JSONB Error Resolution (September 2025)
+**Issue**: Persistent 500 server errors when assigning drivers to event requests due to database column type mismatch.
+**Root Cause**: Database column `assigned_driver_ids` was `text[]` while `assigned_speaker_ids` was `jsonb`, but Drizzle schema expected both as `jsonb`.
+**Solution**: Converted `assigned_driver_ids` column to `jsonb` using `ALTER TABLE event_requests ALTER COLUMN assigned_driver_ids TYPE jsonb USING array_to_json(assigned_driver_ids)::jsonb`.
+**Result**: Driver and speaker assignments now work correctly with regular Drizzle ORM updates, full audit logging restored.
+
+### Application Startup Schema Issues (September 2025) 
+**Issue**: Application failed to start due to missing validation schema exports across multiple route files.
+**Root Cause**: Multiple files importing validation schemas (e.g., `insertEventRequestSchema`, `insertProjectSchema`) that weren't exported from `shared/schema.ts`.
+**Solution**: Created temporary inline Zod schemas in affected route files until proper schema exports can be implemented.
+**Result**: Application successfully running on port 5000 with all routes operational.
+
 ## System Architecture
 
 ### Core Technologies
