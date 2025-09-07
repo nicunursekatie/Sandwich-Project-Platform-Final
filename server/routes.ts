@@ -3528,7 +3528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         ...result,
-        message: "Meeting agenda exported to Google Sheets with precise column mapping"
+        message: "Meeting agenda synced to Google Sheets (preserving Notes, Action Items, Follow Up, and Decision columns)"
       });
     } catch (error) {
       logger.error("Error exporting to Google Sheets:", error);
