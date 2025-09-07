@@ -1,81 +1,42 @@
 import { 
-  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations, eventVolunteers
+  users, projects, archivedProjects, projectTasks, projectComments, projectAssignments, taskCompletions, messages, messageLikes, conversations, conversationParticipants, weeklyReports, meetingMinutes, driveLinks, sandwichCollections, agendaItems, meetings, compiledAgendas, agendaSections, driverAgreements, drivers, volunteers, hosts, hostContacts, recipients, contacts, committees, committeeMemberships, notifications, suggestions, suggestionResponses, chatMessages, chatMessageReads, chatMessageLikes, userActivityLogs, announcements, sandwichDistributions, wishlistSuggestions, documents, documentPermissions, documentAccessLogs, eventRequests, organizations, eventVolunteers,
+  type User, type InsertUser, type UpsertUser,
+  type Project, type InsertProject,
+  type ProjectTask, type InsertProjectTask,
+  type ProjectComment, type InsertProjectComment,
+  type ProjectAssignment, type InsertProjectAssignment,
+  type TaskCompletion, type InsertTaskCompletion,
+  type Message, type InsertMessage,
+  type MessageLike, type InsertMessageLike,
+  type WeeklyReport, type InsertWeeklyReport,
+  type SandwichCollection, type InsertSandwichCollection,
+  type MeetingMinutes, type InsertMeetingMinutes,
+  type DriveLink, type InsertDriveLink,
+  type AgendaItem, type InsertAgendaItem,
+  type Meeting, type InsertMeeting,
+  type DriverAgreement, type InsertDriverAgreement,
+  type Driver, type InsertDriver,
+  type Volunteer, type InsertVolunteer,
+  type Host, type InsertHost,
+  type HostContact, type InsertHostContact,
+  type Recipient, type InsertRecipient,
+  type Contact, type InsertContact,
+  type Committee, type InsertCommittee,
+  type CommitteeMembership, type InsertCommitteeMembership,
+  type Notification, type InsertNotification,
+  type Suggestion, type InsertSuggestion,
+  type SuggestionResponse, type InsertSuggestionResponse,
+  type ChatMessageLike, type InsertChatMessageLike,
+  type UserActivityLog, type InsertUserActivityLog,
+  type SandwichDistribution, type InsertSandwichDistribution,
+  type WishlistSuggestion, type InsertWishlistSuggestion,
+  type Document, type InsertDocument,
+  type DocumentPermission, type InsertDocumentPermission,
+  type DocumentAccessLog, type InsertDocumentAccessLog,
+  type EventRequest, type InsertEventRequest,
+  type Organization, type InsertOrganization,
+  type EventVolunteer, type InsertEventVolunteer
 } from "@shared/schema";
-
-// Temporary type definitions until schema types are properly exported
-type User = typeof users.$inferSelect;
-type InsertUser = typeof users.$inferInsert;
-type UpsertUser = any;
-type Project = typeof projects.$inferSelect;
-type InsertProject = typeof projects.$inferInsert;
-type ProjectTask = typeof projectTasks.$inferSelect;
-type InsertProjectTask = typeof projectTasks.$inferInsert;
-type ProjectComment = typeof projectComments.$inferSelect;
-type InsertProjectComment = typeof projectComments.$inferInsert;
-type ProjectAssignment = typeof projectAssignments.$inferSelect;
-type InsertProjectAssignment = typeof projectAssignments.$inferInsert;
-type TaskCompletion = typeof taskCompletions.$inferSelect;
-type InsertTaskCompletion = typeof taskCompletions.$inferInsert;
-type Message = typeof messages.$inferSelect;
-type InsertMessage = typeof messages.$inferInsert;
-type MessageLike = typeof messageLikes.$inferSelect;
-type InsertMessageLike = typeof messageLikes.$inferInsert;
-type WeeklyReport = typeof weeklyReports.$inferSelect;
-type InsertWeeklyReport = typeof weeklyReports.$inferInsert;
-type SandwichCollection = typeof sandwichCollections.$inferSelect;
-type InsertSandwichCollection = typeof sandwichCollections.$inferInsert;
-type MeetingMinutes = typeof meetingMinutes.$inferSelect;
-type InsertMeetingMinutes = typeof meetingMinutes.$inferInsert;
-type DriveLink = typeof driveLinks.$inferSelect;
-type InsertDriveLink = typeof driveLinks.$inferInsert;
-type AgendaItem = typeof agendaItems.$inferSelect;
-type InsertAgendaItem = typeof agendaItems.$inferInsert;
-type Meeting = typeof meetings.$inferSelect;
-type InsertMeeting = typeof meetings.$inferInsert;
-type DriverAgreement = typeof driverAgreements.$inferSelect;
-type InsertDriverAgreement = typeof driverAgreements.$inferInsert;
-type Driver = typeof drivers.$inferSelect;
-type InsertDriver = typeof drivers.$inferInsert;
-type Volunteer = typeof volunteers.$inferSelect;
-type InsertVolunteer = typeof volunteers.$inferInsert;
-type Host = typeof hosts.$inferSelect;
-type InsertHost = typeof hosts.$inferInsert;
-type HostContact = typeof hostContacts.$inferSelect;
-type InsertHostContact = typeof hostContacts.$inferInsert;
-type Recipient = typeof recipients.$inferSelect;
-type InsertRecipient = typeof recipients.$inferInsert;
-type Contact = typeof contacts.$inferSelect;
-type InsertContact = typeof contacts.$inferInsert;
-type Committee = typeof committees.$inferSelect;
-type InsertCommittee = typeof committees.$inferInsert;
-type CommitteeMembership = typeof committeeMemberships.$inferSelect;
-type InsertCommitteeMembership = typeof committeeMemberships.$inferInsert;
-type Notification = typeof notifications.$inferSelect;
-type InsertNotification = typeof notifications.$inferInsert;
-type Suggestion = typeof suggestions.$inferSelect;
-type InsertSuggestion = typeof suggestions.$inferInsert;
-type SuggestionResponse = typeof suggestionResponses.$inferSelect;
-type InsertSuggestionResponse = typeof suggestionResponses.$inferInsert;
-type ChatMessageLike = typeof chatMessageLikes.$inferSelect;
-type InsertChatMessageLike = typeof chatMessageLikes.$inferInsert;
-type UserActivityLog = typeof userActivityLogs.$inferSelect;
-type InsertUserActivityLog = typeof userActivityLogs.$inferInsert;
-type SandwichDistribution = typeof sandwichDistributions.$inferSelect;
-type InsertSandwichDistribution = typeof sandwichDistributions.$inferInsert;
-type WishlistSuggestion = typeof wishlistSuggestions.$inferSelect;
-type InsertWishlistSuggestion = typeof wishlistSuggestions.$inferInsert;
-type Document = typeof documents.$inferSelect;
-type InsertDocument = typeof documents.$inferInsert;
-type DocumentPermission = typeof documentPermissions.$inferSelect;
-type InsertDocumentPermission = typeof documentPermissions.$inferInsert;
-type DocumentAccessLog = typeof documentAccessLogs.$inferSelect;
-type InsertDocumentAccessLog = typeof documentAccessLogs.$inferInsert;
-type EventRequest = typeof eventRequests.$inferSelect;
-type InsertEventRequest = typeof eventRequests.$inferInsert;
-type Organization = typeof organizations.$inferSelect;
-type InsertOrganization = typeof organizations.$inferInsert;
-type EventVolunteer = typeof eventVolunteers.$inferSelect;
-type InsertEventVolunteer = typeof eventVolunteers.$inferInsert;
 import { db } from "./db";
 import { eq, desc, asc, sql, and, or, isNull, ne, isNotNull, gt, gte, lte, inArray, like, ilike } from "drizzle-orm";
 import type { IStorage } from "./storage";
@@ -2668,39 +2629,14 @@ export class DatabaseStorage implements IStorage {
 
   // Event Request Management Methods
   async getAllEventRequests(): Promise<EventRequest[]> {
-    const results = await db.select().from(eventRequests).orderBy(desc(eventRequests.createdAt));
-    return results.map(this.parseEventRequestJsonFields.bind(this));
+    return await db.select().from(eventRequests).orderBy(desc(eventRequests.createdAt));
   }
 
   async getEventRequest(id: number): Promise<EventRequest | undefined> {
     const [result] = await db.select()
       .from(eventRequests)
       .where(eq(eventRequests.id, id));
-    return result ? this.parseEventRequestJsonFields(result) : undefined;
-  }
-
-  // Helper method to parse JSON fields back to arrays
-  private parseEventRequestJsonFields(eventRequest: any): EventRequest {
-    const parsed = { ...eventRequest };
-    
-    // Parse JSONB fields from strings back to arrays
-    if (parsed.assignedDriverIds && typeof parsed.assignedDriverIds === 'string') {
-      try {
-        parsed.assignedDriverIds = JSON.parse(parsed.assignedDriverIds);
-      } catch {
-        parsed.assignedDriverIds = [];
-      }
-    }
-    
-    if (parsed.assignedSpeakerIds && typeof parsed.assignedSpeakerIds === 'string') {
-      try {
-        parsed.assignedSpeakerIds = JSON.parse(parsed.assignedSpeakerIds);
-      } catch {
-        parsed.assignedSpeakerIds = [];
-      }
-    }
-    
-    return parsed;
+    return result || undefined;
   }
 
   async createEventRequest(insertEventRequest: InsertEventRequest): Promise<EventRequest> {
@@ -2710,7 +2646,7 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .returning();
-    return this.parseEventRequestJsonFields(result);
+    return result;
   }
 
   async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
@@ -2721,7 +2657,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(eventRequests.id, id))
       .returning();
-    return result ? this.parseEventRequestJsonFields(result) : undefined;
+    return result || undefined;
   }
 
   async deleteEventRequest(id: number): Promise<boolean> {
@@ -2731,19 +2667,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEventRequestsByStatus(status: string): Promise<EventRequest[]> {
-    const results = await db.select()
+    return await db.select()
       .from(eventRequests)
       .where(eq(eventRequests.status, status))
       .orderBy(desc(eventRequests.createdAt));
-    return results.map(this.parseEventRequestJsonFields.bind(this));
   }
 
   async getEventRequestsByOrganization(organizationName: string): Promise<EventRequest[]> {
-    const results = await db.select()
+    return await db.select()
       .from(eventRequests)
       .where(ilike(eventRequests.organizationName, `%${organizationName}%`))
       .orderBy(desc(eventRequests.createdAt));
-    return results.map(this.parseEventRequestJsonFields.bind(this));
   }
 
   async checkOrganizationDuplicates(organizationName: string): Promise<{ exists: boolean; matches: Organization[] }> {

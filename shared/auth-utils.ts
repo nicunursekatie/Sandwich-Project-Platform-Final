@@ -58,7 +58,6 @@ export const PERMISSIONS = {
   PROJECTS_EDIT_ALL: "PROJECTS_EDIT_ALL", // Edit any projects
   PROJECTS_DELETE_OWN: "PROJECTS_DELETE_OWN", // Delete assigned/owned projects
   PROJECTS_DELETE_ALL: "PROJECTS_DELETE_ALL", // Delete any projects
-  MANAGE_ALL_PROJECTS: "MANAGE_ALL_PROJECTS", // Administrative project management
 
   // DISTRIBUTIONS - Sandwich distribution tracking 
   DISTRIBUTIONS_VIEW: "DISTRIBUTIONS_VIEW", 

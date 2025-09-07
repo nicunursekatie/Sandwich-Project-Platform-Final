@@ -942,7 +942,6 @@ export default function EventRequestsManagement() {
     mutationFn: ({ id, ...data }: any) =>
       apiRequest("PUT", `/api/event-requests/${id}`, data),
     onSuccess: () => {
-      // Invalidate cache to refresh UI with latest data
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({
         title: "Event request updated",
@@ -950,8 +949,6 @@ export default function EventRequestsManagement() {
       });
     },
     onError: (error: any) => {
-      // On error, also refresh to ensure consistent state
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({
         title: "Error updating event request",
         description: error.message,
@@ -960,7 +957,7 @@ export default function EventRequestsManagement() {
     },
   });
 
-  // Assignment update function with reliable cache invalidation
+  // Assignment update function
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
     updateMutation.mutate({
       id: eventId,
@@ -974,13 +971,11 @@ export default function EventRequestsManagement() {
     mutationFn: ({ eventId, speakerIds }: { eventId: number; speakerIds: string[] }) =>
       apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedSpeakerIds: speakerIds }),
     onSuccess: () => {
-      // Don't invalidate cache - use optimistic updates instead
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       setShowSpeakerDialog(false);
       toast({ title: "Speaker assignments updated successfully" });
     },
     onError: (error: any) => {
-      // On error, revert by refetching
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       toast({
         title: "Error updating speaker assignments",
         description: error.message,
@@ -1978,10 +1973,10 @@ export default function EventRequestsManagement() {
 
         {/* Body Section: Three Column Layout */}
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             
             {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-3 md:p-4 rounded-lg border border-[#236383]">
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
               <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
                 <User className="w-5 h-5 mr-2 text-[#236383]" />
                 Contact
@@ -2219,7 +2214,7 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 md:p-4 rounded-lg border border-[#FBAD3F]">
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
               <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
                 <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
                 Event Details
@@ -2466,7 +2461,16 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
 
-
+                {/* Event Address */}
+                {(request as any).eventAddress && (
+                  <div className="flex items-start space-x-3">
+                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📍</span>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Event Location: </span>
+                      <span className="text-gray-600">{(request as any).eventAddress}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Planning Notes */}
                 {(request as any).planningNotes && (
@@ -2581,7 +2585,7 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-3 md:p-4 rounded-lg border border-[#A31C41]">
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
               <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
                 <span className="inline-block w-5 h-5 mr-2 bg-[#A31C41] rounded-full"></span>
                 Assignments
@@ -2680,78 +2684,59 @@ export default function EventRequestsManagement() {
                       )}
                     </div>
                     {editingDriversFor === request.id ? (
-                      <div className="space-y-1 w-full">
-                        <div className="flex items-center space-x-1">
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value === "__custom__") {
-                                setTempDriverInput("");
-                                // Focus will be on input field
-                              } else if (value) {
-                                // Add selected driver immediately
-                                const currentDrivers = (request as any).assignedDriverIds || [];
-                                const updatedDrivers = [...currentDrivers, value];
-                                handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                                setEditingDriversFor(null); // Close the editor
-                                setTempDriverInput(""); // Clear input
-                                toast({
-                                  title: "Driver assigned successfully",
-                                  description: "Driver has been added to the event",
-                                });
-                              }
-                            }}
-                            className="text-xs border rounded px-1 py-1 flex-1 max-w-28"
-                          >
-                            <option value="">Select...</option>
-                            {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
-                              <option key={user.id} value={user.id}>
-                                {user.displayName}
-                              </option>
-                            ))}
-                            <option value="__custom__">+ Custom</option>
-                          </select>
-                          <button
-                            onClick={() => {
-                              setEditingDriversFor(null);
+                      <div className="flex items-center space-x-1">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "__custom__") {
                               setTempDriverInput("");
-                            }}
-                            className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700 border rounded"
-                          >
-                            ✓
-                          </button>
-                        </div>
+                              // Focus will be on input field
+                            } else if (value) {
+                              // Add selected driver immediately
+                              const currentDrivers = (request as any).assignedDriverIds || [];
+                              const updatedDrivers = [...currentDrivers, value];
+                              handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                            }
+                          }}
+                          className="text-xs border rounded px-2 py-1 min-w-32"
+                        >
+                          <option value="">Select driver...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                          <option value="__custom__">+ Add custom driver</option>
+                        </select>
                         <input
                           type="text"
-                          placeholder="Or type driver name..."
+                          placeholder="Type driver name..."
                           value={tempDriverInput}
                           onChange={(e) => setTempDriverInput(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && tempDriverInput.trim()) {
-                              const driverName = tempDriverInput.trim();
                               const currentDrivers = (request as any).assignedDriverIds || [];
-                              const updatedDrivers = [...currentDrivers, driverName];
-                              
-                              console.log('Adding driver:', driverName);
-                              console.log('Current drivers:', currentDrivers);
-                              console.log('Updated drivers:', updatedDrivers);
-                              
+                              const updatedDrivers = [...currentDrivers, tempDriverInput.trim()];
                               handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
                               setTempDriverInput("");
-                              setEditingDriversFor(null); // Close the editor
-                              toast({
-                                title: "Driver added successfully",
-                                description: `Added ${driverName} as driver`,
-                              });
                             }
                             if (e.key === "Escape") {
                               setEditingDriversFor(null);
                               setTempDriverInput("");
                             }
                           }}
-                          className="text-xs border rounded px-1 py-1 w-full"
+                          className="text-xs border rounded px-2 py-1 w-32"
                         />
+                        <button
+                          onClick={() => {
+                            setEditingDriversFor(null);
+                            setTempDriverInput("");
+                          }}
+                          className="text-xs px-1 py-1 text-gray-500 hover:text-gray-700"
+                        >
+                          ✓
+                        </button>
                       </div>
                     ) : (
                       <button
@@ -2765,23 +2750,20 @@ export default function EventRequestsManagement() {
                       </button>
                     )}
                   </div>
-                  {(() => {
-                    const drivers = (request as any).assignedDriverIds || [];
-                    return drivers.map((driverId: string, index: number) => (
-                      <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
+                  {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
+                    <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
                       {getUserDisplayName(driverId)}
-                        <button
-                          className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
-                          onClick={() => {
-                            const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
-                            handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ));
-                  })()}
+                      <button
+                        className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
+                        onClick={() => {
+                          const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
+                          handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
                 {/* TSP Contact Assignment */}
@@ -5572,7 +5554,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1"
                         >
                           <option value="">Add team member...</option>
-                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
+                          {availableUsers?.map(user => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -5642,7 +5624,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1"
                         >
                           <option value="">Add team member...</option>
-                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
+                          {availableUsers?.map(user => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -5864,7 +5846,7 @@ export default function EventRequestsManagement() {
             open={showCompleteContactDialog}
             onOpenChange={setShowCompleteContactDialog}
           >
-            <DialogContent className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl">
+            <DialogContent className="max-w-4xl">
               <DialogHeader>
                 <DialogTitle>Complete Contact & Event Details</DialogTitle>
                 <DialogDescription>
@@ -6150,7 +6132,7 @@ export default function EventRequestsManagement() {
             open={showEventDetailsDialog}
             onOpenChange={setShowEventDetailsDialog}
           >
-            <DialogContent className="max-w-[95vw] md:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   Event Details for {detailsRequest.organizationName}
@@ -6364,7 +6346,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
-                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
+                          {availableUsers?.map(user => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -6465,7 +6447,7 @@ export default function EventRequestsManagement() {
                           className="w-full text-sm border rounded px-2 py-1 h-8 bg-white"
                         >
                           <option value="">Add team member...</option>
-                          {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
+                          {availableUsers?.map(user => (
                             <option key={user.id} value={user.id}>
                               {user.displayName}
                             </option>
@@ -6757,7 +6739,7 @@ export default function EventRequestsManagement() {
                     Speakers needed: {(assigningSpeakerRequest as any).speakersNeeded || 0}
                   </p>
                   <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                    {(Array.isArray(availableUsers) ? availableUsers : []).map((user: any) => (
+                    {availableUsers?.map((user: any) => (
                       <div
                         key={user.id}
                         className="flex items-center space-x-2"
@@ -6804,14 +6786,17 @@ export default function EventRequestsManagement() {
                 <Button
                   type="button"
                   onClick={() => {
-                    // Use optimistic update for immediate UI feedback
-                    handleAssignmentUpdate(assigningSpeakerRequest.id, 'assignedSpeakerIds', selectedSpeakers);
-                    setShowSpeakerDialog(false);
-                    toast({ title: "Speaker assignments updated successfully" });
+                    saveSpeakerAssignmentMutation.mutate({
+                      eventId: assigningSpeakerRequest.id,
+                      speakerIds: selectedSpeakers,
+                    });
                   }}
+                  disabled={saveSpeakerAssignmentMutation.isPending}
                   className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  Assign Speakers
+                  {saveSpeakerAssignmentMutation.isPending
+                    ? "Assigning..."
+                    : "Assign Speakers"}
                 </Button>
               </div>
             </DialogContent>

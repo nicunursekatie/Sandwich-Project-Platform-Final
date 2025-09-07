@@ -31,7 +31,6 @@ import { sanitizeMiddleware } from "./middleware/sanitizer";
 import { requestLogger, errorLogger, logger } from "./middleware/logger";
 import { createActivityLogger } from "./middleware/activity-logger";
 import {
-  // Validation schemas - now properly exported
   insertProjectSchema,
   insertProjectTaskSchema,
   insertProjectCommentSchema,
@@ -56,8 +55,6 @@ import {
   insertEventRequestSchema,
   insertEventReminderSchema,
   insertOrganizationSchema,
-  
-  // Table references
   drivers,
   volunteers,
   projectTasks,
@@ -280,10 +277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false, // Disable auto-creation to avoid index conflicts
+    createTableIfMissing: true,
     ttl: 30 * 24 * 60 * 60, // 30 days in seconds (matches cookie maxAge)
-    tableName: "user_sessions", // Use unique table name to avoid index conflicts
-    pruneSessionInterval: false, // Disable auto-pruning to avoid conflicts
+    tableName: "sessions",
   });
 
   // Add CORS middleware before session middleware
@@ -325,16 +321,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add session middleware with database store
+  // Add session middleware with enhanced stability
   app.use(
     session({
       store: sessionStore,
       secret: process.env.SESSION_SECRET || "temp-secret-key-for-development",
-      resave: false,
+      resave: true, // Force session save on every request to prevent data loss
       saveUninitialized: false,
       cookie: {
         secure: false, // Should be true in production with HTTPS, false for development
-        httpOnly: true, // Secure cookies for authentication
+        httpOnly: false, // Allow frontend to access cookies for debugging in Replit
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
         sameSite: "lax", // CSRF protection
         domain: undefined, // Let Express auto-detect domain for Replit
@@ -4342,8 +4338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send notification email if available
       try {
-        // Note: Email notification functionality can be restored later
-        console.log('Driver agreement created - email notification would be sent here');
+        await sendDriverAgreementNotification(agreement);
       } catch (emailError) {
         logger.error(
           "Failed to send driver agreement notification",
@@ -4467,9 +4462,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store in database
       const agreement = await storage.createDriverAgreement(validatedData);
 
-      // Send email notification (functionality can be restored later)
-      console.log('Driver agreement created - email notification would be sent here');
-      const emailSent = true; // Simulated success
+      // Send email notification
+      const { sendDriverAgreementNotification } = await import("./sendgrid");
+      const emailSent = await sendDriverAgreementNotification(agreement);
 
       if (!emailSent) {
         console.warn(

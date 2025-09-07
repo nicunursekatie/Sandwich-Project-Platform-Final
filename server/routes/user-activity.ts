@@ -1,15 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-
-// Temporary inline schema until proper schema exports are added
-const insertUserActivityLogSchema = z.object({
-  userId: z.string(),
-  action: z.string(),
-  details: z.string().optional(),
-  ipAddress: z.string().optional(),
-  sessionId: z.string().optional(),
-  userAgent: z.string().optional()
-});
+import { insertUserActivityLogSchema } from "@shared/schema";
 // Import isAuthenticated from temp-auth instead of middleware/auth
 import type { IStorage } from "../storage";
 

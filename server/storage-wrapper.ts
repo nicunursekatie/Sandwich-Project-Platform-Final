@@ -1346,8 +1346,10 @@ class StorageWrapper implements IStorage {
   }
 
   async updateEventRequest(id: number, updates: any) {
-    // Force database storage only - no fallback to debug JSONB issue
-    return this.primaryStorage.updateEventRequest(id, updates);
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateEventRequest(id, updates),
+      () => this.fallbackStorage.updateEventRequest(id, updates)
+    );
   }
 
   async deleteEventRequest(id: number) {

@@ -12,47 +12,6 @@ Documentation: All technical findings and fixes must be documented in replit.md 
 Navigation Icons: Collections log icon in simple-nav should use sandwich logo.png from LOGOS folder.
 Desktop Chat UX: Desktop users require proper scrolling behavior without nested scrolling containers that cause page focus issues - chat layout must handle desktop and mobile differently.
 
-## Recent Technical Fixes
-
-### Driver Assignment JSONB Error Resolution (September 2025)
-**Issue**: Persistent 500 server errors when assigning drivers to event requests due to database column type mismatch.
-**Root Cause**: Database column `assigned_driver_ids` was `text[]` while `assigned_speaker_ids` was `jsonb`, but Drizzle schema expected both as `jsonb`.
-**Solution**: Converted `assigned_driver_ids` column to `jsonb` using `ALTER TABLE event_requests ALTER COLUMN assigned_driver_ids TYPE jsonb USING array_to_json(assigned_driver_ids)::jsonb`.
-**Result**: Driver and speaker assignments now work correctly with regular Drizzle ORM updates, full audit logging restored.
-
-### Application Startup Schema Issues (September 2025) 
-**Issue**: Application failed to start due to missing validation schema exports across multiple route files.
-**Root Cause**: Multiple files importing validation schemas (e.g., `insertEventRequestSchema`, `insertProjectSchema`) that weren't exported from `shared/schema.ts`.
-**Solution**: Created temporary inline Zod schemas in affected route files until proper schema exports can be implemented.
-**Result**: Application successfully running on port 5000 with all routes operational.
-
-### Authentication System Complete Restoration (September 2025)
-**Issue**: Login system completely broken due to missing metadata column and session storage failures.
-**Root Cause**: Database schema missing `metadata` jsonb column for password storage; database session store had constraint conflicts causing session persistence failures.
-**Solution**: 
-- Added `metadata` jsonb column to users table for secure password storage
-- Resolved database session index conflicts using custom table name
-- Fixed schema exports and validation throughout authentication system
-**Technical Details**:
-- Passwords now stored in `users.metadata.password` field
-- Session middleware uses PostgreSQL database store (connect-pg-simple) with custom `user_sessions` table
-- Eliminated `IDX_session_expire` index conflicts through custom table configuration
-- All validation schemas properly exported from shared/schema.ts
-**Result**: Authentication system fully operational - login works, sessions persist in database, all user permissions and roles function correctly. Admin credentials: admin@sandwich.project / admin123
-
-### Database Session Persistence Resolution (September 2025)
-**Issue**: Critical session persistence failures preventing dashboard data display despite successful login.
-**Root Cause**: connect-pg-simple library creating race conditions with hardcoded `IDX_session_expire` index name regardless of table configuration.
-**Solution**: 
-- Configured custom `user_sessions` table name instead of default `session`
-- Disabled automatic table creation to prevent index conflicts
-- Manually created session table with proper structure and indexes
-**Technical Details**:
-- Session table: `user_sessions` with primary key on `sid` and expire index
-- Configuration: `createTableIfMissing: false` and `pruneSessionInterval: false`
-- Session TTL: 30 days matching cookie maxAge for extended user sessions
-**Result**: Database-backed session persistence fully operational. Users maintain authentication across page refreshes and extended sessions. Dashboard and all authenticated endpoints now function correctly.
-
 ## System Architecture
 
 ### Core Technologies

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-// GoogleSheets table not implemented yet
+import { googleSheets, insertGoogleSheetSchema } from '@shared/schema';
 import { isAuthenticated } from '../temp-auth';
 
 const router = Router();
@@ -17,11 +17,10 @@ function generateSheetUrls(sheetId: string) {
 // Get all Google Sheets
 router.get('/', async (req, res) => {
   try {
-    // const sheets = await db
-    //   .select()
-    //   .from(googleSheets)
-    //   .orderBy(googleSheets.createdAt);
-    const sheets = [];
+    const sheets = await db
+      .select()
+      .from(googleSheets)
+      .orderBy(googleSheets.createdAt);
 
     res.json(sheets);
   } catch (error) {
