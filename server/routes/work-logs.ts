@@ -63,9 +63,10 @@ router.get("/work-logs", isAuthenticated, async (req, res) => {
       return res.status(403).json({ error: "Insufficient permissions to view work logs" });
     }
     
-    // Users with WORK_LOGS_VIEW_ALL or admin roles can see ALL work logs
-    if (canViewAll || isAdmin) {
-      console.log(`[WORK LOGS] Admin/ViewAll access - fetching ALL logs`);
+    // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
+    // Being admin does NOT automatically grant access to personal work logs
+    if (canViewAll) {
+      console.log(`[WORK LOGS] ViewAll permission - fetching ALL logs`);
       const logs = await db.select().from(workLogs);
       console.log(`[WORK LOGS] Found ${logs.length} total logs:`, logs.map(l => `${l.id}: ${l.userId}`));
       return res.json(logs);
