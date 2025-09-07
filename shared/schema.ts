@@ -1127,8 +1127,8 @@ export const eventRequests = pgTable("event_requests", {
   volunteerNotes: text("volunteer_notes"), // General notes about volunteer requirements
   
   // Driver and speaker assignments
-  assignedDriverIds: jsonb("assigned_driver_ids").$type<string[]>(), // Array of user IDs assigned as drivers
-  assignedSpeakerIds: jsonb("assigned_speaker_ids").$type<string[]>(), // Array of user IDs assigned as speakers
+  assignedDriverIds: jsonb("assigned_driver_ids"), // Array of user IDs assigned as drivers
+  assignedSpeakerIds: jsonb("assigned_speaker_ids"), // Array of user IDs assigned as speakers
   
   // Follow-up tracking for completed events
   followUpOneDayCompleted: boolean("follow_up_one_day_completed").default(false), // 1-day follow-up completed
