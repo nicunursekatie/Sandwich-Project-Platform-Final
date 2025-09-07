@@ -2675,7 +2675,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
-    // Routes file already processes JSONB fields - just pass them through to Drizzle
     const [result] = await db.update(eventRequests)
       .set({
         ...updates,
