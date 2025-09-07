@@ -2775,7 +2775,9 @@ export default function EventRequestsManagement() {
                         id: request.id,
                         orgName: (request as any).organizationName,
                         drivers: drivers,
-                        rawRequest: request
+                        assignedDriverIds_field: (request as any).assignedDriverIds,
+                        all_fields_with_driver: Object.keys(request).filter(k => k.toLowerCase().includes('driver')),
+                        all_fields_with_assign: Object.keys(request).filter(k => k.toLowerCase().includes('assign'))
                       });
                     }
                     return drivers.map((driverId: string, index: number) => (
