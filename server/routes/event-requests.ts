@@ -1181,7 +1181,7 @@ router.post("/sync/to-sheets", async (req, res) => {
       req,
       res,
       PERMISSIONS.MANAGE_EVENT_REQUESTS,
-      `Synced ${result.synced || 0} event requests to Google Sheets`,
+      `Smart-synced ${result.synced || 0} event requests to Google Sheets (preserving manual columns N+)`,
     );
 
     res.json(result);
