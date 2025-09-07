@@ -1126,6 +1126,10 @@ export const eventRequests = pgTable("event_requests", {
   speakersNeeded: integer("speakers_needed").default(0), // How many speakers this event needs
   volunteerNotes: text("volunteer_notes"), // General notes about volunteer requirements
   
+  // Driver and speaker assignments
+  assignedDriverIds: jsonb("assigned_driver_ids"), // Array of user IDs assigned as drivers
+  assignedSpeakerIds: jsonb("assigned_speaker_ids"), // Array of user IDs assigned as speakers
+  
   // Follow-up tracking for completed events
   followUpOneDayCompleted: boolean("follow_up_one_day_completed").default(false), // 1-day follow-up completed
   followUpOneDayDate: timestamp("follow_up_one_day_date"), // When 1-day follow-up was completed
@@ -1261,6 +1265,9 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests).omit({
   driverDetails: z.string().nullable().optional(),
   speakersNeeded: z.boolean().nullable().optional(),
   speakerDetails: z.string().nullable().optional(),
+  // Assignment fields
+  assignedDriverIds: z.array(z.string()).nullable().optional(),
+  assignedSpeakerIds: z.array(z.string()).nullable().optional(),
   // Follow-up tracking fields
   followUpOneDayCompleted: z.boolean().nullable().optional(),
   followUpOneDayDate: z.date().nullable().optional(),

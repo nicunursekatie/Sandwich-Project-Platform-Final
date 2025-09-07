@@ -962,9 +962,6 @@ export default function EventRequestsManagement() {
 
   // Assignment update function with reliable cache invalidation
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
-    if (eventId === 5) { // Homeowners Financial Group
-      console.log('🔍 SAVING ASSIGNMENT:', { eventId, field, value });
-    }
     updateMutation.mutate({
       id: eventId,
       [field]: value,
@@ -2770,16 +2767,6 @@ export default function EventRequestsManagement() {
                   </div>
                   {(() => {
                     const drivers = (request as any).assignedDriverIds || [];
-                    if (request.id === 5) { // Homeowners Financial Group
-                      console.log('🐛 HOMEOWNERS EVENT DEBUG:', {
-                        id: request.id,
-                        orgName: (request as any).organizationName,
-                        drivers: drivers,
-                        assignedDriverIds_field: (request as any).assignedDriverIds,
-                        all_fields_with_driver: Object.keys(request).filter(k => k.toLowerCase().includes('driver')),
-                        all_fields_with_assign: Object.keys(request).filter(k => k.toLowerCase().includes('assign'))
-                      });
-                    }
                     return drivers.map((driverId: string, index: number) => (
                       <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
                       {getUserDisplayName(driverId)}
