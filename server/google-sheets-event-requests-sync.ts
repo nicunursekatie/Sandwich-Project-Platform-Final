@@ -279,70 +279,136 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
-   * Update Google Sheets with event requests data
+   * Smart sync: Update Google Sheets with event requests data while preserving manual edits
    */
   private async updateEventRequestsSheet(eventRequests: EventRequestSheetRow[]): Promise<void> {
     if (!this.sheets) {
       throw new Error('Google Sheets service not initialized');
     }
 
-    // DISABLED: Clear existing data - this was wiping the user's sheet
-    // await this.sheets.spreadsheets.values.clear({
-    //   spreadsheetId: (this as any).config.spreadsheetId,
-    //   range: `${(this as any).config.worksheetName}!A2:Z1000`,
-    // });
-
     if (eventRequests.length === 0) {
       console.log('No event requests to sync');
       return;
     }
 
-    // Prepare headers
-    const headers = [
-      'Organization Name',
-      'Contact Name', 
-      'Email',
-      'Phone',
-      'Desired Event Date',
-      'Message',
-      'Department',
-      'Previously Hosted',
-      'Status',
-      'Created Date',
-      'Last Updated',
-      'Duplicate Check',
-      'Notes'
+    // First, read existing data to preserve manual edits
+    let existingData: any[][] = [];
+    try {
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: (this as any).config.spreadsheetId,
+        range: `${(this as any).config.worksheetName}!A:Z`,
+      });
+      existingData = response.data.values || [];
+    } catch (error) {
+      console.warn('Could not read existing event requests sheet data, proceeding with full overwrite:', error);
+    }
+
+    // Prepare app-managed headers (columns A-M)
+    const appManagedHeaders = [
+      'Organization Name',    // A
+      'Contact Name',         // B
+      'Email',               // C
+      'Phone',               // D
+      'Desired Event Date',   // E
+      'Message',             // F
+      'Department',          // G
+      'Previously Hosted',    // H
+      'Status',              // I
+      'Created Date',        // J
+      'Last Updated',        // K
+      'Duplicate Check',     // L
+      'Notes'                // M
     ];
 
-    // Prepare data rows
-    const values = [
-      headers,
-      ...eventRequests.map(request => [
-        request.organizationName,
-        request.contactName,
-        request.email,
-        request.phone,
-        request.desiredEventDate,
-        request.message,
-        request.department,
-        request.previouslyHosted,
-        request.status,
-        request.createdDate,
-        request.lastUpdated,
-        request.duplicateCheck,
-        request.notes
-      ])
-    ];
+    // Smart merge: preserve manual columns beyond M (columns N, O, P, etc.)
+    const mergedData = this.mergeEventRequestsSheetData(eventRequests, existingData, appManagedHeaders);
 
-    // Update the sheet
+    // Update the sheet with merged data
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: (this as any).config.spreadsheetId,
       range: `${(this as any).config.worksheetName}!A1`,
       valueInputOption: 'USER_ENTERED',
-      resource: { values },
+      resource: { values: mergedData },
     });
 
-    console.log(`✅ Updated Google Sheets with ${eventRequests.length} event requests`);
+    console.log(`✅ Smart-synced Google Sheets with ${eventRequests.length} event requests (preserving manual columns N+)`);
+  }
+
+  /**
+   * Merge new app data with existing manual edits
+   * Preserves columns beyond M (manual tracking columns)
+   * Updates columns A-M (app-managed data)
+   */
+  private mergeEventRequestsSheetData(
+    eventRequests: EventRequestSheetRow[], 
+    existingData: any[][], 
+    appHeaders: string[]
+  ): any[][] {
+    const merged: any[][] = [];
+    
+    // Handle headers row
+    const existingHeaders = existingData[0] || [];
+    const mergedHeaders = [...appHeaders];
+    
+    // Preserve any manual headers beyond column M (index 12)
+    for (let i = appHeaders.length; i < existingHeaders.length; i++) {
+      if (existingHeaders[i] && existingHeaders[i].trim()) {
+        mergedHeaders[i] = existingHeaders[i];
+      }
+    }
+    merged[0] = mergedHeaders;
+
+    // Create lookup map for existing data by organization + contact name
+    const existingRowMap = new Map<string, any[]>();
+    for (let i = 1; i < existingData.length; i++) {
+      const row = existingData[i] || [];
+      const orgName = row[0] || '';
+      const contactName = row[1] || '';
+      const key = `${orgName.toLowerCase().trim()}|${contactName.toLowerCase().trim()}`;
+      if (key !== '|') {
+        existingRowMap.set(key, row);
+      }
+    }
+
+    // Process each new event request
+    eventRequests.forEach((request) => {
+      const key = `${(request.organizationName || '').toLowerCase().trim()}|${(request.contactName || '').toLowerCase().trim()}`;
+      const existingRow = existingRowMap.get(key) || [];
+      
+      // Create merged row: app data (A-M) + preserved manual data (N+)
+      const newRow = [
+        request.organizationName,    // A
+        request.contactName,         // B
+        request.email,              // C
+        request.phone,              // D
+        request.desiredEventDate,   // E
+        request.message,            // F
+        request.department,         // G
+        request.previouslyHosted,   // H
+        request.status,             // I
+        request.createdDate,        // J
+        request.lastUpdated,        // K
+        request.duplicateCheck,     // L
+        request.notes               // M
+      ];
+      
+      // Preserve manual columns (N, O, P, etc.) from existing data
+      for (let i = appHeaders.length; i < Math.max(mergedHeaders.length, existingRow.length); i++) {
+        newRow[i] = existingRow[i] || '';
+      }
+      
+      merged.push(newRow);
+      existingRowMap.delete(key); // Mark as processed
+    });
+
+    // Add any remaining existing rows that weren't in the new data
+    existingRowMap.forEach((existingRow) => {
+      if (existingRow.some(cell => cell && cell.toString().trim())) {
+        merged.push(existingRow);
+      }
+    });
+
+    return merged;
   }
 
   /**
