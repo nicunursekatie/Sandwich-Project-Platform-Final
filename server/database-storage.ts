@@ -2675,24 +2675,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEventRequest(id: number, updates: Partial<EventRequest>): Promise<EventRequest | undefined> {
-    // Handle JSONB fields properly for Drizzle - ensure arrays stay as arrays
-    const processedUpdates = { ...updates };
-    
-    // Ensure JSONB fields are proper arrays (Drizzle handles serialization automatically)
-    if (processedUpdates.assignedDriverIds !== undefined) {
-      processedUpdates.assignedDriverIds = Array.isArray(processedUpdates.assignedDriverIds) 
-        ? processedUpdates.assignedDriverIds 
-        : [];
-    }
-    if (processedUpdates.assignedSpeakerIds !== undefined) {
-      processedUpdates.assignedSpeakerIds = Array.isArray(processedUpdates.assignedSpeakerIds) 
-        ? processedUpdates.assignedSpeakerIds 
-        : [];
-    }
-    
+    // Routes file already processes JSONB fields - just pass them through to Drizzle
     const [result] = await db.update(eventRequests)
       .set({
-        ...processedUpdates,
+        ...updates,
         updatedAt: new Date()
       })
       .where(eq(eventRequests.id, id))
