@@ -1317,7 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (isAgendaUpdate) {
           // For agenda updates, only need MEETINGS_MANAGE permission
-          const canManageMeetings = hasPermission(req.user, PERMISSIONS.MEETINGS_MANAGE);
+          const canManageMeetings = hasPermission(req.user, "MEETINGS_MANAGE");
           console.log('Agenda update detected - checking MEETINGS_MANAGE permission:', canManageMeetings);
           
           if (!canManageMeetings) {
@@ -1328,9 +1328,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else {
           // For other project updates, use standard project edit permissions
-          const canEditAll = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_ALL) ||
-                            hasPermission(req.user, PERMISSIONS.MANAGE_ALL_PROJECTS);
-          const canEditOwn = hasPermission(req.user, PERMISSIONS.PROJECTS_EDIT_OWN) && 
+          const canEditAll = hasPermission(req.user, "PROJECTS_EDIT_ALL") ||
+                            hasPermission(req.user, "MANAGE_ALL_PROJECTS");
+          const canEditOwn = hasPermission(req.user, "PROJECTS_EDIT_OWN") && 
                             (existingProject.createdBy === req.user.id);
 
           console.log('Regular project edit - canEditAll:', canEditAll, 'canEditOwn:', canEditOwn);
