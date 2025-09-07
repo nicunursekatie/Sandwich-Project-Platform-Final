@@ -280,9 +280,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
+    createTableIfMissing: false, // Disable auto-creation to avoid index conflicts
     ttl: 30 * 24 * 60 * 60, // 30 days in seconds (matches cookie maxAge)
-    tableName: "sessions",
+    tableName: "user_sessions", // Use unique table name to avoid index conflicts
+    pruneSessionInterval: false, // Disable auto-pruning to avoid conflicts
   });
 
   // Add CORS middleware before session middleware
@@ -324,16 +325,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add session middleware with enhanced stability
+  // Add session middleware with database store
   app.use(
     session({
       store: sessionStore,
       secret: process.env.SESSION_SECRET || "temp-secret-key-for-development",
-      resave: true, // Force session save on every request to prevent data loss
+      resave: false,
       saveUninitialized: false,
       cookie: {
         secure: false, // Should be true in production with HTTPS, false for development
-        httpOnly: false, // Allow frontend to access cookies for debugging in Replit
+        httpOnly: true, // Secure cookies for authentication
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
         sameSite: "lax", // CSRF protection
         domain: undefined, // Let Express auto-detect domain for Replit

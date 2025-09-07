@@ -26,6 +26,33 @@ Desktop Chat UX: Desktop users require proper scrolling behavior without nested 
 **Solution**: Created temporary inline Zod schemas in affected route files until proper schema exports can be implemented.
 **Result**: Application successfully running on port 5000 with all routes operational.
 
+### Authentication System Complete Restoration (September 2025)
+**Issue**: Login system completely broken due to missing metadata column and session storage failures.
+**Root Cause**: Database schema missing `metadata` jsonb column for password storage; database session store had constraint conflicts causing session persistence failures.
+**Solution**: 
+- Added `metadata` jsonb column to users table for secure password storage
+- Resolved database session index conflicts using custom table name
+- Fixed schema exports and validation throughout authentication system
+**Technical Details**:
+- Passwords now stored in `users.metadata.password` field
+- Session middleware uses PostgreSQL database store (connect-pg-simple) with custom `user_sessions` table
+- Eliminated `IDX_session_expire` index conflicts through custom table configuration
+- All validation schemas properly exported from shared/schema.ts
+**Result**: Authentication system fully operational - login works, sessions persist in database, all user permissions and roles function correctly. Admin credentials: admin@sandwich.project / admin123
+
+### Database Session Persistence Resolution (September 2025)
+**Issue**: Critical session persistence failures preventing dashboard data display despite successful login.
+**Root Cause**: connect-pg-simple library creating race conditions with hardcoded `IDX_session_expire` index name regardless of table configuration.
+**Solution**: 
+- Configured custom `user_sessions` table name instead of default `session`
+- Disabled automatic table creation to prevent index conflicts
+- Manually created session table with proper structure and indexes
+**Technical Details**:
+- Session table: `user_sessions` with primary key on `sid` and expire index
+- Configuration: `createTableIfMissing: false` and `pruneSessionInterval: false`
+- Session TTL: 30 days matching cookie maxAge for extended user sessions
+**Result**: Database-backed session persistence fully operational. Users maintain authentication across page refreshes and extended sessions. Dashboard and all authenticated endpoints now function correctly.
+
 ## System Architecture
 
 ### Core Technologies

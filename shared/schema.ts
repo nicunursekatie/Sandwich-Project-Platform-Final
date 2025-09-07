@@ -429,6 +429,7 @@ export const users = pgTable("users", {
         role: varchar().default('volunteer'),
         permissions: jsonb().default([]),
         isActive: boolean("is_active").default(true),
+        metadata: jsonb().default({}),
 }, (table) => [
         unique("users_email_unique").on(table.email),
 ]);
