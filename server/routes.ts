@@ -3455,7 +3455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Compile meeting agenda with structured sections: Old Business, Urgent Items, Housekeeping, New Business
   app.post("/api/meetings/:id/compile-agenda", isAuthenticated, async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, PERMISSIONS.MEETINGS_MANAGE)) {
+      if (!hasPermission(req.user, "MEETINGS_MANAGE")) {
         return res.status(403).json({ error: "Insufficient permissions to compile agenda" });
       }
 
@@ -3484,7 +3484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get compiled agenda for a meeting
   app.get("/api/meetings/:id/compiled-agenda", isAuthenticated, async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, PERMISSIONS.MEETINGS_VIEW)) {
+      if (!hasPermission(req.user, "MEETINGS_VIEW")) {
         return res.status(403).json({ error: "Insufficient permissions to view agenda" });
       }
 
@@ -3512,7 +3512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export meeting agenda to Google Sheets using Christine's format
   app.post("/api/meetings/:id/export-to-sheets", isAuthenticated, async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, PERMISSIONS.MEETINGS_MANAGE)) {
+      if (!hasPermission(req.user, "MEETINGS_MANAGE")) {
         return res.status(403).json({ error: "Insufficient permissions to export to Google Sheets" });
       }
 
@@ -3542,7 +3542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export meeting minutes to Google Sheets
   app.post("/api/meetings/:id/export-minutes-to-sheets", isAuthenticated, async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, PERMISSIONS.MEETINGS_MANAGE)) {
+      if (!hasPermission(req.user, "MEETINGS_MANAGE")) {
         return res.status(403).json({ error: "Insufficient permissions to export to Google Sheets" });
       }
 
@@ -3572,7 +3572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Download meeting agenda as PDF
   app.get("/api/meetings/:id/download-pdf", isAuthenticated, async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, PERMISSIONS.MEETINGS_VIEW)) {
+      if (!hasPermission(req.user, "MEETINGS_VIEW")) {
         return res.status(403).json({ error: "Insufficient permissions to download meeting agenda" });
       }
 
@@ -3621,7 +3621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Finalize compiled agenda
   app.patch("/api/compiled-agendas/:id/finalize", isAuthenticated, async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, PERMISSIONS.MEETINGS_MANAGE)) {
+      if (!hasPermission(req.user, "MEETINGS_MANAGE")) {
         return res.status(403).json({ error: "Insufficient permissions to finalize agenda" });
       }
 
@@ -3648,7 +3648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Finalize and export custom agenda as PDF
   app.post("/api/meetings/finalize-agenda-pdf", isAuthenticated, async (req: any, res) => {
     try {
-      if (!hasPermission(req.user, PERMISSIONS.MEETINGS_MANAGE)) {
+      if (!hasPermission(req.user, "MEETINGS_MANAGE")) {
         return res.status(403).json({ error: "Insufficient permissions to generate agenda PDF" });
       }
 
@@ -3857,7 +3857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Set response headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="meeting-agenda-${agendaData.meetingDate}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="meeting-agenda-${agendaData.meetingDate || 'unknown'}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
       
       res.send(pdfBuffer);
@@ -3865,7 +3865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       logger.error('Finalize agenda PDF error:', error);
       console.error('=== PDF GENERATION ERROR DETAILS ===');
       console.error('Error:', error);
-      console.error('Agenda data received:', JSON.stringify(agendaData, null, 2));
+      console.error('Agenda data received:', JSON.stringify(req.body, null, 2));
       console.error('User permissions:', req.user?.permissions);
       console.error('User ID:', req.user?.id);
       console.error('=====================================');
