@@ -962,6 +962,9 @@ export default function EventRequestsManagement() {
 
   // Assignment update function with reliable cache invalidation
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
+    if (eventId === 5) { // Homeowners Financial Group
+      console.log('🔍 SAVING ASSIGNMENT:', { eventId, field, value });
+    }
     updateMutation.mutate({
       id: eventId,
       [field]: value,
@@ -2765,20 +2768,31 @@ export default function EventRequestsManagement() {
                       </button>
                     )}
                   </div>
-                  {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
-                    <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
+                  {(() => {
+                    const drivers = (request as any).assignedDriverIds || [];
+                    if (request.id === 5) { // Homeowners Financial Group
+                      console.log('🐛 HOMEOWNERS EVENT DEBUG:', {
+                        id: request.id,
+                        orgName: (request as any).organizationName,
+                        drivers: drivers,
+                        rawRequest: request
+                      });
+                    }
+                    return drivers.map((driverId: string, index: number) => (
+                      <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
                       {getUserDisplayName(driverId)}
-                      <button
-                        className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
-                        onClick={() => {
-                          const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
-                          handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                        <button
+                          className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
+                          onClick={() => {
+                            const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
+                            handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ));
+                  })()}
                 </div>
 
                 {/* TSP Contact Assignment */}
