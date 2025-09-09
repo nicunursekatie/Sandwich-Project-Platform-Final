@@ -14,6 +14,39 @@ import { AuditLogger } from "../audit-logger";
 
 const router = Router();
 
+// Get available drivers for event assignments
+router.get("/drivers/available", isAuthenticated, async (req, res) => {
+  try {
+    if (!hasPermission(req.user?.permissions || 0, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+
+    const drivers = await storage.getAllDrivers();
+    
+    // Only return active drivers with essential info
+    const availableDrivers = drivers
+      .filter(driver => driver.isActive)
+      .map(driver => ({
+        id: driver.id,
+        name: driver.name,
+        email: driver.email,
+        phone: driver.phone,
+        availability: driver.availability,
+        availabilityNotes: driver.availabilityNotes,
+        hostLocation: driver.hostLocation,
+        routeDescription: driver.routeDescription,
+        vanApproved: driver.vanApproved,
+        vehicleType: driver.vehicleType
+      }));
+
+    console.log(`Activity: EVENT_REQUESTS_VIEW - Retrieved ${availableDrivers.length} available drivers for assignment`);
+    res.json(availableDrivers);
+  } catch (error) {
+    console.error("Error fetching available drivers:", error);
+    res.status(500).json({ error: "Failed to fetch available drivers" });
+  }
+});
+
 // Get complete event details by organization and contact
 router.get("/details/:organizationName/:contactName", isAuthenticated, async (req, res) => {
   try {
