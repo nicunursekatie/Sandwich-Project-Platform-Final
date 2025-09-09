@@ -241,6 +241,10 @@ export async function importScheduledEvents(): Promise<{
         firstName = nameParts[0] || 'Contact';
         lastName = nameParts.slice(1).join(' ') || 'Person';
       }
+      
+      // Extra safety check to ensure we never have null/empty names
+      if (!firstName || firstName.trim() === '') firstName = 'Contact';
+      if (!lastName || lastName.trim() === '') lastName = 'Person';
 
       // Create new event request
       const newEvent = {
@@ -252,7 +256,7 @@ export async function importScheduledEvents(): Promise<{
         desired_event_date: (() => {
           const [year, month, day] = event.date.split('-').map(Number);
           return new Date(year, month - 1, day, 16, 0, 0); // 4 PM local time, month is 0-indexed
-        })()
+        })(),
         message: event.details,
         status: 'scheduled',
         event_address: event.address || '',
