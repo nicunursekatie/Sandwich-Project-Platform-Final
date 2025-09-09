@@ -2622,10 +2622,9 @@ export default function EventRequestsManagement() {
                 {/* Driver Assignment Details */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-0">
                       <span className="text-xs text-gray-600">
-                        Assigned: {(request as any).assignedDriverIds?.length || 0}/
-                      </span>
+                        Assigned: {(request as any).assignedDriverIds?.length || 0}/</span>
                       {editingField === "driversNeeded" && editingEventId === request.id ? (
                         <div className="flex items-center space-x-1">
                           <input
@@ -2681,7 +2680,7 @@ export default function EventRequestsManagement() {
                         </div>
                       ) : (
                         <button
-                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline ml-0"
                           onClick={() => {
                             setEditingField("driversNeeded");
                             setEditingEventId(request.id);
