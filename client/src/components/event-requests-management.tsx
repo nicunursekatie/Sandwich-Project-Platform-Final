@@ -2840,8 +2840,11 @@ export default function EventRequestsManagement() {
                   <span className="text-gray-500 text-sm mt-1 flex-shrink-0">🥪</span>
                   {editingField === "sandwichTypes" &&
                   editingEventId === request.id ? (
-                    <div className="w-full bg-white border rounded-lg p-3 shadow-sm">
-                      <div className="space-y-3">
+                    <div className="w-full bg-white border rounded-lg p-4 shadow-sm">
+                      <div className="space-y-4">
+                        <div className="text-sm font-medium text-gray-800">🥪 Sandwich Planning</div>
+                        
+                        {/* Estimated Total Count Input */}
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
@@ -2851,39 +2854,51 @@ export default function EventRequestsManagement() {
                             className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm text-center"
                             placeholder="0"
                           />
-                          <span className="text-sm text-gray-600">sandwiches</span>
+                          <span className="text-sm text-gray-600">total sandwiches estimated</span>
                         </div>
-                        <div>
-                          <Label className="text-sm text-gray-600">Type (optional):</Label>
-                          <select
-                            value={tempValues.sandwichType || 'unknown'}
-                            onChange={(e) => setTempValues(prev => ({ ...prev, sandwichType: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mt-1"
-                          >
-                            {SANDWICH_TYPES.map(type => (
-                              <option key={type.value} value={type.value}>
-                                {type.label}
-                              </option>
-                            ))}
-                          </select>
+
+                        {/* Advanced Sandwich Types Selector */}
+                        <div className="border-t pt-3">
+                          <div className="text-sm font-medium text-gray-700 mb-2">Sandwich Types & Quantities</div>
+                          <SandwichTypesSelector 
+                            name="sandwichTypesInline"
+                            defaultValue={request.sandwichTypes}
+                            estimatedCount={tempValues.estimatedSandwichCount || request.estimatedSandwichCount || 0}
+                            className="inline-editing"
+                          />
                         </div>
                       </div>
-                      <div className="flex gap-2 mt-3">
+                      
+                      <div className="flex gap-2 mt-4 pt-3 border-t">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            handleTrackChange(request.id, "estimatedSandwichCount", tempValues.estimatedSandwichCount);
-                            // Save sandwich types in the correct JSONB format
-                            const sandwichType = tempValues.sandwichType || 'unknown';
-                            const sandwichCount = tempValues.estimatedSandwichCount || 0;
-                            if (sandwichType && sandwichType !== 'unknown' && sandwichCount > 0) {
-                              const sandwichTypesData = [{
-                                type: sandwichType,
-                                quantity: sandwichCount
-                              }];
-                              handleTrackChange(request.id, "sandwichTypes", JSON.stringify(sandwichTypesData));
+                            // Get the form data from the SandwichTypesSelector
+                            const form = document.querySelector('input[name="sandwichTypesInline"]')?.closest('form') || document.createElement('form');
+                            const formData = new FormData();
+                            
+                            // Add current values
+                            formData.append('estimatedSandwichCount', String(tempValues.estimatedSandwichCount || 0));
+                            
+                            // Get sandwich types from the hidden input
+                            const sandwichTypesInput = document.querySelector('input[name="sandwichTypesInline"]') as HTMLInputElement;
+                            const sandwichTypesValue = sandwichTypesInput?.value;
+                            
+                            // Save both the estimated count and the detailed types
+                            handleTrackChange(request.id, "estimatedSandwichCount", tempValues.estimatedSandwichCount || 0);
+                            
+                            if (sandwichTypesValue) {
+                              try {
+                                const parsedTypes = JSON.parse(sandwichTypesValue);
+                                if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
+                                  handleTrackChange(request.id, "sandwichTypes", JSON.stringify(parsedTypes));
+                                }
+                              } catch (e) {
+                                console.warn("Failed to parse sandwich types:", e);
+                              }
                             }
+                            
                             setEditingField(null);
                             setEditingEventId(null);
                             setTempValues({});
@@ -3708,32 +3723,6 @@ export default function EventRequestsManagement() {
 
                   {/* Show volunteer assignments if volunteers are needed */}
                   {(request as any).volunteersNeeded && (request as any).assignedVolunteerIds?.length > 0 && (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-700">Volunteers</span>
-                        {((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0) && (
-                          <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
-                            NEEDED
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        className={`text-xs px-2 py-1 rounded border ${
-                          ((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0)
-                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
-                            : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200'
-                        }`}
-                        onClick={() => {
-                          setAssigningVolunteerRequest(request);
-                          setShowVolunteerDialog(true);
-                          const currentVolunteers = (request as any).assignedVolunteerIds || [];
-                          setSelectedVolunteers(currentVolunteers);
-                        }}
-                      >
-                        {(request as any).assignedVolunteerIds?.length > 0 ? "Edit Volunteers" : "+ Assign Volunteer"}
-                      </button>
-                    </div>
                     <div className="flex flex-wrap gap-1">
                       {((request as any).assignedVolunteerIds || []).map((volunteerId: string, index: number) => (
                         <div key={index} className="inline-flex items-center bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-200">
