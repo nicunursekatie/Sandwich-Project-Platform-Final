@@ -1149,6 +1149,16 @@ export const eventRequests = pgTable("event_requests", {
   socialMediaPostCompletedDate: timestamp("social_media_post_completed_date"), // When they completed the post
   socialMediaPostNotes: text("social_media_post_notes"), // Notes about social media posts
   
+  // Actual sandwich count and distribution tracking for completed events
+  actualSandwichCount: integer("actual_sandwich_count"), // Final count of sandwiches made
+  actualSandwichTypes: jsonb("actual_sandwich_types"), // Array of {type: string, quantity: number} for actual sandwiches made
+  actualSandwichCountRecordedDate: timestamp("actual_sandwich_count_recorded_date"), // When final count was recorded
+  actualSandwichCountRecordedBy: varchar("actual_sandwich_count_recorded_by"), // User ID who recorded final count
+  sandwichDistributions: jsonb("sandwich_distributions"), // Array of {destination: string, sandwichTypes: [{type: string, quantity: number}], totalCount: number} for distribution tracking
+  distributionRecordedDate: timestamp("distribution_recorded_date"), // When distribution was recorded
+  distributionRecordedBy: varchar("distribution_recorded_by"), // User ID who recorded distribution
+  distributionNotes: text("distribution_notes"), // Notes about sandwich distribution
+  
   // Duplicate detection flags
   organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates
