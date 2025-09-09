@@ -160,7 +160,9 @@ export default function ProjectsClean() {
       startDate: '',
       estimatedHours: 0,
       actualHours: 0,
-      budget: ''
+      budget: '',
+      isMeetingProject: false,
+      reviewInNextMeeting: false
     });
   };
 
@@ -170,7 +172,10 @@ export default function ProjectsClean() {
       const projectWithCreator = {
         ...newProject,
         createdBy: (user as any)?.id || '',
-        createdByName: (user as any)?.firstName ? `${(user as any).firstName} ${(user as any).lastName || ''}`.trim() : (user as any)?.email || ''
+        createdByName: (user as any)?.firstName ? `${(user as any).firstName} ${(user as any).lastName || ''}`.trim() : (user as any)?.email || '',
+        // If it's a meeting project, mark it for potential sync but don't assign googleSheetRowId yet
+        // The googleSheetRowId will be assigned when it's actually synced to the sheet
+        reviewInNextMeeting: newProject.isMeetingProject || false
       };
       createProjectMutation.mutate(projectWithCreator);
     }
@@ -656,6 +661,35 @@ export default function ProjectsClean() {
                 className="font-roboto"
                 rows={3}
               />
+            </div>
+            
+            {/* Project Type Selection */}
+            <div className="space-y-2">
+              <Label className="font-roboto">Project Type</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="projectType"
+                    checked={!newProject.isMeetingProject}
+                    onChange={() => setNewProject({...newProject, isMeetingProject: false})}
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="text-sm font-roboto">🏢 Internal Project</span>
+                  <span className="text-xs text-gray-500">(Database only)</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="projectType"
+                    checked={newProject.isMeetingProject}
+                    onChange={() => setNewProject({...newProject, isMeetingProject: true})}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-roboto">📊 Meeting Project</span>
+                  <span className="text-xs text-gray-500">(Syncs with Google Sheets)</span>
+                </label>
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
