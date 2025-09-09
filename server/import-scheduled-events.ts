@@ -184,19 +184,24 @@ const scheduledEvents = [
 async function eventExists(organizationName: string, eventDate: string): Promise<boolean> {
   try {
     const allEvents = await storage.getAllEventRequests();
-    const targetDate = new Date(eventDate);
+    // Parse date in local timezone to avoid UTC shifts
+    const [year, month, day] = eventDate.split('-').map(Number);
+    const targetDate = new Date(year, month - 1, day); // month is 0-indexed
     
     return allEvents.some((event: any) => {
-      if (!event.desired_event_date) return false;
+      if (!event.desired_event_date || !event.organization_name) return false;
       
       const existingDate = new Date(event.desired_event_date);
-      const sameDate = existingDate.toDateString() === targetDate.toDateString();
-      const sameOrg = event.organization_name?.toLowerCase() === organizationName.toLowerCase();
+      // Compare year, month, day directly to avoid timezone issues
+      const sameDate = existingDate.getFullYear() === targetDate.getFullYear() &&
+                      existingDate.getMonth() === targetDate.getMonth() &&
+                      existingDate.getDate() === targetDate.getDate();
+      const sameOrg = event.organization_name.toLowerCase() === organizationName.toLowerCase();
       
       return sameDate && sameOrg;
     });
   } catch (error) {
-    console.error('Error checking event existence:', error);
+    console.error('Error checking event existence:', error instanceof Error ? error.message : String(error));
     return false;
   }
 }
@@ -226,11 +231,16 @@ export async function importScheduledEvents(): Promise<{
         continue;
       }
 
-      // Parse contact name with fallbacks for empty/null values
-      const contactName = event.contactName?.trim() || 'Contact Person';
-      const nameParts = contactName.split(' ');
-      const firstName = nameParts[0] || 'Contact';
-      const lastName = nameParts.slice(1).join(' ') || 'Person';
+      // Parse contact name with robust fallbacks for empty/null values
+      const contactName = event.contactName?.trim();
+      let firstName = 'Contact';
+      let lastName = 'Person';
+      
+      if (contactName && contactName.length > 0) {
+        const nameParts = contactName.split(' ');
+        firstName = nameParts[0] || 'Contact';
+        lastName = nameParts.slice(1).join(' ') || 'Person';
+      }
 
       // Create new event request
       const newEvent = {
@@ -239,14 +249,17 @@ export async function importScheduledEvents(): Promise<{
         email: event.contactEmail || '',
         phone: event.contactPhone || '',
         organization_name: event.groupName,
-        desired_event_date: new Date(`${event.date}T16:00:00`), // Default to 4 PM
+        desired_event_date: (() => {
+          const [year, month, day] = event.date.split('-').map(Number);
+          return new Date(year, month - 1, day, 16, 0, 0); // 4 PM local time, month is 0-indexed
+        })()
         message: event.details,
         status: 'scheduled',
         event_address: event.address || '',
         estimated_sandwich_count: event.estimatedSandwiches || 0,
         event_start_time: event.eventStartTime || '',
         event_end_time: event.eventEndTime || '',
-        pickup_time: event.pickupTime || '',
+        pickup_time: event.pickupTime === 'flexible' ? 'Flexible timing' : (event.pickupTime || ''),
         planning_notes: event.notes || '',
         toolkit_sent: true, // Marked as sent in spreadsheet
         toolkit_status: 'sent',
@@ -267,8 +280,9 @@ export async function importScheduledEvents(): Promise<{
       }
 
     } catch (error) {
-      const errorMsg = `Failed to import ${event.groupName}: ${error.message}`;
+      const errorMsg = `Failed to import ${event.groupName}: ${error instanceof Error ? error.message : String(error)}`;
       console.error(`❌ ${errorMsg}`);
+      console.error('Full error details:', error);
       results.errors.push(errorMsg);
     }
   }
