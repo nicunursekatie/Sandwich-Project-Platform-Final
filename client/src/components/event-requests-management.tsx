@@ -6227,6 +6227,51 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
+                {/* Contact Information Section */}
+                <div className="border rounded-lg p-4 bg-blue-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Contact Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        name="firstName"
+                        defaultValue={detailsRequest.firstName || ""}
+                        placeholder="Contact first name"
+                        className="bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        name="lastName"
+                        defaultValue={detailsRequest.lastName || ""}
+                        placeholder="Contact last name"
+                        className="bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        name="email"
+                        type="email"
+                        defaultValue={detailsRequest.email || ""}
+                        placeholder="Contact email address"
+                        className="bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        name="phone"
+                        type="tel"
+                        defaultValue={detailsRequest.phone || ""}
+                        placeholder="Contact phone number"
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="toolkitStatus">Toolkit Status</Label>
