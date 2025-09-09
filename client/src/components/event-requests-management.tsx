@@ -1045,6 +1045,27 @@ export default function EventRequestsManagement() {
     },
   });
 
+  // Mark in_process event as scheduled manually
+  const markScheduledMutation = useMutation({
+    mutationFn: (eventId: number) =>
+      apiRequest("PUT", `/api/event-requests/${eventId}`, { status: "scheduled" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
+      toast({ 
+        title: "Event marked as scheduled",
+        description: "The event has been moved to scheduled status"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter events by tab
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
@@ -3565,6 +3586,43 @@ export default function EventRequestsManagement() {
                 >
                   <XCircle className="h-4 w-4 mr-1" />
                   Manage Unresponsive
+                </Button>
+              )}
+
+              {/* Show "Mark as Scheduled" only for in_process events */}
+              {request.status === "in_process" && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    // Check if event date is in the past or today
+                    if (request.desiredEventDate) {
+                      try {
+                        const eventDate = new Date(request.desiredEventDate);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        eventDate.setHours(0, 0, 0, 0);
+                        
+                        if (eventDate <= today) {
+                          toast({
+                            title: "Cannot mark as scheduled",
+                            description: "Events with past or current dates cannot be in process. Please update the event date first.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                      } catch (error) {
+                        console.warn("Error parsing event date for validation:", error);
+                      }
+                    }
+                    
+                    markScheduledMutation.mutate(request.id);
+                  }}
+                  disabled={markScheduledMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  {markScheduledMutation.isPending ? "Scheduling..." : "Mark as Scheduled"}
                 </Button>
               )}
 
