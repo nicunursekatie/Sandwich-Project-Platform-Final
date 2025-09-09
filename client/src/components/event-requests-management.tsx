@@ -4560,40 +4560,44 @@ export default function EventRequestsManagement() {
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto p-1 flex flex-row justify-start overflow-x-auto md:grid md:grid-cols-6">
+          <TabsList className="w-full h-auto p-1 grid grid-cols-2 sm:grid-cols-4 gap-1">
             <TabsTrigger
               value="requests"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-xs sm:text-sm"
             >
-              New Requests
-              <Badge variant="secondary" className="ml-2">
+              <span className="hidden sm:inline">New Requests</span>
+              <span className="sm:hidden">New</span>
+              <Badge variant="secondary" className="ml-1 text-xs">
                 {requestsEvents.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger
               value="in_process"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-xs sm:text-sm"
             >
-              In Process
-              <Badge variant="secondary" className="ml-2">
+              <span className="hidden sm:inline">In Process</span>
+              <span className="sm:hidden">Process</span>
+              <Badge variant="secondary" className="ml-1 text-xs">
                 {inProcessEvents.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger
               value="scheduled"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-xs sm:text-sm"
             >
-              Scheduled
-              <Badge variant="secondary" className="ml-2">
+              <span className="hidden sm:inline">Scheduled</span>
+              <span className="sm:hidden">Schedule</span>
+              <Badge variant="secondary" className="ml-1 text-xs">
                 {scheduledEvents.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger
               value="past"
-              className="relative whitespace-nowrap flex-shrink-0 min-w-fit px-3 py-2"
+              className="relative flex-1 px-2 py-2 text-xs sm:text-sm"
             >
-              Past Events
-              <Badge variant="secondary" className="ml-2">
+              <span className="hidden sm:inline">Past Events</span>
+              <span className="sm:hidden">Past</span>
+              <Badge variant="secondary" className="ml-1 text-xs">
                 {pastEvents.length}
               </Badge>
             </TabsTrigger>
