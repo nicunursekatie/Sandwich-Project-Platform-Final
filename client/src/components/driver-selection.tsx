@@ -116,7 +116,7 @@ export function DriverSelection({
   // Filter drivers based on search and availability
   const filteredDrivers = (drivers as Driver[]).filter((driver: Driver) => {
     const matchesSearch = !searchTerm || 
-      driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       driver.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       driver.phone?.includes(searchTerm) ||
       driver.hostLocation?.toLowerCase().includes(searchTerm.toLowerCase());

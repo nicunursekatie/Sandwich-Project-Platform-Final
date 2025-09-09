@@ -51,9 +51,9 @@ export function DriverSelectionModal({
 
   // Filter drivers based on search term
   const filteredDrivers = drivers.filter(driver =>
-    driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    driver.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    driver.phone.includes(searchTerm)
+    driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    driver.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    driver.phone?.includes(searchTerm)
   );
 
   const handleDriverToggle = (driverName: string) => {
