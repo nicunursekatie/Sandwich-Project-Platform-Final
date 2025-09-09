@@ -4047,7 +4047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export hosts to CSV
-  app.get("/api/hosts/export", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
+  app.get("/api/hosts/export", isAuthenticated, requirePermission("HOSTS_VIEW"), async (req, res) => {
     try {
       const hosts = await storage.getAllHosts();
       
@@ -4099,7 +4099,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export recipients to CSV
-  app.get("/api/recipients/export", isAuthenticated, requirePermission("access_recipients"), async (req, res) => {
+  app.get("/api/recipients/export", isAuthenticated, requirePermission("RECIPIENTS_VIEW"), async (req, res) => {
     try {
       const recipients = await storage.getAllRecipients();
       
@@ -4510,7 +4510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/hosts/:id", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
+  app.get("/api/hosts/:id", isAuthenticated, requirePermission("HOSTS_VIEW"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const host = await storage.getHost(id);
@@ -4750,7 +4750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/hosts/:hostId/contacts", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
+  app.get("/api/hosts/:hostId/contacts", isAuthenticated, requirePermission("HOSTS_VIEW"), async (req, res) => {
     try {
       const hostId = parseInt(req.params.hostId);
       const contacts = await storage.getHostContacts(hostId);
@@ -4830,7 +4830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Optimized endpoint to get all hosts with their contacts in one call
-  app.get("/api/hosts-with-contacts", isAuthenticated, requirePermission("access_hosts"), async (req, res) => {
+  app.get("/api/hosts-with-contacts", isAuthenticated, requirePermission("HOSTS_VIEW"), async (req, res) => {
     try {
       const hostsWithContacts = await storage.getAllHostsWithContacts();
       res.json(hostsWithContacts);
@@ -4860,7 +4860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recipients
-  app.get("/api/recipients", isAuthenticated, requirePermission("access_recipients"), async (req, res) => {
+  app.get("/api/recipients", isAuthenticated, requirePermission("RECIPIENTS_VIEW"), async (req, res) => {
     try {
       const recipients = await storage.getAllRecipients();
       res.json(recipients);
