@@ -1122,6 +1122,13 @@ export const eventRequests = pgTable("event_requests", {
   speakersNeeded: integer("speakers_needed").default(0), // How many speakers this event needs
   volunteerNotes: text("volunteer_notes"), // General notes about volunteer requirements
   
+  // Driver and speaker assignments
+  assignedDriverIds: text("assigned_driver_ids").array(), // Array of assigned driver IDs/names
+  driverPickupTime: varchar("driver_pickup_time"), // Pickup time for drivers
+  driverNotes: text("driver_notes"), // Notes for drivers
+  driversArranged: boolean("drivers_arranged").default(false), // Whether drivers are confirmed
+  assignedSpeakerIds: text("assigned_speaker_ids").array(), // Array of assigned speaker IDs/names
+  
   // Follow-up tracking for completed events
   followUpOneDayCompleted: boolean("follow_up_one_day_completed").default(false), // 1-day follow-up completed
   followUpOneDayDate: timestamp("follow_up_one_day_date"), // When 1-day follow-up was completed

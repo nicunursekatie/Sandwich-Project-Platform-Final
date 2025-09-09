@@ -2624,9 +2624,13 @@ export default function EventRequestsManagement() {
                 {/* Driver Assignment Details */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-0">
+                    <div className="flex items-center">
                       <span className="text-xs text-gray-600">
-                        Assigned: {(request as any).assignedDriverIds?.length || 0}/</span>
+                        Assigned: {(request as any).assignedDriverIds?.length || 0}/
+                        {editingField === "driversNeeded" && editingEventId === request.id ? 
+                          tempValues.driversNeeded || (request as any).driversNeeded || 0 
+                        : (request as any).driversNeeded || 0}
+                      </span>
                       {editingField === "driversNeeded" && editingEventId === request.id ? (
                         <div className="flex items-center space-x-1">
                           <input
