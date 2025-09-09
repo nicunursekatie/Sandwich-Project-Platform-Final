@@ -72,6 +72,7 @@ import {
   History,
   HelpCircle,
   Shield,
+  CalendarPlus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -837,6 +838,24 @@ export default function EventRequestsManagement() {
     onError: (error: any) => {
       toast({
         title: "Error syncing from Google Sheets",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const importScheduledEventsMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/import-scheduled-events"),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      toast({
+        title: "Scheduled Events Import successful",
+        description: `Imported ${data.imported} new events, skipped ${data.skipped} existing events`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error importing scheduled events",
         description: error.message,
         variant: "destructive",
       });
@@ -4409,6 +4428,20 @@ export default function EventRequestsManagement() {
                 {importExcelMutation.isPending
                   ? "Importing..."
                   : "Import Excel"}
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => importScheduledEventsMutation.mutate()}
+              disabled={importScheduledEventsMutation.isPending}
+              className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              <CalendarPlus className="w-4 h-4" />
+              <span className="hidden sm:inline sm:ml-2">
+                {importScheduledEventsMutation.isPending
+                  ? "Importing..."
+                  : "Import Scheduled Events"}
               </span>
             </Button>
             <Button
