@@ -74,6 +74,7 @@ import {
   HelpCircle,
   Shield,
   CalendarPlus,
+  ArrowUp,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -356,6 +357,7 @@ export default function EventRequestsManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [globalSearch, setGlobalSearch] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(
     null,
@@ -4558,6 +4560,20 @@ export default function EventRequestsManagement() {
     completeEventDetailsMutation.mutate(data);
   };
 
+  // Back to top functionality
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -7577,6 +7593,18 @@ export default function EventRequestsManagement() {
         currentCustomVanDriverName={(selectedEventForDrivers as any)?.customVanDriverName}
         eventId={selectedEventForDrivers?.id || 0}
       />
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <Button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[#236383] hover:bg-[#1a4d63] text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-[#236383] focus:ring-offset-2"
+          size="sm"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </Button>
+      )}
     </TooltipProvider>
   );
 }
