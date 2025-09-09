@@ -671,6 +671,12 @@ export default function EventRequestsManagement() {
   const [assigningSpeakerRequest, setAssigningSpeakerRequest] =
     useState<EventRequest | null>(null);
   const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
+
+  // Volunteer Assignment state
+  const [showVolunteerDialog, setShowVolunteerDialog] = useState(false);
+  const [assigningVolunteerRequest, setAssigningVolunteerRequest] =
+    useState<EventRequest | null>(null);
+  const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
   const [showCallbackDialog, setShowCallbackDialog] = useState(false);
   const [showCallCompletedDialog, setShowCallCompletedDialog] = useState(false);
   const [callCompletedRequest, setCallCompletedRequest] =
@@ -2288,6 +2294,17 @@ export default function EventRequestsManagement() {
       return { badge: "❓ Unknown", color: "bg-yellow-100 text-yellow-700" };
     };
 
+    const getVolunteerStatus = () => {
+      const volunteersNeeded = (request as any).volunteersNeeded || false;
+      const assignedVolunteers = (request as any).assignedVolunteerIds || [];
+      
+      if (!volunteersNeeded)
+        return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
+      if (assignedVolunteers.length > 0)
+        return { badge: "✓ Assigned", color: "bg-green-100 text-green-700" };
+      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
+    };
+
     return (
       <Card
         key={request.id}
@@ -3053,6 +3070,14 @@ export default function EventRequestsManagement() {
                   </span>
                 </div>
 
+                {/* Volunteer Status */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Volunteers</span>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getVolunteerStatus().color}`}>
+                    {getVolunteerStatus().badge}
+                  </span>
+                </div>
+
                 {/* Driver Assignment Details */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -3483,6 +3508,42 @@ export default function EventRequestsManagement() {
                       </div>
                     ))}
                   </div>
+
+                {/* Volunteer Assignment Section - Only show if volunteers are needed */}
+                {(request as any).volunteersNeeded && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Volunteers</span>
+                      <button
+                        className="text-xs bg-orange-50 text-orange-700 hover:bg-orange-100 px-2 py-1 rounded border border-orange-200"
+                        onClick={() => {
+                          setAssigningVolunteerRequest(request);
+                          setShowVolunteerDialog(true);
+                          const currentVolunteers = (request as any).assignedVolunteerIds || [];
+                          setSelectedVolunteers(currentVolunteers);
+                        }}
+                      >
+                        {(request as any).assignedVolunteerIds?.length > 0 ? "Edit Volunteers" : "+ Assign Volunteer"}
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {((request as any).assignedVolunteerIds || []).map((volunteerId: string, index: number) => (
+                        <div key={index} className="inline-flex items-center bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-200">
+                          {getUserDisplayName(volunteerId)}
+                          <button
+                            className="ml-1 hover:bg-orange-200 rounded-full w-4 h-4 flex items-center justify-center"
+                            onClick={() => {
+                              const updatedVolunteers = (request as any).assignedVolunteerIds?.filter((id: string, i: number) => i !== index) || [];
+                              handleAssignmentUpdate(request.id, 'assignedVolunteerIds', updatedVolunteers);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Show volunteer notes if present */}
                 {(request as any).volunteerNotes && (
