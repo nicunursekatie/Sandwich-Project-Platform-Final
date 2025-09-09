@@ -56,6 +56,7 @@ Typography uses Roboto font family. UI elements prioritize clarity with well-def
 - **Meeting PDF Generation Debugging**: Enhanced PDF generation system with comprehensive error handling, detailed logging for troubleshooting permission issues, and improved user feedback for successful agenda exports.
 - **Organization EIN Display**: Added prominent EIN (87-0939484) display in sidebar navigation and Important Documents page for easy access and tracking.
 - **Unresponsive Contact Workflow**: Comprehensive system for managing unresponsive event requests with tracking fields (contact attempts, last attempt date, reason, contact method preferences), workflow buttons for marking and managing unresponsive status, visual indicators with red badges, filtering capabilities, and detailed management forms with automated follow-up scheduling and audit logging.
+- **403 Permissions Debugging**: **TECHNICAL FIX DOCUMENTED**: Root causes of 403 "Insufficient Permissions" errors: (1) Mixed permission identifiers - some routes used string literals vs PERMISSIONS constants, (2) Routes accessing req.user without proper middleware, (3) Driver endpoint explicit DRIVERS_VIEW permission check with bitmask compatibility issues, (4) CORS credentials with wildcard origins blocking session cookies. Fixed via hasPermission() function enhancement to handle both array and bitmask formats, proper middleware implementation, and session restart clearing caching issues.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
