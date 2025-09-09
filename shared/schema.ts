@@ -1129,6 +1129,12 @@ export const eventRequests = pgTable("event_requests", {
   driversArranged: boolean("drivers_arranged").default(false), // Whether drivers are confirmed
   assignedSpeakerIds: text("assigned_speaker_ids").array(), // Array of assigned speaker IDs/names
   
+  // Van driver assignment
+  vanDriverNeeded: boolean("van_driver_needed").default(false), // Whether a van driver is required
+  assignedVanDriverId: text("assigned_van_driver_id"), // Van driver ID from database
+  customVanDriverName: text("custom_van_driver_name"), // Custom van driver name (text entry)
+  vanDriverNotes: text("van_driver_notes"), // Special notes for van driver
+  
   // Follow-up tracking for completed events
   followUpOneDayCompleted: boolean("follow_up_one_day_completed").default(false), // 1-day follow-up completed
   followUpOneDayDate: timestamp("follow_up_one_day_date"), // When 1-day follow-up was completed
