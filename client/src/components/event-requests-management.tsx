@@ -970,7 +970,9 @@ export default function EventRequestsManagement() {
         driversArranged: assignedDriverIds && assignedDriverIds.length > 0
       }),
     onSuccess: () => {
+      // Force immediate cache invalidation and refetch
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.refetchQueries({ queryKey: ["/api/event-requests"] });
       toast({ 
         title: "Success",
         description: "Driver assignments updated successfully" 
