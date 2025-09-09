@@ -20,10 +20,10 @@ router.get("/drivers/available", isAuthenticated, async (req, res) => {
     console.log("🔍 Driver lookup permission check:", {
       userPermissions: req.user?.permissions,
       requiredPermission: PERMISSIONS.DRIVERS_VIEW,
-      hasPermission: hasPermission(req.user?.permissions || 0, PERMISSIONS.DRIVERS_VIEW)
+      hasPermission: hasPermission(req.user, PERMISSIONS.DRIVERS_VIEW)
     });
     
-    if (!hasPermission(req.user?.permissions || 0, PERMISSIONS.DRIVERS_VIEW)) {
+    if (!hasPermission(req.user, PERMISSIONS.DRIVERS_VIEW)) {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 
