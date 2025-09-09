@@ -200,10 +200,13 @@ const getSandwichTypesSummary = (request: any) => {
   if (request.estimatedSandwichCount) {
     const total = request.estimatedSandwichCount;
     const type = request.sandwichType || 'Unknown';
+    // Convert sandwich type code to readable label
+    const typeLabel = type !== 'Unknown' && type !== 'unknown' ? 
+      (SANDWICH_TYPES.find(t => t.value === type)?.label || type) : 'Unknown';
     return { 
       total, 
-      breakdown: type !== 'Unknown' ? `${total} ${type}` : `${total} sandwiches`,
-      hasBreakdown: type !== 'Unknown'
+      breakdown: typeLabel !== 'Unknown' ? `${total} ${typeLabel}` : `${total} sandwiches`,
+      hasBreakdown: typeLabel !== 'Unknown'
     };
   }
   
@@ -2811,7 +2814,16 @@ export default function EventRequestsManagement() {
                           variant="outline"
                           onClick={() => {
                             handleTrackChange(request.id, "estimatedSandwichCount", tempValues.estimatedSandwichCount);
-                            handleTrackChange(request.id, "sandwichType", tempValues.sandwichType || 'Unknown');
+                            // Save sandwich types in the correct JSONB format
+                            const sandwichType = tempValues.sandwichType || 'unknown';
+                            const sandwichCount = tempValues.estimatedSandwichCount || 0;
+                            if (sandwichType && sandwichType !== 'unknown' && sandwichCount > 0) {
+                              const sandwichTypesData = [{
+                                type: sandwichType,
+                                quantity: sandwichCount
+                              }];
+                              handleTrackChange(request.id, "sandwichTypes", JSON.stringify(sandwichTypesData));
+                            }
                             setEditingField(null);
                             setEditingEventId(null);
                             setTempValues({});
@@ -2857,9 +2869,14 @@ export default function EventRequestsManagement() {
                           onClick={() => {
                             setEditingField("sandwichTypes");
                             setEditingEventId(request.id);
+                            // Load existing sandwich type data
+                            let existingSandwichType = 'unknown';
+                            if (request.sandwichTypes && Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0) {
+                              existingSandwichType = request.sandwichTypes[0].type || 'unknown';
+                            }
                             setTempValues({
                               estimatedSandwichCount: request.estimatedSandwichCount || 0,
-                              sandwichType: request.sandwichType || 'Unknown'
+                              sandwichType: existingSandwichType
                             });
                           }}
                         >
