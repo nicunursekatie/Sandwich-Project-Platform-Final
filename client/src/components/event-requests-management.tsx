@@ -1157,11 +1157,11 @@ export default function EventRequestsManagement() {
       const matchesSearch =
         !searchTerm ||
         request.organizationName
-          .toLowerCase()
+          ?.toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        request.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (request.desiredEventDate &&
           typeof request.desiredEventDate === "string" &&
           request.desiredEventDate
@@ -1217,8 +1217,8 @@ export default function EventRequestsManagement() {
     if (activeTab === "requests") {
       return filtered.sort((a: any, b: any) => {
         if (requestsSortBy === "organization") {
-          const orgA = a.organizationName.toLowerCase();
-          const orgB = b.organizationName.toLowerCase();
+          const orgA = (a.organizationName || "").toLowerCase();
+          const orgB = (b.organizationName || "").toLowerCase();
           const comparison = orgA.localeCompare(orgB);
           return requestsSortOrder === "desc" ? -comparison : comparison;
         } else {
@@ -1233,8 +1233,8 @@ export default function EventRequestsManagement() {
     } else if (activeTab === "followed_up" || activeTab === "in_process") {
       return filtered.sort((a: any, b: any) => {
         if (requestsSortBy === "organization") {
-          const orgA = a.organizationName.toLowerCase();
-          const orgB = b.organizationName.toLowerCase();
+          const orgA = (a.organizationName || "").toLowerCase();
+          const orgB = (b.organizationName || "").toLowerCase();
           const comparison = orgA.localeCompare(orgB);
           return requestsSortOrder === "desc" ? -comparison : comparison;
         } else {
