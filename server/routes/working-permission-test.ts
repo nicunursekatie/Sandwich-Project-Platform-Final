@@ -101,6 +101,7 @@ const PERMISSION_TESTS: PermissionTest[] = [
   { permission: PERMISSIONS.EVENT_REQUESTS_ADD, name: 'Event Requests Add' },
   { permission: PERMISSIONS.EVENT_REQUESTS_EDIT, name: 'Event Requests Edit' },
   { permission: PERMISSIONS.EVENT_REQUESTS_DELETE, name: 'Event Requests Delete' },
+  { permission: PERMISSIONS.EVENT_REQUESTS_DELETE_CARD, name: 'Event Requests Delete Card Button' },
   { permission: PERMISSIONS.EVENT_REQUESTS_SYNC, name: 'Event Requests Sync' },
   { permission: PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT, name: 'Event Requests Complete Contact' },
   

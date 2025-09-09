@@ -961,7 +961,7 @@ router.put(
 router.delete(
   "/:id",
   isAuthenticated,
-  requirePermission("EVENT_REQUESTS_DELETE"),
+  requirePermission("EVENT_REQUESTS_DELETE_CARD"),
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -997,7 +997,7 @@ router.delete(
       await logActivity(
         req,
         res,
-        "EVENT_REQUESTS_DELETE",
+        "EVENT_REQUESTS_DELETE_CARD",
         `Deleted event request: ${id}`,
       );
       res.json({ message: "Event request deleted successfully" });

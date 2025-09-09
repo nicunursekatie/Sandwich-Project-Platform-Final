@@ -3065,7 +3065,7 @@ export default function EventRequestsManagement() {
               </Button>
             )}
 
-            {hasPermission(user, "EVENT_REQUESTS_DELETE") && (
+            {hasPermission(user, "EVENT_REQUESTS_DELETE_CARD") && (
               <Button
                 size="sm"
                 variant="outline"
@@ -3656,16 +3656,18 @@ export default function EventRequestsManagement() {
                 <Edit className="h-4 w-4 mr-1" />
                 Edit Event
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDeleteRequest(request)}
-                className="text-red-600 hover:text-red-800 bg-gradient-to-r from-red-50 to-pink-100 hover:from-red-100 hover:to-pink-200"
-                disabled={deleteMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {deleteMutation.isPending ? "Deleting..." : "Delete Event"}
-              </Button>
+              {hasPermission(user, "EVENT_REQUESTS_DELETE_CARD") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteRequest(request)}
+                  className="text-red-600 hover:text-red-800 bg-gradient-to-r from-red-50 to-pink-100 hover:from-red-100 hover:to-pink-200"
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {deleteMutation.isPending ? "Deleting..." : "Delete Event"}
+                </Button>
+              )}
             </div>
           </div>
         </div>
