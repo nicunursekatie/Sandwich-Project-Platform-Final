@@ -1142,6 +1142,13 @@ export const eventRequests = pgTable("event_requests", {
   followUpOneMonthDate: timestamp("follow_up_one_month_date"), // When 1-month follow-up was completed
   followUpNotes: text("follow_up_notes"), // Notes from follow-up communications
   
+  // Social media post tracking for past events
+  socialMediaPostRequested: boolean("social_media_post_requested").default(false), // Whether we asked them to make a post tagging us
+  socialMediaPostRequestedDate: timestamp("social_media_post_requested_date"), // When we asked for the post
+  socialMediaPostCompleted: boolean("social_media_post_completed").default(false), // Whether they completed the post
+  socialMediaPostCompletedDate: timestamp("social_media_post_completed_date"), // When they completed the post
+  socialMediaPostNotes: text("social_media_post_notes"), // Notes about social media posts
+  
   // Duplicate detection flags
   organizationExists: boolean("organization_exists").notNull().default(false), // Flag if we found a match in our database
   duplicateCheckDate: timestamp("duplicate_check_date"), // When we last checked for duplicates
