@@ -3055,15 +3055,92 @@ export default function EventRequestsManagement() {
                       </div>
                     )}
                     {/* Additional requirements */}
-                    {(request as any).additionalRequirements && (
-                      <div className="flex items-start space-x-3">
-                        <span className="text-gray-500 text-sm mt-1 flex-shrink-0">⚠️</span>
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium text-gray-700">Special Requirements: </span>
-                          <span className="text-gray-600">{(request as any).additionalRequirements}</span>
+                    <div className="flex items-start space-x-3">
+                      <span className="text-gray-500 text-sm mt-1 flex-shrink-0">⚠️</span>
+                      {editingField === "additionalRequirements" && editingEventId === request.id ? (
+                        <div className="flex-1">
+                          <div className="flex items-start space-x-2">
+                            <textarea
+                              className="flex-1 text-sm border rounded px-2 py-1 resize-none"
+                              rows={2}
+                              value={tempValues.additionalRequirements || (request as any).additionalRequirements || ""}
+                              onChange={(e) =>
+                                setTempValues((prev) => ({
+                                  ...prev,
+                                  additionalRequirements: e.target.value,
+                                }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && e.ctrlKey) {
+                                  handleTrackChange(
+                                    request.id,
+                                    "additionalRequirements",
+                                    tempValues.additionalRequirements || e.target.value,
+                                  );
+                                  setEditingField(null);
+                                  setEditingEventId(null);
+                                  setTempValues({});
+                                }
+                                if (e.key === "Escape") handleFieldCancel();
+                              }}
+                              placeholder="Enter special requirements or notes"
+                            />
+                            <div className="flex flex-col space-y-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  handleTrackChange(
+                                    request.id,
+                                    "additionalRequirements",
+                                    tempValues.additionalRequirements,
+                                  );
+                                  setEditingField(null);
+                                  setEditingEventId(null);
+                                  setTempValues({});
+                                }}
+                              >
+                                ✓
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={handleFieldCancel}
+                              >
+                                ✗
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex items-start space-x-2 flex-1">
+                          <div className="text-sm text-gray-600 flex-1">
+                            <span className="font-medium text-gray-700">Special Requirements: </span>
+                            <span className="text-gray-600">
+                              {(request as any).additionalRequirements || "None specified"}
+                            </span>
+                          </div>
+                          {canEditField("additionalRequirements") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                              onClick={() => {
+                                setEditingField("additionalRequirements");
+                                setEditingEventId(request.id);
+                                setTempValues({
+                                  additionalRequirements: (request as any).additionalRequirements || "",
+                                });
+                              }}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
