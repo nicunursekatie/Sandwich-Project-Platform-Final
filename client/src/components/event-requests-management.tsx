@@ -6458,6 +6458,79 @@ export default function EventRequestsManagement() {
                     </div>
                   </div>
                 </div>
+
+                {/* Volunteers Section */}
+                <div className="space-y-4 border rounded-lg p-4 bg-purple-50">
+                  <h3 className="text-lg font-semibold text-purple-800">🙋‍♀️ Volunteers</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="volunteersNeeded">Volunteers Needed?</Label>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <input
+                          type="checkbox"
+                          name="volunteersNeeded"
+                          defaultChecked={(selectedRequest as any).volunteersNeeded || false}
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm text-gray-700">Yes, volunteers are needed for this event</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Assigned Volunteers</Label>
+                      <div className="space-y-2">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentVolunteers = (selectedRequest as any).assignedVolunteerIds || [];
+                              const updatedVolunteers = [...currentVolunteers, e.target.value];
+                              (selectedRequest as any).assignedVolunteerIds = updatedVolunteers;
+                              e.target.value = "";
+                            }
+                          }}
+                          className="w-full text-sm border rounded px-2 py-1"
+                        >
+                          <option value="">Add team member...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Or type custom volunteer name"
+                          className="w-full text-sm border rounded px-2 py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && e.target.value.trim()) {
+                              const currentVolunteers = (selectedRequest as any).assignedVolunteerIds || [];
+                              const updatedVolunteers = [...currentVolunteers, e.target.value.trim()];
+                              (selectedRequest as any).assignedVolunteerIds = updatedVolunteers;
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {((selectedRequest as any).assignedVolunteerIds || []).map((volunteerId: string, index: number) => (
+                            <span key={index} className="inline-flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                              {getUserDisplayName(volunteerId)}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedVolunteers = (selectedRequest as any).assignedVolunteerIds?.filter((_: any, i: number) => i !== index) || [];
+                                  (selectedRequest as any).assignedVolunteerIds = updatedVolunteers;
+                                }}
+                                className="ml-1 text-purple-600 hover:text-purple-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <Label htmlFor="additionalRequirements">
                     Special Requirements
