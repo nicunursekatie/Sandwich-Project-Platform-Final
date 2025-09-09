@@ -137,9 +137,9 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
 
     
     // Data section (filtered by permissions)
-    ...(hasPermission(user, PERMISSIONS.ACCESS_HOSTS) ? [{ id: "hosts", label: "Host Location", icon: Building2 }] : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_DRIVERS) ? [{ id: "drivers", label: "Drivers", icon: Car }] : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_RECIPIENTS) ? [{ id: "recipients", label: "Recipients", icon: Users }] : []),
+    ...(hasPermission(user, PERMISSIONS.HOSTS_VIEW) ? [{ id: "hosts", label: "Host Location", icon: Building2 }] : []),
+    ...(hasPermission(user, PERMISSIONS.DRIVERS_VIEW) ? [{ id: "drivers", label: "Drivers", icon: Car }] : []),
+    ...(hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW) ? [{ id: "recipients", label: "Recipients", icon: Users }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_VOLUNTEERS) ? [{ id: "volunteers", label: "Volunteers", icon: Users }] : []),
     ...(hasPermission(user, PERMISSIONS.VIEW_DONATION_TRACKING) ? [{ id: "donation-tracking", label: "Distribution Tracking", icon: Truck }] : []),
     
