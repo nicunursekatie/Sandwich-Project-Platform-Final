@@ -236,6 +236,10 @@ export default function EnhancedMeetingDashboard() {
     description: ''
   });
 
+  // Off-agenda item form states
+  const [offAgendaTitle, setOffAgendaTitle] = useState('');
+  const [offAgendaSection, setOffAgendaSection] = useState('');
+
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery<Meeting[]>({
     queryKey: ['/api/meetings'],
@@ -442,6 +446,71 @@ export default function EnhancedMeetingDashboard() {
       setShowResetConfirmDialog(false);
     },
   });
+
+  // Create off-agenda item mutation
+  const createOffAgendaItemMutation = useMutation({
+    mutationFn: async (itemData: { title: string; section: string; meetingId: number }) => {
+      return await apiRequest('POST', '/api/agenda-items', {
+        title: itemData.title,
+        description: `Section: ${itemData.section}`,
+        meetingId: itemData.meetingId,
+        submittedBy: user?.email || 'unknown',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agenda-items'] });
+      toast({
+        title: "Agenda Item Added",
+        description: "Off-agenda item has been successfully added to the meeting",
+      });
+      // Reset form
+      setOffAgendaTitle('');
+      setOffAgendaSection('');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add Item",
+        description: error.message || "Failed to add off-agenda item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler for adding off-agenda items
+  const handleAddOffAgendaItem = () => {
+    if (!offAgendaTitle.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title for the agenda item",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!offAgendaSection) {
+      toast({
+        title: "Section Required", 
+        description: "Please select a section for the agenda item",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedMeeting) {
+      toast({
+        title: "No Meeting Selected",
+        description: "Please select a meeting to add the agenda item to",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createOffAgendaItemMutation.mutate({
+      title: offAgendaTitle,
+      section: offAgendaSection,
+      meetingId: selectedMeeting.id
+    });
+  };
 
   // Debounced handlers for auto-save
   const debouncedUpdateRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
@@ -2226,8 +2295,13 @@ export default function EnhancedMeetingDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <Input placeholder="Item title" className="md:col-span-2" />
-                <Select>
+                <Input 
+                  placeholder="Item title" 
+                  className="md:col-span-2" 
+                  value={offAgendaTitle}
+                  onChange={(e) => setOffAgendaTitle(e.target.value)}
+                />
+                <Select value={offAgendaSection} onValueChange={setOffAgendaSection}>
                   <SelectTrigger>
                     <SelectValue placeholder="Section" />
                   </SelectTrigger>
@@ -2239,11 +2313,13 @@ export default function EnhancedMeetingDashboard() {
                   </SelectContent>
                 </Select>
                 <Button 
+                  onClick={handleAddOffAgendaItem}
+                  disabled={createOffAgendaItemMutation.isPending}
                   style={{ backgroundColor: '#FBAD3F' }} 
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#e09d36'} 
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#FBAD3F'}
+                  onMouseEnter={(e) => !createOffAgendaItemMutation.isPending && (e.target.style.backgroundColor = '#e09d36')} 
+                  onMouseLeave={(e) => !createOffAgendaItemMutation.isPending && (e.target.style.backgroundColor = '#FBAD3F')}
                 >
-                  Add Item
+                  {createOffAgendaItemMutation.isPending ? 'Adding...' : 'Add Item'}
                 </Button>
               </div>
             </CardContent>
