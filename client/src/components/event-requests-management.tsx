@@ -7868,6 +7868,89 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
+                {/* Volunteers Section */}
+                <div className="space-y-3 border rounded-lg p-3 bg-purple-50">
+                  <h3 className="text-base font-semibold text-purple-800">👥 Volunteers</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="volunteersNeeded">Volunteers Needed?</Label>
+                      <select
+                        name="volunteersNeeded"
+                        defaultValue={(detailsRequest as any).volunteersNeeded ? "true" : "false"}
+                        className="h-8 w-full text-sm border rounded px-2"
+                      >
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label>Assigned Volunteers</Label>
+                      <div className="space-y-2">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentVolunteers = (detailsRequest as any).assignedVolunteerIds || [];
+                              const updatedVolunteers = [...currentVolunteers, e.target.value];
+                              setDetailsRequest(prev => ({
+                                ...prev,
+                                assignedVolunteerIds: updatedVolunteers
+                              }));
+                              e.target.value = "";
+                            }
+                          }}
+                          className="h-8 w-full text-xs border rounded px-2"
+                        >
+                          <option value="">Add team member...</option>
+                          {availableUsers?.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Or type custom volunteer name"
+                          className="h-8 w-full text-xs border rounded px-2"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const input = e.target as HTMLInputElement;
+                              if (input.value.trim()) {
+                                const currentVolunteers = (detailsRequest as any).assignedVolunteerIds || [];
+                                const updatedVolunteers = [...currentVolunteers, input.value.trim()];
+                                setDetailsRequest(prev => ({
+                                  ...prev,
+                                  assignedVolunteerIds: updatedVolunteers
+                                }));
+                                input.value = "";
+                              }
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {((detailsRequest as any).assignedVolunteerIds || []).map((volunteerId: string, index: number) => (
+                            <span key={index} className="inline-flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                              {availableUsers?.find(u => u.id === volunteerId)?.displayName || volunteerId}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedVolunteers = (detailsRequest as any).assignedVolunteerIds?.filter((_: any, i: number) => i !== index) || [];
+                                  setDetailsRequest(prev => ({
+                                    ...prev,
+                                    assignedVolunteerIds: updatedVolunteers
+                                  }));
+                                }}
+                                className="ml-1 text-purple-600 hover:text-purple-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <Label htmlFor="customTspContact">
                     Additional TSP Contact Info
