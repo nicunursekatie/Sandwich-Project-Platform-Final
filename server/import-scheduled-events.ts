@@ -255,9 +255,16 @@ export async function importScheduledEvents(): Promise<{
         updated_at: new Date()
       };
 
-      await storage.createEventRequest(newEvent);
-      console.log(`✅ Imported: ${event.groupName} on ${event.date}`);
-      results.imported++;
+      console.log(`🔍 About to create event request:`, JSON.stringify(newEvent, null, 2));
+      
+      try {
+        const createdEvent = await storage.createEventRequest(newEvent);
+        console.log(`✅ Successfully created event with ID: ${createdEvent.id} for ${event.groupName}`);
+        results.imported++;
+      } catch (createError) {
+        console.error(`❌ Failed to create event request:`, createError);
+        throw createError;
+      }
 
     } catch (error) {
       const errorMsg = `Failed to import ${event.groupName}: ${error.message}`;
