@@ -490,20 +490,35 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 
 // Function to check if user has a specific permission
 export function hasPermission(user: any, permission: string): boolean {
-  if (!user || !user.permissions || !permission) return false;
+  if (!user || user.permissions === null || user.permissions === undefined || !permission) return false;
   
   // Super admins get all permissions automatically
   if (user.role === "super_admin" || user.role === USER_ROLES.SUPER_ADMIN) return true;
   
+  // Handle both array and number (bitmask) formats for permissions
+  let userPermissions: string[] = [];
+  
+  if (Array.isArray(user.permissions)) {
+    userPermissions = user.permissions;
+  } else if (typeof user.permissions === 'number') {
+    // Convert permission bitmask to array using PERMISSION_LIST order
+    const PERMISSION_LIST = Object.values(PERMISSIONS);
+    userPermissions = PERMISSION_LIST.filter((_, index) => 
+      (user.permissions as number) & (1 << index)
+    );
+  } else {
+    return false;
+  }
+  
   // Check for exact match first
-  if (user.permissions.includes(permission)) return true;
+  if (userPermissions.includes(permission)) return true;
   
   // Check for case variations to handle mixed case permissions
   const lowerPermission = permission.toLowerCase();
   const upperPermission = permission.toUpperCase();
   
-  return user.permissions.includes(lowerPermission) || 
-         user.permissions.includes(upperPermission);
+  return userPermissions.includes(lowerPermission) || 
+         userPermissions.includes(upperPermission);
 }
 
 // Function to check if user can edit a specific collection entry
