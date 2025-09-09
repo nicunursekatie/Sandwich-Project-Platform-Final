@@ -2457,73 +2457,71 @@ export default function EventRequestsManagement() {
               </div>
             </div>
             {/* Status Badge in Top-Right */}
-            <div className="ml-4">
+            <div className="ml-4 flex flex-col items-end space-y-2">
               {getStatusDisplay(request.status)}
+              {/* Needed badges positioned below the status badge */}
+              <div className="flex flex-col gap-1">
+                {(() => {
+                  const driverStatus = getDriverStatus();
+                  const speakerStatus = getSpeakerStatus();
+                  const volunteerStatus = getVolunteerStatus();
+                  const badges = [];
+
+                  // Add van driver badge if van driver needed and not assigned
+                  if ((request as any).vanDriverNeeded && !(request as any).assignedVanDriverId && !(request as any).customVanDriverName) {
+                    badges.push(
+                      <Badge
+                        key="van-driver"
+                        className="bg-amber-100 text-amber-800 border-amber-300 font-semibold text-xs"
+                      >
+                        🚐 VAN DRIVER NEEDED
+                      </Badge>
+                    );
+                  }
+
+                  // Add driver badge if drivers needed and not fulfilled
+                  if (driverStatus.badge === "⚠️ Needed") {
+                    badges.push(
+                      <Badge
+                        key="drivers"
+                        className={`${driverStatus.color} border-amber-300 font-semibold text-xs`}
+                      >
+                        🚗 DRIVERS NEEDED
+                      </Badge>
+                    );
+                  }
+
+                  // Add speaker badge if speakers needed and not fulfilled
+                  if (speakerStatus.badge === "⚠️ Needed") {
+                    badges.push(
+                      <Badge
+                        key="speakers"
+                        className={`${speakerStatus.color} border-amber-300 font-semibold text-xs`}
+                      >
+                        🎤 SPEAKERS NEEDED
+                      </Badge>
+                    );
+                  }
+
+                  // Add volunteer badge if volunteers needed and not fulfilled
+                  if (volunteerStatus.badge === "⚠️ Needed") {
+                    badges.push(
+                      <Badge
+                        key="volunteers"
+                        className={`${volunteerStatus.color} border-amber-300 font-semibold text-xs`}
+                      >
+                        🙋 VOLUNTEERS NEEDED
+                      </Badge>
+                    );
+                  }
+
+                  return badges.length > 0 ? badges : null;
+                })()}
+              </div>
             </div>
           </div>
         </CardHeader>
 
-        {/* Status Badges Section */}
-        <div className="px-6 pb-4">
-          <div className="flex flex-wrap gap-2">
-            {(() => {
-              const driverStatus = getDriverStatus();
-              const speakerStatus = getSpeakerStatus();
-              const volunteerStatus = getVolunteerStatus();
-              const badges = [];
-
-              // Add van driver badge if van driver needed and not assigned
-              if ((request as any).vanDriverNeeded && !(request as any).assignedVanDriverId && !(request as any).customVanDriverName) {
-                badges.push(
-                  <Badge
-                    key="van-driver"
-                    className="bg-amber-100 text-amber-800 border-amber-300 font-semibold"
-                  >
-                    🚐 VAN DRIVER NEEDED
-                  </Badge>
-                );
-              }
-
-              // Add driver badge if drivers needed and not fulfilled
-              if (driverStatus.badge === "⚠️ Needed") {
-                badges.push(
-                  <Badge
-                    key="drivers"
-                    className={`${driverStatus.color} border-amber-300 font-semibold`}
-                  >
-                    🚗 DRIVERS NEEDED
-                  </Badge>
-                );
-              }
-
-              // Add speaker badge if speakers needed and not fulfilled
-              if (speakerStatus.badge === "⚠️ Needed") {
-                badges.push(
-                  <Badge
-                    key="speakers"
-                    className={`${speakerStatus.color} border-amber-300 font-semibold`}
-                  >
-                    🎤 SPEAKERS NEEDED
-                  </Badge>
-                );
-              }
-
-              // Add volunteer badge if volunteers needed and not fulfilled
-              if (volunteerStatus.badge === "⚠️ Needed") {
-                badges.push(
-                  <Badge
-                    key="volunteers"
-                    className={`${volunteerStatus.color} border-amber-300 font-semibold`}
-                  >
-                    🙋 VOLUNTEERS NEEDED
-                  </Badge>
-                );
-              }
-
-              return badges.length > 0 ? badges : null;
-            })()}
-          </div>
-        </div>
 
         {/* Body Section: Three Column Layout */}
         <CardContent>
