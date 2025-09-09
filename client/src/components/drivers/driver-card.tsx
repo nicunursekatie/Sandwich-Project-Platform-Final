@@ -12,6 +12,7 @@ interface Driver {
   licenseNumber: string;
   availability: "available" | "busy" | "off-duty";
   zone: string;
+  area: string;
 }
 
 interface DriverCardProps {
@@ -89,14 +90,21 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
         )}
         
         {driver.zone && (
-          <div className="flex items-center gap-2 text-sm text-gray-600"
+          <div className="flex items-center gap-2 text-sm text-gray-600">
             <MapPin className="h-4 w-4" />
-            <span>{driver.zone}</span>
+            <span><strong>Zone:</strong> {driver.zone}</span>
+          </div>
+        )}
+
+        {driver.area && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin className="h-4 w-4" />
+            <span><strong>Area:</strong> {driver.area}</span>
           </div>
         )}
         
         {driver.licenseNumber && (
-          <div className="text-xs text-gray-500"
+          <div className="text-xs text-gray-500">
             License: {driver.licenseNumber}
           </div>
         )}

@@ -535,6 +535,7 @@ export const drivers = pgTable("drivers", {
   licenseNumber: text("license_number"),
   availability: text("availability").default("available"), // "available", "busy", "off-duty"
   zone: text("zone"), // Keep for migration compatibility
+  area: text("area"), // Geographic area for driver coverage
   routeDescription: text("route_description"), // New field to preserve route info like "SS to Dunwoody"
   hostLocation: text("host_location"), // Connect to specific host locations
   hostId: integer("host_id"), // Reference to hosts table for directory connection

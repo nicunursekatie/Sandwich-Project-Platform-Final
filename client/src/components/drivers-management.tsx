@@ -81,6 +81,7 @@ export default function DriversManagement() {
     licenseNumber: "",
 
     zone: "",
+    area: "",
     routeDescription: "" as string | undefined,
     hostId: undefined as number | undefined,
     availabilityNotes: "",
@@ -125,6 +126,7 @@ export default function DriversManagement() {
         vehicleType: "",
         licenseNumber: "",
         zone: "",
+        area: "",
         routeDescription: "",
         hostId: undefined,
         availabilityNotes: "",
@@ -332,6 +334,7 @@ export default function DriversManagement() {
       "Phone",
       "Email",
       "Zone",
+      "Area",
       "Active",
       "Agreement",
       "Van Approved",
@@ -351,6 +354,7 @@ export default function DriversManagement() {
           `"${driver.phone || ""}"`,
           `"${driver.email || ""}"`,
           `"${driver.zone || ""}"`,
+          `"${(driver as any).area || ""}"`,
           driver.isActive ? "Yes" : "No",
           hasAgreement ? "Yes" : "No",
           driver.vanApproved ? "Yes" : "No",
@@ -893,7 +897,19 @@ export default function DriversManagement() {
                         onChange={(e) =>
                           setNewDriver({ ...newDriver, zone: e.target.value })
                         }
-                        placeholder="e.g., East Cobb, Dunwoody, Sandy Springs"
+                        placeholder="e.g., Zone A, Zone B"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="area">Area</Label>
+                      <Input
+                        id="area"
+                        value={newDriver.area}
+                        onChange={(e) =>
+                          setNewDriver({ ...newDriver, area: e.target.value })
+                        }
+                        placeholder="e.g., North Atlanta, Downtown, Midtown"
                       />
                     </div>
 
@@ -1183,6 +1199,26 @@ export default function DriversManagement() {
                       </div>
                     </div>
                   )}
+                  {driver.zone && (
+                    <div className="mt-2">
+                      <div className="flex items-start gap-2 text-sm text-slate-600">
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>
+                          <strong>Zone:</strong> {driver.zone}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {driver.area && (
+                    <div className="mt-2">
+                      <div className="flex items-start gap-2 text-sm text-slate-600">
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>
+                          <strong>Area:</strong> {driver.area}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {driver.homeAddress && (
                     <div className="mt-2">
                       <div className="flex items-start gap-2 text-sm text-slate-600">
@@ -1353,6 +1389,26 @@ export default function DriversManagement() {
                       </div>
                     </div>
                   )}
+                  {driver.zone && (
+                    <div className="mt-2">
+                      <div className="flex items-start gap-2 text-sm text-slate-600">
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>
+                          <strong>Zone:</strong> {driver.zone}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {driver.area && (
+                    <div className="mt-2">
+                      <div className="flex items-start gap-2 text-sm text-slate-600">
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>
+                          <strong>Area:</strong> {driver.area}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {driver.homeAddress && (
                     <div className="mt-2">
                       <div className="flex items-start gap-2 text-sm text-slate-600">
@@ -1460,6 +1516,38 @@ export default function DriversManagement() {
                   }
                   placeholder="email@example.com"
                 />
+              </div>
+
+              {/* Zone and Area */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-zone">Zone</Label>
+                  <Input
+                    id="edit-zone"
+                    value={(editingDriver as any).zone ?? ""}
+                    onChange={(e) =>
+                      setEditingDriver({
+                        ...editingDriver,
+                        zone: e.target.value,
+                      } as any)
+                    }
+                    placeholder="Driver zone"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-area">Area</Label>
+                  <Input
+                    id="edit-area"
+                    value={(editingDriver as any).area ?? ""}
+                    onChange={(e) =>
+                      setEditingDriver({
+                        ...editingDriver,
+                        area: e.target.value,
+                      } as any)
+                    }
+                    placeholder="Driver area"
+                  />
+                </div>
               </div>
 
               {/* Status and Permissions */}

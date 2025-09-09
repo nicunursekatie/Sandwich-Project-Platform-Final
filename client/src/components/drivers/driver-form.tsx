@@ -15,6 +15,7 @@ interface Driver {
   licenseNumber: string;
   availability: "available" | "busy" | "off-duty";
   zone: string;
+  area: string;
 }
 
 interface DriverFormData {
@@ -25,6 +26,7 @@ interface DriverFormData {
   licenseNumber: string;
   availability: "available" | "busy" | "off-duty";
   zone: string;
+  area: string;
 }
 
 interface DriverFormProps {
@@ -52,6 +54,7 @@ export function DriverForm({
     licenseNumber: "",
     availability: "available",
     zone: "",
+    area: "",
     ...initialData
   });
 
@@ -158,7 +161,7 @@ export function DriverForm({
           </div>
           
           <div>
-            <Label htmlFor="zone">Zone/Area</Label>
+            <Label htmlFor="zone">Zone</Label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -166,7 +169,21 @@ export function DriverForm({
                 value={formData.zone}
                 onChange={(e) => handleInputChange("zone", e.target.value)}
                 className="pl-10"
-                placeholder="e.g., North Atlanta, Downtown"
+                placeholder="e.g., Zone A, Zone B"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="area">Area</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="area"
+                value={formData.area}
+                onChange={(e) => handleInputChange("area", e.target.value)}
+                className="pl-10"
+                placeholder="e.g., North Atlanta, Downtown, Midtown"
               />
             </div>
           </div>
