@@ -571,8 +571,10 @@ export default function EventRequestsManagement() {
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) =>
-      apiRequest("PUT", `/api/event-requests/${id}`, data),
+    mutationFn: ({ id, ...data }: any) => {
+      console.log('🔄 Edit mutation called with data:', { id, ...data });
+      return apiRequest("PUT", `/api/event-requests/${id}`, data);
+    },
     onMutate: async ({ id, ...updatedData }) => {
       // Cancel outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: ["/api/event-requests"] });
@@ -942,8 +944,10 @@ export default function EventRequestsManagement() {
     mutationFn: ({ id, ...data }: any) =>
       apiRequest("PUT", `/api/event-requests/${id}`, data),
     onSuccess: () => {
+      console.log('🔄 Event request updated - invalidating caches...');
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
+      console.log('✅ Cache invalidation complete');
       toast({
         title: "Event request updated",
         description: "The event request has been updated successfully",
