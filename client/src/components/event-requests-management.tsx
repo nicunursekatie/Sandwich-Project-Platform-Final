@@ -2327,10 +2327,20 @@ export default function EventRequestsManagement() {
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
-                        {getDisplayValue(request, "eventAddress") ||
-                          "No address provided"}
-                      </span>
+                      {getDisplayValue(request, "eventAddress") ? (
+                        <a
+                          href={`https://maps.google.com/maps?q=${encodeURIComponent(getDisplayValue(request, "eventAddress") || "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex-1"
+                        >
+                          📍 {getDisplayValue(request, "eventAddress")}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-600 flex-1">
+                          No address provided
+                        </span>
+                      )}
                       {canEditField("eventAddress") && (
                         <Button
                           size="sm"
@@ -3707,7 +3717,14 @@ export default function EventRequestsManagement() {
             {request.eventAddress && (
               <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
                 <Building className="w-4 h-4" />
-                <span>{request.eventAddress}</span>
+                <a
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  📍 {request.eventAddress}
+                </a>
               </div>
             )}
           </div>
