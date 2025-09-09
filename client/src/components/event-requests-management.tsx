@@ -1743,7 +1743,7 @@ export default function EventRequestsManagement() {
 
   const getStatusDisplay = (status: string) => {
     const option = statusOptions.find((opt) => opt.value === status);
-    const Icon = statusIcons[status as keyof typeof statusIcons];
+    const Icon = statusIcons[status as keyof typeof statusIcons] || Clock;
     const explanation =
       statusExplanations[status as keyof typeof statusExplanations] ||
       "Status information";
