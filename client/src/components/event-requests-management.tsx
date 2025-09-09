@@ -4341,6 +4341,8 @@ export default function EventRequestsManagement() {
     const formData = new FormData(e.currentTarget);
     const data = {
       id: detailsRequest.id,
+      organizationName: formData.get("organizationName") || null,
+      department: formData.get("department") || null,
       desiredEventDate: formData.get("desiredEventDate") || null,
       toolkitStatus: formData.get("toolkitStatus"),
       eventStartTime: formData.get("eventStartTime") || null,
@@ -6199,6 +6201,31 @@ export default function EventRequestsManagement() {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCompleteEventDetails} className="space-y-4">
+                {/* Organization Info Section */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Organization Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="organizationName">Organization Name</Label>
+                      <Input
+                        name="organizationName"
+                        defaultValue={detailsRequest.organizationName || ""}
+                        placeholder="Enter organization name"
+                        className="bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="department">Department (optional)</Label>
+                      <Input
+                        name="department"
+                        defaultValue={detailsRequest.department || ""}
+                        placeholder="Enter department if applicable"
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="toolkitStatus">Toolkit Status</Label>
