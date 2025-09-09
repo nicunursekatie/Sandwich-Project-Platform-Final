@@ -58,10 +58,15 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
   const { data: groupsResponse, isLoading, error } = useQuery({
     queryKey: ['/api/groups-catalog'],
     queryFn: async () => {
+      console.log('🔄 Groups catalog fetching data from API...');
       const response = await fetch('/api/groups-catalog');
       if (!response.ok) throw new Error('Failed to fetch groups');
-      return response.json();
-    }
+      const data = await response.json();
+      console.log('✅ Groups catalog received data:', data);
+      return data;
+    },
+    staleTime: 0, // Always consider data stale so it refetches when invalidated
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   // Function to fetch complete event details
