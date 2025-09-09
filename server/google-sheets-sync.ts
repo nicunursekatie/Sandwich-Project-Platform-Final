@@ -6,7 +6,7 @@ export class GoogleSheetsSyncService {
   constructor(private storage: IStorage) {}
 
   /**
-   * Sync projects from database to Google Sheets
+   * Sync projects from database to Google Sheets - Only syncs meeting projects (those with googleSheetRowId)
    */
   async syncToGoogleSheets(): Promise<{ success: boolean; message: string; synced?: number }> {
     const sheetsService = getGoogleSheetsService();
@@ -15,8 +15,9 @@ export class GoogleSheetsSyncService {
     }
 
     try {
-      // Get all projects from database
-      const projects = await this.storage.getAllProjects();
+      // Get only projects that should sync to sheets (meeting projects)
+      const allProjects = await this.storage.getAllProjects();
+      const projects = allProjects.filter(p => p.googleSheetRowId); // Only sync meeting projects
       
       // Convert projects to sheet format (including sub-tasks)
       const sheetRows: SheetRow[] = [];
@@ -52,7 +53,7 @@ export class GoogleSheetsSyncService {
   }
 
   /**
-   * Sync from Google Sheets to database
+   * Sync from Google Sheets to database - Only syncs projects that have googleSheetRowId
    */
   async syncFromGoogleSheets(): Promise<{ success: boolean; message: string; updated?: number; created?: number }> {
     const sheetsService = getGoogleSheetsService();
@@ -80,18 +81,24 @@ export class GoogleSheetsSyncService {
         const projectData = this.sheetRowToProject(row);
         
         if (existingProject) {
-          // Update existing project
+          // Preserve meeting discussion content - don't overwrite it
+          const preservedData = { ...projectData };
+          if (existingProject.meetingDiscussionPoints) {
+            delete preservedData.description; // Don't overwrite if it has meeting content
+          }
+          
+          // Update existing project but preserve meeting content
           await this.storage.updateProject(existingProject.id, {
-            ...projectData,
+            ...preservedData,
             syncStatus: 'synced',
             googleSheetRowId: row.rowIndex?.toString()
           });
           
-          // Sync sub-tasks for this project
-          await this.syncProjectTasks(existingProject.id, row.subTasksOwners);
+          // Sync sub-tasks for this project (with meeting content preservation)
+          await this.syncProjectTasksPreservingMeetingContent(existingProject.id, row.subTasksOwners);
           updatedCount++;
         } else {
-          // Create new project
+          // Only create new project if it doesn't exist - mark as meeting project
           const newProject = await this.storage.createProject({
             ...projectData,
             createdBy: 'google-sheets-sync',
@@ -148,6 +155,81 @@ export class GoogleSheetsSyncService {
         success: false,
         message: `Bidirectional sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
+    }
+  }
+
+  /**
+   * Sync individual project tasks from sheet format - preserving meeting discussion content
+   */
+  private async syncProjectTasksPreservingMeetingContent(projectId: number, subTasksOwners: string): Promise<void> {
+    if (!subTasksOwners || typeof subTasksOwners !== 'string') return;
+
+    // Parse tasks from string format (e.g., "• Task 1: Katie (C), • Task 2: Chris (IP)")
+    const taskItems = this.parseTasksFromString(subTasksOwners);
+    
+    // Get existing tasks for this project
+    const existingTasks = await this.storage.getProjectTasks(projectId);
+    
+    // Track which tasks we've processed
+    const processedTaskTitles = new Set<string>();
+    
+    // Update existing tasks or create new ones
+    for (const taskItem of taskItems) {
+      processedTaskTitles.add(taskItem.title);
+      
+      // Find existing task with matching title
+      const existingTask = existingTasks.find(task => 
+        task.title.trim().toLowerCase() === taskItem.title.trim().toLowerCase()
+      );
+      
+      if (existingTask) {
+        // PRESERVE meeting discussion content - only update status and assignee
+        const updateData: any = {};
+        
+        if (taskItem.status && taskItem.status !== existingTask.status) {
+          updateData.status = taskItem.status;
+          console.log(`📝 Updating task "${taskItem.title}" status from "${existingTask.status}" to "${taskItem.status}"`);
+        }
+        
+        if (taskItem.assignee && taskItem.assignee !== existingTask.assigneeName) {
+          updateData.assigneeName = taskItem.assignee;
+          updateData.assigneeNames = [taskItem.assignee];
+          console.log(`👤 Updating task "${taskItem.title}" assignee to "${taskItem.assignee}"`);
+        }
+        
+        // Do NOT update description if it contains meeting discussion content
+        if (existingTask.description && existingTask.description.includes('Meeting Discussion Notes:')) {
+          console.log(`🔒 Preserving meeting discussion content for task "${taskItem.title}"`);
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+          await this.storage.updateProjectTask(existingTask.id, updateData);
+        }
+      } else {
+        // Create new task (basic version from sheet)
+        console.log(`➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'available'}"`);
+        await this.storage.createProjectTask({
+          projectId,
+          title: taskItem.title,
+          description: taskItem.description || '',
+          status: taskItem.status || 'available',
+          assigneeName: taskItem.assignee || undefined,
+          assigneeNames: taskItem.assignee ? [taskItem.assignee] : []
+        });
+      }
+    }
+    
+    // Remove tasks that are no longer in the sheet (but preserve meeting-generated tasks)
+    for (const existingTask of existingTasks) {
+      if (!processedTaskTitles.has(existingTask.title)) {
+        // Don't delete tasks that have meeting discussion content
+        if (existingTask.description && existingTask.description.includes('Meeting Discussion Notes:')) {
+          console.log(`🔒 Preserving meeting-generated task "${existingTask.title}"`);
+        } else {
+          console.log(`🗑️ Removing task "${existingTask.title}" as it's no longer in the sheet`);
+          await this.storage.deleteProjectTask(existingTask.id);
+        }
+      }
     }
   }
 
