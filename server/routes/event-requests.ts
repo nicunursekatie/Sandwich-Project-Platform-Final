@@ -651,6 +651,13 @@ router.post(
       console.log("Event ID:", id);
       console.log("Updates:", JSON.stringify(updates, null, 2));
 
+      // Handle date conversion properly on server side
+      if (updates.desiredEventDate && typeof updates.desiredEventDate === 'string') {
+        // Convert string date to proper Date object
+        updates.desiredEventDate = new Date(updates.desiredEventDate + "T12:00:00.000Z");
+        console.log("🔧 Converted date:", updates.desiredEventDate);
+      }
+
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...updates,
         updatedAt: new Date(),

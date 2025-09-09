@@ -4339,14 +4339,9 @@ export default function EventRequestsManagement() {
     if (!detailsRequest) return;
 
     const formData = new FormData(e.currentTarget);
-    
-    // Handle date conversion properly
-    const dateValue = formData.get("desiredEventDate");
-    const convertedDate = dateValue ? new Date(dateValue + "T12:00:00.000Z") : null;
-    
     const data = {
       id: detailsRequest.id,
-      desiredEventDate: convertedDate,
+      desiredEventDate: formData.get("desiredEventDate") || null,
       toolkitStatus: formData.get("toolkitStatus"),
       eventStartTime: formData.get("eventStartTime") || null,
       eventEndTime: formData.get("eventEndTime") || null,
