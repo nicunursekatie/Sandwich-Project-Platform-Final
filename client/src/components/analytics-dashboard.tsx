@@ -58,7 +58,6 @@ export default function AnalyticsDashboard() {
       return acc;
     }, {} as Record<string, { total: number; collections: number }>);
 
-    console.log('🔍 Host Stats Debug:', Object.entries(hostStats).slice(0, 3));
 
     const topPerformer = Object.entries(hostStats)
       .sort(([,a], [,b]) => b.total - a.total)[0];
@@ -194,9 +193,9 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Monthly Trends */}
+      {/* Charts Section - Vertical Layout */}
+      <div className="space-y-8">
+        {/* Monthly Trends - Full Width */}
         <Card className="border-2 border-[#236383]/20">
           <div className="p-6 border-b">
             <h3 className="text-xl font-semibold text-[#236383] flex items-center gap-2">
@@ -206,7 +205,7 @@ export default function AnalyticsDashboard() {
             <p className="text-[#646464] mt-1">Monthly collection performance</p>
           </div>
           <CardContent className="p-6">
-            <div className="h-80">
+            <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={analyticsData.trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#236383" opacity={0.2} />
@@ -243,8 +242,8 @@ export default function AnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Top Performers */}
-        <Card className="border-2 border-[#236383]/20">
+        {/* Strategic Ideas - Full Width */}
+        <Card className="border-2 border-[#FBAD3F]/20">
           <div className="p-6 border-b">
             <h3 className="text-xl font-semibold text-[#236383] flex items-center gap-2">
               <Target className="h-5 w-5" />
@@ -281,53 +280,6 @@ export default function AnalyticsDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Top Performers Bar Chart */}
-      <Card className="border-2 border-[#236383]/20">
-        <div className="p-6 border-b">
-          <h3 className="text-xl font-semibold text-[#236383] flex items-center gap-2">
-            <Award className="h-5 w-5" />
-            Achievements
-          </h3>
-          <p className="text-[#646464] mt-1">Celebrating achievements and identifying growth opportunities</p>
-        </div>
-        <CardContent className="p-6">
-          <div className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsData.topHosts} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="#236383" opacity={0.2} />
-                <XAxis 
-                  type="number"
-                  stroke="#236383"
-                  fontSize={12}
-                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                />
-                <YAxis 
-                  type="category"
-                  dataKey="name" 
-                  stroke="#236383"
-                  fontSize={11}
-                  width={120}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${Number(value).toLocaleString()} sandwiches`, 'Total']}
-                  labelStyle={{ color: '#236383' }}
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #236383',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Bar 
-                  dataKey="total" 
-                  fill="#236383"
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

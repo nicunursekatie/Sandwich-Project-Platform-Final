@@ -348,23 +348,23 @@ export default function ImportantDocuments() {
                 <CardDescription className="mb-6 flex-1 text-base leading-relaxed text-gray-600 line-clamp-3">
                   {doc.description}
                 </CardDescription>
-                {/* Action buttons - Smaller, more subtle design */}
-                <div className="flex flex-col gap-3 mt-auto">
+                {/* Action buttons - Responsive design for all screen sizes */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-auto">
                   <Button
                     variant="ghost"
                     onClick={() => handlePreview(doc)}
-                    className="w-full h-10 text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-2 px-3"
+                    className="w-full sm:flex-1 h-9 sm:h-10 text-xs sm:text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-1.5 sm:py-2 px-2 sm:px-3"
                   >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
+                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                    <span className="truncate">Preview</span>
                   </Button>
                   <Button
                     variant="default"
                     onClick={() => handleDownload(doc)}
-                    className="w-full h-10 text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
+                    className="w-full sm:flex-1 h-9 sm:h-10 text-xs sm:text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 shadow-sm hover:shadow-md"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                    <span className="truncate">Download</span>
                   </Button>
                 </div>
               </CardContent>
@@ -418,15 +418,15 @@ export default function ImportantDocuments() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3 pt-4">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="h-9 text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-2 px-3"
+                            className="h-8 sm:h-9 text-xs sm:text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-1.5 sm:py-2 px-2 sm:px-3"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Preview
+                            <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1 flex-shrink-0" />
+                            <span className="truncate">Preview</span>
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
@@ -468,28 +468,28 @@ export default function ImportantDocuments() {
 
                       <Button
                         onClick={() => handleLogoDownload(logo.filename, logo.name)}
-                        className="h-9 text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
+                        className="h-8 sm:h-9 text-xs sm:text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 shadow-sm hover:shadow-md"
                       >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
+                        <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1 flex-shrink-0" />
+                        <span className="truncate">Download</span>
                       </Button>
                       
                       <Button
                         onClick={() => handleLogoShare(logo.filename, logo.name)}
                         variant="outline"
-                        className="h-9 text-sm font-medium border border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
+                        className="h-8 sm:h-9 text-xs sm:text-sm font-medium border border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white transition-all duration-200 ease-in-out rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 shadow-sm hover:shadow-md"
                       >
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
+                        <Share2 className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1 flex-shrink-0" />
+                        <span className="truncate">Share</span>
                       </Button>
                       
                       <Button
                         onClick={() => handleLogoCopy(logo.filename, logo.name)}
                         variant="outline"
-                        className="h-9 text-sm font-medium border border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 ease-in-out rounded-lg py-2 px-3 shadow-sm hover:shadow-md"
+                        className="h-8 sm:h-9 text-xs sm:text-sm font-medium border border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 ease-in-out rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 shadow-sm hover:shadow-md"
                       >
-                        <Copy className="h-4 w-4 mr-1" />
-                        Copy
+                        <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1 flex-shrink-0" />
+                        <span className="truncate">Copy</span>
                       </Button>
                     </div>
                   </CardContent>
