@@ -7629,11 +7629,12 @@ export default function EventRequestsManagement() {
                       <Label htmlFor="driversNeeded">How Many Drivers Needed?</Label>
                       <Input
                         name="driversNeeded"
-                        type="number"
-                        min="0"
+                        type="text"
                         defaultValue={(detailsRequest as any).driversNeeded || 0}
-                        placeholder="Number of drivers needed"
-                        className="h-8"
+                        placeholder="0"
+                        className="h-8 w-16 text-center"
+                        pattern="[0-9]{1,2}"
+                        maxLength={2}
                       />
                     </div>
                     <div>
@@ -7730,11 +7731,12 @@ export default function EventRequestsManagement() {
                       <Label htmlFor="speakersNeeded">How Many Speakers Needed?</Label>
                       <Input
                         name="speakersNeeded"
-                        type="number"
-                        min="0"
+                        type="text"
                         defaultValue={(detailsRequest as any).speakersNeeded || 0}
-                        placeholder="Number of speakers needed"
-                        className="h-8"
+                        placeholder="0"
+                        className="h-8 w-16 text-center"
+                        pattern="[0-9]{1,2}"
+                        maxLength={2}
                       />
                     </div>
                     <div>
