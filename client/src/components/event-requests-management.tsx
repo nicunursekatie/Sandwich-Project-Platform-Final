@@ -7796,6 +7796,137 @@ export default function EventRequestsManagement() {
           <ArrowUp className="w-5 h-5" />
         </Button>
       )}
+
+      {/* Record Sandwich Count Dialog */}
+      <Dialog open={showSandwichCountDialog} onOpenChange={setShowSandwichCountDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Record Final Sandwich Count</DialogTitle>
+            <DialogDescription>
+              Enter the actual number of sandwiches provided for this event.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="actualSandwichCount">Final Sandwich Count</Label>
+              <Input
+                id="actualSandwichCount"
+                type="number"
+                min="0"
+                value={actualSandwichCount}
+                onChange={(e) => setActualSandwichCount(parseInt(e.target.value) || 0)}
+                placeholder="Enter actual count"
+                className="w-full"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="actualSandwichTypes">Sandwich Types (optional)</Label>
+              <Textarea
+                id="actualSandwichTypes"
+                value={actualSandwichTypes}
+                onChange={(e) => setActualSandwichTypes(e.target.value)}
+                placeholder="e.g., 50 PB&J, 30 Turkey, 20 Ham"
+                className="w-full min-h-20"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSandwichCountDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRecordSandwichCount}
+              disabled={actualSandwichCount <= 0 || recordSandwichCountMutation.isPending}
+              className="bg-[#236383] hover:bg-[#1a4d63] text-white"
+            >
+              {recordSandwichCountMutation.isPending ? "Recording..." : "Record Count"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Record Distribution Dialog */}
+      <Dialog open={showDistributionDialog} onOpenChange={setShowDistributionDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Record Sandwich Distribution</DialogTitle>
+            <DialogDescription>
+              Track where the sandwiches were distributed after the event.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <Label>Distribution Details</Label>
+              {distributionData.map((entry, index) => (
+                <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Destination (e.g., Food Bank, Shelter)"
+                      value={entry.destination}
+                      onChange={(e) => updateDistributionEntry(index, 'destination', e.target.value)}
+                    />
+                  </div>
+                  <div className="w-32">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Count"
+                      value={entry.totalCount}
+                      onChange={(e) => updateDistributionEntry(index, 'totalCount', parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  {distributionData.length > 1 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeDistributionEntry(index)}
+                      className="text-red-600 hover:text-red-700 px-2"
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addDistributionEntry}
+                className="w-full border-dashed"
+              >
+                + Add Another Destination
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="distributionNotes">Distribution Notes (optional)</Label>
+              <Textarea
+                id="distributionNotes"
+                value={distributionNotes}
+                onChange={(e) => setDistributionNotes(e.target.value)}
+                placeholder="Additional notes about the distribution"
+                className="w-full min-h-20"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDistributionDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRecordDistribution}
+              disabled={distributionData.filter(d => d.destination && d.totalCount > 0).length === 0 || recordDistributionMutation.isPending}
+              className="bg-[#236383] hover:bg-[#1a4d63] text-white"
+            >
+              {recordDistributionMutation.isPending ? "Recording..." : "Record Distribution"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }
