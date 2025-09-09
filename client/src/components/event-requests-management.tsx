@@ -3623,8 +3623,91 @@ export default function EventRequestsManagement() {
                     ))}
                   </div>
 
-                {/* Volunteer Assignment Section - Only show if volunteers are needed */}
-                {(request as any).volunteersNeeded && (
+                {/* Volunteer Assignment Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700">Volunteers</span>
+                      {((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0) && (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
+                          NEEDED
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      {editingField === "volunteersNeeded" && editingEventId === request.id ? (
+                        <div className="flex items-center space-x-2">
+                          <label className="flex items-center">
+                            <input 
+                              type="checkbox" 
+                              checked={tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true"}
+                              onChange={(e) => setTempValues(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
+                              className="mr-1"
+                            />
+                            <span className="text-xs">Needed</span>
+                          </label>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={() => {
+                              handleTrackChange(
+                                request.id,
+                                "volunteersNeeded",
+                                tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true",
+                              );
+                              setEditingField(null);
+                              setEditingEventId(null);
+                              setTempValues({});
+                            }}
+                          >
+                            ✓
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={handleFieldCancel}
+                          >
+                            ✗
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-xs text-orange-600 hover:text-orange-800 hover:underline"
+                          onClick={() => {
+                            setEditingField("volunteersNeeded");
+                            setEditingEventId(request.id);
+                            setTempValues({ volunteersNeeded: (request as any).volunteersNeeded || false });
+                          }}
+                        >
+                          Status: {(request as any).volunteersNeeded ? "✓ Needed" : "Not needed"}
+                        </button>
+                      )}
+                    </div>
+                    {(request as any).volunteersNeeded && (
+                      <button
+                        className={`text-xs px-2 py-1 rounded border ${
+                          ((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0)
+                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
+                            : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200'
+                        }`}
+                        onClick={() => {
+                          setAssigningVolunteerRequest(request);
+                          setShowVolunteerDialog(true);
+                          const currentVolunteers = (request as any).assignedVolunteerIds || [];
+                          setSelectedVolunteers(currentVolunteers);
+                        }}
+                      >
+                        {(request as any).assignedVolunteerIds?.length > 0 ? "Edit Volunteers" : "+ Assign Volunteer"}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Show volunteer assignments if volunteers are needed */}
+                  {(request as any).volunteersNeeded && (request as any).assignedVolunteerIds?.length > 0 && (
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
@@ -3667,8 +3750,8 @@ export default function EventRequestsManagement() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* Show volunteer notes if present */}
                 {(request as any).volunteerNotes && (
