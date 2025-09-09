@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
 import { EventEmailComposer } from "@/components/event-email-composer";
+import { DriverSelectionModal } from "./driver-selection-modal";
 import {
   Collapsible,
   CollapsibleContent,
@@ -431,6 +432,8 @@ export default function EventRequestsManagement() {
   const [editingDriversFor, setEditingDriversFor] = useState<number | null>(null);
   const [tempDriverInput, setTempDriverInput] = useState("");
   const [showingCustomDriver, setShowingCustomDriver] = useState(false);
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const [selectedEventForDrivers, setSelectedEventForDrivers] = useState<EventRequest | null>(null);
   // Speaker Assignment state
   const [showSpeakerDialog, setShowSpeakerDialog] = useState(false);
   const [assigningSpeakerRequest, setAssigningSpeakerRequest] =
