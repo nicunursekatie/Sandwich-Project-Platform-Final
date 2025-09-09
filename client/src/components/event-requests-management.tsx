@@ -164,8 +164,39 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
   );
 };
 
-// Helper function to get sandwich types summary
+// Helper function to get sandwich types summary for new standardized format
 const getSandwichTypesSummary = (request: any) => {
+  // Handle new standardized sandwich types format (array of {type, quantity})
+  if (request.sandwichTypes && Array.isArray(request.sandwichTypes)) {
+    const total = request.sandwichTypes.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+    
+    if (request.sandwichTypes.length === 1) {
+      // Single type
+      const type = request.sandwichTypes[0].type;
+      const typeLabel = SANDWICH_TYPES.find(t => t.value === type)?.label || type;
+      return {
+        total,
+        breakdown: `${total} ${typeLabel}`,
+        hasBreakdown: true
+      };
+    } else if (request.sandwichTypes.length > 1) {
+      // Multiple types
+      const breakdown = request.sandwichTypes
+        .filter((item: any) => item.quantity > 0)
+        .map((item: any) => {
+          const typeLabel = SANDWICH_TYPES.find(t => t.value === item.type)?.label || item.type;
+          return `${item.quantity} ${typeLabel}`;
+        })
+        .join(', ');
+      return {
+        total,
+        breakdown,
+        hasBreakdown: true
+      };
+    }
+  }
+  
+  // Legacy format fallback
   if (request.estimatedSandwichCount) {
     const total = request.estimatedSandwichCount;
     const type = request.sandwichType || 'Unknown';
@@ -2727,19 +2758,15 @@ export default function EventRequestsManagement() {
                         <div>
                           <Label className="text-sm text-gray-600">Type (optional):</Label>
                           <select
-                            value={tempValues.sandwichType || 'Unknown'}
+                            value={tempValues.sandwichType || 'unknown'}
                             onChange={(e) => setTempValues(prev => ({ ...prev, sandwichType: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mt-1"
                           >
-                            <option value="Unknown">Unknown</option>
-                            <option value="Deli (Turkey, Ham, etc.)">Deli (Turkey, Ham, etc.)</option>
-                            <option value="Turkey">Turkey</option>
-                            <option value="Ham">Ham</option>
-                            <option value="PB&J">PB&J</option>
-                            <option value="Vegetarian">Vegetarian</option>
-                            <option value="Vegan">Vegan</option>
-                            <option value="Gluten-Free">Gluten-Free</option>
-                            <option value="Other">Other</option>
+                            {SANDWICH_TYPES.map(type => (
+                              <option key={type.value} value={type.value}>
+                                {type.label}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>
@@ -4415,12 +4442,18 @@ export default function EventRequestsManagement() {
               </div>
 
               {/* Sandwich details */}
-              {(request as any).sandwichTypes && (
-                <div className="text-gray-800">
-                  <span className="font-semibold text-green-700">Sandwich Types:</span>{" "}
-                  <span className="text-gray-900 font-medium">{(request as any).sandwichTypes}</span>
-                </div>
-              )}
+              {(() => {
+                const summary = getSandwichTypesSummary(request);
+                if (summary.hasBreakdown) {
+                  return (
+                    <div className="text-gray-800">
+                      <span className="font-semibold text-green-700">Sandwich Types:</span>{" "}
+                      <span className="text-gray-900 font-medium">{summary.breakdown}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               {/* Drivers section */}
               <div className="text-gray-800">
@@ -4816,7 +4849,19 @@ export default function EventRequestsManagement() {
       eventStartTime: formData.get("eventStartTime") || null,
       eventEndTime: formData.get("eventEndTime") || null,
       pickupTime: formData.get("pickupTime") || null,
-      sandwichTypes: formData.get("sandwichTypes") || null,
+      sandwichTypes: (() => {
+        const sandwichTypesStr = formData.get("sandwichTypes");
+        if (sandwichTypesStr) {
+          try {
+            const parsed = JSON.parse(sandwichTypesStr as string);
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+          } catch (e) {
+            console.warn("Failed to parse sandwich types:", e);
+            return null;
+          }
+        }
+        return null;
+      })(),
       // Driver and speaker requirements
       driversNeeded: formData.get("driversNeeded")
         ? parseInt(formData.get("driversNeeded") as string)
@@ -4871,7 +4916,19 @@ export default function EventRequestsManagement() {
       pickupTime: formData.get("pickupTime") || null,
       tspContact: formData.get("tspContact") || null,
       customTspContact: formData.get("customTspContact") || null,
-      sandwichTypes: formData.get("sandwichTypes") || null,
+      sandwichTypes: (() => {
+        const sandwichTypesStr = formData.get("sandwichTypes");
+        if (sandwichTypesStr) {
+          try {
+            const parsed = JSON.parse(sandwichTypesStr as string);
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+          } catch (e) {
+            console.warn("Failed to parse sandwich types:", e);
+            return null;
+          }
+        }
+        return null;
+      })(),
       driversNeeded: formData.get("driversNeeded")
         ? parseInt(formData.get("driversNeeded") as string)
         : 0,
@@ -4907,7 +4964,19 @@ export default function EventRequestsManagement() {
       estimatedSandwichCount: formData.get("estimatedSandwichCount")
         ? parseInt(formData.get("estimatedSandwichCount") as string)
         : null,
-      sandwichTypes: formData.get("sandwichTypes") || null,
+      sandwichTypes: (() => {
+        const sandwichTypesStr = formData.get("sandwichTypes");
+        if (sandwichTypesStr) {
+          try {
+            const parsed = JSON.parse(sandwichTypesStr as string);
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+          } catch (e) {
+            console.warn("Failed to parse sandwich types:", e);
+            return null;
+          }
+        }
+        return null;
+      })(),
       driversNeeded: formData.get("driversNeeded")
         ? parseInt(formData.get("driversNeeded") as string)
         : 0,
