@@ -1831,33 +1831,32 @@ export default function EventRequestsManagement() {
   const canEditField = (field: string) => {
     if (!user) return false;
 
-    // Lightweight fields that volunteers can edit
-    const lightweightFields = ["phone", "email", "planningNotes"];
+    // All editing requires EVENT_REQUESTS_EDIT permission
+    if (!hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT)) {
+      return false;
+    }
 
-    // Critical fields that require admin permissions
-    const criticalFields = [
+    // Standard editable fields for users with edit permissions
+    const editableFields = [
+      "phone", 
+      "email", 
+      "planningNotes",
       "eventDate",
       "eventStartTime",
       "eventEndTime",
       "eventAddress",
       "estimatedSandwichCount",
+      "sandwichTypes",
       "deliveryDestination",
       "contact",
       "hasRefrigeration",
+      "additionalRequirements", // Special Requirements field
+      "driversNeeded",
+      "speakersNeeded", 
+      "volunteersNeeded"
     ];
 
-    if (lightweightFields.includes(field)) {
-      return hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS);
-    }
-
-    if (criticalFields.includes(field)) {
-      return (
-        hasPermission(user, PERMISSIONS.MANAGE_USERS) ||
-        user.role === "super_admin"
-      );
-    }
-
-    return false;
+    return editableFields.includes(field);
   };
 
   // Track pending changes without saving immediately
