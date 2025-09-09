@@ -1501,7 +1501,17 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
 router.patch("/:id/drivers", isAuthenticated, async (req, res) => {
   try {
     const eventId = parseInt(req.params.id);
-    const { assignedDriverIds, driverPickupTime, driverNotes, driversArranged } = req.body;
+    const { 
+      assignedDriverIds, 
+      driverPickupTime, 
+      driverNotes, 
+      driversArranged,
+      // Van driver fields
+      vanDriverNeeded,
+      assignedVanDriverId,
+      customVanDriverName,
+      vanDriverNotes
+    } = req.body;
     
     // Validate that the event exists first
     const existingEvent = await storage.getEventRequestById(eventId);
@@ -1510,12 +1520,18 @@ router.patch("/:id/drivers", isAuthenticated, async (req, res) => {
     }
     
     // Update the event with driver assignments
-    const updateData = {
+    const updateData: any = {
       assignedDriverIds: assignedDriverIds || [],
       driverPickupTime: driverPickupTime || null,
       driverNotes: driverNotes || null,
       driversArranged: driversArranged !== undefined ? driversArranged : (assignedDriverIds && assignedDriverIds.length > 0)
     };
+    
+    // Add van driver fields if provided
+    if (vanDriverNeeded !== undefined) updateData.vanDriverNeeded = vanDriverNeeded;
+    if (assignedVanDriverId !== undefined) updateData.assignedVanDriverId = assignedVanDriverId;
+    if (customVanDriverName !== undefined) updateData.customVanDriverName = customVanDriverName;
+    if (vanDriverNotes !== undefined) updateData.vanDriverNotes = vanDriverNotes;
     
     const updatedEvent = await storage.updateEventRequest(eventId, updateData);
     
