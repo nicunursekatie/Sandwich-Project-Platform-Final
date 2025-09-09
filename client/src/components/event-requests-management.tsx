@@ -2913,21 +2913,6 @@ export default function EventRequestsManagement() {
                           </div>
                         )}
 
-                        {/* Van driver notes */}
-                        {((request as any).assignedVanDriverId || (request as any).customVanDriverName) && (
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-blue-700">Van Driver Notes</label>
-                            <textarea
-                              placeholder="Special instructions for van driver..."
-                              value={(request as any).vanDriverNotes || ""}
-                              onChange={(e) => {
-                                handleAssignmentUpdate(request.id, 'vanDriverNotes', e.target.value);
-                              }}
-                              className="w-full text-xs border border-blue-300 rounded px-2 py-1 bg-white resize-none"
-                              rows={2}
-                            />
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
