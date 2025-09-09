@@ -1117,17 +1117,19 @@ export const eventRequests = pgTable("event_requests", {
   // Additional event details
   sandwichTypes: jsonb("sandwich_types"), // Array of {type: string, quantity: number} objects
   deliveryDestination: text("delivery_destination"), // Organization/host location where sandwiches will be delivered
-  // Driver and speaker requirements
+  // Driver, speaker, and volunteer requirements
   driversNeeded: integer("drivers_needed").default(0), // How many drivers this event needs
   speakersNeeded: integer("speakers_needed").default(0), // How many speakers this event needs
+  volunteersNeeded: boolean("volunteers_needed").default(false), // Whether volunteers are needed for this event
   volunteerNotes: text("volunteer_notes"), // General notes about volunteer requirements
   
-  // Driver and speaker assignments
+  // Driver, speaker, and volunteer assignments
   assignedDriverIds: text("assigned_driver_ids").array(), // Array of assigned driver IDs/names
   driverPickupTime: varchar("driver_pickup_time"), // Pickup time for drivers
   driverNotes: text("driver_notes"), // Notes for drivers
   driversArranged: boolean("drivers_arranged").default(false), // Whether drivers are confirmed
   assignedSpeakerIds: text("assigned_speaker_ids").array(), // Array of assigned speaker IDs/names
+  assignedVolunteerIds: text("assigned_volunteer_ids").array(), // Array of assigned volunteer IDs/names
   
   // Van driver assignment
   vanDriverNeeded: boolean("van_driver_needed").default(false), // Whether a van driver is required
