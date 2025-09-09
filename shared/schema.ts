@@ -1130,6 +1130,7 @@ export const eventRequests = pgTable("event_requests", {
   driverNotes: text("driver_notes"), // Notes for drivers
   driversArranged: boolean("drivers_arranged").default(false), // Whether drivers are confirmed
   assignedSpeakerIds: text("assigned_speaker_ids").array(), // Array of assigned speaker IDs/names
+  assignedDriverSpeakers: text("assigned_driver_speakers").array(), // Array of driver IDs who are also speakers
   assignedVolunteerIds: text("assigned_volunteer_ids").array(), // Array of assigned volunteer IDs/names
   
   // Van driver assignment

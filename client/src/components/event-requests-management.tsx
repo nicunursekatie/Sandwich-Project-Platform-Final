@@ -699,6 +699,12 @@ export default function EventRequestsManagement() {
     enabled: true,
   });
 
+  // Fetch drivers for speaker assignments (multi-faceted volunteers)
+  const { data: availableDrivers = [] } = useQuery({
+    queryKey: ["/api/drivers"],
+    enabled: true,
+  });
+
   // Handle URL parameters for tab and event highlighting
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1275,12 +1281,23 @@ export default function EventRequestsManagement() {
   // Assignment save mutations
 
   const saveSpeakerAssignmentMutation = useMutation({
-    mutationFn: ({ eventId, speakerIds }: { eventId: number; speakerIds: string[] }) =>
-      apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedSpeakerIds: speakerIds }),
+    mutationFn: ({ eventId, speakerIds }: { eventId: number; speakerIds: string[] }) => {
+      // Process mixed speaker IDs (users and drivers)
+      const speakers = {
+        userSpeakers: speakerIds.filter(id => id.startsWith('user-')).map(id => id.replace('user-', '')),
+        driverSpeakers: speakerIds.filter(id => id.startsWith('driver-')).map(id => id.replace('driver-', ''))
+      };
+      
+      return apiRequest("PUT", `/api/event-requests/${eventId}`, { 
+        assignedSpeakerIds: speakers.userSpeakers, // Keep existing user speakers for backwards compatibility
+        assignedDriverSpeakers: speakers.driverSpeakers // Add new driver speakers field
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       setShowSpeakerDialog(false);
+      setSelectedSpeakers([]);
       toast({ title: "Speaker assignments updated successfully" });
     },
     onError: (error: any) => {
@@ -2329,11 +2346,13 @@ export default function EventRequestsManagement() {
     };
 
     const getSpeakerStatus = () => {
-      const speakerIds = (request as any).assignedSpeakerIds || [];
+      const userSpeakers = (request as any).assignedSpeakerIds || [];
+      const driverSpeakers = (request as any).assignedDriverSpeakers || [];
+      const totalSpeakers = userSpeakers.length + driverSpeakers.length;
       const speakersNeeded = (request as any).speakersNeeded || 0;
       if (speakersNeeded === 0)
         return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
-      if (speakerIds.length >= speakersNeeded)
+      if (totalSpeakers >= speakersNeeded)
         return { badge: "✓ Arranged", color: "bg-green-100 text-green-700" };
       return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
     };
@@ -3647,7 +3666,7 @@ export default function EventRequestsManagement() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Speakers</span>
-                    {((request as any).speakersNeeded > 0 && ((request as any).assignedSpeakerIds?.length || 0) < (request as any).speakersNeeded) && (
+                    {((request as any).speakersNeeded > 0 && (((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) < (request as any).speakersNeeded) && (
                       <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
                         NEEDED
                       </span>
@@ -3655,8 +3674,8 @@ export default function EventRequestsManagement() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className={`text-xs ${((request as any).speakersNeeded > 0 && ((request as any).assignedSpeakerIds?.length || 0) < (request as any).speakersNeeded) ? 'text-amber-700 font-medium' : 'text-gray-600'}`}>
-                        Assigned: {(request as any).assignedSpeakerIds?.length || 0}/{editingField === "speakersNeeded" && editingEventId === request.id ? (tempValues.speakersNeeded || (request as any).speakersNeeded || 0) : (<button className="text-xs text-purple-600 hover:text-purple-800 hover:underline inline" onClick={() => { setEditingField("speakersNeeded"); setEditingEventId(request.id); setTempValues({ speakersNeeded: (request as any).speakersNeeded || 0, }); }}>{(request as any).speakersNeeded || 0}</button>)}
+                      <span className={`text-xs ${((request as any).speakersNeeded > 0 && (((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) < (request as any).speakersNeeded) ? 'text-amber-700 font-medium' : 'text-gray-600'}`}>
+                        Assigned: {((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)}/{editingField === "speakersNeeded" && editingEventId === request.id ? (tempValues.speakersNeeded || (request as any).speakersNeeded || 0) : (<button className="text-xs text-purple-600 hover:text-purple-800 hover:underline inline" onClick={() => { setEditingField("speakersNeeded"); setEditingEventId(request.id); setTempValues({ speakersNeeded: (request as any).speakersNeeded || 0, }); }}>{(request as any).speakersNeeded || 0}</button>)}
                       </span>
                       {editingField === "speakersNeeded" && editingEventId === request.id && (
                         <div className="flex items-center space-x-1">
@@ -3715,18 +3734,23 @@ export default function EventRequestsManagement() {
                     </div>
                     <button
                       className={`text-xs px-2 py-1 rounded border ${
-                        ((request as any).speakersNeeded > 0 && ((request as any).assignedSpeakerIds?.length || 0) < (request as any).speakersNeeded)
+                        ((request as any).speakersNeeded > 0 && (((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) < (request as any).speakersNeeded)
                           ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
                           : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200'
                       }`}
                       onClick={() => {
                         setAssigningSpeakerRequest(request);
                         setShowSpeakerDialog(true);
-                        const currentSpeakers = (request as any).assignedSpeakerIds || [];
-                        setSelectedSpeakers(currentSpeakers);
+                        
+                        // Initialize selected speakers from both users and drivers
+                        const userSpeakers = ((request as any).assignedSpeakerIds || []).map((id: string) => `user-${id}`);
+                        const driverSpeakers = ((request as any).assignedDriverSpeakers || []).map((id: string) => `driver-${id}`);
+                        const allSelectedSpeakers = [...userSpeakers, ...driverSpeakers];
+                        
+                        setSelectedSpeakers(allSelectedSpeakers);
                       }}
                     >
-                      {(request as any).assignedSpeakerIds?.length > 0 ? "Edit Speakers" : "+ Assign Speaker"}
+                      {(((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) > 0 ? "Edit Speakers" : "+ Assign Speaker"}
                     </button>
                   </div>
                   {(request as any).assignedSpeakerIds?.map((speakerId: string, index: number) => (
@@ -8061,41 +8085,95 @@ export default function EventRequestsManagement() {
 
               <div className="space-y-6">
                 <div>
-                  <Label className="text-base font-medium">
-                    Available Team Members
-                  </Label>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-600 mb-4">
                     Speakers needed: {(assigningSpeakerRequest as any).speakersNeeded || 0}
                   </p>
-                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                    {availableUsers?.map((user: any) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <input
-                          type="checkbox"
-                          id={`speaker-${user.id}`}
-                          checked={selectedSpeakers.includes(user.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedSpeakers([...selectedSpeakers, user.id]);
-                            } else {
-                              setSelectedSpeakers(
-                                selectedSpeakers.filter((id) => id !== user.id)
-                              );
-                            }
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        <label
-                          htmlFor={`speaker-${user.id}`}
-                          className="text-sm cursor-pointer"
+                  
+                  {/* Team Members Section */}
+                  <div className="mb-6">
+                    <Label className="text-base font-medium text-teal-700">
+                      Team Members
+                    </Label>
+                    <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto mt-2 p-2 bg-teal-50 rounded-md">
+                      {availableUsers?.map((user: any) => (
+                        <div
+                          key={`user-${user.id}`}
+                          className="flex items-center space-x-2"
                         >
-                          {user.displayName} ({user.email})
-                        </label>
-                      </div>
-                    ))}
+                          <input
+                            type="checkbox"
+                            id={`speaker-user-${user.id}`}
+                            checked={selectedSpeakers.includes(`user-${user.id}`)}
+                            onChange={(e) => {
+                              const speakerId = `user-${user.id}`;
+                              if (e.target.checked) {
+                                setSelectedSpeakers([...selectedSpeakers, speakerId]);
+                              } else {
+                                setSelectedSpeakers(
+                                  selectedSpeakers.filter((id) => id !== speakerId)
+                                );
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label
+                            htmlFor={`speaker-user-${user.id}`}
+                            className="text-sm cursor-pointer"
+                          >
+                            {user.displayName} ({user.email})
+                          </label>
+                        </div>
+                      ))}
+                      {(!availableUsers || availableUsers.length === 0) && (
+                        <p className="text-sm text-gray-500 italic">No team members available</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Drivers Section */}
+                  <div>
+                    <Label className="text-base font-medium text-orange-700">
+                      Drivers (Multi-faceted Volunteers)
+                    </Label>
+                    <p className="text-xs text-gray-600 mb-2">
+                      Select from drivers who can also serve as speakers
+                    </p>
+                    <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto p-2 bg-orange-50 rounded-md">
+                      {availableDrivers?.filter((driver: any) => driver.isActive).map((driver: any) => (
+                        <div
+                          key={`driver-${driver.id}`}
+                          className="flex items-center space-x-2"
+                        >
+                          <input
+                            type="checkbox"
+                            id={`speaker-driver-${driver.id}`}
+                            checked={selectedSpeakers.includes(`driver-${driver.id}`)}
+                            onChange={(e) => {
+                              const speakerId = `driver-${driver.id}`;
+                              if (e.target.checked) {
+                                setSelectedSpeakers([...selectedSpeakers, speakerId]);
+                              } else {
+                                setSelectedSpeakers(
+                                  selectedSpeakers.filter((id) => id !== speakerId)
+                                );
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label
+                            htmlFor={`speaker-driver-${driver.id}`}
+                            className="text-sm cursor-pointer"
+                          >
+                            {driver.name} {driver.phone && `(${driver.phone})`}
+                            {driver.zone && <span className="text-xs text-gray-500 ml-1">- Zone: {driver.zone}</span>}
+                            {driver.area && <span className="text-xs text-gray-500"> | Area: {driver.area}</span>}
+                          </label>
+                        </div>
+                      ))}
+                      {(!availableDrivers || availableDrivers.filter((d: any) => d.isActive).length === 0) && (
+                        <p className="text-sm text-gray-500 italic">No active drivers available</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
