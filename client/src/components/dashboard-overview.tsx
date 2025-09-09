@@ -413,14 +413,14 @@ export default function DashboardOverview({ onSectionChange }: { onSectionChange
               </div>
             </div>
 
-            <div className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20" onClick={() => onSectionChange?.('phone-directory')}>
+            <div className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20" onClick={() => onSectionChange?.('event-requests')}>
               <div className="w-12 h-12 bg-[#007E8C] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <Users className="w-6 h-6 text-white" />
+                <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-[#236383] mb-1">Directory</h3>
-              <p className="text-sm text-gray-600 mb-3">Contact info</p>
+              <h3 className="text-base font-semibold text-[#236383] mb-1">Event Planning</h3>
+              <p className="text-sm text-gray-600 mb-3">Manage events</p>
               <div className="text-[#236383] font-medium text-sm flex items-center">
-                Open Directory →
+                Open Event Planning →
               </div>
             </div>
 
