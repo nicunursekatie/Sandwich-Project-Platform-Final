@@ -105,15 +105,16 @@ export default function SuggestionsPortal() {
     enabled: true
   });
 
-  // Check permissions - updated to use new CREATE_SUGGESTIONS system
-  const canSubmit = hasPermission(currentUser, 'create_suggestions'); // Changed from submit_suggestions
-  const canManage = hasPermission(currentUser, 'manage_suggestions');
-  const canRespond = hasPermission(currentUser, 'respond_to_suggestions');
+  // Updated permissions logic - everyone can submit suggestions
+  const canSubmit = true; // Everyone can submit suggestions
+  const canManage = hasPermission(currentUser, 'SUGGESTIONS_MANAGE') || hasPermission(currentUser, 'SUGGESTIONS_EDIT_ALL');
+  const canRespond = hasPermission(currentUser, 'SUGGESTIONS_MANAGE');
+  const canViewAll = hasPermission(currentUser, 'SUGGESTIONS_VIEW') || hasPermission(currentUser, 'SUGGESTIONS_MANAGE') || hasPermission(currentUser, 'ADMIN_ACCESS');
 
-  // Fetch suggestions - everyone with create_suggestions can also view them
+  // Fetch suggestions - everyone can view at least their own
   const { data: suggestions = [], isLoading } = useQuery<Suggestion[]>({
     queryKey: ['/api/suggestions'],
-    enabled: hasPermission(currentUser, 'access_suggestions') || hasPermission(currentUser, 'create_suggestions'),
+    enabled: true, // Everyone can access suggestions (filtering happens server-side)
     staleTime: 0
   });
 
@@ -340,21 +341,8 @@ export default function SuggestionsPortal() {
     };
   };
 
-  if (!hasPermission(currentUser, 'access_suggestions') && !hasPermission(currentUser, 'create_suggestions')) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <Lightbulb className="h-12 w-12 mx-auto text-gray-400" />
-            <CardTitle>Access Required</CardTitle>
-            <CardDescription>
-              You need permission to view the suggestions portal.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  // Remove access restrictions - everyone can access suggestions
+  // (Server-side filtering will show users only their own suggestions if they don't have view-all permissions)
 
   const tabCounts = getTabCounts();
 

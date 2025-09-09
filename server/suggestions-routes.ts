@@ -11,25 +11,48 @@ const router = Router();
 
 // Use the requirePermission middleware from temp-auth
 
-// Get all suggestions
-router.get('/', requirePermission(PERMISSIONS.ACCESS_SUGGESTIONS), async (req, res) => {
+// Get suggestions - everyone can access, but filter based on permissions
+router.get('/', isAuthenticated, async (req, res) => {
   try {
+    const user = (req as any).user;
     const suggestions = await storage.getAllSuggestions();
-    res.json(suggestions);
+    
+    // If user has permission to view all suggestions, return all
+    if (user?.permissions?.includes(PERMISSIONS.SUGGESTIONS_VIEW) || 
+        user?.permissions?.includes(PERMISSIONS.SUGGESTIONS_MANAGE) ||
+        user?.permissions?.includes(PERMISSIONS.ADMIN_ACCESS)) {
+      res.json(suggestions);
+    } else {
+      // Otherwise, only return suggestions submitted by this user
+      const userSuggestions = suggestions.filter(s => s.submittedBy === user?.id);
+      res.json(userSuggestions);
+    }
   } catch (error) {
     console.error('Error fetching suggestions:', error);
     res.status(500).json({ error: 'Failed to fetch suggestions' });
   }
 });
 
-// Get single suggestion
-router.get('/:id', requirePermission(PERMISSIONS.ACCESS_SUGGESTIONS), async (req, res) => {
+// Get single suggestion - check if user can view it
+router.get('/:id', isAuthenticated, async (req, res) => {
   try {
+    const user = (req as any).user;
     const id = parseInt(req.params.id);
     const suggestion = await storage.getSuggestion(id);
+    
     if (!suggestion) {
       return res.status(404).json({ error: 'Suggestion not found' });
     }
+    
+    // Check if user can view this suggestion
+    const canViewAll = user?.permissions?.includes(PERMISSIONS.SUGGESTIONS_VIEW) || 
+                      user?.permissions?.includes(PERMISSIONS.SUGGESTIONS_MANAGE) ||
+                      user?.permissions?.includes(PERMISSIONS.ADMIN_ACCESS);
+    
+    if (!canViewAll && suggestion.submittedBy !== user?.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     res.json(suggestion);
   } catch (error) {
     console.error('Error fetching suggestion:', error);
@@ -37,8 +60,8 @@ router.get('/:id', requirePermission(PERMISSIONS.ACCESS_SUGGESTIONS), async (req
   }
 });
 
-// Create new suggestion
-router.post('/', requirePermission(PERMISSIONS.SUGGESTIONS_ADD), async (req, res) => {
+// Create new suggestion - everyone can submit suggestions
+router.post('/', isAuthenticated, async (req, res) => {
   try {
     console.log('=== SUGGESTION SUBMISSION DEBUG ===');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
