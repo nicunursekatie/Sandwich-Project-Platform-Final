@@ -2911,7 +2911,7 @@ export default function EventRequestsManagement() {
                         <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
                         <div className="text-sm text-gray-600">
                           <span className="font-medium text-gray-700">Planning Notes: </span>
-                          <span className="text-gray-600">{(request as any).planningNotes}</span>
+                          <span className="text-gray-600 whitespace-pre-wrap">{(request as any).planningNotes}</span>
                         </div>
                       </div>
                     )}
@@ -4490,7 +4490,7 @@ export default function EventRequestsManagement() {
                   {(request as any).planningNotes && (
                     <div className="text-gray-800 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
                       <span className="font-semibold text-blue-700">Planning Notes:</span>{" "}
-                      <span className="text-gray-900 font-medium">{(request as any).planningNotes}</span>
+                      <span className="text-gray-900 font-medium whitespace-pre-wrap">{(request as any).planningNotes}</span>
                     </div>
                   )}
                   {/* Additional requirements */}
