@@ -959,11 +959,42 @@ export default function EventRequestsManagement() {
 
   // Assignment update function
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
-    updateMutation.mutate({
-      id: eventId,
-      [field]: value,
-    });
+    // Use specific driver endpoint for driver assignments
+    if (field === 'assignedDriverIds') {
+      driverAssignmentMutation.mutate({
+        eventId,
+        assignedDriverIds: value
+      });
+    } else {
+      updateMutation.mutate({
+        id: eventId,
+        [field]: value,
+      });
+    }
   };
+
+  // Driver assignment mutation
+  const driverAssignmentMutation = useMutation({
+    mutationFn: ({ eventId, assignedDriverIds }: { eventId: number; assignedDriverIds: string[] }) =>
+      apiRequest("PATCH", `/api/event-requests/${eventId}/drivers`, { 
+        assignedDriverIds,
+        driversArranged: assignedDriverIds && assignedDriverIds.length > 0
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      toast({ 
+        title: "Success",
+        description: "Driver assignments updated successfully" 
+      });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error",
+        description: "Failed to update driver assignments",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Assignment save mutations
 
