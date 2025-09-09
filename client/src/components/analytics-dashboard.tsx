@@ -21,12 +21,23 @@ export default function AnalyticsDashboard() {
     queryKey: ['/api/sandwich-collections/stats']
   });
 
-  const isLoading = collectionsLoading || statsLoading;
+  const { data: hostsData, isLoading: hostsLoading } = useQuery({
+    queryKey: ['/api/hosts'],
+    queryFn: async () => {
+      const response = await fetch('/api/hosts');
+      if (!response.ok) throw new Error('Failed to fetch hosts');
+      return response.json();
+    }
+  });
+
+  const isLoading = collectionsLoading || statsLoading || hostsLoading;
 
   const analyticsData = useMemo(() => {
-    if (!collections?.length || !statsData) return null;
+    if (!collections?.length || !statsData || !hostsData) return null;
 
     const totalSandwiches = statsData.completeTotalSandwiches || 0;
+    const totalHosts = hostsData?.length || 0;
+    const activeHosts = hostsData?.filter((h: any) => h.status === 'active')?.length || 0;
 
     const calculateGroupTotal = (collection: SandwichCollection): number => {
       const groupCount1 = (collection as any).group1Count || 0;
@@ -90,6 +101,8 @@ export default function AnalyticsDashboard() {
       totalSandwiches,
       totalCollections: collections.length,
       activeLocations: Object.keys(hostStats).length,
+      totalHosts,
+      activeHosts,
       avgWeekly: 8700,
       topPerformer: topPerformer ? { name: topPerformer[0], total: topPerformer[1].total } : null,
       recordWeek: { total: 38828, date: '2023-11-15' },
@@ -97,7 +110,7 @@ export default function AnalyticsDashboard() {
       topHosts
     };
 
-  }, [collections, statsData]);
+  }, [collections, statsData, hostsData]);
 
   if (isLoading) {
     return (
@@ -172,10 +185,10 @@ export default function AnalyticsDashboard() {
             <Badge className="bg-teal-100 text-teal-700 text-sm">Network</Badge>
           </div>
           <div className="text-3xl font-bold text-[#236383] mb-2">
-            {analyticsData.activeLocations}
+            {analyticsData.totalHosts}
           </div>
-          <p className="text-[#646464] font-medium">Active Hosts</p>
-          <p className="text-sm text-green-600 mt-2">Network growing</p>
+          <p className="text-[#646464] font-medium">Total Hosts</p>
+          <p className="text-sm text-green-600 mt-2">{analyticsData.activeHosts} active hosts</p>
         </div>
       </div>
 
@@ -242,7 +255,7 @@ export default function AnalyticsDashboard() {
               <div className="bg-[#FBAD3F]/10 p-4 rounded-lg border border-[#FBAD3F]/30">
                 <h4 className="font-semibold text-[#236383] mb-2">Host Expansion</h4>
                 <p className="text-sm text-[#646464] mb-2">
-                  {analyticsData.activeLocations} active locations - Target +5 new hosts this month
+                  {analyticsData.totalHosts} total hosts ({analyticsData.activeHosts} active) - Growing network
                 </p>
                 <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F]">Special campaign needed</Badge>
               </div>
@@ -255,12 +268,12 @@ export default function AnalyticsDashboard() {
                 <Badge className="bg-[#236383]/20 text-[#236383]">→ Target 10K/week</Badge>
               </div>
 
-              <div className="bg-[#007E8C]/10 p-4 rounded-lg border border-[#007E8C]/30">
-                <h4 className="font-semibold text-[#236383] mb-2">Milestone Push</h4>
-                <p className="text-sm text-[#646464] mb-2">
-                  {(2000000 - analyticsData.totalSandwiches).toLocaleString()} to 2M goal
+              <div className="bg-green-100 p-4 rounded-lg border border-green-300">
+                <h4 className="font-semibold text-green-800 mb-2">🎉 Milestone Achieved!</h4>
+                <p className="text-sm text-green-700 mb-2">
+                  {(analyticsData.totalSandwiches - 2000000).toLocaleString()} sandwiches BEYOND 2M goal!
                 </p>
-                <Badge className="bg-[#007E8C]/20 text-[#007E8C]">146,936 to 2M goal</Badge>
+                <Badge className="bg-green-200 text-green-800">2M+ Goal Exceeded!</Badge>
               </div>
             </div>
           </CardContent>
