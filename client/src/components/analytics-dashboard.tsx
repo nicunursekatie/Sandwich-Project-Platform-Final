@@ -58,6 +58,8 @@ export default function AnalyticsDashboard() {
       return acc;
     }, {} as Record<string, { total: number; collections: number }>);
 
+    console.log('🔍 Host Stats Debug:', Object.entries(hostStats).slice(0, 3));
+
     const topPerformer = Object.entries(hostStats)
       .sort(([,a], [,b]) => b.total - a.total)[0];
 
