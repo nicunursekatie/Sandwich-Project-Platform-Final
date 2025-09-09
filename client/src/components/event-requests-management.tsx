@@ -3243,16 +3243,9 @@ export default function EventRequestsManagement() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  if (
-                    confirm(
-                      "Are you sure you want to delete this event request?",
-                    )
-                  ) {
-                    deleteMutation.mutate(request.id);
-                  }
-                }}
+                onClick={() => handleDeleteRequest(request)}
                 className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                title="Delete event request"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
