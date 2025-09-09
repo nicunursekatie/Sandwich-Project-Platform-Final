@@ -3532,7 +3532,7 @@ export default function EventRequestsManagement() {
               </Button>
             )}
 
-            {hasPermission(user, "EVENT_REQUESTS_DELETE_CARD") && (
+            {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_DELETE) && (
               <Button
                 size="sm"
                 variant="outline"
@@ -4167,7 +4167,7 @@ export default function EventRequestsManagement() {
                 <Edit className="h-4 w-4 mr-1" />
                 Edit Event
               </Button>
-              {hasPermission(user, "EVENT_REQUESTS_DELETE_CARD") && (
+              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_DELETE) && (
                 <Button
                   variant="outline"
                   size="sm"
