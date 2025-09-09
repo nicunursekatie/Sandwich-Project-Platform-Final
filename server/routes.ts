@@ -8189,6 +8189,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { messagingRoutes } = await import("./routes/messaging");
   app.use("/api/messaging", messagingRoutes);
 
+  // Import scheduled events endpoint
+  app.post("/api/import-scheduled-events", isAuthenticated, async (req, res) => {
+    try {
+      const { importScheduledEvents } = await import("./import-scheduled-events");
+      const results = await importScheduledEvents();
+      res.json(results);
+    } catch (error) {
+      logger.error("Failed to import scheduled events", error);
+      res.status(500).json({ message: "Failed to import scheduled events", error: error.message });
+    }
+  });
+
   // Google Sheets sync endpoint for individual collection entries
   app.post("/api/google-sheets/sync-entry", async (req, res) => {
     try {
