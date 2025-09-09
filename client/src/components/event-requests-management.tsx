@@ -2710,19 +2710,6 @@ export default function EventRequestsManagement() {
                             ✗
                           </Button>
                         </div>
-                      ) : (
-                        <button
-                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline ml-0"
-                          onClick={() => {
-                            setEditingField("driversNeeded");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              driversNeeded: (request as any).driversNeeded || 0,
-                            });
-                          }}
-                        >
-                          {(request as any).driversNeeded || 0}
-                        </button>
                       )}
                     </div>
                     {editingDriversFor === request.id ? (
