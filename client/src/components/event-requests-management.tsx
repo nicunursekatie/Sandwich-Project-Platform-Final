@@ -3099,8 +3099,18 @@ export default function EventRequestsManagement() {
                 {/* Driver Assignment Details */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700">Driver Details</span>
+                      {((request as any).driversNeeded > 0 && ((request as any).assignedDriverIds?.length || 0) < (request as any).driversNeeded) && (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
+                          NEEDED
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <span className="text-xs text-gray-600">
+                      <span className={`text-xs ${((request as any).driversNeeded > 0 && ((request as any).assignedDriverIds?.length || 0) < (request as any).driversNeeded) ? 'text-amber-700 font-medium' : 'text-gray-600'}`}>
                         Assigned: {(request as any).assignedDriverIds?.length || 0}/{editingField === "driversNeeded" && editingEventId === request.id ? tempValues.driversNeeded || (request as any).driversNeeded || 0 : (request as any).driversNeeded || 0}
                       </span>
                       {editingField === "driversNeeded" && editingEventId === request.id ? (
@@ -3438,10 +3448,15 @@ export default function EventRequestsManagement() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Speakers</span>
+                    {((request as any).speakersNeeded > 0 && ((request as any).assignedSpeakerIds?.length || 0) < (request as any).speakersNeeded) && (
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
+                        NEEDED
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">
+                      <span className={`text-xs ${((request as any).speakersNeeded > 0 && ((request as any).assignedSpeakerIds?.length || 0) < (request as any).speakersNeeded) ? 'text-amber-700 font-medium' : 'text-gray-600'}`}>
                         Assigned: {(request as any).assignedSpeakerIds?.length || 0}/{editingField === "speakersNeeded" && editingEventId === request.id ? (tempValues.speakersNeeded || (request as any).speakersNeeded || 0) : (<button className="text-xs text-purple-600 hover:text-purple-800 hover:underline inline" onClick={() => { setEditingField("speakersNeeded"); setEditingEventId(request.id); setTempValues({ speakersNeeded: (request as any).speakersNeeded || 0, }); }}>{(request as any).speakersNeeded || 0}</button>)}
                       </span>
                       {editingField === "speakersNeeded" && editingEventId === request.id && (
@@ -3500,7 +3515,11 @@ export default function EventRequestsManagement() {
                       )}
                     </div>
                     <button
-                      className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200"
+                      className={`text-xs px-2 py-1 rounded border ${
+                        ((request as any).speakersNeeded > 0 && ((request as any).assignedSpeakerIds?.length || 0) < (request as any).speakersNeeded)
+                          ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
+                          : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200'
+                      }`}
                       onClick={() => {
                         setAssigningSpeakerRequest(request);
                         setShowSpeakerDialog(true);
@@ -3531,9 +3550,20 @@ export default function EventRequestsManagement() {
                 {(request as any).volunteersNeeded && (
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Volunteers</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-700">Volunteers</span>
+                        {((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0) && (
+                          <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
+                            NEEDED
+                          </span>
+                        )}
+                      </div>
                       <button
-                        className="text-xs bg-orange-50 text-orange-700 hover:bg-orange-100 px-2 py-1 rounded border border-orange-200"
+                        className={`text-xs px-2 py-1 rounded border ${
+                          ((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0)
+                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
+                            : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200'
+                        }`}
                         onClick={() => {
                           setAssigningVolunteerRequest(request);
                           setShowVolunteerDialog(true);
