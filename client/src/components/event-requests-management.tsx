@@ -557,6 +557,7 @@ export default function EventRequestsManagement() {
     mutationFn: (data: any) => apiRequest("POST", "/api/event-requests", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       setShowAddDialog(false);
       toast({ title: "Event request created successfully" });
     },
@@ -609,6 +610,7 @@ export default function EventRequestsManagement() {
     onSettled: () => {
       // Always refetch after error or success to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
     },
   });
 
@@ -617,6 +619,7 @@ export default function EventRequestsManagement() {
       apiRequest("DELETE", `/api/event-requests/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       toast({ title: "Event request deleted successfully" });
     },
     onError: (error: any) => {
@@ -665,6 +668,7 @@ export default function EventRequestsManagement() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
     },
   });
 
@@ -711,6 +715,7 @@ export default function EventRequestsManagement() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
     },
   });
 
@@ -764,6 +769,7 @@ export default function EventRequestsManagement() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
     },
   });
 
@@ -810,6 +816,7 @@ export default function EventRequestsManagement() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
     },
   });
 
@@ -817,6 +824,7 @@ export default function EventRequestsManagement() {
     mutationFn: () => apiRequest("POST", "/api/import/sync-to-sheets"),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       toast({
         title: "Sync to Google Sheets successful",
         description: `Updated ${data.updated} rows in Google Sheets`,
@@ -835,6 +843,7 @@ export default function EventRequestsManagement() {
     mutationFn: () => apiRequest("POST", "/api/import/sync-from-sheets"),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       toast({
         title: "Sync from Google Sheets successful",
         description: `Processed ${data.total} rows, imported ${data.imported} new events`,
@@ -853,6 +862,7 @@ export default function EventRequestsManagement() {
     mutationFn: () => apiRequest("POST", "/api/import-scheduled-events"),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       toast({
         title: "Scheduled Events Import successful",
         description: `Imported ${data.imported} new events, skipped ${data.skipped} existing events`,
@@ -933,6 +943,7 @@ export default function EventRequestsManagement() {
       apiRequest("PUT", `/api/event-requests/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       toast({
         title: "Event request updated",
         description: "The event request has been updated successfully",
@@ -998,6 +1009,7 @@ export default function EventRequestsManagement() {
     onSuccess: () => {
       // Force immediate cache invalidation and refetch
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       queryClient.refetchQueries({ queryKey: ["/api/event-requests"] });
       toast({ 
         title: "Success",
@@ -1020,6 +1032,7 @@ export default function EventRequestsManagement() {
       apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedSpeakerIds: speakerIds }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
       setShowSpeakerDialog(false);
       toast({ title: "Speaker assignments updated successfully" });
     },
