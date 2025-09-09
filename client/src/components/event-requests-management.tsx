@@ -575,6 +575,9 @@ export default function EventRequestsManagement() {
   const [activeTab, setActiveTab] = useState("requests");
   const [searchTerm, setSearchTerm] = useState("");
   const [globalSearch, setGlobalSearch] = useState(false);
+  
+  // Collapsible event details state
+  const [collapsedEventDetails, setCollapsedEventDetails] = useState<Set<number>>(new Set());
   const [statusFilter, setStatusFilter] = useState("all");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -2747,10 +2750,25 @@ export default function EventRequestsManagement() {
 
             {/* Center Column: Event Logistics */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
-              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
-                <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                Event Details
+              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center justify-between cursor-pointer"
+                  onClick={() => {
+                    const newCollapsed = new Set(collapsedEventDetails);
+                    if (newCollapsed.has(request.id)) {
+                      newCollapsed.delete(request.id);
+                    } else {
+                      newCollapsed.add(request.id);
+                    }
+                    setCollapsedEventDetails(newCollapsed);
+                  }}>
+                <div className="flex items-center">
+                  <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                  Event Details
+                </div>
+                <div className="text-sm text-[#FBAD3F]">
+                  {collapsedEventDetails.has(request.id) ? "▶" : "▼"}
+                </div>
               </h4>
+              {!collapsedEventDetails.has(request.id) && (
               <div className="space-y-4">
                 
                 {/* Address */}
@@ -3242,6 +3260,7 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
               </div>
+              )}
             </div>
 
             {/* Right Column: Status & Assignments */}
