@@ -422,6 +422,15 @@ export default function EventRequestsManagement() {
   const [assigningContactRequest, setAssigningContactRequest] =
     useState<EventRequest | null>(null);
   const [showUnresponsiveDialog, setShowUnresponsiveDialog] = useState(false);
+  
+  // Social Media and Sandwich Tracking state
+  const [showSandwichCountDialog, setShowSandwichCountDialog] = useState(false);
+  const [showDistributionDialog, setShowDistributionDialog] = useState(false);
+  const [currentEventForTracking, setCurrentEventForTracking] = useState<EventRequest | null>(null);
+  const [actualSandwichCount, setActualSandwichCount] = useState<number>(0);
+  const [actualSandwichTypes, setActualSandwichTypes] = useState<string>("");
+  const [distributionData, setDistributionData] = useState<{destination: string, totalCount: number, notes?: string}[]>([]);
+  const [distributionNotes, setDistributionNotes] = useState<string>("");
   const [unresponsiveRequest, setUnresponsiveRequest] =
     useState<EventRequest | null>(null);
   const [selectedTspContacts, setSelectedTspContacts] = useState<string[]>([]);
@@ -1071,6 +1080,132 @@ export default function EventRequestsManagement() {
       });
     },
   });
+
+  // Social media post tracking mutations
+  const socialMediaMutation = useMutation({
+    mutationFn: ({ eventId, data }: { eventId: number; data: any }) =>
+      apiRequest("PATCH", `/api/event-requests/${eventId}/social-media`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      toast({
+        title: "Social media tracking updated",
+        description: "Social media post status has been updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating social media tracking",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Record actual sandwich count mutation
+  const recordSandwichCountMutation = useMutation({
+    mutationFn: ({ eventId, actualSandwichCount, actualSandwichTypes }: { eventId: number; actualSandwichCount: number; actualSandwichTypes?: string }) =>
+      apiRequest("PATCH", `/api/event-requests/${eventId}/actual-sandwich-count`, {
+        actualSandwichCount,
+        actualSandwichTypes,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      setShowSandwichCountDialog(false);
+      setCurrentEventForTracking(null);
+      toast({
+        title: "Final sandwich count recorded",
+        description: "The actual sandwich count has been saved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error recording sandwich count",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Record distribution mutation
+  const recordDistributionMutation = useMutation({
+    mutationFn: ({ eventId, sandwichDistributions, distributionNotes }: { eventId: number; sandwichDistributions: any[]; distributionNotes?: string }) =>
+      apiRequest("PATCH", `/api/event-requests/${eventId}/distribution`, {
+        sandwichDistributions,
+        distributionNotes,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      setShowDistributionDialog(false);
+      setCurrentEventForTracking(null);
+      toast({
+        title: "Distribution recorded",
+        description: "Sandwich distribution has been saved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error recording distribution",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper functions for social media and sandwich tracking
+  const updateSocialMediaPostStatus = (eventId: number, data: { socialMediaPostRequested?: boolean; socialMediaPostCompleted?: boolean }) => {
+    socialMediaMutation.mutate({ eventId, data });
+  };
+
+  const openSandwichCountDialog = (request: EventRequest) => {
+    setCurrentEventForTracking(request);
+    setActualSandwichCount(0);
+    setActualSandwichTypes("");
+    setShowSandwichCountDialog(true);
+  };
+
+  const openDistributionDialog = (request: EventRequest) => {
+    setCurrentEventForTracking(request);
+    setDistributionData([{ destination: "", totalCount: 0 }]);
+    setDistributionNotes("");
+    setShowDistributionDialog(true);
+  };
+
+  const handleRecordSandwichCount = () => {
+    if (!currentEventForTracking || actualSandwichCount <= 0) return;
+    
+    recordSandwichCountMutation.mutate({
+      eventId: currentEventForTracking.id,
+      actualSandwichCount,
+      actualSandwichTypes: actualSandwichTypes || undefined,
+    });
+  };
+
+  const handleRecordDistribution = () => {
+    if (!currentEventForTracking || distributionData.length === 0) return;
+    
+    const validDistributions = distributionData.filter(d => d.destination && d.totalCount > 0);
+    if (validDistributions.length === 0) return;
+    
+    recordDistributionMutation.mutate({
+      eventId: currentEventForTracking.id,
+      sandwichDistributions: validDistributions,
+      distributionNotes: distributionNotes || undefined,
+    });
+  };
+
+  const addDistributionEntry = () => {
+    setDistributionData([...distributionData, { destination: "", totalCount: 0 }]);
+  };
+
+  const removeDistributionEntry = (index: number) => {
+    setDistributionData(distributionData.filter((_, i) => i !== index));
+  };
+
+  const updateDistributionEntry = (index: number, field: string, value: string | number) => {
+    const updated = [...distributionData];
+    updated[index] = { ...updated[index], [field]: value };
+    setDistributionData(updated);
+  };
 
   // Filter events by tab
   const today = new Date();
@@ -3855,22 +3990,78 @@ export default function EventRequestsManagement() {
 
       <CardContent>
         <div className="space-y-4">
-          {/* Prominent Sandwich Count */}
+          {/* Prominent Sandwich Count - Enhanced with Actual vs Estimated */}
           {(() => {
             const summary = getSandwichTypesSummary(request);
-            return summary.total > 0 ? (
+            const hasActualCount = (request as any).actualSandwichCount;
+            const displayCount = hasActualCount || summary.total;
+            
+            return displayCount > 0 ? (
               <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
                 <div className="flex items-center justify-center space-x-3">
                   <span className="text-3xl">🥪</span>
                   <div className="text-center">
                     <span className="text-2xl font-bold text-[#FBAD3F]">
-                      {summary.total} Sandwiches
+                      {displayCount} Sandwiches
                     </span>
-                    {summary.hasBreakdown && (
-                      <div className="text-sm text-[#FBAD3F]/80 mt-1">
-                        {summary.breakdown}
-                      </div>
+                    <div className="text-sm text-[#FBAD3F]/80 mt-1">
+                      {hasActualCount ? (
+                        <span className="font-semibold">✅ Final Count Recorded</span>
+                      ) : summary.hasBreakdown ? (
+                        <div>
+                          <div>{summary.breakdown}</div>
+                          <div className="text-xs text-orange-600 mt-1">(Estimated)</div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-orange-600">(Estimated)</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Action Buttons for Past Events */}
+                <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                  {/* Social Media Post Tracking */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateSocialMediaPostStatus(request.id, { socialMediaPostRequested: !(request as any).socialMediaPostRequested })}
+                      className={`${(request as any).socialMediaPostRequested ? 'bg-blue-100 border-blue-300 text-blue-700' : 'hover:bg-blue-50'}`}
+                    >
+                      {(request as any).socialMediaPostRequested ? '✅' : '📤'} Asked to Post
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateSocialMediaPostStatus(request.id, { socialMediaPostCompleted: !(request as any).socialMediaPostCompleted })}
+                      className={`${(request as any).socialMediaPostCompleted ? 'bg-green-100 border-green-300 text-green-700' : 'hover:bg-green-50'}`}
+                      disabled={!(request as any).socialMediaPostRequested}
+                    >
+                      {(request as any).socialMediaPostCompleted ? '✅' : '📱'} Posted
+                    </Button>
+                  </div>
+                  
+                  {/* Sandwich Count and Distribution Buttons */}
+                  <div className="flex gap-2">
+                    {!hasActualCount && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openSandwichCountDialog(request)}
+                        className="bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100"
+                      >
+                        🥪 Record Final Count
+                      </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openDistributionDialog(request)}
+                      className="bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
+                    >
+                      📊 Record Distribution
+                    </Button>
                   </div>
                 </div>
               </div>
