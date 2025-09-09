@@ -434,6 +434,7 @@ export default function EventRequestsManagement() {
   const [showingCustomDriver, setShowingCustomDriver] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedEventForDrivers, setSelectedEventForDrivers] = useState<EventRequest | null>(null);
+  const [driverModalMode, setDriverModalMode] = useState<'regular' | 'van'>('regular');
   // Speaker Assignment state
   const [showSpeakerDialog, setShowSpeakerDialog] = useState(false);
   const [assigningSpeakerRequest, setAssigningSpeakerRequest] =
@@ -948,11 +949,18 @@ export default function EventRequestsManagement() {
 
   // Assignment update function
   const handleAssignmentUpdate = (eventId: number, field: string, value: any) => {
-    // Use specific driver endpoint for driver assignments
-    if (field === 'assignedDriverIds') {
+    // Use specific driver endpoint for driver assignments and van driver fields
+    if (field === 'assignedDriverIds' || field.startsWith('van')) {
+      const updateData: any = {};
+      updateData[field] = value;
+      
+      if (field === 'assignedDriverIds') {
+        updateData.driversArranged = value && value.length > 0;
+      }
+      
       driverAssignmentMutation.mutate({
         eventId,
-        assignedDriverIds: value
+        ...updateData
       });
     } else {
       updateMutation.mutate({
@@ -964,10 +972,28 @@ export default function EventRequestsManagement() {
 
   // Driver assignment mutation
   const driverAssignmentMutation = useMutation({
-    mutationFn: ({ eventId, assignedDriverIds }: { eventId: number; assignedDriverIds: string[] }) =>
+    mutationFn: ({ 
+      eventId, 
+      assignedDriverIds, 
+      vanDriverNeeded, 
+      assignedVanDriverId, 
+      customVanDriverName, 
+      vanDriverNotes 
+    }: { 
+      eventId: number; 
+      assignedDriverIds?: string[]; 
+      vanDriverNeeded?: boolean;
+      assignedVanDriverId?: string | null;
+      customVanDriverName?: string | null;
+      vanDriverNotes?: string | null;
+    }) =>
       apiRequest("PATCH", `/api/event-requests/${eventId}/drivers`, { 
         assignedDriverIds,
-        driversArranged: assignedDriverIds && assignedDriverIds.length > 0
+        driversArranged: assignedDriverIds && assignedDriverIds.length > 0,
+        vanDriverNeeded,
+        assignedVanDriverId,
+        customVanDriverName,
+        vanDriverNotes
       }),
     onSuccess: () => {
       // Force immediate cache invalidation and refetch
@@ -2794,6 +2820,7 @@ export default function EventRequestsManagement() {
                         onClick={() => {
                           setSelectedEventForDrivers(request);
                           setShowDriverModal(true);
+                          setDriverModalMode('regular');
                         }}
                       >
                         <User className="w-3 h-3 mr-1 inline" />
@@ -2819,6 +2846,104 @@ export default function EventRequestsManagement() {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Van Driver Assignment Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700">Van Driver</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <label className="flex items-center space-x-1">
+                        <input
+                          type="checkbox"
+                          checked={(request as any).vanDriverNeeded || false}
+                          onChange={(e) => {
+                            handleAssignmentUpdate(request.id, 'vanDriverNeeded', e.target.checked);
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-600">Needed</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Van Driver Details */}
+                  {(request as any).vanDriverNeeded && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                      {/* Van Driver Assignment */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-blue-700">Assigned Van Driver</span>
+                          <div className="flex space-x-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs bg-blue-100 border-blue-300 hover:bg-blue-200"
+                              onClick={() => {
+                                setSelectedEventForDrivers(request);
+                                setShowDriverModal(true);
+                                // Set van driver mode when opened from van driver section
+                                setDriverModalMode('van');
+                              }}
+                            >
+                              {(request as any).assignedVanDriverId || (request as any).customVanDriverName ? 
+                                "Change Van Driver" : 
+                                "Choose Van Driver"
+                              }
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Display current van driver */}
+                        {((request as any).assignedVanDriverId || (request as any).customVanDriverName) && (
+                          <div className="bg-blue-100 border border-blue-300 rounded p-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <span className="text-xs font-medium text-blue-800">
+                                  {(request as any).assignedVanDriverId 
+                                    ? getUserDisplayName((request as any).assignedVanDriverId)
+                                    : (request as any).customVanDriverName
+                                  }
+                                </span>
+                                {(request as any).customVanDriverName && (
+                                  <span className="ml-2 text-xs text-blue-600 bg-blue-200 px-1 rounded">
+                                    Custom
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                className="text-blue-600 hover:text-blue-800"
+                                onClick={() => {
+                                  handleAssignmentUpdate(request.id, 'assignedVanDriverId', null);
+                                  handleAssignmentUpdate(request.id, 'customVanDriverName', null);
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Van driver notes */}
+                        {((request as any).assignedVanDriverId || (request as any).customVanDriverName) && (
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-blue-700">Van Driver Notes</label>
+                            <textarea
+                              placeholder="Special instructions for van driver..."
+                              value={(request as any).vanDriverNotes || ""}
+                              onChange={(e) => {
+                                handleAssignmentUpdate(request.id, 'vanDriverNotes', e.target.value);
+                              }}
+                              className="w-full text-xs border border-blue-300 rounded px-2 py-1 bg-white resize-none"
+                              rows={2}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* TSP Contact Assignment */}
@@ -7357,13 +7482,26 @@ export default function EventRequestsManagement() {
         onClose={() => {
           setShowDriverModal(false);
           setSelectedEventForDrivers(null);
+          setDriverModalMode('regular');
         }}
+        mode={driverModalMode}
         onSelectDrivers={(drivers) => {
           if (selectedEventForDrivers) {
             handleAssignmentUpdate(selectedEventForDrivers.id, 'assignedDriverIds', drivers);
           }
         }}
+        onVanDriverSelect={(driverId, customName) => {
+          if (selectedEventForDrivers) {
+            driverAssignmentMutation.mutate({
+              eventId: selectedEventForDrivers.id,
+              assignedVanDriverId: driverId,
+              customVanDriverName: customName
+            });
+          }
+        }}
         selectedDrivers={(selectedEventForDrivers as any)?.assignedDriverIds || []}
+        currentVanDriverId={(selectedEventForDrivers as any)?.assignedVanDriverId}
+        currentCustomVanDriverName={(selectedEventForDrivers as any)?.customVanDriverName}
         eventId={selectedEventForDrivers?.id || 0}
       />
     </TooltipProvider>
