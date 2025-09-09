@@ -496,10 +496,24 @@ export default function EnhancedMeetingDashboard() {
       return;
     }
 
-    if (!selectedMeeting) {
+    // Auto-select the most recent meeting if none is selected
+    let targetMeeting = selectedMeeting;
+    if (!targetMeeting && meetings.length > 0) {
+      // Find the most recent upcoming meeting, or the most recent past meeting
+      const upcomingMeetings = meetings.filter(meeting => new Date(meeting.date) >= new Date());
+      const pastMeetings = meetings.filter(meeting => new Date(meeting.date) < new Date());
+      
+      if (upcomingMeetings.length > 0) {
+        targetMeeting = upcomingMeetings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      } else if (pastMeetings.length > 0) {
+        targetMeeting = pastMeetings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      }
+    }
+
+    if (!targetMeeting) {
       toast({
-        title: "No Meeting Selected",
-        description: "Please select a meeting to add the agenda item to",
+        title: "No Meetings Available",
+        description: "Please create a meeting first to add agenda items",
         variant: "destructive",
       });
       return;
@@ -508,7 +522,7 @@ export default function EnhancedMeetingDashboard() {
     createOffAgendaItemMutation.mutate({
       title: offAgendaTitle,
       section: offAgendaSection,
-      meetingId: selectedMeeting.id
+      meetingId: targetMeeting.id
     });
   };
 
