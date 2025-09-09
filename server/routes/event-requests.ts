@@ -896,6 +896,29 @@ router.put(
         }
       });
 
+      // Validate that in_process status is not set for past/current date events
+      if (processedUpdates.status === "in_process") {
+        let eventDate = processedUpdates.desiredEventDate;
+        
+        // If date wasn't updated, check the existing event's date
+        if (!eventDate && originalEvent.desiredEventDate) {
+          eventDate = new Date(originalEvent.desiredEventDate);
+        }
+        
+        if (eventDate) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          eventDate.setHours(0, 0, 0, 0);
+          
+          if (eventDate <= today) {
+            return res.status(400).json({ 
+              message: "Cannot set in_process status for events with past or current dates",
+              error: "Invalid status for event date"
+            });
+          }
+        }
+      }
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
