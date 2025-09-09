@@ -2326,6 +2326,16 @@ export default function EventRequestsManagement() {
       return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
     };
 
+    const getSpeakerStatus = () => {
+      const speakerIds = (request as any).assignedSpeakerIds || [];
+      const speakersNeeded = (request as any).speakersNeeded || 0;
+      if (speakersNeeded === 0)
+        return { badge: "N/A", color: "bg-gray-100 text-gray-600" };
+      if (speakerIds.length >= speakersNeeded)
+        return { badge: "✓ Arranged", color: "bg-green-100 text-green-700" };
+      return { badge: "⚠️ Needed", color: "bg-orange-100 text-[#FBAD3F]" };
+    };
+
     return (
       <Card
         key={request.id}
@@ -2431,6 +2441,56 @@ export default function EventRequestsManagement() {
             </div>
           </div>
         </CardHeader>
+
+        {/* Status Badges Section */}
+        <div className="px-6 pb-4">
+          <div className="flex flex-wrap gap-2">
+            {(() => {
+              const driverStatus = getDriverStatus();
+              const speakerStatus = getSpeakerStatus();
+              const volunteerStatus = getVolunteerStatus();
+              const badges = [];
+
+              // Add driver badge if drivers needed and not fulfilled
+              if (driverStatus.badge === "⚠️ Needed") {
+                badges.push(
+                  <Badge
+                    key="drivers"
+                    className={`${driverStatus.color} border-amber-300 font-semibold`}
+                  >
+                    🚗 DRIVERS NEEDED
+                  </Badge>
+                );
+              }
+
+              // Add speaker badge if speakers needed and not fulfilled
+              if (speakerStatus.badge === "⚠️ Needed") {
+                badges.push(
+                  <Badge
+                    key="speakers"
+                    className={`${speakerStatus.color} border-amber-300 font-semibold`}
+                  >
+                    🎤 SPEAKERS NEEDED
+                  </Badge>
+                );
+              }
+
+              // Add volunteer badge if volunteers needed and not fulfilled
+              if (volunteerStatus.badge === "⚠️ Needed") {
+                badges.push(
+                  <Badge
+                    key="volunteers"
+                    className={`${volunteerStatus.color} border-amber-300 font-semibold`}
+                  >
+                    🙋 VOLUNTEERS NEEDED
+                  </Badge>
+                );
+              }
+
+              return badges.length > 0 ? badges : null;
+            })()}
+          </div>
+        </div>
 
         {/* Body Section: Three Column Layout */}
         <CardContent>
