@@ -2999,34 +2999,6 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
-                {/* Pickup Time Display */}
-                {(request as any).pickupTime && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Pickup Time</span>
-                    <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                      {(() => {
-                        try {
-                          const pickupTime = (request as any).pickupTime;
-                          // If it's already in 12-hour format, return as is
-                          if (pickupTime.includes('AM') || pickupTime.includes('PM')) {
-                            return pickupTime;
-                          }
-                          // Otherwise, convert from 24-hour to 12-hour format
-                          const [hours, minutes] = pickupTime.split(":");
-                          const time = new Date();
-                          time.setHours(parseInt(hours), parseInt(minutes));
-                          return time.toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          });
-                        } catch {
-                          return (request as any).pickupTime;
-                        }
-                      })()}
-                    </span>
-                  </div>
-                )}
 
                 {/* Speaker Assignment */}
                 <div className="space-y-2">
