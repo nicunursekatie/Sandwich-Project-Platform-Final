@@ -2799,17 +2799,20 @@ export default function EventRequestsManagement() {
                         )}
                       </div>
                     ) : (
-                      <button
-                        className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-2 rounded border border-blue-200 font-medium"
-                        onClick={() => {
-                          setSelectedEventForDrivers(request);
-                          setShowDriverModal(true);
-                          setDriverModalMode('regular');
-                        }}
-                      >
-                        <User className="w-3 h-3 mr-1 inline" />
-                        {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
-                      </button>
+                      // Only show assign driver button if quota not met
+                      ((request as any).assignedDriverIds?.length || 0) < ((request as any).driversNeeded || 0) && (
+                        <button
+                          className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-2 rounded border border-blue-200 font-medium"
+                          onClick={() => {
+                            setSelectedEventForDrivers(request);
+                            setShowDriverModal(true);
+                            setDriverModalMode('regular');
+                          }}
+                        >
+                          <User className="w-3 h-3 mr-1 inline" />
+                          {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
+                        </button>
+                      )
                     )}
                   </div>
                   {/* Assigned Drivers Display */}
