@@ -17,7 +17,7 @@ const router = Router();
 // Get available drivers for event assignments
 router.get("/drivers/available", isAuthenticated, async (req, res) => {
   try {
-    if (!hasPermission(req.user?.permissions || 0, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+    if (!hasPermission(req.user?.permissions || 0, PERMISSIONS.DRIVERS_VIEW)) {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 
@@ -1483,34 +1483,6 @@ router.get("/organization-counts", isAuthenticated, async (req, res) => {
   }
 });
 
-// Get available drivers for event assignment
-router.get("/drivers/available", isAuthenticated, async (req, res) => {
-  try {
-    const allDrivers = await storage.getAllDrivers();
-    
-    // Filter to only active drivers
-    const availableDrivers = allDrivers
-      .filter((driver: any) => driver.isActive)
-      .map((driver: any) => ({
-        id: driver.id,
-        name: driver.name,
-        email: driver.email,
-        phone: driver.phone,
-        availability: driver.availability,
-        availabilityNotes: driver.availabilityNotes,
-        hostLocation: driver.hostLocation,
-        routeDescription: driver.routeDescription,
-        vanApproved: driver.vanApproved,
-        vehicleType: driver.vehicleType
-      }));
-    
-    console.log(`Found ${availableDrivers.length} available drivers`);
-    res.json(availableDrivers);
-  } catch (error) {
-    console.error("Error fetching available drivers:", error);
-    res.status(500).json({ error: "Failed to fetch available drivers" });
-  }
-});
 
 // Update driver assignments for an event
 router.patch("/:id/drivers", isAuthenticated, async (req, res) => {
