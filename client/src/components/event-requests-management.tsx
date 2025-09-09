@@ -2785,31 +2785,35 @@ export default function EventRequestsManagement() {
                       </div>
                     ) : (
                       <button
-                        className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                        className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-2 rounded border border-blue-200 font-medium"
                         onClick={() => {
-                          setEditingDriversFor(request.id);
-                          setTempDriverInput("");
-                          setShowingCustomDriver(false);
+                          setSelectedEventForDrivers(request);
+                          setShowDriverModal(true);
                         }}
                       >
+                        <User className="w-3 h-3 mr-1 inline" />
                         {(request as any).assignedDriverIds?.length > 0 ? "Edit Drivers" : "+ Assign Driver"}
                       </button>
                     )}
                   </div>
-                  {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
-                    <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 mr-1">
-                      {getUserDisplayName(driverId)}
-                      <button
-                        className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
-                        onClick={() => {
-                          const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
-                          handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                  {/* Assigned Drivers Display */}
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {(request as any).assignedDriverIds?.map((driverId: string, index: number) => (
+                      <div key={index} className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200">
+                        <User className="w-3 h-3 mr-1" />
+                        {getUserDisplayName(driverId)}
+                        <button
+                          className="ml-1 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center"
+                          onClick={() => {
+                            const updatedDrivers = (request as any).assignedDriverIds?.filter((id: string, i: number) => i !== index) || [];
+                            handleAssignmentUpdate(request.id, 'assignedDriverIds', updatedDrivers);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* TSP Contact Assignment */}
@@ -7229,6 +7233,22 @@ export default function EventRequestsManagement() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Driver Selection Modal */}
+      <DriverSelectionModal
+        isOpen={showDriverModal}
+        onClose={() => {
+          setShowDriverModal(false);
+          setSelectedEventForDrivers(null);
+        }}
+        onSelectDrivers={(drivers) => {
+          if (selectedEventForDrivers) {
+            handleAssignmentUpdate(selectedEventForDrivers.id, 'assignedDriverIds', drivers);
+          }
+        }}
+        selectedDrivers={(selectedEventForDrivers as any)?.assignedDriverIds || []}
+        eventId={selectedEventForDrivers?.id || 0}
+      />
     </TooltipProvider>
   );
 }
