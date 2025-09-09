@@ -394,19 +394,23 @@ export default function EventRequestsManagement() {
   }>({});
   const [editValues, setEditValues] = useState<{[key: string]: string}>({});
   // Sorting state for all tabs
-  const [requestsSortBy, setRequestsSortBy] = useState<"date" | "organization">(
+  const [requestsSortBy, setRequestsSortBy] = useState<"date" | "organization" | "contact">(
     "date",
   );
   const [requestsSortOrder, setRequestsSortOrder] = useState<"asc" | "desc">(
     "desc",
   );
   const [scheduledSortBy, setScheduledSortBy] = useState<
-    "date" | "organization"
+    "date" | "organization" | "contact"
   >("date");
   const [scheduledSortOrder, setScheduledSortOrder] = useState<"asc" | "desc">(
     "asc",
   );
-  const [pastSortBy, setPastSortBy] = useState<"date" | "organization">("date");
+  const [pastSortBy, setPastSortBy] = useState<"date" | "organization" | "contact">("date");
+  const [pastSortOrder, setPastSortOrder] = useState<"asc" | "desc">("desc");
+  const [inProcessSortBy, setInProcessSortBy] = useState<"date" | "organization" | "contact">("date");
+  const [inProcessSortOrder, setInProcessSortOrder] = useState<"asc" | "desc">("desc");
+  
   // Enhanced inline editing state for safer editing
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
@@ -1207,6 +1211,44 @@ export default function EventRequestsManagement() {
     setDistributionData(updated);
   };
 
+  // Sorting helper functions
+  const sortEvents = (events: EventRequest[], sortBy: "date" | "organization" | "contact", sortOrder: "asc" | "desc") => {
+    return events.sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+      
+      switch (sortBy) {
+        case "organization":
+          valueA = a.organizationName?.toLowerCase() || "";
+          valueB = b.organizationName?.toLowerCase() || "";
+          break;
+        case "contact":
+          valueA = `${a.firstName || ""} ${a.lastName || ""}`.toLowerCase().trim();
+          valueB = `${b.firstName || ""} ${b.lastName || ""}`.toLowerCase().trim();
+          break;
+        case "date":
+        default:
+          // For requests tab, sort by created date; for others, sort by event date then created date
+          if (a.desiredEventDate && b.desiredEventDate) {
+            valueA = new Date(a.desiredEventDate);
+            valueB = new Date(b.desiredEventDate);
+          } else {
+            valueA = new Date(a.createdAt);
+            valueB = new Date(b.createdAt);
+          }
+          break;
+      }
+      
+      if (sortBy === "date") {
+        const comparison = valueA.getTime() - valueB.getTime();
+        return sortOrder === "asc" ? comparison : -comparison;
+      } else {
+        const comparison = valueA.localeCompare(valueB);
+        return sortOrder === "asc" ? comparison : -comparison;
+      }
+    });
+  };
+
   // Filter events by tab
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Start of today for accurate comparison
@@ -1416,91 +1458,33 @@ export default function EventRequestsManagement() {
       return new Date(req.createdAt);
     };
 
-    // Sort events based on tab
-    if (activeTab === "requests") {
-      return filtered.sort((a: any, b: any) => {
-        if (requestsSortBy === "organization") {
-          const orgA = (a.organizationName || "").toLowerCase();
-          const orgB = (b.organizationName || "").toLowerCase();
-          const comparison = orgA.localeCompare(orgB);
-          return requestsSortOrder === "desc" ? -comparison : comparison;
-        } else {
-          // Sort by submission date for new requests
-          const dateA = getSubmissionDate(a);
-          const dateB = getSubmissionDate(b);
-          return requestsSortOrder === "desc"
-            ? dateB.getTime() - dateA.getTime()
-            : dateA.getTime() - dateB.getTime();
-        }
-      });
-    } else if (activeTab === "followed_up" || activeTab === "in_process") {
-      return filtered.sort((a: any, b: any) => {
-        if (requestsSortBy === "organization") {
-          const orgA = (a.organizationName || "").toLowerCase();
-          const orgB = (b.organizationName || "").toLowerCase();
-          const comparison = orgA.localeCompare(orgB);
-          return requestsSortOrder === "desc" ? -comparison : comparison;
-        } else {
-          // Sort by event date for in-process requests
-          const dateA = getEventDate(a);
-          const dateB = getEventDate(b);
-          return requestsSortOrder === "desc"
-            ? dateB.getTime() - dateA.getTime()
-            : dateA.getTime() - dateB.getTime();
-        }
-      });
+    // Apply sorting based on active tab
+    switch (activeTab) {
+      case "requests":
+        return sortEvents(filtered, requestsSortBy, requestsSortOrder);
+      case "in_process":
+        return sortEvents(filtered, inProcessSortBy, inProcessSortOrder);
+      case "scheduled":
+        return sortEvents(filtered, scheduledSortBy, scheduledSortOrder);
+      case "past":
+        return sortEvents(filtered, pastSortBy, pastSortOrder);
+      default:
+        return sortEvents(filtered, requestsSortBy, requestsSortOrder);
     }
 
-    // Sort scheduled events
-    if (activeTab === "scheduled") {
-      return filtered.sort((a: any, b: any) => {
-        if (scheduledSortBy === "organization") {
-          const orgA = a.organizationName.toLowerCase();
-          const orgB = b.organizationName.toLowerCase();
-          const comparison = orgA.localeCompare(orgB);
-          return scheduledSortOrder === "desc" ? -comparison : comparison;
-        } else {
-          // Sort by date
-          const dateA = getEventDate(a);
-          const dateB = getEventDate(b);
-          return scheduledSortOrder === "desc"
-            ? dateB.getTime() - dateA.getTime()
-            : dateA.getTime() - dateB.getTime();
-        }
-      });
-    }
-
-    // Sort past events
-    if (activeTab === "past") {
-      return filtered.sort((a: any, b: any) => {
-        if (pastSortBy === "organization") {
-          const orgA = a.organizationName.toLowerCase();
-          const orgB = b.organizationName.toLowerCase();
-          const comparison = orgA.localeCompare(orgB);
-          return pastEventsSortOrder === "desc" ? -comparison : comparison;
-        } else {
-          // Sort by date
-          const dateA = getEventDate(a);
-          const dateB = getEventDate(b);
-          return pastEventsSortOrder === "desc"
-            ? dateB.getTime() - dateA.getTime()
-            : dateA.getTime() - dateB.getTime();
-        }
-      });
-    }
-
-    return filtered;
   }, [
     eventRequests,
     searchTerm,
     activeTab,
     globalSearch,
-    pastEventsSortOrder,
     requestsSortBy,
     requestsSortOrder,
     scheduledSortBy,
     scheduledSortOrder,
     pastSortBy,
+    pastSortOrder,
+    inProcessSortBy,
+    inProcessSortOrder,
     statusFilter,
   ]);
 
@@ -5075,6 +5059,107 @@ export default function EventRequestsManagement() {
                   regardless of tab
                 </div>
               )}
+            </div>
+
+            {/* Sorting Controls */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm font-medium text-gray-700">Sort by:</span>
+                  
+                  {/* Sort Field Selector */}
+                  <Select
+                    value={
+                      activeTab === "requests" ? requestsSortBy :
+                      activeTab === "in_process" ? inProcessSortBy :
+                      activeTab === "scheduled" ? scheduledSortBy :
+                      activeTab === "past" ? pastSortBy :
+                      requestsSortBy
+                    }
+                    onValueChange={(value: "date" | "organization" | "contact") => {
+                      if (activeTab === "requests") {
+                        setRequestsSortBy(value);
+                      } else if (activeTab === "in_process") {
+                        setInProcessSortBy(value);
+                      } else if (activeTab === "scheduled") {
+                        setScheduledSortBy(value);
+                      } else if (activeTab === "past") {
+                        setPastSortBy(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date</SelectItem>
+                      <SelectItem value="organization">Organization</SelectItem>
+                      <SelectItem value="contact">Contact Name</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Sort Order Buttons */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Order:</span>
+                  <div className="flex border rounded-md overflow-hidden">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`px-3 py-1 rounded-none border-r ${
+                        (activeTab === "requests" ? requestsSortOrder :
+                         activeTab === "in_process" ? inProcessSortOrder :
+                         activeTab === "scheduled" ? scheduledSortOrder :
+                         activeTab === "past" ? pastSortOrder :
+                         requestsSortOrder) === "asc"
+                          ? "bg-[#236383] text-white"
+                          : "hover:bg-gray-100"
+                      }`}
+                      onClick={() => {
+                        if (activeTab === "requests") {
+                          setRequestsSortOrder("asc");
+                        } else if (activeTab === "in_process") {
+                          setInProcessSortOrder("asc");
+                        } else if (activeTab === "scheduled") {
+                          setScheduledSortOrder("asc");
+                        } else if (activeTab === "past") {
+                          setPastSortOrder("asc");
+                        }
+                      }}
+                    >
+                      <ArrowUp className="w-4 h-4 mr-1" />
+                      Ascending
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`px-3 py-1 rounded-none ${
+                        (activeTab === "requests" ? requestsSortOrder :
+                         activeTab === "in_process" ? inProcessSortOrder :
+                         activeTab === "scheduled" ? scheduledSortOrder :
+                         activeTab === "past" ? pastSortOrder :
+                         requestsSortOrder) === "desc"
+                          ? "bg-[#236383] text-white"
+                          : "hover:bg-gray-100"
+                      }`}
+                      onClick={() => {
+                        if (activeTab === "requests") {
+                          setRequestsSortOrder("desc");
+                        } else if (activeTab === "in_process") {
+                          setInProcessSortOrder("desc");
+                        } else if (activeTab === "scheduled") {
+                          setScheduledSortOrder("desc");
+                        } else if (activeTab === "past") {
+                          setPastSortOrder("desc");
+                        }
+                      }}
+                    >
+                      <ArrowUp className="w-4 h-4 mr-1 transform rotate-180" />
+                      Descending
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Tab Content */}
