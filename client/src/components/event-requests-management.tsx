@@ -2511,14 +2511,39 @@ export default function EventRequestsManagement() {
                 </div>
 
 
-                {/* Planning Notes */}
-                {(request as any).planningNotes && (
-                  <div className="flex items-start space-x-3">
-                    <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Planning Notes: </span>
-                      <span className="text-gray-600">{(request as any).planningNotes}</span>
-                    </div>
+                {/* Notes - consolidate all notes fields */}
+                {((request as any).message || (request as any).planningNotes || (request as any).additionalRequirements) && (
+                  <div className="space-y-2">
+                    {/* Original event details/message */}
+                    {(request as any).message && (request as any).message !== "Imported from Excel file" && (
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📋</span>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium text-gray-700">Event Details: </span>
+                          <span className="text-gray-600">{(request as any).message}</span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Planning notes */}
+                    {(request as any).planningNotes && (
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📝</span>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium text-gray-700">Planning Notes: </span>
+                          <span className="text-gray-600">{(request as any).planningNotes}</span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Additional requirements */}
+                    {(request as any).additionalRequirements && (
+                      <div className="flex items-start space-x-3">
+                        <span className="text-gray-500 text-sm mt-1 flex-shrink-0">⚠️</span>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium text-gray-700">Special Requirements: </span>
+                          <span className="text-gray-600">{(request as any).additionalRequirements}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -3977,21 +4002,32 @@ export default function EventRequestsManagement() {
                     ? "Not available"
                     : "Not specified"}</span>
               </div>
-              {(request as any).additionalRequirements && (
-                <div className="text-gray-800">
-                  <span className="font-semibold text-red-700">Special Requirements:</span>{" "}
-                  <span className="text-gray-900 font-medium">{(request as any).additionalRequirements}</span>
+              {/* Notes - consolidate all notes fields for in-process events */}
+              {((request as any).message || (request as any).planningNotes || (request as any).additionalRequirements) && (
+                <div className="space-y-2 col-span-full">
+                  {/* Original event details/message */}
+                  {request.message && request.message !== "Imported from Excel file" && (
+                    <div className="text-gray-800 p-3 bg-gray-50 rounded border-l-4 border-orange-400">
+                      <span className="font-semibold text-orange-700">Event Details:</span>{" "}
+                      <span className="text-gray-900 font-medium">{request.message}</span>
+                    </div>
+                  )}
+                  {/* Planning notes */}
+                  {(request as any).planningNotes && (
+                    <div className="text-gray-800 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                      <span className="font-semibold text-blue-700">Planning Notes:</span>{" "}
+                      <span className="text-gray-900 font-medium">{(request as any).planningNotes}</span>
+                    </div>
+                  )}
+                  {/* Additional requirements */}
+                  {(request as any).additionalRequirements && (
+                    <div className="text-gray-800 p-3 bg-red-50 rounded border-l-4 border-red-400">
+                      <span className="font-semibold text-red-700">Special Requirements:</span>{" "}
+                      <span className="text-gray-900 font-medium">{(request as any).additionalRequirements}</span>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Include original message in event summary if it exists and isn't generic */}
-              {request.message &&
-                request.message !== "Imported from Excel file" && (
-                  <div className="col-span-full text-gray-800 p-3 bg-gray-50 rounded border-l-4 border-orange-400">
-                    <span className="font-semibold text-orange-700">Event Details:</span>{" "}
-                    <span className="text-gray-900 font-medium">{request.message}</span>
-                  </div>
-                )}
             </div>
           </div>
 
