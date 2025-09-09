@@ -2710,7 +2710,7 @@ export default function EventRequestsManagement() {
                             ✗
                           </Button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                     {editingDriversFor === request.id ? (
                       <div className="space-y-2 w-full">
