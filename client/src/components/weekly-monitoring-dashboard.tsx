@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Info, MessageSquare, Smartphone, Settings, Send } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Mail, RefreshCw, Calendar, MapPin, AlertTriangle, FileBarChart, Users, Info, MessageSquare, Smartphone, Settings, Send, Download } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -125,6 +125,256 @@ export default function WeeklyMonitoringDashboard() {
     mutationFn: (data: { phoneNumber: string; appUrl?: string }) => 
       apiRequest('POST', '/api/monitoring/test-sms', data),
   });
+
+  // Function to generate stylized export of non-reporting groups
+  const generateNonReportingExport = () => {
+    if (!submissionStatus || !Array.isArray(submissionStatus)) return;
+
+    const nonReportingGroups = submissionStatus.filter(status => !status.hasSubmitted);
+    const reportingGroups = submissionStatus.filter(status => status.hasSubmitted);
+    
+    const currentDate = new Date();
+    const weekLabel = getWeekLabel(selectedWeek);
+    
+    // Create HTML content for the export
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Weekly Monitoring Report - ${weekLabel}</title>
+        <style>
+          body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f9fafb;
+            color: #1f2937;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #236383 0%, #007E8C 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.2em;
+            font-weight: 700;
+          }
+          .header p {
+            margin: 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+          }
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+          }
+          .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid;
+          }
+          .stat-card.missing {
+            border-left-color: #dc2626;
+          }
+          .stat-card.submitted {
+            border-left-color: #16a34a;
+          }
+          .stat-card.total {
+            border-left-color: #236383;
+          }
+          .stat-number {
+            font-size: 2.5em;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1;
+          }
+          .stat-label {
+            color: #6b7280;
+            margin: 8px 0 0 0;
+            font-weight: 500;
+          }
+          .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          }
+          .section-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin: 0 0 25px 0;
+            color: #236383;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .status-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: 500;
+          }
+          .status-item.missing {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+          }
+          .status-item.submitted {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+          }
+          .status-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+          }
+          .status-icon.missing {
+            background-color: #dc2626;
+            color: white;
+          }
+          .status-icon.submitted {
+            background-color: #16a34a;
+            color: white;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #6b7280;
+            border-top: 2px solid #e5e7eb;
+          }
+          .dunwoody-badge {
+            display: inline-block;
+            background-color: #fbbf24;
+            color: #92400e;
+            font-size: 0.75em;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-weight: 600;
+          }
+          .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #16a34a;
+            font-size: 1.2em;
+            background: #f0fdf4;
+            border-radius: 8px;
+            border: 1px solid #bbf7d0;
+          }
+          .empty-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+          }
+          @media print {
+            body { background-color: white; padding: 20px; }
+            .header { background: #236383 !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📊 Weekly Monitoring Report</h1>
+          <p>${weekLabel} • Generated ${currentDate.toLocaleDateString()} at ${currentDate.toLocaleTimeString()}</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card total">
+            <div class="stat-number">${submissionStatus.length}</div>
+            <div class="stat-label">Total Locations</div>
+          </div>
+          <div class="stat-card submitted">
+            <div class="stat-number">${reportingGroups.length}</div>
+            <div class="stat-label">Submitted</div>
+          </div>
+          <div class="stat-card missing">
+            <div class="stat-number">${nonReportingGroups.length}</div>
+            <div class="stat-label">Missing Reports</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            ❌ Locations Missing Reports
+          </div>
+          ${nonReportingGroups.length === 0 ? 
+            '<div class="empty-state"><div class="empty-icon">🎉</div><strong>Excellent!</strong><br>All locations have submitted their reports this week!</div>' :
+            nonReportingGroups.map(status => `
+              <div class="status-item missing">
+                <div class="status-icon missing">✗</div>
+                <div>
+                  ${status.location}
+                  ${status.location === 'Dunwoody/PTC' && status.dunwoodyStatus ? 
+                    `<span class="dunwoody-badge">
+                      Missing: ${!status.dunwoodyStatus.lisaHiles && !status.dunwoodyStatus.stephanieOrMarcy ? 'Both Required' : 
+                                 !status.dunwoodyStatus.lisaHiles ? 'Lisa Hiles' : 'Stephanie/Marcy'}
+                    </span>` : ''}
+                  ${status.lastSubmissionDate ? `<br><small style="color: #6b7280;">Last submission: ${new Date(status.lastSubmissionDate).toLocaleDateString()}</small>` : ''}
+                </div>
+              </div>
+            `).join('')
+          }
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            ✅ Locations With Reports
+          </div>
+          ${reportingGroups.length === 0 ? 
+            '<div style="text-align: center; color: #6b7280; padding: 20px;">No locations have submitted reports yet.</div>' :
+            reportingGroups.map(status => `
+              <div class="status-item submitted">
+                <div class="status-icon submitted">✓</div>
+                <div>
+                  ${status.location}
+                  ${status.submittedBy && status.submittedBy.length > 0 ? 
+                    `<br><small style="color: #6b7280;">Submitted by: ${status.submittedBy.join(', ')}</small>` : ''}
+                </div>
+              </div>
+            `).join('')
+          }
+        </div>
+
+        <div class="footer">
+          <p><strong>The Sandwich Project</strong> • Weekly Monitoring System</p>
+          <p>For questions about this report, contact the monitoring team.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create and download the report
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Weekly-Monitoring-${weekLabel.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
   
   // SMS announcement mutation
   const sendAnnouncementMutation = useMutation({
@@ -219,6 +469,17 @@ export default function WeeklyMonitoringDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-2">
+          <Button
+            onClick={generateNonReportingExport}
+            variant="outline"
+            disabled={!submissionStatus || !Array.isArray(submissionStatus) || submissionStatus.length === 0}
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9 text-purple-700 border-purple-200 hover:bg-purple-50"
+          >
+            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden lg:inline">Export Report</span>
+            <span className="lg:hidden">Export</span>
+          </Button>
+          
           <Button
             onClick={() => testEmailMutation.mutate()}
             variant="outline"
