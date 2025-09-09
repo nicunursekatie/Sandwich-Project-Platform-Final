@@ -1286,6 +1286,24 @@ export default function EventRequestsManagement() {
     },
   });
 
+  const saveVolunteerAssignmentMutation = useMutation({
+    mutationFn: ({ eventId, volunteerIds }: { eventId: number; volunteerIds: string[] }) =>
+      apiRequest("PUT", `/api/event-requests/${eventId}`, { assignedVolunteerIds: volunteerIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
+      setShowVolunteerDialog(false);
+      toast({ title: "Volunteer assignments updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating volunteer assignments",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Mark in_process event as scheduled manually
   const markScheduledMutation = useMutation({
     mutationFn: (eventId: number) =>
@@ -7820,6 +7838,94 @@ export default function EventRequestsManagement() {
                   {saveSpeakerAssignmentMutation.isPending
                     ? "Assigning..."
                     : "Assign Speakers"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Volunteer Assignment Dialog */}
+        {showVolunteerDialog && assigningVolunteerRequest && (
+          <Dialog
+            open={showVolunteerDialog}
+            onOpenChange={setShowVolunteerDialog}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Assign Volunteers</DialogTitle>
+                <p className="text-sm text-gray-600">
+                  Assign volunteers for{" "}
+                  {assigningVolunteerRequest.organizationName}
+                </p>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-base font-medium">
+                    Available Team Members
+                  </Label>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Select team members to volunteer for this event
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                    {availableUsers?.map((user: any) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`volunteer-${user.id}`}
+                          checked={selectedVolunteers.includes(user.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedVolunteers([...selectedVolunteers, user.id]);
+                            } else {
+                              setSelectedVolunteers(
+                                selectedVolunteers.filter((id) => id !== user.id)
+                              );
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <label
+                          htmlFor={`volunteer-${user.id}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {user.displayName} ({user.email})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowVolunteerDialog(false);
+                    setAssigningVolunteerRequest(null);
+                    setSelectedVolunteers([]);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    saveVolunteerAssignmentMutation.mutate({
+                      eventId: assigningVolunteerRequest.id,
+                      volunteerIds: selectedVolunteers,
+                    });
+                  }}
+                  disabled={saveVolunteerAssignmentMutation.isPending}
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  {saveVolunteerAssignmentMutation.isPending
+                    ? "Assigning..."
+                    : "Assign Volunteers"}
                 </Button>
               </div>
             </DialogContent>
