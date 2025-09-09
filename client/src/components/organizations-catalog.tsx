@@ -542,13 +542,13 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                         </div>
                         
                         {/* Consolidated Status Bar */}
-                        <div className="bg-gray-50 p-2 rounded-md">
-                          <div className="text-xs text-gray-600 flex items-center space-x-1">
-                            <span>Status: <span className="font-medium text-gray-800">{getStatusText(org.status)}</span></span>
+                        <div className="bg-transparent p-2 border border-gray-200 rounded-md">
+                          <div className="text-xs text-gray-700 flex items-center space-x-1">
+                            <span>Status: <span className="font-medium text-gray-900">{getStatusText(org.status)}</span></span>
                             <span className="text-gray-400">•</span>
-                            <span>Requests: <span className="font-medium text-gray-800">{org.totalRequests}</span></span>
+                            <span>Requests: <span className="font-medium text-gray-900">{org.totalRequests}</span></span>
                             <span className="text-gray-400">•</span>
-                            <span>Hosted: <span className="font-medium text-gray-800">{org.hasHostedEvent ? 'Yes' : 'No'}</span></span>
+                            <span>Hosted: <span className="font-medium text-gray-900">{org.hasHostedEvent ? 'Yes' : 'No'}</span></span>
                           </div>
                         </div>
                       </div>
@@ -567,7 +567,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                     </div>
                     
                     {/* Sandwich Count for Completed Events */}
-                    {org.totalSandwiches && org.totalSandwiches > 0 && (
+                    {org.totalSandwiches && org.totalSandwiches > 0 ? (
                       <div className="text-sm mb-3 bg-orange-50 p-2 rounded-lg border border-orange-200">
                         <div className="flex items-center space-x-2">
                           <span className="text-orange-600">🥪</span>
@@ -575,7 +575,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                           <span className="text-orange-800 font-semibold">{org.totalSandwiches}</span>
                         </div>
                       </div>
-                    )}
+                    ) : null}
                     
                     {/* View Event Details Button */}
                     <Button 
