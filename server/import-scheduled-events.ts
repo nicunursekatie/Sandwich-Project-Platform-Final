@@ -226,8 +226,8 @@ export async function importScheduledEvents(): Promise<{
         continue;
       }
 
-      // Parse contact name with fallbacks
-      const contactName = event.contactName || 'Contact';
+      // Parse contact name with fallbacks for empty/null values
+      const contactName = event.contactName?.trim() || 'Contact Person';
       const nameParts = contactName.split(' ');
       const firstName = nameParts[0] || 'Contact';
       const lastName = nameParts.slice(1).join(' ') || 'Person';
