@@ -51,6 +51,7 @@ export default function ProjectsClean() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState("active");
+  const [projectTypeFilter, setProjectTypeFilter] = useState("all"); // all, meeting, internal
   
   const [newProject, setNewProject] = useState<Partial<InsertProject>>({
     title: '',
@@ -64,7 +65,8 @@ export default function ProjectsClean() {
     startDate: '',
     estimatedHours: 0,
     actualHours: 0,
-    budget: ''
+    budget: '',
+    isMeetingProject: false
   });
 
   // Fetch all projects
@@ -211,10 +213,23 @@ export default function ProjectsClean() {
   };
 
   const filterProjectsByStatus = (status: string) => {
+    let filtered = allProjects;
+    
+    // Filter by status
     if (status === "active") {
-      return allProjects.filter((project: Project) => project.status === "in_progress");
+      filtered = filtered.filter((project: Project) => project.status === "in_progress");
+    } else {
+      filtered = filtered.filter((project: Project) => project.status === status);
     }
-    return allProjects.filter((project: Project) => project.status === status);
+    
+    // Filter by project type
+    if (projectTypeFilter === "meeting") {
+      filtered = filtered.filter((project: Project) => project.googleSheetRowId);
+    } else if (projectTypeFilter === "internal") {
+      filtered = filtered.filter((project: Project) => !project.googleSheetRowId);
+    }
+    
+    return filtered;
   };
 
   const getPriorityColor = (priority: string) => {
@@ -263,6 +278,17 @@ export default function ProjectsClean() {
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 flex items-start gap-3">
+            {/* Project Type Badge */}
+            {project.googleSheetRowId ? (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                📊 Meeting
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                🏢 Internal
+              </Badge>
+            )}
+            
             {canEditProject(user, project) && (
               <Button
                 variant="ghost"
@@ -467,27 +493,63 @@ export default function ProjectsClean() {
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       {/* Header with TSP Styling */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <img 
-            src={sandwichLogo} 
-            alt="The Sandwich Project Logo" 
-            className="w-10 h-10"
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-[#236383] font-roboto">Project Management</h1>
-            <p className="text-gray-600 font-roboto">Organize and track all team projects</p>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <img 
+              src={sandwichLogo} 
+              alt="The Sandwich Project Logo" 
+              className="w-10 h-10"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-[#236383] font-roboto">Project Management</h1>
+              <p className="text-gray-600 font-roboto">Organize and track all team projects</p>
+            </div>
           </div>
+          {hasPermission(user, PERMISSIONS.CREATE_PROJECTS) && (
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              className="bg-[#FBAD3F] hover:bg-[#e89a2f] text-white font-roboto font-medium shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Project
+            </Button>
+          )}
         </div>
-        {hasPermission(user, PERMISSIONS.CREATE_PROJECTS) && (
-          <Button 
-            onClick={() => setShowCreateDialog(true)}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2f] text-white font-roboto font-medium shadow-sm"
+        
+        {/* Project Type Filter */}
+        <div className="flex gap-2 mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setProjectTypeFilter("all")}
+            className={`transition-all ${projectTypeFilter === "all" 
+              ? "bg-[#236383] text-white hover:bg-[#1e5470]" 
+              : "text-[#236383] hover:text-[#1e5470] hover:bg-[#236383]/5"}`}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            New Project
+            All Projects
           </Button>
-        )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setProjectTypeFilter("meeting")}
+            className={`transition-all ${projectTypeFilter === "meeting" 
+              ? "bg-blue-500 text-white hover:bg-blue-600" 
+              : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"}`}
+          >
+            📊 Meeting Projects ({allProjects.filter(p => p.googleSheetRowId).length})
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setProjectTypeFilter("internal")}
+            className={`transition-all ${projectTypeFilter === "internal" 
+              ? "bg-green-500 text-white hover:bg-green-600" 
+              : "text-green-600 hover:text-green-700 hover:bg-green-50"}`}
+          >
+            🏢 Internal Projects ({allProjects.filter(p => !p.googleSheetRowId).length})
+          </Button>
+        </div>
       </div>
 
       {/* Clean Status Tabs */}
