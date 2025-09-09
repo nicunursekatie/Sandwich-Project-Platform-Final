@@ -1,0 +1,502 @@
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/auth/user", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "cache-control": "no-cache",
+    "pragma": "no-cache",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/announcements", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"3b6-9C8DzEArDv9NmCtdC/aKqoTbBGA\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/message-notifications/unread-counts", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"78-AkNmNSc3aoSiK+Y7ANF36xfcKlQ\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/message-notifications/unread-counts", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"78-AkNmNSc3aoSiK+Y7ANF36xfcKlQ\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/messaging/unread", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"f-FAzzTdccAfl0E2Lu/wbvI/6Anvk\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-reminders/count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/sandwich-collections/stats", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"6f-lAEX+vlUDJosLUyPvZWJEndGQ9M\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/messaging/unread?groupByContext=true", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"30-53BlSlSqeqfHzEULgMrjfWAH23E\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/users/for-assignments", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"e79-ENck8eYNRUrvm4FKH6rKjzPPQOs\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-requests", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b22d1-DqcM5gEncN8upBmfLEgLceeR8f0\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-requests/organization-counts", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"51b1-tasggFRY3VxGWpXGwoOYXziWmWQ\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/auth/me", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-requests/drivers/available", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-reminders/count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/message-notifications/unread-counts", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"78-AkNmNSc3aoSiK+Y7ANF36xfcKlQ\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-reminders/count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/message-notifications/unread-counts", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"78-AkNmNSc3aoSiK+Y7ANF36xfcKlQ\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/messaging/unread?groupByContext=true", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"30-53BlSlSqeqfHzEULgMrjfWAH23E\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-reminders/count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/emails/unread-count", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b-ch7MNww9+xUYoTgutbGr6VU0GaU\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-requests/complete-event-details", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "content-type": "application/json",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": "{\"id\":570,\"organizationName\":\"Pepsi\",\"department\":null,\"desiredEventDate\":\"2025-09-17\",\"toolkitStatus\":\"sent\",\"eventStartTime\":null,\"eventEndTime\":null,\"pickupTime\":\"16:00\",\"tspContact\":\"user_1756855060322_pbabb7eby\",\"customTspContact\":null,\"planningNotes\":\"need a volunteer + driver, Juliet asks Kim to attend\",\"eventAddress\":null,\"estimatedSandwichCount\":500,\"sandwichTypes\":null,\"driversNeeded\":1,\"speakersNeeded\":1,\"volunteerNotes\":null}",
+  "method": "POST"
+}); ;
+fetch("https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/api/event-requests", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.7",
+    "if-none-match": "W/\"b22d1-DqcM5gEncN8upBmfLEgLceeR8f0\"",
+    "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "cookie": "tsp.session=s%3A000puAN7fC-lOLn3BmD8f_xRuP4J0xso.rJLRUGgvgfzRuhn9LDcBuoGR9wQuAbKXmAuKvp0NLtw",
+    "Referer": "https://bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev:5000/dashboard?section=event-requests"
+  },
+  "body": null,
+  "method": "GET"
+});
