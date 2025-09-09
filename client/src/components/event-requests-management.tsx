@@ -863,23 +863,6 @@ export default function EventRequestsManagement() {
     },
   });
 
-  const importExcelMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/import/import-excel"),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
-      toast({
-        title: "Excel import successful",
-        description: `Successfully imported ${data.imported} events out of ${data.total} parsed`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error importing Excel file",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   // Handle delete confirmation
   const handleDeleteRequest = (request: EventRequest) => {
@@ -940,23 +923,6 @@ export default function EventRequestsManagement() {
     return inlineEditing[editKey] !== undefined;
   };
 
-  const importHistoricalMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/import/import-historical"),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
-      toast({
-        title: "Historical import successful",
-        description: `Successfully imported ${data.imported} historical events from 2024`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error importing historical events",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, ...data }: any) =>
@@ -4456,19 +4422,6 @@ export default function EventRequestsManagement() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => importExcelMutation.mutate()}
-              disabled={importExcelMutation.isPending}
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                {importExcelMutation.isPending
-                  ? "Importing..."
-                  : "Import Excel"}
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => importScheduledEventsMutation.mutate()}
               disabled={importScheduledEventsMutation.isPending}
               className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
@@ -4478,20 +4431,6 @@ export default function EventRequestsManagement() {
                 {importScheduledEventsMutation.isPending
                   ? "Importing..."
                   : "Import Scheduled Events"}
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => importHistoricalMutation.mutate()}
-              disabled={importHistoricalMutation.isPending}
-              title="Import historical 2024 events"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline sm:ml-2">
-                {importHistoricalMutation.isPending
-                  ? "Importing..."
-                  : "Import 2024 Data"}
               </span>
             </Button>
             </div>

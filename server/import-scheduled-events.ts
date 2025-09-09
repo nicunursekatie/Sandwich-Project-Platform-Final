@@ -226,10 +226,11 @@ export async function importScheduledEvents(): Promise<{
         continue;
       }
 
-      // Parse contact name
-      const nameParts = event.contactName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      // Parse contact name with fallbacks
+      const contactName = event.contactName || 'Contact';
+      const nameParts = contactName.split(' ');
+      const firstName = nameParts[0] || 'Contact';
+      const lastName = nameParts.slice(1).join(' ') || 'Person';
 
       // Create new event request
       const newEvent = {
