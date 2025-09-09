@@ -289,8 +289,8 @@ export default function EnhancedMeetingDashboard() {
         // Create task from discussion points
         if (project.meetingDiscussionPoints?.trim()) {
           tasks.push({
-            title: `Follow up on: ${project.title}`,
-            description: `Meeting Discussion Notes: ${project.meetingDiscussionPoints.trim()}`,
+            title: project.meetingDiscussionPoints.trim(),
+            description: `Project: ${project.title}`,
             assigneeName: project.assigneeName || 'Unassigned',
             priority: 'medium',
             status: 'pending',
