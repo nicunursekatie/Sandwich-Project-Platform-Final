@@ -2448,18 +2448,18 @@ export default function EventRequestsManagement() {
                       onCancel={handleFieldCancel}
                     />
                   ) : (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <span className="text-sm text-gray-600 flex-1">
+                    <div className="flex-1 space-y-2">
+                      <div className="text-sm text-gray-600">
                         <span className="font-medium text-gray-700">🎯 Sandwich Destination: </span>
                         <span className={`${(request as any).deliveryDestination ? 'text-green-700 font-medium' : 'text-orange-600 italic'}`}>
                           {(request as any).deliveryDestination || "⚠️ Not specified"}
                         </span>
-                      </span>
+                      </div>
                       {canEditField("deliveryDestination") ? (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-2 text-xs border-blue-300 text-blue-700 hover:bg-blue-50 flex-shrink-0"
+                          className="h-7 px-3 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
                           onClick={() => {
                             setEditingField("deliveryDestination");
                             setEditingEventId(request.id);
@@ -2469,8 +2469,8 @@ export default function EventRequestsManagement() {
                           }}
                         >
                           <Edit className="w-3 h-3 mr-1" />
-                          <span className="hidden sm:inline">Edit Destination</span>
-                          <span className="sm:hidden">Edit</span>
+                          <span className="hidden lg:inline">Edit Destination</span>
+                          <span className="lg:hidden">Edit</span>
                         </Button>
                       ) : (
                         <div className="text-xs text-gray-400 italic">Edit requires admin permissions</div>
