@@ -3018,9 +3018,9 @@ export default function EventRequestsManagement() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-gray-600">
-                        Assigned: {(request as any).assignedSpeakerIds?.length || 0}/
+                        Assigned: {(request as any).assignedSpeakerIds?.length || 0}/{editingField === "speakersNeeded" && editingEventId === request.id ? (tempValues.speakersNeeded || (request as any).speakersNeeded || 0) : (<button className="text-xs text-purple-600 hover:text-purple-800 hover:underline inline" onClick={() => { setEditingField("speakersNeeded"); setEditingEventId(request.id); setTempValues({ speakersNeeded: (request as any).speakersNeeded || 0, }); }}>{(request as any).speakersNeeded || 0}</button>)}
                       </span>
-                      {editingField === "speakersNeeded" && editingEventId === request.id ? (
+                      {editingField === "speakersNeeded" && editingEventId === request.id && (
                         <div className="flex items-center space-x-1">
                           <input
                             type="number"
@@ -3073,19 +3073,6 @@ export default function EventRequestsManagement() {
                             ✗
                           </Button>
                         </div>
-                      ) : (
-                        <button
-                          className="text-xs text-purple-600 hover:text-purple-800 hover:underline"
-                          onClick={() => {
-                            setEditingField("speakersNeeded");
-                            setEditingEventId(request.id);
-                            setTempValues({
-                              speakersNeeded: (request as any).speakersNeeded || 0,
-                            });
-                          }}
-                        >
-                          {(request as any).speakersNeeded || 0}
-                        </button>
                       )}
                     </div>
                     <button
