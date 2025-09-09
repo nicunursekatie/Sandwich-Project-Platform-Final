@@ -2473,7 +2473,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-2 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                          className="h-8 px-2 text-xs border-blue-300 text-blue-700 hover:bg-blue-50 flex-shrink-0"
                           onClick={() => {
                             setEditingField("deliveryDestination");
                             setEditingEventId(request.id);
@@ -2483,7 +2483,8 @@ export default function EventRequestsManagement() {
                           }}
                         >
                           <Edit className="w-3 h-3 mr-1" />
-                          Edit Destination
+                          <span className="hidden sm:inline">Edit Destination</span>
+                          <span className="sm:hidden">Edit</span>
                         </Button>
                       ) : (
                         <div className="text-xs text-gray-400 italic">Edit requires admin permissions</div>
