@@ -4339,6 +4339,7 @@ export default function EventRequestsManagement() {
     const formData = new FormData(e.currentTarget);
     const data = {
       id: detailsRequest.id,
+      desiredEventDate: formData.get("desiredEventDate") || null,
       toolkitStatus: formData.get("toolkitStatus"),
       eventStartTime: formData.get("eventStartTime") || null,
       eventEndTime: formData.get("eventEndTime") || null,
@@ -6234,7 +6235,19 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label htmlFor="desiredEventDate">Event Date</Label>
+                    <Input
+                      name="desiredEventDate"
+                      type="date"
+                      defaultValue={
+                        detailsRequest.desiredEventDate
+                          ? detailsRequest.desiredEventDate.split("T")[0]
+                          : ""
+                      }
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="eventStartTime">Event Start Time</Label>
                     <Input
