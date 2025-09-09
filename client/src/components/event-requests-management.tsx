@@ -347,11 +347,195 @@ const statusOptions = [
   { value: "declined", label: "🚫 EVENT POSTPONED" },
 ];
 
+// Standardized sandwich types - only these 5 options allowed
+const SANDWICH_TYPES = [
+  { value: "pbj", label: "PB&J" },
+  { value: "deli", label: "Deli (General)" },
+  { value: "deli_turkey", label: "Deli (Turkey)" },
+  { value: "deli_ham", label: "Deli (Ham)" },
+  { value: "unknown", label: "Unknown" },
+] as const;
+
 // Simple inline sandwich types interface
 interface SandwichType {
   type: string;
   quantity: number;
 }
+
+// Sandwich Types Selector Component
+interface SandwichTypesSelectorProps {
+  name: string;
+  defaultValue?: SandwichType[] | string | null;
+  estimatedCount?: number | null;
+  className?: string;
+}
+
+const SandwichTypesSelector = ({ 
+  name, 
+  defaultValue, 
+  estimatedCount,
+  className = "" 
+}: SandwichTypesSelectorProps) => {
+  const [mode, setMode] = useState<"single" | "multiple">("single");
+  const [singleType, setSingleType] = useState("pbj");
+  const [quantities, setQuantities] = useState<Record<string, number>>({
+    pbj: 0,
+    deli: 0,
+    deli_turkey: 0,
+    deli_ham: 0,
+    unknown: 0
+  });
+
+  // Initialize from default value
+  useEffect(() => {
+    if (defaultValue) {
+      try {
+        // Handle array format from database
+        if (Array.isArray(defaultValue)) {
+          if (defaultValue.length === 1) {
+            setMode("single");
+            setSingleType(defaultValue[0].type);
+          } else {
+            setMode("multiple");
+            const newQuantities = { ...quantities };
+            defaultValue.forEach(item => {
+              newQuantities[item.type] = item.quantity;
+            });
+            setQuantities(newQuantities);
+          }
+        }
+        // Handle string format (legacy)
+        else if (typeof defaultValue === "string" && defaultValue.trim()) {
+          const typeMatch = SANDWICH_TYPES.find(t => 
+            defaultValue.toLowerCase().includes(t.value) || 
+            defaultValue.toLowerCase().includes(t.label.toLowerCase())
+          );
+          if (typeMatch) {
+            setSingleType(typeMatch.value);
+          }
+        }
+      } catch (error) {
+        console.warn("Error parsing sandwich types:", error);
+      }
+    }
+  }, [defaultValue]);
+
+  // Calculate total quantity for multiple mode
+  const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
+
+  // Generate the value for form submission
+  const generateFormValue = () => {
+    if (mode === "single") {
+      const quantity = estimatedCount || 0;
+      return quantity > 0 ? [{ type: singleType, quantity }] : [];
+    } else {
+      return Object.entries(quantities)
+        .filter(([_, qty]) => qty > 0)
+        .map(([type, quantity]) => ({ type, quantity }));
+    }
+  };
+
+  return (
+    <div className={`space-y-4 p-4 border rounded-lg bg-gray-50 ${className}`}>
+      {/* Hidden input for form submission */}
+      <input 
+        type="hidden" 
+        name={name} 
+        value={JSON.stringify(generateFormValue())} 
+      />
+      
+      {/* Mode Selector */}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === "single" ? "default" : "outline"}
+          onClick={() => setMode("single")}
+          className="text-xs"
+        >
+          All Same Type
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === "multiple" ? "default" : "outline"}
+          onClick={() => setMode("multiple")}
+          className="text-xs"
+        >
+          Mixed Types
+        </Button>
+      </div>
+
+      {/* Single Type Mode */}
+      {mode === "single" && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">All {estimatedCount || "?"} sandwiches will be:</span>
+          </div>
+          <Select value={singleType} onValueChange={setSingleType}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SANDWICH_TYPES.map(type => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Multiple Types Mode */}
+      {mode === "multiple" && (
+        <div className="space-y-3">
+          <div className="text-sm font-medium">
+            Specify quantities for each type: 
+            {totalQuantity > 0 && (
+              <span className="ml-2 text-blue-600">Total: {totalQuantity} sandwiches</span>
+            )}
+            {estimatedCount && totalQuantity !== estimatedCount && (
+              <span className="ml-2 text-orange-600">
+                (Expected: {estimatedCount})
+              </span>
+            )}
+          </div>
+          {SANDWICH_TYPES.map(type => (
+            <div key={type.value} className="flex items-center justify-between">
+              <label className="text-sm">{type.label}:</label>
+              <Input
+                type="number"
+                min="0"
+                value={quantities[type.value]}
+                onChange={(e) => setQuantities({
+                  ...quantities,
+                  [type.value]: parseInt(e.target.value) || 0
+                })}
+                className="w-20 text-center"
+                placeholder="0"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Summary */}
+      <div className="text-xs text-gray-600 bg-white p-2 rounded border-l-4 border-blue-200">
+        <strong>Current Selection:</strong>{" "}
+        {mode === "single" 
+          ? `${estimatedCount || "?"} ${SANDWICH_TYPES.find(t => t.value === singleType)?.label || singleType}`
+          : totalQuantity > 0 
+            ? Object.entries(quantities)
+                .filter(([_, qty]) => qty > 0)
+                .map(([type, qty]) => `${qty} ${SANDWICH_TYPES.find(t => t.value === type)?.label || type}`)
+                .join(", ")
+            : "No types specified"
+        }
+      </div>
+    </div>
+  );
+};
 
 export default function EventRequestsManagement() {
   const [activeTab, setActiveTab] = useState("requests");
@@ -6017,12 +6201,11 @@ export default function EventRequestsManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="sandwichTypes">Sandwich Types</Label>
-                    <Input
+                    <Label htmlFor="sandwichTypes">Sandwich Types & Quantities</Label>
+                    <SandwichTypesSelector 
                       name="sandwichTypes"
-                      defaultValue={
-                        (selectedRequest as any).sandwichTypes || ""
-                      }
+                      defaultValue={(selectedRequest as any).sandwichTypes}
+                      estimatedCount={(selectedRequest as any).estimatedSandwichCount}
                     />
                   </div>
                 </div>
@@ -6506,9 +6689,9 @@ export default function EventRequestsManagement() {
                     <Label htmlFor="sandwichTypes">
                       Sandwich Types/Preferences (optional)
                     </Label>
-                    <Input
+                    <SandwichTypesSelector 
                       name="sandwichTypes"
-                      placeholder="Any specific sandwich preferences?"
+                      estimatedCount={null}
                     />
                   </div>
                   <div>
