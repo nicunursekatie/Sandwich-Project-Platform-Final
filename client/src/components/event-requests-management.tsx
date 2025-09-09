@@ -167,21 +167,33 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
 // Helper function to get sandwich types summary for new standardized format
 const getSandwichTypesSummary = (request: any) => {
   // Handle new standardized sandwich types format (array of {type, quantity})
-  if (request.sandwichTypes && Array.isArray(request.sandwichTypes)) {
-    const total = request.sandwichTypes.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+  let sandwichTypes = request.sandwichTypes;
+  
+  // If sandwichTypes is a string, try to parse it as JSON
+  if (typeof sandwichTypes === 'string') {
+    try {
+      sandwichTypes = JSON.parse(sandwichTypes);
+    } catch (e) {
+      console.warn('Failed to parse sandwich types JSON:', sandwichTypes);
+      sandwichTypes = null;
+    }
+  }
+  
+  if (sandwichTypes && Array.isArray(sandwichTypes)) {
+    const total = sandwichTypes.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
     
-    if (request.sandwichTypes.length === 1) {
+    if (sandwichTypes.length === 1) {
       // Single type
-      const type = request.sandwichTypes[0].type;
+      const type = sandwichTypes[0].type;
       const typeLabel = SANDWICH_TYPES.find(t => t.value === type)?.label || type;
       return {
         total,
         breakdown: `${total} ${typeLabel}`,
         hasBreakdown: true
       };
-    } else if (request.sandwichTypes.length > 1) {
+    } else if (sandwichTypes.length > 1) {
       // Multiple types
-      const breakdown = request.sandwichTypes
+      const breakdown = sandwichTypes
         .filter((item: any) => item.quantity > 0)
         .map((item: any) => {
           const typeLabel = SANDWICH_TYPES.find(t => t.value === item.type)?.label || item.type;
