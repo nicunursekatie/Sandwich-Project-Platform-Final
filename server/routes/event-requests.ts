@@ -1738,4 +1738,141 @@ router.get("/my-volunteers", isAuthenticated, async (req, res) => {
   }
 });
 
+// Update social media post tracking for an event
+router.patch("/:id/social-media", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { socialMediaPostRequested, socialMediaPostCompleted, notes } = req.body;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: "Valid event ID required" });
+    }
+
+    const updates: any = {};
+    
+    if (socialMediaPostRequested !== undefined) {
+      updates.socialMediaPostRequested = socialMediaPostRequested;
+      updates.socialMediaPostRequestedDate = socialMediaPostRequested ? new Date() : null;
+    }
+    
+    if (socialMediaPostCompleted !== undefined) {
+      updates.socialMediaPostCompleted = socialMediaPostCompleted;
+      updates.socialMediaPostCompletedDate = socialMediaPostCompleted ? new Date() : null;
+    }
+    
+    if (notes !== undefined) {
+      updates.socialMediaPostNotes = notes;
+    }
+
+    const updatedEventRequest = await storage.updateEventRequest(id, updates);
+    
+    if (!updatedEventRequest) {
+      return res.status(404).json({ error: "Event request not found" });
+    }
+
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_EDIT",
+      `Updated social media tracking for event: ${id}`
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error("Error updating social media tracking:", error);
+    res.status(500).json({ error: "Failed to update social media tracking" });
+  }
+});
+
+// Record actual sandwich count for a completed event
+router.patch("/:id/actual-sandwich-count", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { actualSandwichCount, actualSandwichTypes } = req.body;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: "Valid event ID required" });
+    }
+    
+    if (!actualSandwichCount || actualSandwichCount <= 0) {
+      return res.status(400).json({ error: "Valid sandwich count required" });
+    }
+
+    const updates = {
+      actualSandwichCount,
+      actualSandwichTypes: actualSandwichTypes || null,
+      actualSandwichCountRecordedDate: new Date(),
+      actualSandwichCountRecordedBy: req.user?.id
+    };
+
+    const updatedEventRequest = await storage.updateEventRequest(id, updates);
+    
+    if (!updatedEventRequest) {
+      return res.status(404).json({ error: "Event request not found" });
+    }
+
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_EDIT",
+      `Recorded actual sandwich count (${actualSandwichCount}) for event: ${id}`
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error("Error recording actual sandwich count:", error);
+    res.status(500).json({ error: "Failed to record actual sandwich count" });
+  }
+});
+
+// Record sandwich distribution for a completed event
+router.patch("/:id/distribution", isAuthenticated, requirePermission("EVENT_REQUESTS_EDIT"), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { sandwichDistributions, distributionNotes } = req.body;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: "Valid event ID required" });
+    }
+    
+    if (!sandwichDistributions || !Array.isArray(sandwichDistributions) || sandwichDistributions.length === 0) {
+      return res.status(400).json({ error: "Valid distribution data required" });
+    }
+
+    // Validate distribution format
+    for (const dist of sandwichDistributions) {
+      if (!dist.destination || !dist.totalCount || dist.totalCount <= 0) {
+        return res.status(400).json({ error: "Each distribution must have a destination and valid count" });
+      }
+    }
+
+    const updates = {
+      sandwichDistributions,
+      distributionNotes: distributionNotes || null,
+      distributionRecordedDate: new Date(),
+      distributionRecordedBy: req.user?.id
+    };
+
+    const updatedEventRequest = await storage.updateEventRequest(id, updates);
+    
+    if (!updatedEventRequest) {
+      return res.status(404).json({ error: "Event request not found" });
+    }
+
+    const totalDistributed = sandwichDistributions.reduce((sum, dist) => sum + dist.totalCount, 0);
+    
+    await logActivity(
+      req,
+      res,
+      "EVENT_REQUESTS_EDIT",
+      `Recorded sandwich distribution (${totalDistributed} sandwiches to ${sandwichDistributions.length} locations) for event: ${id}`
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error("Error recording sandwich distribution:", error);
+    res.status(500).json({ error: "Failed to record sandwich distribution" });
+  }
+});
+
 export default router;
