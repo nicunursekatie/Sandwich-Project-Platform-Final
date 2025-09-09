@@ -4534,6 +4534,7 @@ export default function EventRequestsManagement() {
       department: formData.get("department") || null,
       desiredEventDate: formData.get("desiredEventDate") || null,
       toolkitStatus: formData.get("toolkitStatus"),
+      status: formData.get("status") || null,
       eventStartTime: formData.get("eventStartTime") || null,
       eventEndTime: formData.get("eventEndTime") || null,
       pickupTime: formData.get("pickupTime") || null,
@@ -6460,7 +6461,7 @@ export default function EventRequestsManagement() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <Label htmlFor="toolkitStatus">Toolkit Status</Label>
                     <select
@@ -6475,6 +6476,19 @@ export default function EventRequestsManagement() {
                         Received & Confirmed
                       </option>
                       <option value="not_needed">Not Needed</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="status">Event Status</Label>
+                    <select
+                      name="status"
+                      defaultValue={detailsRequest.status || ""}
+                      className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Select status</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="completed">Completed</option>
                     </select>
                   </div>
 
