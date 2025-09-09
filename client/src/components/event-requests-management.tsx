@@ -2451,6 +2451,18 @@ export default function EventRequestsManagement() {
               const volunteerStatus = getVolunteerStatus();
               const badges = [];
 
+              // Add van driver badge if van driver needed and not assigned
+              if ((request as any).vanDriverNeeded && !(request as any).assignedVanDriverId && !(request as any).customVanDriverName) {
+                badges.push(
+                  <Badge
+                    key="van-driver"
+                    className="bg-amber-100 text-amber-800 border-amber-300 font-semibold"
+                  >
+                    🚐 VAN DRIVER NEEDED
+                  </Badge>
+                );
+              }
+
               // Add driver badge if drivers needed and not fulfilled
               if (driverStatus.badge === "⚠️ Needed") {
                 badges.push(
