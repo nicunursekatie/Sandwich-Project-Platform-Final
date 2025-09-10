@@ -695,6 +695,9 @@ export default function EventRequestsManagement() {
   const [assigningVolunteerRequest, setAssigningVolunteerRequest] =
     useState<EventRequest | null>(null);
   const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
+  const [editingVolunteersFor, setEditingVolunteersFor] = useState<number | null>(null);
+  const [tempVolunteerInput, setTempVolunteerInput] = useState("");
+  const [showingCustomVolunteer, setShowingCustomVolunteer] = useState(false);
   const [showCallbackDialog, setShowCallbackDialog] = useState(false);
   const [showCallCompletedDialog, setShowCallCompletedDialog] = useState(false);
   const [callCompletedRequest, setCallCompletedRequest] =
