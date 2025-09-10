@@ -2790,25 +2790,10 @@ export default function EventRequestsManagement() {
 
             {/* Center Column: Event Logistics */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
-              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center justify-between cursor-pointer"
-                  onClick={() => {
-                    const newCollapsed = new Set(collapsedEventDetails);
-                    if (newCollapsed.has(request.id)) {
-                      newCollapsed.delete(request.id);
-                    } else {
-                      newCollapsed.add(request.id);
-                    }
-                    setCollapsedEventDetails(newCollapsed);
-                  }}>
-                <div className="flex items-center">
-                  <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                  Event Details
-                </div>
-                <div className="text-sm text-[#FBAD3F]">
-                  {collapsedEventDetails.has(request.id) ? "▶" : "▼"}
-                </div>
+              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
+                <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                Event Details
               </h4>
-              {!collapsedEventDetails.has(request.id) && (
               <div className="space-y-4">
                 
                 {/* Address */}
@@ -3095,9 +3080,27 @@ export default function EventRequestsManagement() {
                     {(request as any).message && (request as any).message !== "Imported from Excel file" && (
                       <div className="flex items-start space-x-3">
                         <span className="text-gray-500 text-sm mt-1 flex-shrink-0">📋</span>
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium text-gray-700">Event Details: </span>
-                          <span className="text-gray-600">{(request as any).message}</span>
+                        <div className="text-sm text-gray-600 flex-1">
+                          <div 
+                            className="flex items-center justify-between cursor-pointer"
+                            onClick={() => {
+                              const newCollapsed = new Set(collapsedMessages);
+                              if (newCollapsed.has(request.id)) {
+                                newCollapsed.delete(request.id);
+                              } else {
+                                newCollapsed.add(request.id);
+                              }
+                              setCollapsedMessages(newCollapsed);
+                            }}
+                          >
+                            <span className="font-medium text-gray-700">Event Details:</span>
+                            <span className="text-gray-500 text-xs ml-2">
+                              {collapsedMessages.has(request.id) ? "▶ Show" : "▼ Hide"}
+                            </span>
+                          </div>
+                          {!collapsedMessages.has(request.id) && (
+                            <span className="text-gray-600 block mt-1">{(request as any).message}</span>
+                          )}
                         </div>
                       </div>
                     )}
@@ -3300,7 +3303,6 @@ export default function EventRequestsManagement() {
                   )}
                 </div>
               </div>
-              )}
             </div>
 
             {/* Right Column: Status & Assignments */}
