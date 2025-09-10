@@ -845,6 +845,20 @@ export default function EventRequestsManagement() {
     }
   };
 
+  // Helper function to get driver display name
+  const getDriverDisplayName = (driverId: string | null | undefined) => {
+    if (!driverId) return "Not specified";
+
+    // First try to find by driver ID
+    const driver = availableDrivers.find((d: any) => d.id.toString() === driverId);
+    if (driver) {
+      return driver.name || "Unknown Driver";
+    }
+
+    // If not found in drivers, just return the ID as is (might be a custom name)
+    return driverId;
+  };
+
   // Helper function to get organization event count
   const getOrganizationEventCount = (organizationName: string) => {
     const trimmedName = organizationName.trim();
