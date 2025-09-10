@@ -486,7 +486,7 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h3 className="text-xl font-bold text-gray-900 leading-tight">
-                              {org.department || org.organizationName}
+                              {org.department || "General Request"}
                             </h3>
                             {/* Event Date - Prominent */}
                             {org.eventDate ? (
