@@ -2970,14 +2970,14 @@ export default function EventRequestsManagement() {
                             const sandwichTypesInput = document.querySelector('input[name="sandwichTypesInline"]') as HTMLInputElement;
                             const sandwichTypesValue = sandwichTypesInput?.value;
                             
-                            // Save both the estimated count and the detailed types
-                            handleTrackChange(request.id, "estimatedSandwichCount", tempValues.estimatedSandwichCount || 0);
+                            // Save both the estimated count and the detailed types to the server
+                            handleAutosave(request.id, "estimatedSandwichCount", tempValues.estimatedSandwichCount || 0);
                             
                             if (sandwichTypesValue) {
                               try {
                                 const parsedTypes = JSON.parse(sandwichTypesValue);
                                 if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
-                                  handleTrackChange(request.id, "sandwichTypes", JSON.stringify(parsedTypes));
+                                  handleAutosave(request.id, "sandwichTypes", JSON.stringify(parsedTypes));
                                 }
                               } catch (e) {
                                 console.warn("Failed to parse sandwich types:", e);
