@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SandwichForecastWidget from "@/components/sandwich-forecast-widget";
 import { EventEmailComposer } from "@/components/event-email-composer";
 import { DriverSelectionModal } from "./driver-selection-modal";
+import { VolunteerSelectionModal } from "./volunteer-selection-modal";
 import {
   Collapsible,
   CollapsibleContent,
@@ -698,9 +699,6 @@ export default function EventRequestsManagement() {
   const [assigningVolunteerRequest, setAssigningVolunteerRequest] =
     useState<EventRequest | null>(null);
   const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
-  const [editingVolunteersFor, setEditingVolunteersFor] = useState<number | null>(null);
-  const [tempVolunteerInput, setTempVolunteerInput] = useState("");
-  const [showingCustomVolunteer, setShowingCustomVolunteer] = useState(false);
   const [showCallbackDialog, setShowCallbackDialog] = useState(false);
   const [showCallCompletedDialog, setShowCallCompletedDialog] = useState(false);
   const [callCompletedRequest, setCallCompletedRequest] =
@@ -4093,116 +4091,18 @@ export default function EventRequestsManagement() {
                         </div>
                       )}
                     </div>
-                    {(request as any).volunteersNeeded && editingVolunteersFor !== request.id && (
+                    {(request as any).volunteersNeeded && (
                       <button
                         className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded border border-green-200 font-medium"
                         onClick={() => {
-                          setEditingVolunteersFor(request.id);
-                          setTempVolunteerInput("");
-                          setShowingCustomVolunteer(false);
+                          setAssigningVolunteerRequest(request);
+                          setSelectedVolunteers((request as any).assignedVolunteerIds || []);
+                          setShowVolunteerDialog(true);
                         }}
                       >
                         <Users className="w-3 h-3 mr-1 inline" />
                         {(request as any).assignedVolunteerIds?.length > 0 ? "Edit Volunteers" : "+ Assign Volunteer"}
                       </button>
-                    )}
-                    {editingVolunteersFor === request.id && (
-                      <div className="space-y-2 w-full">
-                        <div className="flex items-center space-x-1">
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value === "__custom__") {
-                                setTempVolunteerInput("");
-                                setShowingCustomVolunteer(true);
-                              } else if (value) {
-                                // Add selected volunteer immediately
-                                const currentVolunteers = (request as any).assignedVolunteerIds || [];
-                                const updatedVolunteers = [...currentVolunteers, value];
-                                handleAssignmentUpdate(request.id, 'assignedVolunteerIds', updatedVolunteers);
-                                e.target.value = ""; // Reset dropdown
-                              }
-                            }}
-                            className="text-xs border rounded px-2 py-1 flex-1"
-                          >
-                            <option value="">Select volunteer...</option>
-                            <optgroup label="Team Members">
-                              {availableUsers?.map(user => (
-                                <option key={`user-${user.id}`} value={user.id}>
-                                  {user.displayName}
-                                </option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Drivers">
-                              {availableDrivers?.map(driver => (
-                                <option key={`driver-${driver.id}`} value={driver.name}>
-                                  {driver.name}
-                                </option>
-                              ))}
-                            </optgroup>
-                            <option value="__custom__">+ Add custom volunteer</option>
-                          </select>
-                          <button
-                            onClick={() => {
-                              setEditingVolunteersFor(null);
-                              setTempVolunteerInput("");
-                              setShowingCustomVolunteer(false);
-                            }}
-                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded"
-                          >
-                            Done
-                          </button>
-                        </div>
-                        {showingCustomVolunteer && (
-                          <div className="flex items-center space-x-1">
-                            <input
-                              type="text"
-                              placeholder="Type volunteer name..."
-                              value={tempVolunteerInput}
-                              onChange={(e) => setTempVolunteerInput(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" && tempVolunteerInput.trim()) {
-                                  const currentVolunteers = (request as any).assignedVolunteerIds || [];
-                                  const updatedVolunteers = [...currentVolunteers, tempVolunteerInput.trim()];
-                                  handleAssignmentUpdate(request.id, 'assignedVolunteerIds', updatedVolunteers);
-                                  setTempVolunteerInput("");
-                                  setShowingCustomVolunteer(false);
-                                }
-                                if (e.key === "Escape") {
-                                  setTempVolunteerInput("");
-                                  setShowingCustomVolunteer(false);
-                                }
-                              }}
-                              className="text-xs border rounded px-2 py-1 flex-1"
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => {
-                                if (tempVolunteerInput.trim()) {
-                                  const currentVolunteers = (request as any).assignedVolunteerIds || [];
-                                  const updatedVolunteers = [...currentVolunteers, tempVolunteerInput.trim()];
-                                  handleAssignmentUpdate(request.id, 'assignedVolunteerIds', updatedVolunteers);
-                                  setTempVolunteerInput("");
-                                  setShowingCustomVolunteer(false);
-                                }
-                              }}
-                              className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              onClick={() => {
-                                setTempVolunteerInput("");
-                                setShowingCustomVolunteer(false);
-                              }}
-                              className="text-xs bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        )}
-                      </div>
                     )}
                   </div>
                   
@@ -9301,6 +9201,24 @@ export default function EventRequestsManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Volunteer Selection Modal */}
+      {showVolunteerDialog && assigningVolunteerRequest && (
+        <VolunteerSelectionModal
+          isOpen={showVolunteerDialog}
+          onClose={() => {
+            setShowVolunteerDialog(false);
+            setAssigningVolunteerRequest(null);
+          }}
+          onSelectVolunteers={(volunteers) => {
+            // Update the volunteer assignments
+            handleAssignmentUpdate(assigningVolunteerRequest.id, 'assignedVolunteerIds', volunteers);
+          }}
+          selectedVolunteers={selectedVolunteers}
+          eventId={assigningVolunteerRequest.id}
+        />
+      )}
+
     </TooltipProvider>
   );
 }
