@@ -27,7 +27,9 @@ router.get("/drivers/available", isAuthenticated, async (req, res) => {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 
+    console.log("🚗 Fetching all drivers from storage...");
     const drivers = await storage.getAllDrivers();
+    console.log(`📊 Total drivers retrieved: ${drivers.length}`);
     
     // Only return active drivers with essential info
     const availableDrivers = drivers
@@ -45,10 +47,12 @@ router.get("/drivers/available", isAuthenticated, async (req, res) => {
         vehicleType: driver.vehicleType
       }));
 
-    console.log(`Activity: EVENT_REQUESTS_VIEW - Retrieved ${availableDrivers.length} available drivers for assignment`);
+    console.log(`✅ Active drivers filtered: ${availableDrivers.length} out of ${drivers.length}`);
+    console.log("🔍 Sample driver data:", availableDrivers[0] ? JSON.stringify(availableDrivers[0], null, 2) : "No drivers found");
+    
     res.json(availableDrivers);
   } catch (error) {
-    console.error("Error fetching available drivers:", error);
+    console.error("❌ Error in /api/event-requests/drivers/available:", error);
     res.status(500).json({ error: "Failed to fetch available drivers" });
   }
 });
