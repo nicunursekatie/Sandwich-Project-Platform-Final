@@ -772,6 +772,12 @@ export default function EventRequestsManagement() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: drivers = [] } = useQuery({
+    queryKey: ["/api/drivers"],
+    queryFn: () => apiRequest("GET", "/api/drivers"),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Query for organization event counts (completed events only)
   const {
     data: organizationCounts = {},
@@ -797,6 +803,11 @@ export default function EventRequestsManagement() {
         : user.displayName || user.email;
     }
 
+    // Then try to find by driver ID (for van drivers)
+    const driver = drivers.find((d: any) => d.id.toString() === userId.toString());
+    if (driver) {
+      return driver.name || "Driver";
+    }
 
     // If not found by ID, check if it's already a display name (plain text)
     // This handles legacy data where names were stored directly
