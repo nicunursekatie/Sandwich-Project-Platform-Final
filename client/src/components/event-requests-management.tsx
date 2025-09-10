@@ -3828,14 +3828,30 @@ export default function EventRequestsManagement() {
                       {(((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) > 0 ? "Edit Speakers" : "+ Assign Speaker"}
                     </button>
                   </div>
+                  {/* Display User Speakers */}
                   {(request as any).assignedSpeakerIds?.map((speakerId: string, index: number) => (
-                      <div key={index} className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200 mr-1">
+                      <div key={`user-${index}`} className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200 mr-1">
                         {getUserDisplayName(speakerId)}
                         <button
                           className="ml-1 hover:bg-purple-200 rounded-full w-4 h-4 flex items-center justify-center"
                           onClick={() => {
                             const updatedSpeakers = (request as any).assignedSpeakerIds?.filter((id: string, i: number) => i !== index) || [];
                             handleAssignmentUpdate(request.id, 'assignedSpeakerIds', updatedSpeakers);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  {/* Display Driver Speakers */}
+                  {(request as any).assignedDriverSpeakers?.map((driverId: string, index: number) => (
+                      <div key={`driver-${index}`} className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200 mr-1">
+                        {getDriverDisplayName(driverId)}
+                        <button
+                          className="ml-1 hover:bg-purple-200 rounded-full w-4 h-4 flex items-center justify-center"
+                          onClick={() => {
+                            const updatedDriverSpeakers = (request as any).assignedDriverSpeakers?.filter((id: string, i: number) => i !== index) || [];
+                            handleAssignmentUpdate(request.id, 'assignedDriverSpeakers', updatedDriverSpeakers);
                           }}
                         >
                           ×
