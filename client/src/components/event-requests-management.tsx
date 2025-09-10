@@ -3901,16 +3901,18 @@ export default function EventRequestsManagement() {
                           )}
                         </span>
                       ) : (
-                        <span className="text-xs text-gray-600">
-                          No volunteers needed{' '}
+                        <div className="flex items-center space-x-2">
                           {editingField === "volunteersNeeded" && editingEventId === request.id ? (
-                            <div className="inline-flex items-center space-x-1">
-                              <input 
-                                type="checkbox" 
-                                checked={tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true"}
-                                onChange={(e) => setTempValues(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
-                                className="ml-1"
-                              />
+                            <div className="flex items-center space-x-2">
+                              <label className="flex items-center">
+                                <input 
+                                  type="checkbox" 
+                                  checked={tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true"}
+                                  onChange={(e) => setTempValues(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
+                                  className="mr-1"
+                                />
+                                <span className="text-xs">Volunteers needed</span>
+                              </label>
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -3939,17 +3941,17 @@ export default function EventRequestsManagement() {
                             </div>
                           ) : (
                             <button
-                              className="text-xs text-purple-600 hover:text-purple-800 hover:underline inline ml-1"
+                              className="text-xs text-gray-600 hover:text-gray-800 hover:underline"
                               onClick={() => {
                                 setEditingField("volunteersNeeded");
                                 setEditingEventId(request.id);
                                 setTempValues({ volunteersNeeded: (request as any).volunteersNeeded || false });
                               }}
                             >
-                              (set needed)
+                              Status: Not needed ✏️
                             </button>
                           )}
-                        </span>
+                        </div>
                       )}
                     </div>
                     {(request as any).volunteersNeeded && (
