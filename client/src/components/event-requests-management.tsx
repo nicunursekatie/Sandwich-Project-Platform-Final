@@ -733,12 +733,30 @@ export default function EventRequestsManagement() {
       const eventId = parseInt(eventIdParam);
       setHighlightedEventId(eventId);
 
-      // Clear highlight after 3 seconds
+      // Auto-scroll to the event after DOM updates
+      setTimeout(() => {
+        const element = document.getElementById(`event-${eventId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+          // Show toast notification with organization name
+          const event = eventRequests.find(req => req.id === eventId);
+          if (event) {
+            toast({
+              title: "Event Located",
+              description: `Navigated to ${event.organizationName} event`,
+              duration: 4000,
+            });
+          }
+        }
+      }, 1000);
+
+      // Clear highlight after 5 seconds
       setTimeout(() => {
         setHighlightedEventId(null);
-      }, 3000);
+      }, 5000);
     }
-  }, []);
+  }, [eventRequests, toast]);
 
   // Reset pagination when search term changes
   useEffect(() => {
@@ -2394,6 +2412,7 @@ export default function EventRequestsManagement() {
     return (
       <Card
         key={request.id}
+        id={`event-${request.id}`}
         className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-white ${highlightedEventId === request.id ? "ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100" : ""} ${hasPendingChanges(request.id) ? "ring-2 ring-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50" : ""}`}
       >
         {/* Header Section: Organization Name, Date, and Status Badge */}
@@ -4026,6 +4045,7 @@ export default function EventRequestsManagement() {
   const renderStandardEventCard = (request: EventRequest) => (
     <Card
       key={request.id}
+      id={`event-${request.id}`}
       className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-[#236383] bg-gradient-to-br from-white to-orange-50 ${highlightedEventId === request.id ? "ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100" : ""}`}
     >
       <CardHeader className="pb-3">
@@ -4431,6 +4451,7 @@ export default function EventRequestsManagement() {
   const renderPastEventCard = (request: EventRequest) => (
     <Card
       key={request.id}
+      id={`event-${request.id}`}
       className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-gray-500 bg-gradient-to-br from-white to-gray-50 ${highlightedEventId === request.id ? "ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100" : ""}`}
     >
       <CardHeader className="pb-3">
@@ -6570,7 +6591,11 @@ export default function EventRequestsManagement() {
                     <Input
                       name="email"
                       type="email"
-                      defaultValue={selectedRequest.email}
+                      defaultValue={(() => {
+                        // Always get the latest data from cache instead of stale snapshot
+                        const latestData = eventRequests.find(req => req.id === selectedRequest?.id);
+                        return latestData?.email || selectedRequest?.email || "";
+                      })()}
                       required
                     />
                   </div>
@@ -7502,7 +7527,11 @@ export default function EventRequestsManagement() {
                       <Input
                         name="email"
                         type="email"
-                        defaultValue={detailsRequest.email || ""}
+                        defaultValue={(() => {
+                          // Always get the latest data from cache instead of stale snapshot
+                          const latestData = eventRequests.find(req => req.id === detailsRequest?.id);
+                          return latestData?.email || detailsRequest?.email || "";
+                        })()}
                         placeholder="Contact email address"
                         className="bg-white"
                       />
