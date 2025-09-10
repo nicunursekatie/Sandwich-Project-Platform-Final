@@ -755,6 +755,47 @@ export default function EventRequestsManagement() {
     refetchOnMount: true,
   });
 
+  // Initialize collapsed state for scheduled events when data loads
+  useEffect(() => {
+    if (eventRequests.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Find all scheduled events and add them to collapsed set
+      const scheduledEventIds = eventRequests
+        .filter((req: EventRequest) => {
+          if (!req.desiredEventDate) return req.status === "scheduled";
+          
+          // Use the same timezone-safe parsing as the filtering logic
+          let eventDate: Date;
+          const dateString = req.desiredEventDate;
+          if (
+            dateString &&
+            typeof dateString === "string" &&
+            dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+          ) {
+            const dateOnly = dateString.split(" ")[0];
+            eventDate = new Date(dateOnly + "T12:00:00");
+          } else if (
+            dateString &&
+            typeof dateString === "string" &&
+            dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)
+          ) {
+            const dateOnly = dateString.split("T")[0];
+            eventDate = new Date(dateOnly + "T12:00:00");
+          } else {
+            eventDate = new Date(dateString);
+          }
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= today && req.status === "scheduled";
+        })
+        .map((req: EventRequest) => req.id);
+      
+      // Set scheduled events as collapsed by default
+      setCollapsedEventDetails(new Set(scheduledEventIds));
+    }
+  }, [eventRequests]);
+
   const { data: users = [] } = useQuery({
     queryKey: ["/api/users/for-assignments"],
     queryFn: () => apiRequest("GET", "/api/users/for-assignments"),
