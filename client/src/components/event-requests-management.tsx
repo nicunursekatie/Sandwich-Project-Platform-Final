@@ -3911,7 +3911,7 @@ export default function EventRequestsManagement() {
                                   onChange={(e) => setTempValues(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
                                   className="mr-1"
                                 />
-                                <span className="text-xs">Volunteers needed</span>
+                                <span className="text-xs">Need volunteers for this event</span>
                               </label>
                               <Button
                                 size="sm"
@@ -3948,7 +3948,7 @@ export default function EventRequestsManagement() {
                                 setTempValues({ volunteersNeeded: (request as any).volunteersNeeded || false });
                               }}
                             >
-                              Status: Not needed ✏️
+                              No volunteers needed ✏️
                             </button>
                           )}
                         </div>
