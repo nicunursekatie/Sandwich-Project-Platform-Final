@@ -716,8 +716,10 @@ router.post(
 
       // Both email and call follow-ups should move event to in_process
       updates.status = 'in_process';
-      if (method === 'call') {
-        updates.updatedEmail = updatedEmail;
+      if (method === 'call' && updatedEmail) {
+        // Update the main email field if a corrected email is provided during call follow-up
+        updates.email = updatedEmail;
+        updates.updatedEmail = updatedEmail; // Keep for audit trail
       }
 
       // Add notes to existing followUpNotes if provided
