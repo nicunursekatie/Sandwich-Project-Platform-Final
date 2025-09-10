@@ -7572,10 +7572,17 @@ export default function EventRequestsManagement() {
                     <Label htmlFor="status">Event Status</Label>
                     <select
                       name="status"
-                      defaultValue={detailsRequest.status || ""}
+                      defaultValue={(() => {
+                        // Always get the latest data from cache instead of stale snapshot
+                        const latestData = eventRequests.find(req => req.id === detailsRequest?.id);
+                        return latestData?.status || detailsRequest?.status || "";
+                      })()}
                       className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="">Select status</option>
+                      <option value="new">New Request</option>
+                      <option value="followed_up">Followed Up</option>
+                      <option value="in_process">In Process</option>
                       <option value="scheduled">Scheduled</option>
                       <option value="completed">Completed</option>
                     </select>
