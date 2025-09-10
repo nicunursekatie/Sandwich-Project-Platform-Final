@@ -3807,26 +3807,129 @@ export default function EventRequestsManagement() {
                         </div>
                       )}
                     </div>
-                    <button
-                      className={`text-xs px-2 py-1 rounded border ${
-                        ((request as any).speakersNeeded > 0 && (((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) < (request as any).speakersNeeded)
-                          ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
-                          : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200'
-                      }`}
-                      onClick={() => {
-                        setAssigningSpeakerRequest(request);
-                        setShowSpeakerDialog(true);
-                        
-                        // Initialize selected speakers from both users and drivers
-                        const userSpeakers = ((request as any).assignedSpeakerIds || []).map((id: string) => `user-${id}`);
-                        const driverSpeakers = ((request as any).assignedDriverSpeakers || []).map((id: string) => `driver-${id}`);
-                        const allSelectedSpeakers = [...userSpeakers, ...driverSpeakers];
-                        
-                        setSelectedSpeakers(allSelectedSpeakers);
-                      }}
-                    >
-                      {(((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) > 0 ? "Edit Speakers" : "+ Assign Speaker"}
-                    </button>
+                    {(request as any).speakersNeeded > 0 && editingSpeakersFor !== request.id && (
+                      <button
+                        className={`text-xs px-2 py-1 rounded border ${
+                          (((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) < (request as any).speakersNeeded
+                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
+                            : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200'
+                        }`}
+                        onClick={() => {
+                          setEditingSpeakersFor(request.id);
+                          setTempSpeakerInput("");
+                          setShowingCustomSpeaker(false);
+                        }}
+                      >
+                        <Users className="w-3 h-3 mr-1 inline" />
+                        {(((request as any).assignedSpeakerIds?.length || 0) + ((request as any).assignedDriverSpeakers?.length || 0)) > 0 ? "Edit Speakers" : "+ Assign Speaker"}
+                      </button>
+                    )}
+                    {editingSpeakersFor === request.id && (
+                      <div className="space-y-2 w-full">
+                        <div className="flex items-center space-x-1">
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === "__custom__") {
+                                setTempSpeakerInput("");
+                                setShowingCustomSpeaker(true);
+                              } else if (value) {
+                                // Determine if it's a user or driver and update appropriate field
+                                if (value.startsWith('user-')) {
+                                  const userId = value.replace('user-', '');
+                                  const currentSpeakers = (request as any).assignedSpeakerIds || [];
+                                  const updatedSpeakers = [...currentSpeakers, userId];
+                                  handleAssignmentUpdate(request.id, 'assignedSpeakerIds', updatedSpeakers);
+                                } else if (value.startsWith('driver-')) {
+                                  const driverId = value.replace('driver-', '');
+                                  const currentDriverSpeakers = (request as any).assignedDriverSpeakers || [];
+                                  const updatedDriverSpeakers = [...currentDriverSpeakers, driverId];
+                                  handleAssignmentUpdate(request.id, 'assignedDriverSpeakers', updatedDriverSpeakers);
+                                }
+                                e.target.value = ""; // Reset dropdown
+                              }
+                            }}
+                            className="text-xs border rounded px-2 py-1 flex-1"
+                          >
+                            <option value="">Select speaker...</option>
+                            <optgroup label="Team Members">
+                              {availableUsers?.map(user => (
+                                <option key={`user-${user.id}`} value={`user-${user.id}`}>
+                                  {user.displayName}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Drivers">
+                              {availableDrivers?.map(driver => (
+                                <option key={`driver-${driver.id}`} value={`driver-${driver.id}`}>
+                                  {driver.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <option value="__custom__">+ Add custom speaker</option>
+                          </select>
+                          <button
+                            onClick={() => {
+                              setEditingSpeakersFor(null);
+                              setTempSpeakerInput("");
+                              setShowingCustomSpeaker(false);
+                            }}
+                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded"
+                          >
+                            Done
+                          </button>
+                        </div>
+                        {showingCustomSpeaker && (
+                          <div className="flex items-center space-x-1">
+                            <input
+                              type="text"
+                              placeholder="Type speaker name..."
+                              value={tempSpeakerInput}
+                              onChange={(e) => setTempSpeakerInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && tempSpeakerInput.trim()) {
+                                  const currentSpeakers = (request as any).assignedSpeakerIds || [];
+                                  const updatedSpeakers = [...currentSpeakers, tempSpeakerInput.trim()];
+                                  handleAssignmentUpdate(request.id, 'assignedSpeakerIds', updatedSpeakers);
+                                  setTempSpeakerInput("");
+                                  setShowingCustomSpeaker(false);
+                                }
+                                if (e.key === "Escape") {
+                                  setTempSpeakerInput("");
+                                  setShowingCustomSpeaker(false);
+                                }
+                              }}
+                              className="text-xs border rounded px-2 py-1 flex-1"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => {
+                                if (tempSpeakerInput.trim()) {
+                                  const currentSpeakers = (request as any).assignedSpeakerIds || [];
+                                  const updatedSpeakers = [...currentSpeakers, tempSpeakerInput.trim()];
+                                  handleAssignmentUpdate(request.id, 'assignedSpeakerIds', updatedSpeakers);
+                                  setTempSpeakerInput("");
+                                  setShowingCustomSpeaker(false);
+                                }
+                              }}
+                              className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => {
+                                setTempSpeakerInput("");
+                                setShowingCustomSpeaker(false);
+                              }}
+                              className="text-xs bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {/* Display User Speakers */}
                   {(request as any).assignedSpeakerIds?.map((speakerId: string, index: number) => (
