@@ -3852,7 +3852,7 @@ export default function EventRequestsManagement() {
                     <div className="flex items-center space-x-2">
                       {(request as any).volunteersNeeded ? (
                         <span className={`text-xs ${((request as any).assignedVolunteerIds?.length || 0) === 0 ? 'text-amber-700 font-medium' : 'text-gray-600'}`}>
-                          Assigned: {((request as any).assignedVolunteerIds?.length || 0)}/needed{' '}
+                          Assigned: {((request as any).assignedVolunteerIds?.length || 0)}{' '}
                           {editingField === "volunteersNeeded" && editingEventId === request.id ? (
                             <div className="inline-flex items-center space-x-1">
                               <input 
