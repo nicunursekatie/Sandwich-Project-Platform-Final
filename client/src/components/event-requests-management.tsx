@@ -689,6 +689,9 @@ export default function EventRequestsManagement() {
   const [assigningSpeakerRequest, setAssigningSpeakerRequest] =
     useState<EventRequest | null>(null);
   const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
+  const [editingSpeakersFor, setEditingSpeakersFor] = useState<number | null>(null);
+  const [tempSpeakerInput, setTempSpeakerInput] = useState("");
+  const [showingCustomSpeaker, setShowingCustomSpeaker] = useState(false);
 
   // Volunteer Assignment state
   const [showVolunteerDialog, setShowVolunteerDialog] = useState(false);
