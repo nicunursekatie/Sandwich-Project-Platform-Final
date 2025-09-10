@@ -717,6 +717,17 @@ export default function EventRequestsManagement() {
     enabled: true,
   });
 
+  // Query for event requests - must come before useEffect that references it
+  const {
+    data: eventRequests = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["/api/event-requests"],
+    queryFn: () => apiRequest("GET", "/api/event-requests"),
+    refetchOnMount: true,
+  });
+
   // Handle URL parameters for tab and event highlighting
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -762,16 +773,6 @@ export default function EventRequestsManagement() {
   useEffect(() => {
     setPastEventsPage(1);
   }, [searchTerm]);
-
-  const {
-    data: eventRequests = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["/api/event-requests"],
-    queryFn: () => apiRequest("GET", "/api/event-requests"),
-    refetchOnMount: true,
-  });
 
   // Initialize collapsed state for event message content by default
   const [collapsedMessages, setCollapsedMessages] = useState<Set<number>>(new Set());
