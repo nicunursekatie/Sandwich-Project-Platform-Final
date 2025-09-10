@@ -485,9 +485,11 @@ export default function GroupCatalog({ onNavigateToEventPlanning }: GroupCatalog
                       <div className="space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 className="text-xl font-bold text-gray-900 leading-tight">
-                              {org.department || "General Request"}
-                            </h3>
+                            {org.department && (
+                              <h3 className="text-xl font-bold text-gray-900 leading-tight">
+                                {org.department}
+                              </h3>
+                            )}
                             {/* Event Date - Prominent */}
                             {org.eventDate ? (
                               <div className="flex items-center mt-2 text-lg font-semibold" style={{ color: '#FBAD3F' }}>
