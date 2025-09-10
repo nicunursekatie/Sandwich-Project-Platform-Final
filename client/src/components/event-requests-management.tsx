@@ -423,7 +423,7 @@ const SandwichTypesSelector = ({
   className = "" 
 }: SandwichTypesSelectorProps) => {
   const [mode, setMode] = useState<"single" | "multiple">("single");
-  const [singleType, setSingleType] = useState("pbj");
+  const [singleType, setSingleType] = useState("unknown");
   const [quantities, setQuantities] = useState<Record<string, number>>({
     pbj: 0,
     deli: 0,
