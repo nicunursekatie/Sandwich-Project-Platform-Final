@@ -3841,74 +3841,120 @@ export default function EventRequestsManagement() {
                 {/* Volunteer Assignment Section */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700">Volunteers</span>
-                      {((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0) && (
-                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
-                          NEEDED
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-sm font-medium text-gray-700">Volunteers</span>
+                    {((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0) && (
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium border border-amber-200">
+                        NEEDED
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      {editingField === "volunteersNeeded" && editingEventId === request.id ? (
-                        <div className="flex items-center space-x-2">
-                          <label className="flex items-center">
-                            <input 
-                              type="checkbox" 
-                              checked={tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true"}
-                              onChange={(e) => setTempValues(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
-                              className="mr-1"
-                            />
-                            <span className="text-xs">Needed</span>
-                          </label>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
-                              handleTrackChange(
-                                request.id,
-                                "volunteersNeeded",
-                                tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true",
-                              );
-                              setEditingField(null);
-                              setEditingEventId(null);
-                              setTempValues({});
-                            }}
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6 p-0"
-                            onClick={handleFieldCancel}
-                          >
-                            ✗
-                          </Button>
-                        </div>
+                      {(request as any).volunteersNeeded ? (
+                        <span className={`text-xs ${((request as any).assignedVolunteerIds?.length || 0) === 0 ? 'text-amber-700 font-medium' : 'text-gray-600'}`}>
+                          Assigned: {((request as any).assignedVolunteerIds?.length || 0)}/needed{' '}
+                          {editingField === "volunteersNeeded" && editingEventId === request.id ? (
+                            <div className="inline-flex items-center space-x-1">
+                              <input 
+                                type="checkbox" 
+                                checked={tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true"}
+                                onChange={(e) => setTempValues(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
+                                className="ml-1"
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  handleTrackChange(
+                                    request.id,
+                                    "volunteersNeeded",
+                                    tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true",
+                                  );
+                                  setEditingField(null);
+                                  setEditingEventId(null);
+                                  setTempValues({});
+                                }}
+                              >
+                                ✓
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={handleFieldCancel}
+                              >
+                                ✗
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              className="text-xs text-purple-600 hover:text-purple-800 hover:underline inline ml-1"
+                              onClick={() => {
+                                setEditingField("volunteersNeeded");
+                                setEditingEventId(request.id);
+                                setTempValues({ volunteersNeeded: (request as any).volunteersNeeded || false });
+                              }}
+                            >
+                              (edit)
+                            </button>
+                          )}
+                        </span>
                       ) : (
-                        <button
-                          className="text-xs text-orange-600 hover:text-orange-800 hover:underline"
-                          onClick={() => {
-                            setEditingField("volunteersNeeded");
-                            setEditingEventId(request.id);
-                            setTempValues({ volunteersNeeded: (request as any).volunteersNeeded || false });
-                          }}
-                        >
-                          Status: {(request as any).volunteersNeeded ? "✓ Needed" : "Not needed"}
-                        </button>
+                        <span className="text-xs text-gray-600">
+                          No volunteers needed{' '}
+                          {editingField === "volunteersNeeded" && editingEventId === request.id ? (
+                            <div className="inline-flex items-center space-x-1">
+                              <input 
+                                type="checkbox" 
+                                checked={tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true"}
+                                onChange={(e) => setTempValues(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
+                                className="ml-1"
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  handleTrackChange(
+                                    request.id,
+                                    "volunteersNeeded",
+                                    tempValues.volunteersNeeded === true || tempValues.volunteersNeeded === "true",
+                                  );
+                                  setEditingField(null);
+                                  setEditingEventId(null);
+                                  setTempValues({});
+                                }}
+                              >
+                                ✓
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={handleFieldCancel}
+                              >
+                                ✗
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              className="text-xs text-purple-600 hover:text-purple-800 hover:underline inline ml-1"
+                              onClick={() => {
+                                setEditingField("volunteersNeeded");
+                                setEditingEventId(request.id);
+                                setTempValues({ volunteersNeeded: (request as any).volunteersNeeded || false });
+                              }}
+                            >
+                              (set needed)
+                            </button>
+                          )}
+                        </span>
                       )}
                     </div>
                     {(request as any).volunteersNeeded && (
                       <button
-                        className={`text-xs px-2 py-1 rounded border ${
-                          ((request as any).volunteersNeeded && ((request as any).assignedVolunteerIds?.length || 0) === 0)
-                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 font-medium'
-                            : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200'
-                        }`}
+                        className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded border border-green-200 font-medium"
                         onClick={() => {
                           setAssigningVolunteerRequest(request);
                           setShowVolunteerDialog(true);
@@ -3916,10 +3962,32 @@ export default function EventRequestsManagement() {
                           setSelectedVolunteers(currentVolunteers);
                         }}
                       >
+                        <Users className="w-3 h-3 mr-1 inline" />
                         {(request as any).assignedVolunteerIds?.length > 0 ? "Edit Volunteers" : "+ Assign Volunteer"}
                       </button>
                     )}
                   </div>
+                  
+                  {/* Assigned Volunteers Display */}
+                  {(request as any).volunteersNeeded && (request as any).assignedVolunteerIds?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {(request as any).assignedVolunteerIds?.map((volunteerId: string, index: number) => (
+                        <div key={index} className="inline-flex items-center bg-green-50 text-green-700 px-2 py-1 rounded text-xs border border-green-200">
+                          <Users className="w-3 h-3 mr-1" />
+                          {getUserDisplayName(volunteerId)}
+                          <button
+                            className="ml-1 hover:bg-green-200 rounded-full w-4 h-4 flex items-center justify-center"
+                            onClick={() => {
+                              const updatedVolunteers = (request as any).assignedVolunteerIds?.filter((id: string, i: number) => i !== index) || [];
+                              handleAssignmentUpdate(request.id, 'assignedVolunteerIds', updatedVolunteers);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Show volunteer assignments if volunteers are needed */}
                   {(request as any).volunteersNeeded && (request as any).assignedVolunteerIds?.length > 0 && (
