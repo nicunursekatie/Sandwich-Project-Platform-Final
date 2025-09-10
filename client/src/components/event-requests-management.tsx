@@ -5398,6 +5398,7 @@ export default function EventRequestsManagement() {
       speakersNeeded: formData.get("speakersNeeded")
         ? parseInt(formData.get("speakersNeeded") as string)
         : 0,
+      volunteersNeeded: formData.get("volunteersNeeded") === "on",
       volunteerNotes: formData.get("volunteerNotes") || null,
       planningNotes: formData.get("planningNotes") || null,
     };
@@ -5446,6 +5447,7 @@ export default function EventRequestsManagement() {
       speakersNeeded: formData.get("speakersNeeded")
         ? parseInt(formData.get("speakersNeeded") as string)
         : 0,
+      volunteersNeeded: formData.get("volunteersNeeded") === "on",
       volunteerNotes: formData.get("volunteerNotes") || null,
     };
 
