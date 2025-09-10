@@ -7578,61 +7578,8 @@ export default function EventRequestsManagement() {
                       placeholder="Where will the event take place?"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="estimatedSandwichCount">
-                      Estimated # of Sandwiches to be Made
-                    </Label>
-                    <Input
-                      name="estimatedSandwichCount"
-                      type="number"
-                      min="1"
-                      defaultValue={detailsRequest.estimatedSandwichCount || ""}
-                      placeholder="How many sandwiches to be made?"
-                    />
-                  </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="estimatedSandwichCount">
-                      How Many Sandwiches Needed?
-                    </Label>
-                    <Input
-                      name="estimatedSandwichCount"
-                      type="number"
-                      min="0"
-                      value={detailsRequest?.estimatedSandwichCount || ''}
-                      onChange={(e) => setDetailsRequest(prev => ({
-                        ...prev,
-                        estimatedSandwichCount: parseInt(e.target.value) || 0
-                      }))}
-                      placeholder="Enter number of sandwiches"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="sandwichType">
-                      Sandwich Type (optional)
-                    </Label>
-                    <select
-                      value={detailsRequest?.sandwichType || 'Unknown'}
-                      onChange={(e) => setDetailsRequest(prev => ({
-                        ...prev,
-                        sandwichType: e.target.value
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mt-1"
-                    >
-                      <option value="Unknown">Unknown</option>
-                      <option value="Deli (Turkey, Ham, etc.)">Deli (Turkey, Ham, etc.)</option>
-                      <option value="Turkey">Turkey</option>
-                      <option value="Ham">Ham</option>
-                      <option value="PB&J">PB&J</option>
-                      <option value="Vegetarian">Vegetarian</option>
-                      <option value="Vegan">Vegan</option>
-                      <option value="Gluten-Free">Gluten-Free</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
 
                 {/* Sandwich Destination */}
                 <div>
