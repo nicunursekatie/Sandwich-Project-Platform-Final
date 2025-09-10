@@ -1245,10 +1245,25 @@ export default function EventRequestsManagement() {
   const updateMutation = useMutation({
     mutationFn: ({ id, ...data }: any) =>
       apiRequest("PUT", `/api/event-requests/${id}`, data),
-    onSuccess: () => {
-      console.log('🔄 Event request updated - invalidating caches...');
+    onSuccess: (_, variables) => {
+      console.log('🔄 Event request updated - invalidating caches...', variables);
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
+      
+      // If the details dialog is open, refresh the detailsRequest data
+      if (detailsRequest && variables.id === detailsRequest.id) {
+        console.log('📝 Updating detailsRequest data for open dialog...');
+        // Immediately invalidate and refetch, then update dialog data
+        queryClient.refetchQueries({ queryKey: ["/api/event-requests"] }).then(() => {
+          const updatedRequest = queryClient.getQueryData(["/api/event-requests"])?.
+            find((req: any) => req.id === variables.id);
+          if (updatedRequest) {
+            console.log('🆕 Refreshing dialog with updated data:', updatedRequest);
+            setDetailsRequest(updatedRequest);
+          }
+        });
+      }
+      
       console.log('✅ Cache invalidation complete');
       toast({
         title: "Event request updated",
@@ -7530,10 +7545,17 @@ export default function EventRequestsManagement() {
                       <Input
                         name="email"
                         type="email"
+                        key={`email-${detailsRequest?.id}-${Date.now()}`} // Force re-render when detailsRequest changes
                         defaultValue={(() => {
                           // Always get the latest data from cache instead of stale snapshot
                           const latestData = eventRequests.find(req => req.id === detailsRequest?.id);
-                          return latestData?.email || detailsRequest?.email || "";
+                          const emailValue = latestData?.email || detailsRequest?.email || "";
+                          console.log(`🔍 Email form field debug for event ${detailsRequest?.id}:`, {
+                            latestDataEmail: latestData?.email,
+                            detailsRequestEmail: detailsRequest?.email,
+                            finalEmailValue: emailValue
+                          });
+                          return emailValue;
                         })()}
                         placeholder="Contact email address"
                         className="bg-white"
