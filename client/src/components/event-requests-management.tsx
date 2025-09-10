@@ -849,8 +849,8 @@ export default function EventRequestsManagement() {
   const getDriverDisplayName = (driverId: string | null | undefined) => {
     if (!driverId) return "Not specified";
 
-    // First try to find by driver ID
-    const driver = availableDrivers.find((d: any) => d.id.toString() === driverId);
+    // First try to find by driver ID in available drivers
+    const driver = availableDrivers?.find((d: any) => d.id.toString() === driverId);
     if (driver) {
       return driver.name || "Unknown Driver";
     }
@@ -4227,25 +4227,6 @@ export default function EventRequestsManagement() {
                     </div>
                   )}
 
-                  {/* Show volunteer assignments if volunteers are needed */}
-                  {(request as any).volunteersNeeded && (request as any).assignedVolunteerIds?.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {((request as any).assignedVolunteerIds || []).map((volunteerId: string, index: number) => (
-                        <div key={index} className="inline-flex items-center bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-200">
-                          {getUserDisplayName(volunteerId)}
-                          <button
-                            className="ml-1 hover:bg-orange-200 rounded-full w-4 h-4 flex items-center justify-center"
-                            onClick={() => {
-                              const updatedVolunteers = (request as any).assignedVolunteerIds?.filter((id: string, i: number) => i !== index) || [];
-                              handleAssignmentUpdate(request.id, 'assignedVolunteerIds', updatedVolunteers);
-                            }}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {/* Show volunteer notes if present */}
