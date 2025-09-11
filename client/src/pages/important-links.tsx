@@ -113,7 +113,7 @@ export default function ImportantLinks() {
           </TabsTrigger>
           <TabsTrigger value="user-sheet" className="flex items-center gap-2">
             <LinkIcon className="h-4 w-4" />
-            Custom Sheet
+            Historical Collections Record
           </TabsTrigger>
         </TabsList>
 
@@ -285,10 +285,10 @@ export default function ImportantLinks() {
                 <div>
                   <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
                     <LinkIcon className="h-5 w-5 text-[#236383]" />
-                    Custom Google Sheet
+                    Historical Collections Record
                   </CardTitle>
                   <CardDescription>
-                    Access to your specific Google spreadsheet - available as link and embedded view
+                    Historical collections tracking spreadsheet - available as link and embedded view
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -403,7 +403,7 @@ export default function ImportantLinks() {
                     transform: `scale(${userSheetZoomLevel / 100})`,
                     transformOrigin: 'top left'
                   }}
-                  title="Custom Google Sheet"
+                  title="Historical Collections Record"
                   loading="lazy"
                   sandbox="allow-scripts allow-same-origin allow-forms"
                 />
