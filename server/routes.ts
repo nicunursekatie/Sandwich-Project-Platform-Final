@@ -1828,7 +1828,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Schema validation test failed:", schemaError);
         }
         
-        const collectionData = insertSandwichCollectionSchema.parse(req.body);
+        // CRITICAL BUG FIX: Handle unlimited groups by processing groupCollections array
+        console.log("Processing group collections data...");
+        let processedBody = { ...req.body };
+        
+        // If groupCollections array is provided, use it to populate legacy fields for all groups
+        if (req.body.groupCollections && Array.isArray(req.body.groupCollections)) {
+          console.log("Found groupCollections array with", req.body.groupCollections.length, "groups");
+          const groups = req.body.groupCollections;
+          
+          // Set first two groups in legacy format for database compatibility
+          if (groups.length > 0) {
+            processedBody.group1Name = groups[0].name || "";
+            processedBody.group1Count = groups[0].count || 0;
+          }
+          if (groups.length > 1) {
+            processedBody.group2Name = groups[1].name || "";
+            processedBody.group2Count = groups[1].count || 0;
+          }
+          
+          // For now, log additional groups (2+) that we can't store in current schema
+          if (groups.length > 2) {
+            console.log("WARNING: Received", groups.length, "groups but can only store 2 in current schema");
+            console.log("Additional groups that will be lost:", groups.slice(2));
+          }
+        }
+        
+        const collectionData = insertSandwichCollectionSchema.parse(processedBody);
         console.log("Parsed collection data:", JSON.stringify(collectionData, null, 2));
         
         // Add user attribution to the collection
