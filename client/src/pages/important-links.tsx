@@ -102,7 +102,7 @@ export default function ImportantLinks() {
         <p className="text-gray-600">Quick access to essential tools and spreadsheets for planning and coordination.</p>
       </div>
 
-      <Tabs defaultValue="calculator" className="flex-1">
+      <Tabs defaultValue="calculator" className="flex-1 flex flex-col">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="calculator" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
@@ -118,8 +118,8 @@ export default function ImportantLinks() {
         </TabsList>
 
         {/* Inventory Calculator Tab */}
-        <TabsContent value="calculator" className="flex-1">
-          <Card className="h-full">
+        <TabsContent value="calculator" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="h-5 w-5 text-[#236383]" />
@@ -129,8 +129,8 @@ export default function ImportantLinks() {
                 Interactive tool for calculating sandwich inventory and planning quantities for collections
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="flex-1 flex flex-col">
+              <div className="space-y-4 flex-1 flex flex-col">
                 <div className="flex gap-3">
                   <Button
                     size="lg"
@@ -152,10 +152,10 @@ export default function ImportantLinks() {
                 </div>
 
                 {/* Embedded Calculator */}
-                <div className="border rounded-lg overflow-hidden">
+                <div className="border rounded-lg overflow-hidden flex-1">
                   <iframe
                     src={inventoryCalculatorUrl}
-                    className="w-full h-[800px] border-0"
+                    className="w-full h-full border-0"
                     title="Inventory Calculator"
                     loading="lazy"
                     sandbox="allow-scripts allow-same-origin allow-forms"
@@ -167,8 +167,8 @@ export default function ImportantLinks() {
         </TabsContent>
 
         {/* Events Google Sheet Tab */}
-        <TabsContent value="events" className="flex-1">
-          <Card className="h-full">
+        <TabsContent value="events" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
             <CardHeader className="pb-1">
               <div className="flex items-center justify-between mb-3">
                 <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -246,7 +246,7 @@ export default function ImportantLinks() {
               </div>
             </CardHeader>
             
-            <CardContent className="p-0 h-full">
+            <CardContent className="p-0 flex-1">
               <div className="w-full h-full relative overflow-hidden">
                 {isLoading && (
                   <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
@@ -260,13 +260,12 @@ export default function ImportantLinks() {
                 <iframe
                   id="events-spreadsheet"
                   src={eventsEmbedUrl}
-                  className="border-0 rounded-b-lg"
+                  className="border-0 rounded-b-lg w-full h-full"
                   style={{ 
-                    height: 'calc(100vh - 200px)',
-                    minHeight: '700px',
-                    width: `${100 / (eventsZoomLevel / 100)}%`,
                     transform: `scale(${eventsZoomLevel / 100})`,
-                    transformOrigin: 'top left'
+                    transformOrigin: 'top left',
+                    width: `${100 / (eventsZoomLevel / 100)}%`,
+                    height: `${100 / (eventsZoomLevel / 100)}%`
                   }}
                   title="Events Calendar"
                   loading="lazy"
@@ -278,8 +277,8 @@ export default function ImportantLinks() {
         </TabsContent>
 
         {/* User's Custom Google Sheet Tab */}
-        <TabsContent value="user-sheet" className="flex-1">
-          <Card className="h-full">
+        <TabsContent value="user-sheet" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
             <CardHeader className="pb-1">
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -381,7 +380,7 @@ export default function ImportantLinks() {
               </div>
             </CardHeader>
             
-            <CardContent className="p-0 h-full">
+            <CardContent className="p-0 flex-1">
               <div className="w-full h-full relative overflow-hidden">
                 {isLoading && (
                   <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
@@ -395,13 +394,12 @@ export default function ImportantLinks() {
                 <iframe
                   id="user-spreadsheet"
                   src={userSheetEmbedUrl}
-                  className="border-0 rounded-b-lg"
+                  className="border-0 rounded-b-lg w-full h-full"
                   style={{ 
-                    height: 'calc(100vh - 250px)',
-                    minHeight: '700px',
-                    width: `${100 / (userSheetZoomLevel / 100)}%`,
                     transform: `scale(${userSheetZoomLevel / 100})`,
-                    transformOrigin: 'top left'
+                    transformOrigin: 'top left',
+                    width: `${100 / (userSheetZoomLevel / 100)}%`,
+                    height: `${100 / (userSheetZoomLevel / 100)}%`
                   }}
                   title="Historical Collections Record"
                   loading="lazy"
