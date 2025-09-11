@@ -145,6 +145,14 @@ export default function CollectionWalkthrough({ onComplete, onCancel }: Collecti
 
     // Add group data from input rows that have meaningful data
     const validGroups = groupInputs.filter(group => group.name.trim() || group.count > 0);
+    
+    // NEW FORMAT: Send all groups in groupCollections array
+    submissionData.groupCollections = validGroups.map(group => ({
+      name: group.name.trim(),
+      count: group.count || 0
+    }));
+    
+    // BACKWARD COMPATIBILITY: Still populate legacy fields for compatibility
     if (validGroups.length > 0) {
       submissionData.group1Name = validGroups[0].name.trim() || "";
       submissionData.group1Count = validGroups[0].count || 0;
