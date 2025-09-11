@@ -155,7 +155,7 @@ export default function ImportantLinks() {
                 <div className="border rounded-lg overflow-hidden">
                   <iframe
                     src={inventoryCalculatorUrl}
-                    className="w-full h-[700px] border-0"
+                    className="w-full h-[800px] border-0"
                     title="Inventory Calculator"
                     loading="lazy"
                     sandbox="allow-scripts allow-same-origin allow-forms"
@@ -262,8 +262,8 @@ export default function ImportantLinks() {
                   src={eventsEmbedUrl}
                   className="border-0 rounded-b-lg"
                   style={{ 
-                    height: 'calc(100vh - 250px)',
-                    minHeight: '600px',
+                    height: 'calc(100vh - 200px)',
+                    minHeight: '700px',
                     width: `${100 / (eventsZoomLevel / 100)}%`,
                     transform: `scale(${eventsZoomLevel / 100})`,
                     transformOrigin: 'top left'
@@ -397,8 +397,8 @@ export default function ImportantLinks() {
                   src={userSheetEmbedUrl}
                   className="border-0 rounded-b-lg"
                   style={{ 
-                    height: 'calc(100vh - 300px)',
-                    minHeight: '600px',
+                    height: 'calc(100vh - 250px)',
+                    minHeight: '700px',
                     width: `${100 / (userSheetZoomLevel / 100)}%`,
                     transform: `scale(${userSheetZoomLevel / 100})`,
                     transformOrigin: 'top left'
