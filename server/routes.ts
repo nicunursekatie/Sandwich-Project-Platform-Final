@@ -483,14 +483,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       for (const user of allUsers) {
-        if (!user.permissions || user.permissions.length === 0) {
+        // Ensure permissions is treated as an array
+        const userPermissions = Array.isArray(user.permissions) ? user.permissions : [];
+        
+        if (!userPermissions || userPermissions.length === 0) {
           console.log(`⏭️  Skipping ${user.email} - no permissions`);
           unchangedCount++;
           continue;
         }
 
         // Map old permissions to new ones
-        const newPermissions = user.permissions
+        const newPermissions = userPermissions
           .map((oldPerm: string) => {
             const newPerm = PERMISSION_MAPPING[oldPerm.toLowerCase()];
             if (newPerm) {
@@ -510,11 +513,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter((perm: string, index: number, array: string[]) => array.indexOf(perm) === index);
 
         // Check if anything changed
-        const hasChanges = JSON.stringify(user.permissions.sort()) !== JSON.stringify(newPermissions.sort());
+        const hasChanges = JSON.stringify([...userPermissions].sort()) !== JSON.stringify(newPermissions.sort());
 
         if (hasChanges) {
           console.log(`🔄 Migrating ${user.email}:`);
-          console.log(`   Old: ${user.permissions.join(', ')}`);
+          console.log(`   Old: ${userPermissions.join(', ')}`);
           console.log(`   New: ${newPermissions.join(', ')}`);
           
           await storage.updateUser(user.id, { permissions: newPermissions });
@@ -1828,16 +1831,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Schema validation test failed:", schemaError);
         }
         
-        // CRITICAL BUG FIX: Handle unlimited groups by processing groupCollections array
+        // CRITICAL BUG FIX: Handle unlimited groups using new JSONB column
         console.log("Processing group collections data...");
         let processedBody = { ...req.body };
         
-        // If groupCollections array is provided, use it to populate legacy fields for all groups
+        // If groupCollections array is provided, store all groups in JSONB column
         if (req.body.groupCollections && Array.isArray(req.body.groupCollections)) {
           console.log("Found groupCollections array with", req.body.groupCollections.length, "groups");
           const groups = req.body.groupCollections;
           
-          // Set first two groups in legacy format for database compatibility
+          // Store ALL groups in the new JSONB column
+          processedBody.groupCollections = groups;
+          
+          // Also set first two groups in legacy format for backward compatibility
           if (groups.length > 0) {
             processedBody.group1Name = groups[0].name || "";
             processedBody.group1Count = groups[0].count || 0;
@@ -1847,11 +1853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             processedBody.group2Count = groups[1].count || 0;
           }
           
-          // For now, log additional groups (2+) that we can't store in current schema
-          if (groups.length > 2) {
-            console.log("WARNING: Received", groups.length, "groups but can only store 2 in current schema");
-            console.log("Additional groups that will be lost:", groups.slice(2));
-          }
+          console.log("Storing", groups.length, "groups in groupCollections JSONB column");
         }
         
         const collectionData = insertSandwichCollectionSchema.parse(processedBody);

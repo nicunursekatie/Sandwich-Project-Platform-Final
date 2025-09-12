@@ -444,11 +444,13 @@ export const sandwichCollections = pgTable("sandwich_collections", {
   collectionDate: text("collection_date").notNull(), // The date sandwiches were actually collected
   hostName: text("host_name").notNull(),
   individualSandwiches: integer("individual_sandwiches").notNull().default(0),
-  // Group collection columns (Phase 5: JSON column removed)
-  group1Name: text("group1_name"), // Name of first group (nullable)
-  group1Count: integer("group1_count"), // Count for first group (nullable)  
-  group2Name: text("group2_name"), // Name of second group (nullable)
-  group2Count: integer("group2_count"), // Count for second group (nullable)
+  // Group collection columns (Phase 5: JSON column for unlimited groups)
+  group1Name: text("group1_name"), // Name of first group (nullable) - LEGACY, use groupCollections
+  group1Count: integer("group1_count"), // Count for first group (nullable) - LEGACY, use groupCollections
+  group2Name: text("group2_name"), // Name of second group (nullable) - LEGACY, use groupCollections
+  group2Count: integer("group2_count"), // Count for second group (nullable) - LEGACY, use groupCollections
+  // New JSON column for unlimited groups
+  groupCollections: jsonb("group_collections").notNull().default('[]'), // Array of {name: string, count: number}
   createdBy: text("created_by"), // User ID who created this entry
   createdByName: text("created_by_name"), // Display name of creator
   submittedAt: timestamp("submitted_at").notNull().defaultNow(), // When form was submitted
