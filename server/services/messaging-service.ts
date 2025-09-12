@@ -3,17 +3,14 @@ import { db } from "../db";
 import {
   messages,
   messageRecipients,
-  messageThreads,
   kudosTracking,
   users,
   conversations,
   conversationParticipants,
   type Message,
   type MessageRecipient,
-  type MessageThread,
   type InsertMessage,
   type InsertMessageRecipient,
-  type InsertMessageThread,
   type InsertKudosTracking,
 } from "@shared/schema";
 import { NotificationService } from "../notification-service";

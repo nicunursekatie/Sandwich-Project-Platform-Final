@@ -49,16 +49,6 @@ router.get("/messages", isAuthenticated, async (req, res) => {
   }
 });
 
-router.get("/messages/:id/thread", async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const messages = await storage.getThreadMessages(id);
-    res.json(messages);
-  } catch (error) {
-    console.error("Error fetching thread messages:", error);
-    res.status(500).json({ error: "Failed to fetch thread messages" });
-  }
-});
 
 router.post("/messages", isAuthenticated, sanitizeMiddleware, async (req, res) => {
   // Check if user has permission to send messages

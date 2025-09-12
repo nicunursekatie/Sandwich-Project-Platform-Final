@@ -610,12 +610,6 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
-  async getThreadMessages(threadId: number): Promise<Message[]> {
-    console.log(`🔍 QUERY: getThreadMessages - threadId: ${threadId}`);
-    const messageResults = await db.select().from(messages).where(eq(messages.conversationId, threadId)).orderBy(messages.createdAt);
-    console.log(`🔍 RESULT: Found ${messageResults.length} messages for threadId ${threadId}`);
-    return messageResults;
-  }
 
   async createReply(insertMessage: InsertMessage, parentId: number): Promise<Message> {
     const [message] = await db.insert(messages).values(insertMessage).returning();

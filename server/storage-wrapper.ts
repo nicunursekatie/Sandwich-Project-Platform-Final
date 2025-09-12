@@ -358,12 +358,6 @@ class StorageWrapper implements IStorage {
     );
   }
 
-  async getThreadMessages(threadId: number) {
-    return this.executeWithFallback(
-      () => this.primaryStorage.getThreadMessages(threadId),
-      () => this.fallbackStorage.getThreadMessages(threadId)
-    );
-  }
 
   async createReply(message: any, parentId: number) {
     return this.executeWithFallback(

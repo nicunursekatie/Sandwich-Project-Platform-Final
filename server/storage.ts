@@ -102,7 +102,6 @@ export interface IStorage {
   getMessageById(id: number): Promise<Message | undefined>;
   markMessageAsRead(messageId: number, userId: string): Promise<void>;
   createMessage(message: InsertMessage): Promise<Message>;
-  getThreadMessages(threadId: number): Promise<Message[]>;
   createReply(message: InsertMessage, parentId: number): Promise<Message>;
   updateReplyCount(messageId: number): Promise<void>;
   deleteMessage(id: number): Promise<boolean>;
@@ -136,12 +135,6 @@ export interface IStorage {
   getChatMessageLikes(messageId: number): Promise<ChatMessageLike[]>;
   hasUserLikedChatMessage(messageId: number, userId: string): Promise<boolean>;
   
-  // Thread participant management - individual user control over group threads
-  getThreadParticipants(threadId: number): Promise<any[]>;
-  getParticipantStatus(threadId: number, userId: string): Promise<string | null>;
-  updateParticipantStatus(threadId: number, userId: string, status: 'active' | 'archived' | 'left' | 'muted'): Promise<boolean>;
-  createThreadParticipant(threadId: number, userId: string): Promise<any>;
-  updateParticipantLastRead(threadId: number, userId: string): Promise<boolean>;
   
   // Weekly Reports
   getAllWeeklyReports(): Promise<WeeklyReport[]>;
@@ -818,11 +811,6 @@ export class MemStorage implements IStorage {
     return message;
   }
 
-  async getThreadMessages(threadId: number): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(message => message.threadId === threadId)
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-  }
 
   async createReply(insertMessage: InsertMessage, parentId: number): Promise<Message> {
     const parentMessage = this.messages.get(parentId);
