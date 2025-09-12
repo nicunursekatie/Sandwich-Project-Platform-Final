@@ -45,7 +45,15 @@ export default function ImpactDashboard() {
 
   // Process data for visualizations
   const processCollectionData = () => {
-    if (!Array.isArray(collections)) {
+    // Debug logging
+    console.log('processCollectionData - chartView:', chartView);
+    console.log('processCollectionData - collections:', collections);
+    console.log('processCollectionData - collections length:', collections?.length);
+    console.log('processCollectionData - collectionsData:', collectionsData);
+    
+    // Use sample data if collections is not available, not an array, or is empty
+    if (!Array.isArray(collections) || collections.length === 0) {
+      console.log('Using sample data - collections not available or empty');
       if (chartView === 'weekly') {
         // Generate sample weekly data
         return [
@@ -71,6 +79,8 @@ export default function ImpactDashboard() {
         { month: '2025-06', sandwiches: 37000, collections: 45, hosts: 9 }
       ];
     }
+    
+    console.log('Processing real collections data...');
     
     const timeData: Record<string, {
       period: string;
@@ -111,18 +121,26 @@ export default function ImpactDashboard() {
         let groupCount = 0;
         
         // Handle groupCollections properly
-        if (collection.groupCollections && collection.groupCollections !== '' && collection.groupCollections !== '[]') {
+        if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+          groupCount = collection.groupCollections.reduce((sum, group) => {
+            // Handle both 'count' and 'sandwichCount' field names
+            const count = group.count || group.sandwichCount || 0;
+            console.log('Group data:', group, 'Count:', count);
+            return sum + count;
+          }, 0);
+        } else if (collection.groupCollections && typeof collection.groupCollections === 'string' && collection.groupCollections !== '' && collection.groupCollections !== '[]') {
           try {
-            const groupData = typeof collection.groupCollections === 'string' 
-              ? JSON.parse(collection.groupCollections) 
-              : collection.groupCollections;
+            const groupData = JSON.parse(collection.groupCollections);
             if (Array.isArray(groupData)) {
-              groupCount = groupData.reduce((sum, group) => sum + (group.sandwichCount || 0), 0);
+              groupCount = groupData.reduce((sum, group) => sum + (group.count || group.sandwichCount || 0), 0);
             }
           } catch (e) {
+            console.log('Error parsing groupCollections JSON:', e);
             groupCount = 0;
           }
         }
+        
+        console.log(`Collection ${collection.id}: individual=${individualCount}, group=${groupCount}, date=${collectionDate}`);
         
         timeData[periodKey].sandwiches += individualCount + groupCount;
         timeData[periodKey].collections += 1;
@@ -133,12 +151,15 @@ export default function ImpactDashboard() {
       }
     });
 
-    return Object.values(timeData).map((item) => ({
+    const processedData = Object.values(timeData).map((item) => ({
       [chartView === 'weekly' ? 'week' : 'month']: item.period,
       sandwiches: item.sandwiches,
       collections: item.collections,
       hosts: item.hosts.size
     })).sort((a, b) => a[chartView === 'weekly' ? 'week' : 'month'].localeCompare(b[chartView === 'weekly' ? 'week' : 'month']));
+    
+    console.log('Processed chart data:', processedData);
+    return processedData;
   };
 
   const processHostPerformance = () => {
@@ -235,6 +256,15 @@ export default function ImpactDashboard() {
   const chartData = processCollectionData();
   const hostPerformance = processHostPerformance();
   const impactMetrics = calculateImpactMetrics();
+
+  // Debug logging for final data
+  console.log('=== IMPACT DASHBOARD DEBUG ===');
+  console.log('Final chartData:', chartData);
+  console.log('Final chartData length:', chartData?.length);
+  console.log('Chart view:', chartView);
+  console.log('Collections data from API:', collectionsData);
+  console.log('Stats data from API:', stats);
+  console.log('=== END DEBUG ===');
 
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
