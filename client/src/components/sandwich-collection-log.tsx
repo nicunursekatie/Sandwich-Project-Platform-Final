@@ -115,8 +115,14 @@ export default function SandwichCollectionLog() {
   ]);
   const [newCollectionGroupOnlyMode, setNewCollectionGroupOnlyMode] = useState(false);
 
-  // PHASE 6: Standardized group total calculation using new column structure only
+  // PHASE 6: Standardized group total calculation using new JSONB array structure
   const calculateGroupTotal = (collection: SandwichCollection) => {
+    // First check if the new groupCollections JSONB array exists and has data
+    if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+      return collection.groupCollections.reduce((total: number, group: any) => total + (group.count || 0), 0);
+    }
+    
+    // Fall back to legacy fields for backward compatibility
     const groupCount1 = (collection as any).group1Count || 0;
     const groupCount2 = (collection as any).group2Count || 0;
     return groupCount1 + groupCount2;
@@ -469,8 +475,19 @@ export default function SandwichCollectionLog() {
     });
   };
 
-  // PHASE 5: Helper to get group collections from new column structure
+  // PHASE 6: Helper to get group collections from new JSONB array structure
   const getGroupCollections = (collection: SandwichCollection) => {
+    // First check if the new groupCollections JSONB array exists and has data
+    if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+      return collection.groupCollections
+        .filter((group: any) => group.name && group.count > 0)
+        .map((group: any) => ({ 
+          groupName: group.name, 
+          sandwichCount: group.count 
+        }));
+    }
+    
+    // Fall back to legacy fields for backward compatibility
     const groups = [];
     const group1Name = (collection as any).group1Name;
     const group1Count = (collection as any).group1Count;
