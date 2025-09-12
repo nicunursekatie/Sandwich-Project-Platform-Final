@@ -4768,18 +4768,21 @@ export default function EventRequestsManagement() {
               </div>
             )}
 
-            {/* Event Address (smaller, below other info) */}
+            {/* Event Address (enhanced prominence) */}
             {request.eventAddress && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
-                <Building className="w-4 h-4" />
-                <a
-                  href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  📍 {request.eventAddress}
-                </a>
+              <div className="flex items-center space-x-2 text-base text-gray-700 mb-3 bg-blue-50 p-2 rounded border-l-4 border-blue-400">
+                <Building className="w-5 h-5 text-blue-600" />
+                <div>
+                  <span className="font-semibold text-blue-700">Event Location:</span>{" "}
+                  <a
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  >
+                    📍 {request.eventAddress}
+                  </a>
+                </div>
               </div>
             )}
           </div>
@@ -5106,10 +5109,8 @@ export default function EventRequestsManagement() {
               <div className="text-gray-800">
                 <span className="font-semibold text-purple-700">Drivers:</span>{" "}
                 <span className="text-gray-900 font-medium">
-                  {(request as any).driverDetails 
-                    ? (typeof (request as any).driverDetails === 'string' 
-                        ? (request as any).driverDetails 
-                        : JSON.stringify((request as any).driverDetails))
+                  {(request as any).assignedDriverIds && (request as any).assignedDriverIds.length > 0
+                    ? (request as any).assignedDriverIds.map((driverId: string) => getDriverDisplayName(driverId)).join(", ")
                     : "Not specified"}
                 </span>
               </div>
@@ -5117,7 +5118,19 @@ export default function EventRequestsManagement() {
               {/* Speakers section */}
               <div className="text-gray-800">
                 <span className="font-semibold text-indigo-700">Speakers:</span>{" "}
-                <span className="text-gray-900 font-medium">{(request as any).speakerDetails || "Not specified"}</span>
+                <span className="text-gray-900 font-medium">
+                  {(request as any).assignedSpeakerIds && (request as any).assignedSpeakerIds.length > 0
+                    ? (request as any).assignedSpeakerIds.map((speakerId: string) => getUserDisplayName(speakerId)).join(", ")
+                    : "Not specified"}
+                </span>
+              </div>
+
+              {/* Sandwich Destination */}
+              <div className="text-gray-800">
+                <span className="font-semibold text-green-700">🎯 Sandwich Destination:</span>{" "}
+                <span className="text-gray-900 font-medium">
+                  {(request as any).deliveryDestination || "Not specified"}
+                </span>
               </div>
 
               {/* Other logistics */}
@@ -5542,6 +5555,12 @@ export default function EventRequestsManagement() {
         : 0,
       volunteerNotes: formData.get("volunteerNotes") || null,
       additionalRequirements: formData.get("additionalRequirements") || null,
+      // Event logistics fields
+      eventAddress: formData.get("eventAddress") || null,
+      estimatedSandwichCount: formData.get("estimatedSandwichCount")
+        ? parseInt(formData.get("estimatedSandwichCount") as string)
+        : null,
+      deliveryDestination: formData.get("deliveryDestination") || null,
       // TSP Contact fields
       tspContact:
         formData.get("tspContact") === "none"
@@ -5576,6 +5595,7 @@ export default function EventRequestsManagement() {
       estimatedSandwichCount: formData.get("estimatedSandwichCount")
         ? parseInt(formData.get("estimatedSandwichCount") as string)
         : null,
+      deliveryDestination: formData.get("deliveryDestination") || null,
       hasRefrigeration:
         formData.get("hasRefrigeration") === "none"
           ? null
