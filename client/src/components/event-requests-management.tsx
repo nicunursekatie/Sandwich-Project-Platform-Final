@@ -5658,6 +5658,7 @@ export default function EventRequestsManagement() {
       estimatedSandwichCount: formData.get("estimatedSandwichCount")
         ? parseInt(formData.get("estimatedSandwichCount") as string)
         : null,
+      deliveryDestination: formData.get("deliveryDestination") || null,
       sandwichTypes: (() => {
         const sandwichTypesStr = formData.get("sandwichTypes");
         if (sandwichTypesStr) {
