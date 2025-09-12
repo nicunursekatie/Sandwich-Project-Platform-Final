@@ -285,10 +285,11 @@ async function startServer() {
           await initializeDatabase();
           console.log("✓ Database initialization complete");
 
-          // Background Google Sheets sync disabled - only manual sync allowed
-          // const { storage } = await import("./storage");
-          // startBackgroundSync(storage);
-          console.log("✓ Background Google Sheets sync disabled (manual sync only)");
+          // Background Google Sheets sync re-enabled
+          const { storage } = await import("./storage-wrapper");
+          const { startBackgroundSync } = await import("./background-sync-service");
+          startBackgroundSync(storage);
+          console.log("✓ Background Google Sheets sync service started");
 
           // Routes already registered during server startup
           console.log(

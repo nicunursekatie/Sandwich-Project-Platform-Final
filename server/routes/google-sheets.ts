@@ -577,6 +577,164 @@ router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
   }
 });
 
+// Event Request Management Sync Endpoints
+// =======================================
+
+// Get sync status for event requests
+router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
+  try {
+    const { getEventRequestsGoogleSheetsService } = await import('../google-sheets-event-requests-sync');
+    const { storage } = await import('../storage-wrapper');
+    
+    const syncService = getEventRequestsGoogleSheetsService(storage);
+    if (!syncService) {
+      return res.json({
+        configured: false,
+        error: 'Event requests Google Sheets service not configured'
+      });
+    }
+
+    const sheetInfo = await syncService.analyzeSheetStructure();
+    const eventRequests = await storage.getAllEventRequests();
+    
+    res.json({
+      configured: true,
+      sheetInfo: sheetInfo,
+      database: {
+        total: eventRequests.length,
+        byStatus: eventRequests.reduce((acc: any, req: any) => {
+          acc[req.status] = (acc[req.status] || 0) + 1;
+          return acc;
+        }, {})
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching event requests sync status:', error);
+    res.status(500).json({ 
+      configured: false,
+      error: 'Failed to fetch event requests sync status',
+      message: error.message
+    });
+  }
+});
+
+// Sync event requests FROM Google Sheets (one-way import only)
+router.post('/event-requests/sync/from-sheets', isAuthenticated, async (req, res) => {
+  try {
+    const { getEventRequestsGoogleSheetsService } = await import('../google-sheets-event-requests-sync');
+    const { storage } = await import('../storage-wrapper');
+    
+    const syncService = getEventRequestsGoogleSheetsService(storage);
+    if (!syncService) {
+      return res.status(500).json({
+        success: false,
+        error: 'Event requests Google Sheets service not configured'
+      });
+    }
+
+    const result = await syncService.syncFromGoogleSheets();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        updated: result.updated || 0,
+        created: result.created || 0
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error syncing event requests from Google Sheets:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to sync event requests from Google Sheets',
+      message: error.message
+    });
+  }
+});
+
+// Update event request status in Google Sheets
+router.post('/event-requests/:id/update-status', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+    const { status } = req.body;
+    
+    if (isNaN(eventId)) {
+      return res.status(400).json({ message: 'Invalid event ID' });
+    }
+
+    const { storage } = await import('../storage-wrapper');
+    const { getEventRequestsGoogleSheetsService } = await import('../google-sheets-event-requests-sync');
+    
+    // Get the event request
+    const eventRequest = await storage.getEventRequest(eventId);
+    if (!eventRequest) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Update status in Google Sheets
+    const syncService = getEventRequestsGoogleSheetsService(storage);
+    if (syncService) {
+      const contactName = `${eventRequest.firstName} ${eventRequest.lastName}`.trim();
+      const result = await syncService.updateEventRequestStatus(
+        eventRequest.organizationName, 
+        contactName, 
+        status
+      );
+      
+      if (!result.success) {
+        console.warn('Failed to update Google Sheets status:', result.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Event request status updated',
+      sheetsUpdate: syncService ? 'attempted' : 'skipped'
+    });
+  } catch (error) {
+    console.error('Error updating event request status:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update event request status',
+      message: error.message
+    });
+  }
+});
+
+// Check Google Sheets configuration for event requests
+router.get('/event-requests/config/check', async (req, res) => {
+  try {
+    const requiredEnvVars = [
+      'GOOGLE_PROJECT_ID',
+      'GOOGLE_CLIENT_EMAIL', 
+      'GOOGLE_PRIVATE_KEY',
+      'EVENT_REQUESTS_SHEET_ID'
+    ];
+
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    const isConfigured = missingVars.length === 0;
+
+    res.json({
+      configured: isConfigured,
+      missingVariables: missingVars,
+      spreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID || null,
+      worksheetName: 'Sheet1'
+    });
+  } catch (error) {
+    console.error('Error checking event requests configuration:', error);
+    res.status(500).json({ 
+      configured: false,
+      error: 'Failed to check event requests configuration',
+      message: error.message
+    });
+  }
+});
+
 // Test endpoint using service account JSON directly
 router.post('/test-direct-auth', async (req, res) => {
   try {
