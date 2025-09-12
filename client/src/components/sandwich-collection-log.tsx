@@ -966,19 +966,34 @@ export default function SandwichCollectionLog() {
     
     // Parse existing group collections from new schema fields
     const groupList = [];
-    if (collection.group1Name && collection.group1Count) {
-      groupList.push({
-        id: "edit-1",
-        groupName: collection.group1Name,
-        sandwichCount: collection.group1Count
+    
+    // First try to read from the new groupCollections array
+    if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+      collection.groupCollections.forEach((group: any, index: number) => {
+        if (group.name && group.count > 0) {
+          groupList.push({
+            id: `edit-${index + 1}`,
+            groupName: group.name,
+            sandwichCount: group.count
+          });
+        }
       });
-    }
-    if (collection.group2Name && collection.group2Count) {
-      groupList.push({
-        id: "edit-2", 
-        groupName: collection.group2Name,
-        sandwichCount: collection.group2Count
-      });
+    } else {
+      // Fall back to legacy group1/group2 fields for backward compatibility
+      if (collection.group1Name && collection.group1Count) {
+        groupList.push({
+          id: "edit-1",
+          groupName: collection.group1Name,
+          sandwichCount: collection.group1Count
+        });
+      }
+      if (collection.group2Name && collection.group2Count) {
+        groupList.push({
+          id: "edit-2", 
+          groupName: collection.group2Name,
+          sandwichCount: collection.group2Count
+        });
+      }
     }
     
     if (groupList.length > 0) {
@@ -993,10 +1008,20 @@ export default function SandwichCollectionLog() {
 
     // Convert editGroupCollections to new schema format
     const validGroups = editGroupCollections.filter(g => g.groupName.trim() && g.sandwichCount > 0);
+    
+    // Prepare groupCollections array for unlimited groups
+    const groupCollections = validGroups.map(group => ({
+      name: group.groupName,
+      count: group.sandwichCount
+    }));
+    
     const updates: any = {
       collectionDate: editFormData.collectionDate,
       hostName: editFormData.hostName,
       individualSandwiches: parseInt(editFormData.individualSandwiches) || 0,
+      // Include the new unlimited groups array
+      groupCollections: groupCollections,
+      // Keep legacy fields for backward compatibility (first 2 groups only)
       group1Name: validGroups[0]?.groupName || null,
       group1Count: validGroups[0]?.sandwichCount || null,
       group2Name: validGroups[1]?.groupName || null,
