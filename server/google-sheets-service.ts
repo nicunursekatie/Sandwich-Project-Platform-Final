@@ -43,6 +43,23 @@ export class GoogleSheetsService {
     try {
       console.log('🔧 Initializing Google Sheets authentication...');
       
+      // Run diagnostics if authentication fails repeatedly
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Running authentication diagnostics...');
+        const { googleSheetsDiagnostics } = await import('./google-sheets-diagnostics');
+        const diagnosticResults = await googleSheetsDiagnostics.runFullDiagnostics();
+        const criticalIssues = diagnosticResults.filter(r => r.severity === 'critical');
+        
+        if (criticalIssues.length > 0) {
+          console.log('❌ Critical authentication issues detected:');
+          criticalIssues.forEach(issue => {
+            console.log(`   - ${issue.issue}: ${issue.description}`);
+            console.log(`     Solution: ${issue.solution}`);
+          });
+          googleSheetsDiagnostics.printDiagnosticReport(diagnosticResults);
+        }
+      }
+      
       // Check for required environment variables - use consistent naming
       const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -55,10 +72,26 @@ export class GoogleSheetsService {
       // Handle private key format more robustly
       let cleanPrivateKey = privateKey;
       
+      console.log('🔧 Original private key format check:', {
+        hasBackslashN: cleanPrivateKey.includes('\\n'),
+        hasRealNewlines: cleanPrivateKey.includes('\n'),
+        hasBeginHeader: cleanPrivateKey.includes('-----BEGIN'),
+        length: cleanPrivateKey.length,
+        firstChars: cleanPrivateKey.substring(0, 50),
+        lastChars: cleanPrivateKey.substring(cleanPrivateKey.length - 50)
+      });
+      
       // Handle escaped newlines in multiple formats
       if (cleanPrivateKey.includes('\\n')) {
         cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
         console.log('🔧 Converted \\n to actual newlines');
+      }
+      
+      // Remove any quotes if the entire key is wrapped in quotes
+      if ((cleanPrivateKey.startsWith('"') && cleanPrivateKey.endsWith('"')) ||
+          (cleanPrivateKey.startsWith("'") && cleanPrivateKey.endsWith("'"))) {
+        cleanPrivateKey = cleanPrivateKey.slice(1, -1);
+        console.log('🔧 Removed surrounding quotes from private key');
       }
       
       // Ensure proper PEM format
@@ -70,6 +103,34 @@ export class GoogleSheetsService {
       
       // Clean up any extra whitespace and normalize line endings
       cleanPrivateKey = cleanPrivateKey.trim().replace(/\r\n/g, '\n');
+      
+      // Ensure proper line breaks in PEM format
+      const lines = cleanPrivateKey.split('\n');
+      const properLines = [];
+      
+      for (let line of lines) {
+        line = line.trim();
+        if (line === '-----BEGIN PRIVATE KEY-----' || line === '-----END PRIVATE KEY-----') {
+          properLines.push(line);
+        } else if (line.length > 0) {
+          // Break long lines into 64-character chunks (standard PEM format)
+          while (line.length > 64) {
+            properLines.push(line.substring(0, 64));
+            line = line.substring(64);
+          }
+          if (line.length > 0) {
+            properLines.push(line);
+          }
+        }
+      }
+      
+      cleanPrivateKey = properLines.join('\n');
+      
+      console.log('🔧 Final private key format:', {
+        lineCount: cleanPrivateKey.split('\n').length,
+        hasProperHeaders: cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----') && cleanPrivateKey.includes('-----END PRIVATE KEY-----'),
+        properFormat: cleanPrivateKey.split('\n')[0] === '-----BEGIN PRIVATE KEY-----'
+      });
 
       // Use GoogleAuth instead of direct JWT for better Node.js v20 compatibility
       try {
@@ -97,10 +158,26 @@ export class GoogleSheetsService {
         this.auth = authClient as JWT;
         this.sheets = google.sheets({ version: 'v4', auth: authClient });
         
-        // Test with a simple API call
-        console.log('🔧 Testing authentication with API call...');
+        // Test with a simple API call to verify authentication actually works
+        console.log('🔧 Testing authentication with real API call...');
         
-        console.log('✅ Google Sheets GoogleAuth authentication successful');
+        try {
+          // Make a minimal API call to test authentication
+          const testResponse = await this.sheets.spreadsheets.get({
+            spreadsheetId: this.config.spreadsheetId || '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', // Use fallback spreadsheet for test
+            fields: 'spreadsheetId,properties.title'
+          });
+          
+          console.log('✅ Authentication test successful:', {
+            spreadsheetId: testResponse.data.spreadsheetId,
+            title: testResponse.data.properties?.title || 'Unknown'
+          });
+        } catch (testError) {
+          console.error('❌ Authentication test failed:', testError.message);
+          throw new Error(`JWT authentication test failed: ${testError.message}`);
+        }
+        
+        console.log('✅ Google Sheets GoogleAuth authentication fully verified');
         return;
         
       } catch (authError) {
@@ -136,7 +213,25 @@ export class GoogleSheetsService {
       this.auth = authClient as JWT;
       this.sheets = google.sheets({ version: 'v4', auth: authClient });
       
-      console.log('✅ Google Sheets file-based authentication successful');
+      // Test file-based authentication with real API call
+      console.log('🔧 Testing file-based authentication with real API call...');
+      
+      try {
+        const testResponse = await this.sheets.spreadsheets.get({
+          spreadsheetId: this.config.spreadsheetId || '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+          fields: 'spreadsheetId,properties.title'
+        });
+        
+        console.log('✅ File-based authentication test successful:', {
+          spreadsheetId: testResponse.data.spreadsheetId,
+          title: testResponse.data.properties?.title || 'Unknown'
+        });
+      } catch (testError) {
+        console.error('❌ File-based authentication test failed:', testError.message);
+        throw new Error(`File-based JWT authentication test failed: ${testError.message}`);
+      }
+      
+      console.log('✅ Google Sheets file-based authentication fully verified');
       
       // Clean up temp file
       fs.unlinkSync(tempFilePath);
