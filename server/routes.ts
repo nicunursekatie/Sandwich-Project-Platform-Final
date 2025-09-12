@@ -664,9 +664,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const sandwichDistributionsRoutes = await import("./routes/sandwich-distributions");
   app.use("/api/sandwich-distributions", sandwichDistributionsRoutes.default);
 
-  // Recipients routes are handled directly in this file below
-  // const recipientsRoutes = await import("./routes/recipients");
-  // app.use("/api/recipients", recipientsRoutes.default);
+  // Import and register recipients routes
+  const recipientsRoutes = await import("./routes/recipients");
+  app.use("/api/recipients", recipientsRoutes.default);
 
   // Import and register recipient TSP contacts routes
   app.use("/api/recipient-tsp-contacts", recipientTspContactRoutes);
@@ -4887,100 +4887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Recipients
-  app.get("/api/recipients", isAuthenticated, requirePermission("RECIPIENTS_VIEW"), async (req, res) => {
-    try {
-      const recipients = await storage.getAllRecipients();
-      res.json(recipients);
-    } catch (error) {
-      logger.error("Failed to fetch recipients", error);
-      res.status(500).json({ message: "Failed to fetch recipients" });
-    }
-  });
-
-  app.post("/api/recipients", isAuthenticated, requirePermission("manage_recipients"), async (req, res) => {
-    try {
-      const recipientData = insertRecipientSchema.parse(req.body);
-      const recipient = await storage.createRecipient(recipientData);
-      res.status(201).json(recipient);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        logger.error("Invalid recipient data", error);
-        return res.status(400).json({ 
-          error: "Invalid data",
-          details: error.errors 
-        });
-      }
-      logger.error("Failed to create recipient", error);
-      res.status(500).json({ message: "Failed to create recipient" });
-    }
-  });
-
-  app.put("/api/recipients/:id", isAuthenticated, requirePermission("manage_recipients"), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      
-      // Validate the request body using the schema
-      const updates = insertRecipientSchema.partial().parse(req.body);
-      
-      const updatedRecipient = await storage.updateRecipient(id, updates);
-      if (!updatedRecipient) {
-        return res.status(404).json({ message: "Recipient not found" });
-      }
-      res.json(updatedRecipient);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        logger.error("Invalid recipient data", error);
-        res.status(400).json({ 
-          message: "Invalid recipient data", 
-          errors: error.errors 
-        });
-      } else {
-        logger.error("Failed to update recipient", error);
-        res.status(500).json({ message: "Failed to update recipient" });
-      }
-    }
-  });
-
-  app.patch("/api/recipients/:id", isAuthenticated, requirePermission("manage_recipients"), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      
-      // Validate the request body using the schema
-      const updates = insertRecipientSchema.partial().parse(req.body);
-      
-      const updatedRecipient = await storage.updateRecipient(id, updates);
-      if (!updatedRecipient) {
-        return res.status(404).json({ message: "Recipient not found" });
-      }
-      res.json(updatedRecipient);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        logger.error("Invalid recipient data", error);
-        res.status(400).json({ 
-          message: "Invalid recipient data", 
-          errors: error.errors 
-        });
-      } else {
-        logger.error("Failed to update recipient", error);
-        res.status(500).json({ message: "Failed to update recipient" });
-      }
-    }
-  });
-
-  app.delete("/api/recipients/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const deleted = await storage.deleteRecipient(id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Recipient not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      logger.error("Failed to delete recipient", error);
-      res.status(500).json({ message: "Failed to delete recipient" });
-    }
-  });
+  // Recipients routes are now handled by the dedicated routes file
 
   // General Contacts
   app.get("/api/contacts", async (req, res) => {

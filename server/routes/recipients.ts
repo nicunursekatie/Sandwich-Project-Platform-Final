@@ -2,50 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage-wrapper";
 import { insertRecipientSchema } from "@shared/schema";
-import { hasPermission, PERMISSIONS } from "@shared/auth-utils";
+import { PERMISSIONS } from "@shared/auth-utils";
+import { requirePermission } from "../middleware/auth";
 
 const router = Router();
 
-// Simple authentication middleware that matches temp-auth system behavior
-const isAuthenticated = (req: any, res: any, next: any) => {
-  // Check for user in session (temp-auth system)
-  const sessionUser = req.session?.user;
-  const reqUser = req.user;
-  
-  const user = sessionUser || reqUser;
-  
-  if (!user) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-  
-  // Ensure user is active
-  if (user.isActive === false) {
-    return res.status(401).json({ error: "Account is inactive" });
-  }
-  
-  // Set req.user for route handlers
-  req.user = user;
-  next();
-};
-
-// Permission middleware for recipient access
-const requireRecipientAccess = (req: any, res: any, next: any) => {
-  if (!hasPermission(req.user, PERMISSIONS.ACCESS_RECIPIENTS)) {
-    return res.status(403).json({ error: "Permission denied. You cannot access recipients." });
-  }
-  next();
-};
-
-// Permission middleware for recipient management
-const requireRecipientManagement = (req: any, res: any, next: any) => {
-  if (!hasPermission(req.user, PERMISSIONS.MANAGE_RECIPIENTS)) {
-    return res.status(403).json({ error: "Permission denied. You cannot manage recipients." });
-  }
-  next();
-};
-
 // GET /api/recipients - Get all recipients
-router.get("/", isAuthenticated, requireRecipientAccess, async (req, res) => {
+router.get("/", requirePermission(PERMISSIONS.RECIPIENTS_VIEW), async (req, res) => {
   try {
     const recipients = await storage.getAllRecipients();
     res.json(recipients);
@@ -56,7 +19,7 @@ router.get("/", isAuthenticated, requireRecipientAccess, async (req, res) => {
 });
 
 // GET /api/recipients/:id - Get single recipient
-router.get("/:id", isAuthenticated, requireRecipientAccess, async (req, res) => {
+router.get("/:id", requirePermission(PERMISSIONS.RECIPIENTS_VIEW), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -76,7 +39,7 @@ router.get("/:id", isAuthenticated, requireRecipientAccess, async (req, res) => 
 });
 
 // POST /api/recipients - Create new recipient
-router.post("/", isAuthenticated, requireRecipientManagement, async (req, res) => {
+router.post("/", requirePermission(PERMISSIONS.RECIPIENTS_ADD), async (req, res) => {
   try {
     const validatedData = insertRecipientSchema.parse(req.body);
     
@@ -96,7 +59,7 @@ router.post("/", isAuthenticated, requireRecipientManagement, async (req, res) =
 });
 
 // PUT /api/recipients/:id - Update recipient
-router.put("/:id", isAuthenticated, requireRecipientManagement, async (req, res) => {
+router.put("/:id", requirePermission(PERMISSIONS.RECIPIENTS_EDIT), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -133,7 +96,7 @@ router.put("/:id", isAuthenticated, requireRecipientManagement, async (req, res)
 });
 
 // DELETE /api/recipients/:id - Delete recipient
-router.delete("/:id", isAuthenticated, requireRecipientManagement, async (req, res) => {
+router.delete("/:id", requirePermission(PERMISSIONS.RECIPIENTS_DELETE), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -153,7 +116,7 @@ router.delete("/:id", isAuthenticated, requireRecipientManagement, async (req, r
 });
 
 // PATCH /api/recipients/:id/status - Update recipient status
-router.patch("/:id/status", isAuthenticated, requireRecipientManagement, async (req, res) => {
+router.patch("/:id/status", requirePermission(PERMISSIONS.RECIPIENTS_EDIT), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
