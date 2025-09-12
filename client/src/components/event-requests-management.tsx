@@ -559,6 +559,7 @@ const SandwichTypesSelector = ({
                   ...quantities,
                   [type.value]: parseInt(e.target.value) || 0
                 })}
+                onWheel={(e) => e.target.blur()}
                 className="w-20 text-center"
                 placeholder="0"
               />
@@ -2969,6 +2970,7 @@ export default function EventRequestsManagement() {
                             min="0"
                             value={tempValues.estimatedSandwichCount || 0}
                             onChange={(e) => setTempValues(prev => ({ ...prev, estimatedSandwichCount: parseInt(e.target.value) || 0 }))}
+                            onWheel={(e) => e.target.blur()}
                             className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm text-center"
                             placeholder="0"
                           />
@@ -6918,6 +6920,7 @@ export default function EventRequestsManagement() {
                       defaultValue={
                         selectedRequest.estimatedSandwichCount || ""
                       }
+                      onWheel={(e) => e.target.blur()}
                     />
                   </div>
                   <div>
@@ -8867,6 +8870,7 @@ export default function EventRequestsManagement() {
                       type="number"
                       min="1"
                       placeholder="50"
+                      onWheel={(e) => e.target.blur()}
                       required
                     />
                   </div>
@@ -8880,6 +8884,7 @@ export default function EventRequestsManagement() {
                       type="number"
                       min="1"
                       placeholder="50"
+                      onWheel={(e) => e.target.blur()}
                       required
                     />
                   </div>
@@ -8892,6 +8897,7 @@ export default function EventRequestsManagement() {
                       min="0"
                       placeholder="1"
                       defaultValue="1"
+                      onWheel={(e) => e.target.blur()}
                       required
                     />
                   </div>
@@ -8904,6 +8910,7 @@ export default function EventRequestsManagement() {
                       min="0"
                       placeholder="0"
                       defaultValue="0"
+                      onWheel={(e) => e.target.blur()}
                       required
                     />
                   </div>
@@ -9116,6 +9123,7 @@ export default function EventRequestsManagement() {
                 min="0"
                 value={actualSandwichCount}
                 onChange={(e) => setActualSandwichCount(parseInt(e.target.value) || 0)}
+                onWheel={(e) => e.target.blur()}
                 placeholder="Enter actual count"
                 className="w-full"
               />
@@ -9177,6 +9185,7 @@ export default function EventRequestsManagement() {
                       placeholder="Count"
                       value={entry.totalCount}
                       onChange={(e) => updateDistributionEntry(index, 'totalCount', parseInt(e.target.value) || 0)}
+                      onWheel={(e) => e.target.blur()}
                     />
                   </div>
                   {distributionData.length > 1 && (
