@@ -185,6 +185,7 @@ export const projectTasks = pgTable("project_tasks", {
   completedAt: timestamp("completed_at"),
   attachments: text("attachments"), // JSON array of file paths
   order: integer("order").notNull().default(0), // for task ordering
+  orderNum: integer("order_num").default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -237,6 +238,7 @@ export const committeeMemberships = pgTable("committee_memberships", {
   permissions: jsonb("permissions").default('[]'), // Specific committee permissions
   joinedAt: timestamp("joined_at").defaultNow(),
   isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Announcements table for website banners
@@ -582,6 +584,8 @@ export const hosts = pgTable("hosts", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(), // Location name (e.g., "Alpharetta", "Roswell Community Center")
   address: text("address"),
+  email: text("email"),
+  phone: text("phone"),
   status: text("status").notNull().default("active"), // 'active', 'inactive'
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -898,6 +902,7 @@ export const contacts = pgTable("contacts", {
   notes: text("notes"),
   category: text("category").notNull().default("general"), // volunteer, board, vendor, donor, etc.
   status: text("status").notNull().default("active"), // active, inactive
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
