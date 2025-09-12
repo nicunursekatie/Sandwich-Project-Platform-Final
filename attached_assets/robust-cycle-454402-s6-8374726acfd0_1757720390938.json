@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "robust-cycle-454402-s6",
+  "private_key_id": "8374726acfd06879d97e6ebf7a779900e349679b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCsEOn3XQJUS0CN\n8QELH+ooeqkVCOuIeUA9jiMTIYzSRTS0Qmf2twEgqZtSADlAnRndK0cMDBii2+K3\nYUXwF4wJgbq1vOh2SQFFXVS9BMuCZ65/fIQ5SURLhLweKpsAno7W9o1Zvwl9x1b8\nmTraaceAhdaZ3Cow0C4pZg+x0Ncf04XhBUgLwyOQRMdLKtX7usOyGaiWYspjvrLD\nRRG3oKF5SZPrR7glKKmo9WgPNrYFE4opQPAllDH3RRzAxA8VaehLz/aD0TVX2Pcq\ni1rvP1Xt2ciQzvm7jZBFFZDon7DWF5ti7r7vqwBbwDX2owJGHFi4w4WPDXyQMoaW\nnURfGZGxAgMBAAECggEABJsJsceGJqMParBqJ1XgWtsFp/yuiUWgx/g3Zu19kap5\nwavXxCcCQbfCFfM2YeaSnA5RGLja9yj/+L0Cz6CU7M0Ev8gueyDZhtv7rUXxyJJl\nfYYXGycJ5YrIM921SAWQEmyHb6dV/4B7CvtzAG7XNAQUSj2cmrF7B6Kl7H8hjJMX\nXkIcWYOgCdTSSzIpT7Fyz2AwvdgKX2ozXbtC1M7TABMPbeUQLW5ajwBG+D2rNA76\n8a4y4wf8kI+FE+SZ9Tu7O+Szxzk/ZMmIBHdnhCk6fqtRqRTkHYdcJhuKsswiBYr6\nyc/ntLqcFHkZKFgt/POBoAk0RMp68jr7V4e03E4KPQKBgQDmkKs+/gBBFCRBodLI\nloQDFH1fI2BqCJYQSEQYpnWGutB6m11FstVez/I+k4PJ6oX4wXkx+/g8T5coYqSb\nowXu7sEYYDjBlsrfptrx0Cycfh83wddAml/VKaz6OPKHyDuyRvJLgar2QtmHyjwf\n9Gu3tR+WAi789HAvqd6syUSvzwKBgQC/DDA1iAAgS34bXAxptMikxIROo7mjxSuO\nYWcan0WxVcUlMqgnEl5Eqqhz7BfB2fbf6OmL1vDOnEFJERYpe08JgBeGniX6VKpF\ndImukAGN4AJvPkPfa5DH0qHD5+pVb8gSyik8YLt6R8dbrzpET23DyNL4Vhen7ckO\nfsomzgCGfwKBgQCsX1PnkDXYcZp5huXzGLQxKUxhqC0YmLq4CY7/btNGmrvqLeUZ\nio2CiKxupBJPDoqCYwKcn+gCDu7PPpAZ21NAQjcSZj2IXZfmhPQC/MOda50jLkQj\nBEbJMpMjrxeC8+vNaMUUNij+WxQONN+mdDFj8oFewNsoOgb1W2Yif4ZeeQKBgQCP\nHspez+uIRgXK6UJDTjOhe7bCUtUXYvYmS8G5p+fF2cM/ApwF6TTFrDNV5GBH0Mmp\nJAsRv4vWvCgMXMiFeuLS8yqspn0884A7V/ps02TWrCImxDaEgUiM6bZV1L8wEfWI\nXfpWSQEpsewfOz4jPn20VhX2BEjkfLZKLaGzQFAUcQKBgQCInSjn0rXjgMx9Iu+5\ny5hIAEgv8KZfNKmPpCrSh+g4NNdrB8OFAQVoRRAefI5i4DMyzm9qF+gqVK9wIz/8\nxGtQQZysnhACfql1qymp4U4LqPfyQGReWbkp2zv2h8TaQ4L05LbklVXetGiUYJNX\n1MEb8PM3JrFTNLUX2A1KXd3fWw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "replit-sheets-access-568@robust-cycle-454402-s6.iam.gserviceaccount.com",
+  "client_id": "114844304991301439942",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/replit-sheets-access-568%40robust-cycle-454402-s6.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

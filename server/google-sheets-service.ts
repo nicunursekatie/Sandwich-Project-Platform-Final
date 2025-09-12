@@ -136,16 +136,10 @@ export class GoogleSheetsService {
       try {
         console.log('🔧 Attempting GoogleAuth with service account...');
         
+        // Use minimal credentials - only essential fields to avoid empty private_key_id issues
         const credentials = {
-          type: "service_account",
-          project_id: projectId,
-          private_key_id: "",
-          private_key: cleanPrivateKey,
           client_email: clientEmail,
-          client_id: "",
-          auth_uri: "https://accounts.google.com/o/oauth2/auth",
-          token_uri: "https://oauth2.googleapis.com/token",
-          auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+          private_key: cleanPrivateKey
         };
 
         const auth = new google.auth.GoogleAuth({
@@ -188,16 +182,10 @@ export class GoogleSheetsService {
       const fs = await import('fs');
       const path = await import('path');
       
+      // Use minimal service account content - avoid empty private_key_id
       const serviceAccountContent = JSON.stringify({
-        type: "service_account",
-        project_id: projectId,
-        private_key_id: "",
-        private_key: cleanPrivateKey,
         client_email: clientEmail,
-        client_id: "",
-        auth_uri: "https://accounts.google.com/o/oauth2/auth",
-        token_uri: "https://oauth2.googleapis.com/token",
-        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+        private_key: cleanPrivateKey
       }, null, 2);
       
       const tempFilePath = path.join(process.cwd(), 'google-service-account.json');
