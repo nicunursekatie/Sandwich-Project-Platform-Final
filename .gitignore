@@ -69,4 +69,6 @@ dist/
 # OS generated files
 Thumbs.db
 ehthumbs.db
-Desktop.ini
+Desktop.ini*_session.txt
+*_test.txt
+*.txt
