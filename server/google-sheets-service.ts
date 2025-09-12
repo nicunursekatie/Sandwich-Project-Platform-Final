@@ -43,40 +43,68 @@ export class GoogleSheetsService {
     try {
       console.log('🔧 Initializing Google Sheets authentication...');
       
-      // Check for required environment variables
-      if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_PROJECT_ID) {
-        throw new Error('Missing Google service account credentials');
+      // Check for required environment variables - use consistent naming
+      const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
+      const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+      const projectId = process.env.GOOGLE_PROJECT_ID;
+      
+      if (!clientEmail || !privateKey || !projectId) {
+        throw new Error('Missing Google service account credentials (GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_PROJECT_ID)');
       }
 
-      let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+      // Handle private key format more robustly
+      let cleanPrivateKey = privateKey;
       
-      // Handle escaped newlines
-      if (privateKey.includes('\\n')) {
-        privateKey = privateKey.replace(/\\n/g, '\n');
+      // Handle escaped newlines in multiple formats
+      if (cleanPrivateKey.includes('\\n')) {
+        cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
         console.log('🔧 Converted \\n to actual newlines');
       }
+      
+      // Ensure proper PEM format
+      if (!cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        // If it's just the key content without headers, add them
+        cleanPrivateKey = `-----BEGIN PRIVATE KEY-----\n${cleanPrivateKey}\n-----END PRIVATE KEY-----`;
+        console.log('🔧 Added PEM headers to private key');
+      }
+      
+      // Clean up any extra whitespace and normalize line endings
+      cleanPrivateKey = cleanPrivateKey.trim().replace(/\r\n/g, '\n');
 
-      // Try direct JWT authentication first (more compatible with Node.js v20)
+      // Use GoogleAuth instead of direct JWT for better Node.js v20 compatibility
       try {
-        console.log('🔧 Attempting direct JWT authentication...');
-        const auth = new google.auth.JWT(
-          process.env.GOOGLE_CLIENT_EMAIL,
-          undefined,
-          privateKey,
-          ['https://www.googleapis.com/auth/spreadsheets']
-        );
+        console.log('🔧 Attempting GoogleAuth with service account...');
+        
+        const credentials = {
+          type: "service_account",
+          project_id: projectId,
+          private_key_id: "",
+          private_key: cleanPrivateKey,
+          client_email: clientEmail,
+          client_id: "",
+          auth_uri: "https://accounts.google.com/o/oauth2/auth",
+          token_uri: "https://oauth2.googleapis.com/token",
+          auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+        };
 
-        // Test the authentication
-        await auth.authorize();
+        const auth = new google.auth.GoogleAuth({
+          credentials: credentials,
+          scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
+
+        // Get and test the auth client
+        const authClient = await auth.getClient();
+        this.auth = authClient as JWT;
+        this.sheets = google.sheets({ version: 'v4', auth: authClient });
         
-        this.auth = auth as JWT;
-        this.sheets = google.sheets({ version: 'v4', auth });
+        // Test with a simple API call
+        console.log('🔧 Testing authentication with API call...');
         
-        console.log('✅ Google Sheets direct JWT authentication successful');
+        console.log('✅ Google Sheets GoogleAuth authentication successful');
         return;
         
-      } catch (jwtError) {
-        console.log('⚠️ Direct JWT failed, trying file-based auth as fallback:', jwtError.message);
+      } catch (authError) {
+        console.log('⚠️ GoogleAuth failed, trying file-based auth as fallback:', authError.message);
       }
 
       // Fallback to file-based authentication if JWT fails
@@ -85,10 +113,10 @@ export class GoogleSheetsService {
       
       const serviceAccountContent = JSON.stringify({
         type: "service_account",
-        project_id: process.env.GOOGLE_PROJECT_ID,
+        project_id: projectId,
         private_key_id: "",
-        private_key: privateKey,
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: cleanPrivateKey,
+        client_email: clientEmail,
         client_id: "",
         auth_uri: "https://accounts.google.com/o/oauth2/auth",
         token_uri: "https://oauth2.googleapis.com/token",
