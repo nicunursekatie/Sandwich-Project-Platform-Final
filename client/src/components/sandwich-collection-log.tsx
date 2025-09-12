@@ -1602,7 +1602,7 @@ export default function SandwichCollectionLog() {
                       </span>
                     </div>
                     {Array.isArray(groupData) && groupData.length > 0 && (
-                      <div className="space-y-1 max-h-16 overflow-y-auto">
+                      <div className="space-y-1">
                         {groupData.map((group: any, index: number) => (
                           <div key={index} className="flex items-center justify-between text-xs bg-white rounded px-2 py-1">
                             <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">{group.groupName}</span>
