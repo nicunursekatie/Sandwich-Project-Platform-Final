@@ -66,7 +66,7 @@ export class GoogleSheetsService {
       const projectId = process.env.GOOGLE_PROJECT_ID;
       
       if (!clientEmail || !privateKey || !projectId) {
-        throw new Error('Missing Google service account credentials (GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_PROJECT_ID)');
+        throw new Error('Missing Google service account credentials (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_PROJECT_ID)');
       }
 
       // Handle private key format more robustly
