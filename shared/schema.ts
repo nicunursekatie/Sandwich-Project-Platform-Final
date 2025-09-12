@@ -131,6 +131,14 @@ export const projects = pgTable("projects", {
   lastSyncedAt: timestamp("last_synced_at"), // When last synced with Google Sheets
   syncStatus: text("sync_status").default("unsynced"), // "unsynced", "synced", "conflict", "error"
   tasksAndOwners: text("tasks_and_owners"), // Parsed from Google Sheets format: "Katie: Design, Chris: Review"
+  // Additional database columns to prevent deletion during migrations
+  estimatedhours: integer("estimatedhours"),
+  actualhours: integer("actualhours"),
+  startdate: text("startdate"), // Using text to match existing pattern
+  enddate: text("enddate"), // Using text to match existing pattern
+  risklevel: varchar("risklevel"),
+  stakeholders: text("stakeholders"),
+  milestones: text("milestones"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -186,6 +194,9 @@ export const projectTasks = pgTable("project_tasks", {
   attachments: text("attachments"), // JSON array of file paths
   order: integer("order").notNull().default(0), // for task ordering
   orderNum: integer("order_num").default(0),
+  // Additional database columns to prevent deletion during migrations
+  completedBy: text("completed_by"),
+  completedByName: text("completed_by_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
