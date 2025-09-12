@@ -71,7 +71,7 @@ import {
   eventReminders,
 } from "@shared/schema";
 
-import { getDefaultPermissionsForRole, hasPermission, hasAccessToChat } from "@shared/auth-utils";
+import { getDefaultPermissionsForRole, hasPermission, hasAccessToChat, PERMISSIONS } from "@shared/auth-utils";
 
 // Extend Request interface to include file metadata
 declare global {
@@ -3993,7 +3993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/drivers/:id", isAuthenticated, requirePermission("DRIVERS_EDIT"), async (req, res) => {
+  app.delete("/api/drivers/:id", isAuthenticated, requirePermission(PERMISSIONS.DRIVERS_DELETE), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteDriver(id);
@@ -4193,7 +4193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export volunteers to CSV
-  app.get("/api/volunteers/export", isAuthenticated, requirePermission("access_volunteers"), async (req, res) => {
+  app.get("/api/volunteers/export", isAuthenticated, requirePermission(PERMISSIONS.USERS_VIEW), async (req, res) => {
     try {
       const volunteers = await storage.getAllVolunteers();
       
@@ -4279,7 +4279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH endpoint for partial driver updates (used by frontend)
-  app.patch("/api/drivers/:id", sanitizeMiddleware, async (req, res) => {
+  app.patch("/api/drivers/:id", isAuthenticated, requirePermission(PERMISSIONS.DRIVERS_EDIT), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
@@ -4336,56 +4336,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // DELETE endpoint for drivers
-  app.delete("/api/drivers/:id", sanitizeMiddleware, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      console.log(`Deleting driver ${id}`);
 
-      const success = await storage.deleteDriver(id);
-      if (!success) {
-        return res.status(404).json({ message: "Driver not found" });
-      }
-
-      console.log(`Driver ${id} deleted successfully`);
-      res.json({ message: "Driver deleted successfully" });
-    } catch (error) {
-      logger.error("Failed to delete driver", error);
-      res.status(500).json({ message: "Failed to delete driver" });
-    }
-  });
-
-  // Driver Agreements (admin access only)
-  app.post("/api/driver-agreements", async (req, res) => {
-    try {
-      const result = insertDriverAgreementSchema.safeParse(req.body);
-      if (!result.success) {
-        return res
-          .status(400)
-          .json({ message: "Invalid driver agreement data" });
-      }
-
-      const agreement = await storage.createDriverAgreement(result.data);
-
-      // Send notification email if available
-      try {
-        await sendDriverAgreementNotification(agreement);
-      } catch (emailError) {
-        logger.error(
-          "Failed to send driver agreement notification",
-          emailError,
-        );
-      }
-
-      res.status(201).json(agreement);
-    } catch (error) {
-      logger.error("Failed to create driver agreement", error);
-      res.status(500).json({ message: "Failed to create driver agreement" });
-    }
-  });
 
   // Volunteers API endpoints
-  app.get("/api/volunteers", isAuthenticated, requirePermission("access_volunteers"), async (req, res) => {
+  app.get("/api/volunteers", isAuthenticated, requirePermission(PERMISSIONS.USERS_VIEW), async (req, res) => {
     try {
       const volunteers = await storage.getAllVolunteers();
       res.json(volunteers);
@@ -4395,7 +4349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/volunteers/:id", isAuthenticated, requirePermission("access_volunteers"), async (req, res) => {
+  app.get("/api/volunteers/:id", isAuthenticated, requirePermission(PERMISSIONS.USERS_VIEW), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const volunteer = await storage.getVolunteer(id);
@@ -4660,7 +4614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  app.patch("/api/hosts/:id", async (req, res) => {
+  app.patch("/api/hosts/:id", isAuthenticated, requirePermission(PERMISSIONS.HOSTS_EDIT), sanitizeMiddleware, async (req, res) => {
     console.log(`🔥 PATCH route hit for host ${req.params.id}`);
     try {
       const id = parseInt(req.params.id);
@@ -4694,7 +4648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/hosts/:id", async (req, res) => {
+  app.delete("/api/hosts/:id", isAuthenticated, requirePermission(PERMISSIONS.HOSTS_DELETE), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteHost(id);
@@ -4843,7 +4797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/host-contacts/:id", async (req, res) => {
+  app.delete("/api/host-contacts/:id", isAuthenticated, requirePermission(PERMISSIONS.HOSTS_DELETE), sanitizeMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteHostContact(id);
@@ -4869,7 +4823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get collections by host name
-  app.get("/api/collections-by-host/:hostName", async (req, res) => {
+  app.get("/api/collections-by-host/:hostName", isAuthenticated, requirePermission(PERMISSIONS.COLLECTIONS_VIEW), async (req, res) => {
     try {
       const hostName = decodeURIComponent(req.params.hostName);
       const collections = await storage.getAllSandwichCollections();
