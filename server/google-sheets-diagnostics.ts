@@ -36,7 +36,7 @@ export class GoogleSheetsDiagnostics {
     const results: DiagnosticResult[] = [];
     
     const requiredVars = [
-      'GOOGLE_SERVICE_ACCOUNT_EMAIL',
+      'GOOGLE_CLIENT_EMAIL',
       'GOOGLE_PRIVATE_KEY', 
       'GOOGLE_PROJECT_ID',
       'GOOGLE_SPREADSHEET_ID',
@@ -60,7 +60,7 @@ export class GoogleSheetsDiagnostics {
           solution: 'Verify you copied the complete private key from your Google Cloud service account JSON file',
           detailsFound: { length: value.length, preview: value.substring(0, 100) + '...' }
         });
-      } else if (varName === 'GOOGLE_SERVICE_ACCOUNT_EMAIL' && !value.includes('@')) {
+      } else if (varName === 'GOOGLE_CLIENT_EMAIL' && !value.includes('@')) {
         results.push({
           issue: 'Invalid Service Account Email',
           severity: 'critical',
@@ -141,7 +141,7 @@ export class GoogleSheetsDiagnostics {
     try {
       console.log('🔍 Testing service account configuration...');
       
-      const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
       const projectId = process.env.GOOGLE_PROJECT_ID;
       

@@ -61,7 +61,7 @@ export class GoogleSheetsService {
       }
       
       // Check for required environment variables - use consistent naming
-      const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
+      const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
       const projectId = process.env.GOOGLE_PROJECT_ID;
       
