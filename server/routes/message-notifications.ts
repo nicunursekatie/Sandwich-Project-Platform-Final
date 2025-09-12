@@ -82,15 +82,24 @@ const getUnreadCounts = async (req: Request, res: Response) => {
             continue;
           }
           
-          // Count unread messages in this channel
+          // Count unread messages in this channel (messages that haven't been marked as read)
+          const { chatMessageReads } = await import("../../shared/schema");
           const unreadCount = await db
             .select({ count: sql<number>`COUNT(*)::int` })
             .from(chatMessages)
+            .leftJoin(chatMessageReads, 
+              and(
+                eq(chatMessageReads.messageId, chatMessages.id),
+                eq(chatMessageReads.userId, userId)
+              )
+            )
             .where(
               and(
                 eq(chatMessages.channel, channel),
                 // Not from current user
-                sql`${chatMessages.userId} != ${userId}`
+                sql`${chatMessages.userId} != ${userId}`,
+                // Not already read
+                isNull(chatMessageReads.id)
               )
             );
           

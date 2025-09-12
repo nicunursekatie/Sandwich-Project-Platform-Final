@@ -2123,8 +2123,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markChannelMessagesAsRead(userId: string, channel: string): Promise<void> {
-    // Chat read tracking disabled - no database table
-    console.log(`Chat read tracking not implemented for user ${userId} in channel ${channel}`);
+    try {
+      const { chatMessages, chatMessageReads } = await import("@shared/schema");
+      
+      // Get all messages in this channel that the user hasn't already marked as read
+      const unreadMessages = await db
+        .select({ id: chatMessages.id })
+        .from(chatMessages)
+        .leftJoin(chatMessageReads, 
+          and(
+            eq(chatMessageReads.messageId, chatMessages.id),
+            eq(chatMessageReads.userId, userId)
+          )
+        )
+        .where(
+          and(
+            eq(chatMessages.channel, channel),
+            isNull(chatMessageReads.id) // Not already read
+          )
+        );
+
+      // Mark all unread messages as read
+      if (unreadMessages.length > 0) {
+        const readEntries = unreadMessages.map(msg => ({
+          messageId: msg.id,
+          userId,
+          channel,
+          readAt: new Date()
+        }));
+
+        await db.insert(chatMessageReads).values(readEntries);
+        console.log(`Marked ${unreadMessages.length} messages as read for user ${userId} in channel ${channel}`);
+      }
+    } catch (error) {
+      console.error(`Error marking channel messages as read for user ${userId} in channel ${channel}:`, error);
+    }
   }
 
   // Shoutout methods

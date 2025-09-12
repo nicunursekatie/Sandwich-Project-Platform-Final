@@ -92,6 +92,18 @@ export const chatMessageLikes = pgTable("chat_message_likes", {
   uniqueLike: unique().on(table.messageId, table.userId),
 }));
 
+// Chat message reads table for tracking which users have read which messages
+export const chatMessageReads = pgTable("chat_message_reads", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").references(() => chatMessages.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull(),
+  channel: varchar("channel").notNull(), // Store channel for efficient querying
+  readAt: timestamp("read_at").defaultNow(),
+}, (table) => ({
+  uniqueRead: unique().on(table.messageId, table.userId),
+  userChannelIdx: index("idx_chat_reads_user_channel").on(table.userId, table.channel),
+}));
+
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
