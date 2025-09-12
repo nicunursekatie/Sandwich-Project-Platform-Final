@@ -445,12 +445,10 @@ export const sandwichCollections = pgTable("sandwich_collections", {
   hostName: text("host_name").notNull(),
   individualSandwiches: integer("individual_sandwiches").notNull().default(0),
   // Group collection columns (Phase 5: JSON column removed)
-  group1Name: text("group1_name"), // Name of first group (nullable) - DEPRECATED, use groupCollections
-  group1Count: integer("group1_count"), // Count for first group (nullable) - DEPRECATED, use groupCollections  
-  group2Name: text("group2_name"), // Name of second group (nullable) - DEPRECATED, use groupCollections
-  group2Count: integer("group2_count"), // Count for second group (nullable) - DEPRECATED, use groupCollections
-  // New JSON column for unlimited groups
-  groupCollections: jsonb("group_collections").notNull().default('[]'), // Array of {name: string, count: number}
+  group1Name: text("group1_name"), // Name of first group (nullable)
+  group1Count: integer("group1_count"), // Count for first group (nullable)  
+  group2Name: text("group2_name"), // Name of second group (nullable)
+  group2Count: integer("group2_count"), // Count for second group (nullable)
   createdBy: text("created_by"), // User ID who created this entry
   createdByName: text("created_by_name"), // Display name of creator
   submittedAt: timestamp("submitted_at").notNull().defaultNow(), // When form was submitted
@@ -757,16 +755,11 @@ export const insertMessageRecipientSchema = createInsertSchema(messageRecipients
 export const insertKudosTrackingSchema = createInsertSchema(kudosTracking).omit({ id: true, sentAt: true });
 export const insertWeeklyReportSchema = createInsertSchema(weeklyReports).omit({ id: true, submittedAt: true });
 export const insertSandwichCollectionSchema = createInsertSchema(sandwichCollections).omit({ id: true, submittedAt: true }).extend({
-  // Override to include proper validation for groupCollections
+  // Support groupCollections array for frontend (will be processed into group1/group2 by backend)
   groupCollections: z.array(z.object({
     name: z.string().trim().min(1).max(120),
     count: z.number().int().min(0)
   })).max(100).optional(),
-  // Make legacy fields optional for backward compatibility
-  group1Name: z.string().optional(),
-  group1Count: z.number().int().min(0).optional(),
-  group2Name: z.string().optional(), 
-  group2Count: z.number().int().min(0).optional()
 });
 export const insertMeetingMinutesSchema = createInsertSchema(meetingMinutes).omit({ id: true });
 export const insertDriveLinkSchema = createInsertSchema(driveLinks).omit({ id: true });

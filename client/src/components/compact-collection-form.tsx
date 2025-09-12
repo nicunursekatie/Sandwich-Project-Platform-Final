@@ -115,15 +115,9 @@ export default function CompactCollectionForm({
       submissionMethod: "standard", // Track that this was submitted via standard form
     };
 
-    // Convert groupCollections array to individual group fields (max 2 groups)
+    // Include ALL groups in the submission (unlimited groups)
     if (groupCollections.length > 0) {
-      submissionData.group1Name = groupCollections[0].name;
-      submissionData.group1Count = groupCollections[0].count;
-      
-      if (groupCollections.length > 1) {
-        submissionData.group2Name = groupCollections[1].name;
-        submissionData.group2Count = groupCollections[1].count;
-      }
+      submissionData.groupCollections = groupCollections;
     }
 
     submitMutation.mutate(submissionData);
