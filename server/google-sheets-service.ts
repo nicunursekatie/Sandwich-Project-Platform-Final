@@ -175,7 +175,7 @@ export class GoogleSheetsService {
         return;
         
       } catch (authError) {
-        console.log('⚠️ GoogleAuth failed, trying file-based auth as fallback:', authError.message);
+        console.log('⚠️ GoogleAuth failed, trying file-based auth as fallback:', (authError as Error).message);
       }
 
       // Fallback to file-based authentication if JWT fails
