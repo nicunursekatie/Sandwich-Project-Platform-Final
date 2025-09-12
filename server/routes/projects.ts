@@ -107,9 +107,8 @@ router.get("/tasks/assigned", isAuthenticated, async (req, res) => {
       try {
         const projectTasks = await storage.getProjectTasks(project.id);
         const userTasks = projectTasks.filter((task: any) => {
-          // Handle text array format (project_tasks table uses text[])
-          const assigneeIds = Array.isArray(task.assigneeIds) ? task.assigneeIds : 
-                             (task.assigneeIds ? task.assigneeIds.split(',') : []);
+          // assigneeIds is now a TEXT[] array - no need to split
+          const assigneeIds = Array.isArray(task.assigneeIds) ? task.assigneeIds : [];
           return assigneeIds.includes(userId);
         });
         

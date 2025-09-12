@@ -176,12 +176,8 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
         topFeatures,
         ...(individualSummary && { summary: individualSummary }),
         ...(individual === 'true' && { activities: recentActivity.map(log => {
-          let parsedMetadata = {};
-          try {
-            parsedMetadata = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata || {};
-          } catch (e) {
-            parsedMetadata = {};
-          }
+          // metadata is now JSONB - no need to JSON.parse
+          const parsedMetadata = log.metadata || {};
           
           // Debug logging for individual activities
           console.log(`🔍 Individual Activity ${log.id}: details="${log.details}", action="${log.action}", section="${log.section}", feature="${log.feature}"`);
@@ -202,12 +198,8 @@ export function createEnhancedUserActivityRoutes(storage: IStorage): Router {
           };
         }) }),
         ...(!individual && { recentActivity: recentActivity.map(log => {
-          let parsedMetadata = {};
-          try {
-            parsedMetadata = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata || {};
-          } catch (e) {
-            parsedMetadata = {};
-          }
+          // metadata is now JSONB - no need to JSON.parse
+          const parsedMetadata = log.metadata || {};
           
           return {
             id: log.id,

@@ -185,7 +185,9 @@ router.get("/assigned", isAuthenticated, async (req, res) => {
       
       // Method 3: Listed in driver details (check if user's name or email appears in driver details)
       if (event.driverDetails && currentUser) {
-        const driverText = event.driverDetails.toLowerCase();
+        // driverDetails is now JSONB - convert to string for text search
+        const driverText = (typeof event.driverDetails === 'string' ? 
+          event.driverDetails : JSON.stringify(event.driverDetails)).toLowerCase();
         const userEmail = currentUser.email.toLowerCase();
         const userName = currentUser.displayName?.toLowerCase() || '';
         const userFirstName = currentUser.firstName?.toLowerCase() || '';
@@ -291,7 +293,9 @@ function getAssignmentType(event: any, userId: string, currentUser: any): string
   }
   
   if (event.driverDetails && currentUser) {
-    const driverText = event.driverDetails.toLowerCase();
+    // driverDetails is now JSONB - convert to string for text search
+    const driverText = (typeof event.driverDetails === 'string' ? 
+      event.driverDetails : JSON.stringify(event.driverDetails)).toLowerCase();
     const userEmail = currentUser.email.toLowerCase();
     const userName = currentUser.displayName?.toLowerCase() || '';
     const userFirstName = currentUser.firstName?.toLowerCase() || '';

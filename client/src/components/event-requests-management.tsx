@@ -5105,7 +5105,13 @@ export default function EventRequestsManagement() {
               {/* Drivers section */}
               <div className="text-gray-800">
                 <span className="font-semibold text-purple-700">Drivers:</span>{" "}
-                <span className="text-gray-900 font-medium">{(request as any).driverDetails || "Not specified"}</span>
+                <span className="text-gray-900 font-medium">
+                  {(request as any).driverDetails 
+                    ? (typeof (request as any).driverDetails === 'string' 
+                        ? (request as any).driverDetails 
+                        : JSON.stringify((request as any).driverDetails))
+                    : "Not specified"}
+                </span>
               </div>
 
               {/* Speakers section */}
