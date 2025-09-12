@@ -1,3 +1,4 @@
+
 agenda_items
 agenda_sections
 announcements
@@ -32,18 +33,18 @@ meetings
 message_likes
 message_reads
 message_recipients
-message_threads
 messages
+message_threads
 notifications
 organizations
 project_assignments
 project_comments
 project_congratulations
 project_documents
-project_tasks
 projects
-recipient_tsp_contacts
+project_tasks
 recipients
+recipient_tsp_contacts
 sandwich_collections
 sandwich_distributions
 sessions
@@ -56,4 +57,3 @@ volunteers
 weekly_reports
 wishlist_suggestions
 work_logs
-

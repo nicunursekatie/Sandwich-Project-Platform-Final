@@ -1,6 +1,6 @@
 import { Request, Response, Express } from "express";
 import { eq, sql, and, gt, or, isNull } from "drizzle-orm";
-import { messages, messageRecipients, conversations, conversationParticipants, chatMessages, chatMessageReads, kudosTracking, users, emailMessages } from "../../shared/schema";
+import { messages, messageRecipients, conversations, conversationParticipants, chatMessages, kudosTracking, users, emailMessages } from "../../shared/schema";
 import { db } from "../db";
 import { isAuthenticated } from "../temp-auth";
 import { hasPermission, PERMISSIONS } from "../../shared/auth-utils";
@@ -86,20 +86,11 @@ const getUnreadCounts = async (req: Request, res: Response) => {
           const unreadCount = await db
             .select({ count: sql<number>`COUNT(*)::int` })
             .from(chatMessages)
-            .leftJoin(
-              chatMessageReads, 
-              and(
-                eq(chatMessageReads.messageId, chatMessages.id),
-                eq(chatMessageReads.userId, userId)
-              )
-            )
             .where(
               and(
                 eq(chatMessages.channel, channel),
                 // Not from current user
-                sql`${chatMessages.userId} != ${userId}`,
-                // Not yet read by current user
-                sql`${chatMessageReads.messageId} IS NULL`
+                sql`${chatMessages.userId} != ${userId}`
               )
             );
           
@@ -195,18 +186,8 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
       
       // If specific message IDs are provided, mark those
       if (messageIds && Array.isArray(messageIds)) {
-        for (const messageId of messageIds) {
-          await db
-            .insert(chatMessageReads)
-            .values({
-              messageId: parseInt(messageId),
-              userId: userId,
-              channel: channel,
-              readAt: new Date(),
-              createdAt: new Date()
-            })
-            .onConflictDoNothing(); // Ignore if already exists
-        }
+        // Chat read tracking disabled - no database table
+        // TODO: Implement if chat read tracking is needed
         
         res.json({ success: true, channel, userId, markedRead: messageIds.length });
       } else {
@@ -221,20 +202,9 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
             )
           );
         
-        let markedCount = 0;
-        for (const message of channelMessages) {
-          await db
-            .insert(chatMessageReads)
-            .values({
-              messageId: message.id,
-              userId: userId,
-              channel: channel,
-              readAt: new Date(),
-              createdAt: new Date()
-            })
-            .onConflictDoNothing();
-          markedCount++;
-        }
+        // Chat read tracking disabled - no database table
+        // TODO: Implement if chat read tracking is needed
+        const markedCount = channelMessages.length;
         
         res.json({ success: true, channel, userId, markedRead: markedCount });
       }

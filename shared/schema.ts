@@ -80,18 +80,6 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Chat message read status tracking
-export const chatMessageReads = pgTable("chat_message_reads", {
-  id: serial("id").primaryKey(),
-  messageId: integer("message_id").references(() => chatMessages.id, { onDelete: "cascade" }),
-  userId: varchar("user_id").notNull(),
-  channel: varchar("channel").notNull(),
-  readAt: timestamp("read_at").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  uniqueRead: unique().on(table.messageId, table.userId),
-  channelUserIdx: index("idx_chat_reads_channel_user").on(table.channel, table.userId),
-}));
 
 // Chat message likes table for real-time chat system
 export const chatMessageLikes = pgTable("chat_message_likes", {
