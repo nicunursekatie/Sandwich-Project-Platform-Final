@@ -366,7 +366,7 @@ export const emailMessages = pgTable("email_messages", {
   isArchived: boolean("is_archived").notNull().default(false),
   isTrashed: boolean("is_trashed").notNull().default(false),
   isDraft: boolean("is_draft").notNull().default(false),
-  // REMOVED: parentMessageId - No threading, each email is independent
+  parentMessageId: integer("parent_message_id"), // Reference to parent message for threading
   contextType: varchar("context_type"), // 'project', 'task', 'suggestion', etc.
   contextId: varchar("context_id"), // ID of the related entity
   contextTitle: varchar("context_title"), // Display name of related entity
@@ -1179,6 +1179,11 @@ export const eventRequests = pgTable("event_requests", {
   contactMethod: varchar("contact_method"), // 'phone', 'email', 'both' - preferred contact method
   nextFollowUpDate: timestamp("next_follow_up_date"), // Scheduled next attempt date
   unresponsiveNotes: text("unresponsive_notes"), // Detailed notes about unresponsive status
+  
+  // Google Sheets sync tracking
+  lastSyncedAt: timestamp("last_synced_at"), // When this record was last synced with Google Sheets
+  driverDetails: jsonb("driver_details"), // Additional driver assignment details
+  speakerDetails: jsonb("speaker_details"), // Additional speaker assignment details
   
   // Audit tracking
   createdAt: timestamp("created_at").defaultNow().notNull(),
