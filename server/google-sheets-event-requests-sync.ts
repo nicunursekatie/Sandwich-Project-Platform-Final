@@ -492,11 +492,18 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
  */
 export function getEventRequestsGoogleSheetsService(storage: IStorage): EventRequestsGoogleSheetsService | null {
   try {
+    // Validate all required environment variables for Google Sheets authentication
+    if (!process.env.GOOGLE_PROJECT_ID || !process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+      console.warn('Google Sheets authentication not configured - missing GOOGLE_PROJECT_ID, GOOGLE_CLIENT_EMAIL, or GOOGLE_PRIVATE_KEY');
+      return null;
+    }
+    
     if (!process.env.EVENT_REQUESTS_SHEET_ID) {
       console.warn('EVENT_REQUESTS_SHEET_ID not configured');
       return null;
     }
     
+    console.log('✅ All Event Requests Google Sheets environment variables validated');
     return new EventRequestsGoogleSheetsService(storage);
   } catch (error) {
     console.error('Failed to create Event Requests Google Sheets service:', error);
