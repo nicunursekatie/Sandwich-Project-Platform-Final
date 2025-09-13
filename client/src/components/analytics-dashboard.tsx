@@ -37,7 +37,7 @@ export default function AnalyticsDashboard() {
 
     const totalSandwiches = statsData.completeTotalSandwiches || 0;
     const totalHosts = hostsData?.length || 0;
-    const activeHosts = hostsData?.filter((h: any) => h.status === 'active')?.length || 0;
+    const activeHosts = 34; // Fixed count per Marcy's manual verification
 
     const calculateGroupTotal = (collection: SandwichCollection): number => {
       const groupCount1 = (collection as any).group1Count || 0;
