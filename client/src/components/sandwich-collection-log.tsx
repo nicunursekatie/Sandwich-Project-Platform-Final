@@ -72,7 +72,9 @@ export default function SandwichCollectionLog() {
     collectionDate: ""
   });
   const [searchFilters, setSearchFilters] = useState({
+    globalSearch: "",
     hostName: "",
+    groupName: "",
     collectionDateFrom: "",
     collectionDateTo: "",
     createdAtFrom: "",
@@ -81,7 +83,9 @@ export default function SandwichCollectionLog() {
 
   // Debounced search filters for actual queries
   const [debouncedSearchFilters, setDebouncedSearchFilters] = useState({
+    globalSearch: "",
     hostName: "",
+    groupName: "",
     collectionDateFrom: "",
     collectionDateTo: "",
     createdAtFrom: "",
@@ -223,6 +227,40 @@ export default function SandwichCollectionLog() {
           filteredCollections = filteredCollections.filter((c: SandwichCollection) => 
             new Date(c.submittedAt) <= toDate
           );
+        }
+        
+        // Global search filter - searches across multiple fields
+        if (debouncedSearchFilters.globalSearch) {
+          const searchTerm = debouncedSearchFilters.globalSearch.toLowerCase();
+          filteredCollections = filteredCollections.filter((c: SandwichCollection) => {
+            // Search in host name
+            const hostNameMatch = c.hostName?.toLowerCase().includes(searchTerm);
+            
+            // Search in group names using the getGroupCollections function
+            const groupData = getGroupCollections(c);
+            const groupNameMatch = groupData.some(group => 
+              group.groupName?.toLowerCase().includes(searchTerm)
+            );
+            
+            // Search in collection date
+            const formattedDate = formatDate(c.collectionDate);
+            const dateMatch = formattedDate.toLowerCase().includes(searchTerm);
+            
+            return hostNameMatch || groupNameMatch || dateMatch;
+          });
+          console.log(`Global search filter '${searchTerm}' applied: ${filteredCollections.length} results`);
+        }
+        
+        // Group name specific filter
+        if (debouncedSearchFilters.groupName) {
+          const searchTerm = debouncedSearchFilters.groupName.toLowerCase();
+          filteredCollections = filteredCollections.filter((c: SandwichCollection) => {
+            const groupData = getGroupCollections(c);
+            return groupData.some(group => 
+              group.groupName?.toLowerCase().includes(searchTerm)
+            );
+          });
+          console.log(`Group name filter '${searchTerm}' applied: ${filteredCollections.length} results`);
         }
         
         // Apply sorting
@@ -1218,6 +1256,37 @@ export default function SandwichCollectionLog() {
       </div>
       
       <div className="px-3 sm:px-6 py-4">
+        {/* Global Search Field - Prominent placement at top */}
+        <div className="mb-6">
+          <div className="relative max-w-md mx-auto">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Scan className="h-5 w-5 text-slate-400" />
+            </div>
+            <Input
+              data-testid="input-global-search"
+              type="text"
+              placeholder="Search collections (host names, groups, dates...)"
+              value={searchFilters.globalSearch}
+              onChange={(e) => setSearchFilters(prev => ({ ...prev, globalSearch: e.target.value }))}
+              className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-base"
+            />
+            {searchFilters.globalSearch && (
+              <button
+                data-testid="button-clear-global-search"
+                onClick={() => setSearchFilters(prev => ({ ...prev, globalSearch: "" }))}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <X className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+              </button>
+            )}
+          </div>
+          {searchFilters.globalSearch && (
+            <p className="text-center text-sm text-slate-600 mt-2">
+              Searching across host names, group names, and dates
+            </p>
+          )}
+        </div>
+        
         <div className="flex flex-col gap-3 mb-4">
           {/* Enhanced Display-Friendly Stats */}
           <div className="space-y-4">
@@ -1345,11 +1414,12 @@ export default function SandwichCollectionLog() {
       {/* Filter Panel */}
       {showFilters && (
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div>
               <Label htmlFor="hostFilter" className="text-sm font-medium text-slate-700">Host/Location Name</Label>
               <Input
                 id="hostFilter"
+                data-testid="input-filter-host"
                 placeholder="Search by host name..."
                 value={searchFilters.hostName}
                 onChange={(e) => handleFilterChange({ hostName: e.target.value })}
@@ -1371,9 +1441,29 @@ export default function SandwichCollectionLog() {
               </div>
             </div>
             <div>
+              <Label htmlFor="groupFilter" className="text-sm font-medium text-slate-700">Group Name</Label>
+              <Input
+                id="groupFilter"
+                data-testid="input-filter-group"
+                placeholder="Search by group name..."
+                value={searchFilters.groupName}
+                onChange={(e) => handleFilterChange({ groupName: e.target.value })}
+                className="mt-1"
+              />
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleFilterChange({ groupName: "" })}
+                  className="px-3 py-1 text-xs bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
+                >
+                  All Groups
+                </button>
+              </div>
+            </div>
+            <div>
               <Label htmlFor="collectionFromDate" className="text-sm font-medium text-slate-700">Collection Date From</Label>
               <Input
                 id="collectionFromDate"
+                data-testid="input-filter-date-from"
                 type="date"
                 value={searchFilters.collectionDateFrom}
                 onChange={(e) => handleFilterChange({ collectionDateFrom: e.target.value })}
@@ -1384,6 +1474,7 @@ export default function SandwichCollectionLog() {
               <Label htmlFor="collectionToDate" className="text-sm font-medium text-slate-700">Collection Date To</Label>
               <Input
                 id="collectionToDate"
+                data-testid="input-filter-date-to"
                 type="date"
                 value={searchFilters.collectionDateTo}
                 onChange={(e) => handleFilterChange({ collectionDateTo: e.target.value })}
@@ -1394,6 +1485,7 @@ export default function SandwichCollectionLog() {
               <Label htmlFor="createdFromDate" className="text-sm font-medium text-slate-700">Created Date From</Label>
               <Input
                 id="createdFromDate"
+                data-testid="input-filter-created-from"
                 type="date"
                 value={searchFilters.createdAtFrom}
                 onChange={(e) => handleFilterChange({ createdAtFrom: e.target.value })}
@@ -1404,6 +1496,7 @@ export default function SandwichCollectionLog() {
               <Label htmlFor="createdToDate" className="text-sm font-medium text-slate-700">Created Date To</Label>
               <Input
                 id="createdToDate"
+                data-testid="input-filter-created-to"
                 type="date"
                 value={searchFilters.createdAtTo}
                 onChange={(e) => handleFilterChange({ createdAtTo: e.target.value })}
