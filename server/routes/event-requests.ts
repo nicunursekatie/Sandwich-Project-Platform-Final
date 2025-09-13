@@ -716,6 +716,8 @@ router.post(
         return res.status(404).json({ message: "Event request not found" });
       }
 
+      console.log("Original event desiredEventDate:", originalEvent.desiredEventDate);
+
       const updates: any = {
         followUpMethod: method,
         followUpDate: new Date(),
@@ -724,6 +726,13 @@ router.post(
 
       // Both email and call follow-ups should move event to in_process
       updates.status = 'in_process';
+      
+      // Explicitly preserve critical fields that must not be lost during status transitions
+      if (originalEvent.desiredEventDate) {
+        updates.desiredEventDate = originalEvent.desiredEventDate;
+        console.log("Explicitly preserving desiredEventDate:", updates.desiredEventDate);
+      }
+      
       if (method === 'call' && updatedEmail) {
         // Update the main email field if a corrected email is provided during call follow-up
         updates.email = updatedEmail;
@@ -736,7 +745,11 @@ router.post(
         updates.followUpNotes = existingNotes ? `${existingNotes}\n\n${notes}` : notes;
       }
 
+      console.log("Updates object before storage call:", JSON.stringify(updates, null, 2));
+
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
+
+      console.log("Updated event desiredEventDate after storage call:", updatedEventRequest?.desiredEventDate);
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: "Event request not found" });
