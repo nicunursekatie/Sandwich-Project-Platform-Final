@@ -2877,6 +2877,17 @@ export default function EventRequestsManagement() {
                     </div>
                   )}
                 </div>
+
+                {/* Toolkit Status - moved from Assignments */}
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#236383] border-opacity-20">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-500 text-sm flex-shrink-0">📋</span>
+                    <span className="text-sm font-medium text-gray-700">Toolkit</span>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus().color}`}>
+                    {getToolkitStatus().badge}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -3406,27 +3417,11 @@ export default function EventRequestsManagement() {
               </h4>
               <div className="space-y-4">
                 
-                {/* Toolkit Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Toolkit</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getToolkitStatus().color}`}>
-                    {getToolkitStatus().badge}
-                  </span>
-                </div>
-
                 {/* Driver Status */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Drivers</span>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${getDriverStatus().color}`}>
                     {getDriverStatus().badge}
-                  </span>
-                </div>
-
-                {/* Volunteer Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Volunteers</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getVolunteerStatus().color}`}>
-                    {getVolunteerStatus().badge}
                   </span>
                 </div>
 
@@ -3710,73 +3705,6 @@ export default function EventRequestsManagement() {
                     </div>
                   )}
                 </div>
-
-                {/* TSP Contact Assignment */}
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">TSP Contact</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
-                      onClick={() => {
-                        setAssigningContactRequest(request);
-                        setShowTspContactDialog(true);
-                        const currentContacts = [
-                          (request as any).tspContact,
-                          (request as any).tspContactAssigned,
-                          (request as any).additionalContact1,
-                          (request as any).additionalContact2,
-                          (request as any).customTspContact,
-                        ].filter(Boolean);
-                        setSelectedTspContacts(currentContacts);
-                      }}
-                    >
-                      <Users className="w-3 h-3 mr-1" />
-                      Manage TSP Contact
-                    </Button>
-                  </div>
-                  
-                  {/* TSP Contact Display - Visually distinct and larger */}
-                  <div className="bg-white border-2 border-[#236383] rounded-lg p-4">
-                    {(() => {
-                      const currentContacts = [
-                        (request as any).tspContact,
-                        (request as any).tspContactAssigned,
-                        (request as any).additionalContact1,
-                        (request as any).additionalContact2,
-                        (request as any).customTspContact,
-                      ].filter(Boolean);
-
-                      if (currentContacts.length === 0) {
-                        return (
-                          <div className="text-center py-3">
-                            <span className="text-gray-400 text-sm italic">No TSP contact assigned</span>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="space-y-2">
-                          <div className="text-xs font-medium text-[#236383] uppercase tracking-wide mb-2">
-                            Assigned TSP Team ({currentContacts.length})
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {currentContacts.map((contactId: string, index: number) => (
-                              <div key={index} className="flex items-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm">
-                                <Users className="w-4 h-4 mr-2" />
-                                {getUserDisplayName(contactId)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-
 
                 {/* Speaker Assignment */}
                 <div className="space-y-2">
@@ -4165,6 +4093,72 @@ export default function EventRequestsManagement() {
                     <span className="text-yellow-700">{(request as any).volunteerNotes}</span>
                   </div>
                 )}
+
+                {/* TSP Contact Assignment */}
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">TSP Contact</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
+                      onClick={() => {
+                        setAssigningContactRequest(request);
+                        setShowTspContactDialog(true);
+                        const currentContacts = [
+                          (request as any).tspContact,
+                          (request as any).tspContactAssigned,
+                          (request as any).additionalContact1,
+                          (request as any).additionalContact2,
+                          (request as any).customTspContact,
+                        ].filter(Boolean);
+                        setSelectedTspContacts(currentContacts);
+                      }}
+                    >
+                      <Users className="w-3 h-3 mr-1" />
+                      Manage TSP Contact
+                    </Button>
+                  </div>
+                  
+                  {/* TSP Contact Display - Visually distinct and larger */}
+                  <div className="bg-white border-2 border-[#236383] rounded-lg p-4">
+                    {(() => {
+                      const currentContacts = [
+                        (request as any).tspContact,
+                        (request as any).tspContactAssigned,
+                        (request as any).additionalContact1,
+                        (request as any).additionalContact2,
+                        (request as any).customTspContact,
+                      ].filter(Boolean);
+
+                      if (currentContacts.length === 0) {
+                        return (
+                          <div className="text-center py-3">
+                            <span className="text-gray-400 text-sm italic">No TSP contact assigned</span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-[#236383] uppercase tracking-wide mb-2">
+                            Assigned TSP Team ({currentContacts.length})
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {currentContacts.map((contactId: string, index: number) => (
+                              <div key={index} className="flex items-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm">
+                                <Users className="w-4 h-4 mr-2" />
+                                {getUserDisplayName(contactId)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
