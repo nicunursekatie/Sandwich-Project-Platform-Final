@@ -189,7 +189,6 @@ export default function AnalyticsDashboard() {
             {analyticsData.totalHosts}
           </div>
           <p className="text-[#646464] font-medium">Total Hosts</p>
-          <p className="text-sm text-green-600 mt-2">{analyticsData.activeHosts} active hosts</p>
         </div>
       </div>
 
