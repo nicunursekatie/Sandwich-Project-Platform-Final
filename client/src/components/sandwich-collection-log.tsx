@@ -384,7 +384,7 @@ export default function SandwichCollectionLog() {
   };
 
   // Determine if we're showing filtered data and get all data for calculations
-  const hasActiveFilters = Object.values(debouncedSearchFilters).some(v => v);
+  const hasActiveFilters = Object.values(debouncedSearchFilters).some(v => v && v.trim() !== "");
   
   // Get all filtered collections when filters are active for statistics calculation
   const { data: allFilteredData } = useQuery({
@@ -466,16 +466,21 @@ export default function SandwichCollectionLog() {
   });
 
   // Calculate current statistics to display
-  const currentStats = hasActiveFilters 
-    ? calculateFilteredStats(allFilteredData?.collections || [])
-    : {
-        totalEntries: totalStats?.totalEntries || 0,
-        individualSandwiches: totalStats?.individualSandwiches || 0,
-        groupSandwiches: totalStats?.groupSandwiches || 0,
-        completeTotalSandwiches: totalStats?.completeTotalSandwiches || 0,
-        hostName: null,
-        dateRange: null
-      };
+  // If we have active filters and filtered data is available, use filtered stats
+  // Otherwise if we need all data (client-side filtering), calculate from current collections
+  // Finally fallback to global stats
+  const currentStats = hasActiveFilters && allFilteredData?.collections ? 
+    calculateFilteredStats(allFilteredData.collections) :
+    needsAllData && collections.length > 0 ?
+    calculateFilteredStats(collections) :
+    {
+      totalEntries: totalStats?.totalEntries || 0,
+      individualSandwiches: totalStats?.individualSandwiches || 0,
+      groupSandwiches: totalStats?.groupSandwiches || 0,
+      completeTotalSandwiches: totalStats?.completeTotalSandwiches || 0,
+      hostName: null,
+      dateRange: null
+    };
 
   // When needsAllData is true, filtering and pagination are already handled in the queryFn
   // When needsAllData is false, server-side pagination and sorting are used
