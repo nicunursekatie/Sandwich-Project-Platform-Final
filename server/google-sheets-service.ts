@@ -76,9 +76,7 @@ export class GoogleSheetsService {
         hasBackslashN: cleanPrivateKey.includes('\\n'),
         hasRealNewlines: cleanPrivateKey.includes('\n'),
         hasBeginHeader: cleanPrivateKey.includes('-----BEGIN'),
-        length: cleanPrivateKey.length,
-        firstChars: cleanPrivateKey.substring(0, 50),
-        lastChars: cleanPrivateKey.substring(cleanPrivateKey.length - 50)
+        length: cleanPrivateKey.length
       });
       
       // Handle escaped newlines in multiple formats
@@ -132,25 +130,20 @@ export class GoogleSheetsService {
         properFormat: cleanPrivateKey.split('\n')[0] === '-----BEGIN PRIVATE KEY-----'
       });
 
-      // Use GoogleAuth instead of direct JWT for better Node.js v20 compatibility
+      // Use direct JWT authentication - simpler and more reliable
       try {
-        console.log('🔧 Attempting GoogleAuth with service account...');
+        console.log('🔧 Attempting direct JWT authentication...');
         
-        // Use minimal credentials - only essential fields to avoid empty private_key_id issues
-        const credentials = {
-          client_email: clientEmail,
-          private_key: cleanPrivateKey
-        };
+        // Simple JWT auth using google.auth.JWT directly
+        const auth = new google.auth.JWT(
+          clientEmail,
+          undefined,
+          cleanPrivateKey,
+          ['https://www.googleapis.com/auth/spreadsheets']
+        );
 
-        const auth = new google.auth.GoogleAuth({
-          credentials: credentials,
-          scopes: ['https://www.googleapis.com/auth/spreadsheets']
-        });
-
-        // Get and test the auth client
-        const authClient = await auth.getClient();
-        this.auth = authClient as JWT;
-        this.sheets = google.sheets({ version: 'v4', auth: authClient });
+        this.auth = auth;
+        this.sheets = google.sheets({ version: 'v4', auth });
         
         // Test with a simple API call to verify authentication actually works
         console.log('🔧 Testing authentication with real API call...');
@@ -166,16 +159,17 @@ export class GoogleSheetsService {
             spreadsheetId: testResponse.data.spreadsheetId,
             title: testResponse.data.properties?.title || 'Unknown'
           });
+          
+          console.log('✅ Google Sheets JWT authentication fully verified');
+          return;
+          
         } catch (testError) {
           console.error('❌ Authentication test failed:', testError.message);
           throw new Error(`JWT authentication test failed: ${testError.message}`);
         }
         
-        console.log('✅ Google Sheets GoogleAuth authentication fully verified');
-        return;
-        
       } catch (authError) {
-        console.log('⚠️ GoogleAuth failed, trying file-based auth as fallback:', (authError as Error).message);
+        console.log('⚠️ JWT auth failed, trying simplified approach:', (authError as Error).message);
       }
 
       // Fallback to file-based authentication if JWT fails

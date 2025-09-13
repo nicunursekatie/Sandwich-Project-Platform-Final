@@ -58,7 +58,7 @@ export class GoogleSheetsDiagnostics {
           severity: 'critical',
           description: `GOOGLE_PRIVATE_KEY appears to be incomplete (${value.length} characters)`,
           solution: 'Verify you copied the complete private key from your Google Cloud service account JSON file',
-          detailsFound: { length: value.length, preview: value.substring(0, 100) + '...' }
+          detailsFound: { length: value.length }
         });
       } else if (varName === 'GOOGLE_SERVICE_ACCOUNT_EMAIL' && !value.includes('@')) {
         results.push({
