@@ -69,7 +69,7 @@ export class GoogleSheetsService {
         throw new Error('Missing Google service account credentials (GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_PROJECT_ID)');
       }
 
-      // Handle private key format more robustly
+      // Handle private key format more robustly - Node.js v20 compatibility fix
       let cleanPrivateKey = privateKey;
       
       console.log('🔧 Original private key format check:', {
@@ -79,10 +79,43 @@ export class GoogleSheetsService {
         length: cleanPrivateKey.length
       });
       
-      // Handle escaped newlines in multiple formats
+      // **NODE.JS v20 COMPATIBILITY FIX** - Handle all newline format issues
+      // Replit often stores literal \n characters instead of actual newlines
       if (cleanPrivateKey.includes('\\n')) {
         cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
-        console.log('🔧 Converted \\n to actual newlines');
+        console.log('🔧 Converted \\n to actual newlines (Node.js v20 fix)');
+      }
+      
+      // Additional newline handling for different platforms
+      cleanPrivateKey = cleanPrivateKey
+        .replace(/\\r\\n/g, '\n')  // Handle Windows-style escaped newlines
+        .replace(/\\r/g, '\n')     // Handle Mac-style escaped newlines
+        .replace(/\r\n/g, '\n')    // Normalize Windows newlines
+        .replace(/\r/g, '\n');     // Normalize Mac newlines
+      
+      // **CRITICAL NODE.JS v20 FIX** - Handle single-line key format from Replit
+      if (!cleanPrivateKey.includes('\n') && cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        console.log('🔧 Detected single-line private key - fixing for Node.js v20...');
+        
+        // Extract the actual key content between headers
+        const beginMarker = '-----BEGIN PRIVATE KEY-----';
+        const endMarker = '-----END PRIVATE KEY-----';
+        const beginIndex = cleanPrivateKey.indexOf(beginMarker);
+        const endIndex = cleanPrivateKey.indexOf(endMarker);
+        
+        if (beginIndex !== -1 && endIndex !== -1) {
+          const keyContent = cleanPrivateKey.substring(beginIndex + beginMarker.length, endIndex).trim();
+          
+          // Rebuild key with proper line breaks every 64 characters
+          const lines = [beginMarker];
+          for (let i = 0; i < keyContent.length; i += 64) {
+            lines.push(keyContent.substring(i, i + 64));
+          }
+          lines.push(endMarker);
+          
+          cleanPrivateKey = lines.join('\n');
+          console.log('🔧 Rebuilt private key with proper line breaks for Node.js v20');
+        }
       }
       
       // Remove any quotes if the entire key is wrapped in quotes
@@ -149,18 +182,22 @@ export class GoogleSheetsService {
         console.log('🔧 Testing authentication with real API call...');
         
         try {
-          // Make a minimal API call to test authentication
+          // **REAL AUTH TEST** - Test against user's ACTUAL spreadsheet, not demo
+          if (!this.config.spreadsheetId) {
+            throw new Error('No spreadsheetId provided for authentication test');
+          }
+          
           const testResponse = await this.sheets.spreadsheets.get({
-            spreadsheetId: this.config.spreadsheetId || '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', // Use fallback spreadsheet for test
+            spreadsheetId: this.config.spreadsheetId, // Test user's REAL spreadsheet
             fields: 'spreadsheetId,properties.title'
           });
           
-          console.log('✅ Authentication test successful:', {
+          console.log('✅ Authentication test successful against USER\'S spreadsheet:', {
             spreadsheetId: testResponse.data.spreadsheetId,
             title: testResponse.data.properties?.title || 'Unknown'
           });
           
-          console.log('✅ Google Sheets JWT authentication fully verified');
+          console.log('✅ Google Sheets JWT authentication FULLY VERIFIED against actual spreadsheet');
           return;
           
         } catch (testError) {
@@ -199,17 +236,22 @@ export class GoogleSheetsService {
       console.log('🔧 Testing file-based authentication with real API call...');
       
       try {
+        // **REAL AUTH TEST** - Test against user's ACTUAL spreadsheet  
+        if (!this.config.spreadsheetId) {
+          throw new Error('No spreadsheetId provided for file-based authentication test');
+        }
+        
         const testResponse = await this.sheets.spreadsheets.get({
-          spreadsheetId: this.config.spreadsheetId || '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+          spreadsheetId: this.config.spreadsheetId, // Test user's REAL spreadsheet
           fields: 'spreadsheetId,properties.title'
         });
         
-        console.log('✅ File-based authentication test successful:', {
+        console.log('✅ File-based authentication test successful against USER\'S spreadsheet:', {
           spreadsheetId: testResponse.data.spreadsheetId,
           title: testResponse.data.properties?.title || 'Unknown'
         });
       } catch (testError) {
-        console.error('❌ File-based authentication test failed:', testError.message);
+        console.error('❌ File-based authentication test failed against user\'s spreadsheet:', testError.message);
         throw new Error(`File-based JWT authentication test failed: ${testError.message}`);
       }
       
