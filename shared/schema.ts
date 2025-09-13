@@ -393,6 +393,8 @@ export const messageRecipients = pgTable(
     notificationSent: boolean("notification_sent").notNull().default(false),
     emailSentAt: timestamp("email_sent_at"),
     contextAccessRevoked: boolean("context_access_revoked").default(false),
+    initiallyNotified: boolean("initially_notified").notNull().default(false),
+    initiallyNotifiedAt: timestamp("initially_notified_at"),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => ({
@@ -415,6 +417,7 @@ export const kudosTracking = pgTable(
     recipientId: text("recipient_id").notNull(),
     contextType: text("context_type").notNull(), // 'project' or 'task'
     contextId: text("context_id").notNull(),
+    entityName: text("entity_name").notNull(), // Store the project/task name for display
     messageId: integer("message_id").references(() => messages.id, {
       onDelete: "cascade",
     }),

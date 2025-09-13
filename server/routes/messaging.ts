@@ -231,6 +231,58 @@ router.post("/kudos/mark-read", async (req, res) => {
 });
 
 /**
+ * Get unnotified kudos for login notifications
+ */
+router.get("/kudos/unnotified", async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const unnotifiedKudos = await messagingService.getUnnotifiedKudos(user.id);
+
+    res.status(200).json(unnotifiedKudos);
+  } catch (error) {
+    console.error("Error fetching unnotified kudos:", error);
+    res.status(500).json({ error: "Failed to fetch unnotified kudos", details: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * Mark kudos as initially notified
+ */
+router.post("/kudos/mark-initial-notified", async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const { kudosIds } = req.body;
+    
+    if (!Array.isArray(kudosIds) || kudosIds.length === 0) {
+      return res.status(400).json({ error: "Invalid kudos IDs array required" });
+    }
+
+    // Validate that all kudosIds are numbers
+    if (!kudosIds.every(id => typeof id === 'number')) {
+      return res.status(400).json({ error: "All kudos IDs must be numbers" });
+    }
+
+    await messagingService.markKudosInitiallyNotified(user.id, kudosIds);
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Marked ${kudosIds.length} kudos as initially notified` 
+    });
+  } catch (error) {
+    console.error("Error marking kudos as initially notified:", error);
+    res.status(500).json({ error: "Failed to mark kudos as initially notified", details: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
  * Get unread messages
  */
 router.get("/unread", async (req, res) => {

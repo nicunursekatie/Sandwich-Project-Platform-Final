@@ -52,6 +52,7 @@ import Governance from "@/pages/governance";
 import GmailStyleInbox from "@/components/gmail-style-inbox";
 import { ToolkitTabs } from "@/components/toolkit-tabs";
 import { KudosInbox } from "@/components/kudos-inbox";
+import { KudosLoginNotifier } from "@/components/kudos-login-notifier";
 import SocketChatHub from "@/components/socket-chat-hub";
 import EventsViewer from "@/components/events-viewer";
 import SignUpGeniusViewer from "@/components/signup-genius-viewer";
@@ -383,11 +384,15 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
-      {/* Announcement Banner */}
-      <AnnouncementBanner />
-      {/* Top Header */}
-      <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-hidden">
+    <>
+      {/* Login Kudos Notifier */}
+      <KudosLoginNotifier />
+      
+      <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+        {/* Announcement Banner */}
+        <AnnouncementBanner />
+        {/* Top Header */}
+        <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-hidden">
         <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
           {/* Mobile menu button - positioned first for easy access */}
           <button
@@ -581,7 +586,8 @@ export default function Dashboard({ initialSection = "dashboard" }: { initialSec
             </div>)
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

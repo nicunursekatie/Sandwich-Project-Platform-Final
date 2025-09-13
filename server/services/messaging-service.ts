@@ -1225,6 +1225,74 @@ export class MessagingService {
       throw error;
     }
   }
+
+  /**
+   * Get unnotified kudos for login notifications
+   */
+  async getUnnotifiedKudos(recipientId: string): Promise<MessageWithSender[]> {
+    try {
+      const query = db
+        .select({
+          message: messages,
+          senderName: sql<string>`COALESCE(${users.displayName}, ${messages.sender}, 'Unknown User')`,
+          senderEmail: users.email,
+          entityName: kudosTracking.entityName,
+        })
+        .from(messageRecipients)
+        .innerJoin(messages, eq(messages.id, messageRecipients.messageId))
+        .leftJoin(users, eq(users.id, messages.senderId))
+        .innerJoin(kudosTracking, eq(kudosTracking.messageId, messages.id))
+        .where(
+          and(
+            eq(messageRecipients.recipientId, recipientId),
+            eq(messageRecipients.read, false),
+            eq(messageRecipients.initiallyNotified, false),
+            isNull(messages.deletedAt),
+            eq(messageRecipients.contextAccessRevoked, false),
+          ),
+        )
+        .orderBy(desc(messages.createdAt))
+        .limit(10);
+
+      const results = await query;
+
+      return results.map((row) => ({
+        ...row.message,
+        senderName: row.senderName || "Unknown User",
+        senderEmail: row.senderEmail || undefined,
+        entityName: row.entityName || "Unknown Entity",
+      }));
+    } catch (error) {
+      console.error("Failed to get unnotified kudos:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark kudos as initially notified (without marking as read)
+   */
+  async markKudosInitiallyNotified(
+    recipientId: string,
+    kudosIds: number[],
+  ): Promise<void> {
+    try {
+      await db
+        .update(messageRecipients)
+        .set({
+          initiallyNotified: true,
+          initiallyNotifiedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(messageRecipients.recipientId, recipientId),
+            inArray(messageRecipients.messageId, kudosIds),
+          ),
+        );
+    } catch (error) {
+      console.error("Failed to mark kudos as initially notified:", error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
