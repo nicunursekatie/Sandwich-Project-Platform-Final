@@ -417,7 +417,7 @@ export const kudosTracking = pgTable(
     recipientId: text("recipient_id").notNull(),
     contextType: text("context_type").notNull(), // 'project' or 'task'
     contextId: text("context_id").notNull(),
-    entityName: text("entity_name").notNull(), // Store the project/task name for display
+    entityName: text("entity_name").notNull().default("Legacy Entry"), // Store the project/task name for display
     messageId: integer("message_id").references(() => messages.id, {
       onDelete: "cascade",
     }),
