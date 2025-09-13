@@ -1005,17 +1005,33 @@ export default function EventRequestsManagement() {
       // Optimistically update the event status
       queryClient.setQueryData(["/api/event-requests"], (old: any) => {
         if (!old) return old;
-        return old.map((event: any) =>
-          event.id === data.id
-            ? {
-                ...event,
-                status: "in_process", // Both email and call follow-ups should go to in_process
-                followUpMethod: data.method,
-                updatedEmail: data.updatedEmail,
-                followUpDate: new Date().toISOString(),
-              }
-            : event,
-        );
+        return old.map((event: any) => {
+          if (event.id === data.id) {
+            // Build update object with only defined fields to avoid overwriting with undefined
+            const updateFields: any = {
+              status: "in_process", // Both email and call follow-ups should go to in_process
+              followUpMethod: data.method,
+              followUpDate: new Date().toISOString(),
+            };
+            
+            // Only set updatedEmail if it's provided (for call follow-ups)
+            if (data.updatedEmail !== undefined) {
+              updateFields.updatedEmail = data.updatedEmail;
+            }
+            
+            // Only set notes if it's provided (for call follow-ups)
+            if (data.notes !== undefined) {
+              updateFields.notes = data.notes;
+            }
+            
+            // Preserve ALL existing event fields, especially desiredEventDate
+            return {
+              ...event,
+              ...updateFields,
+            };
+          }
+          return event;
+        });
       });
 
       return { previousEvents };
