@@ -418,7 +418,7 @@ router.get('/projects/config/check', async (req, res) => {
   try {
     const requiredEnvVars = [
       'GOOGLE_PROJECT_ID',
-      'GOOGLE_CLIENT_EMAIL', 
+      'GOOGLE_SERVICE_ACCOUNT_EMAIL', 
       'GOOGLE_PRIVATE_KEY',
       'GOOGLE_SPREADSHEET_ID'
     ];
@@ -711,7 +711,7 @@ router.get('/event-requests/config/check', async (req, res) => {
   try {
     const requiredEnvVars = [
       'GOOGLE_PROJECT_ID',
-      'GOOGLE_CLIENT_EMAIL', 
+      'GOOGLE_SERVICE_ACCOUNT_EMAIL', 
       'GOOGLE_PRIVATE_KEY',
       'EVENT_REQUESTS_SHEET_ID'
     ];

@@ -17,12 +17,12 @@ export class GoogleSheetsMeetingExporter {
   private async initializeAuth() {
     // Use JWT authentication like the working Google Sheets integrations
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    if (!privateKey || !process.env.GOOGLE_CLIENT_EMAIL) {
+    if (!privateKey || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
       throw new Error('Google Sheets credentials not configured');
     }
 
     this.auth = new google.auth.JWT(
-      process.env.GOOGLE_CLIENT_EMAIL,
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       undefined,
       privateKey,
       [
