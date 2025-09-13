@@ -542,12 +542,22 @@ export class GoogleSheetsService {
 // Export singleton instance
 let sheetsService: GoogleSheetsService | null = null;
 
-export function getGoogleSheetsService(): GoogleSheetsService | null {
+export function getGoogleSheetsService(customConfig?: GoogleSheetsConfig): GoogleSheetsService | null {
   if (!process.env.GOOGLE_PROJECT_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
     console.log('Google Sheets service not configured - missing environment variables');
     return null;
   }
 
+  // If custom config is provided, create a new instance
+  if (customConfig) {
+    if (!customConfig.spreadsheetId) {
+      console.log('Google Sheets service not configured - missing spreadsheetId in custom config');
+      return null;
+    }
+    return new GoogleSheetsService(customConfig);
+  }
+
+  // Default singleton behavior for backward compatibility
   if (!sheetsService) {
     const config: GoogleSheetsConfig = {
       spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID || '',
@@ -563,4 +573,19 @@ export function getGoogleSheetsService(): GoogleSheetsService | null {
   }
 
   return sheetsService;
+}
+
+// Project-specific Google Sheets service
+export function getProjectsGoogleSheetsService(): GoogleSheetsService | null {
+  if (!process.env.PROJECTS_SHEET_ID) {
+    console.log('Projects Google Sheets service not configured - missing PROJECTS_SHEET_ID');
+    return null;
+  }
+
+  const config: GoogleSheetsConfig = {
+    spreadsheetId: process.env.PROJECTS_SHEET_ID,
+    worksheetName: process.env.PROJECTS_WORKSHEET_NAME || 'Sheet1'
+  };
+
+  return getGoogleSheetsService(config);
 }

@@ -1,4 +1,4 @@
-import { getGoogleSheetsService, SheetRow } from './google-sheets-service';
+import { getProjectsGoogleSheetsService, SheetRow } from './google-sheets-service';
 import type { IStorage } from './storage';
 import { Project } from '@shared/schema';
 
@@ -9,9 +9,9 @@ export class GoogleSheetsSyncService {
    * Sync projects from database to Google Sheets - Only syncs meeting projects (those with googleSheetRowId)
    */
   async syncToGoogleSheets(): Promise<{ success: boolean; message: string; synced?: number }> {
-    const sheetsService = getGoogleSheetsService();
+    const sheetsService = getProjectsGoogleSheetsService();
     if (!sheetsService) {
-      return { success: false, message: 'Google Sheets service not configured' };
+      return { success: false, message: 'Projects Google Sheets service not configured - missing PROJECTS_SHEET_ID' };
     }
 
     try {
@@ -56,9 +56,9 @@ export class GoogleSheetsSyncService {
    * Sync from Google Sheets to database - Only syncs projects that have googleSheetRowId
    */
   async syncFromGoogleSheets(): Promise<{ success: boolean; message: string; updated?: number; created?: number }> {
-    const sheetsService = getGoogleSheetsService();
+    const sheetsService = getProjectsGoogleSheetsService();
     if (!sheetsService) {
-      return { success: false, message: 'Google Sheets service not configured' };
+      return { success: false, message: 'Projects Google Sheets service not configured - missing PROJECTS_SHEET_ID' };
     }
 
     try {
