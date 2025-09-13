@@ -1,0 +1,96 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 16.9 (84ade85)
+-- Dumped by pg_dump version 16.9
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: message_recipients; Type: TABLE DATA; Schema: public; Owner: neondb_owner
+--
+
+COPY public.message_recipients (id, message_id, recipient_id, read, read_at, notification_sent, email_sent_at, context_access_revoked, created_at) FROM stdin;
+4	31	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-07-09 01:41:23.843099
+5	32	user_1751492211973_0pi1jdl3p	f	\N	f	\N	f	2025-07-09 01:41:30.317089
+6	33	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-09 01:41:34.22351
+8	34	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-07-09 13:54:45.535903
+9	34	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-09 13:54:45.535903
+10	35	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-11 21:33:20.239733
+11	36	admin_1751065261945	t	2025-07-16 22:43:17.99	f	\N	f	2025-07-11 21:34:36.37908
+7	34	admin_1751065261945	t	2025-07-16 22:53:03.637	f	\N	f	2025-07-09 13:54:45.535903
+24	68	admin_1751065261945	f	\N	f	\N	f	2025-07-22 00:31:05.685795
+25	77	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-23 02:54:20.537775
+26	78	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-23 02:54:26.607417
+27	79	admin_1751065261945	f	\N	f	\N	f	2025-07-23 03:09:21.46176
+28	80	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-23 03:10:08.525136
+29	81	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-23 03:10:12.070655
+31	86	admin_1751065261945	f	\N	f	\N	f	2025-07-23 23:09:33.957347
+32	87	user_1751072243271_fc8jaxl6u	f	\N	f	2025-07-24 00:56:36.149	f	2025-07-24 00:26:30.550813
+33	88	admin_1751065261945	f	\N	f	2025-07-24 00:56:54.075	f	2025-07-24 00:26:51.40065
+34	89	task-team	f	\N	f	\N	f	2025-07-24 01:59:10.748688
+35	90	user_1751250351194_sdteqpzz5	f	\N	f	\N	f	2025-07-24 02:00:33.068129
+36	91	task-team	f	\N	f	\N	f	2025-07-24 02:01:14.186299
+37	92	task-team	f	\N	f	\N	f	2025-07-24 02:02:29.109292
+38	93	task-team	f	\N	f	\N	f	2025-07-24 02:02:32.329853
+39	94	task-team	f	\N	f	\N	f	2025-07-24 02:02:43.903769
+40	95	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-07-24 02:37:29.617464
+30	82	user_1751071509329_mrkw2z95z	t	2025-08-03 03:50:33.482358	f	\N	f	2025-07-23 03:10:18.292988
+41	120	user_1751071509329_mrkw2z95z	t	2025-08-03 03:50:33.482358	f	\N	f	2025-08-03 03:35:59.680846
+42	121	user_1751071509329_mrkw2z95z	t	2025-08-03 03:50:33.482358	f	\N	f	2025-08-03 03:35:59.680846
+44	123	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-08-03 04:28:37.182177
+45	124	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-08-03 04:28:39.566135
+46	125	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-08-03 04:55:18.594463
+47	126	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-08-03 04:55:20.165578
+49	128	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-08-03 04:55:22.447669
+51	130	user_1751920534988_2cgbrae86	f	\N	f	\N	f	2025-08-03 04:55:24.59815
+52	131	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-08-03 04:55:25.758993
+53	132	user_1751975120117_tltz2rc1a	f	\N	f	\N	f	2025-08-03 04:55:26.964493
+43	122	user_1751071509329_mrkw2z95z	t	2025-08-03 20:16:45.017	f	\N	f	2025-08-03 04:27:13.809645
+50	129	user_1751492211973_0pi1jdl3p	t	2025-08-04 18:07:08.647	f	\N	f	2025-08-03 04:55:23.331362
+54	133	test-user-id	f	\N	f	\N	f	2025-08-15 01:54:19.673429
+55	134	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-08-15 01:54:32.933631
+56	135	test	f	\N	f	\N	f	2025-08-15 02:04:58.561172
+48	127	admin_1751065261945	t	2025-08-15 02:30:33.84	f	\N	f	2025-08-03 04:55:21.162163
+57	136	user_1751072243271_fc8jaxl6u	t	2025-08-16 01:44:08.185	f	\N	f	2025-08-15 03:15:57.631907
+58	137	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-08-26 16:34:30.680994
+59	138	user_1751072243271_fc8jaxl6u	f	\N	f	\N	f	2025-08-26 16:34:33.907038
+60	139	user_1751071509329_mrkw2z95z	f	\N	f	\N	f	2025-08-26 16:34:40.108426
+61	140	user_1751920534988_2cgbrae86	f	\N	f	\N	f	2025-08-26 16:34:41.654781
+62	141	user_1751493923615_nbcyq3am7	f	\N	f	\N	f	2025-08-26 16:34:43.156972
+63	142	user_1751975120117_tltz2rc1a	f	\N	f	\N	f	2025-08-26 16:34:44.312529
+64	143	user_1756855558936_ack1puej9	f	\N	f	\N	f	2025-09-04 21:59:09.77249
+65	144	user_1756855060322_pbabb7eby	f	\N	f	\N	f	2025-09-04 21:59:13.220294
+66	145	user_1756855523256_jqcp9jo5v	f	\N	f	\N	f	2025-09-04 21:59:16.217923
+67	146	user_1756942686167_5nh5ezldg	f	\N	f	\N	f	2025-09-04 21:59:18.047121
+68	147	user_1756855558936_ack1puej9	f	\N	f	\N	f	2025-09-04 22:14:06.147611
+69	148	user_1751920534988_2cgbrae86	f	\N	f	2025-09-09 19:14:17.226	f	2025-09-09 18:44:16.927108
+70	149	user_1756855389062_eifo00qut	f	\N	f	\N	f	2025-09-11 23:49:33.00973
+71	150	user_1751920534988_2cgbrae86	f	\N	f	\N	f	2025-09-11 23:49:33.995371
+72	151	user_1756942686167_5nh5ezldg	f	\N	f	\N	f	2025-09-11 23:49:36.304666
+73	152	user_1756855467079_aqi0dhwxk	f	\N	f	\N	f	2025-09-11 23:49:37.166966
+74	153	user_1757617766683_pvo8cmjyc	f	\N	f	\N	f	2025-09-11 23:49:38.44781
+\.
+
+
+--
+-- Name: message_recipients_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
+--
+
+SELECT pg_catalog.setval('public.message_recipients_id_seq', 74, true);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
