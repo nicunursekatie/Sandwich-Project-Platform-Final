@@ -857,6 +857,12 @@ export default function EventRequestsManagement() {
       return driver.name || "Unknown Driver";
     }
 
+    // Backward compatibility: try to find by name (for legacy data)
+    const driverByName = availableDrivers?.find((d: any) => d.name === driverId);
+    if (driverByName) {
+      return driverByName.name;
+    }
+
     // If not found in drivers, just return the ID as is (might be a custom name)
     return driverId;
   };

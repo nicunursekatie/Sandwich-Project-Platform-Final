@@ -23,7 +23,7 @@ interface Driver {
 interface DriverSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectDrivers: (drivers: string[]) => void;
+  onSelectDrivers: (driverIds: string[]) => void;
   selectedDrivers: string[];
   eventId: number;
   mode?: 'regular' | 'van';
@@ -44,14 +44,14 @@ export function DriverSelectionModal({
   currentCustomVanDriverName
 }: DriverSelectionModalProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [tempSelectedDrivers, setTempSelectedDrivers] = useState<string[]>(selectedDrivers);
+  const [tempSelectedDriverIds, setTempSelectedDriverIds] = useState<string[]>(selectedDrivers);
   const [tempVanDriverId, setTempVanDriverId] = useState<string | null>(currentVanDriverId || null);
   const [tempCustomVanDriverName, setTempCustomVanDriverName] = useState<string>(currentCustomVanDriverName || "");
   const [showCustomVanDriverInput, setShowCustomVanDriverInput] = useState(false);
 
   // Reset temp selection when modal opens
   useEffect(() => {
-    setTempSelectedDrivers(selectedDrivers);
+    setTempSelectedDriverIds(selectedDrivers);
     setTempVanDriverId(currentVanDriverId || null);
     setTempCustomVanDriverName(currentCustomVanDriverName || "");
   }, [selectedDrivers, currentVanDriverId, currentCustomVanDriverName, isOpen]);
@@ -76,11 +76,11 @@ export function DriverSelectionModal({
     return matchesSearch;
   });
 
-  const handleDriverToggle = (driverName: string) => {
-    setTempSelectedDrivers(prev => 
-      prev.includes(driverName)
-        ? prev.filter(d => d !== driverName)
-        : [...prev, driverName]
+  const handleDriverToggle = (driverId: string) => {
+    setTempSelectedDriverIds(prev => 
+      prev.includes(driverId)
+        ? prev.filter(d => d !== driverId)
+        : [...prev, driverId]
     );
   };
 
@@ -88,13 +88,13 @@ export function DriverSelectionModal({
     if (mode === 'van' && onVanDriverSelect) {
       onVanDriverSelect(tempVanDriverId, tempCustomVanDriverName || null);
     } else {
-      onSelectDrivers(tempSelectedDrivers);
+      onSelectDrivers(tempSelectedDriverIds);
     }
     onClose();
   };
 
   const handleCancel = () => {
-    setTempSelectedDrivers(selectedDrivers);
+    setTempSelectedDriverIds(selectedDrivers);
     setTempVanDriverId(currentVanDriverId || null);
     setTempCustomVanDriverName(currentCustomVanDriverName || "");
     setShowCustomVanDriverInput(false);
@@ -108,9 +108,9 @@ export function DriverSelectionModal({
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
             {mode === 'van' ? 'Select Van Driver for Event' : 'Select Drivers for Event'}
-            {mode === 'regular' && tempSelectedDrivers.length > 0 && (
+            {mode === 'regular' && tempSelectedDriverIds.length > 0 && (
               <Badge variant="secondary" className="ml-auto">
-                {tempSelectedDrivers.length} selected
+                {tempSelectedDriverIds.length} selected
               </Badge>
             )}
             {mode === 'van' && (tempVanDriverId || tempCustomVanDriverName) && (
@@ -133,18 +133,22 @@ export function DriverSelectionModal({
         </div>
 
         {/* Selected Drivers Summary - Regular Mode */}
-        {mode === 'regular' && tempSelectedDrivers.length > 0 && (
+        {mode === 'regular' && tempSelectedDriverIds.length > 0 && (
           <div className="flex flex-wrap gap-2 p-3 bg-blue-50 rounded-lg">
             <span className="text-sm font-medium text-blue-700">Selected:</span>
-            {tempSelectedDrivers.map(driverName => (
-              <Badge key={driverName} variant="secondary" className="flex items-center gap-1">
-                {driverName}
-                <X 
-                  className="w-3 h-3 cursor-pointer hover:text-red-600" 
-                  onClick={() => handleDriverToggle(driverName)}
-                />
-              </Badge>
-            ))}
+            {tempSelectedDriverIds.map(driverId => {
+              const driver = drivers.find(d => d.id.toString() === driverId);
+              const driverName = driver?.name || driverId;
+              return (
+                <Badge key={driverId} variant="secondary" className="flex items-center gap-1">
+                  {driverName}
+                  <X 
+                    className="w-3 h-3 cursor-pointer hover:text-red-600" 
+                    onClick={() => handleDriverToggle(driverId)}
+                  />
+                </Badge>
+              );
+            })}
           </div>
         )}
 
@@ -226,7 +230,7 @@ export function DriverSelectionModal({
           ) : (
             <div className="space-y-2 p-1">
               {filteredDrivers.map((driver) => {
-                const isSelected = tempSelectedDrivers.includes(driver.name);
+                const isSelected = tempSelectedDriverIds.includes(driver.id.toString());
                 return (
                   <div
                     key={driver.id}
@@ -240,7 +244,7 @@ export function DriverSelectionModal({
                         setTempVanDriverId(driver.id.toString());
                         setTempCustomVanDriverName("");
                       } else {
-                        handleDriverToggle(driver.name);
+                        handleDriverToggle(driver.id.toString());
                       }
                     }}
                   >
@@ -318,7 +322,7 @@ export function DriverSelectionModal({
             >
               {mode === 'van' 
                 ? `Save Van Driver ${(tempVanDriverId || tempCustomVanDriverName) ? '(1)' : ''}`
-                : `Save Selection (${tempSelectedDrivers.length})`
+                : `Save Selection (${tempSelectedDriverIds.length})`
               }
             </Button>
           </div>
