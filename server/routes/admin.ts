@@ -194,7 +194,7 @@ export function createAdminRoutes(deps: AdminDependencies) {
   });
 
   // Debug endpoint for session information
-  router.get("/debug/session", async (req: any, res) => {
+  router.get("/debug/session", deps.isAuthenticated, requirePermission("ADMIN_ACCESS"), async (req: any, res) => {
     try {
       const sessionUser = req.session?.user;
       const reqUser = req.user;
@@ -231,7 +231,7 @@ export function createAdminRoutes(deps: AdminDependencies) {
   });
 
   // Debug endpoint to check authentication status
-  router.get("/debug/auth-status", async (req: any, res) => {
+  router.get("/debug/auth-status", deps.isAuthenticated, requirePermission("ADMIN_ACCESS"), async (req: any, res) => {
     try {
       const user = req.session?.user || req.user;
 
