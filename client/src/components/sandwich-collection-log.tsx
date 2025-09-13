@@ -332,6 +332,151 @@ export default function SandwichCollectionLog() {
     }
   });
 
+  // Calculate filtered statistics from current collections data
+  const calculateFilteredStats = (collectionsData: SandwichCollection[]) => {
+    if (!collectionsData || collectionsData.length === 0) {
+      return {
+        totalEntries: 0,
+        individualSandwiches: 0,
+        groupSandwiches: 0,
+        completeTotalSandwiches: 0,
+        hostName: null,
+        dateRange: null
+      };
+    }
+
+    let individualTotal = 0;
+    let groupTotal = 0;
+    const dates: string[] = [];
+    const hostNames = new Set<string>();
+
+    collectionsData.forEach((collection) => {
+      individualTotal += collection.individualSandwiches || 0;
+      groupTotal += calculateGroupTotal(collection);
+      if (collection.collectionDate) {
+        dates.push(collection.collectionDate);
+      }
+      if (collection.hostName) {
+        hostNames.add(collection.hostName);
+      }
+    });
+
+    // Calculate date range
+    let dateRange = null;
+    if (dates.length > 0) {
+      dates.sort();
+      const earliestDate = new Date(dates[0]);
+      const latestDate = new Date(dates[dates.length - 1]);
+      dateRange = {
+        earliest: earliestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        latest: latestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      };
+    }
+
+    return {
+      totalEntries: collectionsData.length,
+      individualSandwiches: individualTotal,
+      groupSandwiches: groupTotal,
+      completeTotalSandwiches: individualTotal + groupTotal,
+      hostName: hostNames.size === 1 ? Array.from(hostNames)[0] : null,
+      dateRange
+    };
+  };
+
+  // Determine if we're showing filtered data and get all data for calculations
+  const hasActiveFilters = Object.values(debouncedSearchFilters).some(v => v);
+  
+  // Get all filtered collections when filters are active for statistics calculation
+  const { data: allFilteredData } = useQuery({
+    queryKey: ["/api/sandwich-collections", "all-for-stats", debouncedSearchFilters],
+    queryFn: async () => {
+      if (!hasActiveFilters) return { collections: [] };
+      
+      const response = await fetch('/api/sandwich-collections?limit=10000');
+      if (!response.ok) throw new Error('Failed to fetch collections');
+      const data = await response.json();
+      
+      let filteredCollections = data.collections || [];
+      
+      // Apply the same filters as in the main query
+      if (debouncedSearchFilters.hostName) {
+        const searchTerm = debouncedSearchFilters.hostName.toLowerCase();
+        filteredCollections = filteredCollections.filter((c: SandwichCollection) => 
+          c.hostName?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      if (debouncedSearchFilters.collectionDateFrom) {
+        const fromDate = new Date(debouncedSearchFilters.collectionDateFrom);
+        filteredCollections = filteredCollections.filter((c: SandwichCollection) => 
+          new Date(c.collectionDate) >= fromDate
+        );
+      }
+      
+      if (debouncedSearchFilters.collectionDateTo) {
+        const toDate = new Date(debouncedSearchFilters.collectionDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        filteredCollections = filteredCollections.filter((c: SandwichCollection) => 
+          new Date(c.collectionDate) <= toDate
+        );
+      }
+      
+      if (debouncedSearchFilters.createdAtFrom) {
+        const fromDate = new Date(debouncedSearchFilters.createdAtFrom);
+        filteredCollections = filteredCollections.filter((c: SandwichCollection) => 
+          new Date(c.submittedAt) >= fromDate
+        );
+      }
+      
+      if (debouncedSearchFilters.createdAtTo) {
+        const toDate = new Date(debouncedSearchFilters.createdAtTo);
+        toDate.setHours(23, 59, 59, 999);
+        filteredCollections = filteredCollections.filter((c: SandwichCollection) => 
+          new Date(c.submittedAt) <= toDate
+        );
+      }
+      
+      if (debouncedSearchFilters.globalSearch) {
+        const searchTerm = debouncedSearchFilters.globalSearch.toLowerCase();
+        filteredCollections = filteredCollections.filter((c: SandwichCollection) => {
+          const hostNameMatch = c.hostName?.toLowerCase().includes(searchTerm);
+          const groupData = getGroupCollections(c);
+          const groupNameMatch = groupData.some(group => 
+            group.groupName?.toLowerCase().includes(searchTerm)
+          );
+          const formattedDate = formatDate(c.collectionDate);
+          const dateMatch = formattedDate.toLowerCase().includes(searchTerm);
+          return hostNameMatch || groupNameMatch || dateMatch;
+        });
+      }
+      
+      if (debouncedSearchFilters.groupName) {
+        const searchTerm = debouncedSearchFilters.groupName.toLowerCase();
+        filteredCollections = filteredCollections.filter((c: SandwichCollection) => {
+          const groupData = getGroupCollections(c);
+          return groupData.some(group => 
+            group.groupName?.toLowerCase().includes(searchTerm)
+          );
+        });
+      }
+      
+      return { collections: filteredCollections };
+    },
+    enabled: hasActiveFilters
+  });
+
+  // Calculate current statistics to display
+  const currentStats = hasActiveFilters 
+    ? calculateFilteredStats(allFilteredData?.collections || [])
+    : {
+        totalEntries: totalStats?.totalEntries || 0,
+        individualSandwiches: totalStats?.individualSandwiches || 0,
+        groupSandwiches: totalStats?.groupSandwiches || 0,
+        completeTotalSandwiches: totalStats?.completeTotalSandwiches || 0,
+        hostName: null,
+        dateRange: null
+      };
+
   // When needsAllData is true, filtering and pagination are already handled in the queryFn
   // When needsAllData is false, server-side pagination and sorting are used
   const filteredCollections = collections;
@@ -1288,34 +1433,82 @@ export default function SandwichCollectionLog() {
         </div>
         
         <div className="flex flex-col gap-3 mb-4">
-          {/* Enhanced Display-Friendly Stats */}
+          {/* Enhanced Display-Friendly Stats with Filtered Stats Support */}
           <div className="space-y-4">
+            {/* Filter Status and Context */}
+            {hasActiveFilters && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                <div className="flex items-center text-blue-800">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <span className="font-medium">
+                    {currentStats.hostName ? `Statistics for ${currentStats.hostName}` : 'Filtered Statistics'}
+                  </span>
+                </div>
+                {currentStats.dateRange && (
+                  <div className="text-blue-600 mt-1 text-xs">
+                    Date range: {currentStats.dateRange.earliest} - {currentStats.dateRange.latest}
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500 font-medium">{totalItems} entries</p>
-              {totalStats && (
-                <div className="text-right">
-                  <div className="text-xl sm:text-2xl font-black text-transparent bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text drop-shadow-sm">
-                    {totalStats.completeTotalSandwiches.toLocaleString()}
-                  </div>
-                  <div className="text-sm font-semibold text-amber-700 uppercase tracking-wide">Total Sandwiches</div>
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-slate-500 font-medium">
+                  {hasActiveFilters ? `${currentStats.totalEntries}` : `${totalItems}`} 
+                  {hasActiveFilters ? ' filtered' : ''} entries
+                </p>
+                {hasActiveFilters && !currentStats.hostName && (
+                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                    Multiple Hosts
+                  </span>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="text-xl sm:text-2xl font-black text-transparent bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text drop-shadow-sm">
+                  {currentStats.completeTotalSandwiches.toLocaleString()}
                 </div>
-              )}
+                <div className="text-sm font-semibold text-amber-700 uppercase tracking-wide">
+                  {hasActiveFilters ? 'Filtered' : 'Total'} Sandwiches
+                </div>
+              </div>
             </div>
-            {totalStats && (
-              <div className="flex justify-center gap-8 bg-gradient-to-r from-teal-50 to-amber-50 rounded-xl py-4 px-6 border border-amber-200 shadow-sm">
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-teal-700 drop-shadow-sm">
-                    {totalStats.individualSandwiches.toLocaleString()}
-                  </div>
-                  <div className="text-sm font-semibold text-teal-600 uppercase tracking-wide mt-1">Individual</div>
+            
+            {/* Statistics Display */}
+            <div className={`flex justify-center gap-8 rounded-xl py-4 px-6 border shadow-sm ${
+              hasActiveFilters 
+                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' 
+                : 'bg-gradient-to-r from-teal-50 to-amber-50 border-amber-200'
+            }`}>
+              <div className="text-center">
+                <div className={`text-lg sm:text-xl font-bold drop-shadow-sm ${
+                  hasActiveFilters ? 'text-blue-700' : 'text-teal-700'
+                }`}>
+                  {currentStats.individualSandwiches.toLocaleString()}
                 </div>
-                <div className="w-px bg-gradient-to-b from-teal-300 to-amber-300"></div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-orange-600 drop-shadow-sm">
-                    {(totalStats.completeTotalSandwiches - totalStats.individualSandwiches).toLocaleString()}
-                  </div>
-                  <div className="text-sm font-semibold text-orange-600 uppercase tracking-wide mt-1">Groups</div>
+                <div className={`text-sm font-semibold uppercase tracking-wide mt-1 ${
+                  hasActiveFilters ? 'text-blue-600' : 'text-teal-600'
+                }`}>Individual</div>
+              </div>
+              <div className={`w-px bg-gradient-to-b ${
+                hasActiveFilters ? 'from-blue-300 to-indigo-300' : 'from-teal-300 to-amber-300'
+              }`}></div>
+              <div className="text-center">
+                <div className={`text-lg sm:text-xl font-bold drop-shadow-sm ${
+                  hasActiveFilters ? 'text-indigo-600' : 'text-orange-600'
+                }`}>
+                  {currentStats.groupSandwiches.toLocaleString()}
                 </div>
+                <div className={`text-sm font-semibold uppercase tracking-wide mt-1 ${
+                  hasActiveFilters ? 'text-indigo-600' : 'text-orange-600'
+                }`}>Groups</div>
+              </div>
+            </div>
+            
+            {/* Global Stats Reference when filtering */}
+            {hasActiveFilters && totalStats && (
+              <div className="text-center text-xs text-slate-500 border-t pt-3">
+                <span>Global totals: {totalStats.completeTotalSandwiches.toLocaleString()} sandwiches across {totalStats.totalEntries} entries</span>
               </div>
             )}
           </div>
