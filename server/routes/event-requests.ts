@@ -942,6 +942,66 @@ router.put(
         }
       }
 
+      // Validate scheduled status transition and required fields
+      if (processedUpdates.status === "scheduled") {
+        console.log("🎯 Processing scheduled status transition with comprehensive data");
+        
+        // Check required fields for scheduled events
+        const requiredFields = {
+          desiredEventDate: processedUpdates.desiredEventDate || originalEvent.desiredEventDate,
+          eventAddress: processedUpdates.eventAddress || originalEvent.eventAddress,
+          estimatedSandwichCount: processedUpdates.estimatedSandwichCount || originalEvent.estimatedSandwichCount
+        };
+
+        const missingFields = [];
+        if (!requiredFields.desiredEventDate) missingFields.push('Event Date');
+        if (!requiredFields.eventAddress) missingFields.push('Event Address');  
+        if (!requiredFields.estimatedSandwichCount || requiredFields.estimatedSandwichCount <= 0) {
+          missingFields.push('Estimated Sandwich Count');
+        }
+
+        if (missingFields.length > 0) {
+          return res.status(400).json({ 
+            message: `Cannot mark event as scheduled. Missing required fields: ${missingFields.join(', ')}`,
+            error: "Missing required scheduling data",
+            missingFields
+          });
+        }
+
+        // Process comprehensive scheduling data
+        console.log("✅ All required fields present for scheduled status");
+        
+        // Process sandwich types if provided
+        if (processedUpdates.sandwichTypes) {
+          try {
+            if (typeof processedUpdates.sandwichTypes === 'string') {
+              processedUpdates.sandwichTypes = JSON.parse(processedUpdates.sandwichTypes);
+            }
+            console.log("📋 Processed sandwich types:", processedUpdates.sandwichTypes);
+          } catch (error) {
+            console.warn("⚠️ Failed to parse sandwich types, keeping as string:", error);
+          }
+        }
+
+        // Ensure numeric fields are properly typed
+        const numericFields = ['driversNeeded', 'speakersNeeded', 'estimatedSandwichCount'];
+        numericFields.forEach(field => {
+          if (processedUpdates[field] !== undefined) {
+            processedUpdates[field] = parseInt(processedUpdates[field]) || 0;
+          }
+        });
+
+        // Ensure boolean fields are properly typed
+        const booleanFields = ['hasRefrigeration', 'volunteersNeeded', 'vanDriverNeeded'];
+        booleanFields.forEach(field => {
+          if (processedUpdates[field] !== undefined) {
+            processedUpdates[field] = processedUpdates[field] === true || processedUpdates[field] === 'true';
+          }
+        });
+
+        console.log("✅ Processed comprehensive scheduling data for scheduled status");
+      }
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
@@ -960,10 +1020,38 @@ router.put(
         fieldsUpdated: Object.keys(processedUpdates)
       };
 
-      // Check for specific status changes
+      // Check for specific status changes with enhanced context
       if (originalEvent.status !== updatedEventRequest.status) {
         actionType = 'STATUS_CHANGED';
         actionContext.statusChange = `${originalEvent.status} → ${updatedEventRequest.status}`;
+        
+        // Add comprehensive context for scheduled status
+        if (updatedEventRequest.status === 'scheduled') {
+          actionType = 'EVENT_SCHEDULED';
+          actionContext = {
+            ...actionContext,
+            eventDate: updatedEventRequest.desiredEventDate,
+            eventAddress: updatedEventRequest.eventAddress,
+            estimatedSandwichCount: updatedEventRequest.estimatedSandwichCount,
+            eventStartTime: updatedEventRequest.eventStartTime,
+            eventEndTime: updatedEventRequest.eventEndTime,
+            pickupTime: updatedEventRequest.pickupTime,
+            driversNeeded: updatedEventRequest.driversNeeded || 0,
+            speakersNeeded: updatedEventRequest.speakersNeeded || 0,
+            volunteersNeeded: updatedEventRequest.volunteersNeeded || false,
+            hasRefrigeration: updatedEventRequest.hasRefrigeration,
+            deliveryDestination: updatedEventRequest.deliveryDestination,
+            tspContact: updatedEventRequest.tspContact,
+            additionalTspContacts: updatedEventRequest.additionalTspContacts,
+            sandwichTypes: updatedEventRequest.sandwichTypes,
+            toolkitStatus: updatedEventRequest.toolkitStatus,
+            communicationMethod: updatedEventRequest.communicationMethod,
+            scheduledBy: req.user?.email || req.user?.displayName || 'Unknown User',
+            scheduledAt: new Date().toISOString(),
+            comprehensiveDataProcessed: true
+          };
+          console.log("🎯 Enhanced audit logging for EVENT_SCHEDULED action");
+        }
       }
 
       // Check for unresponsive marking

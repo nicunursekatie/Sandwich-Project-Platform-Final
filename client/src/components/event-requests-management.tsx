@@ -704,6 +704,9 @@ export default function EventRequestsManagement() {
   const [showCallCompletedDialog, setShowCallCompletedDialog] = useState(false);
   const [callCompletedRequest, setCallCompletedRequest] =
     useState<EventRequest | null>(null);
+  const [showSchedulingDialog, setShowSchedulingDialog] = useState(false);
+  const [schedulingRequest, setSchedulingRequest] =
+    useState<EventRequest | null>(null);
 
   // Get current user for permission checking
   const { user } = useAuth();
@@ -1430,21 +1433,23 @@ export default function EventRequestsManagement() {
     },
   });
 
-  // Mark in_process event as scheduled manually
+  // Mark in_process event as scheduled with comprehensive data
   const markScheduledMutation = useMutation({
-    mutationFn: (eventId: number) =>
-      apiRequest("PUT", `/api/event-requests/${eventId}`, { status: "scheduled" }),
+    mutationFn: (data: any) =>
+      apiRequest("POST", `/api/event-requests/complete-event-details`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/event-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/groups-catalog"] });
+      setShowSchedulingDialog(false);
+      setSchedulingRequest(null);
       toast({ 
-        title: "Event marked as scheduled",
-        description: "The event has been moved to scheduled status"
+        title: "Event scheduled successfully",
+        description: "The event has been moved to scheduled status with all details"
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error updating status",
+        title: "Error scheduling event",
         description: error.message,
         variant: "destructive",
       });
@@ -4590,7 +4595,7 @@ export default function EventRequestsManagement() {
                 </Button>
               )}
 
-              {/* Show "Mark as Scheduled" only for in_process events */}
+              {/* Show "Mark Scheduled" only for in_process events */}
               {request.status === "in_process" && (
                 <Button
                   variant="default"
@@ -4617,13 +4622,13 @@ export default function EventRequestsManagement() {
                       }
                     }
                     
-                    markScheduledMutation.mutate(request.id);
+                    setSchedulingRequest(request);
+                    setShowSchedulingDialog(true);
                   }}
-                  disabled={markScheduledMutation.isPending}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 text-white border-0 shadow-lg"
                 >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  {markScheduledMutation.isPending ? "Scheduling..." : "Mark as Scheduled"}
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Mark Scheduled
                 </Button>
               )}
 
@@ -5699,6 +5704,63 @@ export default function EventRequestsManagement() {
     };
 
     completeEventDetailsMutation.mutate(data);
+  };
+
+  const handleScheduleEvent = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!schedulingRequest) return;
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      id: schedulingRequest.id,
+      status: "scheduled",
+      // Event scheduling details
+      eventStartTime: formData.get("eventStartTime") || null,
+      eventEndTime: formData.get("eventEndTime") || null,
+      pickupTime: formData.get("pickupTime") || null,
+      eventAddress: formData.get("eventAddress") || null,
+      estimatedSandwichCount: formData.get("estimatedSandwichCount")
+        ? parseInt(formData.get("estimatedSandwichCount") as string)
+        : null,
+      deliveryDestination: formData.get("deliveryDestination") || null,
+      hasRefrigeration:
+        formData.get("hasRefrigeration") === "none"
+          ? null
+          : formData.get("hasRefrigeration") === "true",
+      sandwichTypes: (() => {
+        const sandwichTypesStr = formData.get("sandwichTypes");
+        if (sandwichTypesStr) {
+          try {
+            const parsed = JSON.parse(sandwichTypesStr as string);
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+          } catch (e) {
+            console.warn("Failed to parse sandwich types:", e);
+            return null;
+          }
+        }
+        return null;
+      })(),
+      // TSP Contact and planning
+      tspContact: formData.get("tspContact") || null,
+      customTspContact: formData.get("customTspContact") || null,
+      additionalTspContacts: formData.get("additionalTspContacts") || null,
+      // Driver and volunteer requirements
+      driversNeeded: formData.get("driversNeeded")
+        ? parseInt(formData.get("driversNeeded") as string)
+        : 0,
+      speakersNeeded: formData.get("speakersNeeded")
+        ? parseInt(formData.get("speakersNeeded") as string)
+        : 0,
+      volunteersNeeded: formData.get("volunteersNeeded") === "on",
+      volunteerNotes: formData.get("volunteerNotes") || null,
+      planningNotes: formData.get("planningNotes") || null,
+      additionalRequirements: formData.get("additionalRequirements") || null,
+      // Toolkit and communication
+      toolkitStatus: formData.get("toolkitStatus") || null,
+      communicationMethod: formData.get("communicationMethod") || null,
+    };
+
+    markScheduledMutation.mutate(data);
   };
 
   // Back to top functionality
@@ -8287,6 +8349,357 @@ export default function EventRequestsManagement() {
                     {completeEventDetailsMutation.isPending
                       ? "Saving..."
                       : "Save Event Details"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Comprehensive Scheduling Dialog */}
+        {showSchedulingDialog && schedulingRequest && (
+          <Dialog
+            open={showSchedulingDialog}
+            onOpenChange={setShowSchedulingDialog}
+          >
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-teal-600" />
+                  Schedule Event for {schedulingRequest.organizationName}
+                </DialogTitle>
+                <DialogDescription>
+                  Complete all scheduling details to mark this event as scheduled
+                </DialogDescription>
+              </DialogHeader>
+              
+              <form onSubmit={handleScheduleEvent} className="space-y-6">
+                {/* Event Date & Time Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-teal-50 to-cyan-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-teal-600" />
+                    Event Date & Time
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="eventStartTime">Event Start Time</Label>
+                      <Input
+                        name="eventStartTime"
+                        type="time"
+                        defaultValue={schedulingRequest.eventStartTime || ""}
+                        className="bg-white"
+                        data-testid="input-event-start-time"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="eventEndTime">Event End Time</Label>
+                      <Input
+                        name="eventEndTime"
+                        type="time"
+                        defaultValue={schedulingRequest.eventEndTime || ""}
+                        className="bg-white"
+                        data-testid="input-event-end-time"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pickupTime">Pickup Time</Label>
+                      <Input
+                        name="pickupTime"
+                        type="time"
+                        defaultValue={schedulingRequest.pickupTime || ""}
+                        className="bg-white"
+                        data-testid="input-pickup-time"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Location & Logistics Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Building className="h-4 w-4 mr-2 text-blue-600" />
+                    Location & Logistics
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="eventAddress">Event Address</Label>
+                      <Input
+                        name="eventAddress"
+                        defaultValue={schedulingRequest.eventAddress || ""}
+                        placeholder="Full event address"
+                        className="bg-white"
+                        data-testid="input-event-address"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="deliveryDestination">Delivery Destination</Label>
+                      <Input
+                        name="deliveryDestination"
+                        defaultValue={schedulingRequest.deliveryDestination || ""}
+                        placeholder="Where sandwiches should be delivered"
+                        className="bg-white"
+                        data-testid="input-delivery-destination"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                    <Select name="hasRefrigeration" defaultValue={schedulingRequest.hasRefrigeration ? "true" : "false"}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Not specified</SelectItem>
+                        <SelectItem value="true">Yes - refrigeration available</SelectItem>
+                        <SelectItem value="false">No - no refrigeration</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Sandwich Details Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-orange-50 to-amber-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <TrendingUp className="h-4 w-4 mr-2 text-orange-600" />
+                    Sandwich Requirements
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estimatedSandwichCount">Estimated Sandwich Count</Label>
+                      <Input
+                        name="estimatedSandwichCount"
+                        type="number"
+                        min="0"
+                        defaultValue={schedulingRequest.estimatedSandwichCount || ""}
+                        placeholder="Total number of sandwiches needed"
+                        className="bg-white"
+                        data-testid="input-sandwich-count"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <div className="flex-1">
+                        <Label className="text-sm font-medium">Sandwich Types</Label>
+                        <div className="text-xs text-gray-600 mb-2">Specify types and quantities</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <SandwichTypesSelector
+                      name="sandwichTypes"
+                      defaultValue={schedulingRequest.sandwichTypes}
+                      estimatedCount={schedulingRequest.estimatedSandwichCount}
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Team Assignment Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-pink-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-purple-600" />
+                    Team & Volunteer Requirements
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="driversNeeded">Drivers Needed</Label>
+                      <Input
+                        name="driversNeeded"
+                        type="number"
+                        min="0"
+                        max="10"
+                        defaultValue={schedulingRequest.driversNeeded || 0}
+                        className="bg-white"
+                        data-testid="input-drivers-needed"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="speakersNeeded">Speakers Needed</Label>
+                      <Input
+                        name="speakersNeeded"
+                        type="number"
+                        min="0"
+                        max="5"
+                        defaultValue={schedulingRequest.speakersNeeded || 0}
+                        className="bg-white"
+                        data-testid="input-speakers-needed"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 mt-6">
+                      <input
+                        type="checkbox"
+                        name="volunteersNeeded"
+                        id="volunteersNeeded"
+                        defaultChecked={schedulingRequest.volunteersNeeded}
+                        className="h-4 w-4 text-purple-600"
+                        data-testid="checkbox-volunteers-needed"
+                      />
+                      <Label htmlFor="volunteersNeeded" className="text-sm">
+                        Additional volunteers needed
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="volunteerNotes">Volunteer Notes</Label>
+                    <Textarea
+                      name="volunteerNotes"
+                      rows={2}
+                      defaultValue={schedulingRequest.volunteerNotes || ""}
+                      placeholder="Special requirements or notes about volunteers needed"
+                      className="bg-white"
+                      data-testid="textarea-volunteer-notes"
+                    />
+                  </div>
+                </div>
+
+                {/* TSP Contact Assignment Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-emerald-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <UserCheck className="h-4 w-4 mr-2 text-green-600" />
+                    TSP Contact Assignment
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="tspContact">Primary TSP Contact</Label>
+                      <Select name="tspContact" defaultValue={schedulingRequest.tspContact || ""}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select primary contact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No contact assigned</SelectItem>
+                          {users?.map((user: any) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.firstName && user.lastName
+                                ? `${user.firstName} ${user.lastName}`
+                                : user.displayName || user.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="customTspContact">Custom Contact Info</Label>
+                      <Input
+                        name="customTspContact"
+                        defaultValue={schedulingRequest.customTspContact || ""}
+                        placeholder="Additional contact details"
+                        className="bg-white"
+                        data-testid="input-custom-tsp-contact"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="additionalTspContacts">Additional TSP Contacts</Label>
+                    <Input
+                      name="additionalTspContacts"
+                      defaultValue={schedulingRequest.additionalTspContacts || ""}
+                      placeholder="Additional team members (comma-separated)"
+                      className="bg-white"
+                      data-testid="input-additional-tsp-contacts"
+                    />
+                  </div>
+                </div>
+
+                {/* Communication & Toolkit Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-yellow-50 to-orange-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Mail className="h-4 w-4 mr-2 text-yellow-600" />
+                    Communication & Toolkit
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="communicationMethod">Communication Method</Label>
+                      <Select name="communicationMethod" defaultValue={schedulingRequest.communicationMethod || ""}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="How was contact made?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Not specified</SelectItem>
+                          <SelectItem value="phone">Phone Call</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="in_person">In Person</SelectItem>
+                          <SelectItem value="text">Text Message</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="toolkitStatus">Toolkit Status</Label>
+                      <Select name="toolkitStatus" defaultValue={schedulingRequest.toolkitStatus || ""}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Toolkit sent status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Not specified</SelectItem>
+                          <SelectItem value="sent">Toolkit sent</SelectItem>
+                          <SelectItem value="pending">Pending send</SelectItem>
+                          <SelectItem value="not_needed">Not needed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Planning Notes Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-gray-50 to-slate-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Edit className="h-4 w-4 mr-2 text-gray-600" />
+                    Planning Notes & Requirements
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="planningNotes">Planning Notes</Label>
+                      <Textarea
+                        name="planningNotes"
+                        rows={3}
+                        defaultValue={schedulingRequest.planningNotes || ""}
+                        placeholder="Internal planning notes, follow-up tasks, or special considerations"
+                        className="bg-white"
+                        data-testid="textarea-planning-notes"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="additionalRequirements">Additional Requirements</Label>
+                      <Textarea
+                        name="additionalRequirements"
+                        rows={2}
+                        defaultValue={schedulingRequest.additionalRequirements || ""}
+                        placeholder="Special dietary needs, accessibility requirements, etc."
+                        className="bg-white"
+                        data-testid="textarea-additional-requirements"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-3 pt-6 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowSchedulingDialog(false);
+                      setSchedulingRequest(null);
+                    }}
+                    data-testid="button-cancel-scheduling"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={markScheduledMutation.isPending}
+                    className="bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 text-white px-6"
+                    data-testid="button-confirm-schedule"
+                  >
+                    {markScheduledMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Scheduling...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark as Scheduled
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
