@@ -340,7 +340,7 @@ export const conversations = pgTable("conversations", {
 export const conversationParticipants = pgTable(
   "conversation_participants",
   {
-    conversationId: integer("conversation_id").references(
+    conversationId: integer("conversation_id").notNull().references(
       () => conversations.id,
       { onDelete: "cascade" },
     ),
@@ -356,7 +356,7 @@ export const conversationParticipants = pgTable(
 // 3. Messages - for chat messages only
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id").references(
+  conversationId: integer("conversation_id").notNull().references(
     () => conversations.id,
     { onDelete: "cascade" },
   ),
