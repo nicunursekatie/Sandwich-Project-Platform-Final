@@ -264,6 +264,13 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  async getProjectCongratulations(projectId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getProjectCongratulations(projectId),
+      () => this.fallbackStorage.getProjectCongratulations(projectId)
+    );
+  }
+
   async updateTaskStatus(id: number, status: string) {
     return this.executeWithFallback(
       () => this.primaryStorage.updateTaskStatus(id, status),
@@ -405,6 +412,13 @@ class StorageWrapper implements IStorage {
     return this.executeWithFallback(
       () => this.primaryStorage.getMessagesBySenderWithReadStatus(senderId),
       () => this.fallbackStorage.getMessagesBySenderWithReadStatus(senderId)
+    );
+  }
+
+  async getUserMessageGroups(userId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getUserMessageGroups(userId),
+      () => this.fallbackStorage.getUserMessageGroups(userId)
     );
   }
 
@@ -1407,6 +1421,13 @@ class StorageWrapper implements IStorage {
     return this.executeWithFallback(
       () => this.primaryStorage.searchOrganizations(query),
       () => this.fallbackStorage.searchOrganizations(query)
+    );
+  }
+
+  async checkOrganizationDuplicates(organizationName: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.checkOrganizationDuplicates(organizationName),
+      () => this.fallbackStorage.checkOrganizationDuplicates(organizationName)
     );
   }
 

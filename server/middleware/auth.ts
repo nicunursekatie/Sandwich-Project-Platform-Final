@@ -105,8 +105,12 @@ export const requireOwnershipPermission = (ownPermission: string, allPermission:
       // STEP 5: Check for "OWN" permission and verify ownership
       if (currentUser.permissions && Array.isArray(currentUser.permissions) && currentUser.permissions.includes(ownPermission)) {
         const resourceUserId = await getResourceUserId(req);
-        if (resourceUserId === currentUser.id) {
-          console.log(`✅ AUTH: OWN permission ${ownPermission} granted to ${currentUser.email} (owns resource)`);
+        if (resourceUserId === currentUser.id || resourceUserId === null) {
+          if (resourceUserId === null) {
+            console.log(`✅ AUTH: OWN permission ${ownPermission} granted to ${currentUser.email} (ownerless resource)`);
+          } else {
+            console.log(`✅ AUTH: OWN permission ${ownPermission} granted to ${currentUser.email} (owns resource)`);
+          }
           return next();
         } else {
           console.log(`❌ AUTH: OWN permission ${ownPermission} DENIED for ${currentUser.email} (not owner: ${resourceUserId} vs ${currentUser.id})`);
