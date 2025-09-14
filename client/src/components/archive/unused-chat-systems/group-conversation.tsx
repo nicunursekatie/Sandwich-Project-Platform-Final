@@ -416,7 +416,7 @@ export function GroupConversation({ groupId, groupName, groupDescription, onBack
         {replyingToMessage && (
           <div className="mb-3 p-3 bg-blue-50 border-l-3 border-blue-400 rounded">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1 text-blue-600 text-sm font-medium">
+              <div className="flex items-center gap-1 text-brand-primary text-sm font-medium">
                 <Reply className="h-4 w-4" />
                 <span>Replying to {replyingToMessage.sender || getUserDisplayName(replyingToMessage.userId)}</span>
               </div>

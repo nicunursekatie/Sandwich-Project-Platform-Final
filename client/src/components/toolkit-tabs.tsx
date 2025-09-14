@@ -137,7 +137,7 @@ const getFileIcon = (type: string) => {
     case 'txt':
       return <FileText className="h-5 w-5 text-gray-500" />;
     case 'link':
-      return <Calculator className="h-5 w-5 text-blue-600" />;
+      return <Calculator className="h-5 w-5 text-brand-primary" />;
     default:
       return <FileText className="h-5 w-5 text-gray-500" />;
   }
@@ -205,7 +205,7 @@ function DocumentCard({
               variant="default"
               size="sm"
               onClick={() => window.open(doc.path, '_blank')}
-              className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full text-xs h-8 bg-brand-primary hover:bg-brand-primary-dark text-white"
             >
               <Calculator className="h-3 w-3 mr-1" />
               Open Tool
@@ -304,7 +304,7 @@ export function ToolkitTabs() {
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex items-center space-x-2 sm:space-x-3">
-        <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-brand-orange rounded-lg flex items-center justify-center shrink-0">
           <FileText className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
         </div>
         <div className="min-w-0 flex-1">

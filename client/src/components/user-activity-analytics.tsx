@@ -94,7 +94,7 @@ export default function UserActivityAnalytics() {
   const getActivityLevel = (count: number) => {
     if (count > 100) return { level: 'High', color: 'text-green-600' };
     if (count > 50) return { level: 'Medium', color: 'text-yellow-600' };
-    if (count > 0) return { level: 'Low', color: 'text-blue-600' };
+    if (count > 0) return { level: 'Low', color: 'text-brand-primary' };
     return { level: 'None', color: 'text-gray-600' };
   };
 
@@ -119,7 +119,7 @@ export default function UserActivityAnalytics() {
                 variant={viewMode === 'summary' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('summary')}
-                className="bg-[#236383] hover:bg-[#1e5470] text-white"
+                className="bg-brand-primary hover:bg-brand-primary-dark text-white"
               >
                 <Users className="h-4 w-4 mr-2" />
                 All Users Summary
@@ -128,7 +128,7 @@ export default function UserActivityAnalytics() {
                 variant={viewMode === 'details' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('details')}
-                className="bg-[#236383] hover:bg-[#1e5470] text-white"
+                className="bg-brand-primary hover:bg-brand-primary-dark text-white"
               >
                 <User className="h-4 w-4 mr-2" />
                 Individual Details
@@ -153,7 +153,7 @@ export default function UserActivityAnalytics() {
             <div>
               {summaryLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
                 </div>
               ) : summaryError ? (
                 <div className="text-center py-8">
@@ -176,7 +176,7 @@ export default function UserActivityAnalytics() {
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-[#236383] text-white flex items-center justify-center text-sm font-medium">
+                              <div className="w-10 h-10 rounded-full bg-brand-primary text-white flex items-center justify-center text-sm font-medium">
                                 {(
                                   user.firstName?.[0] ||
                                   user.email?.[0] ||
@@ -263,7 +263,7 @@ export default function UserActivityAnalytics() {
                   </div>
                   <Button
                     onClick={() => setViewMode('summary')}
-                    className="bg-[#236383] hover:bg-[#1e5470] text-white"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white"
                   >
                     <Users className="h-4 w-4 mr-2" />
                     View All Users
@@ -271,7 +271,7 @@ export default function UserActivityAnalytics() {
                 </div>
               ) : statsLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
                 </div>
               ) : userStats ? (
                 <div className="grid gap-6">
@@ -284,11 +284,11 @@ export default function UserActivityAnalytics() {
                             <p className="text-sm text-gray-600">
                               Total Actions
                             </p>
-                            <p className="text-2xl font-bold text-[#236383]">
+                            <p className="text-2xl font-bold text-brand-primary">
                               {userStats.totalActions}
                             </p>
                           </div>
-                          <Activity className="h-8 w-8 text-[#236383]" />
+                          <Activity className="h-8 w-8 text-brand-primary" />
                         </div>
                       </CardContent>
                     </Card>
@@ -300,11 +300,11 @@ export default function UserActivityAnalytics() {
                             <p className="text-sm text-gray-600">
                               Sections Used
                             </p>
-                            <p className="text-2xl font-bold text-[#236383]">
+                            <p className="text-2xl font-bold text-brand-primary">
                               {userStats.sectionsUsed.length}
                             </p>
                           </div>
-                          <TrendingUp className="h-8 w-8 text-[#236383]" />
+                          <TrendingUp className="h-8 w-8 text-brand-primary" />
                         </div>
                       </CardContent>
                     </Card>
@@ -316,14 +316,14 @@ export default function UserActivityAnalytics() {
                             <p className="text-sm text-gray-600">
                               Daily Average
                             </p>
-                            <p className="text-2xl font-bold text-[#236383]">
+                            <p className="text-2xl font-bold text-brand-primary">
                               {Math.round(
                                 userStats.totalActions /
                                   parseInt(selectedPeriod)
                               )}
                             </p>
                           </div>
-                          <Calendar className="h-8 w-8 text-[#236383]" />
+                          <Calendar className="h-8 w-8 text-brand-primary" />
                         </div>
                       </CardContent>
                     </Card>
@@ -342,7 +342,7 @@ export default function UserActivityAnalytics() {
                             className="flex items-center justify-between"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#236383] text-white flex items-center justify-center text-sm font-medium">
+                              <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center text-sm font-medium">
                                 {index + 1}
                               </div>
                               <span className="font-medium">

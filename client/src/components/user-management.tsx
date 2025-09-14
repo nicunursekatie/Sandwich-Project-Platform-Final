@@ -335,7 +335,7 @@ export default function UserManagement() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -351,7 +351,7 @@ export default function UserManagement() {
             onClick={() => setActiveTab("users")}
             className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "users"
-                ? "border-blue-500 text-blue-600"
+                ? "border-blue-500 text-brand-primary"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >
@@ -363,7 +363,7 @@ export default function UserManagement() {
             onClick={() => setActiveTab("activity")}
             className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "activity"
-                ? "border-blue-500 text-blue-600"
+                ? "border-blue-500 text-brand-primary"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >
@@ -375,7 +375,7 @@ export default function UserManagement() {
             onClick={() => setActiveTab("announcements")}
             className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "announcements"
-                ? "border-blue-500 text-blue-600"
+                ? "border-blue-500 text-brand-primary"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >
@@ -387,7 +387,7 @@ export default function UserManagement() {
             onClick={() => setActiveTab("shoutouts")}
             className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "shoutouts"
-                ? "border-blue-500 text-blue-600"
+                ? "border-blue-500 text-brand-primary"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >
@@ -399,7 +399,7 @@ export default function UserManagement() {
             onClick={() => setActiveTab("auth-debug")}
             className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "auth-debug"
-                ? "border-blue-500 text-blue-600"
+                ? "border-blue-500 text-brand-primary"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >

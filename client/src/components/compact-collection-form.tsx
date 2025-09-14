@@ -135,7 +135,7 @@ export default function CompactCollectionForm({
     <TooltipProvider>
       <div className="max-w-sm mx-auto bg-white">
         {/* Compact header */}
-        <div className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white text-center py-4 px-4">
+        <div className="bg-gradient-to-r from-brand-primary to-brand-teal text-white text-center py-4 px-4">
           <h1 className="text-xl md:text-lg font-semibold mb-1">
             Submit Collection
           </h1>
@@ -150,7 +150,7 @@ export default function CompactCollectionForm({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <label className="text-base md:text-sm font-medium text-[#236383]">
+                <label className="text-base md:text-sm font-medium text-brand-primary">
                   Date Sandwiches Were Collected
                 </label>
                 <Tooltip>
@@ -175,7 +175,7 @@ export default function CompactCollectionForm({
             </div>
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <label className="text-base md:text-sm font-medium text-[#236383]">
+                <label className="text-base md:text-sm font-medium text-brand-primary">
                   Location
                 </label>
                 <Tooltip>
@@ -207,7 +207,7 @@ export default function CompactCollectionForm({
           {/* Individual sandwiches - compact row */}
           <div className="bg-gray-50 rounded p-2">
             <div className="flex items-center gap-1 mb-1">
-              <label className="text-base md:text-sm font-medium text-[#236383]">
+              <label className="text-base md:text-sm font-medium text-brand-primary">
                 Individual Sandwiches
               </label>
               <Tooltip>
@@ -257,7 +257,7 @@ export default function CompactCollectionForm({
           {/* Group collections - redesigned with better flow */}
           <div className="bg-gray-50 rounded p-3">
             <div className="flex items-center gap-1 mb-3">
-              <label className="text-base md:text-sm font-medium text-[#236383]">
+              <label className="text-base md:text-sm font-medium text-brand-primary">
                 Group Collections
               </label>
               <Tooltip>
@@ -297,7 +297,7 @@ export default function CompactCollectionForm({
                 <Button
                   onClick={addGroup}
                   disabled={!newGroupName || newGroupCount <= 0}
-                  className="flex-1 h-12 md:h-10 text-lg md:text-base bg-[#47B3CB] hover:bg-[#236383]"
+                  className="flex-1 h-12 md:h-10 text-lg md:text-base bg-brand-light-blue hover:bg-brand-primary"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add This Group
@@ -348,7 +348,7 @@ export default function CompactCollectionForm({
                     key={index}
                     className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm"
                   >
-                    <div className="text-lg md:text-base font-medium text-[#236383] mb-1">
+                    <div className="text-lg md:text-base font-medium text-brand-primary mb-1">
                       {group.name}
                     </div>
                     <div className="text-3xl md:text-2xl font-bold text-gray-800">
@@ -365,7 +365,7 @@ export default function CompactCollectionForm({
             <Button
               onClick={handleSubmit}
               disabled={submitMutation.isPending}
-              className="flex-1 h-14 md:h-12 bg-gradient-to-r from-[#FBAD3F] to-[#e89b2e] hover:from-[#e89b2e] hover:to-[#FBAD3F] text-white font-semibold text-xl md:text-lg"
+              className="flex-1 h-14 md:h-12 bg-gradient-to-r from-brand-orange to-[#e89b2e] hover:from-[#e89b2e] hover:to-brand-orange text-white font-semibold text-xl md:text-lg"
             >
               {submitMutation.isPending ? 'Saving...' : 'Save My Collection'}
             </Button>
@@ -386,10 +386,10 @@ export default function CompactCollectionForm({
           {/* Total counter moved to bottom */}
           <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
             <div className="flex items-center justify-between">
-              <span className="text-lg md:text-base font-medium text-[#236383]">
+              <span className="text-lg md:text-base font-medium text-brand-primary">
                 Total Sandwiches:
               </span>
-              <span className="text-3xl md:text-2xl font-bold text-[#FBAD3F]">
+              <span className="text-3xl md:text-2xl font-bold text-brand-orange">
                 {totalSandwiches}
               </span>
             </div>

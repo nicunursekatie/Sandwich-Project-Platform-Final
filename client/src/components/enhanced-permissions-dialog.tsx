@@ -97,7 +97,7 @@ const RESOURCE_PERMISSIONS = [
     description: 'Manage volunteer drivers and vehicles',
     icon: Truck,
     color: 'bg-blue-50 border-blue-200',
-    iconColor: 'text-blue-600',
+    iconColor: 'text-brand-primary',
     actions: [
       { action: 'VIEW', label: 'View driver information', key: 'DRIVERS_VIEW' },
       { action: 'ADD', label: 'Add new drivers', key: 'DRIVERS_ADD' },

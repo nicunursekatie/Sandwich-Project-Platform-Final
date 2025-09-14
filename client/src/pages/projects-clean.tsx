@@ -289,7 +289,7 @@ export default function ProjectsClean() {
       case 'urgent':
         return 'bg-red-500';
       case 'high':
-        return 'bg-[#FBAD3F]';
+        return 'bg-brand-orange';
       case 'medium':
         return 'bg-yellow-500';
       case 'low':
@@ -372,7 +372,7 @@ export default function ProjectsClean() {
                     handleMarkComplete(project.id, project.title);
                   }
                 }}
-                className="h-5 w-5 p-0 hover:bg-[#FBAD3F]/10 flex-shrink-0 mt-1"
+                className="h-5 w-5 p-0 hover:bg-brand-orange/10 flex-shrink-0 mt-1"
                 title={
                   project.status === 'completed'
                     ? 'Completed'
@@ -382,12 +382,12 @@ export default function ProjectsClean() {
                 {project.status === 'completed' ? (
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                 ) : (
-                  <Square className="h-5 w-5 text-gray-400 hover:text-[#FBAD3F]" />
+                  <Square className="h-5 w-5 text-gray-400 hover:text-brand-orange" />
                 )}
               </Button>
             )}
             <div className="flex-1">
-              <h3 className="font-semibold text-[#236383] font-roboto text-lg mb-1 break-words leading-tight">
+              <h3 className="font-semibold text-brand-primary font-roboto text-lg mb-1 break-words leading-tight">
                 {project.title}
               </h3>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -398,13 +398,13 @@ export default function ProjectsClean() {
                 >
                   {project.priority} priority
                 </Badge>
-                <Badge className="bg-[#FBAD3F] text-white border-[#FBAD3F] text-xs font-roboto">
+                <Badge className="bg-brand-orange text-white border-brand-orange text-xs font-roboto">
                   {project.status === 'in_progress'
                     ? 'active'
                     : project.status?.replace('_', ' ') || 'available'}
                 </Badge>
                 {project.category && (
-                  <Badge className="bg-[#236383] text-white text-xs font-roboto">
+                  <Badge className="bg-brand-primary text-white text-xs font-roboto">
                     {getCategoryIcon(project.category)} {project.category}
                   </Badge>
                 )}
@@ -420,9 +420,9 @@ export default function ProjectsClean() {
                     variant="ghost"
                     size="sm"
                     onClick={(e) => e.stopPropagation()}
-                    className="h-8 w-8 p-0 hover:bg-[#FBAD3F]/10"
+                    className="h-8 w-8 p-0 hover:bg-brand-orange/10"
                   >
-                    <Settings className="h-4 w-4 text-[#FBAD3F]" />
+                    <Settings className="h-4 w-4 text-brand-orange" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -432,7 +432,7 @@ export default function ProjectsClean() {
                       handleEditProject(project);
                     }}
                   >
-                    <Edit className="w-4 h-4 mr-2 text-[#FBAD3F]" />
+                    <Edit className="w-4 h-4 mr-2 text-brand-orange" />
                     Edit Project
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -460,7 +460,7 @@ export default function ProjectsClean() {
 
         <div className="flex items-center justify-between text-sm text-gray-500 font-roboto">
           <div className="flex items-center gap-1 flex-1 min-w-0">
-            <User className="w-4 h-4 text-[#FBAD3F] flex-shrink-0" />
+            <User className="w-4 h-4 text-brand-orange flex-shrink-0" />
             <div className="flex flex-col min-w-0">
               <span className="truncate">
                 {project.assigneeName || 'Unassigned'}
@@ -472,7 +472,7 @@ export default function ProjectsClean() {
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
-            <Calendar className="w-4 h-4 text-[#FBAD3F]" />
+            <Calendar className="w-4 h-4 text-brand-orange" />
             <span>
               {project.dueDate
                 ? (() => {
@@ -619,7 +619,7 @@ export default function ProjectsClean() {
               className="w-10 h-10"
             />
             <div>
-              <h1 className="text-2xl font-bold text-[#236383] font-roboto">
+              <h1 className="text-2xl font-bold text-brand-primary font-roboto">
                 Project Management
               </h1>
               <p className="text-gray-600 font-roboto">
@@ -630,7 +630,7 @@ export default function ProjectsClean() {
           {hasPermission(user, PERMISSIONS.CREATE_PROJECTS) && (
             <Button
               onClick={() => setShowCreateDialog(true)}
-              className="bg-[#FBAD3F] hover:bg-[#e89a2f] text-white font-roboto font-medium shadow-sm"
+              className="bg-brand-orange hover:bg-brand-orange-dark text-white font-roboto font-medium shadow-sm"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Project
@@ -646,8 +646,8 @@ export default function ProjectsClean() {
             onClick={() => setProjectTypeFilter('all')}
             className={`transition-all ${
               projectTypeFilter === 'all'
-                ? 'bg-[#236383] text-white hover:bg-[#1e5470]'
-                : 'text-[#236383] hover:text-[#1e5470] hover:bg-[#236383]/5'
+                ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
+                : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             All Projects
@@ -658,8 +658,8 @@ export default function ProjectsClean() {
             onClick={() => setProjectTypeFilter('meeting')}
             className={`transition-all ${
               projectTypeFilter === 'meeting'
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                ? 'bg-brand-primary text-white hover:bg-brand-primary'
+                : 'text-brand-primary hover:text-blue-700 hover:bg-blue-50'
             }`}
           >
             📊 Meeting Projects (
@@ -689,8 +689,8 @@ export default function ProjectsClean() {
             onClick={() => setActiveTab('available')}
             className={`font-roboto font-medium transition-all ${
               activeTab === 'available'
-                ? 'bg-[#236383] text-white hover:bg-[#1e5470]'
-                : 'text-[#236383] hover:text-[#1e5470] hover:bg-[#236383]/5'
+                ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
+                : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             <Circle className="w-4 h-4 mr-2" />
@@ -703,8 +703,8 @@ export default function ProjectsClean() {
             onClick={() => setActiveTab('active')}
             className={`font-roboto font-medium transition-all ${
               activeTab === 'active'
-                ? 'bg-[#236383] text-white hover:bg-[#1e5470]'
-                : 'text-[#236383] hover:text-[#1e5470] hover:bg-[#236383]/5'
+                ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
+                : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             <Play className="w-4 h-4 mr-2" />
@@ -717,8 +717,8 @@ export default function ProjectsClean() {
             onClick={() => setActiveTab('completed')}
             className={`font-roboto font-medium transition-all ${
               activeTab === 'completed'
-                ? 'bg-[#236383] text-white hover:bg-[#1e5470]'
-                : 'text-[#236383] hover:text-[#1e5470] hover:bg-[#236383]/5'
+                ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
+                : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -731,8 +731,8 @@ export default function ProjectsClean() {
             onClick={() => setActiveTab('archived')}
             className={`font-roboto font-medium transition-all ${
               activeTab === 'archived'
-                ? 'bg-[#236383] text-white hover:bg-[#1e5470]'
-                : 'text-[#236383] hover:text-[#1e5470] hover:bg-[#236383]/5'
+                ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
+                : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             <Archive className="w-4 h-4 mr-2" />
@@ -746,7 +746,7 @@ export default function ProjectsClean() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {(projects || []).length === 0 ? (
           <div className="col-span-full text-center py-12">
-            <div className="text-[#236383]/30 mb-4">
+            <div className="text-brand-primary/30 mb-4">
               {activeTab === 'available' && (
                 <Circle className="w-12 h-12 mx-auto" />
               )}
@@ -758,7 +758,7 @@ export default function ProjectsClean() {
                 <Archive className="w-12 h-12 mx-auto" />
               )}
             </div>
-            <h3 className="text-lg font-medium text-[#236383] font-roboto mb-2">
+            <h3 className="text-lg font-medium text-brand-primary font-roboto mb-2">
               No {activeTab.replace('_', ' ')} Projects
             </h3>
             <p className="text-gray-600 font-roboto">
@@ -781,7 +781,7 @@ export default function ProjectsClean() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle className="text-[#236383] font-roboto">
+            <DialogTitle className="text-brand-primary font-roboto">
               Create New Project
             </DialogTitle>
           </DialogHeader>
@@ -846,7 +846,7 @@ export default function ProjectsClean() {
                     onChange={() =>
                       setNewProject({ ...newProject, isMeetingProject: true })
                     }
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4 text-brand-primary border-gray-300 focus:ring-blue-500"
                   />
                   <span className="text-sm font-roboto">
                     📊 Meeting Project
@@ -963,7 +963,7 @@ export default function ProjectsClean() {
               </Button>
               <Button
                 type="submit"
-                className="bg-[#FBAD3F] hover:bg-[#e89a2f] text-white font-roboto"
+                className="bg-brand-orange hover:bg-brand-orange-dark text-white font-roboto"
                 disabled={createProjectMutation.isPending}
               >
                 {createProjectMutation.isPending
@@ -979,7 +979,7 @@ export default function ProjectsClean() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-[#236383] font-roboto">
+            <DialogTitle className="text-brand-primary font-roboto">
               Edit Project
             </DialogTitle>
             <p className="text-sm text-gray-600 font-roboto">
@@ -1214,7 +1214,7 @@ export default function ProjectsClean() {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-[#FBAD3F] hover:bg-[#e89a2f] text-white font-roboto"
+                    className="bg-brand-orange hover:bg-brand-orange-dark text-white font-roboto"
                     disabled={updateProjectMutation.isPending}
                   >
                     {updateProjectMutation.isPending

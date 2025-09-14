@@ -170,7 +170,7 @@ function RoleView({ user }: { user: any }) {
       <Card>
         <CardHeader>
           <div className="flex items-center space-x-3">
-            <Icon className="w-8 h-8 text-blue-600" />
+            <Icon className="w-8 h-8 text-brand-primary" />
             <div>
               <CardTitle className="text-xl">
                 {user.firstName} {user.lastName}

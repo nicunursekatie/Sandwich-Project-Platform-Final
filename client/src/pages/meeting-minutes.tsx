@@ -427,7 +427,7 @@ export default function MeetingMinutes({
     switch (type) {
       case 'core_team':
         return (
-          <Badge className="bg-[#FBAD3F] text-white hover:bg-[#e6991c]">
+          <Badge className="bg-brand-orange text-white hover:bg-brand-orange-dark">
             Core Team
           </Badge>
         );
@@ -817,7 +817,7 @@ export default function MeetingMinutes({
                   {/* Header with download */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
                     <div className="flex items-center gap-2">
-                      <Link className="w-5 h-5 text-blue-600" />
+                      <Link className="w-5 h-5 text-brand-primary" />
                       <span className="font-medium">Google Docs Document</span>
                     </div>
                     <Button variant="outline" size="sm" asChild>
@@ -863,7 +863,7 @@ export default function MeetingMinutes({
                   {/* Header with download */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
                     <div className="flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-blue-600" />
+                      <FileText className="w-5 h-5 text-brand-primary" />
                       <span className="font-medium">
                         {viewingMinutes.fileName}
                       </span>

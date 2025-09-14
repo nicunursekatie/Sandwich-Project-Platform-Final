@@ -55,7 +55,7 @@ interface EmailThread {
 }
 
 const FOLDERS = [
-  { id: 'inbox', name: 'Inbox', icon: Inbox, color: 'text-blue-600' },
+  { id: 'inbox', name: 'Inbox', icon: Inbox, color: 'text-brand-primary' },
   { id: 'sent', name: 'Sent', icon: Send, color: 'text-green-600' },
   { id: 'drafts', name: 'Drafts', icon: FileText, color: 'text-yellow-600' },
   { id: 'starred', name: 'Starred', icon: Star, color: 'text-amber-500' },
@@ -222,7 +222,7 @@ export default function GmailInbox() {
         <div className="p-4">
           <Button
             onClick={() => setIsComposing(true)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Compose
@@ -241,7 +241,7 @@ export default function GmailInbox() {
                 onClick={() => setSelectedFolder(folder.id)}
                 className={`w-full flex items-center px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
                   selectedFolder === folder.id
-                    ? 'bg-blue-50 border-r-2 border-blue-600'
+                    ? 'bg-blue-50 border-r-2 border-brand-primary'
                     : ''
                 }`}
               >

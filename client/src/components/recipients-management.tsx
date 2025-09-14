@@ -1016,7 +1016,7 @@ export default function RecipientsManagement() {
                                       contractSigned: e.target.checked,
                                     })
                                   }
-                                  className="h-4 w-4 text-[#236383] focus:ring-[#236383] border-gray-300 rounded"
+                                  className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
                                 />
                                 <Label
                                   htmlFor="contractSigned"
@@ -1357,7 +1357,7 @@ export default function RecipientsManagement() {
                       href={(recipient as any).website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:text-[#236383] underline"
+                      className="hover:text-brand-primary underline"
                     >
                       {(recipient as any).website}
                     </a>
@@ -1376,7 +1376,7 @@ export default function RecipientsManagement() {
                       href={`https://instagram.com/${(recipient as any).instagramHandle.replace('@', '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:text-[#236383] underline"
+                      className="hover:text-brand-primary underline"
                     >
                       {(recipient as any).instagramHandle}
                     </a>
@@ -2038,7 +2038,7 @@ export default function RecipientsManagement() {
                                 contractSigned: e.target.checked,
                               })
                             }
-                            className="h-4 w-4 text-[#236383] focus:ring-[#236383] border-gray-300 rounded"
+                            className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
                           />
                           <Label
                             htmlFor="edit-contractSigned"

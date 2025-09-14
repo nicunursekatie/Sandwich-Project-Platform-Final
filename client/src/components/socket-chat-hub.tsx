@@ -370,7 +370,7 @@ export default function SocketChatHub() {
                 key={room.id}
                 className={`rounded border ${
                   currentRoom === room.id
-                    ? 'bg-[#236383] border-[#236383]'
+                    ? 'bg-brand-primary border-brand-primary'
                     : 'bg-white border-gray-200 hover:border-gray-300'
                 } transition-colors`}
               >
@@ -384,7 +384,7 @@ export default function SocketChatHub() {
                         className={
                           currentRoom === room.id
                             ? 'text-white'
-                            : 'text-[#236383]'
+                            : 'text-brand-primary'
                         }
                       >
                         {getRoomIcon(room.id)}
@@ -445,7 +445,7 @@ export default function SocketChatHub() {
         {currentRoom ? (
           <>
             {/* Chat Header - Always Fixed at Top */}
-            <div className="flex-shrink-0 px-4 md:px-6 py-4 bg-[#236383] text-white border-b border-[#1e5573]">
+            <div className="flex-shrink-0 px-4 md:px-6 py-4 bg-brand-primary text-white border-b border-brand-primary-dark">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {isMobile && (
@@ -556,7 +556,7 @@ export default function SocketChatHub() {
                             // Generate consistent colors based on user name
                             const getAvatarColor = (userName: string) => {
                               const colors = [
-                                'bg-blue-500',
+                                'bg-brand-primary',
                                 'bg-green-500',
                                 'bg-purple-500',
                                 'bg-orange-500',
@@ -651,7 +651,7 @@ export default function SocketChatHub() {
               {isMobile && (
                 <Button
                   onClick={() => setShowSidebar(true)}
-                  className="bg-[#236383] hover:bg-[#1e5573]"
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Choose Channel
@@ -665,7 +665,7 @@ export default function SocketChatHub() {
         {isMobile && currentRoom && (
           <Button
             onClick={() => setShowSidebar(true)}
-            className="fixed bottom-6 right-4 z-30 h-14 w-14 rounded-full bg-[#236383] hover:bg-[#1e5573] shadow-lg"
+            className="fixed bottom-6 right-4 z-30 h-14 w-14 rounded-full bg-brand-primary hover:bg-brand-primary-dark shadow-lg"
             size="icon"
             title="Switch Channels"
           >

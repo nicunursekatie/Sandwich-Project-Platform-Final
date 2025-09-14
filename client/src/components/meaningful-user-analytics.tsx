@@ -191,7 +191,7 @@ export default function MeaningfulUserAnalytics() {
     if (score >= 75)
       return {
         level: 'High Impact',
-        color: 'bg-blue-500',
+        color: 'bg-brand-primary',
         textColor: 'text-blue-700',
       };
     if (score >= 50)

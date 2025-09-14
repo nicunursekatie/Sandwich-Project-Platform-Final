@@ -194,14 +194,14 @@ export default function SignupPage() {
             <div className="space-y-3">
               <Button
                 asChild
-                className="w-full bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
+                className="w-full bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
               >
                 <Link href="/">Return to Home</Link>
               </Button>
               <Button
                 variant="outline"
                 asChild
-                className="w-full border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
+                className="w-full border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
               >
                 <Link href="/login">Sign In</Link>
               </Button>
@@ -228,7 +228,7 @@ export default function SignupPage() {
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
-                    step <= currentStep ? 'bg-[#236383]' : 'bg-gray-300'
+                    step <= currentStep ? 'bg-brand-primary' : 'bg-gray-300'
                   }`}
                 />
               ))}
@@ -243,7 +243,7 @@ export default function SignupPage() {
               {currentStep === 1 && (
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2 mb-4">
-                    <Users className="w-5 h-5 text-blue-600" />
+                    <Users className="w-5 h-5 text-brand-primary" />
                     <h3 className="text-xl font-semibold">
                       Personal Information
                     </h3>
@@ -381,7 +381,7 @@ export default function SignupPage() {
               {currentStep === 2 && (
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2 mb-4">
-                    <Shield className="w-5 h-5 text-blue-600" />
+                    <Shield className="w-5 h-5 text-brand-primary" />
                     <h3 className="text-xl font-semibold">
                       Your Role & Availability
                     </h3>
@@ -515,7 +515,7 @@ export default function SignupPage() {
               {currentStep === 3 && (
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2 mb-4">
-                    <CheckCircle className="w-5 h-5 text-blue-600" />
+                    <CheckCircle className="w-5 h-5 text-brand-primary" />
                     <h3 className="text-xl font-semibold">Terms & Agreement</h3>
                   </div>
 
@@ -619,7 +619,7 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link href="/login" className="text-blue-600 hover:underline">
+              <Link href="/login" className="text-brand-primary hover:underline">
                 Sign in here
               </Link>
             </p>

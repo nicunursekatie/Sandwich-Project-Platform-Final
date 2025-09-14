@@ -580,7 +580,7 @@ export default function MeetingAgenda() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEditItem(item)}
-                                className="text-blue-600 hover:text-blue-700"
+                                className="text-brand-primary hover:text-blue-700"
                                 title="Edit item"
                               >
                                 <Edit className="w-3 h-3" />

@@ -751,7 +751,7 @@ export default function TSPContactManager({
                       isPrimary: e.target.checked,
                     })
                   }
-                  className="h-4 w-4 text-[#236383] focus:ring-[#236383] border-gray-300 rounded"
+                  className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
                 />
                 <Label htmlFor="isPrimary" className="text-sm">
                   Set as Primary Contact
@@ -798,7 +798,7 @@ export default function TSPContactManager({
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
                       {contact.isPrimary && (
-                        <Star className="h-4 w-4 text-blue-600 fill-current" />
+                        <Star className="h-4 w-4 text-brand-primary fill-current" />
                       )}
                       <Badge className={getTspContactColor()}>
                         TSP Contact
@@ -1001,7 +1001,7 @@ export default function TSPContactManager({
                       isPrimary: e.target.checked,
                     })
                   }
-                  className="h-4 w-4 text-[#236383] focus:ring-[#236383] border-gray-300 rounded"
+                  className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
                 />
                 <Label htmlFor="edit-isPrimary" className="text-sm">
                   Set as Primary Contact

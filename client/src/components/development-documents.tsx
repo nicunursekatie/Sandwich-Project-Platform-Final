@@ -157,7 +157,7 @@ const getFileIcon = (type: string) => {
     case 'txt':
       return <FileText className="h-5 w-5 text-gray-500" />;
     case 'link':
-      return <Calculator className="h-5 w-5 text-blue-600" />;
+      return <Calculator className="h-5 w-5 text-brand-primary" />;
     default:
       return <FileText className="h-5 w-5 text-gray-500" />;
   }

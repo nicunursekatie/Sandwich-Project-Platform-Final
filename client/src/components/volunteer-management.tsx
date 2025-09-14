@@ -372,7 +372,7 @@ export default function VolunteerManagement() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
-          <Users className="w-6 h-6 text-blue-600" />
+          <Users className="w-6 h-6 text-brand-primary" />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">
@@ -479,7 +479,7 @@ export default function VolunteerManagement() {
                           <Mail className="w-4 h-4 text-gray-400" />
                           <a
                             href={`mailto:${volunteer.email}`}
-                            className="text-blue-600 hover:underline"
+                            className="text-brand-primary hover:underline"
                           >
                             {volunteer.email}
                           </a>
@@ -491,7 +491,7 @@ export default function VolunteerManagement() {
                           <Phone className="w-4 h-4 text-gray-400" />
                           <a
                             href={`tel:${volunteer.phone}`}
-                            className="text-blue-600 hover:underline"
+                            className="text-brand-primary hover:underline"
                           >
                             {volunteer.phone}
                           </a>
@@ -686,7 +686,7 @@ export default function VolunteerManagement() {
                 <div className="border-t pt-4 mt-4">
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-5 h-5 text-blue-600" />
+                      <Building2 className="w-5 h-5 text-brand-primary" />
                       <h3 className="text-lg font-medium text-gray-900">
                         Designate as Host
                       </h3>
@@ -704,7 +704,7 @@ export default function VolunteerManagement() {
                             type="button"
                             variant="outline"
                             onClick={() => setShowHostDesignation(true)}
-                            className="text-blue-600 border-blue-200 hover:bg-blue-100"
+                            className="text-brand-primary border-blue-200 hover:bg-blue-100"
                           >
                             <Building2 className="w-4 h-4 mr-2" />
                             Designate as Host

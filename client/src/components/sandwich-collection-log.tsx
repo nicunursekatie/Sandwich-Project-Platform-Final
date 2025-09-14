@@ -739,7 +739,7 @@ export default function SandwichCollectionLog() {
                   variant={pageNum === currentPage ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-10 h-10 ${pageNum === currentPage ? 'bg-blue-600 text-white' : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-700'}`}
+                  className={`w-10 h-10 ${pageNum === currentPage ? 'bg-brand-primary text-white' : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-700'}`}
                 >
                   {pageNum}
                 </Button>
@@ -1742,7 +1742,7 @@ export default function SandwichCollectionLog() {
                   </span>
                 </div>
                 {currentStats.dateRange && (
-                  <div className="text-blue-600 mt-1 text-xs">
+                  <div className="text-brand-primary mt-1 text-xs">
                     Date range: {currentStats.dateRange.earliest} -{' '}
                     {currentStats.dateRange.latest}
                   </div>
@@ -1759,7 +1759,7 @@ export default function SandwichCollectionLog() {
                   {hasActiveFilters ? ' filtered' : ''} entries
                 </p>
                 {hasActiveFilters && !currentStats.hostName && (
-                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                  <span className="text-xs text-brand-primary bg-blue-100 px-2 py-1 rounded-full">
                     Multiple Hosts
                   </span>
                 )}
@@ -1792,7 +1792,7 @@ export default function SandwichCollectionLog() {
                 </div>
                 <div
                   className={`text-sm font-semibold uppercase tracking-wide mt-1 ${
-                    hasActiveFilters ? 'text-blue-600' : 'text-teal-600'
+                    hasActiveFilters ? 'text-brand-primary' : 'text-teal-600'
                   }`}
                 >
                   Individual
@@ -1849,7 +1849,7 @@ export default function SandwichCollectionLog() {
                   onClick={() => setShowSubmitForm(!showSubmitForm)}
                   variant="default"
                   size="sm"
-                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-[#236383] hover:bg-[#1d5470] py-4 px-6 !text-lg sm:!text-sm min-h-[56px] sm:min-h-[40px]"
+                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-sm min-h-[56px] sm:min-h-[40px]"
                 >
                   <Sandwich className="w-5 h-5 sm:w-4 sm:h-4" />
                   <span className="font-medium">
@@ -2193,7 +2193,7 @@ export default function SandwichCollectionLog() {
                           className="flex items-center w-4 h-4 shrink-0"
                         >
                           {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-blue-600" />
+                            <CheckSquare className="w-4 h-4 text-brand-primary" />
                           ) : (
                             <Square className="w-4 h-4 text-slate-400 hover:text-slate-600" />
                           )}

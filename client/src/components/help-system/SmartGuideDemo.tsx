@@ -76,7 +76,7 @@ export function SmartGuideDemo() {
                 className="p-4 border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-lg cursor-pointer transition-all hover:bg-blue-50"
                 data-guide="user-management"
               >
-                <Users className="w-6 h-6 text-blue-600 mb-2" />
+                <Users className="w-6 h-6 text-brand-primary mb-2" />
                 <h3 className="font-semibold text-slate-900 mb-1">Users</h3>
                 <p className="text-sm text-slate-600">Manage team members</p>
                 <Badge variant="outline" className="mt-2 text-xs">

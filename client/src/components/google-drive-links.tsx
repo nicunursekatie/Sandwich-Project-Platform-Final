@@ -284,7 +284,7 @@ export default function GoogleDriveLinks() {
                     <div className="flex text-sm text-gray-600">
                       <label
                         htmlFor="file-upload"
-                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                        className="relative cursor-pointer bg-white rounded-md font-medium text-brand-primary hover:text-blue-500 focus-within:outline-none"
                       >
                         <span>Upload a file</span>
                         <input
@@ -448,7 +448,7 @@ export default function GoogleDriveLinks() {
                   className={`${getIconColor(link.iconColor)} mr-3 w-5 h-5`}
                 />
                 <div className="flex-1">
-                  <h3 className="font-medium text-slate-900 group-hover:text-blue-600">
+                  <h3 className="font-medium text-slate-900 group-hover:text-brand-primary">
                     {link.title}
                   </h3>
                   <p className="text-sm text-slate-600">{link.description}</p>

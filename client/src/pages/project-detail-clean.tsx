@@ -598,7 +598,7 @@ export default function ProjectDetailClean({
       case 'completed':
         return 'text-green-600 bg-green-50 border-green-200';
       case 'in_progress':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+        return 'text-brand-primary bg-blue-50 border-blue-200';
       case 'available':
         return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'waiting':
@@ -655,13 +655,13 @@ export default function ProjectDetailClean({
                 setLocation('/projects');
               }
             }}
-            className="flex items-center gap-2 text-[#236383] hover:bg-[#236383]/10 font-roboto"
+            className="flex items-center gap-2 text-brand-primary hover:bg-brand-primary/10 font-roboto"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Projects
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-[#236383] font-roboto mb-2">
+            <h1 className="text-3xl font-bold text-brand-primary font-roboto mb-2">
               {project.title}
             </h1>
             {project.description && (
@@ -677,7 +677,7 @@ export default function ProjectDetailClean({
               variant="outline"
               size="sm"
               onClick={handleEditProject}
-              className="flex items-center gap-2 border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white font-roboto"
+              className="flex items-center gap-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white font-roboto"
             >
               <Edit2 className="h-4 w-4" />
               Edit Project
@@ -698,7 +698,7 @@ export default function ProjectDetailClean({
             {project.priority}
           </Badge>
           {project.category && project.category !== project.milestone && (
-            <Badge className="bg-[#236383] text-white font-roboto px-3 py-1">
+            <Badge className="bg-brand-primary text-white font-roboto px-3 py-1">
               {getCategoryIcon(project.category)} {project.category}
             </Badge>
           )}
@@ -710,10 +710,10 @@ export default function ProjectDetailClean({
         {/* Project Owner */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 bg-[#236383]/10 rounded flex items-center justify-center shrink-0">
-              <User className="h-3 w-3 text-[#236383]" />
+            <div className="w-6 h-6 bg-brand-primary/10 rounded flex items-center justify-center shrink-0">
+              <User className="h-3 w-3 text-brand-primary" />
             </div>
-            <h3 className="text-sm font-semibold text-[#236383] font-roboto">
+            <h3 className="text-sm font-semibold text-brand-primary font-roboto">
               Owner
             </h3>
           </div>
@@ -746,10 +746,10 @@ export default function ProjectDetailClean({
         {/* Target Date */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 bg-[#FBAD3F]/10 rounded flex items-center justify-center shrink-0">
-              <Calendar className="h-3 w-3 text-[#FBAD3F]" />
+            <div className="w-6 h-6 bg-brand-orange/10 rounded flex items-center justify-center shrink-0">
+              <Calendar className="h-3 w-3 text-brand-orange" />
             </div>
-            <h3 className="text-sm font-semibold text-[#FBAD3F] font-roboto">
+            <h3 className="text-sm font-semibold text-brand-orange font-roboto">
               Target Date
             </h3>
           </div>
@@ -794,7 +794,7 @@ export default function ProjectDetailClean({
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shrink-0">
                 <Target className="h-4 w-4 text-white" />
               </div>
               <h2 className="text-lg font-semibold text-blue-900 font-roboto">
@@ -806,7 +806,7 @@ export default function ProjectDetailClean({
                 variant="outline"
                 size="sm"
                 onClick={handleEditMilestone}
-                className="flex items-center gap-2 border-blue-300 text-blue-600 hover:bg-blue-600 hover:text-white font-roboto"
+                className="flex items-center gap-2 border-blue-300 text-brand-primary hover:bg-brand-primary hover:text-white font-roboto"
               >
                 <Edit2 className="h-3 w-3" />
                 Edit
@@ -836,7 +836,7 @@ export default function ProjectDetailClean({
                     size="sm"
                     onClick={handleSaveMilestone}
                     disabled={saveMilestoneMutation.isPending}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-3"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white text-xs sm:text-sm px-2 sm:px-3"
                   >
                     {saveMilestoneMutation.isPending
                       ? 'Saving...'
@@ -869,7 +869,7 @@ export default function ProjectDetailClean({
               <MessageSquare className="h-4 w-4 text-orange-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#236383] font-roboto">
+              <h2 className="text-xl font-bold text-brand-primary font-roboto">
                 Meeting Discussion
               </h2>
               <p className="text-sm text-gray-600">
@@ -974,13 +974,13 @@ export default function ProjectDetailClean({
       {/* Tasks Section */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-[#236383] font-roboto">
+          <h2 className="text-2xl font-bold text-brand-primary font-roboto">
             Tasks
           </h2>
           {user && canEditProject(user, project) && (
             <Button
               onClick={() => setIsAddingTask(true)}
-              className="flex items-center gap-2 bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white font-roboto px-4 py-2"
+              className="flex items-center gap-2 bg-brand-orange hover:bg-brand-orange/90 text-white font-roboto px-4 py-2"
             >
               <Plus className="h-4 w-4" />
               Add Task
@@ -991,7 +991,7 @@ export default function ProjectDetailClean({
         {/* Add Task Form */}
         {isAddingTask && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-xl font-bold text-[#236383] font-roboto mb-6">
+            <h3 className="text-xl font-bold text-brand-primary font-roboto mb-6">
               Add New Task
             </h3>
             <div className="space-y-4">
@@ -1082,7 +1082,7 @@ export default function ProjectDetailClean({
                 <Button
                   onClick={handleAddTask}
                   disabled={addTaskMutation.isPending}
-                  className="bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white font-roboto"
+                  className="bg-brand-orange hover:bg-brand-orange/90 text-white font-roboto"
                 >
                   {addTaskMutation.isPending ? 'Adding...' : 'Add Task'}
                 </Button>
@@ -1130,7 +1130,7 @@ export default function ProjectDetailClean({
                       className={`text-lg font-semibold font-roboto ${
                         task.status === 'completed'
                           ? 'line-through text-gray-600'
-                          : 'text-[#236383]'
+                          : 'text-brand-primary'
                       }`}
                     >
                       {task.status === 'completed' && (
@@ -1186,7 +1186,7 @@ export default function ProjectDetailClean({
                               onClick={() =>
                                 handleTaskStatusChange(task.id, 'in_progress')
                               }
-                              className="text-blue-600 hover:text-blue-800"
+                              className="text-brand-primary hover:text-blue-800"
                               title="Mark as in progress"
                             >
                               <Clock className="h-4 w-4" />
@@ -1196,7 +1196,7 @@ export default function ProjectDetailClean({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditTask(task)}
-                          className="text-[#236383] hover:text-[#236383]/80"
+                          className="text-brand-primary hover:text-brand-primary/80"
                           title="Edit task"
                         >
                           <Edit2 className="h-4 w-4" />

@@ -207,7 +207,7 @@ export default function MeetingAgenda({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl">
-            <ListTodo className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <ListTodo className="w-5 h-5 sm:w-6 sm:h-6 text-brand-primary" />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">

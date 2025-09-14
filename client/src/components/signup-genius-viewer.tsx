@@ -30,7 +30,7 @@ export default function SignUpGeniusViewer() {
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-brand-primary" />
               </div>
               SignUp Genius
             </CardTitle>
@@ -42,7 +42,7 @@ export default function SignUpGeniusViewer() {
           {
             <div className="flex flex-col items-center justify-center h-full bg-white rounded-lg border-2 border-dashed border-gray-300 p-8">
               <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-brand-primary" />
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -56,7 +56,7 @@ export default function SignUpGeniusViewer() {
 
               <Button
                 onClick={handleOpenExternal}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary-dark"
                 size="lg"
               >
                 <ExternalLink className="h-5 w-5" />
@@ -65,7 +65,7 @@ export default function SignUpGeniusViewer() {
 
               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl">
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <Calendar className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                  <Calendar className="h-6 w-6 text-brand-primary mx-auto mb-2" />
                   <div className="font-medium text-gray-900">Event Signup</div>
                   <div className="text-sm text-gray-600">
                     Register for upcoming events

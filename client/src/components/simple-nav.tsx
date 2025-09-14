@@ -506,7 +506,7 @@ export default function SimpleNav({
               } text-left h-11 touch-manipulation relative
               ${
                 isCurrentlyActive
-                  ? 'bg-[#236383] hover:bg-[#1d5470] text-white shadow-sm border-l-4 border-l-[#FBAD3F]'
+                  ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
                   : 'hover:bg-slate-100 text-slate-700'
               }
             `}

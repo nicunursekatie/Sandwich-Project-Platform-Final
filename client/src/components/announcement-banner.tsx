@@ -86,21 +86,21 @@ export default function AnnouncementBanner() {
 
     // Use brand colors: #236383 (teal), #FBAD3F (orange), #A31C41 (burgundy)
     if (priority === 'urgent') {
-      return `${baseStyles} bg-red-50 dark:bg-red-950/20 border-[#A31C41] text-[#A31C41] dark:text-red-200`;
+      return `${baseStyles} bg-red-50 dark:bg-red-950/20 border-brand-burgundy text-brand-burgundy dark:text-red-200`;
     }
     if (priority === 'high') {
-      return `${baseStyles} bg-orange-50 dark:bg-orange-950/20 border-[#FBAD3F] text-orange-900 dark:text-orange-200`;
+      return `${baseStyles} bg-orange-50 dark:bg-orange-950/20 border-brand-orange text-orange-900 dark:text-orange-200`;
     }
     if (type === 'event') {
-      return `${baseStyles} bg-teal-50 dark:bg-teal-950/20 border-[#236383] text-[#236383] dark:text-teal-200`;
+      return `${baseStyles} bg-teal-50 dark:bg-teal-950/20 border-brand-primary text-brand-primary dark:text-teal-200`;
     }
     if (type === 'position') {
-      return `${baseStyles} bg-teal-50 dark:bg-teal-950/20 border-[#007E8C] text-[#007E8C] dark:text-teal-200`;
+      return `${baseStyles} bg-teal-50 dark:bg-teal-950/20 border-brand-teal text-brand-teal dark:text-teal-200`;
     }
     if (type === 'alert') {
-      return `${baseStyles} bg-orange-50 dark:bg-orange-950/20 border-[#FBAD3F] text-orange-900 dark:text-orange-200`;
+      return `${baseStyles} bg-orange-50 dark:bg-orange-950/20 border-brand-orange text-orange-900 dark:text-orange-200`;
     }
-    return `${baseStyles} bg-blue-50 dark:bg-blue-950/20 border-[#236383] text-[#236383] dark:text-blue-200`;
+    return `${baseStyles} bg-blue-50 dark:bg-blue-950/20 border-brand-primary text-brand-primary dark:text-blue-200`;
   };
 
   return (

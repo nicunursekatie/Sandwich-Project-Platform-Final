@@ -409,22 +409,22 @@ export default function Dashboard({
               </p>
             </div>
             <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 h-9 sm:h-10 bg-[#236383]/10 border-[#236383]/20">
+              <TabsList className="grid w-full grid-cols-3 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
                 <TabsTrigger
                   value="data"
-                  className="text-xs sm:text-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white text-[#236383]"
+                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   Data Analytics
                 </TabsTrigger>
                 <TabsTrigger
                   value="hosts"
-                  className="text-xs sm:text-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white text-[#646464]"
+                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   Host Analytics
                 </TabsTrigger>
                 <TabsTrigger
                   value="impact"
-                  className="text-xs sm:text-sm data-[state=active]:bg-[#236383] data-[state=active]:text-white text-[#646464]"
+                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   Impact Dashboard
                 </TabsTrigger>
@@ -607,7 +607,7 @@ export default function Dashboard({
                 }}
                 className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
                   activeSection === 'messages'
-                    ? 'bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm'
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
                     : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
                 }`}
                 title="Messages"
@@ -644,7 +644,7 @@ export default function Dashboard({
                 }}
                 className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
                   activeSection === 'profile'
-                    ? 'bg-[#236383] hover:bg-[#1d5470] text-white border border-[#236383] shadow-sm'
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
                     : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
                 }`}
                 title="Account Settings"

@@ -228,7 +228,7 @@ export default function MeetingCalendar({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
-            <Calendar className="w-6 h-6 text-blue-600" />
+            <Calendar className="w-6 h-6 text-brand-primary" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Calendar</h1>
@@ -424,7 +424,7 @@ export default function MeetingCalendar({
                         </p>
                       )}
                       {meeting.meetingLink && (
-                        <p className="text-sm text-blue-600">
+                        <p className="text-sm text-brand-primary">
                           Meeting Link:{' '}
                           <a
                             href={meeting.meetingLink}

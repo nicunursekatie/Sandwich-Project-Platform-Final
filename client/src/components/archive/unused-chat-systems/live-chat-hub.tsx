@@ -295,7 +295,7 @@ export default function LiveChatHub({
                         isSelected
                           ? isCorteTeam
                             ? 'text-amber-600'
-                            : 'text-blue-600'
+                            : 'text-brand-primary'
                           : 'text-gray-500'
                       }`}
                     >

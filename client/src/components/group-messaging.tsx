@@ -644,7 +644,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                         <div className="flex items-center gap-1 mt-1">
                           <Users className="h-3 w-3 text-gray-400" />
                           <button 
-                            className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                            className="text-xs text-brand-primary hover:text-blue-800 hover:underline"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedGroup(group);

@@ -221,7 +221,7 @@ export default function WishlistPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
-            <Gift className="w-8 h-8 text-[#FBAD3F]" />
+            <Gift className="w-8 h-8 text-brand-orange" />
             Amazon Wishlist
           </h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
@@ -232,8 +232,8 @@ export default function WishlistPage() {
         </div>
 
         {/* Quick Share Section */}
-        <Card className="border-[#236383] border-2">
-          <CardHeader className="bg-[#236383] text-white">
+        <Card className="border-brand-primary border-2">
+          <CardHeader className="bg-brand-primary text-white">
             <CardTitle className="flex items-center gap-2">
               <Share2 className="w-5 h-5" />
               Share Our Wishlist
@@ -278,7 +278,7 @@ export default function WishlistPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
-                <Users className="w-8 h-8 text-[#236383]" />
+                <Users className="w-8 h-8 text-brand-primary" />
                 <div>
                   <p className="text-2xl font-bold">{suggestions.length}</p>
                   <p className="text-xs text-slate-600">Items Suggested</p>
@@ -290,7 +290,7 @@ export default function WishlistPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
-                <TrendingUp className="w-8 h-8 text-[#FBAD3F]" />
+                <TrendingUp className="w-8 h-8 text-brand-orange" />
                 <div>
                   <p className="text-2xl font-bold">
                     {suggestions.filter((s) => s.status === 'approved').length}
@@ -304,7 +304,7 @@ export default function WishlistPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
-                <Gift className="w-8 h-8 text-[#A31C41]" />
+                <Gift className="w-8 h-8 text-brand-burgundy" />
                 <div>
                   <p className="text-2xl font-bold">
                     {suggestions.filter((s) => s.priority === 'high').length}
@@ -319,7 +319,7 @@ export default function WishlistPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-[#236383]" />
+              <Gift className="w-5 h-5 text-brand-primary" />
               Current Wishlist Suggestions ({suggestions.length})
             </CardTitle>
           </CardHeader>
@@ -508,7 +508,7 @@ export default function WishlistPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-[#236383]" />
+              <Plus className="w-5 h-5 text-brand-primary" />
               Suggest New Items
             </CardTitle>
           </CardHeader>
@@ -586,7 +586,7 @@ export default function WishlistPage() {
         </Card>
 
         {/* Sharing Tips */}
-        <Card className="bg-gradient-to-r from-[#236383]/5 to-[#FBAD3F]/5">
+        <Card className="bg-gradient-to-r from-brand-primary/5 to-brand-orange/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -646,7 +646,7 @@ export default function WishlistPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-[#A31C41]" />
+                  <Shield className="w-5 h-5 text-brand-burgundy" />
                   Admin Review - Pending Suggestions
                 </CardTitle>
               </CardHeader>
@@ -765,7 +765,7 @@ export default function WishlistPage() {
                             item.status === 'approved'
                               ? 'text-green-600'
                               : item.status === 'pending'
-                                ? 'text-blue-600'
+                                ? 'text-brand-primary'
                                 : 'text-orange-600'
                           }`}
                         />

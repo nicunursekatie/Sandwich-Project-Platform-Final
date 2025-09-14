@@ -346,7 +346,7 @@ export default function SuggestionsPortal() {
       case 'in_progress':
         return {
           icon: <Clock className="h-4 w-4" />,
-          color: 'text-blue-600',
+          color: 'text-brand-primary',
           bg: 'bg-blue-50',
           label: 'In Progress',
         };
@@ -768,7 +768,7 @@ export default function SuggestionsPortal() {
                 >
                   <span className="hidden sm:inline">In Progress</span>
                   <span className="sm:hidden">Active</span>
-                  <Badge className="bg-blue-600 text-white text-xs min-w-[20px] justify-center">
+                  <Badge className="bg-brand-primary text-white text-xs min-w-[20px] justify-center">
                     {tabCounts.inProgress}
                   </Badge>
                 </TabsTrigger>
@@ -930,7 +930,7 @@ export default function SuggestionsPortal() {
                                           suggestion.priority.slice(1)}
                                       </Badge>
                                     </div>
-                                    <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors line-clamp-2 mb-2">
+                                    <h3 className="text-lg font-semibold group-hover:text-brand-primary transition-colors line-clamp-2 mb-2">
                                       {suggestion.title}
                                     </h3>
                                     <p className="text-gray-600 line-clamp-2 text-sm">
@@ -987,7 +987,7 @@ export default function SuggestionsPortal() {
                                           e.stopPropagation();
                                           upvoteMutation.mutate(suggestion.id);
                                         }}
-                                        className="flex items-center gap-1 h-8 px-2 hover:bg-blue-50 hover:text-blue-600"
+                                        className="flex items-center gap-1 h-8 px-2 hover:bg-blue-50 hover:text-brand-primary"
                                       >
                                         <ThumbsUp className="h-4 w-4" />
                                         <span className="font-medium">
@@ -1191,7 +1191,7 @@ export default function SuggestionsPortal() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-blue-600" />
+              <Mail className="h-5 w-5 text-brand-primary" />
               Request Clarification
             </DialogTitle>
             <DialogDescription>

@@ -513,7 +513,7 @@ function getCardColorForType(type: string) {
 function getIconForType(type: string) {
   switch (type) {
     case 'content':
-      return <Database className="h-4 w-4 text-blue-600" />;
+      return <Database className="h-4 w-4 text-brand-primary" />;
     case 'directory':
       return <Phone className="h-4 w-4 text-green-600" />;
     case 'communication':

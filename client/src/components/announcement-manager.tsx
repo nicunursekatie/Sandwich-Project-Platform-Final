@@ -502,7 +502,7 @@ export default function AnnouncementManager() {
                           href={announcement.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="text-brand-primary hover:underline"
                         >
                           {announcement.linkText || 'View'}
                         </a>

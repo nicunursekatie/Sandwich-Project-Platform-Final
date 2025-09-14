@@ -566,11 +566,11 @@ export default function ImpactDashboard() {
                       <span className="text-gray-600">
                         Recent Trend (Last 4 weeks)
                       </span>
-                      <span className="font-bold text-blue-600">Steady</span>
+                      <span className="font-bold text-brand-primary">Steady</span>
                     </div>
                     <div className="bg-gray-100 rounded-full h-2">
                       <div
-                        className="bg-blue-500 h-2 rounded-full"
+                        className="bg-brand-primary h-2 rounded-full"
                         style={{ width: '75%' }}
                       ></div>
                     </div>
@@ -603,14 +603,14 @@ export default function ImpactDashboard() {
                       <a
                         href="https://www.atlantaregionalfoodbank.org/impact/"
                         target="_blank"
-                        className="text-blue-600 text-sm hover:underline block"
+                        className="text-brand-primary text-sm hover:underline block"
                       >
                         → Atlanta Regional Food Bank Data
                       </a>
                       <a
                         href="https://hungerandhealth.feedingamerica.org/understand-food-insecurity/hunger-facts/"
                         target="_blank"
-                        className="text-blue-600 text-sm hover:underline block"
+                        className="text-brand-primary text-sm hover:underline block"
                       >
                         → Georgia Food Insecurity Stats
                       </a>
@@ -642,7 +642,7 @@ export default function ImpactDashboard() {
                     </div>
 
                     <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                      <Users className="w-5 h-5 text-blue-600 mt-1" />
+                      <Users className="w-5 h-5 text-brand-primary mt-1" />
                       <div>
                         <p className="font-medium text-blue-900">
                           Community Engagement

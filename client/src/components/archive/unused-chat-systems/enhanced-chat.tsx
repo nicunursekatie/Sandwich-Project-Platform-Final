@@ -290,7 +290,7 @@ export default function EnhancedChat() {
     if (selectedChannel === 'core-team') {
       return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white';
     }
-    return 'bg-[#236383] text-white';
+    return 'bg-brand-primary text-white';
   };
 
   return (
@@ -348,7 +348,7 @@ export default function EnhancedChat() {
           {!isJoined ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center text-gray-500">
-                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#236383] mx-auto mb-3 sm:mb-4"></div>
+                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-brand-primary mx-auto mb-3 sm:mb-4"></div>
                 <p className="text-sm sm:text-base">
                   Joining {channelInfo?.name}...
                 </p>
@@ -400,7 +400,7 @@ export default function EnhancedChat() {
             <Button
               onClick={sendMessage}
               disabled={!isConnected || !isJoined || !newMessage.trim()}
-              className="bg-[#236383] hover:bg-[#1a4d66] text-white h-10 sm:h-11 w-10 sm:w-11 p-0"
+              className="bg-brand-primary hover:bg-brand-primary-dark text-white h-10 sm:h-11 w-10 sm:w-11 p-0"
             >
               <Send className="h-4 w-4" />
             </Button>

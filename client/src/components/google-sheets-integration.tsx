@@ -197,7 +197,7 @@ export function GoogleSheetsIntegration() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-brand-primary">
                   {analysis.totalRows}
                 </div>
                 <div className="text-sm text-gray-600">Total Rows</div>
@@ -301,7 +301,7 @@ export function GoogleSheetsIntegration() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {importResult.preview && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold text-brand-primary">
                     {importResult.preview.length}
                   </div>
                   <div className="text-sm text-gray-600">Rows Analyzed</div>

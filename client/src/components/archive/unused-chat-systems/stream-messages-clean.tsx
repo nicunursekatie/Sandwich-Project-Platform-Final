@@ -266,7 +266,7 @@ export default function StreamMessagesPage() {
       {/* Header */}
       <div className="border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-blue-600" />
+          <MessageCircle className="h-5 w-5 text-brand-primary" />
           <h1 className="text-xl font-semibold">Stream Chat Messages</h1>
         </div>
 

@@ -70,14 +70,14 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
       <CardContent className="pt-0 space-y-3">
         <div className="flex items-center gap-2 text-sm text-gray-600"
           <Phone className="h-4 w-4" />
-          <a href={`tel:${driver.phone}`} className="hover:text-blue-600">
+          <a href={`tel:${driver.phone}`} className="hover:text-brand-primary">
             {driver.phone}
           </a>
         </div>
         
         <div className="flex items-center gap-2 text-sm text-gray-600"
           <Mail className="h-4 w-4" />
-          <a href={`mailto:${driver.email}`} className="hover:text-blue-600 truncate">
+          <a href={`mailto:${driver.email}`} className="hover:text-brand-primary truncate">
             {driver.email}
           </a>
         </div>

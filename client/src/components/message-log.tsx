@@ -278,7 +278,7 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
   const getAvatarColor = (name: string) => {
     if (!name || typeof name !== 'string') return 'bg-gray-500';
     const colors = [
-      'bg-blue-500',
+      'bg-brand-primary',
       'bg-green-500',
       'bg-purple-500',
       'bg-red-500',
@@ -656,7 +656,7 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
                             !form.watch('content').trim()
                           }
                           size="sm"
-                          className="absolute right-1 top-1 h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700"
+                          className="absolute right-1 top-1 h-8 w-8 p-0 bg-brand-primary hover:bg-brand-primary-dark"
                         >
                           <Send className="w-4 h-4" />
                         </Button>
