@@ -43,6 +43,8 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -58,6 +60,7 @@ export function ConfidentialDocuments() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [allowedEmails, setAllowedEmails] = useState<string>('');
   const [isDragActive, setIsDragActive] = useState(false);
+  const [expandedAccess, setExpandedAccess] = useState<Record<number, boolean>>({});
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -259,6 +262,13 @@ export function ConfidentialDocuments() {
 
   const handleDelete = (doc: ConfidentialDocument) => {
     deleteMutation.mutate(doc.id);
+  };
+
+  const toggleAccessExpanded = (documentId: number) => {
+    setExpandedAccess(prev => ({
+      ...prev,
+      [documentId]: !prev[documentId]
+    }));
   };
 
   const canDeleteDocument = (doc: ConfidentialDocument): boolean => {
@@ -520,8 +530,8 @@ export function ConfidentialDocuments() {
                   data-testid={`card-document-${document.id}`}
                 >
                   <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="p-2 bg-red-100 rounded-lg">
                           <Lock className="h-6 w-6 text-red-600" />
                         </div>
@@ -536,7 +546,7 @@ export function ConfidentialDocuments() {
                       </div>
                       <Badge
                         variant="secondary"
-                        className="text-xs bg-red-100 text-red-800 ml-2"
+                        className="text-xs bg-red-100 text-red-800 shrink-0"
                       >
                         <Lock className="w-3 h-3 mr-1" />
                         Restricted
@@ -561,14 +571,22 @@ export function ConfidentialDocuments() {
 
                       {/* Access List */}
                       <div>
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <button
+                          onClick={() => toggleAccessExpanded(document.id)}
+                          className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 hover:text-[#236383] transition-colors w-full text-left"
+                          data-testid={`button-toggle-access-${document.id}`}
+                        >
                           <Users className="h-4 w-4" />
                           <span>Allowed Access ({document.allowedEmails.length})</span>
-                        </div>
-                        <div className="space-y-1">
-                          {document.allowedEmails
-                            .slice(0, 3)
-                            .map((email: string, index: number) => (
+                          {expandedAccess[document.id] ? (
+                            <ChevronUp className="h-4 w-4 ml-auto" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 ml-auto" />
+                          )}
+                        </button>
+                        {expandedAccess[document.id] && (
+                          <div className="space-y-1">
+                            {document.allowedEmails.map((email: string, index: number) => (
                               <div
                                 key={index}
                                 className="text-xs bg-gray-100 px-2 py-1 rounded-md font-mono"
@@ -576,12 +594,8 @@ export function ConfidentialDocuments() {
                                 {email}
                               </div>
                             ))}
-                          {document.allowedEmails.length > 3 && (
-                            <div className="text-xs text-gray-500">
-                              +{document.allowedEmails.length - 3} more
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
