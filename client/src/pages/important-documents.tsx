@@ -299,7 +299,7 @@ export default function ImportantDocuments() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 p-8">
+    <div className="min-h-screen bg-white p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-16">
           <div className="flex items-center gap-4 mb-6">
