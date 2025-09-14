@@ -50,21 +50,21 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'collections',
   },
 
-  // CORE TOOLS
+  // Move these back to their original groups without creating "core"
   {
     id: 'events',
     label: 'Events',
     icon: Calendar,
     href: 'events',
     permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
-    group: 'core',
+    group: 'planning',
   },
   {
     id: 'inventory-calculator',
     label: 'Inventory Calculator',
     icon: Calculator,
     href: 'inventory-calculator',
-    group: 'core',
+    group: 'operations',
   },
   {
     id: 'important-documents',

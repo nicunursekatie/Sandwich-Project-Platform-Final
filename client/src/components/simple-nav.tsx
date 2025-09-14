@@ -96,12 +96,9 @@ export default function SimpleNav({
 
     const getGroupLabel = (group: string) => {
       const labels = {
-        dashboard: 'DASHBOARD',
-        collections: 'COLLECTIONS',
-        core: 'CORE TOOLS',
-        communication: 'COMMUNICATION',
         operations: 'OPERATIONS',
         planning: 'PLANNING & COORDINATION',
+        communication: 'COMMUNICATION',
         documentation: 'DOCUMENTATION',
         admin: 'ADMIN',
       };
