@@ -298,6 +298,29 @@ export default function createProjectRoutes(options: {
     }
   );
 
+  // GET /:id - Get single project by ID
+  projectsRouter.get(
+    '/:id',
+    async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+          return res.status(400).json({ message: 'Invalid project ID' });
+        }
+
+        const project = await projectService.getProjectById(id);
+        if (!project) {
+          return res.status(404).json({ message: 'Project not found' });
+        }
+
+        res.json(project);
+      } catch (error) {
+        logger.error('Failed to fetch project', error);
+        res.status(500).json({ message: 'Failed to fetch project' });
+      }
+    }
+  );
+
   // GET /:id/tasks - Get tasks for a project
   projectsRouter.get(
     '/:id/tasks',

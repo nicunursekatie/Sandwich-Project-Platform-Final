@@ -55,6 +55,7 @@ export interface TaskCompletionData {
 export interface IProjectService {
   // Project CRUD operations
   getAllProjects(): Promise<Project[]>;
+  getProjectById(id: number): Promise<Project | null>;
   getArchivedProjects(): Promise<ArchivedProject[]>;
   createProject(data: ProjectCreationData): Promise<Project>;
   updateProject(data: ProjectUpdateData): Promise<Project | null>;
@@ -103,6 +104,10 @@ export class ProjectService implements IProjectService {
 
   async getAllProjects(): Promise<Project[]> {
     return this.storage.getAllProjects();
+  }
+
+  async getProjectById(id: number): Promise<Project | null> {
+    return this.storage.getProject(id);
   }
 
   async getArchivedProjects(): Promise<ArchivedProject[]> {
