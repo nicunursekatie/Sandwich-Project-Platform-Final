@@ -856,7 +856,6 @@ export default function EventRequestsManagement() {
   // State for recording actual sandwich counts
   const [showRecordSandwichesDialog, setShowRecordSandwichesDialog] = useState(false);
   const [recordSandwichesRequest, setRecordSandwichesRequest] = useState<EventRequest | null>(null);
-  const [actualSandwichCount, setActualSandwichCount] = useState(0);
   const [actualSandwichNotes, setActualSandwichNotes] = useState('');
   
   // Toolkit Sent Dialog state
@@ -1360,7 +1359,7 @@ export default function EventRequestsManagement() {
       return await apiRequest('PATCH', `/api/event-requests/${data.eventId}/actual-sandwiches`, {
         actualSandwichCount: data.actualSandwichCount,
         actualSandwichCountRecordedDate: new Date().toISOString(),
-        actualSandwichCountRecordedBy: user?.id || 'unknown',
+        actualSandwichCountRecordedBy: currentUser?.id || 'unknown',
         distributionNotes: data.actualSandwichNotes,
       });
     },
@@ -1377,7 +1376,7 @@ export default function EventRequestsManagement() {
                 ...event,
                 actualSandwichCount: data.actualSandwichCount,
                 actualSandwichCountRecordedDate: new Date().toISOString(),
-                actualSandwichCountRecordedBy: user?.id || 'unknown',
+                actualSandwichCountRecordedBy: currentUser?.id || 'unknown',
                 distributionNotes: data.actualSandwichNotes,
               }
             : event

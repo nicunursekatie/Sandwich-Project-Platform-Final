@@ -2325,4 +2325,103 @@ router.patch(
   }
 );
 
+// Record actual sandwich counts for scheduled events
+router.patch(
+  '/:id/actual-sandwiches',
+  isAuthenticated,
+  requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { 
+        actualSandwichCount, 
+        actualSandwichCountRecordedDate, 
+        actualSandwichCountRecordedBy, 
+        distributionNotes 
+      } = req.body;
+
+      if (!id || isNaN(id)) {
+        return res.status(400).json({ error: 'Valid event ID required' });
+      }
+
+      // Create validation schema for the payload
+      const actualSandwichDataSchema = z.object({
+        actualSandwichCount: z.coerce.number().min(1, 'Actual sandwich count must be greater than 0'),
+        actualSandwichCountRecordedDate: z.string().optional(),
+        actualSandwichCountRecordedBy: z.string().optional(),
+        distributionNotes: z.string().optional(),
+      });
+
+      const validatedData = actualSandwichDataSchema.parse(req.body);
+
+      // Get original data for audit logging
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ error: 'Event request not found' });
+      }
+
+      // Prepare updates object
+      const updates = {
+        actualSandwichCount: validatedData.actualSandwichCount,
+        distributionNotes: validatedData.distributionNotes || null,
+        // Handle recorded date - use provided date or current timestamp
+        actualSandwichCountRecordedDate: validatedData.actualSandwichCountRecordedDate 
+          ? new Date(validatedData.actualSandwichCountRecordedDate)
+          : new Date(),
+        // Handle recorded by - use provided user or current user
+        actualSandwichCountRecordedBy: validatedData.actualSandwichCountRecordedBy || req.user?.id,
+        updatedAt: new Date(),
+      };
+
+      const updatedEventRequest = await storage.updateEventRequest(id, updates);
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ error: 'Event request not found' });
+      }
+
+      // Enhanced audit logging for this operation
+      await logEventRequestAudit(
+        'UPDATE_ACTUAL_SANDWICHES',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: 'Actual Sandwich Count Recorded',
+          actualSandwichCount: validatedData.actualSandwichCount,
+          distributionNotesProvided: !!validatedData.distributionNotes,
+          recordedBy: updates.actualSandwichCountRecordedBy,
+        }
+      );
+
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_EDIT',
+        `Recorded actual sandwich count (${validatedData.actualSandwichCount}) and distribution notes for event: ${id}`,
+        {
+          eventId: id,
+          actualSandwichCount: validatedData.actualSandwichCount,
+          hasDistributionNotes: !!validatedData.distributionNotes,
+          recordedBy: updates.actualSandwichCountRecordedBy,
+        }
+      );
+
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error('Error recording actual sandwich data:', error);
+      
+      // Handle validation errors specifically
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: error.errors 
+        });
+      }
+      
+      res.status(500).json({ error: 'Failed to record actual sandwich data' });
+    }
+  }
+);
+
 export default router;
