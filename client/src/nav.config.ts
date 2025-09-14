@@ -52,14 +52,6 @@ export const NAV_ITEMS: NavItem[] = [
 
   // Move these back to their original groups without creating "core"
   {
-    id: 'events',
-    label: 'Events',
-    icon: Calendar,
-    href: 'events',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
-    group: 'planning',
-  },
-  {
     id: 'inventory-calculator',
     label: 'Inventory Calculator',
     icon: Calculator,
@@ -149,6 +141,14 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // PLANNING & COORDINATION
+  {
+    id: 'events',
+    label: 'Events Google Sheet',
+    icon: Calendar,
+    href: 'events',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    group: 'planning',
+  },
   {
     id: 'projects',
     label: 'Projects',
