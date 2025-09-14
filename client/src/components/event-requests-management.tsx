@@ -2955,6 +2955,21 @@ export default function EventRequestsManagement() {
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
+              {/* For in_process events, show date prominently at the top */}
+              {request.status === 'in_process' && request.desiredEventDate && (
+                <div className="flex items-center text-2xl font-bold text-brand-orange mb-3 bg-gradient-to-r from-orange-100 to-yellow-100 p-3 rounded-lg border-2 border-brand-orange">
+                  <Calendar className="w-8 h-8 mr-3" />
+                  <span>
+                    {(() => {
+                      const dateInfo = formatEventDate(
+                        request.desiredEventDate
+                      );
+                      return dateInfo.text;
+                    })()}
+                  </span>
+                </div>
+              )}
+              
               <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-2">
                 {request.organizationName}
               </h3>
@@ -2963,8 +2978,9 @@ export default function EventRequestsManagement() {
                   {request.department}
                 </p>
               )}
-              {/* Event Date as Styled Subtitle */}
-              {request.desiredEventDate && (
+              
+              {/* Event Date for non-in_process events */}
+              {request.status !== 'in_process' && request.desiredEventDate && (
                 <div className="flex items-center text-xl font-semibold text-brand-orange mb-2">
                   <Calendar className="w-6 h-6 mr-2" />
                   <span>
