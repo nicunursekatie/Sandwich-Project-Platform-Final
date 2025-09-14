@@ -18,6 +18,7 @@ Desktop Chat UX: Desktop users require proper scrolling behavior without nested 
 - **Frontend**: React 18 (TypeScript), Vite, TanStack Query, Tailwind CSS (with shadcn/ui), React Hook Form (with Zod).
 - **Backend**: Express.js (TypeScript), Drizzle ORM, PostgreSQL (Neon serverless), Session-based authentication (connect-pg-simple), Replit Auth.
 - **Logging**: Winston-based structured logging with service-specific loggers, log rotation, and environment-based configuration.
+- **Security**: Centralized CORS configuration with environment-aware origin validation, eliminating wildcard origins in production.
 
 ### Backend Router Architecture (Modular Refactoring - 2025)
 The application underwent a major architectural refactoring in September 2025, transforming from a monolithic 9,000+ line routes.ts file into a clean, modular structure:
