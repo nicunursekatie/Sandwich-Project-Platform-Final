@@ -66,7 +66,7 @@ export default function ChatMessageComponent({
   const getAvatarColor = (userId: string) => {
     const colors = [
       'bg-red-500',
-      'bg-blue-500',
+      'bg-brand-primary',
       'bg-green-500',
       'bg-yellow-500',
       'bg-purple-500',

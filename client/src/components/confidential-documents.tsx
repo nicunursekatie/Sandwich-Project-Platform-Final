@@ -310,7 +310,7 @@ export function ConfidentialDocuments() {
         {/* Header */}
         <div className="mb-16">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-gradient-to-br from-[#236383] to-[#1a4e66] rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
+            <div className="p-3 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
               <Lock className="h-8 w-8 text-white" />
             </div>
             <div>
@@ -334,7 +334,7 @@ export function ConfidentialDocuments() {
             <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
               <DialogTrigger asChild>
                 <Button
-                  className="px-6 py-3 text-sm font-medium bg-gradient-to-r from-[#236383] to-[#1a4e66] text-white border-0 shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.1)] transform hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(35,99,131,0.3),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg"
+                  className="px-6 py-3 text-sm font-medium bg-gradient-to-r from-brand-primary to-brand-primary-dark text-white border-0 shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.1)] transform hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(35,99,131,0.3),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg"
                   data-testid="button-upload-confidential"
                 >
                   <Upload className="w-4 h-4 mr-2" />
@@ -344,7 +344,7 @@ export function ConfidentialDocuments() {
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <Lock className="h-5 w-5 text-[#236383]" />
+                    <Lock className="h-5 w-5 text-brand-primary" />
                     Upload Confidential Document
                   </DialogTitle>
                   <DialogDescription>
@@ -360,8 +360,8 @@ export function ConfidentialDocuments() {
                     <div
                       className={`mt-2 border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                         isDragActive
-                          ? 'border-[#236383] bg-[#236383]/5'
-                          : 'border-gray-300 hover:border-[#236383]/50'
+                          ? 'border-brand-primary bg-brand-primary/5'
+                          : 'border-gray-300 hover:border-brand-primary/50'
                       }`}
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
@@ -369,7 +369,7 @@ export function ConfidentialDocuments() {
                     >
                       {selectedFile ? (
                         <div className="flex items-center justify-center gap-3">
-                          <FileText className="h-8 w-8 text-[#236383]" />
+                          <FileText className="h-8 w-8 text-brand-primary" />
                           <div>
                             <p className="font-medium text-gray-900">
                               {selectedFile.name}
@@ -394,7 +394,7 @@ export function ConfidentialDocuments() {
                             Drag and drop a file, or{' '}
                             <button
                               type="button"
-                              className="font-medium text-[#236383] hover:text-[#1a4e66]"
+                              className="font-medium text-brand-primary hover:text-brand-primary-dark"
                               onClick={() =>
                                 document.getElementById('file-input')?.click()
                               }
@@ -452,7 +452,7 @@ export function ConfidentialDocuments() {
                     <Button
                       onClick={handleUpload}
                       disabled={uploadMutation.isPending}
-                      className="bg-[#236383] hover:bg-[#1a4e66]"
+                      className="bg-brand-primary hover:bg-brand-primary-dark"
                       data-testid="button-confirm-upload"
                     >
                       {uploadMutation.isPending ? (
@@ -479,7 +479,7 @@ export function ConfidentialDocuments() {
           {isLoadingDocuments ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-[#236383]" />
+                <Loader2 className="h-6 w-6 animate-spin text-brand-primary" />
                 <p className="text-lg text-gray-600">Loading documents...</p>
               </div>
             </div>
@@ -513,7 +513,7 @@ export function ConfidentialDocuments() {
                 </p>
                 <Button
                   onClick={() => setUploadDialogOpen(true)}
-                  className="bg-[#236383] hover:bg-[#1a4e66]"
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
                   data-testid="button-upload-first"
                 >
                   <Upload className="w-4 h-4 mr-2" />
@@ -573,7 +573,7 @@ export function ConfidentialDocuments() {
                       <div>
                         <button
                           onClick={() => toggleAccessExpanded(document.id)}
-                          className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 hover:text-[#236383] transition-colors w-full text-left"
+                          className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 hover:text-brand-primary transition-colors w-full text-left"
                           data-testid={`button-toggle-access-${document.id}`}
                         >
                           <Users className="h-4 w-4" />
@@ -607,7 +607,7 @@ export function ConfidentialDocuments() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDownload(document)}
-                        className="flex-1 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                        className="flex-1 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
                         data-testid={`button-download-${document.id}`}
                       >
                         <Download className="w-4 h-4 mr-1" />

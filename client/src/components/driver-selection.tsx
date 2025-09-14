@@ -259,7 +259,7 @@ export function DriverSelection({
                   className="flex items-center justify-between bg-white rounded px-3 py-2"
                 >
                   <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-blue-600" />
+                    <User className="h-4 w-4 text-brand-primary" />
                     <div>
                       <span className="font-medium">{driver.name}</span>
                       {driver.hostLocation && (
@@ -365,7 +365,7 @@ export function DriverSelection({
 
                       <div className="ml-4">
                         {isSelected ? (
-                          <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                          <CheckCircle2 className="h-5 w-5 text-brand-primary" />
                         ) : (
                           <Plus className="h-5 w-5 text-gray-400" />
                         )}

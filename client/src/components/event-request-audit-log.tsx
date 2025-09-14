@@ -419,7 +419,7 @@ export function EventRequestAuditLog({
                         log.details) && (
                         <div className="mt-2 space-y-1 text-xs">
                           {log.statusChange && (
-                            <div className="flex items-center text-blue-600 dark:text-blue-400">
+                            <div className="flex items-center text-brand-primary dark:text-blue-400">
                               <RefreshCw className="h-3 w-3 mr-1" />
                               Status: {log.statusChange}
                             </div>

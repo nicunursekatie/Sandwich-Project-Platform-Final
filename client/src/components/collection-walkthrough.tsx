@@ -256,7 +256,7 @@ export default function CollectionWalkthrough({
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-brand-primary" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                 When did you collect the sandwiches?
               </h3>
@@ -297,7 +297,7 @@ export default function CollectionWalkthrough({
                         })}
                   </p>
                   {!useExactDate && (
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-brand-primary mt-1">
                       We automatically assign collections to the Wednesday of
                       that week for consistent reporting.
                     </p>
@@ -318,7 +318,7 @@ export default function CollectionWalkthrough({
                           setActualCollectionDate(wednesday);
                         }
                       }}
-                      className="rounded border-blue-300 text-blue-600"
+                      className="rounded border-blue-300 text-brand-primary"
                     />
                     <label
                       htmlFor="useExactDate"
@@ -337,7 +337,7 @@ export default function CollectionWalkthrough({
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-brand-primary" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Where did you collect?
               </h3>
@@ -353,7 +353,7 @@ export default function CollectionWalkthrough({
                   variant={hostName === host.name ? 'default' : 'outline'}
                   className={`w-full justify-start h-auto p-3 sm:p-4 touch-manipulation ${
                     hostName === host.name
-                      ? 'bg-[#236383] hover:bg-[#1a4d66]'
+                      ? 'bg-brand-primary hover:bg-brand-primary-dark'
                       : 'hover:bg-gray-50'
                   }`}
                   onClick={() => {
@@ -384,7 +384,7 @@ export default function CollectionWalkthrough({
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <User className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <User className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-brand-primary" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Individual & Family Sandwiches
               </h3>
@@ -418,7 +418,7 @@ export default function CollectionWalkthrough({
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-brand-primary" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Group Collections
               </h3>
@@ -436,7 +436,7 @@ export default function CollectionWalkthrough({
                 variant={hasGroups === true ? 'default' : 'outline'}
                 className={`flex-1 h-12 sm:h-16 text-base sm:text-lg touch-manipulation ${
                   hasGroups === true
-                    ? 'bg-[#236383] hover:bg-[#1a4d66]'
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark'
                     : 'hover:bg-gray-50'
                 }`}
                 onClick={() => {
@@ -453,7 +453,7 @@ export default function CollectionWalkthrough({
                 variant={hasGroups === false ? 'default' : 'outline'}
                 className={`flex-1 h-12 sm:h-16 text-base sm:text-lg touch-manipulation ${
                   hasGroups === false
-                    ? 'bg-[#236383] hover:bg-[#1a4d66]'
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark'
                     : 'hover:bg-gray-50'
                 }`}
                 onClick={() => {
@@ -474,7 +474,7 @@ export default function CollectionWalkthrough({
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-[#236383]" />
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-brand-primary" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Group Details
               </h3>
@@ -561,10 +561,10 @@ export default function CollectionWalkthrough({
 
             <div className="space-y-4">
               {/* Collection Date Section */}
-              <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+              <div className="bg-white border-l-4 border-brand-primary rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-[#236383]" />
-                  <span className="font-semibold text-[#236383] text-sm sm:text-base">
+                  <Calendar className="w-4 h-4 text-brand-primary" />
+                  <span className="font-semibold text-brand-primary text-sm sm:text-base">
                     Collection Date
                   </span>
                 </div>
@@ -581,10 +581,10 @@ export default function CollectionWalkthrough({
               </div>
 
               {/* Location Section */}
-              <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+              <div className="bg-white border-l-4 border-brand-primary rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4 text-[#236383]" />
-                  <span className="font-semibold text-[#236383] text-sm sm:text-base">
+                  <MapPin className="w-4 h-4 text-brand-primary" />
+                  <span className="font-semibold text-brand-primary text-sm sm:text-base">
                     Location
                   </span>
                 </div>
@@ -594,10 +594,10 @@ export default function CollectionWalkthrough({
               </div>
 
               {/* Individual/Family Section */}
-              <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+              <div className="bg-white border-l-4 border-brand-primary rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <User className="w-4 h-4 text-[#236383]" />
-                  <span className="font-semibold text-[#236383] text-sm sm:text-base">
+                  <User className="w-4 h-4 text-brand-primary" />
+                  <span className="font-semibold text-brand-primary text-sm sm:text-base">
                     Individual & Family
                   </span>
                 </div>
@@ -613,10 +613,10 @@ export default function CollectionWalkthrough({
                 );
                 return (
                   validGroups.length > 0 && (
-                    <div className="bg-white border-l-4 border-[#236383] rounded-lg p-4 shadow-sm">
+                    <div className="bg-white border-l-4 border-brand-primary rounded-lg p-4 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
-                        <Users className="w-4 h-4 text-[#236383]" />
-                        <span className="font-semibold text-[#236383] text-sm sm:text-base">
+                        <Users className="w-4 h-4 text-brand-primary" />
+                        <span className="font-semibold text-brand-primary text-sm sm:text-base">
                           Groups
                         </span>
                       </div>
@@ -630,7 +630,7 @@ export default function CollectionWalkthrough({
                               <span className="font-medium text-sm sm:text-base text-gray-900 truncate max-w-[60%]">
                                 {group.name.trim() || 'Unnamed Group'}
                               </span>
-                              <span className="text-sm sm:text-base font-semibold text-[#236383]">
+                              <span className="text-sm sm:text-base font-semibold text-brand-primary">
                                 {group.count} sandwiches
                               </span>
                             </div>
@@ -643,7 +643,7 @@ export default function CollectionWalkthrough({
               })()}
 
               {/* Total Section */}
-              <div className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white rounded-lg p-4 shadow-md">
+              <div className="bg-gradient-to-r from-brand-primary to-brand-teal text-white rounded-lg p-4 shadow-md">
                 <div className="flex items-center gap-2 mb-2">
                   <Check className="w-5 h-5" />
                   <span className="font-semibold text-base sm:text-lg">
@@ -668,7 +668,7 @@ export default function CollectionWalkthrough({
 
   return (
     <Card ref={walkthroughRef} className="max-w-2xl mx-auto m-2 sm:m-4">
-      <CardHeader className="text-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white p-3 sm:p-6">
+      <CardHeader className="text-center bg-gradient-to-r from-brand-primary to-brand-teal text-white p-3 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <Badge
             variant="secondary"
@@ -712,7 +712,7 @@ export default function CollectionWalkthrough({
             <Button
               onClick={nextStep}
               disabled={!canProceed()}
-              className="flex items-center gap-2 bg-[#236383] hover:bg-[#1a4d66] h-10 sm:h-auto text-sm sm:text-base px-3 sm:px-4 touch-manipulation"
+              className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary-dark h-10 sm:h-auto text-sm sm:text-base px-3 sm:px-4 touch-manipulation"
             >
               <span className="hidden sm:inline">Next</span>
               <span className="sm:hidden">→</span>

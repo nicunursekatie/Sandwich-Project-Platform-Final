@@ -262,7 +262,7 @@ export function GoogleSheetsViewer({
               </div>
 
               <div className="mt-2 text-center">
-                <p className="text-sm text-blue-600">
+                <p className="text-sm text-brand-primary">
                   File: {fallbackFileStatus.fileName}
                 </p>
               </div>

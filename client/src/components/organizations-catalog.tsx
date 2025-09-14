@@ -850,7 +850,7 @@ export default function GroupCatalog({
                                 }}
                                 variant="outline"
                                 size="sm"
-                                className="w-full text-sm bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white border-[#FBAD3F] hover:border-[#FBAD3F]/90"
+                                className="w-full text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90"
                               >
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 View Complete History
@@ -1005,7 +1005,7 @@ export default function GroupCatalog({
           <div className="space-y-6">
             {loadingOrganizationDetails ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
                 <span className="ml-2 text-gray-600 dark:text-gray-400">
                   Loading organization details...
                 </span>
@@ -1016,7 +1016,7 @@ export default function GroupCatalog({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      <div className="text-2xl font-bold text-brand-primary dark:text-blue-400">
                         {organizationDetails.summary.totalEvents}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -1092,7 +1092,7 @@ export default function GroupCatalog({
                                     </div>
                                   )}
                                   {contact.department && (
-                                    <div className="text-xs mt-1 text-blue-600 dark:text-blue-400">
+                                    <div className="text-xs mt-1 text-brand-primary dark:text-blue-400">
                                       {contact.department}
                                     </div>
                                   )}
@@ -1119,7 +1119,7 @@ export default function GroupCatalog({
                         (event: any, index: number) => (
                           <div
                             key={index}
-                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-brand-primary transition-colors"
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">

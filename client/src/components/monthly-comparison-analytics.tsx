@@ -315,7 +315,7 @@ export default function MonthlyComparisonAnalytics() {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#236383] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
           <p className="text-[#646464] text-lg">Loading analytics...</p>
         </div>
       </div>
@@ -326,7 +326,7 @@ export default function MonthlyComparisonAnalytics() {
     return (
       <div className="text-center py-16">
         <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-[#236383] mb-2">
+        <h3 className="text-xl font-semibold text-brand-primary mb-2">
           No August 2025 Data
         </h3>
         <p className="text-[#646464]">
@@ -348,10 +348,10 @@ export default function MonthlyComparisonAnalytics() {
   return (
     <div className="space-y-6">
       {/* Header with Key Metrics */}
-      <div className="bg-gradient-to-r from-[#236383]/10 to-[#FBAD3F]/10 p-6 rounded-lg border border-[#236383]/20">
+      <div className="bg-gradient-to-r from-brand-primary/10 to-brand-orange/10 p-6 rounded-lg border border-brand-primary/20">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#236383] mb-2">
+            <h2 className="text-3xl font-bold text-brand-primary mb-2">
               August 2025 Performance Analysis
             </h2>
             <p className="text-[#646464]">
@@ -367,8 +367,8 @@ export default function MonthlyComparisonAnalytics() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-[#236383]/20">
-            <div className="text-2xl font-bold text-[#236383]">
+          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
+            <div className="text-2xl font-bold text-brand-primary">
               {augustAnalysis.august2025.totalSandwiches.toLocaleString()}
             </div>
             <p className="text-sm text-[#646464]">August 2025 Total</p>
@@ -377,16 +377,16 @@ export default function MonthlyComparisonAnalytics() {
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-[#236383]/20">
-            <div className="text-2xl font-bold text-[#236383]">
+          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
+            <div className="text-2xl font-bold text-brand-primary">
               {Math.round(augustAnalysis.avgTopMonth).toLocaleString()}
             </div>
             <p className="text-sm text-[#646464]">Avg Top 5 Months</p>
             <div className="text-sm text-green-600 mt-1">Benchmark target</div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-[#236383]/20">
-            <div className="text-2xl font-bold text-[#236383]">
+          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
+            <div className="text-2xl font-bold text-brand-primary">
               {augustAnalysis.august2025.totalCollections}
             </div>
             <p className="text-sm text-[#646464]">Collections Count</p>
@@ -395,8 +395,8 @@ export default function MonthlyComparisonAnalytics() {
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-[#236383]/20">
-            <div className="text-2xl font-bold text-[#236383]">
+          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
+            <div className="text-2xl font-bold text-brand-primary">
               {augustAnalysis.yearOverYearChange !== null
                 ? (augustAnalysis.yearOverYearChange > 0 ? '+' : '') +
                   augustAnalysis.yearOverYearChange?.toLocaleString()
@@ -512,11 +512,11 @@ export default function MonthlyComparisonAnalytics() {
               <div className="mt-4 text-sm text-[#646464]">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-[#236383] rounded"></div>
+                    <div className="w-3 h-3 bg-brand-primary rounded"></div>
                     <span>Total Sandwiches</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-[#FBAD3F] rounded"></div>
+                    <div className="w-3 h-3 bg-brand-orange rounded"></div>
                     <span>Collections Count</span>
                   </div>
                 </div>
@@ -535,7 +535,7 @@ export default function MonthlyComparisonAnalytics() {
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold text-[#236383] mb-3">
+                  <h4 className="font-semibold text-brand-primary mb-3">
                     Top 5 Months (2024-2025)
                   </h4>
                   <div className="space-y-2">
@@ -549,7 +549,7 @@ export default function MonthlyComparisonAnalytics() {
                           <span className="text-sm font-medium">
                             {month.month}
                           </span>
-                          <span className="text-sm font-bold text-[#236383]">
+                          <span className="text-sm font-bold text-brand-primary">
                             {month.totalSandwiches.toLocaleString()}
                           </span>
                         </div>
@@ -558,7 +558,7 @@ export default function MonthlyComparisonAnalytics() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-[#236383] mb-3">
+                  <h4 className="font-semibold text-brand-primary mb-3">
                     Performance Breakdown
                   </h4>
                   <div className="space-y-3">
@@ -608,23 +608,23 @@ export default function MonthlyComparisonAnalytics() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#236383]/20">
-                      <th className="text-left p-2 font-semibold text-[#236383]">
+                    <tr className="border-b border-brand-primary/20">
+                      <th className="text-left p-2 font-semibold text-brand-primary">
                         Host
                       </th>
-                      <th className="text-right p-2 font-semibold text-[#236383]">
+                      <th className="text-right p-2 font-semibold text-brand-primary">
                         Aug 2025
                       </th>
-                      <th className="text-right p-2 font-semibold text-[#236383]">
+                      <th className="text-right p-2 font-semibold text-brand-primary">
                         Monthly Avg
                       </th>
-                      <th className="text-right p-2 font-semibold text-[#236383]">
+                      <th className="text-right p-2 font-semibold text-brand-primary">
                         Difference
                       </th>
-                      <th className="text-right p-2 font-semibold text-[#236383]">
+                      <th className="text-right p-2 font-semibold text-brand-primary">
                         % Change
                       </th>
-                      <th className="text-center p-2 font-semibold text-[#236383]">
+                      <th className="text-center p-2 font-semibold text-brand-primary">
                         Status
                       </th>
                     </tr>

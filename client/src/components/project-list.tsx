@@ -318,11 +318,11 @@ export default function ProjectList() {
       case 'in_progress':
         return 'bg-amber-500';
       case 'planning':
-        return 'bg-blue-500';
+        return 'bg-brand-primary';
       case 'completed':
         return 'bg-gray-500';
       default:
-        return 'bg-blue-500';
+        return 'bg-brand-primary';
     }
   };
 
@@ -404,7 +404,7 @@ export default function ProjectList() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3
-                          className="text-base font-semibold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
+                          className="text-base font-semibold text-slate-900 cursor-pointer hover:text-brand-primary transition-colors"
                           onClick={() => handleProjectClick(project.id)}
                         >
                           {project.title}
@@ -903,7 +903,7 @@ export default function ProjectList() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3
-                        className="text-base font-semibold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
+                        className="text-base font-semibold text-slate-900 cursor-pointer hover:text-brand-primary transition-colors"
                         onClick={() => handleProjectClick(project.id)}
                       >
                         {project.title}
@@ -948,7 +948,7 @@ export default function ProjectList() {
                           variant="outline"
                           size="sm"
                           onClick={() => startClaimingProject(project.id)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          className="text-brand-primary hover:text-blue-700 hover:bg-blue-50 border-blue-200"
                         >
                           Claim
                         </Button>
@@ -1006,7 +1006,7 @@ export default function ProjectList() {
                         disabled={
                           claimProjectMutation.isPending || !assigneeName.trim()
                         }
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-brand-primary hover:bg-brand-primary-dark text-white"
                       >
                         {claimProjectMutation.isPending
                           ? 'Claiming...'
@@ -1301,7 +1301,7 @@ export default function ProjectList() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3
-                        className="text-base font-semibold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
+                        className="text-base font-semibold text-slate-900 cursor-pointer hover:text-brand-primary transition-colors"
                         onClick={() => handleProjectClick(project.id)}
                       >
                         {project.title}
@@ -1346,7 +1346,7 @@ export default function ProjectList() {
                           variant="outline"
                           size="sm"
                           onClick={() => startClaimingProject(project.id)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          className="text-brand-primary hover:text-blue-700 hover:bg-blue-50 border-blue-200"
                         >
                           Claim
                         </Button>
@@ -1404,7 +1404,7 @@ export default function ProjectList() {
                         disabled={
                           claimProjectMutation.isPending || !assigneeName.trim()
                         }
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-brand-primary hover:bg-brand-primary-dark text-white"
                       >
                         {claimProjectMutation.isPending
                           ? 'Claiming...'

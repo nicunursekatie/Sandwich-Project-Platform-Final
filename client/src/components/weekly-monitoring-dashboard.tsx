@@ -555,7 +555,7 @@ export default function WeeklyMonitoringDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383] flex-shrink-0" />
+            <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-brand-primary flex-shrink-0" />
             <span className="truncate">Weekly Submission Monitoring</span>
           </h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">
@@ -654,7 +654,7 @@ export default function WeeklyMonitoringDashboard() {
             disabled={
               manualCheckMutation.isPending || checkWeekMutation.isPending
             }
-            className="flex items-center gap-1 sm:gap-2 bg-[#236383] hover:bg-[#1d5470] text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
+            className="flex items-center gap-1 sm:gap-2 bg-brand-primary hover:bg-brand-primary-dark text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
           >
             <RefreshCw
               className={`h-3 w-3 sm:h-4 sm:w-4 ${
@@ -941,7 +941,7 @@ export default function WeeklyMonitoringDashboard() {
                     }
                   }}
                   disabled={sendAnnouncementMutation.isPending}
-                  className="flex items-center gap-2 bg-[#236383] hover:bg-[#1d5470]"
+                  className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   <Send className="h-4 w-4" />
                   {sendAnnouncementMutation.isPending

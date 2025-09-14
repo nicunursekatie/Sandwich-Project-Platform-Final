@@ -295,7 +295,7 @@ const formatEventDate = (dateString: string) => {
     } else if (isWedOrThu) {
       className = 'text-orange-600 font-medium';
     } else {
-      className = 'text-[#236383] font-bold';
+      className = 'text-brand-primary font-bold';
     }
 
     return {
@@ -370,17 +370,17 @@ interface EventRequest {
 }
 
 const statusColors = {
-  new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-[#236383] border border-teal-200',
+  new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-primary border border-teal-200',
   followed_up:
-    'bg-gradient-to-r from-orange-50 to-amber-100 text-[#FBAD3F] border border-orange-200',
+    'bg-gradient-to-r from-orange-50 to-amber-100 text-brand-orange border border-orange-200',
   in_process:
-    'bg-gradient-to-r from-teal-50 to-cyan-100 text-[#007E8C] border border-teal-200',
+    'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
   scheduled:
     'bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200',
   completed:
     'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
   declined:
-    'bg-gradient-to-r from-[#A31C41] to-red-700 text-white border-2 font-bold shadow-lg',
+    'bg-gradient-to-r from-brand-burgundy to-red-700 text-white border-2 font-bold shadow-lg',
 };
 
 const statusIcons = {
@@ -559,7 +559,7 @@ const SandwichTypesSelector = ({
           <div className="text-sm font-medium">
             Specify quantities for each type:
             {totalQuantity > 0 && (
-              <span className="ml-2 text-blue-600">
+              <span className="ml-2 text-brand-primary">
                 Total: {totalQuantity} sandwiches
               </span>
             )}
@@ -2884,7 +2884,7 @@ export default function EventRequestsManagement() {
         return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
       if (driverIds.length >= driversNeeded)
         return { badge: '✓ Arranged', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-[#FBAD3F]' };
+      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
     };
 
     const getToolkitStatus = () => {
@@ -2901,7 +2901,7 @@ export default function EventRequestsManagement() {
         default:
           return {
             badge: '⚠️ Pending',
-            color: 'bg-orange-100 text-[#FBAD3F]',
+            color: 'bg-orange-100 text-brand-orange',
           };
       }
     };
@@ -2922,7 +2922,7 @@ export default function EventRequestsManagement() {
         return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
       if (assignedVolunteers.length > 0)
         return { badge: '✓ Assigned', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-[#FBAD3F]' };
+      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
     };
 
     const getSpeakerStatus = () => {
@@ -2934,7 +2934,7 @@ export default function EventRequestsManagement() {
         return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
       if (totalSpeakers >= speakersNeeded)
         return { badge: '✓ Arranged', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-[#FBAD3F]' };
+      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
     };
 
     return (
@@ -2965,7 +2965,7 @@ export default function EventRequestsManagement() {
               )}
               {/* Event Date as Styled Subtitle */}
               {request.desiredEventDate && (
-                <div className="flex items-center text-xl font-semibold text-[#FBAD3F] mb-2">
+                <div className="flex items-center text-xl font-semibold text-brand-orange mb-2">
                   <Calendar className="w-6 h-6 mr-2" />
                   <span>
                     {(() => {
@@ -3127,9 +3127,9 @@ export default function EventRequestsManagement() {
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-[#236383]">
-              <h4 className="font-bold text-[#236383] text-lg mb-4 flex items-center">
-                <User className="w-5 h-5 mr-2 text-[#236383]" />
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-brand-primary">
+              <h4 className="font-bold text-brand-primary text-lg mb-4 flex items-center">
+                <User className="w-5 h-5 mr-2 text-brand-primary" />
                 Contact
               </h4>
               <div className="space-y-4">
@@ -3391,7 +3391,7 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Toolkit Status - moved from Assignments */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#236383] border-opacity-20">
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-brand-primary border-opacity-20">
                   <div className="flex items-center space-x-2">
                     <span className="text-gray-500 text-sm flex-shrink-0">
                       📋
@@ -3412,9 +3412,9 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
-              <h4 className="font-bold text-[#FBAD3F] text-lg mb-4 flex items-center">
-                <Building className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-brand-orange">
+              <h4 className="font-bold text-brand-orange text-lg mb-4 flex items-center">
+                <Building className="w-5 h-5 mr-2 text-brand-orange" />
                 Event Details
               </h4>
               <div className="space-y-4">
@@ -3483,7 +3483,7 @@ export default function EventRequestsManagement() {
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex-1"
+                          className="text-sm text-brand-primary hover:text-blue-800 hover:underline flex-1"
                         >
                           📍 {getDisplayValue(request, 'eventAddress')}
                         </a>
@@ -3652,7 +3652,7 @@ export default function EventRequestsManagement() {
                           const summary = getSandwichTypesSummary(request);
                           return summary.hasBreakdown ? (
                             <div>
-                              <span className="font-medium text-[#236383]">
+                              <span className="font-medium text-brand-primary">
                                 {summary.total}
                               </span>{' '}
                               sandwiches
@@ -4059,9 +4059,9 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-[#A31C41]">
-              <h4 className="font-bold text-[#A31C41] text-lg mb-4 flex items-center">
-                <span className="inline-block w-5 h-5 mr-2 bg-[#A31C41] rounded-full"></span>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-brand-burgundy">
+              <h4 className="font-bold text-brand-burgundy text-lg mb-4 flex items-center">
+                <span className="inline-block w-5 h-5 mr-2 bg-brand-burgundy rounded-full"></span>
                 Assignments
               </h4>
               <div className="space-y-4">
@@ -4376,7 +4376,7 @@ export default function EventRequestsManagement() {
                               e.target.checked
                             );
                           }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-brand-primary focus:ring-blue-500"
                         />
                         <span className="text-xs text-gray-600">Needed</span>
                       </label>
@@ -4426,13 +4426,13 @@ export default function EventRequestsManagement() {
                                     : (request as any).customVanDriverName}
                                 </span>
                                 {(request as any).customVanDriverName && (
-                                  <span className="ml-2 text-xs text-blue-600 bg-blue-200 px-1 rounded">
+                                  <span className="ml-2 text-xs text-brand-primary bg-blue-200 px-1 rounded">
                                     Custom
                                   </span>
                                 )}
                               </div>
                               <button
-                                className="text-blue-600 hover:text-blue-800"
+                                className="text-brand-primary hover:text-blue-800"
                                 onClick={() => {
                                   handleAssignmentUpdate(
                                     request.id,
@@ -5043,7 +5043,7 @@ export default function EventRequestsManagement() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full text-xs bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0"
+                      className="w-full text-xs bg-gradient-to-r from-brand-primary to-brand-teal text-white hover:from-brand-primary-dark hover:to-[#005a66] border-0"
                       onClick={() => {
                         setAssigningContactRequest(request);
                         setShowTspContactDialog(true);
@@ -5063,7 +5063,7 @@ export default function EventRequestsManagement() {
                   </div>
 
                   {/* TSP Contact Display - Visually distinct and larger */}
-                  <div className="bg-white border-2 border-[#236383] rounded-lg p-4">
+                  <div className="bg-white border-2 border-brand-primary rounded-lg p-4">
                     {(() => {
                       const currentContacts = [
                         (request as any).tspContact,
@@ -5085,7 +5085,7 @@ export default function EventRequestsManagement() {
 
                       return (
                         <div className="space-y-2">
-                          <div className="text-xs font-medium text-[#236383] uppercase tracking-wide mb-2">
+                          <div className="text-xs font-medium text-brand-primary uppercase tracking-wide mb-2">
                             Assigned TSP Team ({currentContacts.length})
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -5093,7 +5093,7 @@ export default function EventRequestsManagement() {
                               (contactId: string, index: number) => (
                                 <div
                                   key={index}
-                                  className="flex items-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm"
+                                  className="flex items-center bg-gradient-to-r from-brand-primary to-brand-teal text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm"
                                 >
                                   <Users className="w-4 h-4 mr-2" />
                                   {getUserDisplayName(contactId)}
@@ -5200,7 +5200,7 @@ export default function EventRequestsManagement() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-[#FBAD3F] hover:text-[#FBAD3F] border-[#FBAD3F] hover:bg-orange-50"
+                    className="text-brand-orange hover:text-brand-orange border-brand-orange hover:bg-orange-50"
                   >
                     1 Week Check-in
                   </Button>
@@ -5224,7 +5224,7 @@ export default function EventRequestsManagement() {
     <Card
       key={request.id}
       id={`event-${request.id}`}
-      className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-[#236383] bg-gradient-to-br from-white to-orange-50 ${
+      className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-brand-primary bg-gradient-to-br from-white to-orange-50 ${
         highlightedEventId === request.id
           ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100'
           : ''
@@ -5260,10 +5260,10 @@ export default function EventRequestsManagement() {
 
             <div className="space-y-2">
               {/* Prominent Submission Date Display */}
-              <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-orange-50 p-2 rounded-lg border border-[#FBAD3F]">
-                <Calendar className="w-5 h-5 text-[#FBAD3F]" />
+              <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-orange-50 p-2 rounded-lg border border-brand-orange">
+                <Calendar className="w-5 h-5 text-brand-orange" />
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium text-[#FBAD3F] uppercase tracking-wide">
+                  <span className="text-xs font-medium text-brand-orange uppercase tracking-wide">
                     Submitted
                   </span>
                   <span className="text-sm font-medium text-gray-600">
@@ -5970,7 +5970,7 @@ export default function EventRequestsManagement() {
             {/* Event Address (enhanced prominence) */}
             {request.eventAddress && (
               <div className="flex items-center space-x-2 text-base text-gray-700 mb-3 bg-blue-50 p-2 rounded border-l-4 border-blue-400">
-                <Building className="w-5 h-5 text-blue-600" />
+                <Building className="w-5 h-5 text-brand-primary" />
                 <div>
                   <span className="font-semibold text-blue-700">
                     Event Location:
@@ -5981,7 +5981,7 @@ export default function EventRequestsManagement() {
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                    className="text-brand-primary hover:text-blue-800 hover:underline font-medium"
                   >
                     📍 {request.eventAddress}
                   </a>
@@ -6046,16 +6046,16 @@ export default function EventRequestsManagement() {
             const displayCount = hasActualCount || summary.total;
 
             return displayCount > 0 ? (
-              <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-[#FBAD3F]">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-brand-orange">
                 <div className="flex items-center justify-center space-x-3">
                   <span className="text-3xl">🥪</span>
                   <div className="text-center">
-                    <span className="text-2xl font-bold text-[#FBAD3F]">
+                    <span className="text-2xl font-bold text-brand-orange">
                       {summary.hasBreakdown
                         ? summary.breakdown
                         : `${displayCount} Sandwiches`}
                     </span>
-                    <div className="text-sm text-[#FBAD3F]/80 mt-1">
+                    <div className="text-sm text-brand-orange/80 mt-1">
                       {hasActualCount ? (
                         <span className="font-semibold">
                           ✅ Final Count Recorded
@@ -6165,15 +6165,15 @@ export default function EventRequestsManagement() {
           </div>
 
           {/* Event Summary with all remaining details */}
-          <div className="bg-orange-50 p-3 rounded-lg border border-[#FBAD3F]">
-            <h4 className="font-semibold text-[#FBAD3F] mb-2">Event Summary</h4>
+          <div className="bg-orange-50 p-3 rounded-lg border border-brand-orange">
+            <h4 className="font-semibold text-brand-orange mb-2">Event Summary</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {/* Event Start Time with inline editing */}
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   {isEditing(request.id, 'eventStartTime') ? (
                     <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">
+                      <span className="font-semibold text-brand-orange">
                         Start Time:
                       </span>
                       <input
@@ -6223,7 +6223,7 @@ export default function EventRequestsManagement() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        className="h-4 w-4 p-0 text-brand-orange hover:text-orange-600"
                         onClick={() =>
                           startInlineEdit(
                             request.id,
@@ -6244,7 +6244,7 @@ export default function EventRequestsManagement() {
                 <div className="flex-1">
                   {isEditing(request.id, 'eventEndTime') ? (
                     <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">
+                      <span className="font-semibold text-brand-orange">
                         End Time:
                       </span>
                       <input
@@ -6294,7 +6294,7 @@ export default function EventRequestsManagement() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        className="h-4 w-4 p-0 text-brand-orange hover:text-orange-600"
                         onClick={() =>
                           startInlineEdit(
                             request.id,
@@ -6315,7 +6315,7 @@ export default function EventRequestsManagement() {
                 <div className="flex-1">
                   {isEditing(request.id, 'pickupTime') ? (
                     <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-[#FBAD3F]">
+                      <span className="font-semibold text-brand-orange">
                         Pickup Time:
                       </span>
                       <input
@@ -6363,7 +6363,7 @@ export default function EventRequestsManagement() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-4 w-4 p-0 text-[#FBAD3F] hover:text-orange-600"
+                        className="h-4 w-4 p-0 text-brand-orange hover:text-orange-600"
                         onClick={() =>
                           startInlineEdit(
                             request.id,
@@ -6645,7 +6645,7 @@ export default function EventRequestsManagement() {
                     <div className="bg-white/70 p-3 rounded-md border border-blue-200">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                          <div className="w-2 h-2 bg-brand-primary rounded-full"></div>
                           <span className="font-semibold text-blue-900">
                             Secondary Contact
                           </span>
@@ -6654,7 +6654,7 @@ export default function EventRequestsManagement() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                            className="h-6 w-6 p-0 text-brand-primary hover:text-blue-800"
                             onClick={() =>
                               startInlineEdit(
                                 request.id,
@@ -6828,7 +6828,7 @@ export default function EventRequestsManagement() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                            className="text-brand-primary border-blue-300 hover:bg-blue-50"
                             onClick={() =>
                               startInlineEdit(
                                 request.id,
@@ -7219,7 +7219,7 @@ export default function EventRequestsManagement() {
                 variant="outline"
                 size="default"
                 onClick={() => setActiveTab('forecast')}
-                className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white hover:from-[#1a4d63] hover:to-[#005a66] border-0 font-semibold"
+                className="bg-gradient-to-r from-brand-primary to-brand-teal text-white hover:from-brand-primary-dark hover:to-[#005a66] border-0 font-semibold"
               >
                 <TrendingUp className="w-4 h-4" />
                 <span className="ml-2">Weekly Planning</span>
@@ -7554,7 +7554,7 @@ export default function EventRequestsManagement() {
                               : activeTab === 'past'
                                 ? pastSortOrder
                                 : requestsSortOrder) === 'asc'
-                          ? 'bg-[#236383] text-white'
+                          ? 'bg-brand-primary text-white'
                           : 'hover:bg-gray-100'
                       }`}
                       onClick={() => {
@@ -7585,7 +7585,7 @@ export default function EventRequestsManagement() {
                               : activeTab === 'past'
                                 ? pastSortOrder
                                 : requestsSortOrder) === 'desc'
-                          ? 'bg-[#236383] text-white'
+                          ? 'bg-brand-primary text-white'
                           : 'hover:bg-gray-100'
                       }`}
                       onClick={() => {
@@ -8651,7 +8651,7 @@ export default function EventRequestsManagement() {
                                   (selectedRequest as any).assignedDriverIds =
                                     updatedDrivers;
                                 }}
-                                className="ml-1 text-blue-600 hover:text-blue-800"
+                                className="ml-1 text-brand-primary hover:text-blue-800"
                               >
                                 ×
                               </button>
@@ -9734,7 +9734,7 @@ export default function EventRequestsManagement() {
                                     assignedDriverIds: updatedDrivers,
                                   }));
                                 }}
-                                className="ml-1 text-blue-600 hover:text-blue-800"
+                                className="ml-1 text-brand-primary hover:text-blue-800"
                               >
                                 ×
                               </button>
@@ -10104,7 +10104,7 @@ export default function EventRequestsManagement() {
                 {/* Event Location & Logistics Section */}
                 <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
                   <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
-                    <Building className="h-4 w-4 mr-2 text-blue-600" />
+                    <Building className="h-4 w-4 mr-2 text-brand-primary" />
                     Location & Logistics
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -11064,7 +11064,7 @@ export default function EventRequestsManagement() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-[#FBAD3F]" />
+                  <CheckCircle className="h-5 w-5 text-brand-orange" />
                   <span>Record Follow-Up</span>
                 </DialogTitle>
                 <DialogDescription>
@@ -11083,7 +11083,7 @@ export default function EventRequestsManagement() {
                       });
                     }}
                     disabled={followUpMutation.isPending}
-                    className="bg-[#236383] hover:bg-[#1a4d63] text-white border-[#236383]"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white border-brand-primary"
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     Toolkit/Scheduling Link Emailed
@@ -11095,7 +11095,7 @@ export default function EventRequestsManagement() {
                       setShowFollowUpDialog(false);
                       setShowCallbackDialog(true);
                     }}
-                    className="bg-[#007E8C] hover:bg-[#006b76] text-white border-[#007E8C]"
+                    className="bg-brand-teal hover:bg-brand-teal-dark text-white border-brand-teal"
                   >
                     <Phone className="h-4 w-4 mr-2" />
                     Called Back
@@ -11169,7 +11169,7 @@ export default function EventRequestsManagement() {
                   <Button
                     type="submit"
                     disabled={followUpMutation.isPending}
-                    className="bg-[#FBAD3F] hover:bg-[#e69d36] text-white"
+                    className="bg-brand-orange hover:bg-brand-orange-dark text-white"
                   >
                     {followUpMutation.isPending
                       ? 'Recording...'
@@ -11190,7 +11190,7 @@ export default function EventRequestsManagement() {
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
-                  <Phone className="h-5 w-5 text-[#236383]" />
+                  <Phone className="h-5 w-5 text-brand-primary" />
                   <span>Call Completed - Enter Event Details</span>
                 </DialogTitle>
                 <DialogDescription>
@@ -11346,7 +11346,7 @@ export default function EventRequestsManagement() {
                   <Button
                     type="submit"
                     disabled={callCompletedMutation.isPending}
-                    className="bg-[#236383] hover:bg-[#1d4f6a] text-white"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white"
                   >
                     {callCompletedMutation.isPending
                       ? 'Saving...'
@@ -11492,7 +11492,7 @@ export default function EventRequestsManagement() {
       {showBackToTop && (
         <Button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[#236383] hover:bg-[#1a4d63] text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-[#236383] focus:ring-offset-2"
+          className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-brand-primary hover:bg-brand-primary-dark text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
           size="sm"
           aria-label="Back to top"
         >
@@ -11557,7 +11557,7 @@ export default function EventRequestsManagement() {
                 actualSandwichCount <= 0 ||
                 recordSandwichCountMutation.isPending
               }
-              className="bg-[#236383] hover:bg-[#1a4d63] text-white"
+              className="bg-brand-primary hover:bg-brand-primary-dark text-white"
             >
               {recordSandwichCountMutation.isPending
                 ? 'Recording...'
@@ -11667,7 +11667,7 @@ export default function EventRequestsManagement() {
                   (d) => d.destination && d.totalCount > 0
                 ).length === 0 || recordDistributionMutation.isPending
               }
-              className="bg-[#236383] hover:bg-[#1a4d63] text-white"
+              className="bg-brand-primary hover:bg-brand-primary-dark text-white"
             >
               {recordDistributionMutation.isPending
                 ? 'Recording...'

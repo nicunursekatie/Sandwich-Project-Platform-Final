@@ -69,7 +69,7 @@ function Router() {
           </p>
           <button
             onClick={() => (window.location.href = '/api/login')}
-            className="w-full px-6 py-3 bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
+            className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
           >
             Try Again
           </button>
@@ -105,9 +105,9 @@ function Router() {
           {() => (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
               <div className="max-w-md p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 text-center backdrop-blur-sm">
-                <div className="w-12 h-12 bg-[#236383]/10 dark:bg-[#236383]/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-brand-primary/10 dark:bg-brand-primary/20 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <svg
-                    className="w-6 h-6 text-[#236383]"
+                    className="w-6 h-6 text-brand-primary"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -135,7 +135,7 @@ function Router() {
                 </p>
                 <button
                   onClick={() => (window.location.href = '/api/login')}
-                  className="w-full px-6 py-3 bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
+                  className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
                 >
                   Login to Continue
                 </button>

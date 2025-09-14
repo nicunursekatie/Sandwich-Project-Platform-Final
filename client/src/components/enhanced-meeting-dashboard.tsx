@@ -2681,7 +2681,7 @@ export default function EnhancedMeetingDashboard() {
                                           project.milestone && (
                                           <Badge
                                             variant="outline"
-                                            className="text-xs bg-[#236383] text-white whitespace-nowrap"
+                                            className="text-xs bg-brand-primary text-white whitespace-nowrap"
                                           >
                                             {getCategoryIcon(project.category)}{' '}
                                             {project.category}

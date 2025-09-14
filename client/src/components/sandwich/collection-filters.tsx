@@ -72,7 +72,7 @@ export function CollectionFilters({
             <Filter className="h-4 w-4 mr-2" />
             Filter Collections
             {hasActiveFilters && (
-              <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+              <span className="ml-2 bg-brand-primary text-white text-xs px-2 py-1 rounded-full">
                 Active
               </span>
             )}

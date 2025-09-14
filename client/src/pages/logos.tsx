@@ -97,8 +97,8 @@ export default function LogosPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <div className="border-b border-[#236383]/20 pb-4">
-        <h1 className="text-3xl font-bold text-[#236383] flex items-center gap-3">
+      <div className="border-b border-brand-primary/20 pb-4">
+        <h1 className="text-3xl font-bold text-brand-primary flex items-center gap-3">
           <FileImage className="h-8 w-8" />
           The Sandwich Project Logos
         </h1>
@@ -110,9 +110,9 @@ export default function LogosPage() {
       </div>
 
       {/* Usage Guidelines */}
-      <Card className="border-[#236383]/20">
+      <Card className="border-brand-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-[#236383] text-lg">
+          <CardTitle className="text-brand-primary text-lg">
             Usage Guidelines
           </CardTitle>
         </CardHeader>
@@ -138,10 +138,10 @@ export default function LogosPage() {
         {logoFiles.map((logo) => (
           <Card
             key={logo.id}
-            className="border-[#236383]/20 hover:shadow-lg transition-shadow"
+            className="border-brand-primary/20 hover:shadow-lg transition-shadow"
           >
             <CardHeader className="pb-3">
-              <CardTitle className="text-[#236383] text-lg flex items-center gap-2">
+              <CardTitle className="text-brand-primary text-lg flex items-center gap-2">
                 {logo.icon}
                 {logo.name}
               </CardTitle>
@@ -179,7 +179,7 @@ export default function LogosPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                      className="flex-1 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
                       onClick={() => handlePreview(logo)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
@@ -188,7 +188,7 @@ export default function LogosPage() {
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                      <DialogTitle className="text-[#236383]">
+                      <DialogTitle className="text-brand-primary">
                         {logo.name}
                       </DialogTitle>
                     </DialogHeader>
@@ -205,21 +205,21 @@ export default function LogosPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <strong className="text-[#236383]">File Type:</strong>{' '}
+                          <strong className="text-brand-primary">File Type:</strong>{' '}
                           {logo.type}
                         </div>
                         <div>
-                          <strong className="text-[#236383]">Filename:</strong>{' '}
+                          <strong className="text-brand-primary">Filename:</strong>{' '}
                           {logo.filename}
                         </div>
                         <div className="col-span-2">
-                          <strong className="text-[#236383]">Usage:</strong>{' '}
+                          <strong className="text-brand-primary">Usage:</strong>{' '}
                           {logo.usage}
                         </div>
                       </div>
                       <Button
                         onClick={() => handleDownload(logo.filename, logo.name)}
-                        className="w-full bg-[#236383] hover:bg-[#1a4e66]"
+                        className="w-full bg-brand-primary hover:bg-brand-primary-dark"
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Download {logo.name}
@@ -231,7 +231,7 @@ export default function LogosPage() {
                 <Button
                   onClick={() => handleDownload(logo.filename, logo.name)}
                   size="sm"
-                  className="flex-1 bg-[#236383] hover:bg-[#1a4e66]"
+                  className="flex-1 bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   <Download className="h-4 w-4 mr-1" />
                   Download
@@ -243,9 +243,9 @@ export default function LogosPage() {
       </div>
 
       {/* Download All Section */}
-      <Card className="border-[#236383]/20">
+      <Card className="border-brand-primary/20">
         <CardHeader>
-          <CardTitle className="text-[#236383]">
+          <CardTitle className="text-brand-primary">
             Download Complete Logo Package
           </CardTitle>
         </CardHeader>

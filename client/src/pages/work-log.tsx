@@ -183,7 +183,7 @@ export default function WorkLogPage() {
                 <Button
                   type="submit"
                   disabled={createLog.isPending}
-                  className="bg-[#FBAD3F] hover:bg-[#f09f2b] text-white font-medium px-6"
+                  className="bg-brand-orange hover:bg-brand-orange-dark text-white font-medium px-6"
                 >
                   {createLog.isPending ? 'Logging...' : 'Log Work'}
                 </Button>
@@ -246,7 +246,7 @@ export default function WorkLogPage() {
                   {/* Metadata row - secondary information */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="font-medium text-[#FBAD3F]">
+                      <span className="font-medium text-brand-orange">
                         {log.hours}h {log.minutes}m
                       </span>
                       <span>
@@ -255,7 +255,7 @@ export default function WorkLogPage() {
                           : new Date(log.createdAt).toLocaleDateString()}
                       </span>
                       {log?.userId !== (user as any)?.id && (
-                        <span className="text-blue-600 text-xs px-2 py-1 bg-blue-50 rounded-full">
+                        <span className="text-brand-primary text-xs px-2 py-1 bg-blue-50 rounded-full">
                           Other user
                         </span>
                       )}

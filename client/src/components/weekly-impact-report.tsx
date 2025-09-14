@@ -258,7 +258,7 @@ export default function WeeklyImpactReport() {
       {/* Header and Controls */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#236383]">
+          <h1 className="text-2xl md:text-3xl font-bold text-brand-primary">
             Weekly Impact Report
           </h1>
           <p className="text-sm md:text-base text-gray-600 mt-1">
@@ -271,7 +271,7 @@ export default function WeeklyImpactReport() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-[#FBAD3F]" />
+            <CalendarDays className="h-5 w-5 text-brand-orange" />
             Generate Report
           </CardTitle>
           <CardDescription>
@@ -295,7 +295,7 @@ export default function WeeklyImpactReport() {
               <Button
                 onClick={handleGenerateReport}
                 disabled={generateReportMutation.isPending}
-                className="bg-[#236383] hover:bg-[#1a4d66] text-white w-full sm:w-auto"
+                className="bg-brand-primary hover:bg-brand-primary-dark text-white w-full sm:w-auto"
               >
                 {generateReportMutation.isPending ? (
                   <>
@@ -314,7 +314,7 @@ export default function WeeklyImpactReport() {
                   onClick={handleDownloadPdf}
                   disabled={downloadPdfMutation.isPending}
                   variant="outline"
-                  className="border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white w-full sm:w-auto"
+                  className="border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white w-full sm:w-auto"
                 >
                   {downloadPdfMutation.isPending ? (
                     <>
@@ -340,7 +340,7 @@ export default function WeeklyImpactReport() {
           {/* Executive Summary */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl text-[#236383]">
+              <CardTitle className="text-xl text-brand-primary">
                 Executive Summary
               </CardTitle>
               <CardDescription>
@@ -355,13 +355,13 @@ export default function WeeklyImpactReport() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl md:text-3xl font-bold text-[#236383]">
+                  <div className="text-2xl md:text-3xl font-bold text-brand-primary">
                     {formatNumber(reportData.summary.total_sandwiches)}
                   </div>
                   <div className="text-sm text-gray-600">Total Collected</div>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <div className="text-2xl md:text-3xl font-bold text-[#FBAD3F]">
+                  <div className="text-2xl md:text-3xl font-bold text-brand-orange">
                     {reportData.summary.active_locations}/
                     {reportData.summary.total_locations}
                   </div>
@@ -385,7 +385,7 @@ export default function WeeklyImpactReport() {
                   <div className="text-sm text-gray-600">Week-over-Week</div>
                 </div>
                 <div className="text-center p-4 bg-teal-50 rounded-lg">
-                  <div className="text-xl md:text-2xl font-bold text-[#47B3CB]">
+                  <div className="text-xl md:text-2xl font-bold text-brand-light-blue">
                     {formatNumber(reportData.summary.monthly_progress.current)}
                   </div>
                   <div className="text-sm text-gray-600">Monthly Progress</div>
@@ -429,7 +429,7 @@ export default function WeeklyImpactReport() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-[#47B3CB]" />
+                    <TrendingUp className="h-5 w-5 text-brand-light-blue" />
                     Key Metrics Comparison
                   </CardTitle>
                 </CardHeader>
@@ -777,7 +777,7 @@ export default function WeeklyImpactReport() {
                   0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-[#47B3CB] text-lg">
+                      <CardTitle className="flex items-center gap-2 text-brand-light-blue text-lg">
                         <CheckCircle className="h-5 w-5" />
                         <span className="text-sm md:text-lg">
                           Steady Contributors (
@@ -799,12 +799,12 @@ export default function WeeklyImpactReport() {
                               className="flex items-center justify-between p-3 bg-blue-50 rounded border"
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <MapPin className="h-3 w-3 text-[#47B3CB] flex-shrink-0" />
+                                <MapPin className="h-3 w-3 text-brand-light-blue flex-shrink-0" />
                                 <span className="text-sm font-medium truncate">
                                   {location.name}
                                 </span>
                               </div>
-                              <span className="text-sm font-semibold text-[#47B3CB] ml-2">
+                              <span className="text-sm font-semibold text-brand-light-blue ml-2">
                                 {formatNumber(location.total)}
                               </span>
                             </div>
@@ -839,7 +839,7 @@ export default function WeeklyImpactReport() {
                       {reportData.trends_insights.patterns.map(
                         (pattern, index) => (
                           <li key={index} className="flex items-start gap-3">
-                            <TrendingUp className="h-4 w-4 mt-1 text-[#47B3CB] flex-shrink-0" />
+                            <TrendingUp className="h-4 w-4 mt-1 text-brand-light-blue flex-shrink-0" />
                             <span className="text-sm md:text-base">
                               {pattern}
                             </span>
@@ -859,7 +859,7 @@ export default function WeeklyImpactReport() {
                       {reportData.trends_insights.seasonal_impacts.map(
                         (impact, index) => (
                           <li key={index} className="flex items-start gap-2">
-                            <Calendar className="h-4 w-4 mt-0.5 text-[#FBAD3F]" />
+                            <Calendar className="h-4 w-4 mt-0.5 text-brand-orange" />
                             <span>{impact}</span>
                           </li>
                         )
@@ -877,7 +877,7 @@ export default function WeeklyImpactReport() {
                       {reportData.trends_insights.special_events.map(
                         (event, index) => (
                           <li key={index} className="flex items-start gap-2">
-                            <Star className="h-4 w-4 mt-0.5 text-[#236383]" />
+                            <Star className="h-4 w-4 mt-0.5 text-brand-primary" />
                             <span>{event}</span>
                           </li>
                         )
@@ -894,13 +894,13 @@ export default function WeeklyImpactReport() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                      <Users className="h-5 w-5 text-[#236383]" />
+                      <Users className="h-5 w-5 text-brand-primary" />
                       Host Confirmations
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="text-2xl md:text-3xl font-bold text-[#236383] text-center sm:text-left">
+                      <div className="text-2xl md:text-3xl font-bold text-brand-primary text-center sm:text-left">
                         {reportData.next_week_prep.host_confirmations.confirmed}
                         /{reportData.next_week_prep.host_confirmations.total}
                       </div>
@@ -933,7 +933,7 @@ export default function WeeklyImpactReport() {
                       {reportData.next_week_prep.pending_actions.map(
                         (action, index) => (
                           <li key={index} className="flex items-start gap-2">
-                            <Clock className="h-4 w-4 mt-0.5 text-[#FBAD3F]" />
+                            <Clock className="h-4 w-4 mt-0.5 text-brand-orange" />
                             <span>{action}</span>
                           </li>
                         )
@@ -987,7 +987,7 @@ export default function WeeklyImpactReport() {
                         {reportData.next_week_prep.collection_day_prep.special_considerations.map(
                           (consideration, index) => (
                             <li key={index} className="flex items-start gap-2">
-                              <Calendar className="h-4 w-4 mt-0.5 text-[#47B3CB]" />
+                              <Calendar className="h-4 w-4 mt-0.5 text-brand-light-blue" />
                               <span>{consideration}</span>
                             </li>
                           )
@@ -1005,7 +1005,7 @@ export default function WeeklyImpactReport() {
                 {reportData.celebrating_success.milestones.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-[#FBAD3F]">
+                      <CardTitle className="flex items-center gap-2 text-brand-orange">
                         <Award className="h-5 w-5" />
                         Milestones Reached
                       </CardTitle>
@@ -1015,7 +1015,7 @@ export default function WeeklyImpactReport() {
                         {reportData.celebrating_success.milestones.map(
                           (milestone, index) => (
                             <li key={index} className="flex items-start gap-2">
-                              <Star className="h-4 w-4 mt-0.5 text-[#FBAD3F]" />
+                              <Star className="h-4 w-4 mt-0.5 text-brand-orange" />
                               <span className="font-medium">{milestone}</span>
                             </li>
                           )
@@ -1028,14 +1028,14 @@ export default function WeeklyImpactReport() {
                 {reportData.celebrating_success.volunteer_spotlight && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-[#236383]">
+                      <CardTitle className="flex items-center gap-2 text-brand-primary">
                         <Users className="h-5 w-5" />
                         Volunteer Spotlight
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-[#236383]">
-                        <div className="font-semibold text-[#236383] mb-2">
+                      <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-brand-primary">
+                        <div className="font-semibold text-brand-primary mb-2">
                           {
                             reportData.celebrating_success.volunteer_spotlight
                               .name
@@ -1055,17 +1055,17 @@ export default function WeeklyImpactReport() {
                 {reportData.celebrating_success.impact_story && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-[#47B3CB]">
+                      <CardTitle className="flex items-center gap-2 text-brand-light-blue">
                         <Star className="h-5 w-5" />
                         Impact Story
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="p-4 bg-teal-50 rounded-lg border-l-4 border-[#47B3CB]">
+                      <div className="p-4 bg-teal-50 rounded-lg border-l-4 border-brand-light-blue">
                         <blockquote className="text-lg italic text-gray-700 mb-3">
                           "{reportData.celebrating_success.impact_story.quote}"
                         </blockquote>
-                        <cite className="text-sm font-medium text-[#47B3CB]">
+                        <cite className="text-sm font-medium text-brand-light-blue">
                           —{' '}
                           {
                             reportData.celebrating_success.impact_story

@@ -122,7 +122,7 @@ export default function ImportantLinks() {
   return (
     <div className="h-full flex flex-col bg-gray-50 p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#236383] mb-2">
+        <h1 className="text-3xl font-bold text-brand-primary mb-2">
           Important Links
         </h1>
         <p className="text-gray-600">
@@ -151,7 +151,7 @@ export default function ImportantLinks() {
           <Card className="flex-1 flex flex-col">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-[#236383]" />
+                <Calculator className="h-5 w-5 text-brand-primary" />
                 Inventory Calculator
               </CardTitle>
               <CardDescription>
@@ -167,7 +167,7 @@ export default function ImportantLinks() {
                     onClick={() =>
                       window.open(inventoryCalculatorUrl, '_blank')
                     }
-                    className="bg-[#236383] hover:bg-[#007E8C] text-white font-semibold px-8 py-3 text-base flex-1"
+                    className="bg-brand-primary hover:bg-brand-teal text-white font-semibold px-8 py-3 text-base flex-1"
                   >
                     <Calculator className="w-5 h-5 mr-2" />
                     Open Calculator
@@ -178,7 +178,7 @@ export default function ImportantLinks() {
                     onClick={() =>
                       window.open(inventoryCalculatorUrl, '_blank')
                     }
-                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/5 px-6 py-3 font-medium"
+                    className="border-brand-primary text-brand-primary hover:bg-brand-primary/5 px-6 py-3 font-medium"
                   >
                     <ExternalLink className="w-5 h-5 mr-2" />
                     New Tab
@@ -333,7 +333,7 @@ export default function ImportantLinks() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <LinkIcon className="h-5 w-5 text-[#236383]" />
+                    <LinkIcon className="h-5 w-5 text-brand-primary" />
                     Historical Collections Record
                   </CardTitle>
                   <CardDescription>
@@ -380,7 +380,7 @@ export default function ImportantLinks() {
                   <Button
                     size="sm"
                     onClick={() => window.open(userSheetUrl, '_blank')}
-                    className="bg-[#236383] hover:bg-[#007E8C] text-white"
+                    className="bg-brand-primary hover:bg-brand-teal text-white"
                   >
                     <ExternalLink className="h-4 w-4 mr-1" />
                     Open Link

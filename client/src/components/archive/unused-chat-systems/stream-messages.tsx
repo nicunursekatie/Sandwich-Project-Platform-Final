@@ -737,7 +737,7 @@ export default function StreamMessagesPage() {
       {/* Header */}
       <div className="flex items-center gap-4 p-6 border-b">
         <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-          <MessageCircle className="w-5 h-5 text-blue-600"/"
+          <MessageCircle className="w-5 h-5 text-brand-primary"/"
         </div>
         <div>
           <h1 className="text-2xl font-main-heading text-primary Messages</h1>"
@@ -781,7 +781,7 @@ export default function StreamMessagesPage() {
                           <span key={user.id} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm">
                             {user.displayName}
                             <X 
-                              className="w-3 h-3 cursor-pointer hover:text-blue-600" 
+                              className="w-3 h-3 cursor-pointer hover:text-brand-primary" 
                               onClick={() => removeRecipient(user.id)}
                             />
                           </span>
@@ -842,7 +842,7 @@ export default function StreamMessagesPage() {
                   <Button 
                     onClick={handleSendMessage}
                     disabled={selectedRecipients.length === 0 || !messageBody.trim()}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-6"
+                    className="bg-brand-primary hover:bg-brand-primary text-white px-6"
                   >
                     Send
                   </Button>
@@ -1032,7 +1032,7 @@ export default function StreamMessagesPage() {
                       
                       <Button 
                         onClick={() => setShowCompose(true)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        className="bg-brand-primary hover:bg-brand-primary text-white"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Start Conversation

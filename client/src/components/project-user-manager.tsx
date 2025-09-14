@@ -181,7 +181,7 @@ export default function ProjectUserManager({
       case 'owner':
         return 'bg-purple-500 text-white';
       case 'member':
-        return 'bg-blue-500 text-white';
+        return 'bg-brand-primary text-white';
       case 'viewer':
         return 'bg-gray-500 text-white';
       default:
@@ -340,7 +340,7 @@ export default function ProjectUserManager({
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <span className="text-sm font-medium text-blue-600">
+                                    <span className="text-sm font-medium text-brand-primary">
                                       {assignedUser.firstName?.[0]}
                                       {assignedUser.lastName?.[0]}
                                     </span>
@@ -437,7 +437,7 @@ export default function ProjectUserManager({
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-600">
+                      <span className="text-sm font-medium text-brand-primary">
                         {assignedUser.firstName?.[0]}
                         {assignedUser.lastName?.[0]}
                       </span>

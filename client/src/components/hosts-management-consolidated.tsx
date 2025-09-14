@@ -846,7 +846,7 @@ export default function HostsManagementConsolidated() {
                       {sortedContacts.length > 2 && (
                         <button
                           onClick={() => toggleContactExpansion(host.id)}
-                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                          className="text-xs text-brand-primary hover:text-blue-800 hover:underline cursor-pointer"
                         >
                           {isExpanded
                             ? 'Show less'
@@ -1375,7 +1375,7 @@ export default function HostsManagementConsolidated() {
                           <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <a
                             href={`tel:${contact.phone}`}
-                            className="text-blue-600 hover:underline truncate"
+                            className="text-brand-primary hover:underline truncate"
                           >
                             {contact.phone}
                           </a>
@@ -1386,7 +1386,7 @@ export default function HostsManagementConsolidated() {
                             <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
                             <a
                               href={`mailto:${contact.email}`}
-                              className="text-blue-600 hover:underline truncate"
+                              className="text-brand-primary hover:underline truncate"
                             >
                               {contact.email}
                             </a>
