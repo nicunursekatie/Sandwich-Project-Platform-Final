@@ -852,6 +852,13 @@ export default function EventRequestsManagement() {
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [emailComposerRequest, setEmailComposerRequest] =
     useState<EventRequest | null>(null);
+  
+  // State for recording actual sandwich counts
+  const [showRecordSandwichesDialog, setShowRecordSandwichesDialog] = useState(false);
+  const [recordSandwichesRequest, setRecordSandwichesRequest] = useState<EventRequest | null>(null);
+  const [actualSandwichCount, setActualSandwichCount] = useState(0);
+  const [actualSandwichNotes, setActualSandwichNotes] = useState('');
+  
   // Toolkit Sent Dialog state
   const [showToolkitSentDialog, setShowToolkitSentDialog] = useState(false);
   const [toolkitSentRequest, setToolkitSentRequest] =
@@ -1333,6 +1340,69 @@ export default function EventRequestsManagement() {
       );
       toast({
         title: 'Error recording follow-up',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+    },
+  });
+
+  // Mutation for recording actual sandwich counts
+  const recordActualSandwichesMutation = useMutation({
+    mutationFn: async (data: {
+      eventId: number;
+      actualSandwichCount: number;
+      actualSandwichNotes: string;
+    }) => {
+      return await apiRequest('PATCH', `/api/event-requests/${data.eventId}/actual-sandwiches`, {
+        actualSandwichCount: data.actualSandwichCount,
+        actualSandwichCountRecordedDate: new Date().toISOString(),
+        actualSandwichCountRecordedBy: user?.id || 'unknown',
+        distributionNotes: data.actualSandwichNotes,
+      });
+    },
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ['/api/event-requests'] });
+      const previousEvents = queryClient.getQueryData(['/api/event-requests']);
+
+      // Optimistically update the event with actual sandwich count
+      queryClient.setQueryData(['/api/event-requests'], (old: any) => {
+        if (!old) return old;
+        return old.map((event: any) =>
+          event.id === data.eventId
+            ? {
+                ...event,
+                actualSandwichCount: data.actualSandwichCount,
+                actualSandwichCountRecordedDate: new Date().toISOString(),
+                actualSandwichCountRecordedBy: user?.id || 'unknown',
+                distributionNotes: data.actualSandwichNotes,
+              }
+            : event
+        );
+      });
+
+      return { previousEvents };
+    },
+    onSuccess: () => {
+      setShowRecordSandwichesDialog(false);
+      setRecordSandwichesRequest(null);
+      setActualSandwichCount(0);
+      setActualSandwichNotes('');
+      toast({
+        title: 'Success',
+        description: 'Actual sandwich count recorded successfully',
+      });
+    },
+    onError: (error: any, variables, context: any) => {
+      queryClient.setQueryData(
+        ['/api/event-requests'],
+        context?.previousEvents
+      );
+      toast({
+        title: 'Error recording sandwich count',
         description: error.message,
         variant: 'destructive',
       });
@@ -5787,6 +5857,25 @@ export default function EventRequestsManagement() {
                 >
                   <Calendar className="h-4 w-4 mr-1" />
                   Mark Scheduled
+                </Button>
+              )}
+
+              {/* Show "Record Actual Sandwiches" button for scheduled events */}
+              {activeTab === 'scheduled' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setRecordSandwichesRequest(request);
+                    setActualSandwichCount((request as any).estimatedSandwichCount || 0);
+                    setActualSandwichNotes('');
+                    setShowRecordSandwichesDialog(true);
+                  }}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white border-0 shadow-lg"
+                  data-testid={`button-record-sandwiches-${request.id}`}
+                >
+                  <Calculator className="h-4 w-4 mr-1" />
+                  Record Actual Sandwiches
                 </Button>
               )}
 
@@ -11688,6 +11777,106 @@ export default function EventRequestsManagement() {
               {recordDistributionMutation.isPending
                 ? 'Recording...'
                 : 'Record Distribution'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Record Actual Sandwich Count Dialog */}
+      <Dialog
+        open={showRecordSandwichesDialog}
+        onOpenChange={setShowRecordSandwichesDialog}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Record Actual Sandwich Count</DialogTitle>
+            <DialogDescription>
+              Record the actual number of sandwiches distributed for this event.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {recordSandwichesRequest && (
+              <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+                <h4 className="font-semibold text-blue-900">
+                  {recordSandwichesRequest.organizationName}
+                </h4>
+                <p className="text-sm text-blue-700">
+                  Estimated: {(recordSandwichesRequest as any).estimatedSandwichCount || 'Not specified'} sandwiches
+                </p>
+                {recordSandwichesRequest.desiredEventDate && (
+                  <p className="text-sm text-blue-600">
+                    Event Date: {new Date(recordSandwichesRequest.desiredEventDate).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="actualSandwichCount">
+                Actual Sandwich Count <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="actualSandwichCount"
+                type="number"
+                min="0"
+                value={actualSandwichCount}
+                onChange={(e) => setActualSandwichCount(parseInt(e.target.value) || 0)}
+                placeholder="Enter actual sandwich count"
+                className="text-lg"
+                onWheel={(e) => e.target.blur()}
+                data-testid="input-actual-sandwich-count"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="actualSandwichNotes">
+                Additional Notes (optional)
+              </Label>
+              <Textarea
+                id="actualSandwichNotes"
+                value={actualSandwichNotes}
+                onChange={(e) => setActualSandwichNotes(e.target.value)}
+                placeholder="Add any notes about the distribution, challenges, or other relevant details..."
+                className="min-h-20"
+                data-testid="input-actual-sandwich-notes"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRecordSandwichesDialog(false);
+                setRecordSandwichesRequest(null);
+                setActualSandwichCount(0);
+                setActualSandwichNotes('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (recordSandwichesRequest) {
+                  recordActualSandwichesMutation.mutate({
+                    eventId: recordSandwichesRequest.id,
+                    actualSandwichCount,
+                    actualSandwichNotes,
+                  });
+                }
+              }}
+              disabled={
+                !recordSandwichesRequest || 
+                actualSandwichCount === 0 || 
+                recordActualSandwichesMutation.isPending
+              }
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              data-testid="button-save-sandwich-count"
+            >
+              {recordActualSandwichesMutation.isPending
+                ? 'Recording...'
+                : 'Record Count'}
             </Button>
           </DialogFooter>
         </DialogContent>
