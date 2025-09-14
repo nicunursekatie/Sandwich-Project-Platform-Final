@@ -598,6 +598,14 @@ export default function ImportantDocuments() {
                             <Download className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span>Download</span>
                           </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleShare(doc)}
+                            className="w-full h-11 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 hover:text-brand-primary transition-all duration-200 ease-in-out rounded-lg py-3 px-4"
+                          >
+                            <Share2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span>Share Document</span>
+                          </Button>
                         </>
                       )}
                     </div>
