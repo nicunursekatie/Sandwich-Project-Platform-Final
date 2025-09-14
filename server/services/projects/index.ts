@@ -107,7 +107,8 @@ export class ProjectService implements IProjectService {
   }
 
   async getProjectById(id: number): Promise<Project | null> {
-    return this.storage.getProject(id);
+    const project = await this.storage.getProject(id);
+    return project || null;
   }
 
   async getArchivedProjects(): Promise<ArchivedProject[]> {
