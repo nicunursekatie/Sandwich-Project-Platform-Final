@@ -179,7 +179,7 @@ export default function SimpleNav({
 
                 />
               )}
-            </div>
+            </Button>
           );
         })}
       </nav>
