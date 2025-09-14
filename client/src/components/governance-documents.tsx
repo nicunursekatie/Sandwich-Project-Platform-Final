@@ -123,7 +123,11 @@ export function GovernanceDocuments() {
           <Button
             key={category}
             variant={selectedCategory === category ? 'default' : 'outline'}
-            className={selectedCategory === category ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border-brand-primary' : 'text-brand-primary border-brand-primary hover:bg-[#f0f9ff]'}
+            className={
+              selectedCategory === category
+                ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border-brand-primary'
+                : 'text-brand-primary border-brand-primary hover:bg-brand-primary/10'
+            }
             size="sm"
             onClick={() => setSelectedCategory(category)}
             className="text-sm"
@@ -179,7 +183,7 @@ export function GovernanceDocuments() {
                   size="sm"
                   variant="outline"
                   onClick={() => handlePreview(document)}
-                  className="w-full h-9 text-sm font-medium text-brand-primary border-brand-primary hover:bg-[#f0f9ff]"
+                  className="w-full h-9 text-sm font-medium text-brand-primary border-brand-primary hover:bg-brand-primary/10"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Preview

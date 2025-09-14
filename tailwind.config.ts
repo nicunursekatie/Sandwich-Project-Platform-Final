@@ -65,6 +65,7 @@ export default {
           orange: '#FBAD3F',
           'orange-dark': '#E89A2F',
           burgundy: '#A31C41',
+          gold: '#B8860B',
           'light-blue': '#47B3CB',
           'dark-gray': 'hsl(24 5% 38%)' /* #605251 */,
           'light-gray': 'hsl(0 0% 82%)' /* #D1D3D4 */,

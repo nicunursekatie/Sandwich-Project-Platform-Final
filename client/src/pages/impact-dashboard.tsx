@@ -308,7 +308,7 @@ export default function ImpactDashboard() {
 
         {/* Key Impact Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+          <Card className="bg-gradient-to-r from-brand-teal to-brand-primary text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Heart className="w-5 h-5 mr-2" />

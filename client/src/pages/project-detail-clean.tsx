@@ -728,10 +728,10 @@ export default function ProjectDetailClean({
         {/* Support People */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 bg-[#B8860B]/10 rounded flex items-center justify-center shrink-0">
-              <Users className="h-3 w-3 text-[#B8860B]" />
+            <div className="w-6 h-6 bg-brand-gold/10 rounded flex items-center justify-center shrink-0">
+              <Users className="h-3 w-3 text-brand-gold" />
             </div>
-            <h3 className="text-sm font-semibold text-[#B8860B] font-roboto">
+            <h3 className="text-sm font-semibold text-brand-gold font-roboto">
               Support
             </h3>
           </div>
