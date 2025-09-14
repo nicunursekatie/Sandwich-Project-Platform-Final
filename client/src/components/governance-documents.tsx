@@ -64,11 +64,11 @@ const getFileIcon = (type: string) => {
 const getCategoryColor = (category: string) => {
   switch (category) {
     case 'Legal Foundation':
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-teal-100 text-teal-800';
     case 'Legal Reference':
       return 'bg-blue-100 text-blue-800';
     case 'Tax Status':
-      return 'bg-green-100 text-green-800';
+      return 'bg-amber-100 text-amber-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -123,6 +123,7 @@ export function GovernanceDocuments() {
           <Button
             key={category}
             variant={selectedCategory === category ? 'default' : 'outline'}
+            className={selectedCategory === category ? 'bg-[#236383] hover:bg-[#1d5470] text-white border-[#236383]' : 'text-[#236383] border-[#236383] hover:bg-[#f0f9ff]'}
             size="sm"
             onClick={() => setSelectedCategory(category)}
             className="text-sm"
@@ -137,7 +138,7 @@ export function GovernanceDocuments() {
         {filteredDocuments.map((document, index) => (
           <Card
             key={index}
-            className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200"
+            className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-[#236383]"
           >
             <CardHeader className="pb-4 flex-shrink-0">
               <div className="flex items-start justify-between mb-3">
@@ -178,16 +179,15 @@ export function GovernanceDocuments() {
                   size="sm"
                   variant="outline"
                   onClick={() => handlePreview(document)}
-                  className="w-full h-9 text-sm font-medium"
+                  className="w-full h-9 text-sm font-medium text-[#236383] border-[#236383] hover:bg-[#f0f9ff]"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Preview
                 </Button>
                 <Button
                   size="sm"
-                  variant="default"
                   onClick={() => handleDownload(document)}
-                  className="w-full h-9 text-sm font-medium"
+                  className="w-full h-9 text-sm font-medium bg-[#236383] hover:bg-[#1d5470] text-white"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download
