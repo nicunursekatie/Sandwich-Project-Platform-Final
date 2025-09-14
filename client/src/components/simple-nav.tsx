@@ -320,14 +320,23 @@ export default function SimpleNav({
             },
           ]
         : []),
+      // Important Documents - accessible to all authenticated users
+      {
+        id: 'important-documents',
+        label: 'Important Documents',
+        icon: FileText,
+        href: 'important-documents',
+        group: 'documentation',
+      },
+      // Admin Documents - restricted to admin users only  
       ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS)
         ? [
             {
               id: 'admin',
-              label: 'Important Documents',
-              icon: FileText,
+              label: 'Admin Panel',
+              icon: Settings,
               href: 'admin',
-              group: 'documentation',
+              group: 'admin',
             },
           ]
         : []),
