@@ -192,15 +192,6 @@ const adminDocuments: AdminDocument[] = [
     type: 'pdf',
     importance: 'high',
   },
-  {
-    id: 'sandwich-inventory',
-    name: 'Sandwich Inventory List',
-    description: 'Comprehensive inventory tracking system for sandwich collections',
-    category: 'Sandwich Making',
-    path: '/attached_assets/CLEANED UP Sandwich Totals_1753480177827.pdf',
-    type: 'pdf',
-    importance: 'high',
-  },
   
   // Tools
   {
