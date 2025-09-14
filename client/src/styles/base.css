@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Lobster&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+
+/* Fix for horizontal scroll issues */
+html, body {
+  @apply overflow-x-hidden;
+}
+
+body {
+  overscroll-behavior-x: none;
+}
+
+@supports (padding: max(0px)) {
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 24 5% 38%; /* #605251 - Dark Gray */
+    --muted: 0 0% 82%; /* #D1D3D4 - Light Gray */
+    --muted-foreground: 24 5% 38%; /* #605251 */
+    --popover: 0 0% 100%; /* #FFFFFF */
+    --popover-foreground: 24 5% 38%; /* #605251 */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 24 5% 38%; /* #605251 */
+    --border: 0 0% 90%; /* Light border */
+    --input: 0 0% 96%; /* Light input background */
+    --primary: 197 53% 32%; /* #236383 - TSP Primary Blue */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary: 27 92% 62%; /* #FBAD3F - Orange */
+    --secondary-foreground: 24 5% 38%; /* #605251 */
+    --accent: 342 63% 38%; /* #A31C41 - Burgundy */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+    --ring: 197 100% 37%; /* #007EBC */
+    --radius: 0.5rem;
+    --gradient-from: 210 100% 98%;
+    --gradient-via: 220 50% 96%;
+    --gradient-to: 230 25% 94%;
+    --tsp-primary: #236383;
+    --tsp-secondary: #FBAD3F;
+    --tsp-accent: #A31C41;
+    --tsp-muted: #007E8C;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --gradient-from: 222 84% 6%;
+    --gradient-via: 217 33% 18%;
+    --gradient-to: 222 47% 12%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Roboto', system-ui, sans-serif;
+  }
+
+  .font-main-heading {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .font-sub-heading {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+  }
+
+  .font-body {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+  }
+
+  .font-body-light {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+  }
+
+  .font-highlight {
+    font-family: 'Lobster', cursive;
+    font-weight: 400;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="url"],
+  textarea,
+  select,
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="tel"]:focus,
+  input[type="search"]:focus,
+  input[type="date"]:focus,
+  input[type="time"]:focus,
+  input[type="datetime-local"]:focus,
+  input[type="url"]:focus,
+  textarea:focus,
+  select:focus {
+    @apply bg-white;
+  }
+}
