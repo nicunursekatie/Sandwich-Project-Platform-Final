@@ -463,7 +463,7 @@ export default function BulkDataManager({
 
               <div className="border rounded-lg p-4 bg-blue-50">
                 <div className="flex items-start space-x-3">
-                  <Database className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <Database className="w-5 h-5 text-brand-primary mt-0.5" />
                   <div>
                     <h4 className="font-medium text-blue-900">
                       Data Import Status

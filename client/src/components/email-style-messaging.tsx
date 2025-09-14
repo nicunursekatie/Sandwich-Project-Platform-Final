@@ -594,7 +594,7 @@ export default function EmailStyleMessaging() {
                             checked={selectedMessages.includes(message.id)}
                             onChange={() => toggleMessageSelection(message.id)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                            className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mt-1"
                           />
 
                           <Avatar className="h-8 w-8 flex-shrink-0">
@@ -621,7 +621,7 @@ export default function EmailStyleMessaging() {
                                     : message.from.name}
                                 </span>
                                 {!message.read && (
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                  <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0"></div>
                                 )}
                               </div>
 
@@ -757,7 +757,7 @@ export default function EmailStyleMessaging() {
                         ) : (
                           // For received messages, show FROM information
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-blue-600">
+                            <span className="font-bold text-brand-primary">
                               FROM:
                             </span>
                             <span className="font-medium">

@@ -169,7 +169,7 @@ export default function AnalyticsDashboard() {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-[#236383] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-brand-primary mx-auto mb-4"></div>
           <p className="text-[#646464] text-lg">Loading analytics...</p>
         </div>
       </div>
@@ -188,7 +188,7 @@ export default function AnalyticsDashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-[#236383] mb-2">
+        <h1 className="text-4xl font-bold text-brand-primary mb-2">
           ANALYTICS DASHBOARD
         </h1>
         <p className="text-lg text-[#646464]">
@@ -198,54 +198,54 @@ export default function AnalyticsDashboard() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg p-6 border-2 border-[#236383]/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
-            <Trophy className="h-8 w-8 text-[#236383]" />
-            <Badge className="bg-[#236383]/10 text-[#236383] text-sm">
+            <Trophy className="h-8 w-8 text-brand-primary" />
+            <Badge className="bg-brand-primary/10 text-brand-primary text-sm">
               500K Goal
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-[#236383] mb-2">
+          <div className="text-3xl font-bold text-brand-primary mb-2">
             {(analyticsData.totalSandwiches / 1000000).toFixed(2)}M
           </div>
           <p className="text-[#646464] font-medium">Total Impact</p>
-          <p className="text-sm text-[#236383] mt-2">2025 Goal: 15K of 500K</p>
+          <p className="text-sm text-brand-primary mt-2">2025 Goal: 15K of 500K</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-[#236383]/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
-            <TrendingUp className="h-8 w-8 text-[#236383]" />
+            <TrendingUp className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-blue-100 text-blue-700 text-sm">
               Weekly Avg
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-[#236383] mb-2">
+          <div className="text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.avgWeekly.toLocaleString()}
           </div>
           <p className="text-[#646464] font-medium">Per Week</p>
           <p className="text-sm text-green-600 mt-2">↑ vs last month</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-[#236383]/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
-            <Award className="h-8 w-8 text-[#236383]" />
-            <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] text-sm">
+            <Award className="h-8 w-8 text-brand-primary" />
+            <Badge className="bg-brand-orange/20 text-brand-orange text-sm">
               Record
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-[#236383] mb-2">
+          <div className="text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.recordWeek.total.toLocaleString()}
           </div>
           <p className="text-[#646464] font-medium">Best Week</p>
           <p className="text-sm text-[#646464] mt-2">11/14/2023</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-[#236383]/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
-            <Users2 className="h-8 w-8 text-[#236383]" />
+            <Users2 className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-teal-100 text-teal-700 text-sm">Network</Badge>
           </div>
-          <div className="text-3xl font-bold text-[#236383] mb-2">
+          <div className="text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.totalHosts}
           </div>
           <p className="text-[#646464] font-medium">Total Hosts</p>
@@ -255,9 +255,9 @@ export default function AnalyticsDashboard() {
       {/* Charts Section - Vertical Layout */}
       <div className="space-y-8">
         {/* Monthly Trends - Full Width */}
-        <Card className="border-2 border-[#236383]/20">
+        <Card className="border-2 border-brand-primary/20">
           <div className="p-6 border-b">
-            <h3 className="text-xl font-semibold text-[#236383] flex items-center gap-2">
+            <h3 className="text-xl font-semibold text-brand-primary flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               Growth Trends
             </h3>
@@ -307,9 +307,9 @@ export default function AnalyticsDashboard() {
         </Card>
 
         {/* Strategic Ideas - Full Width */}
-        <Card className="border-2 border-[#FBAD3F]/20">
+        <Card className="border-2 border-brand-orange/20">
           <div className="p-6 border-b">
-            <h3 className="text-xl font-semibold text-[#236383] flex items-center gap-2">
+            <h3 className="text-xl font-semibold text-brand-primary flex items-center gap-2">
               <Target className="h-5 w-5" />
               Strategic Ideas
             </h3>
@@ -317,28 +317,28 @@ export default function AnalyticsDashboard() {
           </div>
           <CardContent className="p-6">
             <div className="space-y-4">
-              <div className="bg-[#FBAD3F]/10 p-4 rounded-lg border border-[#FBAD3F]/30">
-                <h4 className="font-semibold text-[#236383] mb-2">
+              <div className="bg-brand-orange/10 p-4 rounded-lg border border-brand-orange/30">
+                <h4 className="font-semibold text-brand-primary mb-2">
                   Host Expansion
                 </h4>
                 <p className="text-sm text-[#646464] mb-2">
                   {analyticsData.totalHosts} total hosts (
                   {analyticsData.activeHosts} active) - Growing network
                 </p>
-                <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F]">
+                <Badge className="bg-brand-orange/20 text-brand-orange">
                   Special campaign needed
                 </Badge>
               </div>
 
-              <div className="bg-[#236383]/10 p-4 rounded-lg border border-[#236383]/30">
-                <h4 className="font-semibold text-[#236383] mb-2">
+              <div className="bg-brand-primary/10 p-4 rounded-lg border border-brand-primary/30">
+                <h4 className="font-semibold text-brand-primary mb-2">
                   Capacity Building
                 </h4>
                 <p className="text-sm text-[#646464] mb-2">
                   Weekly avg: {analyticsData.avgWeekly.toLocaleString()} -
                   Support volunteer recruitment
                 </p>
-                <Badge className="bg-[#236383]/20 text-[#236383]">
+                <Badge className="bg-brand-primary/20 text-brand-primary">
                   → Target 10K/week
                 </Badge>
               </div>

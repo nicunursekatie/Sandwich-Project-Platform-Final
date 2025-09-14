@@ -308,7 +308,7 @@ export default function DonationTracking() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Truck className="h-6 w-6 text-[#236383]" />
+            <Truck className="h-6 w-6 text-brand-primary" />
             Distribution Tracking
           </h1>
           <p className="text-gray-600 mt-1">
@@ -319,7 +319,7 @@ export default function DonationTracking() {
 
         <Button
           onClick={openAddDialog}
-          className="bg-[#236383] hover:bg-[#1d5470]"
+          className="bg-brand-primary hover:bg-brand-primary-dark"
         >
           <Plus className="h-4 w-4 mr-2" />
           Log New Distribution
@@ -331,7 +331,7 @@ export default function DonationTracking() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-[#236383]" />
+              <Package className="h-5 w-5 text-brand-primary" />
               <div>
                 <p className="text-sm text-gray-600">Total Sandwiches</p>
                 <p className="text-2xl font-bold text-gray-900">
@@ -345,7 +345,7 @@ export default function DonationTracking() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-[#236383]" />
+              <MapPin className="h-5 w-5 text-brand-primary" />
               <div>
                 <p className="text-sm text-gray-600">Host Locations</p>
                 <p className="text-2xl font-bold text-gray-900">
@@ -359,7 +359,7 @@ export default function DonationTracking() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#236383]" />
+              <Building2 className="h-5 w-5 text-brand-primary" />
               <div>
                 <p className="text-sm text-gray-600">Recipients</p>
                 <p className="text-2xl font-bold text-gray-900">
@@ -373,7 +373,7 @@ export default function DonationTracking() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#236383]" />
+              <Calendar className="h-5 w-5 text-brand-primary" />
               <div>
                 <p className="text-sm text-gray-600">Total Records</p>
                 <p className="text-2xl font-bold text-gray-900">
@@ -500,7 +500,7 @@ export default function DonationTracking() {
         <CardContent>
           {loadingDistributions ? (
             <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-b-2 border-[#236383] mx-auto"></div>
+              <div className="animate-spin h-8 w-8 border-b-2 border-brand-primary mx-auto"></div>
               <p className="text-gray-600 mt-2">Loading distributions...</p>
             </div>
           ) : filteredDistributions.length === 0 ? (
@@ -517,7 +517,7 @@ export default function DonationTracking() {
               {distributions.length === 0 && (
                 <Button
                   onClick={openAddDialog}
-                  className="bg-[#236383] hover:bg-[#1d5470]"
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Log First Distribution
@@ -559,8 +559,8 @@ export default function DonationTracking() {
 
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-[#236383]" />
-                            <span className="font-bold text-lg text-[#236383]">
+                            <Package className="h-4 w-4 text-brand-primary" />
+                            <span className="font-bold text-lg text-brand-primary">
                               {distribution.sandwichCount.toLocaleString()}{' '}
                               sandwiches
                             </span>
@@ -735,7 +735,7 @@ export default function DonationTracking() {
                   createDistributionMutation.isPending ||
                   updateDistributionMutation.isPending
                 }
-                className="bg-[#236383] hover:bg-[#1d5470]"
+                className="bg-brand-primary hover:bg-brand-primary-dark"
               >
                 {createDistributionMutation.isPending ||
                 updateDistributionMutation.isPending ? (

@@ -176,16 +176,16 @@ export default function SandwichForecastWidget() {
 
   if (isLoading) {
     return (
-      <Card className="border-2 border-[#236383]/20">
+      <Card className="border-2 border-brand-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-[#236383] flex items-center gap-2">
+          <CardTitle className="text-brand-primary flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
             Sandwich Forecast
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#236383]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -193,16 +193,16 @@ export default function SandwichForecastWidget() {
   }
 
   return (
-    <Card className="border-2 border-[#236383]/20">
+    <Card className="border-2 border-brand-primary/20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-[#236383] flex items-center gap-2">
+        <CardTitle className="text-brand-primary flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
           Weekly Sandwich Planning
         </CardTitle>
         <p className="text-sm text-[#646464] mt-1">
           Group sandwich production forecast by Thursday distribution dates
         </p>
-        <p className="text-xs text-blue-600 mt-1 font-medium">
+        <p className="text-xs text-brand-primary mt-1 font-medium">
           📅 Individual makers prep Wednesdays • Group distributions Thursdays
         </p>
       </CardHeader>
@@ -227,7 +227,7 @@ export default function SandwichForecastWidget() {
                   key={week.weekKey}
                   className={`rounded-lg p-3 border ${
                     index === 0
-                      ? 'bg-gradient-to-r from-[#236383] to-[#007E8C] text-white border-[#236383]'
+                      ? 'bg-gradient-to-r from-brand-primary to-brand-teal text-white border-brand-primary'
                       : 'bg-gray-50 border-gray-200'
                   }`}
                 >
@@ -246,7 +246,7 @@ export default function SandwichForecastWidget() {
                     )}
                     <div
                       className={`text-2xl font-bold mt-1 ${
-                        index === 0 ? 'text-white' : 'text-[#236383]'
+                        index === 0 ? 'text-white' : 'text-brand-primary'
                       }`}
                     >
                       {(week.totalEstimated || 0).toLocaleString()}
@@ -266,7 +266,7 @@ export default function SandwichForecastWidget() {
 
             {/* Detailed Weekly Breakdown */}
             <div className="space-y-4">
-              <h4 className="font-semibold text-[#236383] flex items-center gap-2">
+              <h4 className="font-semibold text-brand-primary flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 Weekly Breakdown (Next 8 Weeks)
               </h4>
@@ -278,7 +278,7 @@ export default function SandwichForecastWidget() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h5 className="font-semibold text-[#236383]">
+                        <h5 className="font-semibold text-brand-primary">
                           {week.distributionDate}
                         </h5>
                         <p className="text-sm text-gray-600">
@@ -287,7 +287,7 @@ export default function SandwichForecastWidget() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <div className="text-xl font-bold text-[#236383]">
+                        <div className="text-xl font-bold text-brand-primary">
                           {(week.totalEstimated || 0).toLocaleString()}
                         </div>
                         <div className="text-sm text-gray-600">
@@ -321,7 +321,7 @@ export default function SandwichForecastWidget() {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="font-semibold text-[#236383]">
+                                <div className="font-semibold text-brand-primary">
                                   {(
                                     event.estimatedSandwichCount || 0
                                   ).toLocaleString()}

@@ -139,44 +139,44 @@ export default function SimpleNav({
           const active = isActive(item.href);
 
           return (
-            <div key={item.id} className="relative">
-              <Button
-                data-testid={`nav-${item.id}`}
-                variant={active ? 'secondary' : 'ghost'}
-                size="sm"
-                className={`w-full justify-start gap-2 relative ${
-                  active ? 'bg-secondary text-secondary-foreground' : ''
-                }`}
-                onClick={() => onSectionChange(item.href)}
-              >
-                {item.customIcon ? (
-                  <img
-                    src={item.customIcon}
-                    alt={item.label}
-                    className="h-4 w-4 object-contain"
-                  />
-                ) : item.icon ? (
-                  <item.icon className="h-4 w-4" />
-                ) : null}
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {badgeCount > 0 && (
-                      <Badge 
-                        variant="destructive" 
-                        className="ml-auto h-5 min-w-[20px] text-xs"
-                      >
-                        {badgeCount > 99 ? '99+' : badgeCount}
-                      </Badge>
-                    )}
-                  </>
-                )}
-              </Button>
-              {item.id === 'collections' && !isCollapsed && (
-                <HelpBubble
-                  className="absolute -top-1 -right-1"
-                  content="Click here to log your sandwich collections and track daily sandwich counts"
-                  title="Collections Log"
+
+            <Button
+              key={item.id}
+              variant={isCurrentlyActive ? 'default' : 'ghost'}
+              className={`
+              w-full ${
+                isCollapsed
+                  ? 'justify-center px-2'
+                  : 'justify-start px-2 sm:px-3'
+              } text-left h-11 touch-manipulation relative
+              ${
+                isCurrentlyActive
+                  ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
+                  : 'hover:bg-slate-100 text-slate-700'
+              }
+            `}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Navigation click:', item.href);
+                onSectionChange(item.href);
+              }}
+              title={isCollapsed ? item.label : undefined}
+            >
+              {item.customIcon ? (
+                <img
+                  src={sandwich_logo}
+                  alt={item.label}
+                  className={`h-4 w-4 flex-shrink-0 ${
+                    isCollapsed ? '' : 'mr-2 sm:mr-3'
+                  }`}
+                />
+              ) : (
+                <item.icon
+                  className={`h-4 w-4 flex-shrink-0 ${
+                    isCollapsed ? '' : 'mr-2 sm:mr-3'
+                  }`}
+
                 />
               )}
             </div>

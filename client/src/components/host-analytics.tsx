@@ -378,10 +378,10 @@ export default function HostAnalytics({
                 <CardTitle className="text-sm font-medium">
                   Collections
                 </CardTitle>
-                <Calendar className="h-4 w-4 text-blue-600" />
+                <Calendar className="h-4 w-4 text-brand-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-brand-primary">
                   {hostData.totalCollections.toLocaleString()}
                 </div>
                 <p className="text-xs text-gray-600 mt-1">
@@ -490,7 +490,7 @@ export default function HostAnalytics({
                             <div className="text-gray-600">Individual</div>
                           </div>
                           <div className="text-center">
-                            <div className="font-medium text-blue-600">
+                            <div className="font-medium text-brand-primary">
                               {month.groupSandwiches.toLocaleString()}
                             </div>
                             <div className="text-gray-600">Groups</div>

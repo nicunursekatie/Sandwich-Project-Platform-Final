@@ -78,7 +78,7 @@ export function DocumentViewer({
       {/* Document Controls */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
+          <FileText className="h-5 w-5 text-brand-primary" />
           <span className="font-medium text-gray-900">{fileName}</span>
           <span className="text-sm text-gray-500 uppercase">{fileType}</span>
         </div>
@@ -100,7 +100,7 @@ export function DocumentViewer({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
             <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mb-4"></div>
               <p className="text-gray-600">Loading document...</p>
             </div>
           </div>
@@ -117,7 +117,7 @@ export function DocumentViewer({
         ) : fileType === 'docx' || fileType === 'doc' ? (
           // For DOCX files, we'll use Office Online viewer if available, otherwise show download prompt
           <div className="flex flex-col items-center justify-center h-full p-8">
-            <FileText className="h-16 w-16 text-blue-600 mb-4" />
+            <FileText className="h-16 w-16 text-brand-primary mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Word Document
             </h3>

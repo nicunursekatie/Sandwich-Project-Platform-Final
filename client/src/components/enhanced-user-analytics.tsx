@@ -266,9 +266,9 @@ export default function EnhancedUserAnalytics() {
       {systemStats && (
         <div className="space-y-8">
           <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
-            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-brand-primary/20 hover:border-brand-primary/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
-                <Users className="h-4 w-4 text-[#236383]" />
+                <Users className="h-4 w-4 text-brand-primary" />
                 <span className="text-xs text-green-600 font-medium">
                   ↑
                   {Math.round(
@@ -280,7 +280,7 @@ export default function EnhancedUserAnalytics() {
                   %
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">
+              <div className="text-xl sm:text-2xl font-bold text-brand-primary mb-1">
                 {systemStats.totalUsers}
               </div>
               <p className="text-xs text-gray-600">Total Users</p>
@@ -290,27 +290,27 @@ export default function EnhancedUserAnalytics() {
               </p>
             </div>
 
-            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-brand-primary/20 hover:border-brand-primary/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
-                <Activity className="h-4 w-4 text-[#236383]" />
-                <span className="text-xs text-blue-600 font-medium">
+                <Activity className="h-4 w-4 text-brand-primary" />
+                <span className="text-xs text-brand-primary font-medium">
                   {Math.round(systemStats.averageActionsPerUser)}/user
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-[#236383] mb-1">
+              <div className="text-xl sm:text-2xl font-bold text-brand-primary mb-1">
                 {systemStats.totalActions.toLocaleString()}
               </div>
               <p className="text-xs text-gray-600">Total Actions</p>
             </div>
 
-            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-brand-primary/20 hover:border-brand-primary/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
-                <BarChart3 className="h-4 w-4 text-[#236383]" />
+                <BarChart3 className="h-4 w-4 text-brand-primary" />
                 <span className="text-xs text-orange-600 font-medium">
                   Most Used
                 </span>
               </div>
-              <div className="text-lg sm:text-xl font-bold text-[#236383] mb-1 truncate">
+              <div className="text-lg sm:text-xl font-bold text-brand-primary mb-1 truncate">
                 {systemStats.topSections?.[0]?.section || 'N/A'}
               </div>
               <p className="text-xs text-gray-600">Top Section</p>
@@ -319,14 +319,14 @@ export default function EnhancedUserAnalytics() {
               </p>
             </div>
 
-            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-[#236383]/20 hover:border-[#236383]/40 transition-colors">
+            <div className="bg-white  p-3 sm:p-4 rounded-lg border border-brand-primary/20 hover:border-brand-primary/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
-                <Target className="h-4 w-4 text-[#236383]" />
+                <Target className="h-4 w-4 text-brand-primary" />
                 <span className="text-xs text-purple-600 font-medium">
                   Popular
                 </span>
               </div>
-              <div className="text-sm sm:text-base font-bold text-[#236383] mb-1 line-clamp-2">
+              <div className="text-sm sm:text-base font-bold text-brand-primary mb-1 line-clamp-2">
                 {systemStats.topFeatures?.[0]?.feature || 'N/A'}
               </div>
               <p className="text-xs text-gray-600">Top Feature</p>
@@ -339,7 +339,7 @@ export default function EnhancedUserAnalytics() {
           {/* Actionable Insights Section */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50   p-4 sm:p-6 rounded-lg border border-blue-200 ">
             <h3 className="text-base font-semibold text-gray-900  mb-3 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <TrendingUp className="h-4 w-4 text-brand-primary" />
               Action Items
             </h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -353,7 +353,7 @@ export default function EnhancedUserAnalytics() {
                       systemStats.activeUsers)}{' '}
                   users haven't logged in today
                 </p>
-                <p className="text-xs text-blue-600 font-medium mt-1">
+                <p className="text-xs text-brand-primary font-medium mt-1">
                   → Send engagement reminders
                 </p>
               </div>
@@ -440,7 +440,7 @@ export default function EnhancedUserAnalytics() {
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#236383] to-[#1a4b5c] text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                      <div className="w-10 h-10 bg-gradient-to-br from-brand-primary to-[#1a4b5c] text-white rounded-full flex items-center justify-center text-sm font-semibold">
                         {user.firstName?.[0] || user.email[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -565,7 +565,7 @@ export default function EnhancedUserAnalytics() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                    <BarChart3 className="h-5 w-5 text-brand-primary" />
                     Activity Breakdown
                   </CardTitle>
                 </CardHeader>
@@ -742,7 +742,7 @@ export default function EnhancedUserAnalytics() {
                               idx === 0
                                 ? 'bg-green-500'
                                 : idx === 1
-                                  ? 'bg-blue-500'
+                                  ? 'bg-brand-primary'
                                   : idx === 2
                                     ? 'bg-purple-500'
                                     : 'bg-gray-400'
@@ -774,7 +774,7 @@ export default function EnhancedUserAnalytics() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  <BarChart3 className="h-5 w-5 text-brand-primary" />
                   Most Visited Sections
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">

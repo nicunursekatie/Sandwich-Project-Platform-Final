@@ -178,7 +178,7 @@ export function ImportExportDialog({
 
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <AlertCircle className="h-5 w-5 text-brand-primary mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
                       <div className="font-medium text-blue-800 mb-1">
                         CSV Format Requirements

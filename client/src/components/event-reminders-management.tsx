@@ -349,7 +349,7 @@ export default function EventRemindersManagement() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Clock className="h-6 w-6 text-[#236383]" />
+            <Clock className="h-6 w-6 text-brand-primary" />
             Event Reminders
           </h1>
           <p className="text-gray-600 mt-1">
@@ -359,7 +359,7 @@ export default function EventRemindersManagement() {
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#236383] hover:bg-[#1e5a75]">
+            <Button className="bg-brand-primary hover:bg-brand-primary-dark">
               <Plus className="h-4 w-4 mr-2" />
               Create Reminder
             </Button>
@@ -509,7 +509,7 @@ export default function EventRemindersManagement() {
                   <Button
                     type="submit"
                     disabled={createReminderMutation.isPending}
-                    className="bg-[#236383] hover:bg-[#1e5a75]"
+                    className="bg-brand-primary hover:bg-brand-primary-dark"
                   >
                     {createReminderMutation.isPending
                       ? 'Creating...'
@@ -643,7 +643,7 @@ export default function EventRemindersManagement() {
                   </p>
                   <Button
                     onClick={() => setIsCreateDialogOpen(true)}
-                    className="bg-[#236383] hover:bg-[#1e5a75]"
+                    className="bg-brand-primary hover:bg-brand-primary-dark"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create First Reminder

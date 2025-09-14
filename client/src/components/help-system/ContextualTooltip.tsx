@@ -52,7 +52,7 @@ const typeConfig = {
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
     textColor: 'text-blue-900',
-    iconColor: 'text-blue-600',
+    iconColor: 'text-brand-primary',
   },
   tip: {
     icon: <Lightbulb className="w-4 h-4" />,

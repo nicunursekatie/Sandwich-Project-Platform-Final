@@ -1123,7 +1123,7 @@ export default function GmailStyleInbox() {
                           e.stopPropagation();
                           handleToggleSelect(message.id);
                         }}
-                        className="mt-1 h-4 w-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+                        className="mt-1 h-4 w-4 text-brand-primary bg-white border-gray-300 rounded focus:ring-blue-500"
                       />
                       <button
                         onClick={(e) => {
@@ -1458,7 +1458,7 @@ export default function GmailStyleInbox() {
                           disabled={
                             replyMutation.isPending || !replyContent.trim()
                           }
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                          className="bg-brand-primary hover:bg-brand-primary-dark text-white px-6"
                         >
                           {replyMutation.isPending ? (
                             <div className="flex items-center gap-2">

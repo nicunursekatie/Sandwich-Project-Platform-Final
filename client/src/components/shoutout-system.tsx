@@ -344,9 +344,9 @@ export default function ShoutoutSystem() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
-        <div className="px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-[#FBAD3F]/5 via-white to-[#236383]/5">
+        <div className="px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-brand-orange/5 via-white to-brand-primary/5">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#FBAD3F] to-[#e89b2e] rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-[#e89b2e] rounded-xl flex items-center justify-center shadow-lg">
               <Megaphone className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -366,7 +366,7 @@ export default function ShoutoutSystem() {
         <Card className="border-slate-200 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-slate-50/50 to-white border-b border-slate-200">
             <CardTitle className="text-xl font-bold text-slate-900 font-roboto flex items-center gap-2">
-              <Mail className="h-5 w-5 text-[#236383]" />
+              <Mail className="h-5 w-5 text-brand-primary" />
               Quick Templates
             </CardTitle>
             <CardDescription>
@@ -379,7 +379,7 @@ export default function ShoutoutSystem() {
                 key={template.id}
                 className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-md ${
                   selectedTemplate?.id === template.id
-                    ? 'border-[#FBAD3F] bg-[#FBAD3F]/5'
+                    ? 'border-brand-orange bg-brand-orange/5'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
                 onClick={() => handleTemplateSelect(template)}
@@ -409,7 +409,7 @@ export default function ShoutoutSystem() {
         <Card className="border-slate-200 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-slate-50/50 to-white border-b border-slate-200">
             <CardTitle className="text-xl font-bold text-slate-900 font-roboto flex items-center gap-2">
-              <Send className="h-5 w-5 text-[#236383]" />
+              <Send className="h-5 w-5 text-brand-primary" />
               Compose Message
             </CardTitle>
             <CardDescription>
@@ -501,7 +501,7 @@ export default function ShoutoutSystem() {
                       key={user.id}
                       className={`flex items-center space-x-3 p-2 rounded-md cursor-pointer transition-colors ${
                         selectedUsers.includes(user.id)
-                          ? 'bg-[#FBAD3F]/10 border border-[#FBAD3F]/30'
+                          ? 'bg-brand-orange/10 border border-brand-orange/30'
                           : 'hover:bg-slate-50 border border-transparent'
                       }`}
                       onClick={() => handleUserToggle(user.id)}
@@ -510,7 +510,7 @@ export default function ShoutoutSystem() {
                         type="checkbox"
                         checked={selectedUsers.includes(user.id)}
                         onChange={() => handleUserToggle(user.id)}
-                        className="w-4 h-4 text-[#FBAD3F] border-slate-300 rounded focus:ring-[#FBAD3F]"
+                        className="w-4 h-4 text-brand-orange border-slate-300 rounded focus:ring-brand-orange"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -567,8 +567,8 @@ export default function ShoutoutSystem() {
 
             {/* Send Button */}
             <div className="pt-4">
-              <Alert className="mb-4 border-[#FBAD3F]/30 bg-[#FBAD3F]/5">
-                <Users className="h-4 w-4 text-[#FBAD3F]" />
+              <Alert className="mb-4 border-brand-orange/30 bg-brand-orange/5">
+                <Users className="h-4 w-4 text-brand-orange" />
                 <AlertDescription className="text-slate-700">
                   This message will be sent to{' '}
                   <strong>{getRecipientCount()} recipients</strong> via email.
@@ -583,7 +583,7 @@ export default function ShoutoutSystem() {
                     !customSubject.trim() ||
                     !customMessage.trim()
                   }
-                  className="w-full bg-gradient-to-r from-[#FBAD3F] to-[#e89b2e] hover:from-[#e89b2e] hover:to-[#d4941f] text-white font-semibold py-3"
+                  className="w-full bg-gradient-to-r from-brand-orange to-[#e89b2e] hover:from-[#e89b2e] hover:to-[#d4941f] text-white font-semibold py-3"
                 >
                   {sendShoutoutMutation.isPending ? (
                     <>
@@ -602,11 +602,11 @@ export default function ShoutoutSystem() {
                   onClick={handleTestSendGrid}
                   disabled={testSendGridMutation.isPending}
                   variant="outline"
-                  className="w-full border-[#236383] text-[#236383] hover:bg-[#236383]/5"
+                  className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/5"
                 >
                   {testSendGridMutation.isPending ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#236383] mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary mr-2"></div>
                       Testing...
                     </>
                   ) : (
@@ -627,7 +627,7 @@ export default function ShoutoutSystem() {
         <Card className="border-slate-200 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-slate-50/50 to-white border-b border-slate-200">
             <CardTitle className="text-xl font-bold text-slate-900 font-roboto flex items-center gap-2">
-              <Clock className="h-5 w-5 text-[#236383]" />
+              <Clock className="h-5 w-5 text-brand-primary" />
               Recent Shoutouts
             </CardTitle>
             <CardDescription>History of sent messages</CardDescription>

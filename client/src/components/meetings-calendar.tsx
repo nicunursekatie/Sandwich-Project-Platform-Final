@@ -295,7 +295,7 @@ export default function MeetingsCalendar() {
           <DialogTrigger asChild>
             <Button
               size="lg"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary-dark"
             >
               <Plus className="w-5 h-5" />
               Schedule New Meeting
@@ -447,7 +447,7 @@ export default function MeetingsCalendar() {
                 <Button
                   type="submit"
                   disabled={createMeetingMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   {createMeetingMutation.isPending
                     ? 'Scheduling...'
@@ -586,7 +586,7 @@ export default function MeetingsCalendar() {
                           !isCurrentMonthDay
                             ? 'text-slate-400'
                             : isTodayDay
-                              ? 'text-blue-600'
+                              ? 'text-brand-primary'
                               : 'text-slate-900'
                         }`}
                       >
@@ -653,7 +653,7 @@ export default function MeetingsCalendar() {
                 <Button
                   size="lg"
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Schedule Your First Meeting
@@ -714,7 +714,7 @@ export default function MeetingsCalendar() {
                                     href={meeting.location}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-800 underline"
+                                    className="text-brand-primary hover:text-blue-800 underline"
                                   >
                                     Join Google Meet
                                   </a>
@@ -841,7 +841,7 @@ export default function MeetingsCalendar() {
                   <div className="flex text-sm text-gray-600">
                     <label
                       htmlFor="agenda-upload"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-brand-primary hover:text-blue-500 focus-within:outline-none"
                     >
                       <span>Upload agenda file</span>
                       <input

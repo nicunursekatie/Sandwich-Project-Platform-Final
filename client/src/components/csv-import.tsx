@@ -143,12 +143,12 @@ export default function CSVImport() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-blue-600" />
+                  <FileText className="w-5 h-5 text-brand-primary" />
                   <div>
                     <p className="font-medium text-blue-900">
                       {selectedFile.name}
                     </p>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-brand-primary">
                       {(selectedFile.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
@@ -169,8 +169,8 @@ export default function CSVImport() {
 
               {importMutation.isPending && (
                 <div className="text-center py-4">
-                  <div className="inline-flex items-center gap-2 text-blue-600">
-                    <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                  <div className="inline-flex items-center gap-2 text-brand-primary">
+                    <div className="animate-spin w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full"></div>
                     Processing CSV file...
                   </div>
                 </div>

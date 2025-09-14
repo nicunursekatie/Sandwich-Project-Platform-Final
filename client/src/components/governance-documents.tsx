@@ -123,7 +123,7 @@ export function GovernanceDocuments() {
           <Button
             key={category}
             variant={selectedCategory === category ? 'default' : 'outline'}
-            className={selectedCategory === category ? 'bg-[#236383] hover:bg-[#1d5470] text-white border-[#236383]' : 'text-[#236383] border-[#236383] hover:bg-[#f0f9ff]'}
+            className={selectedCategory === category ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border-brand-primary' : 'text-brand-primary border-brand-primary hover:bg-[#f0f9ff]'}
             size="sm"
             onClick={() => setSelectedCategory(category)}
             className="text-sm"
@@ -138,7 +138,7 @@ export function GovernanceDocuments() {
         {filteredDocuments.map((document, index) => (
           <Card
             key={index}
-            className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-[#236383]"
+            className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-brand-primary"
           >
             <CardHeader className="pb-4 flex-shrink-0">
               <div className="flex items-start justify-between mb-3">
@@ -179,7 +179,7 @@ export function GovernanceDocuments() {
                   size="sm"
                   variant="outline"
                   onClick={() => handlePreview(document)}
-                  className="w-full h-9 text-sm font-medium text-[#236383] border-[#236383] hover:bg-[#f0f9ff]"
+                  className="w-full h-9 text-sm font-medium text-brand-primary border-brand-primary hover:bg-[#f0f9ff]"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Preview
@@ -187,7 +187,7 @@ export function GovernanceDocuments() {
                 <Button
                   size="sm"
                   onClick={() => handleDownload(document)}
-                  className="w-full h-9 text-sm font-medium bg-[#236383] hover:bg-[#1d5470] text-white"
+                  className="w-full h-9 text-sm font-medium bg-brand-primary hover:bg-brand-primary-dark text-white"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download

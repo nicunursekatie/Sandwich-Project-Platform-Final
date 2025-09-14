@@ -304,7 +304,7 @@ export default function ImportantDocuments() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-16">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-gradient-to-br from-[#236383] to-[#1a4e66] rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
+            <div className="p-3 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
               <FileText className="h-8 w-8 text-white" />
             </div>
             <div>
@@ -331,14 +331,14 @@ export default function ImportantDocuments() {
           <TabsList className={`grid w-full ${hasConfidentialAccess ? 'grid-cols-3' : 'grid-cols-2'} h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white`}>
             <TabsTrigger
               value="documents"
-              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-[#236383] hover:bg-[#236383]/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#236383] data-[state=active]:to-[#1a4e66] data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
             >
               <FileText className="h-4 w-4" />
               Documents
             </TabsTrigger>
             <TabsTrigger
               value="logos"
-              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-[#236383] hover:bg-[#236383]/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#236383] data-[state=active]:to-[#1a4e66] data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
             >
               <FileImage className="h-4 w-4" />
               Logos & Branding
@@ -346,7 +346,7 @@ export default function ImportantDocuments() {
             {hasConfidentialAccess && (
               <TabsTrigger
                 value="confidential"
-                className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-[#236383] hover:bg-[#236383]/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#236383] data-[state=active]:to-[#1a4e66] data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+                className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
                 data-testid="tab-confidential"
               >
                 <Lock className="h-4 w-4" />
@@ -371,8 +371,8 @@ export default function ImportantDocuments() {
                     onClick={() => setSelectedCategory(category)}
                     className={
                       selectedCategory === category
-                        ? 'px-6 py-3 text-sm font-medium bg-gradient-to-r from-[#236383] to-[#1a4e66] text-white border-0 shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.1)] transform hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(35,99,131,0.3),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
-                        : 'px-6 py-3 text-sm font-medium border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] transform hover:scale-[1.02] hover:shadow-[0_4px_12px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
+                        ? 'px-6 py-3 text-sm font-medium bg-gradient-to-r from-brand-primary to-brand-primary-dark text-white border-0 shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.1)] transform hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(35,99,131,0.3),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
+                        : 'px-6 py-3 text-sm font-medium border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] transform hover:scale-[1.02] hover:shadow-[0_4px_12px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
                     }
                   >
                     {category}
@@ -391,11 +391,11 @@ export default function ImportantDocuments() {
                   <CardHeader className="pb-6 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start space-x-4 min-w-0 flex-1">
-                        <div className="flex-shrink-0 p-3 bg-gradient-to-br from-[#236383]/10 to-[#236383]/5 rounded-xl shadow-inner">
-                          <FileText className="h-5 w-5 text-[#236383]" />
+                        <div className="flex-shrink-0 p-3 bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 rounded-xl shadow-inner">
+                          <FileText className="h-5 w-5 text-brand-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <CardTitle className="text-lg font-bold text-gray-900 leading-tight group-hover:text-[#236383] transition-colors break-words">
+                          <CardTitle className="text-lg font-bold text-gray-900 leading-tight group-hover:text-brand-primary transition-colors break-words">
                             {doc.name}
                           </CardTitle>
                         </div>
@@ -407,7 +407,7 @@ export default function ImportantDocuments() {
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="text-xs font-semibold px-3 py-1 border border-[#236383] text-[#236383] rounded-full bg-white shadow-sm"
+                        className="text-xs font-semibold px-3 py-1 border border-brand-primary text-brand-primary rounded-full bg-white shadow-sm"
                       >
                         {doc.type.toUpperCase()}
                       </Badge>
@@ -423,7 +423,7 @@ export default function ImportantDocuments() {
                       <Button
                         variant="ghost"
                         onClick={() => handlePreview(doc)}
-                        className="w-full h-11 text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-3 px-4"
+                        className="w-full h-11 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 hover:text-brand-primary transition-all duration-200 ease-in-out rounded-lg py-3 px-4"
                       >
                         <Eye className="h-4 w-4 mr-2 flex-shrink-0" />
                         <span>Preview</span>
@@ -431,7 +431,7 @@ export default function ImportantDocuments() {
                       <Button
                         variant="default"
                         onClick={() => handleDownload(doc)}
-                        className="w-full h-11 text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-3 px-4 shadow-sm hover:shadow-md"
+                        className="w-full h-11 text-sm font-medium bg-brand-primary hover:bg-brand-primary-dark text-white transition-all duration-200 ease-in-out rounded-lg py-3 px-4 shadow-sm hover:shadow-md"
                       >
                         <Download className="h-4 w-4 mr-2 flex-shrink-0" />
                         <span>Download</span>
@@ -453,8 +453,8 @@ export default function ImportantDocuments() {
                 >
                   <CardHeader className="pb-8 bg-gradient-to-r from-gray-50 to-white">
                     <div className="flex items-center justify-between mb-3">
-                      <CardTitle className="text-[#236383] text-xl font-bold flex items-center gap-4 group-hover:text-[#1a4e66] transition-colors duration-200">
-                        <div className="p-2 bg-gradient-to-br from-[#236383]/10 to-[#236383]/5 rounded-lg shadow-inner">
+                      <CardTitle className="text-brand-primary text-xl font-bold flex items-center gap-4 group-hover:text-brand-primary-dark transition-colors duration-200">
+                        <div className="p-2 bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 rounded-lg shadow-inner">
                           {logo.icon}
                         </div>
                         {logo.name}
@@ -488,8 +488,8 @@ export default function ImportantDocuments() {
                       <p className="text-base text-gray-700 leading-relaxed font-medium">
                         {logo.description}
                       </p>
-                      <div className="bg-[#236383]/5 p-4 rounded-lg">
-                        <p className="text-sm text-[#236383] font-semibold">
+                      <div className="bg-brand-primary/5 p-4 rounded-lg">
+                        <p className="text-sm text-brand-primary font-semibold">
                           Best for: {logo.usage}
                         </p>
                       </div>
@@ -500,7 +500,7 @@ export default function ImportantDocuments() {
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="w-full h-10 text-sm font-medium text-[#236383] hover:bg-[#236383]/10 hover:text-[#236383] transition-all duration-200 ease-in-out rounded-lg py-2.5 px-4"
+                            className="w-full h-10 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 hover:text-brand-primary transition-all duration-200 ease-in-out rounded-lg py-2.5 px-4"
                           >
                             <Eye className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span>Preview</span>
@@ -508,7 +508,7 @@ export default function ImportantDocuments() {
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                           <DialogHeader>
-                            <DialogTitle className="text-[#236383]">
+                            <DialogTitle className="text-brand-primary">
                               {logo.name}
                             </DialogTitle>
                           </DialogHeader>
@@ -525,19 +525,19 @@ export default function ImportantDocuments() {
                             </div>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div>
-                                <strong className="text-[#236383]">
+                                <strong className="text-brand-primary">
                                   File Type:
                                 </strong>{' '}
                                 {logo.type}
                               </div>
                               <div>
-                                <strong className="text-[#236383]">
+                                <strong className="text-brand-primary">
                                   Filename:
                                 </strong>{' '}
                                 {logo.filename}
                               </div>
                               <div className="col-span-2">
-                                <strong className="text-[#236383]">
+                                <strong className="text-brand-primary">
                                   Usage:
                                 </strong>{' '}
                                 {logo.usage}
@@ -547,7 +547,7 @@ export default function ImportantDocuments() {
                               onClick={() =>
                                 handleLogoDownload(logo.filename, logo.name)
                               }
-                              className="w-full bg-[#236383] hover:bg-[#1a4e66]"
+                              className="w-full bg-brand-primary hover:bg-brand-primary-dark"
                             >
                               <Download className="h-4 w-4 mr-2" />
                               Download {logo.name}
@@ -560,7 +560,7 @@ export default function ImportantDocuments() {
                         onClick={() =>
                           handleLogoDownload(logo.filename, logo.name)
                         }
-                        className="w-full h-10 text-sm font-medium bg-[#236383] hover:bg-[#1a4e66] text-white transition-all duration-200 ease-in-out rounded-lg py-2.5 px-4 shadow-sm hover:shadow-md"
+                        className="w-full h-10 text-sm font-medium bg-brand-primary hover:bg-brand-primary-dark text-white transition-all duration-200 ease-in-out rounded-lg py-2.5 px-4 shadow-sm hover:shadow-md"
                       >
                         <Download className="h-4 w-4 mr-2 flex-shrink-0" />
                         <span>Download</span>
@@ -571,7 +571,7 @@ export default function ImportantDocuments() {
                           handleLogoShare(logo.filename, logo.name)
                         }
                         variant="outline"
-                        className="w-full h-10 text-sm font-medium border border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white transition-all duration-200 ease-in-out rounded-lg py-2.5 px-4 shadow-sm hover:shadow-md"
+                        className="w-full h-10 text-sm font-medium border border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all duration-200 ease-in-out rounded-lg py-2.5 px-4 shadow-sm hover:shadow-md"
                       >
                         <Share2 className="h-4 w-4 mr-2 flex-shrink-0" />
                         <span>Share</span>
@@ -605,7 +605,7 @@ export default function ImportantDocuments() {
             <div className="bg-white rounded-lg shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(0,0,0,0.1)] max-w-4xl w-full max-h-[90vh] overflow-hidden">
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                  <FileText className="h-5 w-5 text-brand-primary" />
                   <div>
                     <h3 className="font-semibold text-lg">
                       {previewDocument.name}

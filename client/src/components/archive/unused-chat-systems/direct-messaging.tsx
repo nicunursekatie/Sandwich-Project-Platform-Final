@@ -326,7 +326,7 @@ export default function DirectMessaging() {
                         <div
                           className={`rounded-2xl px-3 py-2 text-sm ${
                             msg.userId === (user as any)?.id
-                              ? 'bg-[#236383] text-white rounded-br-md'
+                              ? 'bg-brand-primary text-white rounded-br-md'
                               : 'bg-gray-100 text-gray-900 rounded-bl-md'
                           }`}
                         >
@@ -540,7 +540,7 @@ export default function DirectMessaging() {
                                     <DropdownMenuContent align={isCurrentUser ? "end" : "start"} sideOffset={5}>
                                       <DropdownMenuItem
                                         onClick={() => handleEditMessage(msg)}
-                                        className="text-blue-600 hover:text-blue-700"
+                                        className="text-brand-primary hover:text-blue-700"
                                       >
                                         <Edit className="w-3 h-3 mr-2" />
                                         Edit message
@@ -578,7 +578,7 @@ export default function DirectMessaging() {
                                       size="sm"
                                       onClick={handleSaveEdit}
                                       disabled={!editedContent.trim() || editMessageMutation.isPending}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                      className="bg-brand-primary hover:bg-brand-primary-dark text-white"
                                     >
                                       {editMessageMutation.isPending ? "Saving..." : "Save"}
                                     </Button>

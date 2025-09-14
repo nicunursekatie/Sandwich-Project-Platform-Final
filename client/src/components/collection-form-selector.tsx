@@ -97,7 +97,7 @@ export default function CollectionFormSelector({
 
   return (
     <Card className="max-w-4xl mx-auto m-2 sm:m-4">
-      <CardHeader className="text-center bg-gradient-to-r from-[#236383] to-[#007E8C] text-white p-4 sm:p-6">
+      <CardHeader className="text-center bg-gradient-to-r from-brand-primary to-brand-teal text-white p-4 sm:p-6">
         <CardTitle className="flex items-center justify-between text-sm sm:text-lg">
           <span className="hidden sm:inline">Submit Collection Data</span>
           <span className="sm:hidden">Choose Entry Method</span>
@@ -121,11 +121,11 @@ export default function CollectionFormSelector({
         <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Standard Form Option */}
           <Card
-            className="cursor-pointer border-2 hover:border-[#236383] transition-colors touch-manipulation"
+            className="cursor-pointer border-2 hover:border-brand-primary transition-colors touch-manipulation"
             onClick={() => setSelectedMethod('standard')}
           >
             <CardHeader className="text-center p-4 sm:p-6">
-              <FormInput className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-[#236383] mb-2 sm:mb-3" />
+              <FormInput className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-brand-primary mb-2 sm:mb-3" />
               <CardTitle className="text-base sm:text-lg">
                 Standard Form
               </CardTitle>
@@ -144,7 +144,7 @@ export default function CollectionFormSelector({
                 <div>✓ Good for multiple group entries</div>
               </div>
               <Button
-                className="w-full bg-[#236383] hover:bg-[#1a4d66] h-10 sm:h-auto text-sm sm:text-base touch-manipulation"
+                className="w-full bg-brand-primary hover:bg-brand-primary-dark h-10 sm:h-auto text-sm sm:text-base touch-manipulation"
                 onClick={() => setSelectedMethod('standard')}
               >
                 Use Standard Form
@@ -155,11 +155,11 @@ export default function CollectionFormSelector({
 
           {/* Walkthrough Option */}
           <Card
-            className="cursor-pointer border-2 hover:border-[#007E8C] transition-colors touch-manipulation"
+            className="cursor-pointer border-2 hover:border-brand-teal transition-colors touch-manipulation"
             onClick={() => setSelectedMethod('walkthrough')}
           >
             <CardHeader className="text-center p-4 sm:p-6">
-              <Users className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-[#007E8C] mb-2 sm:mb-3" />
+              <Users className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-brand-teal mb-2 sm:mb-3" />
               <CardTitle className="text-base sm:text-lg">
                 Step-by-Step Guide
               </CardTitle>
@@ -181,7 +181,7 @@ export default function CollectionFormSelector({
                 <div>✓ Clear instructions for each step</div>
               </div>
               <Button
-                className="w-full bg-[#007E8C] hover:bg-[#006B75] h-10 sm:h-auto text-sm sm:text-base touch-manipulation"
+                className="w-full bg-brand-teal hover:bg-brand-teal-dark h-10 sm:h-auto text-sm sm:text-base touch-manipulation"
                 onClick={() => setSelectedMethod('walkthrough')}
               >
                 Start Walkthrough
@@ -193,7 +193,7 @@ export default function CollectionFormSelector({
 
         <div className="mt-4 sm:mt-8 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-start gap-2 sm:gap-3">
-            <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-brand-primary mt-0.5 flex-shrink-0" />
             <div className="text-xs sm:text-sm text-blue-800">
               <strong>Important:</strong> Both methods will ask you for the{' '}
               <em>actual date you collected the sandwiches</em>, not today's

@@ -113,7 +113,7 @@ export function Filters({
       <div className="flex justify-between items-center text-sm text-gray-600">
         <span>Showing {collections.length} collections</span>
         {hasActiveFilters && (
-          <span className="text-blue-600">Filters active</span>
+          <span className="text-brand-primary">Filters active</span>
         )}
       </div>
     </div>

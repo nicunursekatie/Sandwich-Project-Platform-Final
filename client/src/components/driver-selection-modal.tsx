@@ -288,7 +288,7 @@ export function DriverSelectionModal({
                               ? tempVanDriverId === driver.id.toString()
                               : isSelected
                           )
-                            ? 'bg-blue-600 border-blue-600'
+                            ? 'bg-brand-primary border-brand-primary'
                             : 'border-gray-300'
                         }`}
                       >
@@ -363,7 +363,7 @@ export function DriverSelectionModal({
             </Button>
             <Button
               onClick={handleSave}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-brand-primary hover:bg-brand-primary-dark"
               disabled={
                 mode === 'van' &&
                 !tempVanDriverId &&

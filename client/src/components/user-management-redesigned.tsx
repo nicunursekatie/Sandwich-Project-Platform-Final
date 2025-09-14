@@ -120,7 +120,7 @@ interface User {
 
 const ROLE_COLORS = {
   [USER_ROLES.SUPER_ADMIN]: 'bg-red-100 text-red-800 border-red-200',
-  [USER_ROLES.ADMIN]: 'bg-[#236383] text-white border-[#236383]',
+  [USER_ROLES.ADMIN]: 'bg-brand-primary text-white border-brand-primary',
   [USER_ROLES.COMMITTEE_MEMBER]: 'bg-teal-100 text-teal-800 border-teal-200',
   [USER_ROLES.CORE_TEAM]: 'bg-orange-100 text-orange-800 border-orange-200',
   [USER_ROLES.HOST]: 'bg-green-100 text-green-800 border-green-200',
@@ -596,7 +596,7 @@ export default function UserManagementRedesigned() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#236383]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
       </div>
     );
   }
@@ -622,7 +622,7 @@ export default function UserManagementRedesigned() {
           </Button>
           <ButtonTooltip text="Open form to add a new user to the platform">
             <Button
-              className="bg-[#236383] hover:bg-[#1a4d66]"
+              className="bg-brand-primary hover:bg-brand-primary-dark"
               onClick={() => setShowAddUserDialog(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -787,7 +787,7 @@ export default function UserManagementRedesigned() {
                           </div>
                           <Badge
                             variant="outline"
-                            className="bg-[#236383] text-white border-[#236383]"
+                            className="bg-brand-primary text-white border-brand-primary"
                           >
                             {count}
                           </Badge>
@@ -1232,7 +1232,7 @@ export default function UserManagementRedesigned() {
               <Button
                 onClick={handleAddUser}
                 disabled={addUserMutation.isPending}
-                className="bg-[#236383] hover:bg-[#1a4d66]"
+                className="bg-brand-primary hover:bg-brand-primary-dark"
               >
                 {addUserMutation.isPending ? 'Adding...' : 'Add User'}
               </Button>
@@ -1280,7 +1280,7 @@ export default function UserManagementRedesigned() {
             <Button
               onClick={handleSetPassword}
               disabled={setPasswordMutation.isPending}
-              className="bg-[#236383] hover:bg-[#1a4d66]"
+              className="bg-brand-primary hover:bg-brand-primary-dark"
             >
               {setPasswordMutation.isPending ? 'Setting...' : 'Set Password'}
             </Button>
@@ -1304,7 +1304,7 @@ export default function UserManagementRedesigned() {
           <div className="space-y-6 py-4">
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <Phone className="h-5 w-5 text-[#236383]" />
+                <Phone className="h-5 w-5 text-brand-primary" />
                 <div>
                   <p className="font-medium">Current Status</p>
                   <p className="text-sm text-gray-600">
@@ -1465,7 +1465,7 @@ export default function UserManagementRedesigned() {
                   onChange={(e) =>
                     setEditUser({ ...editUser, isActive: e.target.checked })
                   }
-                  className="w-4 h-4 text-[#236383] border-slate-300 rounded focus:ring-[#236383]"
+                  className="w-4 h-4 text-brand-primary border-slate-300 rounded focus:ring-brand-primary"
                 />
                 <Label htmlFor="editActive">User is active</Label>
               </div>
@@ -1482,7 +1482,7 @@ export default function UserManagementRedesigned() {
                 <Button
                   onClick={handleSaveUserEdit}
                   disabled={editUserMutation.isPending}
-                  className="bg-[#236383] hover:bg-[#1a4d66]"
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   {editUserMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>

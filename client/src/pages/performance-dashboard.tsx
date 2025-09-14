@@ -485,7 +485,7 @@ export default function PerformanceDashboard() {
                             </div>
                           </div>
                           <div>
-                            <div className="text-2xl font-bold text-blue-600">
+                            <div className="text-2xl font-bold text-brand-primary">
                               {metrics.database.connectionPool.idle_connections}
                             </div>
                             <div className="text-sm text-muted-foreground">

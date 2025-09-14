@@ -79,7 +79,7 @@ export default function Landing() {
             <Button
               onClick={handleLogin}
               size="lg"
-              className="bg-[#236383] hover:bg-[#1e5a75] active:bg-[#1a4d61] text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#236383]/30 group"
+              className="bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-brand-primary/30 group"
             >
               <span className="flex items-center gap-2">
                 Enter Platform
@@ -108,7 +108,7 @@ export default function Landing() {
                 );
                 setShowToolkit(!showToolkit);
               }}
-              className="border-2 border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#236383]/20"
+              className="border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
             >
               {showToolkit ? 'Hide' : 'View'} Group Toolkit
             </Button>
@@ -177,7 +177,7 @@ export default function Landing() {
         {showToolkit && (
           <Card className="bg-blue-50 border-2 border-blue-500">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl text-blue-600">
+              <CardTitle className="text-3xl text-brand-primary">
                 🛠️ Group Toolkit
               </CardTitle>
               <CardDescription className="text-lg">
@@ -231,7 +231,7 @@ export default function Landing() {
                 </div>
               </div>
               <div className="text-center p-4 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">1,800+</div>
+                <div className="text-2xl font-bold text-brand-primary">1,800+</div>
                 <div className="text-sm font-medium text-gray-700">
                   Weekly Data Points
                 </div>
@@ -257,9 +257,9 @@ export default function Landing() {
           <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
             <CardHeader>
               <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors duration-300">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-brand-primary" />
               </div>
-              <CardTitle className="group-hover:text-blue-600 transition-colors duration-300">
+              <CardTitle className="group-hover:text-brand-primary transition-colors duration-300">
                 Team Management
               </CardTitle>
               <CardDescription>
@@ -314,7 +314,7 @@ export default function Landing() {
             </p>
             <p className="text-sm font-medium">
               Visit:{' '}
-              <span className="text-blue-600">thesandwichproject.org</span>
+              <span className="text-brand-primary">thesandwichproject.org</span>
             </p>
           </CardContent>
         </Card>

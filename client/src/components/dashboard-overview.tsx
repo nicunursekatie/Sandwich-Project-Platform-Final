@@ -236,7 +236,7 @@ export default function DashboardOverview({
               height="125"
             />
           </div>
-          <p className="text-base sm:text-lg md:text-xl text-[#236383] font-medium">
+          <p className="text-base sm:text-lg md:text-xl text-brand-primary font-medium">
             Community Impact Through Coordinated Action
           </p>
         </div>
@@ -247,7 +247,7 @@ export default function DashboardOverview({
           <div className="bg-white rounded-xl mx-4 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="text-center">
               <div className="mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-[#236383] mb-2">
+                <h2 className="text-lg sm:text-xl font-semibold text-brand-primary mb-2">
                   Record Collection Data
                 </h2>
                 {showCollectionForm && (
@@ -258,7 +258,7 @@ export default function DashboardOverview({
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
-                  className="bg-[#FBAD3F] hover:bg-[#e09a36] text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-base sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
+                  className="bg-brand-orange hover:bg-brand-orange-dark text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-base sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
                 >
                   {showCollectionForm
@@ -266,7 +266,7 @@ export default function DashboardOverview({
                     : 'Enter New Collection Data'}
                 </Button>
                 <Button
-                  className="bg-white border border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-base sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
+                  className="bg-white border border-brand-light-blue text-brand-light-blue hover:bg-brand-light-blue hover:text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-base sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
                   onClick={() => onSectionChange?.('collections')}
                 >
                   View Collection History
@@ -298,17 +298,17 @@ export default function DashboardOverview({
         <div className="mx-4 mb-8 sm:mb-12">
           <div className="bg-white rounded-xl p-8 sm:p-12 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="mb-4">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[#FBAD3F] tracking-tight">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-brand-orange tracking-tight">
                 <AnimatedCounter
                   value={statsData?.completeTotalSandwiches || 0}
                 />
               </h1>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mt-4">
-                <div className="w-2 h-2 bg-[#47B3CB] rounded-full hidden sm:block"></div>
-                <p className="text-lg sm:text-xl text-[#236383] font-medium text-center">
+                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
+                <p className="text-lg sm:text-xl text-brand-primary font-medium text-center">
                   Total sandwiches distributed since 2020
                 </p>
-                <div className="w-2 h-2 bg-[#47B3CB] rounded-full hidden sm:block"></div>
+                <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
               </div>
             </div>
             <div className="text-sm text-gray-600 border-t border-gray-200 pt-4 sm:pt-6 mt-4 sm:mt-6">
@@ -321,14 +321,14 @@ export default function DashboardOverview({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mx-4 mb-6 sm:mb-8">
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="text-xs sm:text-sm font-semibold text-[#236383] uppercase tracking-wide">
+              <h3 className="text-xs sm:text-sm font-semibold text-brand-primary uppercase tracking-wide">
                 Individual Collections
               </h3>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#FBAD3F] rounded-lg flex items-center justify-center">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-orange rounded-lg flex items-center justify-center">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-[#FBAD3F] mb-2">
+            <div className="text-2xl sm:text-3xl font-bold text-brand-orange mb-2">
               <AnimatedCounter value={statsData?.individualSandwiches || 0} />
             </div>
             <p className="text-xs sm:text-sm text-gray-600">
@@ -338,14 +338,14 @@ export default function DashboardOverview({
 
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="text-xs sm:text-sm font-semibold text-[#236383] uppercase tracking-wide">
+              <h3 className="text-xs sm:text-sm font-semibold text-brand-primary uppercase tracking-wide">
                 Group Collections
               </h3>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#47B3CB] rounded-lg flex items-center justify-center">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-light-blue rounded-lg flex items-center justify-center">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-[#47B3CB] mb-2">
+            <div className="text-2xl sm:text-3xl font-bold text-brand-light-blue mb-2">
               <AnimatedCounter
                 value={
                   statsData
@@ -362,14 +362,14 @@ export default function DashboardOverview({
 
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] transition-all duration-200 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="text-xs sm:text-sm font-semibold text-[#236383] uppercase tracking-wide">
+              <h3 className="text-xs sm:text-sm font-semibold text-brand-primary uppercase tracking-wide">
                 Collection Records
               </h3>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#236383] rounded-lg flex items-center justify-center">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-primary rounded-lg flex items-center justify-center">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full"></div>
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-[#236383] mb-2">
+            <div className="text-2xl sm:text-3xl font-bold text-brand-primary mb-2">
               <AnimatedCounter value={statsData?.totalEntries || 0} />
             </div>
             <p className="text-xs sm:text-sm text-gray-600">Data submissions</p>
@@ -384,8 +384,8 @@ export default function DashboardOverview({
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {/* Peak Week - Burgundy accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#A31C41] border-l-4 border-l-[#A31C41] hover:shadow-md transition-shadow">
-                <div className="text-lg sm:text-2xl font-bold text-[#A31C41] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy hover:shadow-md transition-shadow">
+                <div className="text-lg sm:text-2xl font-bold text-brand-burgundy mb-1">
                   {organizationalStats.peakWeekRecord}
                 </div>
                 <div className="text-xs sm:text-sm text-[#646464] font-medium">
@@ -395,8 +395,8 @@ export default function DashboardOverview({
               </div>
 
               {/* Annual Target - Orange accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#FBAD3F] border-l-4 border-l-[#FBAD3F] hover:shadow-md transition-shadow">
-                <div className="text-lg sm:text-2xl font-bold text-[#FBAD3F] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange hover:shadow-md transition-shadow">
+                <div className="text-lg sm:text-2xl font-bold text-brand-orange mb-1">
                   {organizationalStats.currentAnnualCapacity}
                 </div>
                 <div className="text-xs sm:text-sm text-[#646464] font-medium">
@@ -406,8 +406,8 @@ export default function DashboardOverview({
               </div>
 
               {/* Weekly Baseline - Light Blue accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#47B3CB] border-l-4 border-l-[#47B3CB] hover:shadow-md transition-shadow">
-                <div className="text-sm sm:text-xl lg:text-2xl font-bold text-[#47B3CB] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue hover:shadow-md transition-shadow">
+                <div className="text-sm sm:text-xl lg:text-2xl font-bold text-brand-light-blue mb-1">
                   {organizationalStats.weeklyBaseline}
                 </div>
                 <div className="text-xs sm:text-sm text-[#646464] font-medium">
@@ -417,8 +417,8 @@ export default function DashboardOverview({
               </div>
 
               {/* Surge Capacity - Dark Teal accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-[#007E8C] border-l-4 border-l-[#007E8C] hover:shadow-md transition-shadow">
-                <div className="text-sm sm:text-xl lg:text-2xl font-bold text-[#007E8C] mb-1">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal hover:shadow-md transition-shadow">
+                <div className="text-sm sm:text-xl lg:text-2xl font-bold text-brand-teal mb-1">
                   {organizationalStats.surgingCapacity}
                 </div>
                 <div className="text-xs sm:text-sm text-[#646464] font-medium">
@@ -434,18 +434,18 @@ export default function DashboardOverview({
 
         {/* Planning Tools Section */}
         <div className="mx-4 mb-8">
-          <h3 className="text-lg font-semibold text-[#236383] mb-6">
+          <h3 className="text-lg font-semibold text-brand-primary mb-6">
             Planning Tools
           </h3>
 
           {/* Inventory Calculator - Clean and prominent */}
-          <div className="bg-white rounded-xl p-6 shadow-md border-2 border-[#236383]/20 mb-6">
+          <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-primary/20 mb-6">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-[#236383] rounded-lg flex items-center justify-center mr-4">
+              <div className="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mr-4">
                 <Calculator className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h4 className="text-xl font-bold text-[#236383] mb-1">
+                <h4 className="text-xl font-bold text-brand-primary mb-1">
                   Inventory Calculator
                 </h4>
                 <p className="text-gray-600">
@@ -462,7 +462,7 @@ export default function DashboardOverview({
                     '_blank'
                   )
                 }
-                className="bg-[#236383] hover:bg-[#007E8C] text-white font-semibold px-8 py-3 text-base flex-1"
+                className="bg-brand-primary hover:bg-brand-teal text-white font-semibold px-8 py-3 text-base flex-1"
               >
                 <Calculator className="w-5 h-5 mr-2" />
                 Open Calculator
@@ -471,7 +471,7 @@ export default function DashboardOverview({
                 size="lg"
                 variant="outline"
                 onClick={handleShareInventoryCalculator}
-                className="border-[#236383] text-[#236383] hover:bg-[#236383]/5 px-6 py-3 font-medium"
+                className="border-brand-primary text-brand-primary hover:bg-brand-primary/5 px-6 py-3 font-medium"
               >
                 <Share2 className="w-5 h-5 mr-2" />
                 Share Tool
@@ -482,65 +482,65 @@ export default function DashboardOverview({
           {/* Quick Actions Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20"
+              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
               onClick={() => onSectionChange?.('collections')}
             >
-              <div className="w-12 h-12 bg-[#47B3CB] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-light-blue rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-[#236383] mb-1">
+              <h3 className="text-base font-semibold text-brand-primary mb-1">
                 Collections
               </h3>
               <p className="text-sm text-gray-600 mb-3">View all data</p>
-              <div className="text-[#236383] font-medium text-sm flex items-center">
+              <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Collections →
               </div>
             </div>
 
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20"
+              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
               onClick={() => onSectionChange?.('analytics')}
             >
-              <div className="w-12 h-12 bg-[#FBAD3F] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-orange rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-[#236383] mb-1">
+              <h3 className="text-base font-semibold text-brand-primary mb-1">
                 Analytics
               </h3>
               <p className="text-sm text-gray-600 mb-3">Deep insights</p>
-              <div className="text-[#236383] font-medium text-sm flex items-center">
+              <div className="text-brand-primary font-medium text-sm flex items-center">
                 View Analytics →
               </div>
             </div>
 
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20"
+              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
               onClick={() => onSectionChange?.('event-requests')}
             >
-              <div className="w-12 h-12 bg-[#007E8C] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-[#236383] mb-1">
+              <h3 className="text-base font-semibold text-brand-primary mb-1">
                 Event Planning
               </h3>
               <p className="text-sm text-gray-600 mb-3">Manage events</p>
-              <div className="text-[#236383] font-medium text-sm flex items-center">
+              <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Event Planning →
               </div>
             </div>
 
             <div
-              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-[#236383]/20"
+              className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
               onClick={() => onSectionChange?.('messages')}
             >
-              <div className="w-12 h-12 bg-[#A31C41] rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 bg-brand-burgundy rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-semibold text-[#236383] mb-1">
+              <h3 className="text-base font-semibold text-brand-primary mb-1">
                 Messages
               </h3>
               <p className="text-sm text-gray-600 mb-3">Communication</p>
-              <div className="text-[#236383] font-medium text-sm flex items-center">
+              <div className="text-brand-primary font-medium text-sm flex items-center">
                 Open Messages →
               </div>
             </div>
@@ -549,16 +549,16 @@ export default function DashboardOverview({
 
         {/* Resources Section */}
         <div className="mx-4 mb-8">
-          <h3 className="text-lg font-semibold text-[#236383] mb-6">
+          <h3 className="text-lg font-semibold text-brand-primary mb-6">
             Resources
           </h3>
           <div className="bg-white rounded-xl p-6 shadow-md">
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-[#FBAD3F] rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h4 className="text-xl font-semibold text-[#236383]">
+                <h4 className="text-xl font-semibold text-brand-primary">
                   Important Documents
                 </h4>
                 <p className="text-sm text-gray-600">
@@ -572,16 +572,16 @@ export default function DashboardOverview({
               {importantDocuments.map((doc, index) => (
                 <div
                   key={index}
-                  className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200 border hover:border-[#236383]/30"
+                  className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200 border hover:border-brand-primary/30"
                 >
                   <div className="flex items-center mb-3">
-                    <FileText className="h-5 w-5 text-[#236383] mr-2 flex-shrink-0" />
+                    <FileText className="h-5 w-5 text-brand-primary mr-2 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-semibold text-[#236383] truncate">
+                      <h4 className="text-sm font-semibold text-brand-primary truncate">
                         {doc.title}
                       </h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs bg-[#236383]/10 text-[#236383] px-2 py-0.5 rounded">
+                        <span className="text-xs bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded">
                           {doc.category}
                         </span>
                         <span className="text-xs text-gray-500">PDF</span>
@@ -598,7 +598,7 @@ export default function DashboardOverview({
                       onClick={() =>
                         openPreviewModal(doc.path, doc.title, 'pdf')
                       }
-                      className="flex-1 h-8 text-xs border-[#236383]/30 hover:border-[#236383] text-[#236383]"
+                      className="flex-1 h-8 text-xs border-brand-primary/30 hover:border-brand-primary text-brand-primary"
                     >
                       <Eye className="h-3 w-3 mr-1" />
                       Preview
@@ -606,7 +606,7 @@ export default function DashboardOverview({
                     <Button
                       size="sm"
                       onClick={() => window.open(doc.path, '_blank')}
-                      className="flex-1 h-8 text-xs bg-[#236383] hover:bg-[#007E8C] text-white"
+                      className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-teal text-white"
                     >
                       <Download className="h-3 w-3 mr-1" />
                       Download
