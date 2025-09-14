@@ -525,12 +525,7 @@ export default function Dashboard({
                 <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
-              {/* MessageNotifications component */}
-              {typeof window !== 'undefined' && (
-                <MessageNotifications user={user} />
-              )}
-
-              {/* Enhanced In-App Notifications */}
+              {/* Enhanced In-App Notifications - the main notification bell */}
               {typeof window !== 'undefined' && (
                 <EnhancedNotifications user={user} />
               )}
