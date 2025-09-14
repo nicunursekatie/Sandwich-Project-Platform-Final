@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
+import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 
 export default function SimpleNav({
   navigationItems,
@@ -142,7 +143,7 @@ export default function SimpleNav({
 
             <Button
               key={item.id}
-              variant={isCurrentlyActive ? 'default' : 'ghost'}
+              variant={active ? 'default' : 'ghost'}
               className={`
               w-full ${
                 isCollapsed
@@ -150,7 +151,7 @@ export default function SimpleNav({
                   : 'justify-start px-2 sm:px-3'
               } text-left h-11 touch-manipulation relative
               ${
-                isCurrentlyActive
+                active
                   ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
                   : 'hover:bg-slate-100 text-slate-700'
               }
@@ -178,6 +179,19 @@ export default function SimpleNav({
                   }`}
 
                 />
+              )}
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {badgeCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-auto h-5 min-w-[20px] text-xs"
+                    >
+                      {badgeCount > 99 ? '99+' : badgeCount}
+                    </Badge>
+                  )}
+                </>
               )}
             </Button>
           );
