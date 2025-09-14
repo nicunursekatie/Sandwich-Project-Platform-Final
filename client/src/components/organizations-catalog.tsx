@@ -789,9 +789,9 @@ export default function GroupCatalog({
                                       </span>
                                     </div>
                                     <div className="flex items-center space-x-1">
-                                      <span>📅</span>
+                                      <span>🎯</span>
                                       <span className="font-semibold text-blue-700">
-                                        {org.actualEventCount || 0} events
+                                        {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} events
                                       </span>
                                     </div>
                                   </div>
@@ -803,17 +803,6 @@ export default function GroupCatalog({
                                     </div>
                                   )}
 
-                                  {org.hasHostedEvent && (
-                                    <div className="flex items-center justify-center space-x-1 text-green-600">
-                                      <CheckCircle className="w-3 h-3" />
-                                      <span className="text-xs">
-                                        Hosted {org.actualEventCount || 1} event
-                                        {(org.actualEventCount || 1) > 1
-                                          ? 's'
-                                          : ''}
-                                      </span>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             </div>
