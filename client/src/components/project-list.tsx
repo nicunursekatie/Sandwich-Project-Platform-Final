@@ -32,7 +32,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import SendKudosButton from '@/components/send-kudos-button';
-import type { Project } from '@shared/schema';
+import type { Project as ProjectBase } from '@shared/schema';
+
+// Extend Project type to include attachments for local use
+interface Project extends ProjectBase {
+  attachments?: string | null;
+}
 
 export default function ProjectList() {
   const { toast } = useToast();
