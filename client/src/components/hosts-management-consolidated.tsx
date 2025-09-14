@@ -1087,6 +1087,18 @@ export default function HostsManagementConsolidated() {
                 />
               </div>
               <div>
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={newHost.address || ''}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewHost({ ...newHost, address: e.target.value });
+                  }}
+                  placeholder="Enter host location address (e.g., 123 Main St, Alpharetta, GA 30009)"
+                />
+              </div>
+              <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={newHost.status}
