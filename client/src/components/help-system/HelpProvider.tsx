@@ -97,6 +97,18 @@ export function HelpProvider({ children }: HelpProviderProps) {
     const defaultHelpContent: Array<[string, HelpContent]> = [
       // All content commented out to prevent any guides
       [
+        'collections-log-nav',
+        {
+          id: 'collections-log-nav',
+          title: 'Collections Log',
+          message:
+            "This is where all your sandwich collection data lives! Click here to view, add, or manage collection records. Each entry tells a story of community impact.",
+          tone: 'informative',
+          character: 'guide',
+          position: 'right',
+        },
+      ],
+      [
         'collections-form',
         {
           id: 'collections-form',

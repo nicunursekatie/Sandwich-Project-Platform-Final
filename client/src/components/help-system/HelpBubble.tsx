@@ -151,9 +151,11 @@ export function HelpBubble({
                 ? 'left-full ml-2'
                 : content.position === 'top'
                   ? 'bottom-full mb-2'
-                  : 'top-full mt-2'
+                  : content.id?.includes('navigation') || content.id?.includes('nav')
+                    ? 'left-full ml-2'  // Default to right for navigation items
+                    : 'top-full mt-2'
           } ${
-            content.position === 'left' || content.position === 'right'
+            content.position === 'left' || content.position === 'right' || (content.id?.includes('navigation') || content.id?.includes('nav'))
               ? 'top-0'
               : 'left-1/2 transform -translate-x-1/2'
           }`}
