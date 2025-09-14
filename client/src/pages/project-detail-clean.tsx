@@ -182,14 +182,21 @@ export default function ProjectDetailClean({
   const { data: project, isLoading: isProjectLoading, error: projectError } = useQuery<Project>({
     queryKey: ['/api/projects', id],
     queryFn: async () => {
-      console.log('Fetching project with ID:', id);
-      const response = await apiRequest('GET', `/api/projects/${id}`);
-      console.log('Project response:', response);
-      return response;
+      console.log('🔄 Fetching project with ID:', id);
+      console.log('🔄 Query enabled?', !!id);
+      try {
+        const response = await apiRequest('GET', `/api/projects/${id}`);
+        console.log('✅ Project response received:', response);
+        return response;
+      } catch (error) {
+        console.error('❌ Project fetch error:', error);
+        throw error;
+      }
     },
     enabled: !!id,
     staleTime: 0, // Force fresh data
     gcTime: 0, // Don't cache
+    retry: false, // Don't retry to see error immediately
   });
 
   // Fetch project tasks
