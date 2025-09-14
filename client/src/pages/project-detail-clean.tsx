@@ -635,8 +635,16 @@ export default function ProjectDetailClean({
     );
   }
 
-  if (!project) {
-    console.log('Project is null/undefined. ID:', id, 'isLoading:', isProjectLoading);
+  if (isProjectLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Loading project...</div>
+      </div>
+    );
+  }
+
+  if (projectError || !project) {
+    console.log('Project error or not found. ID:', id, 'isLoading:', isProjectLoading, 'error:', projectError);
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg text-red-600">Project not found (ID: {id})</div>
