@@ -52,13 +52,6 @@ export const NAV_ITEMS: NavItem[] = [
 
   // Move these back to their original groups without creating "core"
   {
-    id: 'inventory-calculator',
-    label: 'Inventory Calculator',
-    icon: Calculator,
-    href: 'inventory-calculator',
-    group: 'operations',
-  },
-  {
     id: 'important-documents',
     label: 'Important Documents',
     icon: FileText,
@@ -137,6 +130,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Truck,
     href: 'donation-tracking',
     permission: PERMISSIONS.VIEW_DONATION_TRACKING,
+    group: 'operations',
+  },
+  {
+    id: 'inventory-calculator',
+    label: 'Inventory Calculator',
+    icon: Calculator,
+    href: 'inventory-calculator',
     group: 'operations',
   },
 
