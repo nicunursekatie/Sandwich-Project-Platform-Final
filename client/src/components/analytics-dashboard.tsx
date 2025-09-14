@@ -271,12 +271,12 @@ export default function AnalyticsDashboard() {
                 <LineChart data={analyticsData.trendData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="#236383"
+                    stroke="var(--tsp-primary)"
                     opacity={0.2}
                   />
-                  <XAxis dataKey="month" stroke="#236383" fontSize={12} />
+                  <XAxis dataKey="month" stroke="var(--tsp-primary)" fontSize={12} />
                   <YAxis
-                    stroke="#236383"
+                    stroke="var(--tsp-primary)"
                     fontSize={12}
                     tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                   />
@@ -285,20 +285,20 @@ export default function AnalyticsDashboard() {
                       `${Number(value).toLocaleString()} sandwiches`,
                       'Total',
                     ]}
-                    labelStyle={{ color: '#236383' }}
+                    labelStyle={{ color: 'var(--tsp-primary)' }}
                     contentStyle={{
                       backgroundColor: 'white',
-                      border: '1px solid #236383',
+                      border: '1px solid var(--tsp-primary)',
                       borderRadius: '8px',
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="sandwiches"
-                    stroke="#236383"
+                    stroke="var(--tsp-primary)"
                     strokeWidth={3}
-                    dot={{ fill: '#236383', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#FBAD3F' }}
+                    dot={{ fill: 'var(--tsp-primary)', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'var(--tsp-secondary)' }}
                   />
                 </LineChart>
               </ResponsiveContainer>

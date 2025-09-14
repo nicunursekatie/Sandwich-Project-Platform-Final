@@ -38,7 +38,7 @@ body {
     --card-foreground: 24 5% 38%; /* #605251 */
     --border: 0 0% 90%; /* Light border */
     --input: 0 0% 96%; /* Light input background */
-    --primary: 197 53% 32%; /* #236383 - TSP Primary Blue */
+    /* --primary moved to ThemeProvider */
     --primary-foreground: 0 0% 100%; /* #FFFFFF */
     --secondary: 27 92% 62%; /* #FBAD3F - Orange */
     --secondary-foreground: 24 5% 38%; /* #605251 */
@@ -51,10 +51,7 @@ body {
     --gradient-from: 210 100% 98%;
     --gradient-via: 220 50% 96%;
     --gradient-to: 230 25% 94%;
-    --tsp-primary: #236383;
-    --tsp-secondary: #FBAD3F;
-    --tsp-accent: #A31C41;
-    --tsp-muted: #007E8C;
+    /* TSP brand variables moved to ThemeProvider */
   }
 
   .dark {
@@ -64,7 +61,7 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
+    /* --primary moved to ThemeProvider */
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;

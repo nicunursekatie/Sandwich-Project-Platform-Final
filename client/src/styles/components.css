@@ -7,19 +7,21 @@
   }
 
   [role="tab"] {
-    @apply bg-white text-[#236383] border-0 shadow-none;
+    @apply bg-white border-0 shadow-none;
+    color: var(--tsp-teal);
   }
 
   [role="tab"][data-state="active"] {
-    @apply bg-[#236383] text-white border-0 shadow-none;
+    @apply text-white border-0 shadow-none;
+    background-color: var(--tsp-teal);
   }
 
   [role="tab"]:hover {
-    @apply bg-[#f0f9ff];
+    background-color: var(--tsp-teal-light);
   }
 
   [role="tab"][data-state="active"]:hover {
-    @apply bg-[#1a4e66];
+    background-color: var(--tsp-teal-hover);
   }
 
   /* Professional Button Styling */
@@ -175,7 +177,7 @@
 
   .badge-completed {
     @apply px-2 py-1 text-xs font-medium rounded-full;
-    background-color: #FBAD3F;
+    background-color: var(--tsp-secondary);
     color: #8B4513;
   }
 

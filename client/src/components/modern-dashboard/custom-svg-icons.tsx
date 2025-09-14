@@ -11,7 +11,10 @@ export function SandwichStackIcon({
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <defs>
         <linearGradient id="sandwichGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#FBAD3F', stopOpacity: 1 }} />
+          <stop
+            offset="0%"
+            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+          />
           <stop
             offset="100%"
             style={{ stopColor: '#f09f2b', stopOpacity: 1 }}
@@ -43,7 +46,10 @@ export function GrowthTrendIcon({
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <defs>
         <linearGradient id="growthGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" style={{ stopColor: '#236383', stopOpacity: 1 }} />
+          <stop
+            offset="0%"
+            style={{ stopColor: 'var(--tsp-primary)', stopOpacity: 1 }}
+          />
           <stop
             offset="100%"
             style={{ stopColor: '#47B3CB', stopOpacity: 1 }}
@@ -64,9 +70,9 @@ export function GrowthTrendIcon({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="9" cy="11" r="2" fill="#FBAD3F" opacity="0.8" />
-      <circle cx="15" cy="5" r="2" fill="#FBAD3F" opacity="0.8" />
-      <circle cx="21" cy="3" r="2" fill="#FBAD3F" opacity="0.8" />
+      <circle cx="9" cy="11" r="2" fill="var(--tsp-secondary)" opacity="0.8" />
+      <circle cx="15" cy="5" r="2" fill="var(--tsp-secondary)" opacity="0.8" />
+      <circle cx="21" cy="3" r="2" fill="var(--tsp-secondary)" opacity="0.8" />
     </svg>
   );
 }
@@ -79,11 +85,17 @@ export function CommunityIcon({
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <defs>
         <linearGradient id="communityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#A31C41', stopOpacity: 1 }} />
-          <stop offset="50%" style={{ stopColor: '#FBAD3F', stopOpacity: 1 }} />
+          <stop
+            offset="0%"
+            style={{ stopColor: 'var(--tsp-accent)', stopOpacity: 1 }}
+          />
+          <stop
+            offset="50%"
+            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+          />
           <stop
             offset="100%"
-            style={{ stopColor: '#236383', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--tsp-primary)', stopOpacity: 1 }}
           />
         </linearGradient>
       </defs>
@@ -118,14 +130,17 @@ export function TargetIcon({
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <defs>
         <radialGradient id="targetGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" style={{ stopColor: '#FBAD3F', stopOpacity: 1 }} />
+          <stop
+            offset="0%"
+            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+          />
           <stop
             offset="70%"
-            style={{ stopColor: '#236383', stopOpacity: 0.8 }}
+            style={{ stopColor: 'var(--tsp-primary)', stopOpacity: 0.8 }}
           />
           <stop
             offset="100%"
-            style={{ stopColor: '#A31C41', stopOpacity: 0.6 }}
+            style={{ stopColor: 'var(--tsp-accent)', stopOpacity: 0.6 }}
           />
         </radialGradient>
       </defs>
@@ -163,7 +178,10 @@ export function SparkleIcon({
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <defs>
         <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#FBAD3F', stopOpacity: 1 }} />
+          <stop
+            offset="0%"
+            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+          />
           <stop offset="50%" style={{ stopColor: '#fbbf24', stopOpacity: 1 }} />
           <stop
             offset="100%"
@@ -179,7 +197,7 @@ export function SparkleIcon({
         cx="18"
         cy="6"
         r="1.5"
-        fill="#FBAD3F"
+        fill="var(--tsp-secondary)"
         opacity="0.8"
         className="animate-pulse"
       />
@@ -187,7 +205,7 @@ export function SparkleIcon({
         cx="6"
         cy="18"
         r="1"
-        fill="#FBAD3F"
+        fill="var(--tsp-secondary)"
         opacity="0.6"
         className="animate-pulse"
       />
@@ -195,7 +213,7 @@ export function SparkleIcon({
         cx="20"
         cy="16"
         r="1"
-        fill="#FBAD3F"
+        fill="var(--tsp-secondary)"
         opacity="0.7"
         className="animate-pulse"
       />
