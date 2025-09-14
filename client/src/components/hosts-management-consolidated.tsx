@@ -64,7 +64,7 @@ interface ExtendedHostContact extends HostContact {
 export default function HostsManagementConsolidated() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.EDIT_ALL_COLLECTIONS);
+  const canEdit = hasPermission(user, PERMISSIONS.HOSTS_EDIT);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingHost, setEditingHost] = useState<Host | null>(null);
