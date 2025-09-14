@@ -66,6 +66,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { queryClient } from '@/lib/queryClient';
 import SimpleNav from '@/components/simple-nav';
+import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
 import MessageNotifications from '@/components/message-notifications';
 import EnhancedNotifications from '@/components/enhanced-notifications';
@@ -165,98 +166,6 @@ export default function Dashboard({
     );
   };
 
-  // Simplified navigation structure
-  const navigationItems = [
-    // Core section
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'collections', label: 'Collections', icon: Sandwich },
-    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW)
-      ? [{ id: 'events', label: 'Events', icon: Calendar }]
-      : []),
-    {
-      id: 'inventory-calculator',
-      label: 'Inventory Calculator',
-      icon: Calculator,
-    },
-    { id: 'important-documents', label: 'Important Documents', icon: FileText },
-
-    // Data section (filtered by permissions)
-    ...(hasPermission(user, PERMISSIONS.HOSTS_VIEW)
-      ? [{ id: 'hosts', label: 'Host Location', icon: Building2 }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.DRIVERS_VIEW)
-      ? [{ id: 'drivers', label: 'Drivers', icon: Car }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW)
-      ? [{ id: 'recipients', label: 'Recipients', icon: Users }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_VOLUNTEERS)
-      ? [{ id: 'volunteers', label: 'Volunteers', icon: Users }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.VIEW_DONATION_TRACKING)
-      ? [
-          {
-            id: 'donation-tracking',
-            label: 'Distribution Tracking',
-            icon: Truck,
-          },
-        ]
-      : []),
-
-    // Event Planning section
-    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW)
-      ? [{ id: 'event-requests', label: 'Event Planning', icon: Calendar }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW)
-      ? [{ id: 'event-reminders', label: 'Event Reminders', icon: Clock }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW)
-      ? [{ id: 'groups-catalog', label: 'Groups Catalog', icon: Building2 }]
-      : []),
-
-    // Operations section
-    ...(hasPermission(user, PERMISSIONS.MEETINGS_VIEW)
-      ? [{ id: 'meetings', label: 'Meetings', icon: ClipboardList }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.ANALYTICS_VIEW)
-      ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3 }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_WEEKLY_MONITORING)
-      ? [{ id: 'weekly-monitoring', label: 'Weekly Monitoring', icon: Clock }]
-      : []),
-
-    ...(hasPermission(user, PERMISSIONS.PROJECTS_VIEW)
-      ? [{ id: 'projects', label: 'Projects', icon: ListTodo }]
-      : []),
-
-    // Communication section
-    { id: 'chat', label: 'Chat', icon: MessageCircle },
-    ...(hasPermission(user, PERMISSIONS.CHAT_GENERAL)
-      ? [{ id: 'committee', label: 'Committee', icon: MessageCircle }]
-      : []),
-
-    ...(hasPermission(user, PERMISSIONS.SUGGESTIONS_VIEW)
-      ? [{ id: 'suggestions', label: 'Suggestions', icon: Lightbulb }]
-      : []),
-
-    // Resources section
-    ...(hasPermission(user, PERMISSIONS.ACCESS_TOOLKIT)
-      ? [{ id: 'toolkit', label: 'Toolkit', icon: FolderOpen }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.ADMIN_ACCESS)
-      ? [{ id: 'development', label: 'Development', icon: FileText }]
-      : []),
-    ...(hasPermission(user, PERMISSIONS.ACCESS_WORK_LOGS)
-      ? [{ id: 'work-log', label: 'Work Log', icon: ClipboardList }]
-      : []),
-
-    // Admin section
-    ...(hasPermission(user, PERMISSIONS.MANAGE_USERS)
-      ? [{ id: 'user-management', label: 'Admin', icon: UserCog }]
-      : []),
-  ];
-
-  // Navigation is already filtered by permissions above
 
   const renderContent = () => {
     // Extract project ID from activeSection if it's a project detail page
@@ -728,6 +637,7 @@ export default function Dashboard({
             {/* Simple Navigation with enhanced mobile scrolling */}
             <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-contain">
               <SimpleNav
+                navigationItems={NAV_ITEMS}
                 activeSection={activeSection}
                 onSectionChange={(section) => {
                   console.log(
