@@ -48,7 +48,6 @@ import ImportantDocuments from '@/pages/important-documents';
 import BulkDataManager from '@/components/bulk-data-manager';
 import AnalyticsDashboard from '@/components/analytics-dashboard';
 import HostAnalytics from '@/components/host-analytics';
-import Development from '@/pages/development';
 import EnhancedMeetingDashboard from '@/components/enhanced-meeting-dashboard';
 import RoleDemo from '@/pages/role-demo';
 import ProjectsClean from '@/pages/projects-clean';
@@ -391,8 +390,6 @@ export default function Dashboard({
         );
       case 'user-management':
         return <UserManagementRedesigned />;
-      case 'development':
-        return <Development />;
       case 'admin':
         return <ImportantDocuments />;
       default:

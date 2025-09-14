@@ -231,14 +231,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'documentation',
   },
   {
-    id: 'development',
-    label: 'Development',
-    icon: FileText,
-    href: 'development',
-    permission: PERMISSIONS.ADMIN_ACCESS,
-    group: 'documentation',
-  },
-  {
     id: 'governance',
     label: 'Governance',
     icon: Scale,

@@ -39,28 +39,29 @@ interface AdminDocument {
   description: string;
   category: string;
   path: string;
-  type: 'pdf' | 'docx' | 'xlsx';
+  type: 'pdf' | 'docx' | 'xlsx' | 'link';
   size?: string;
   lastModified?: string;
   importance: 'critical' | 'high' | 'normal';
 }
 
 const adminDocuments: AdminDocument[] = [
+  // Legal & Tax Documents
   {
     id: 'tax-exempt-letter',
     name: 'IRS Tax Exempt Letter',
-    description: 'Our 501(c)(3) letter',
+    description: 'IRS Tax Exempt determination letter containing EIN',
     category: 'Legal & Tax',
-    path: '/attached_assets/IRS Tax Exempt Letter (Contains EIN).pdf',
+    path: '/attached_assets/IRS Tax Exempt Letter (Contains EIN)_1750817584990.pdf',
     type: 'pdf',
     importance: 'critical',
   },
   {
     id: 'articles-incorporation',
     name: 'Articles of Incorporation',
-    description: 'Articles of Incorporation',
+    description: 'Official Articles of Incorporation for The Sandwich Project',
     category: 'Legal & Tax',
-    path: '/attached_assets/Articles of Incorporation.pdf',
+    path: '/attached_assets/Articles of Incorporation_1750817584990.pdf',
     type: 'pdf',
     importance: 'critical',
   },
@@ -73,15 +74,19 @@ const adminDocuments: AdminDocument[] = [
     type: 'pdf',
     importance: 'high',
   },
+  
+  // Governance Documents
   {
     id: 'bylaws-2024',
-    name: 'TSP Bylaws 2024',
-    description: 'Current organizational bylaws and governance structure',
+    name: 'The Sandwich Project Bylaws 2024',
+    description: 'Official bylaws document outlining organizational structure, governance, and operational procedures',
     category: 'Governance',
     path: '/attached_assets/The Sandwich Project Bylaws 2024(1)_1750871081277.pdf',
     type: 'pdf',
     importance: 'critical',
   },
+  
+  // Forms
   {
     id: 'volunteer-driver-agreement',
     name: 'TSP Volunteer Driver Agreement',
@@ -100,9 +105,116 @@ const adminDocuments: AdminDocument[] = [
     type: 'pdf',
     importance: 'high',
   },
+  
+  // Safety Guidelines
+  {
+    id: 'summer-food-safety',
+    name: 'Summer Food Safety Guidelines',
+    description: 'Updated guidelines for no cooler collections, proper refrigeration temperatures (33-36°F), and summer heat safety protocols for home hosts',
+    category: 'Safety Guidelines',
+    path: '/attached_assets/Summer Food Safety Guidelines_1751569876472.pdf',
+    type: 'pdf',
+    importance: 'critical',
+  },
+  {
+    id: 'food-safety-volunteers',
+    name: 'Food Safety Volunteers Guide',
+    description: 'Comprehensive safety protocols for volunteers preparing and delivering sandwiches',
+    category: 'Safety Guidelines',
+    path: '/attached_assets/20230525-TSP-Food Safety Volunteers_1749341933308.pdf',
+    type: 'pdf',
+    importance: 'critical',
+  },
+  {
+    id: 'food-safety-hosts',
+    name: 'Food Safety Hosts Guide',
+    description: 'Safety standards and procedures for hosts collecting and storing sandwiches',
+    category: 'Safety Guidelines',
+    path: '/attached_assets/20230525-TSP-Food Safety Hosts (1)_1753670644140.pdf',
+    type: 'pdf',
+    importance: 'critical',
+  },
+  {
+    id: 'food-safety-recipients',
+    name: 'Food Safety Recipients Guide',
+    description: 'Safety standards for recipient organizations handling perishable food donations',
+    category: 'Safety Guidelines',
+    path: '/attached_assets/20250205-TSP-Food Safety Recipients_1753670644140.pdf',
+    type: 'pdf',
+    importance: 'critical',
+  },
+  {
+    id: 'food-safety-recipients-alt',
+    name: 'Food Safety Recipients (Alternate)',
+    description: 'Additional safety guidelines for 501(c)(3) recipient organizations',
+    category: 'Safety Guidelines',
+    path: '/attached_assets/Copy of Copy of Food Safety TSP.RECIPIENTS.04042023_1753670644141.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  
+  // Labels & Printing
+  {
+    id: 'deli-labels',
+    name: 'Deli Labels',
+    description: 'Official TSP labels for deli sandwich identification and tracking',
+    category: 'Labels & Printing',
+    path: '/attached_assets/Deli labels_1749341916236.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  {
+    id: 'pbj-labels',
+    name: 'PBJ Labels',
+    description: 'Labels and guidelines for peanut butter and jelly sandwiches',
+    category: 'Labels & Printing',
+    path: '/attached_assets/20250622-TSP-PBJ Sandwich Making 101_1749341916236.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  
+  // Sandwich Making Guides
+  {
+    id: 'deli-sandwich-guide',
+    name: 'Deli Sandwich Making 101',
+    description: 'Complete guide to preparing deli sandwiches according to TSP standards',
+    category: 'Sandwich Making',
+    path: '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  {
+    id: 'pbj-sandwich-guide',
+    name: 'PBJ Sandwich Making 101',
+    description: 'Step-by-step instructions for making peanut butter and jelly sandwiches',
+    category: 'Sandwich Making',
+    path: '/attached_assets/20250622-TSP-PBJ Sandwich Making 101_1749341916236.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  {
+    id: 'sandwich-inventory',
+    name: 'Sandwich Inventory List',
+    description: 'Comprehensive inventory tracking system for sandwich collections',
+    category: 'Sandwich Making',
+    path: '/attached_assets/CLEANED UP Sandwich Totals_1753480177827.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  
+  // Tools
+  {
+    id: 'inventory-calculator',
+    name: 'Inventory Calculator',
+    description: 'Interactive tool for calculating sandwich inventory and planning quantities for collections',
+    category: 'Tools',
+    path: 'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
+    type: 'link',
+    importance: 'high',
+  },
 ];
 
-const categories = ['All', 'Legal & Tax', 'Governance', 'Forms'];
+const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Tools'];
 
 // Logo files information
 const logoFiles = [
@@ -175,16 +287,54 @@ export default function ImportantDocuments() {
   );
 
   const handleDownload = (doc: AdminDocument) => {
-    const link = document.createElement('a');
-    link.href = doc.path;
-    link.download = doc.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (doc.type === 'link') {
+      window.open(doc.path, '_blank');
+    } else {
+      const link = document.createElement('a');
+      link.href = doc.path;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handlePreview = (doc: AdminDocument) => {
-    setPreviewDocument(doc);
+    if (doc.type === 'link') {
+      window.open(doc.path, '_blank');
+    } else {
+      setPreviewDocument(doc);
+    }
+  };
+
+  const handleShare = async (doc: AdminDocument) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: doc.name,
+          text: doc.description,
+          url: doc.path,
+        });
+        toast({
+          title: 'Shared Successfully',
+          description: `${doc.name} has been shared.`,
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          await navigator.clipboard.writeText(doc.path);
+          toast({
+            title: 'Link Copied',
+            description: 'Link has been copied to clipboard instead.',
+          });
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(doc.path);
+      toast({
+        title: 'Link Copied',
+        description: 'Link has been copied to clipboard.',
+      });
+    }
   };
 
   const handleLogoDownload = async (filename: string, displayName: string) => {
@@ -420,22 +570,45 @@ export default function ImportantDocuments() {
                     </CardDescription>
                     {/* Action buttons - Better mobile responsive design */}
                     <div className="flex flex-col gap-3 mt-auto">
-                      <Button
-                        variant="ghost"
-                        onClick={() => handlePreview(doc)}
-                        className="w-full h-11 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 hover:text-brand-primary transition-all duration-200 ease-in-out rounded-lg py-3 px-4"
-                      >
-                        <Eye className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span>Preview</span>
-                      </Button>
-                      <Button
-                        variant="default"
-                        onClick={() => handleDownload(doc)}
-                        className="w-full h-11 text-sm font-medium bg-brand-primary hover:bg-brand-primary-dark text-white transition-all duration-200 ease-in-out rounded-lg py-3 px-4 shadow-sm hover:shadow-md"
-                      >
-                        <Download className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span>Download</span>
-                      </Button>
+                      {doc.type === 'link' ? (
+                        <>
+                          <Button
+                            variant="default"
+                            onClick={() => handleDownload(doc)}
+                            className="w-full h-11 text-sm font-medium bg-brand-primary hover:bg-brand-primary-dark text-white transition-all duration-200 ease-in-out rounded-lg py-3 px-4 shadow-sm hover:shadow-md"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span>Open Tool</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleShare(doc)}
+                            className="w-full h-11 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 hover:text-brand-primary transition-all duration-200 ease-in-out rounded-lg py-3 px-4"
+                          >
+                            <Share2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span>Share Link</span>
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handlePreview(doc)}
+                            className="w-full h-11 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 hover:text-brand-primary transition-all duration-200 ease-in-out rounded-lg py-3 px-4"
+                          >
+                            <Eye className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span>Preview</span>
+                          </Button>
+                          <Button
+                            variant="default"
+                            onClick={() => handleDownload(doc)}
+                            className="w-full h-11 text-sm font-medium bg-brand-primary hover:bg-brand-primary-dark text-white transition-all duration-200 ease-in-out rounded-lg py-3 px-4 shadow-sm hover:shadow-md"
+                          >
+                            <Download className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span>Download</span>
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
