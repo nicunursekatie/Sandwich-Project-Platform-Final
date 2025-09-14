@@ -51,13 +51,6 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // Move these back to their original groups without creating "core"
-  {
-    id: 'important-documents',
-    label: 'Important Documents',
-    icon: FileText,
-    href: 'important-documents',
-    group: 'documentation',
-  },
 
   // COMMUNICATION
   {
@@ -199,6 +192,13 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // DOCUMENTATION
+  {
+    id: 'important-documents',
+    label: 'Important Documents',
+    icon: FileText,
+    href: 'important-documents',
+    group: 'documentation',
+  },
   {
     id: 'important-links',
     label: 'Important Links',

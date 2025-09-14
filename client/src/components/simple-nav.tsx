@@ -149,7 +149,7 @@ export default function SimpleNav({
                 isCollapsed
                   ? 'justify-center px-2'
                   : 'justify-start px-2 sm:px-3'
-              } text-left h-11 touch-manipulation relative
+              } text-left h-11 touch-manipulation relative text-sm font-medium
               ${
                 active
                   ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
@@ -182,7 +182,7 @@ export default function SimpleNav({
               )}
               {!isCollapsed && (
                 <>
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span className="flex-1 text-left font-medium">{item.label}</span>
                   {badgeCount > 0 && (
                     <Badge 
                       variant="destructive" 
