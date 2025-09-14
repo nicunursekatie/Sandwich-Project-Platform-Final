@@ -179,10 +179,12 @@ export default function ProjectDetailClean({
   });
 
   // Fetch project details
-  const { data: project, isLoading: isProjectLoading } = useQuery<Project>({
+  const { data: project, isLoading: isProjectLoading, error: projectError } = useQuery<Project>({
     queryKey: ['/api/projects', id],
     queryFn: async () => {
+      console.log('Fetching project with ID:', id);
       const response = await apiRequest('GET', `/api/projects/${id}`);
+      console.log('Project response:', response);
       return response;
     },
     enabled: !!id,
@@ -624,10 +626,20 @@ export default function ProjectDetailClean({
     );
   }
 
-  if (!project) {
+  if (projectError) {
+    console.error('Project query error:', projectError);
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-red-600">Project not found</div>
+        <div className="text-lg text-red-600">Error loading project: {(projectError as Error).message}</div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    console.log('Project is null/undefined. ID:', id, 'isLoading:', isProjectLoading);
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-red-600">Project not found (ID: {id})</div>
       </div>
     );
   }
