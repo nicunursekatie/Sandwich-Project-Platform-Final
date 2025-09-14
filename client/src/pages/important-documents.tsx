@@ -166,8 +166,9 @@ export default function ImportantDocuments() {
     null
   );
 
-  // Show confidential tab to all authenticated users - server handles access control
-  const hasConfidentialAccess = !!user && !isAuthLoading;
+  // Show confidential tab only to admin users
+  const hasConfidentialAccess = !!user && !isAuthLoading && 
+    (user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
 
   const filteredDocuments = adminDocuments.filter(
     (doc) => selectedCategory === 'All' || doc.category === selectedCategory
