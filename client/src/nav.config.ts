@@ -132,6 +132,14 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'inventory-calculator',
     group: 'operations',
   },
+  {
+    id: 'work-log',
+    label: 'Work Log',
+    icon: ClipboardList,
+    href: 'work-log',
+    permission: PERMISSIONS.WORK_LOGS_VIEW,
+    group: 'operations',
+  },
 
   // PLANNING & COORDINATION
   {
@@ -235,14 +243,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Governance',
     icon: Scale,
     href: 'governance',
-    group: 'documentation',
-  },
-  {
-    id: 'work-log',
-    label: 'Work Log',
-    icon: ClipboardList,
-    href: 'work-log',
-    permission: PERMISSIONS.WORK_LOGS_VIEW,
     group: 'documentation',
   },
 
