@@ -28,6 +28,10 @@ function getAllowedOrigins(): string[] {
     // Also allow the .replit.dev variant
     const replitDevDomain = `https://${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.repl.co`;
     origins.push(replitDevDomain);
+    
+    // CRITICAL: Also allow the .replit.app production domain format
+    const replitAppDomain = `https://${process.env.REPL_SLUG}-${process.env.REPL_OWNER}.replit.app`;
+    origins.push(replitAppDomain);
   }
   
   // Development specific origins
@@ -46,6 +50,11 @@ function getAllowedOrigins(): string[] {
       .map(origin => origin.trim())
       .filter(origin => origin.length > 0);
     origins.push(...additionalOrigins);
+  }
+  
+  // CRITICAL: Ensure the exact production URL is always allowed
+  if (process.env.NODE_ENV === 'production') {
+    origins.push('https://sandwich-project-platform-final-katielong2316.replit.app');
   }
   
   return [...new Set(origins)]; // Remove duplicates
