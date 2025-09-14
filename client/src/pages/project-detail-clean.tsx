@@ -182,21 +182,10 @@ export default function ProjectDetailClean({
   const { data: project, isLoading: isProjectLoading, error: projectError } = useQuery<Project>({
     queryKey: ['/api/projects', id],
     queryFn: async () => {
-      console.log('🔄 Fetching project with ID:', id);
-      console.log('🔄 Query enabled?', !!id);
-      try {
-        const response = await apiRequest('GET', `/api/projects/${id}`);
-        console.log('✅ Project response received:', response);
-        return response;
-      } catch (error) {
-        console.error('❌ Project fetch error:', error);
-        throw error;
-      }
+      const response = await apiRequest('GET', `/api/projects/${id}`);
+      return response;
     },
     enabled: !!id,
-    staleTime: 0, // Force fresh data
-    gcTime: 0, // Don't cache
-    retry: false, // Don't retry to see error immediately
   });
 
   // Fetch project tasks
@@ -651,7 +640,6 @@ export default function ProjectDetailClean({
   }
 
   if (projectError || !project) {
-    console.log('Project error or not found. ID:', id, 'isLoading:', isProjectLoading, 'error:', projectError);
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg text-red-600">Project not found (ID: {id})</div>

@@ -127,7 +127,7 @@ export default function SimpleNav({
           if (groupItem.type === 'separator') {
             return (
               <div key={`separator-${groupItem.group}-${index}`} className="my-2">
-                <div className="text-xs font-semibold text-muted-foreground px-2 mb-1 text-right">
+                <div className="text-sm font-semibold text-muted-foreground px-2 mb-1 text-right">
                   {getGroupLabel(groupItem.group)}
                 </div>
                 <div className="border-t border-border" />
@@ -149,7 +149,7 @@ export default function SimpleNav({
                 isCollapsed
                   ? 'justify-center px-2'
                   : 'justify-start px-2 sm:px-3'
-              } text-left h-11 touch-manipulation relative text-sm font-medium
+              } text-left h-11 touch-manipulation relative text-base font-medium
               ${
                 active
                   ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
