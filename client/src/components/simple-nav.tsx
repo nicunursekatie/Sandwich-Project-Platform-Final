@@ -126,7 +126,7 @@ export default function SimpleNav({
           if (groupItem.type === 'separator') {
             return (
               <div key={`separator-${groupItem.group}-${index}`} className="my-2">
-                <div className="text-xs font-semibold text-muted-foreground px-2 mb-1">
+                <div className="text-xs font-semibold text-muted-foreground px-2 mb-1 text-right">
                   {getGroupLabel(groupItem.group)}
                 </div>
                 <div className="border-t border-border" />
