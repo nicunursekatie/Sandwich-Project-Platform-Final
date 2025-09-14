@@ -192,8 +192,8 @@ export function KudosLoginNotifier() {
   };
 
   const handleViewInInbox = () => {
-    // Navigate to dashboard with messaging section and kudos tab
-    window.location.hash = '#/dashboard?section=messaging&tab=kudos';
+    // Navigate to the main inbox where kudos should be visible
+    window.location.hash = '#/dashboard?section=gmail-inbox';
   };
 
   const handleDismissToast = (kudosId: number) => {
