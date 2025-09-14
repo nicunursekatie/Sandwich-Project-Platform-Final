@@ -213,8 +213,23 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       // Helper function to calculate event frequency
       const calculateEventFrequency = (eventDates: Set<string>) => {
-        if (eventDates.size === 1) return '1 event';
         if (eventDates.size === 0) return null;
+        if (eventDates.size === 1) {
+          // Show time since last event for single events
+          const lastEventDate = new Date(Array.from(eventDates)[0]);
+          const now = new Date();
+          const daysSince = Math.floor((now.getTime() - lastEventDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSince < 30) {
+            return `${daysSince} days ago`;
+          } else if (daysSince < 365) {
+            const monthsSince = Math.floor(daysSince / 30);
+            return `${monthsSince} month${monthsSince > 1 ? 's' : ''} ago`;
+          } else {
+            const yearsSince = Math.floor(daysSince / 365);
+            return `${yearsSince} year${yearsSince > 1 ? 's' : ''} ago`;
+          }
+        }
 
         const dates = Array.from(eventDates)
           .map((d) => new Date(d))
@@ -232,7 +247,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         } else {
           const eventsPerYear = eventDates.size / yearsDiff;
           if (eventsPerYear >= 1) {
-            return `${Math.round(eventsPerYear * 10) / 10} events per year`;
+            return `${Math.round(eventsPerYear * 10) / 10} events/year`;
           } else {
             return `${eventDates.size} events in ${Math.round(
               yearsDiff
@@ -552,7 +567,20 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         // Calculate event frequency
         let eventFrequency = null;
         if (allEvents.length === 1) {
-          eventFrequency = '1 event';
+          // Show time since last event for single events
+          const lastEventDate = new Date(allEvents[0].date || allEvents[0].createdAt);
+          const now = new Date();
+          const daysSince = Math.floor((now.getTime() - lastEventDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSince < 30) {
+            eventFrequency = `${daysSince} days ago`;
+          } else if (daysSince < 365) {
+            const monthsSince = Math.floor(daysSince / 30);
+            eventFrequency = `${monthsSince} month${monthsSince > 1 ? 's' : ''} ago`;
+          } else {
+            const yearsSince = Math.floor(daysSince / 365);
+            eventFrequency = `${yearsSince} year${yearsSince > 1 ? 's' : ''} ago`;
+          }
         } else if (allEvents.length > 1) {
           const dates = allEvents
             .map((event) => new Date(event.date || event.createdAt))
@@ -573,7 +601,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             if (eventsPerYear >= 1) {
               eventFrequency = `${
                 Math.round(eventsPerYear * 10) / 10
-              } events per year`;
+              } events/year`;
             } else {
               eventFrequency = `${allEvents.length} events in ${Math.round(
                 yearsDiff
