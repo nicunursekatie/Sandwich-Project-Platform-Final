@@ -77,6 +77,7 @@ import {
   Shield,
   CalendarPlus,
   ArrowUp,
+  Calculator,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
