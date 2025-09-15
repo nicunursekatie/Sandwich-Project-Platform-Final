@@ -118,6 +118,9 @@ export default function AnalyticsDashboard() {
     console.log('📅 Current time:', new Date().toISOString());
     console.log('📊 Total collections to process:', collections.length);
     
+    // Declare trendData outside try/catch for proper scoping
+    let trendData: { month: string; sandwiches: number }[] = [];
+    
     try {
       // STEP 1: DATA AGGREGATION - Build monthly totals with bulletproof calculation
       console.log('\n📊 STEP 1: AGGREGATING MONTHLY DATA');
@@ -182,7 +185,7 @@ export default function AnalyticsDashboard() {
       console.log('  - Match status:', august2025Total === 26009 ? '✅ EXACT MATCH' : '❌ MISMATCH');
       
       // STEP 2: TIMELINE GENERATION - Create bulletproof chronological sequence
-      console.log('\n📈 STEP 2: GENERATING BULLETPROOF TIMELINE');
+      console.log('\n📈 STEP 2: GENERATING BULLETPROOF TIMELINE (EXCLUDING CURRENT MONTH)');
       
       const today = new Date();
       const currentYear = today.getFullYear();
@@ -190,13 +193,14 @@ export default function AnalyticsDashboard() {
       
       console.log('📅 Reference date:', today.toISOString().split('T')[0]);
       console.log('📅 Current year:', currentYear, '| Current month (0-based):', currentMonth);
+      console.log('🚫 EXCLUDING current month to prevent incomplete data trend');
       
-      // Generate 12 months chronologically: [oldest ... newest]
+      // Generate 12 months chronologically: [oldest ... newest] - EXCLUDING current month
       const chartData: { month: string; sandwiches: number }[] = [];
       
       for (let i = 0; i < 12; i++) {
-        // Calculate the target month (11 months ago + i)
-        const monthsFromNow = 11 - i; // Start 11 months back, work forward
+        // Calculate the target month (12 months ago + i) to exclude current month
+        const monthsFromNow = 12 - i; // Start 12 months back, work forward to 1 month ago
         const targetDate = new Date(currentYear, currentMonth - monthsFromNow, 1);
         
         // Generate month key (YYYY-MM format)
@@ -242,7 +246,7 @@ export default function AnalyticsDashboard() {
         console.log('⚠️ August 2025 not found in chart data');
       }
       
-      const trendData = chartData;
+      trendData = chartData;
       
       console.log('\n✅ BULLETPROOF ANALYTICS v5 COMPLETE!');
       console.log('🚀 Timeline fixed: Chronological order verified');
@@ -252,7 +256,7 @@ export default function AnalyticsDashboard() {
     } catch (error) {
       console.error('❌ ANALYTICS v5 ERROR:', error);
       // Fallback to empty data to prevent crashes
-      const trendData = Array.from({ length: 12 }, (_, i) => ({
+      trendData = Array.from({ length: 12 }, (_, i) => ({
         month: `Month ${i + 1}`,
         sandwiches: 0
       }));
