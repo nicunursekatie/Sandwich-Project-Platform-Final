@@ -47,14 +47,16 @@ export default function AnalyticsDashboard() {
       return data.collections || [];
     },
     staleTime: 0, // Force fresh data every time
-    cacheTime: 0, // Don't cache the data
+    gcTime: 0, // Don't cache the data (React Query v5)
   });
 
-  const { data: statsData, isLoading: statsLoading } = useQuery({
+  const { data: statsData, isLoading: statsLoading } = useQuery<{
+    completeTotalSandwiches: number;
+  }>({
     queryKey: ['/api/sandwich-collections/stats'],
   });
 
-  const { data: hostsData, isLoading: hostsLoading } = useQuery({
+  const { data: hostsData, isLoading: hostsLoading } = useQuery<any[]>({
     queryKey: ['/api/hosts'],
     queryFn: async () => {
       const response = await fetch('/api/hosts');
@@ -92,6 +94,14 @@ export default function AnalyticsDashboard() {
       ([, a], [, b]) => b.total - a.total
     )[0];
 
+    // Safe month key extraction to prevent timezone issues
+    const safeMonthKey = (dateStr: string): string | null => {
+      if (!dateStr) return null;
+      // Extract YYYY-MM directly from ISO date string (YYYY-MM-DD format)
+      const match = dateStr.match(/^(\d{4})-(\d{2})/);
+      return match ? `${match[1]}-${match[2]}` : null;
+    };
+
     // Monthly trends for chart
     console.log(
       '🔢 Analytics Dashboard: Processing',
@@ -100,14 +110,27 @@ export default function AnalyticsDashboard() {
     );
     const monthlyTrends = collections.reduce(
       (acc, c) => {
-        const date = new Date(c.collectionDate || '');
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthKey = safeMonthKey(c.collectionDate || '');
+        if (!monthKey) return acc; // Skip invalid dates
+        
         const sandwiches = calculateTotalSandwiches(c);
 
         if (!acc[monthKey]) {
           acc[monthKey] = { month: monthKey, sandwiches: 0 };
         }
         acc[monthKey].sandwiches += sandwiches;
+
+        // Debug August specifically
+        if (monthKey === '2024-08') {
+          console.log(`📅 August 2024 collection:`, {
+            date: c.collectionDate,
+            host: c.hostName,
+            individual: c.individualSandwiches,
+            group: calculateGroupSandwiches(c),
+            total: sandwiches,
+            runningTotal: acc[monthKey].sandwiches
+          });
+        }
 
         return acc;
       },
