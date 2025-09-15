@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScheduleEventDialog } from './ScheduleEventDialog';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -628,6 +627,7 @@ interface ToolkitSentDialogProps {
   onToolkitSent: (toolkitSentDate: string) => void;
   isLoading: boolean;
 }
+
 const ToolkitSentDialog = ({
   isOpen,
   onClose,
@@ -855,12 +855,12 @@ export default function EventRequestsManagement() {
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [emailComposerRequest, setEmailComposerRequest] =
     useState<EventRequest | null>(null);
-
+  
   // State for recording actual sandwich counts
   const [showRecordSandwichesDialog, setShowRecordSandwichesDialog] = useState(false);
   const [recordSandwichesRequest, setRecordSandwichesRequest] = useState<EventRequest | null>(null);
   const [actualSandwichNotes, setActualSandwichNotes] = useState('');
-
+  
   // Toolkit Sent Dialog state
   const [showToolkitSentDialog, setShowToolkitSentDialog] = useState(false);
   const [toolkitSentRequest, setToolkitSentRequest] =
@@ -1377,6 +1377,7 @@ export default function EventRequestsManagement() {
       queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
     },
   });
+
   // Mutation for recording actual sandwich counts
   const recordActualSandwichesMutation = useMutation({
     mutationFn: async (data: {
@@ -2139,6 +2140,7 @@ export default function EventRequestsManagement() {
     updated[index] = { ...updated[index], [field]: value };
     setDistributionData(updated);
   };
+
   // Sorting helper functions
   const sortEvents = (
     events: EventRequest[],
@@ -2803,6 +2805,7 @@ export default function EventRequestsManagement() {
       });
     }
   };
+
   // Unresponsive Management Form Component
   const UnresponsiveManagementForm = ({
     request,
@@ -3045,7 +3048,7 @@ export default function EventRequestsManagement() {
                   </span>
                 </div>
               )}
-
+              
               {/* Event Address */}
               {request.eventAddress && (
                 <div className="flex items-center space-x-2">
@@ -3154,7 +3157,7 @@ export default function EventRequestsManagement() {
               {/* Assignments Summary */}
               {(() => {
                 const assignments = [];
-
+                
                 // Van Driver
                 if ((request as any).vanDriverNeeded) {
                   const hasVanDriver = (request as any).assignedVanDriverId || (request as any).customVanDriverName;
@@ -3290,265 +3293,8 @@ export default function EventRequestsManagement() {
       </CardHeader>
     </Card>
   );
-    return (
-      <Card
-        key={request.id}
-        id={`event-${request.id}`}
-        className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-white ${
-          highlightedEventId === request.id
-            ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100'
-            : ''
-        } ${
-          hasPendingChanges(request.id)
-            ? 'ring-2 ring-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50'
-            : ''
-        }`}
-      >
-        {/* Header Section: Organization Name, Date, and Status Badge */}
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              {/* For in_process events, show date prominently at the top */}
-              {request.status === 'in_process' && request.desiredEventDate && (
-                <div className="flex items-center text-lg font-semibold text-brand-orange mb-2 bg-gradient-to-r from-orange-50 to-yellow-50 px-3 py-2 rounded-lg border border-brand-orange">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  <span>
-                    {(() => {
-                      const dateInfo = formatEventDate(
-                        request.desiredEventDate
-                      );
-                      return dateInfo.text;
-                    })()}
-                  </span>
-                </div>
-              )}
 
-              <h3 className="text-xl font-bold text-gray-900 leading-tight mb-1">
-                {request.organizationName}
-              </h3>
-              {request.department && (
-                <p className="text-gray-600 font-medium text-base mb-2">
-                  {request.department}
-                </p>
-              )}
-
-              {/* Event Date for non-in_process events */}
-              {request.status !== 'in_process' && request.desiredEventDate && (
-                <div className="flex items-center text-base font-semibold text-brand-orange mb-2">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span>
-                    {(() => {
-                      const dateInfo = formatEventDate(
-                        request.desiredEventDate
-                      );
-                      return dateInfo.text;
-                    })()}
-                  </span>
-                </div>
-              )}
-              {/* Event Times Row */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                {(request as any).eventStartTime && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Starts:</span>
-                    <span className="ml-1 font-semibold">
-                      {(() => {
-                        try {
-                          const [hours, minutes] = (
-                            request as any
-                          ).eventStartTime.split(':');
-                          const time = new Date();
-                          time.setHours(parseInt(hours), parseInt(minutes));
-                          return time.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          });
-                        } catch {
-                          return (request as any).eventStartTime;
-                        }
-                      })()}
-                    </span>
-                  </div>
-                )}
-                {(request as any).eventEndTime && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Ends:</span>
-                    <span className="ml-1 font-semibold">
-                      {(() => {
-                        try {
-                          const [hours, minutes] = (
-                            request as any
-                          ).eventEndTime.split(':');
-                          const time = new Date();
-                          time.setHours(parseInt(hours), parseInt(minutes));
-                          return time.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          });
-                        } catch {
-                          return (request as any).eventEndTime;
-                        }
-                      })()}
-                    </span>
-                  </div>
-                )}
-                {(request as any).pickupTime && (
-                  <div className="flex items-center text-teal-700">
-                    <Truck className="w-4 h-4 mr-1" />
-                    <span className="font-medium">Pickup:</span>
-                    <span className="ml-1 font-semibold">
-                      {(() => {
-                        try {
-                          const [hours, minutes] = (
-                            request as any
-                          ).pickupTime.split(':');
-                          const time = new Date();
-                          time.setHours(parseInt(hours), parseInt(minutes));
-                          return time.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          });
-                        } catch {
-                          return (request as any).pickupTime;
-                        }
-                      })()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Status Badge in Top-Right */}
-            <div className="ml-4 flex flex-col items-end space-y-2">
-              {getStatusDisplay(request.status)}
-              {/* Needed badges positioned below the status badge */}
-              <div className="flex flex-col gap-1">
-                {(() => {
-                  const driverStatus = getDriverStatus();
-                  const speakerStatus = getSpeakerStatus();
-                  const volunteerStatus = getVolunteerStatus();
-                  const badges = [];
-
-                  // Add van driver badge if van driver needed and not assigned
-                  if (
-                    (request as any).vanDriverNeeded &&
-                    !(request as any).assignedVanDriverId &&
-                    !(request as any).customVanDriverName
-                  ) {
-                    badges.push(
-                      <Badge
-                        key="van-driver"
-                        className="bg-amber-100 text-amber-800 border-amber-300 font-semibold text-xs"
-                      >
-                        🚐 VAN DRIVER NEEDED
-                      </Badge>
-                    );
-                  }
-
-                  // Add driver badge if drivers needed and not fulfilled
-                  if (driverStatus.badge === '⚠️ Needed') {
-                    badges.push(
-                      <Badge
-                        key="drivers"
-                        className={`${driverStatus.color} border-amber-300 font-semibold text-xs`}
-                      >
-                        🚗 DRIVERS NEEDED
-                      </Badge>
-                    );
-                  }
-
-                  // Add speaker badge if speakers needed and not fulfilled
-                  if (speakerStatus.badge === '⚠️ Needed') {
-                    badges.push(
-                      <Badge
-                        key="speakers"
-                        className={`${speakerStatus.color} border-amber-300 font-semibold text-xs`}
-                      >
-                        🎤 SPEAKERS NEEDED
-                      </Badge>
-                    );
-                  }
-
-                  // Add volunteer badge if volunteers needed and not fulfilled
-                  if (volunteerStatus.badge === '⚠️ Needed') {
-                    badges.push(
-                      <Badge
-                        key="volunteers"
-                        className={`${volunteerStatus.color} border-amber-300 font-semibold text-xs`}
-                      >
-                        🙋 VOLUNTEERS NEEDED
-                      </Badge>
-                    );
-                  }
-
-                  return badges.length > 0 ? badges : null;
-                })()}
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        {/* Body Section: Three Column Layout */}
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-            {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-3 rounded-lg border border-brand-primary">
-              <h4 className="font-semibold text-brand-primary text-base mb-3 flex items-center">
-                <User className="w-4 h-4 mr-2 text-brand-primary" />
-                Contact
-              </h4>
-              <div className="space-y-3">
-                {/* Contact Name */}
-                <div className="flex items-start space-x-3">
-                  <User className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
-                  {editingField === 'contact' &&
-                  editingEventId === request.id ? (
-                    <div className="flex space-x-2 flex-1 items-center">
-                      <input
-                        className="text-sm border rounded px-2 py-1 flex-1 bg-white"
-                        value={
-                          tempValues.contact ||
-                          `${request.firstName} ${request.lastName}`
-                        }
-                        onChange={(e) =>
-                          setTempValues((prev) => ({
-                            ...prev,
-                            contact: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const [firstName, ...lastNameParts] = (
-                              tempValues.contact || e.target.value
-                            ).split(' ');
-                            handleTrackChange(
-                              request.id,
-                              'firstName',
-                              firstName
-                            );
-                            handleTrackChange(
-                              request.id,
-                              'lastName',
-                              lastNameParts.join(' ')
-                            );
-                            setEditingField(null);
-                            setEditingEventId(null);
-                            setTempValues({});
-                          }
-                          if (e.key === 'Escape') handleFieldCancel();
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          const [firstName, ...lastNameParts] =
-                            tempValues.contact.split(' ');
+  // Render functions for different card types
                           handleTrackChange(request.id, 'firstName', firstName);
                           handleTrackChange(
                             request.id,
@@ -3779,6 +3525,7 @@ export default function EventRequestsManagement() {
                 </div>
               </div>
             </div>
+
             {/* Center Column: Event Logistics */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg border border-brand-orange">
               <h4 className="font-semibold text-brand-orange text-base mb-3 flex items-center">
@@ -4425,6 +4172,7 @@ export default function EventRequestsManagement() {
                 </div>
               </div>
             </div>
+
             {/* Right Column: Status & Assignments */}
             <div className="bg-gradient-to-br from-red-50 to-red-100 p-3 rounded-lg border border-brand-burgundy">
               <h4 className="font-semibold text-brand-burgundy text-base mb-3 flex items-center">
@@ -5174,6 +4922,7 @@ export default function EventRequestsManagement() {
                     )
                   )}
                 </div>
+
                 {/* Volunteer Assignment Section */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -5584,6 +5333,7 @@ export default function EventRequestsManagement() {
       </Card>
     );
   };
+
   // Function to render standard event cards (for requests and past events)
   const renderStandardEventCard = (request: EventRequest) => (
     <Card
@@ -6198,6 +5948,7 @@ export default function EventRequestsManagement() {
       </CardContent>
     </Card>
   );
+
   // Function to render comprehensive past event cards with all details
   const renderPastEventCard = (request: EventRequest) => (
     <Card
@@ -6896,6 +6647,7 @@ export default function EventRequestsManagement() {
               )}
             </div>
           </div>
+
           {/* TSP Contact Information */}
           {(() => {
             const hasPrimaryContact = (request as any).tspContact;
@@ -7488,6 +7240,68 @@ export default function EventRequestsManagement() {
     completeEventDetailsMutation.mutate(data);
   };
 
+  const handleScheduleEvent = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!schedulingRequest) return;
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      id: schedulingRequest.id,
+      status: 'scheduled',
+      // Event scheduling details
+      eventStartTime: formData.get('eventStartTime') || null,
+      eventEndTime: formData.get('eventEndTime') || null,
+      pickupTime: formData.get('pickupTime') || null,
+      eventAddress: formData.get('eventAddress') || null,
+      estimatedSandwichCount: formData.get('estimatedSandwichCount')
+        ? parseInt(formData.get('estimatedSandwichCount') as string)
+        : null,
+      deliveryDestination: formData.get('deliveryDestination') || null,
+      hasRefrigeration:
+        formData.get('hasRefrigeration') === 'none'
+          ? null
+          : formData.get('hasRefrigeration') === 'true',
+      sandwichTypes: (() => {
+        const sandwichTypesStr = formData.get('sandwichTypes');
+        if (sandwichTypesStr) {
+          try {
+            const parsed = JSON.parse(sandwichTypesStr as string);
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+          } catch (e) {
+            console.warn('Failed to parse sandwich types:', e);
+            return null;
+          }
+        }
+        return null;
+      })(),
+      // TSP Contact and planning
+      tspContact: formData.get('tspContact') || null,
+      customTspContact: formData.get('customTspContact') || null,
+      additionalTspContacts: formData.get('additionalTspContacts') || null,
+      // Driver and volunteer requirements
+      driversNeeded: formData.get('driversNeeded')
+        ? parseInt(formData.get('driversNeeded') as string)
+        : 0,
+      speakersNeeded: formData.get('speakersNeeded')
+        ? parseInt(formData.get('speakersNeeded') as string)
+        : 0,
+      volunteersNeeded: formData.get('volunteersNeeded') === 'on',
+      volunteerNotes: formData.get('volunteerNotes') || null,
+      // Van driver assignment
+      vanDriverNeeded: formData.get('vanDriverNeeded') === 'on',
+      assignedVanDriverId: formData.get('assignedVanDriverId') || null,
+      customVanDriverName: formData.get('customVanDriverName') || null,
+      vanDriverNotes: formData.get('vanDriverNotes') || null,
+      planningNotes: formData.get('planningNotes') || null,
+      additionalRequirements: formData.get('additionalRequirements') || null,
+      // Toolkit and communication
+      toolkitStatus: formData.get('toolkitStatus') || null,
+      communicationMethod: formData.get('communicationMethod') || null,
+    };
+
+    markScheduledMutation.mutate(data);
+  };
+
   // Back to top functionality
   useEffect(() => {
     const handleScroll = () => {
@@ -7501,6 +7315,7 @@ export default function EventRequestsManagement() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
 
   return (
     <TooltipProvider>
@@ -8110,6 +7925,7 @@ export default function EventRequestsManagement() {
                 </div>
               )}
             </TabsContent>
+
             <TabsContent value="past" className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm text-gray-600">
@@ -8597,6 +8413,7 @@ export default function EventRequestsManagement() {
             </div>
           </div>
         )}
+
         {/* Edit Dialog */}
         {showEditDialog && selectedRequest && (
           <Dialog
@@ -9124,9 +8941,8 @@ export default function EventRequestsManagement() {
                                 ...currentVolunteers,
                                 e.target.value.trim(),
                               ];
-                              (
-                                selectedRequest as any
-                              ).assignedVolunteerIds = updatedVolunteers;
+                              (selectedRequest as any).assignedVolunteerIds =
+                                updatedVolunteers;
                               e.target.value = '';
                             }
                           }}
@@ -9340,6 +9156,7 @@ export default function EventRequestsManagement() {
             </DialogContent>
           </Dialog>
         )}
+
         {/* Complete Contact Dialog */}
         {showCompleteContactDialog && completingRequest && (
           <Dialog
@@ -10339,21 +10156,590 @@ export default function EventRequestsManagement() {
             </DialogContent>
           </Dialog>
         )}
+
         {/* Comprehensive Scheduling Dialog */}
-        <ScheduleEventDialog
-    open={showSchedulingDialog}
-    onOpenChange={setShowSchedulingDialog}
-    request={schedulingRequest}
-    formData={markScheduledFormData}
-    setFormData={setMarkScheduledFormData}
-    availableDrivers={availableDrivers}
-    users={users}
-    onSubmit={handleScheduleEvent}
-    onCancel={() => {
-      setShowSchedulingDialog(false);
-      setSchedulingRequest(null);
-    }}
-  />
+        {showSchedulingDialog && schedulingRequest && (
+          <Dialog
+            open={showSchedulingDialog}
+            onOpenChange={setShowSchedulingDialog}
+          >
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-teal-600" />
+                  Schedule Event for {schedulingRequest.organizationName}
+                </DialogTitle>
+                <DialogDescription>
+                  Complete all scheduling details to mark this event as
+                  scheduled
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleScheduleEvent} className="space-y-6">
+                {/* Event Date & Time Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-teal-50 to-cyan-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-teal-600" />
+                    Event Date & Time
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="eventStartTime">Event Start Time</Label>
+                      <Input
+                        name="eventStartTime"
+                        type="time"
+                        defaultValue={schedulingRequest.eventStartTime || ''}
+                        className="bg-white"
+                        data-testid="input-event-start-time"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="eventEndTime">Event End Time</Label>
+                      <Input
+                        name="eventEndTime"
+                        type="time"
+                        defaultValue={schedulingRequest.eventEndTime || ''}
+                        className="bg-white"
+                        data-testid="input-event-end-time"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pickupTime">Pickup Time</Label>
+                      <Input
+                        name="pickupTime"
+                        type="time"
+                        defaultValue={schedulingRequest.pickupTime || ''}
+                        className="bg-white"
+                        data-testid="input-pickup-time"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Location & Logistics Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Building className="h-4 w-4 mr-2 text-brand-primary" />
+                    Location & Logistics
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="eventAddress">Event Address</Label>
+                      <Input
+                        name="eventAddress"
+                        defaultValue={schedulingRequest.eventAddress || ''}
+                        placeholder="Full event address"
+                        className="bg-white"
+                        data-testid="input-event-address"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="deliveryDestination">
+                        Delivery Destination
+                      </Label>
+                      <Input
+                        name="deliveryDestination"
+                        defaultValue={
+                          schedulingRequest.deliveryDestination || ''
+                        }
+                        placeholder="Where sandwiches should be delivered"
+                        className="bg-white"
+                        data-testid="input-delivery-destination"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="hasRefrigeration">
+                      Refrigeration Available?
+                    </Label>
+                    {/* Hidden input for form submission */}
+                    <input
+                      type="hidden"
+                      name="hasRefrigeration"
+                      value={markScheduledFormData.hasRefrigeration}
+                    />
+                    <Select
+                      value={markScheduledFormData.hasRefrigeration}
+                      onValueChange={(value) =>
+                        setMarkScheduledFormData((prev) => ({
+                          ...prev,
+                          hasRefrigeration: value || '',
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Not specified</SelectItem>
+                        <SelectItem value="true">
+                          Yes - refrigeration available
+                        </SelectItem>
+                        <SelectItem value="false">
+                          No - no refrigeration
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Sandwich Details Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-orange-50 to-amber-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <TrendingUp className="h-4 w-4 mr-2 text-orange-600" />
+                    Sandwich Requirements
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estimatedSandwichCount">
+                        Estimated Sandwich Count
+                      </Label>
+                      <Input
+                        name="estimatedSandwichCount"
+                        type="number"
+                        min="0"
+                        defaultValue={
+                          schedulingRequest.estimatedSandwichCount || ''
+                        }
+                        placeholder="Total number of sandwiches needed"
+                        className="bg-white"
+                        data-testid="input-sandwich-count"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <div className="flex-1">
+                        <Label className="text-sm font-medium">
+                          Sandwich Types
+                        </Label>
+                        <div className="text-xs text-gray-600 mb-2">
+                          Specify types and quantities
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <SandwichTypesSelector
+                      name="sandwichTypes"
+                      defaultValue={schedulingRequest.sandwichTypes}
+                      estimatedCount={schedulingRequest.estimatedSandwichCount}
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Team Assignment Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-pink-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-purple-600" />
+                    Team & Volunteer Requirements
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="driversNeeded">Drivers Needed</Label>
+                      <Input
+                        name="driversNeeded"
+                        type="number"
+                        min="0"
+                        max="10"
+                        defaultValue={schedulingRequest.driversNeeded || 0}
+                        className="bg-white"
+                        data-testid="input-drivers-needed"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="speakersNeeded">Speakers Needed</Label>
+                      <Input
+                        name="speakersNeeded"
+                        type="number"
+                        min="0"
+                        max="5"
+                        defaultValue={schedulingRequest.speakersNeeded || 0}
+                        className="bg-white"
+                        data-testid="input-speakers-needed"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 mt-6">
+                      <input
+                        type="checkbox"
+                        name="volunteersNeeded"
+                        id="volunteersNeeded"
+                        defaultChecked={schedulingRequest.volunteersNeeded}
+                        className="h-4 w-4 text-purple-600"
+                        data-testid="checkbox-volunteers-needed"
+                      />
+                      <Label htmlFor="volunteersNeeded" className="text-sm">
+                        Additional volunteers needed
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="volunteerNotes">Volunteer Notes</Label>
+                    <Textarea
+                      name="volunteerNotes"
+                      rows={2}
+                      defaultValue={schedulingRequest.volunteerNotes || ''}
+                      placeholder="Special requirements or notes about volunteers needed"
+                      className="bg-white"
+                      data-testid="textarea-volunteer-notes"
+                    />
+                  </div>
+                </div>
+
+                {/* Van Driver Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-indigo-50 to-purple-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Truck className="h-4 w-4 mr-2 text-indigo-600" />
+                    Van Driver Assignment
+                  </h3>
+
+                  {/* Van Driver Needed Checkbox */}
+                  <div className="mb-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="vanDriverNeeded"
+                        id="vanDriverNeeded"
+                        checked={markScheduledFormData.vanDriverNeeded}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          setMarkScheduledFormData((prev) => ({
+                            ...prev,
+                            vanDriverNeeded: isChecked,
+                            // Clear driver fields when unchecked
+                            assignedVanDriverId: isChecked
+                              ? prev.assignedVanDriverId
+                              : '',
+                          }));
+                        }}
+                        className="h-4 w-4 text-indigo-600"
+                        data-testid="checkbox-van-driver-needed"
+                      />
+                      <Label
+                        htmlFor="vanDriverNeeded"
+                        className="text-sm font-medium"
+                      >
+                        Van driver needed for this event
+                      </Label>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 ml-6">
+                      Check if this event requires a van driver for
+                      transportation or logistics
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Assigned Van Driver */}
+                    <div>
+                      <Label htmlFor="assignedVanDriverId">
+                        Assigned Van Driver
+                      </Label>
+                      {/* Hidden input for form submission */}
+                      <input
+                        type="hidden"
+                        name="assignedVanDriverId"
+                        value={markScheduledFormData.assignedVanDriverId}
+                      />
+                      <Select
+                        value={markScheduledFormData.assignedVanDriverId}
+                        onValueChange={(value) =>
+                          setMarkScheduledFormData((prev) => ({
+                            ...prev,
+                            assignedVanDriverId: value || '',
+                          }))
+                        }
+                        disabled={!markScheduledFormData.vanDriverNeeded}
+                      >
+                        <SelectTrigger
+                          className={`bg-white ${
+                            !markScheduledFormData.vanDriverNeeded
+                              ? 'opacity-50'
+                              : ''
+                          }`}
+                        >
+                          <SelectValue placeholder="Select a van driver" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            No driver assigned
+                          </SelectItem>
+                          {availableDrivers
+                            ?.filter((driver: any) => driver.isActive)
+                            .map((driver: any) => (
+                              <SelectItem key={driver.id} value={driver.id}>
+                                {driver.name}{' '}
+                                {driver.vanApproved && '✓ Van Approved'}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Select from available drivers with van approval
+                      </p>
+                    </div>
+
+                    {/* Custom Van Driver Name */}
+                    <div>
+                      <Label htmlFor="customVanDriverName">
+                        Custom Van Driver Name
+                      </Label>
+                      <Input
+                        name="customVanDriverName"
+                        defaultValue={
+                          schedulingRequest.customVanDriverName || ''
+                        }
+                        placeholder="External driver name or contact"
+                        className={`bg-white ${
+                          !markScheduledFormData.vanDriverNeeded
+                            ? 'opacity-50'
+                            : ''
+                        }`}
+                        disabled={!markScheduledFormData.vanDriverNeeded}
+                        data-testid="input-custom-van-driver-name"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        For external drivers not in our system
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Van Driver Notes */}
+                  <div className="mt-4">
+                    <Label htmlFor="vanDriverNotes">Van Driver Notes</Label>
+                    <Textarea
+                      name="vanDriverNotes"
+                      rows={2}
+                      defaultValue={schedulingRequest.vanDriverNotes || ''}
+                      placeholder="Special instructions, vehicle requirements, pickup/drop-off details, etc."
+                      className={`bg-white ${
+                        !markScheduledFormData.vanDriverNeeded
+                          ? 'opacity-50'
+                          : ''
+                      }`}
+                      disabled={!markScheduledFormData.vanDriverNeeded}
+                      data-testid="textarea-van-driver-notes"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">
+                      Any special requirements or instructions for the van
+                      driver
+                    </p>
+                  </div>
+                </div>
+
+                {/* TSP Contact Assignment Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-emerald-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <UserCheck className="h-4 w-4 mr-2 text-green-600" />
+                    TSP Contact Assignment
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="tspContact">Primary TSP Contact</Label>
+                      {/* Hidden input for form submission */}
+                      <input
+                        type="hidden"
+                        name="tspContact"
+                        value={markScheduledFormData.tspContact}
+                      />
+                      <Select
+                        value={markScheduledFormData.tspContact}
+                        onValueChange={(value) =>
+                          setMarkScheduledFormData((prev) => ({
+                            ...prev,
+                            tspContact: value || '',
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select primary contact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            No contact assigned
+                          </SelectItem>
+                          {users?.map((user: any) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.firstName && user.lastName
+                                ? `${user.firstName} ${user.lastName}`
+                                : user.displayName || user.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="customTspContact">
+                        Custom Contact Info
+                      </Label>
+                      <Input
+                        name="customTspContact"
+                        defaultValue={schedulingRequest.customTspContact || ''}
+                        placeholder="Additional contact details"
+                        className="bg-white"
+                        data-testid="input-custom-tsp-contact"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="additionalTspContacts">
+                      Additional TSP Contacts
+                    </Label>
+                    <Input
+                      name="additionalTspContacts"
+                      defaultValue={
+                        schedulingRequest.additionalTspContacts || ''
+                      }
+                      placeholder="Additional team members (comma-separated)"
+                      className="bg-white"
+                      data-testid="input-additional-tsp-contacts"
+                    />
+                  </div>
+                </div>
+
+                {/* Communication & Toolkit Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-yellow-50 to-orange-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Mail className="h-4 w-4 mr-2 text-yellow-600" />
+                    Communication & Toolkit
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="communicationMethod">
+                        Communication Method
+                      </Label>
+                      {/* Hidden input for form submission */}
+                      <input
+                        type="hidden"
+                        name="communicationMethod"
+                        value={markScheduledFormData.communicationMethod}
+                      />
+                      <Select
+                        value={markScheduledFormData.communicationMethod}
+                        onValueChange={(value) =>
+                          setMarkScheduledFormData((prev) => ({
+                            ...prev,
+                            communicationMethod: value || '',
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="How was contact made?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unspecified">
+                            Not specified
+                          </SelectItem>
+                          <SelectItem value="phone">Phone Call</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="in_person">In Person</SelectItem>
+                          <SelectItem value="text">Text Message</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="toolkitStatus">Toolkit Status</Label>
+                      {/* Hidden input for form submission */}
+                      <input
+                        type="hidden"
+                        name="toolkitStatus"
+                        value={markScheduledFormData.toolkitStatus}
+                      />
+                      <Select
+                        value={markScheduledFormData.toolkitStatus}
+                        onValueChange={(value) =>
+                          setMarkScheduledFormData((prev) => ({
+                            ...prev,
+                            toolkitStatus: value || '',
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Toolkit sent status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unspecified">
+                            Not specified
+                          </SelectItem>
+                          <SelectItem value="sent">Toolkit sent</SelectItem>
+                          <SelectItem value="pending">Pending send</SelectItem>
+                          <SelectItem value="not_needed">Not needed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Planning Notes Section */}
+                <div className="border rounded-lg p-4 bg-gradient-to-r from-gray-50 to-slate-50">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                    <Edit className="h-4 w-4 mr-2 text-gray-600" />
+                    Planning Notes & Requirements
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="planningNotes">Planning Notes</Label>
+                      <Textarea
+                        name="planningNotes"
+                        rows={3}
+                        defaultValue={schedulingRequest.planningNotes || ''}
+                        placeholder="Internal planning notes, follow-up tasks, or special considerations"
+                        className="bg-white"
+                        data-testid="textarea-planning-notes"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="additionalRequirements">
+                        Additional Requirements
+                      </Label>
+                      <Textarea
+                        name="additionalRequirements"
+                        rows={2}
+                        defaultValue={
+                          schedulingRequest.additionalRequirements || ''
+                        }
+                        placeholder="Special dietary needs, accessibility requirements, etc."
+                        className="bg-white"
+                        data-testid="textarea-additional-requirements"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-3 pt-6 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowSchedulingDialog(false);
+                      setSchedulingRequest(null);
+                    }}
+                    data-testid="button-cancel-scheduling"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={markScheduledMutation.isPending}
+                    className="bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 text-white px-6"
+                    data-testid="button-confirm-schedule"
+                  >
+                    {markScheduledMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Scheduling...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark as Scheduled
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* TSP Contact Assignment Dialog */}
         {showTspContactDialog && assigningContactRequest && (
@@ -10503,6 +10889,7 @@ export default function EventRequestsManagement() {
             </DialogContent>
           </Dialog>
         )}
+
         {/* Speaker Assignment Dialog */}
         {showSpeakerDialog && assigningSpeakerRequest && (
           <Dialog open={showSpeakerDialog} onOpenChange={setShowSpeakerDialog}>

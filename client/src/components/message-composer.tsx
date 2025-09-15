@@ -93,14 +93,11 @@ export function MessageComposer({
       });
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] }); // Refresh messages
     } catch (error) {
-      // Log to monitoring service in production, e.g., Sentry.captureException(error)
-      let message = 'Failed to send message.';
-      if (error instanceof Error && error.message) {
-        message = error.message;
-      }
+      console.error('Failed to send message:', error);
       toast({
         title: 'Failed to send message',
-        description: message,
+        description:
+          error instanceof Error ? error.message : 'Please try again',
         variant: 'destructive',
       });
     }

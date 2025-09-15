@@ -157,14 +157,10 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
       });
     },
     onError: (error) => {
-      // Log to monitoring service in production, e.g., Sentry.captureException(error)
-      let message = 'Failed to send message.';
-      if (error instanceof Error && error.message) {
-        message = error.message;
-      }
+      console.error('Message sending failed:', error);
       toast({
-        title: 'Message sending failed',
-        description: message,
+        title: 'Error',
+        description: `Failed to send message: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
     },
