@@ -77,6 +77,7 @@ import {
   Shield,
   CalendarPlus,
   ArrowUp,
+  Calculator,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -131,16 +132,18 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0 text-green-600 hover:bg-green-50"
+            className="min-h-[44px] min-w-[44px] p-2 text-green-600 hover:bg-green-50"
             onClick={onSave}
+            data-testid="save-inline-edit"
           >
             ✓
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+            className="min-h-[44px] min-w-[44px] p-2 text-red-600 hover:bg-red-50"
             onClick={onCancel}
+            data-testid="cancel-inline-edit"
           >
             ✗
           </Button>
@@ -1093,6 +1096,32 @@ export default function EventRequestsManagement() {
   });
 
   // Organization counts debug logging (removed for production)
+
+  // Early returns for loading and error states
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8">
+          <p>Loading event requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8 text-red-600">
+          <p>
+            Error loading event requests:{' '}
+            {(error as any)?.message || 'Unknown error'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Helper function to get user display name
   const getUserDisplayName = (userId: string | null | undefined) => {
@@ -2944,67 +2973,326 @@ export default function EventRequestsManagement() {
     );
   };
 
-  // Function to render modern scheduled event cards with improved visual hierarchy
-  const renderScheduledEventCard = (request: EventRequest) => {
-    const getDriverStatus = () => {
-      const driverIds = (request as any).assignedDriverIds || [];
-      const driversNeeded = (request as any).driversNeeded || 0;
-      if (driversNeeded === 0)
-        return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-      if (driverIds.length >= driversNeeded)
-        return { badge: '✓ Arranged', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
-    };
+  // Function to render scheduled event cards with consistent layout matching standard cards
+  const renderScheduledEventCard = (request: EventRequest) => (
+    <Card
+      key={request.id}
+      id={`event-${request.id}`}
+      className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-brand-primary bg-gradient-to-br from-white to-orange-50 ${
+        highlightedEventId === request.id
+          ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100'
+          : ''
+      }`}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="flex items-center space-x-3 text-xl mb-3">
+              <Building className="w-6 h-6" style={{ color: '#236383' }} />
+              <span className="text-gray-900">
+                {request.organizationName}
+                {request.department && (
+                  <span className="text-sm text-gray-600 ml-2">
+                    - {request.department}
+                  </span>
+                )}
+              </span>
+            </CardTitle>
 
-    const getToolkitStatus = () => {
-      const status = (request as any).toolkitStatus || 'not_sent';
-      switch (status) {
-        case 'sent':
-          return { badge: '✓ Delivered', color: 'bg-green-100 text-green-700' };
-        case 'received_confirmed':
-          return { badge: '✓ Confirmed', color: 'bg-green-100 text-green-700' };
-        case 'not_needed':
-          return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-        case 'not_sent':
-          return { badge: 'Not Sent', color: 'bg-gray-200 text-gray-700' };
-        default:
-          return {
-            badge: '⚠️ Pending',
-            color: 'bg-orange-100 text-brand-orange',
-          };
-      }
-    };
+            <div className="space-y-2">
+              {/* Event Date Display */}
+              {request.desiredEventDate && (
+                <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-orange-50 p-2 rounded-lg border border-brand-orange">
+                  <Calendar className="w-5 h-5 text-brand-orange" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-brand-orange uppercase tracking-wide">
+                      Event Date
+                    </span>
+                    <span className="text-sm font-medium text-gray-600">
+                      {(() => {
+                        const dateInfo = formatEventDate(request.desiredEventDate);
+                        return dateInfo.text;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
 
-    const getRefrigerationStatus = () => {
-      if (request.hasRefrigeration === true)
-        return { badge: '✓ Available', color: 'bg-green-100 text-green-700' };
-      if (request.hasRefrigeration === false)
-        return { badge: '❌ None', color: 'bg-red-100 text-red-700' };
-      return { badge: '❓ Unknown', color: 'bg-yellow-100 text-yellow-700' };
-    };
+              {/* Contact Information */}
+              <div className="flex items-center space-x-2">
+                <User className="w-5 h-5" style={{ color: '#236383' }} />
+                <span
+                  className="text-lg font-semibold"
+                  style={{ color: '#236383' }}
+                >
+                  {request.firstName} {request.lastName}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Mail className="w-5 h-5" style={{ color: '#236383' }} />
+                <span
+                  className="text-base font-medium"
+                  style={{ color: '#236383' }}
+                >
+                  {request.email}
+                </span>
+              </div>
+              {request.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-5 h-5" style={{ color: '#236383' }} />
+                  <span
+                    className="text-base font-medium"
+                    style={{ color: '#236383' }}
+                  >
+                    {request.phone}
+                  </span>
+                </div>
+              )}
+              
+              {/* Event Address */}
+              {request.eventAddress && (
+                <div className="flex items-center space-x-2">
+                  <Building className="w-5 h-5" style={{ color: '#236383' }} />
+                  <a
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(
+                      request.eventAddress
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-base font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    📍 {request.eventAddress}
+                  </a>
+                </div>
+              )}
 
-    const getVolunteerStatus = () => {
-      const volunteersNeeded = (request as any).volunteersNeeded || false;
-      const assignedVolunteers = (request as any).assignedVolunteerIds || [];
+              {/* Event Times */}
+              {((request as any).eventStartTime || (request as any).eventEndTime || (request as any).pickupTime) && (
+                <div className="space-y-1">
+                  {(request as any).eventStartTime && (
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Starts: {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).eventStartTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            });
+                          } catch {
+                            return (request as any).eventStartTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).eventEndTime && (
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Ends: {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).eventEndTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            });
+                          } catch {
+                            return (request as any).eventEndTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).pickupTime && (
+                    <div className="flex items-center space-x-2">
+                      <Truck className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Pickup: {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).pickupTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            });
+                          } catch {
+                            return (request as any).pickupTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-      if (!volunteersNeeded)
-        return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-      if (assignedVolunteers.length > 0)
-        return { badge: '✓ Assigned', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
-    };
+              {/* Sandwich Information */}
+              {(request.estimatedSandwichCount || request.sandwichTypes) && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">🥪</span>
+                  <span className="text-base font-medium" style={{ color: '#236383' }}>
+                    {(() => {
+                      const summary = getSandwichTypesSummary(request);
+                      return summary.hasBreakdown ? (
+                        <span>
+                          {summary.total} sandwiches ({summary.breakdown})
+                        </span>
+                      ) : (
+                        <span>{summary.total || 'Unknown'} sandwiches</span>
+                      );
+                    })()}
+                  </span>
+                </div>
+              )}
 
-    const getSpeakerStatus = () => {
-      const userSpeakers = (request as any).assignedSpeakerIds || [];
-      const driverSpeakers = (request as any).assignedDriverSpeakers || [];
-      const totalSpeakers = userSpeakers.length + driverSpeakers.length;
-      const speakersNeeded = (request as any).speakersNeeded || 0;
-      if (speakersNeeded === 0)
-        return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-      if (totalSpeakers >= speakersNeeded)
-        return { badge: '✓ Arranged', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
-    };
+              {/* Assignments Summary */}
+              {(() => {
+                const assignments = [];
+                
+                // Van Driver
+                if ((request as any).vanDriverNeeded) {
+                  const hasVanDriver = (request as any).assignedVanDriverId || (request as any).customVanDriverName;
+                  assignments.push(
+                    <div key="van-driver" className="flex items-center space-x-2">
+                      <Truck className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Van Driver: {hasVanDriver ? '✓ Assigned' : '⚠️ Needed'}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Regular Drivers
+                if ((request as any).driversNeeded > 0) {
+                  const driverIds = (request as any).assignedDriverIds || [];
+                  const driversNeeded = (request as any).driversNeeded || 0;
+                  const status = driverIds.length >= driversNeeded ? '✓ Arranged' : '⚠️ Needed';
+                  assignments.push(
+                    <div key="drivers" className="flex items-center space-x-2">
+                      <Users className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Drivers ({driversNeeded}): {status}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Speakers
+                if ((request as any).speakersNeeded > 0) {
+                  const userSpeakers = (request as any).assignedSpeakerIds || [];
+                  const driverSpeakers = (request as any).assignedDriverSpeakers || [];
+                  const totalSpeakers = userSpeakers.length + driverSpeakers.length;
+                  const speakersNeeded = (request as any).speakersNeeded || 0;
+                  const status = totalSpeakers >= speakersNeeded ? '✓ Arranged' : '⚠️ Needed';
+                  assignments.push(
+                    <div key="speakers" className="flex items-center space-x-2">
+                      <Users className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Speakers ({speakersNeeded}): {status}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Volunteers
+                if ((request as any).volunteersNeeded) {
+                  const assignedVolunteers = (request as any).assignedVolunteerIds || [];
+                  const status = assignedVolunteers.length > 0 ? '✓ Assigned' : '⚠️ Needed';
+                  assignments.push(
+                    <div key="volunteers" className="flex items-center space-x-2">
+                      <Users className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Volunteers: {status}
+                      </span>
+                    </div>
+                  );
+                }
+
+                return assignments;
+              })()}
+
+              {/* Additional Information */}
+              {(request.hasRefrigeration !== undefined || (request as any).toolkitStatus) && (
+                <div className="space-y-1">
+                  {request.hasRefrigeration !== undefined && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">❄️</span>
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Refrigeration: {
+                          request.hasRefrigeration === true
+                            ? '✓ Available'
+                            : request.hasRefrigeration === false
+                            ? '❌ None'
+                            : '❓ Unknown'
+                        }
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).toolkitStatus && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">📋</span>
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Toolkit: {(() => {
+                          const status = (request as any).toolkitStatus;
+                          switch (status) {
+                            case 'sent':
+                              return '✓ Delivered';
+                            case 'received_confirmed':
+                              return '✓ Confirmed';
+                            case 'not_needed':
+                              return 'N/A';
+                            case 'not_sent':
+                              return 'Not Sent';
+                            default:
+                              return '⚠️ Pending';
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end space-y-2">
+            {getStatusDisplay(request.status)}
+            <div className="flex space-x-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setCurrentEditingStatus(request.status);
+                  setShowEditDialog(true);
+                }}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteRequest(request)}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                title="Delete event request"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+    </Card>
+  );
 
     return (
       <Card
@@ -3021,13 +3309,13 @@ export default function EventRequestsManagement() {
         }`}
       >
         {/* Header Section: Organization Name, Date, and Status Badge */}
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {/* For in_process events, show date prominently at the top */}
               {request.status === 'in_process' && request.desiredEventDate && (
-                <div className="flex items-center text-2xl font-bold text-brand-orange mb-3 bg-gradient-to-r from-orange-100 to-yellow-100 p-3 rounded-lg border-2 border-brand-orange">
-                  <Calendar className="w-8 h-8 mr-3" />
+                <div className="flex items-center text-lg font-semibold text-brand-orange mb-2 bg-gradient-to-r from-orange-50 to-yellow-50 px-3 py-2 rounded-lg border border-brand-orange">
+                  <Calendar className="w-5 h-5 mr-2" />
                   <span>
                     {(() => {
                       const dateInfo = formatEventDate(
@@ -3039,19 +3327,19 @@ export default function EventRequestsManagement() {
                 </div>
               )}
               
-              <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-2">
+              <h3 className="text-xl font-bold text-gray-900 leading-tight mb-1">
                 {request.organizationName}
               </h3>
               {request.department && (
-                <p className="text-gray-600 font-medium text-lg mb-3">
+                <p className="text-gray-600 font-medium text-base mb-2">
                   {request.department}
                 </p>
               )}
               
               {/* Event Date for non-in_process events */}
               {request.status !== 'in_process' && request.desiredEventDate && (
-                <div className="flex items-center text-xl font-semibold text-brand-orange mb-2">
-                  <Calendar className="w-6 h-6 mr-2" />
+                <div className="flex items-center text-base font-semibold text-brand-orange mb-2">
+                  <Calendar className="w-4 h-4 mr-2" />
                   <span>
                     {(() => {
                       const dateInfo = formatEventDate(
@@ -3209,15 +3497,15 @@ export default function EventRequestsManagement() {
         </CardHeader>
 
         {/* Body Section: Three Column Layout */}
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-brand-primary">
-              <h4 className="font-bold text-brand-primary text-lg mb-4 flex items-center">
-                <User className="w-5 h-5 mr-2 text-brand-primary" />
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-3 rounded-lg border border-brand-primary">
+              <h4 className="font-semibold text-brand-primary text-base mb-3 flex items-center">
+                <User className="w-4 h-4 mr-2 text-brand-primary" />
                 Contact
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Contact Name */}
                 <div className="flex items-start space-x-3">
                   <User className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
@@ -3297,7 +3585,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('contact');
                             setEditingEventId(request.id);
@@ -3379,7 +3667,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('email');
                             setEditingEventId(request.id);
@@ -3459,7 +3747,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('phone');
                             setEditingEventId(request.id);
@@ -3476,7 +3764,7 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Toolkit Status - moved from Assignments */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-brand-primary border-opacity-20">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-brand-primary border-opacity-20">
                   <div className="flex items-center space-x-2">
                     <span className="text-gray-500 text-sm flex-shrink-0">
                       📋
@@ -3497,12 +3785,12 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-brand-orange">
-              <h4 className="font-bold text-brand-orange text-lg mb-4 flex items-center">
-                <Building className="w-5 h-5 mr-2 text-brand-orange" />
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg border border-brand-orange">
+              <h4 className="font-semibold text-brand-orange text-base mb-3 flex items-center">
+                <Building className="w-4 h-4 mr-2 text-brand-orange" />
                 Event Details
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Address */}
                 <div className="flex items-start space-x-3">
                   <Building className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
@@ -3581,7 +3869,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('address');
                             setEditingEventId(request.id);
@@ -3759,7 +4047,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('sandwichTypes');
                             setEditingEventId(request.id);
@@ -4006,7 +4294,7 @@ export default function EventRequestsManagement() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                              className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                               onClick={() => {
                                 setEditingField('additionalRequirements');
                                 setEditingEventId(request.id);
@@ -4122,7 +4410,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('refrigeration');
                             setEditingEventId(request.id);
@@ -4144,12 +4432,12 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-brand-burgundy">
-              <h4 className="font-bold text-brand-burgundy text-lg mb-4 flex items-center">
-                <span className="inline-block w-5 h-5 mr-2 bg-brand-burgundy rounded-full"></span>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-3 rounded-lg border border-brand-burgundy">
+              <h4 className="font-semibold text-brand-burgundy text-base mb-3 flex items-center">
+                <span className="inline-block w-4 h-4 mr-2 bg-brand-burgundy rounded-full"></span>
                 Assignments
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Driver Status - Only show if drivers are needed */}
                 {((request as any).driversNeeded || 0) > 0 && (
                   <>
@@ -7286,30 +7574,6 @@ export default function EventRequestsManagement() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Event Planning</h1>
-        <div className="text-center py-8">
-          <p>Loading event requests...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Event Planning</h1>
-        <div className="text-center py-8 text-red-600">
-          <p>
-            Error loading event requests:{' '}
-            {(error as any)?.message || 'Unknown error'}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <TooltipProvider>
@@ -7543,21 +7807,22 @@ export default function EventRequestsManagement() {
                   }
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 min-h-[44px] text-base"
+                  data-testid="search-events-input"
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                <div className="flex items-start space-x-2">
                   <input
                     type="checkbox"
                     id="globalSearch"
                     checked={globalSearch}
                     onChange={(e) => setGlobalSearch(e.target.checked)}
-                    className="rounded border-gray-300 focus:ring-teal-500"
+                    className="rounded border-gray-300 focus:ring-teal-500 mt-0.5"
                   />
                   <label
                     htmlFor="globalSearch"
-                    className="text-sm text-gray-600 cursor-pointer"
+                    className="text-sm text-gray-600 cursor-pointer leading-5"
                   >
                     Search across all events (not just current tab)
                   </label>
@@ -7567,12 +7832,12 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <label
                     htmlFor="statusFilter"
-                    className="text-sm text-gray-600"
+                    className="text-sm text-gray-600 whitespace-nowrap"
                   >
                     Filter:
                   </label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-full sm:w-[140px] min-h-[44px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -7597,7 +7862,7 @@ export default function EventRequestsManagement() {
 
             {/* Sorting Controls */}
             <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
-              <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 flex-wrap gap-2 sm:gap-4">
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-medium text-gray-700">
                     Sort by:
@@ -7630,7 +7895,7 @@ export default function EventRequestsManagement() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-full sm:w-[140px] min-h-[44px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -7642,13 +7907,13 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Sort Order Buttons */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Order:</span>
-                  <div className="flex border rounded-md overflow-hidden">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <span className="text-sm text-gray-600 whitespace-nowrap">Order:</span>
+                  <div className="flex border rounded-md overflow-hidden flex-1 sm:flex-none">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`px-3 py-1 rounded-none border-r ${
+                      className={`px-3 py-2 sm:py-1 rounded-none border-r min-h-[44px] sm:min-h-auto flex-1 sm:flex-none ${
                         (activeTab === 'requests'
                           ? requestsSortOrder
                           : activeTab === 'in_process'
@@ -7672,14 +7937,16 @@ export default function EventRequestsManagement() {
                           setPastSortOrder('asc');
                         }
                       }}
+                      data-testid="sort-ascending"
                     >
                       <ArrowUp className="w-4 h-4 mr-1" />
-                      Ascending
+                      <span className="hidden sm:inline">Ascending</span>
+                      <span className="sm:hidden">Asc</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`px-3 py-1 rounded-none ${
+                      className={`px-3 py-2 sm:py-1 rounded-none min-h-[44px] sm:min-h-auto flex-1 sm:flex-none ${
                         (activeTab === 'requests'
                           ? requestsSortOrder
                           : activeTab === 'in_process'
@@ -7703,9 +7970,11 @@ export default function EventRequestsManagement() {
                           setPastSortOrder('desc');
                         }
                       }}
+                      data-testid="sort-descending"
                     >
                       <ArrowUp className="w-4 h-4 mr-1 transform rotate-180" />
-                      Descending
+                      <span className="hidden sm:inline">Descending</span>
+                      <span className="sm:hidden">Desc</span>
                     </Button>
                   </div>
                 </div>

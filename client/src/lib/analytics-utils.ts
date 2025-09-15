@@ -19,7 +19,7 @@ export function calculateGroupSandwiches(
   ) {
     return collection.groupCollections.reduce((sum, group) => {
       // Handle both 'count' and 'sandwichCount' field names for backward compatibility
-      const count = group.count || (group as any).sandwichCount || 0;
+      const count = Number(group.count || (group as any).sandwichCount || 0);
       return sum + count;
     }, 0);
   }
@@ -35,7 +35,7 @@ export function calculateGroupSandwiches(
       const groupData = JSON.parse(collection.groupCollections);
       if (Array.isArray(groupData) && groupData.length > 0) {
         return groupData.reduce((sum, group) => {
-          const count = group.count || group.sandwichCount || 0;
+          const count = Number(group.count || group.sandwichCount || 0);
           return sum + count;
         }, 0);
       }
@@ -46,8 +46,8 @@ export function calculateGroupSandwiches(
   }
 
   // Fallback: Use legacy group1Count + group2Count for older records
-  const group1Count = (collection as any).group1Count || 0;
-  const group2Count = (collection as any).group2Count || 0;
+  const group1Count = Number((collection as any).group1Count || 0);
+  const group2Count = Number((collection as any).group2Count || 0);
   return group1Count + group2Count;
 }
 
@@ -57,7 +57,7 @@ export function calculateGroupSandwiches(
 export function calculateTotalSandwiches(
   collection: SandwichCollection
 ): number {
-  const individual = collection.individualSandwiches || 0;
+  const individual = Number(collection.individualSandwiches || 0);
   const group = calculateGroupSandwiches(collection);
   return individual + group;
 }

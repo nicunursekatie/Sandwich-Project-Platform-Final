@@ -63,6 +63,10 @@ import {
 } from '@shared/auth-utils';
 import type { SandwichCollection, Host } from '@shared/schema';
 import { HelpBubble, helpContent } from '@/components/help-system';
+import { 
+  calculateTotalSandwiches, 
+  calculateGroupSandwiches 
+} from '@/lib/analytics-utils';
 
 interface ImportResult {
   totalRecords: number;
@@ -184,32 +188,9 @@ export default function SandwichCollectionLog() {
   const [newCollectionGroupOnlyMode, setNewCollectionGroupOnlyMode] =
     useState(false);
 
-  // PHASE 6: Standardized group total calculation using new JSONB array structure
-  const calculateGroupTotal = (collection: SandwichCollection) => {
-    // First check if the new groupCollections JSONB array exists and has data
-    if (
-      collection.groupCollections &&
-      Array.isArray(collection.groupCollections) &&
-      collection.groupCollections.length > 0
-    ) {
-      return collection.groupCollections.reduce(
-        (total: number, group: any) => total + (group.count || 0),
-        0
-      );
-    }
-
-    // Fall back to legacy fields for backward compatibility
-    const groupCount1 = (collection as any).group1Count || 0;
-    const groupCount2 = (collection as any).group2Count || 0;
-    return groupCount1 + groupCount2;
-  };
-
-  // PHASE 6: Standardized total calculation - individual + groups
-  const calculateTotal = (collection: SandwichCollection) => {
-    const individual = Number(collection.individualSandwiches || 0);
-    const groupTotal = calculateGroupTotal(collection);
-    return individual + groupTotal;
-  };
+  // Use standardized calculation functions from analytics-utils.ts for data consistency
+  const calculateGroupTotal = calculateGroupSandwiches;
+  const calculateTotal = calculateTotalSandwiches;
 
   // Listen for form open events from dashboard
   useEffect(() => {
@@ -602,22 +583,43 @@ export default function SandwichCollectionLog() {
   });
 
   // Calculate current statistics to display
-  // If we have active filters and filtered data is available, use filtered stats
-  // Otherwise if we need all data (client-side filtering), calculate from current collections
-  // Finally fallback to global stats
-  const currentStats =
-    hasActiveFilters && allFilteredData?.collections
-      ? calculateFilteredStats(allFilteredData.collections)
-      : needsAllData && collections.length > 0
-        ? calculateFilteredStats(collections)
-        : {
-            totalEntries: totalStats?.totalEntries || 0,
-            individualSandwiches: totalStats?.individualSandwiches || 0,
-            groupSandwiches: totalStats?.groupSandwiches || 0,
-            completeTotalSandwiches: totalStats?.completeTotalSandwiches || 0,
-            hostName: null,
-            dateRange: null,
-          };
+  // When filters are active, always calculate from filtered data (never use global stats)
+  // Priority: allFilteredData > current collections > global stats (only when no filters)
+  const currentStats = (() => {
+    // When filters are active, always prioritize filtered data calculations
+    if (hasActiveFilters) {
+      if (allFilteredData?.collections) {
+        return calculateFilteredStats(allFilteredData.collections);
+      } else if (collections.length > 0) {
+        return calculateFilteredStats(collections);
+      } else {
+        // Even with filters active, if no data is available, show zero stats
+        return {
+          totalEntries: 0,
+          individualSandwiches: 0,
+          groupSandwiches: 0,
+          completeTotalSandwiches: 0,
+          hostName: null,
+          dateRange: null,
+        };
+      }
+    }
+    
+    // No filters active - prefer current collections over global stats for consistency
+    if (needsAllData && collections.length > 0) {
+      return calculateFilteredStats(collections);
+    }
+    
+    // Fallback to global stats only when no filters are active and no current data
+    return {
+      totalEntries: totalStats?.totalEntries || 0,
+      individualSandwiches: totalStats?.individualSandwiches || 0,
+      groupSandwiches: totalStats?.groupSandwiches || 0,
+      completeTotalSandwiches: totalStats?.completeTotalSandwiches || 0,
+      hostName: null,
+      dateRange: null,
+    };
+  })();
 
   // When needsAllData is true, filtering and pagination are already handled in the queryFn
   // When needsAllData is false, server-side pagination and sorting are used

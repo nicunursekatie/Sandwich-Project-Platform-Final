@@ -359,9 +359,10 @@ export default function EventRemindersManagement() {
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-brand-primary hover:bg-brand-primary-dark">
+            <Button className="bg-brand-primary hover:bg-brand-primary-dark min-h-[44px] px-4 text-sm font-medium" data-testid="create-reminder-btn">
               <Plus className="h-4 w-4 mr-2" />
-              Create Reminder
+              <span className="hidden sm:inline">Create Reminder</span>
+              <span className="sm:hidden">Create</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
@@ -411,7 +412,7 @@ export default function EventRemindersManagement() {
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={createForm.control}
                     name="reminderType"
@@ -498,18 +499,21 @@ export default function EventRemindersManagement() {
                   )}
                 />
 
-                <div className="flex justify-end gap-2 pt-4">
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsCreateDialogOpen(false)}
+                    className="min-h-[44px] px-6 text-sm font-medium order-2 sm:order-1"
+                    data-testid="cancel-create-reminder"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={createReminderMutation.isPending}
-                    className="bg-brand-primary hover:bg-brand-primary-dark"
+                    className="bg-brand-primary hover:bg-brand-primary-dark min-h-[44px] px-6 text-sm font-medium order-1 sm:order-2"
+                    data-testid="submit-create-reminder"
                   >
                     {createReminderMutation.isPending
                       ? 'Creating...'
@@ -525,7 +529,7 @@ export default function EventRemindersManagement() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -539,7 +543,7 @@ export default function EventRemindersManagement() {
             </div>
 
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -554,7 +558,7 @@ export default function EventRemindersManagement() {
               value={selectedPriority}
               onValueChange={setSelectedPriority}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -619,12 +623,22 @@ export default function EventRemindersManagement() {
 
       {/* Reminders Tabs */}
       <Tabs defaultValue="pending" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pending">
-            Pending ({pendingReminders.length})
+        <TabsList className="w-full h-auto p-1 grid grid-cols-2 gap-1">
+          <TabsTrigger 
+            value="pending" 
+            className="flex-1 px-3 py-3 text-sm sm:text-base min-h-[44px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            data-testid="tab-pending"
+          >
+            <span className="hidden sm:inline">Pending ({pendingReminders.length})</span>
+            <span className="sm:hidden">Pending ({pendingReminders.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed ({completedReminders.length})
+          <TabsTrigger 
+            value="completed" 
+            className="flex-1 px-3 py-3 text-sm sm:text-base min-h-[44px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            data-testid="tab-completed"
+          >
+            <span className="hidden sm:inline">Completed ({completedReminders.length})</span>
+            <span className="sm:hidden">Done ({completedReminders.length})</span>
           </TabsTrigger>
         </TabsList>
 
@@ -643,7 +657,8 @@ export default function EventRemindersManagement() {
                   </p>
                   <Button
                     onClick={() => setIsCreateDialogOpen(true)}
-                    className="bg-brand-primary hover:bg-brand-primary-dark"
+                    className="bg-brand-primary hover:bg-brand-primary-dark min-h-[44px] px-6 text-sm font-medium"
+                    data-testid="create-first-reminder"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create First Reminder
@@ -701,10 +716,12 @@ export default function EventRemindersManagement() {
                         <Button
                           size="sm"
                           onClick={() => openCompleteDialog(reminder)}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 min-h-[44px] px-4 text-sm font-medium"
+                          data-testid={`complete-reminder-${reminder.id}`}
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Complete
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <span className="hidden sm:inline">Complete</span>
+                          <span className="sm:hidden">Done</span>
                         </Button>
                       </div>
                     </div>

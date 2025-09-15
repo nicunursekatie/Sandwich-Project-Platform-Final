@@ -23,7 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   logCorsConfig(); // Log configuration for debugging
   app.use(createCorsMiddleware());
 
-  // Add session middleware with enhanced security
+  // Add session middleware with enhanced security and mobile compatibility
   app.use(
     session({
       store: sessionStore,
@@ -34,7 +34,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secure: process.env.NODE_ENV === 'production', // HTTPS only in production
         httpOnly: true, // Prevent XSS attacks by blocking client-side access
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
-        sameSite: 'lax', // CSRF protection
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for mobile compatibility in production
         domain: undefined, // Let Express auto-detect domain for Replit
       },
       name: 'tsp.session', // Custom session name

@@ -211,23 +211,74 @@ export default function GmailStyleInbox() {
   // Use email system for Gmail inbox
   const apiBase = '/api/emails';
 
-  // Fetch messages from email system - simple flat list
+  // Fetch both regular messages and kudos for unified inbox
   const { data: messages = [], refetch: refetchMessages } = useQuery<any[]>({
     queryKey: [apiBase, activeFolder],
     queryFn: async () => {
-      // Get flat email list for simple inbox view
-      const response = await apiRequest(
-        'GET',
-        `/api/emails?folder=${activeFolder}`
-      );
-      const messages = Array.isArray(response)
-        ? response
-        : response.messages || [];
-
-      console.log(
-        `Fetched ${messages.length} emails from ${activeFolder} folder`
-      );
-      return messages;
+      if (activeFolder === 'kudos') {
+        // If in kudos folder, only show kudos
+        const kudosResponse = await apiRequest('GET', '/api/emails/kudos');
+        const kudos = Array.isArray(kudosResponse) ? kudosResponse : [];
+        
+        // Mark kudos with special type for styling
+        const formattedKudos = kudos.map((kudo: any) => ({
+          ...kudo,
+          messageType: 'kudos',
+          subject: `🏆 Kudos: ${kudo.entityName}`,
+          senderName: kudo.senderName,
+          isRead: kudo.isRead || false,
+        }));
+        
+        console.log(`Fetched ${formattedKudos.length} kudos`);
+        return formattedKudos;
+      } else if (activeFolder === 'inbox') {
+        // For inbox, fetch both emails and kudos, then merge them
+        const [emailsResponse, kudosResponse] = await Promise.all([
+          apiRequest('GET', `/api/emails?folder=${activeFolder}`),
+          apiRequest('GET', '/api/emails/kudos')
+        ]);
+        
+        const emails = Array.isArray(emailsResponse) ? emailsResponse : emailsResponse.messages || [];
+        const kudos = Array.isArray(kudosResponse) ? kudosResponse : [];
+        
+        // Format emails with message type
+        const formattedEmails = emails.map((email: any) => ({
+          ...email,
+          messageType: 'email',
+        }));
+        
+        // Format kudos with special styling info
+        const formattedKudos = kudos.map((kudo: any) => ({
+          ...kudo,
+          messageType: 'kudos',
+          subject: `🏆 Kudos: ${kudo.entityName || 'Your Work'}`,
+          senderName: kudo.senderName,
+          recipientName: user?.firstName + ' ' + user?.lastName || 'You',
+          isRead: kudo.isRead || false,
+        }));
+        
+        // Merge and sort by creation date (newest first)
+        const allMessages = [...formattedEmails, ...formattedKudos].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        console.log(
+          `Fetched ${emails.length} emails and ${kudos.length} kudos, merged into ${allMessages.length} total messages`
+        );
+        return allMessages;
+      } else {
+        // For other folders, only fetch regular emails
+        const response = await apiRequest('GET', `/api/emails?folder=${activeFolder}`);
+        const messages = Array.isArray(response) ? response : response.messages || [];
+        
+        const formattedMessages = messages.map((msg: any) => ({
+          ...msg,
+          messageType: 'email',
+        }));
+        
+        console.log(`Fetched ${formattedMessages.length} emails from ${activeFolder} folder`);
+        return formattedMessages;
+      }
     },
   });
 
@@ -237,48 +288,6 @@ export default function GmailStyleInbox() {
     enabled: activeFolder === 'drafts',
   });
 
-  // Fetch kudos with proper permission check
-  const { data: kudos = [], refetch: refetchKudos } = useQuery({
-    queryKey: ['/api/messaging/kudos/received'],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest(
-          'GET',
-          '/api/messaging/kudos/received'
-        );
-        return response || [];
-      } catch (error) {
-        console.error('Error fetching kudos:', error);
-        return [];
-      }
-    },
-    enabled: !!user && hasPermission(user, PERMISSIONS.VIEW_KUDOS),
-  });
-
-  // Mark individual kudos as read mutation
-  const markKudosAsReadMutation = useMutation({
-    mutationFn: async (messageId: number) => {
-      return apiRequest('POST', `/api/emails/${messageId}/read`);
-    },
-    onSuccess: () => {
-      refetchKudos();
-      queryClient.invalidateQueries({
-        queryKey: ['/api/messaging/kudos/received'],
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/emails'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
-      queryClient.invalidateQueries({
-        queryKey: ['/api/message-notifications/unread-counts'],
-      });
-    },
-    onError: (error) => {
-      console.error('Failed to mark kudos as read:', error);
-    },
-  });
-
-  const markKudosAsRead = (messageId: number) => {
-    markKudosAsReadMutation.mutate(messageId);
-  };
 
   // Auto-save draft mutation
   const saveDraftMutation = useMutation({
@@ -523,7 +532,13 @@ export default function GmailStyleInbox() {
 
     // Mark as read if not already read
     if (!message.isRead) {
-      markAsReadMutation.mutate([message.id]);
+      if (message.messageType === 'kudos') {
+        // For kudos, use the special kudos mark-as-read endpoint
+        markAsReadMutation.mutate([message.id]);
+      } else {
+        // For regular messages, use the regular mark-as-read
+        markAsReadMutation.mutate([message.id]);
+      }
     }
   };
 
@@ -649,7 +664,7 @@ export default function GmailStyleInbox() {
     },
     { id: 'sent', label: 'Sent', icon: Send, count: 0 },
     { id: 'drafts', label: 'Drafts', icon: Edit3, count: drafts.length },
-    { id: 'kudos', label: 'Kudos', icon: Heart, count: getKudosUnreadCount() },
+    { id: 'kudos', label: 'Kudos', icon: Heart, count: getUnreadCount('kudos') },
     {
       id: 'archived',
       label: 'Archived',
@@ -1097,103 +1112,155 @@ export default function GmailStyleInbox() {
           ) : (
             <ScrollArea className="flex-1">
               <div className="divide-y">
-                {filteredMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    onClick={() => handleSelectMessage(message)}
-                    className={`
-                    p-3 lg:p-5 cursor-pointer transition-colors hover:bg-amber-50 font-['Roboto'] border-b border-gray-100
-                    ${
-                      selectedMessage?.id === message.id
-                        ? 'bg-amber-100 border-r-4 border-amber-500 shadow-sm'
-                        : ''
-                    }
-                    ${
-                      !message.isRead
-                        ? 'bg-blue-50 font-bold border-l-4 border-blue-500'
-                        : 'bg-white font-normal'
-                    }
-                  `}
-                  >
-                    <div className="flex items-start gap-2 lg:gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedMessages.has(message.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleToggleSelect(message.id);
-                        }}
-                        className="mt-1 h-4 w-4 text-brand-primary bg-white border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          console.log('Star clicked for message', message.id);
-                        }}
-                        className="mt-1"
-                      >
-                        <Star className="h-4 w-4 text-gray-300" />
-                      </button>
-                      <Avatar className="h-7 w-7 lg:h-8 lg:w-8 flex-shrink-0">
-                        <AvatarFallback className="text-xs bg-gray-200 text-gray-800">
-                          {activeFolder === 'sent'
-                            ? (message.recipientName || 'U')
-                                ?.split(' ')
-                                .map((n: string) => n[0])
-                                .join('')
-                                .toUpperCase() || 'U'
-                            : (message.senderName || 'U')
-                                ?.split(' ')
-                                .map((n: string) => n[0])
-                                .join('')
-                                .toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <div className="flex items-start justify-between mb-2 gap-2">
-                          <p
-                            className={`text-sm flex-1 break-words ${
-                              !message.isRead
-                                ? 'font-bold text-gray-900'
-                                : 'font-medium text-gray-700'
-                            }`}
-                          >
-                            {activeFolder === 'sent'
-                              ? message.recipientName || 'Unknown'
-                              : message.senderName || 'Unknown'}
-                          </p>
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
-                            {(() => {
-                              try {
-                                return message.createdAt
-                                  ? formatDistanceToNow(
-                                      new Date(message.createdAt),
-                                      { addSuffix: true }
-                                    )
-                                  : 'No date';
-                              } catch (error) {
-                                return 'Invalid date';
-                              }
-                            })()}
-                          </span>
-                        </div>
-                        <p
-                          className={`text-sm leading-relaxed ${
-                            !message.isRead
-                              ? 'font-bold text-gray-900'
-                              : 'font-normal text-gray-600'
-                          }`}
-                          style={{
-                            wordBreak: 'break-word',
-                            whiteSpace: 'pre-wrap',
+                {filteredMessages.map((message) => {
+                  const isKudos = message.messageType === 'kudos';
+                  
+                  return (
+                    <div
+                      key={message.id}
+                      onClick={() => handleSelectMessage(message)}
+                      className={`
+                        p-3 lg:p-5 cursor-pointer transition-all duration-200 font-['Roboto'] border-b
+                        ${
+                          isKudos
+                            ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 hover:from-yellow-100 hover:to-orange-100 hover:border-yellow-300 shadow-md border-l-4 border-l-yellow-400'
+                            : selectedMessage?.id === message.id
+                            ? 'bg-amber-100 border-r-4 border-amber-500 shadow-sm'
+                            : !message.isRead
+                            ? 'bg-blue-50 font-bold border-l-4 border-blue-500'
+                            : 'bg-white font-normal'
+                        } hover:bg-amber-50 border-gray-100
+                        ${isKudos && !message.isRead ? 'animate-pulse' : ''}
+                      `}
+                    >
+                      <div className="flex items-start gap-2 lg:gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedMessages.has(message.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelect(message.id);
                           }}
+                          className="mt-1 h-4 w-4 text-brand-primary bg-white border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        
+                        {/* Kudos trophy icon or regular star */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log('Star clicked for message', message.id);
+                          }}
+                          className="mt-1"
                         >
-                          {message.content}
-                        </p>
+                          {isKudos ? (
+                            <div className={`p-1 rounded-full ${
+                              !message.isRead ? 'bg-yellow-100' : 'bg-yellow-50'
+                            }`}>
+                              <Trophy className={`h-4 w-4 ${
+                                !message.isRead ? 'text-yellow-600' : 'text-yellow-500'
+                              }`} />
+                            </div>
+                          ) : (
+                            <Star className="h-4 w-4 text-gray-300" />
+                          )}
+                        </button>
+                        
+                        <Avatar className={`h-7 w-7 lg:h-8 lg:w-8 flex-shrink-0 ${
+                          isKudos ? 'ring-2 ring-yellow-200' : ''
+                        }`}>
+                          <AvatarFallback className={`text-xs ${
+                            isKudos ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-800'
+                          }`}>
+                            {activeFolder === 'sent'
+                              ? (message.recipientName || 'U')
+                                  ?.split(' ')
+                                  .map((n: string) => n[0])
+                                  .join('')
+                                  .toUpperCase() || 'U'
+                              : (message.senderName || 'U')
+                                  ?.split(' ')
+                                  .map((n: string) => n[0])
+                                  .join('')
+                                  .toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex items-start justify-between mb-2 gap-2">
+                            <div className="flex items-center gap-2 flex-1">
+                              <p
+                                className={`text-sm break-words ${
+                                  isKudos
+                                    ? 'font-bold text-yellow-800'
+                                    : !message.isRead
+                                    ? 'font-bold text-gray-900'
+                                    : 'font-medium text-gray-700'
+                                }`}
+                              >
+                                {isKudos && '🏆 '}
+                                {activeFolder === 'sent'
+                                  ? message.recipientName || 'Unknown'
+                                  : message.senderName || 'Unknown'}
+                              </p>
+                              {isKudos && (
+                                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs px-2 py-0.5 ml-2">
+                                  Kudos
+                                </Badge>
+                              )}
+                            </div>
+                            <span className={`text-xs whitespace-nowrap ${
+                              isKudos ? 'text-yellow-600 font-medium' : 'text-gray-500'
+                            }`}>
+                              {(() => {
+                                try {
+                                  return message.createdAt
+                                    ? formatDistanceToNow(
+                                        new Date(message.createdAt),
+                                        { addSuffix: true }
+                                      )
+                                    : 'No date';
+                                } catch (error) {
+                                  return 'Invalid date';
+                                }
+                              })()}
+                            </span>
+                          </div>
+                          
+                          {/* Show subject for kudos */}
+                          {isKudos && message.subject && (
+                            <p className="text-sm font-semibold text-yellow-700 mb-1">
+                              🎉 {message.subject}
+                            </p>
+                          )}
+                          
+                          <p
+                            className={`text-sm leading-relaxed ${
+                              isKudos
+                                ? 'font-medium text-gray-700'
+                                : !message.isRead
+                                ? 'font-bold text-gray-900'
+                                : 'font-normal text-gray-600'
+                            }`}
+                            style={{
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                            }}
+                          >
+                            {message.content}
+                          </p>
+                          
+                          {/* Show context for kudos */}
+                          {isKudos && message.entityName && (
+                            <div className="mt-2">
+                              <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-300">
+                                {message.contextType === 'task' ? '📋 Task' : '📁 Project'}: {message.entityName}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {filteredMessages.length === 0 && (
                   <div className="p-8 text-center text-gray-500">

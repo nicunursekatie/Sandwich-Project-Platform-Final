@@ -42,11 +42,27 @@ router.get(
 
 // Weekly monitoring endpoints (all require authentication)
 router.get(
+  '/monitoring/weekly-status/:weeksAgo',
+  ...createStandardMiddleware(),
+  async (req, res) => {
+    try {
+      const weeksAgo = parseInt(req.params.weeksAgo, 10) || 0;
+      const submissionStatus = await CoreService.getWeeklyMonitoringStatus(weeksAgo);
+      res.json(submissionStatus);
+    } catch (error) {
+      console.error('Error checking weekly submissions:', error);
+      res.status(500).json({ error: 'Failed to check weekly submissions' });
+    }
+  }
+);
+
+// Legacy route for backward compatibility (defaults to current week)
+router.get(
   '/monitoring/weekly-status',
   ...createStandardMiddleware(),
   async (req, res) => {
     try {
-      const submissionStatus = await CoreService.getWeeklyMonitoringStatus();
+      const submissionStatus = await CoreService.getWeeklyMonitoringStatus(0);
       res.json(submissionStatus);
     } catch (error) {
       console.error('Error checking weekly submissions:', error);
