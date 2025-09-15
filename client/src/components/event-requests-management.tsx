@@ -1097,6 +1097,32 @@ export default function EventRequestsManagement() {
 
   // Organization counts debug logging (removed for production)
 
+  // Early returns for loading and error states
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8">
+          <p>Loading event requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Event Planning</h1>
+        <div className="text-center py-8 text-red-600">
+          <p>
+            Error loading event requests:{' '}
+            {(error as any)?.message || 'Unknown error'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Helper function to get user display name
   const getUserDisplayName = (userId: string | null | undefined) => {
     if (!userId) return 'Not specified';
@@ -2947,67 +2973,326 @@ export default function EventRequestsManagement() {
     );
   };
 
-  // Function to render modern scheduled event cards with improved visual hierarchy
-  const renderScheduledEventCard = (request: EventRequest) => {
-    const getDriverStatus = () => {
-      const driverIds = (request as any).assignedDriverIds || [];
-      const driversNeeded = (request as any).driversNeeded || 0;
-      if (driversNeeded === 0)
-        return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-      if (driverIds.length >= driversNeeded)
-        return { badge: '✓ Arranged', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
-    };
+  // Function to render scheduled event cards with consistent layout matching standard cards
+  const renderScheduledEventCard = (request: EventRequest) => (
+    <Card
+      key={request.id}
+      id={`event-${request.id}`}
+      className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-brand-primary bg-gradient-to-br from-white to-orange-50 ${
+        highlightedEventId === request.id
+          ? 'ring-4 ring-yellow-400 bg-gradient-to-br from-yellow-100 to-orange-100'
+          : ''
+      }`}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="flex items-center space-x-3 text-xl mb-3">
+              <Building className="w-6 h-6" style={{ color: '#236383' }} />
+              <span className="text-gray-900">
+                {request.organizationName}
+                {request.department && (
+                  <span className="text-sm text-gray-600 ml-2">
+                    - {request.department}
+                  </span>
+                )}
+              </span>
+            </CardTitle>
 
-    const getToolkitStatus = () => {
-      const status = (request as any).toolkitStatus || 'not_sent';
-      switch (status) {
-        case 'sent':
-          return { badge: '✓ Delivered', color: 'bg-green-100 text-green-700' };
-        case 'received_confirmed':
-          return { badge: '✓ Confirmed', color: 'bg-green-100 text-green-700' };
-        case 'not_needed':
-          return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-        case 'not_sent':
-          return { badge: 'Not Sent', color: 'bg-gray-200 text-gray-700' };
-        default:
-          return {
-            badge: '⚠️ Pending',
-            color: 'bg-orange-100 text-brand-orange',
-          };
-      }
-    };
+            <div className="space-y-2">
+              {/* Event Date Display */}
+              {request.desiredEventDate && (
+                <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-orange-50 p-2 rounded-lg border border-brand-orange">
+                  <Calendar className="w-5 h-5 text-brand-orange" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-brand-orange uppercase tracking-wide">
+                      Event Date
+                    </span>
+                    <span className="text-sm font-medium text-gray-600">
+                      {(() => {
+                        const dateInfo = formatEventDate(request.desiredEventDate);
+                        return dateInfo.text;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
 
-    const getRefrigerationStatus = () => {
-      if (request.hasRefrigeration === true)
-        return { badge: '✓ Available', color: 'bg-green-100 text-green-700' };
-      if (request.hasRefrigeration === false)
-        return { badge: '❌ None', color: 'bg-red-100 text-red-700' };
-      return { badge: '❓ Unknown', color: 'bg-yellow-100 text-yellow-700' };
-    };
+              {/* Contact Information */}
+              <div className="flex items-center space-x-2">
+                <User className="w-5 h-5" style={{ color: '#236383' }} />
+                <span
+                  className="text-lg font-semibold"
+                  style={{ color: '#236383' }}
+                >
+                  {request.firstName} {request.lastName}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Mail className="w-5 h-5" style={{ color: '#236383' }} />
+                <span
+                  className="text-base font-medium"
+                  style={{ color: '#236383' }}
+                >
+                  {request.email}
+                </span>
+              </div>
+              {request.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-5 h-5" style={{ color: '#236383' }} />
+                  <span
+                    className="text-base font-medium"
+                    style={{ color: '#236383' }}
+                  >
+                    {request.phone}
+                  </span>
+                </div>
+              )}
+              
+              {/* Event Address */}
+              {request.eventAddress && (
+                <div className="flex items-center space-x-2">
+                  <Building className="w-5 h-5" style={{ color: '#236383' }} />
+                  <a
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(
+                      request.eventAddress
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-base font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    📍 {request.eventAddress}
+                  </a>
+                </div>
+              )}
 
-    const getVolunteerStatus = () => {
-      const volunteersNeeded = (request as any).volunteersNeeded || false;
-      const assignedVolunteers = (request as any).assignedVolunteerIds || [];
+              {/* Event Times */}
+              {((request as any).eventStartTime || (request as any).eventEndTime || (request as any).pickupTime) && (
+                <div className="space-y-1">
+                  {(request as any).eventStartTime && (
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Starts: {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).eventStartTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            });
+                          } catch {
+                            return (request as any).eventStartTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).eventEndTime && (
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Ends: {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).eventEndTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            });
+                          } catch {
+                            return (request as any).eventEndTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).pickupTime && (
+                    <div className="flex items-center space-x-2">
+                      <Truck className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Pickup: {(() => {
+                          try {
+                            const [hours, minutes] = (request as any).pickupTime.split(':');
+                            const time = new Date();
+                            time.setHours(parseInt(hours), parseInt(minutes));
+                            return time.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            });
+                          } catch {
+                            return (request as any).pickupTime;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-      if (!volunteersNeeded)
-        return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-      if (assignedVolunteers.length > 0)
-        return { badge: '✓ Assigned', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
-    };
+              {/* Sandwich Information */}
+              {(request.estimatedSandwichCount || request.sandwichTypes) && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">🥪</span>
+                  <span className="text-base font-medium" style={{ color: '#236383' }}>
+                    {(() => {
+                      const summary = getSandwichTypesSummary(request);
+                      return summary.hasBreakdown ? (
+                        <span>
+                          {summary.total} sandwiches ({summary.breakdown})
+                        </span>
+                      ) : (
+                        <span>{summary.total || 'Unknown'} sandwiches</span>
+                      );
+                    })()}
+                  </span>
+                </div>
+              )}
 
-    const getSpeakerStatus = () => {
-      const userSpeakers = (request as any).assignedSpeakerIds || [];
-      const driverSpeakers = (request as any).assignedDriverSpeakers || [];
-      const totalSpeakers = userSpeakers.length + driverSpeakers.length;
-      const speakersNeeded = (request as any).speakersNeeded || 0;
-      if (speakersNeeded === 0)
-        return { badge: 'N/A', color: 'bg-gray-100 text-gray-600' };
-      if (totalSpeakers >= speakersNeeded)
-        return { badge: '✓ Arranged', color: 'bg-green-100 text-green-700' };
-      return { badge: '⚠️ Needed', color: 'bg-orange-100 text-brand-orange' };
-    };
+              {/* Assignments Summary */}
+              {(() => {
+                const assignments = [];
+                
+                // Van Driver
+                if ((request as any).vanDriverNeeded) {
+                  const hasVanDriver = (request as any).assignedVanDriverId || (request as any).customVanDriverName;
+                  assignments.push(
+                    <div key="van-driver" className="flex items-center space-x-2">
+                      <Truck className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Van Driver: {hasVanDriver ? '✓ Assigned' : '⚠️ Needed'}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Regular Drivers
+                if ((request as any).driversNeeded > 0) {
+                  const driverIds = (request as any).assignedDriverIds || [];
+                  const driversNeeded = (request as any).driversNeeded || 0;
+                  const status = driverIds.length >= driversNeeded ? '✓ Arranged' : '⚠️ Needed';
+                  assignments.push(
+                    <div key="drivers" className="flex items-center space-x-2">
+                      <Users className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Drivers ({driversNeeded}): {status}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Speakers
+                if ((request as any).speakersNeeded > 0) {
+                  const userSpeakers = (request as any).assignedSpeakerIds || [];
+                  const driverSpeakers = (request as any).assignedDriverSpeakers || [];
+                  const totalSpeakers = userSpeakers.length + driverSpeakers.length;
+                  const speakersNeeded = (request as any).speakersNeeded || 0;
+                  const status = totalSpeakers >= speakersNeeded ? '✓ Arranged' : '⚠️ Needed';
+                  assignments.push(
+                    <div key="speakers" className="flex items-center space-x-2">
+                      <Users className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Speakers ({speakersNeeded}): {status}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Volunteers
+                if ((request as any).volunteersNeeded) {
+                  const assignedVolunteers = (request as any).assignedVolunteerIds || [];
+                  const status = assignedVolunteers.length > 0 ? '✓ Assigned' : '⚠️ Needed';
+                  assignments.push(
+                    <div key="volunteers" className="flex items-center space-x-2">
+                      <Users className="w-5 h-5" style={{ color: '#236383' }} />
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Volunteers: {status}
+                      </span>
+                    </div>
+                  );
+                }
+
+                return assignments;
+              })()}
+
+              {/* Additional Information */}
+              {(request.hasRefrigeration !== undefined || (request as any).toolkitStatus) && (
+                <div className="space-y-1">
+                  {request.hasRefrigeration !== undefined && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">❄️</span>
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Refrigeration: {
+                          request.hasRefrigeration === true
+                            ? '✓ Available'
+                            : request.hasRefrigeration === false
+                            ? '❌ None'
+                            : '❓ Unknown'
+                        }
+                      </span>
+                    </div>
+                  )}
+                  {(request as any).toolkitStatus && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">📋</span>
+                      <span className="text-base font-medium" style={{ color: '#236383' }}>
+                        Toolkit: {(() => {
+                          const status = (request as any).toolkitStatus;
+                          switch (status) {
+                            case 'sent':
+                              return '✓ Delivered';
+                            case 'received_confirmed':
+                              return '✓ Confirmed';
+                            case 'not_needed':
+                              return 'N/A';
+                            case 'not_sent':
+                              return 'Not Sent';
+                            default:
+                              return '⚠️ Pending';
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end space-y-2">
+            {getStatusDisplay(request.status)}
+            <div className="flex space-x-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setCurrentEditingStatus(request.status);
+                  setShowEditDialog(true);
+                }}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteRequest(request)}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                title="Delete event request"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+    </Card>
+  );
 
     return (
       <Card
@@ -7289,30 +7574,6 @@ export default function EventRequestsManagement() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Event Planning</h1>
-        <div className="text-center py-8">
-          <p>Loading event requests...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Event Planning</h1>
-        <div className="text-center py-8 text-red-600">
-          <p>
-            Error loading event requests:{' '}
-            {(error as any)?.message || 'Unknown error'}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <TooltipProvider>
