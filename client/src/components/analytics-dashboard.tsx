@@ -142,25 +142,47 @@ export default function AnalyticsDashboard() {
       monthlyTrends
     );
 
-    const trendData = Object.values(monthlyTrends)
-      .sort((a, b) => a.month.localeCompare(b.month))
-      .slice(-12) // Last 12 months
-      .map((m) => {
-        const date = new Date(m.month + '-01');
-        const monthName = date.toLocaleDateString('en-US', {
-          month: 'short',
-          year: '2-digit',
-        });
-        return {
-          month: monthName,
-          sandwiches: m.sandwiches,
-        };
+    // Create a proper rolling 12-month window for chronological display
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth(); // 0-based (0 = January)
+    
+    // Generate last 12 months in chronological order (oldest to newest)
+    const last12Months: { month: string; sandwiches: number }[] = [];
+    
+    for (let i = 11; i >= 0; i--) {
+      const targetDate = new Date(currentYear, currentMonth - i, 1);
+      const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Get data for this month, or 0 if no data
+      const monthData = monthlyTrends[monthKey];
+      const sandwiches = monthData ? monthData.sandwiches : 0;
+      
+      // Format month name for display
+      const monthName = targetDate.toLocaleDateString('en-US', {
+        month: 'short',
+        year: '2-digit',
       });
+      
+      last12Months.push({
+        month: monthName,
+        sandwiches: sandwiches,
+      });
+    }
+    
+    const trendData = last12Months;
 
     console.log(
-      '📈 Analytics Dashboard: Final trend data for chart:',
+      '📈 Analytics Dashboard: Final trend data for chart (chronological):',
       trendData
     );
+    
+    // Debug: Show the chronological range
+    if (trendData.length > 0) {
+      console.log(
+        `📅 Chart timeline: ${trendData[0].month} → ${trendData[trendData.length - 1].month} (${trendData.length} months)`
+      );
+    }
 
     // Top performing hosts
     const topHosts = Object.entries(hostStats)
