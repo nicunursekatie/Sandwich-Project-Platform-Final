@@ -3024,13 +3024,13 @@ export default function EventRequestsManagement() {
         }`}
       >
         {/* Header Section: Organization Name, Date, and Status Badge */}
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {/* For in_process events, show date prominently at the top */}
               {request.status === 'in_process' && request.desiredEventDate && (
-                <div className="flex items-center text-2xl font-bold text-brand-orange mb-3 bg-gradient-to-r from-orange-100 to-yellow-100 p-3 rounded-lg border-2 border-brand-orange">
-                  <Calendar className="w-8 h-8 mr-3" />
+                <div className="flex items-center text-lg font-semibold text-brand-orange mb-2 bg-gradient-to-r from-orange-50 to-yellow-50 px-3 py-2 rounded-lg border border-brand-orange">
+                  <Calendar className="w-5 h-5 mr-2" />
                   <span>
                     {(() => {
                       const dateInfo = formatEventDate(
@@ -3042,19 +3042,19 @@ export default function EventRequestsManagement() {
                 </div>
               )}
               
-              <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-2">
+              <h3 className="text-xl font-bold text-gray-900 leading-tight mb-1">
                 {request.organizationName}
               </h3>
               {request.department && (
-                <p className="text-gray-600 font-medium text-lg mb-3">
+                <p className="text-gray-600 font-medium text-base mb-2">
                   {request.department}
                 </p>
               )}
               
               {/* Event Date for non-in_process events */}
               {request.status !== 'in_process' && request.desiredEventDate && (
-                <div className="flex items-center text-xl font-semibold text-brand-orange mb-2">
-                  <Calendar className="w-6 h-6 mr-2" />
+                <div className="flex items-center text-base font-semibold text-brand-orange mb-2">
+                  <Calendar className="w-4 h-4 mr-2" />
                   <span>
                     {(() => {
                       const dateInfo = formatEventDate(
@@ -3212,15 +3212,15 @@ export default function EventRequestsManagement() {
         </CardHeader>
 
         {/* Body Section: Three Column Layout */}
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* Left Column: Contact Information */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-brand-primary">
-              <h4 className="font-bold text-brand-primary text-lg mb-4 flex items-center">
-                <User className="w-5 h-5 mr-2 text-brand-primary" />
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-3 rounded-lg border border-brand-primary">
+              <h4 className="font-semibold text-brand-primary text-base mb-3 flex items-center">
+                <User className="w-4 h-4 mr-2 text-brand-primary" />
                 Contact
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Contact Name */}
                 <div className="flex items-start space-x-3">
                   <User className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
@@ -3479,7 +3479,7 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Toolkit Status - moved from Assignments */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-brand-primary border-opacity-20">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-brand-primary border-opacity-20">
                   <div className="flex items-center space-x-2">
                     <span className="text-gray-500 text-sm flex-shrink-0">
                       📋
@@ -3500,12 +3500,12 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Center Column: Event Logistics */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-brand-orange">
-              <h4 className="font-bold text-brand-orange text-lg mb-4 flex items-center">
-                <Building className="w-5 h-5 mr-2 text-brand-orange" />
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg border border-brand-orange">
+              <h4 className="font-semibold text-brand-orange text-base mb-3 flex items-center">
+                <Building className="w-4 h-4 mr-2 text-brand-orange" />
                 Event Details
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Address */}
                 <div className="flex items-start space-x-3">
                   <Building className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
@@ -4147,12 +4147,12 @@ export default function EventRequestsManagement() {
             </div>
 
             {/* Right Column: Status & Assignments */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-brand-burgundy">
-              <h4 className="font-bold text-brand-burgundy text-lg mb-4 flex items-center">
-                <span className="inline-block w-5 h-5 mr-2 bg-brand-burgundy rounded-full"></span>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-3 rounded-lg border border-brand-burgundy">
+              <h4 className="font-semibold text-brand-burgundy text-base mb-3 flex items-center">
+                <span className="inline-block w-4 h-4 mr-2 bg-brand-burgundy rounded-full"></span>
                 Assignments
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Driver Status - Only show if drivers are needed */}
                 {((request as any).driversNeeded || 0) > 0 && (
                   <>
