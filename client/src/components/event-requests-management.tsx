@@ -3290,12 +3290,6 @@ export default function EventRequestsManagement() {
       </CardHeader>
     </Card>
   );
-<<<<<<< HEAD
-
-  // Render functions for different card types
-
-};
-=======
     return (
       <Card
         key={request.id}
@@ -11642,4 +11636,3 @@ export default function EventRequestsManagement() {
     </TooltipProvider>
   );
 }
->>>>>>> f637a054308af98ad124e6eb6762d0a1f2bd2712
