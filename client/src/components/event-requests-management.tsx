@@ -7501,6 +7501,7 @@ export default function EventRequestsManagement() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
