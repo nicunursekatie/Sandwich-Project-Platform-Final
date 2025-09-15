@@ -63,6 +63,10 @@ import {
 } from '@shared/auth-utils';
 import type { SandwichCollection, Host } from '@shared/schema';
 import { HelpBubble, helpContent } from '@/components/help-system';
+import { 
+  calculateTotalSandwiches, 
+  calculateGroupSandwiches 
+} from '@/lib/analytics-utils';
 
 interface ImportResult {
   totalRecords: number;
@@ -184,32 +188,9 @@ export default function SandwichCollectionLog() {
   const [newCollectionGroupOnlyMode, setNewCollectionGroupOnlyMode] =
     useState(false);
 
-  // PHASE 6: Standardized group total calculation using new JSONB array structure
-  const calculateGroupTotal = (collection: SandwichCollection) => {
-    // First check if the new groupCollections JSONB array exists and has data
-    if (
-      collection.groupCollections &&
-      Array.isArray(collection.groupCollections) &&
-      collection.groupCollections.length > 0
-    ) {
-      return collection.groupCollections.reduce(
-        (total: number, group: any) => total + (group.count || 0),
-        0
-      );
-    }
-
-    // Fall back to legacy fields for backward compatibility
-    const groupCount1 = (collection as any).group1Count || 0;
-    const groupCount2 = (collection as any).group2Count || 0;
-    return groupCount1 + groupCount2;
-  };
-
-  // PHASE 6: Standardized total calculation - individual + groups
-  const calculateTotal = (collection: SandwichCollection) => {
-    const individual = Number(collection.individualSandwiches || 0);
-    const groupTotal = calculateGroupTotal(collection);
-    return individual + groupTotal;
-  };
+  // Use standardized calculation functions from analytics-utils.ts for data consistency
+  const calculateGroupTotal = calculateGroupSandwiches;
+  const calculateTotal = calculateTotalSandwiches;
 
   // Listen for form open events from dashboard
   useEffect(() => {

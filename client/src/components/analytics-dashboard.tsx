@@ -108,6 +108,13 @@ export default function AnalyticsDashboard() {
       collections.length,
       'collections for monthly trends'
     );
+    
+    // Count August 2025 collections before processing
+    const august2025Collections = collections.filter(c => 
+      safeMonthKey(c.collectionDate || '') === '2025-08'
+    );
+    console.log(`📊 Analytics Dashboard: Found ${august2025Collections.length} collections for August 2025`);
+    
     const monthlyTrends = collections.reduce(
       (acc, c) => {
         const monthKey = safeMonthKey(c.collectionDate || '');
@@ -120,9 +127,9 @@ export default function AnalyticsDashboard() {
         }
         acc[monthKey].sandwiches += sandwiches;
 
-        // Debug August specifically
-        if (monthKey === '2024-08') {
-          console.log(`📅 August 2024 collection:`, {
+        // Debug August 2025 specifically to match Collections page data
+        if (monthKey === '2025-08') {
+          console.log(`📅 August 2025 collection:`, {
             date: c.collectionDate,
             host: c.hostName,
             individual: c.individualSandwiches,
@@ -136,6 +143,16 @@ export default function AnalyticsDashboard() {
       },
       {} as Record<string, { month: string; sandwiches: number }>
     );
+    
+    // Log August 2025 final total for comparison with Collections page
+    const august2025Total = monthlyTrends['2025-08']?.sandwiches || 0;
+    console.log(`🎯 Analytics Dashboard: August 2025 FINAL TOTAL = ${august2025Total.toLocaleString()} sandwiches`);
+    console.log(`🎯 Expected from Collections page: 26,009 sandwiches`);
+    console.log(`🎯 Match status: ${august2025Total === 26009 ? '✅ MATCH' : '❌ MISMATCH'}`);
+    
+    if (august2025Total !== 26009) {
+      console.log(`🔍 Difference: ${august2025Total - 26009} sandwiches`);
+    }
 
     console.log(
       '📊 Analytics Dashboard: Monthly trends calculated:',
