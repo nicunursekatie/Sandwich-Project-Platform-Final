@@ -131,16 +131,18 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0 text-green-600 hover:bg-green-50"
+            className="min-h-[44px] min-w-[44px] p-2 text-green-600 hover:bg-green-50"
             onClick={onSave}
+            data-testid="save-inline-edit"
           >
             ✓
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+            className="min-h-[44px] min-w-[44px] p-2 text-red-600 hover:bg-red-50"
             onClick={onCancel}
+            data-testid="cancel-inline-edit"
           >
             ✗
           </Button>
@@ -3297,7 +3299,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('contact');
                             setEditingEventId(request.id);
@@ -3379,7 +3381,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('email');
                             setEditingEventId(request.id);
@@ -3459,7 +3461,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('phone');
                             setEditingEventId(request.id);
@@ -3581,7 +3583,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('address');
                             setEditingEventId(request.id);
@@ -3759,7 +3761,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('sandwichTypes');
                             setEditingEventId(request.id);
@@ -4006,7 +4008,7 @@ export default function EventRequestsManagement() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                              className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                               onClick={() => {
                                 setEditingField('additionalRequirements');
                                 setEditingEventId(request.id);
@@ -4122,7 +4124,7 @@ export default function EventRequestsManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          className="min-h-[44px] min-w-[44px] p-2 opacity-60 hover:opacity-100"
                           onClick={() => {
                             setEditingField('refrigeration');
                             setEditingEventId(request.id);
@@ -7543,21 +7545,22 @@ export default function EventRequestsManagement() {
                   }
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 min-h-[44px] text-base"
+                  data-testid="search-events-input"
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                <div className="flex items-start space-x-2">
                   <input
                     type="checkbox"
                     id="globalSearch"
                     checked={globalSearch}
                     onChange={(e) => setGlobalSearch(e.target.checked)}
-                    className="rounded border-gray-300 focus:ring-teal-500"
+                    className="rounded border-gray-300 focus:ring-teal-500 mt-0.5"
                   />
                   <label
                     htmlFor="globalSearch"
-                    className="text-sm text-gray-600 cursor-pointer"
+                    className="text-sm text-gray-600 cursor-pointer leading-5"
                   >
                     Search across all events (not just current tab)
                   </label>
@@ -7567,12 +7570,12 @@ export default function EventRequestsManagement() {
                 <div className="flex items-center space-x-2">
                   <label
                     htmlFor="statusFilter"
-                    className="text-sm text-gray-600"
+                    className="text-sm text-gray-600 whitespace-nowrap"
                   >
                     Filter:
                   </label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-full sm:w-[140px] min-h-[44px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -7597,7 +7600,7 @@ export default function EventRequestsManagement() {
 
             {/* Sorting Controls */}
             <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
-              <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 flex-wrap gap-2 sm:gap-4">
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-medium text-gray-700">
                     Sort by:
@@ -7630,7 +7633,7 @@ export default function EventRequestsManagement() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-full sm:w-[140px] min-h-[44px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -7642,13 +7645,13 @@ export default function EventRequestsManagement() {
                 </div>
 
                 {/* Sort Order Buttons */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Order:</span>
-                  <div className="flex border rounded-md overflow-hidden">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <span className="text-sm text-gray-600 whitespace-nowrap">Order:</span>
+                  <div className="flex border rounded-md overflow-hidden flex-1 sm:flex-none">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`px-3 py-1 rounded-none border-r ${
+                      className={`px-3 py-2 sm:py-1 rounded-none border-r min-h-[44px] sm:min-h-auto flex-1 sm:flex-none ${
                         (activeTab === 'requests'
                           ? requestsSortOrder
                           : activeTab === 'in_process'
@@ -7672,14 +7675,16 @@ export default function EventRequestsManagement() {
                           setPastSortOrder('asc');
                         }
                       }}
+                      data-testid="sort-ascending"
                     >
                       <ArrowUp className="w-4 h-4 mr-1" />
-                      Ascending
+                      <span className="hidden sm:inline">Ascending</span>
+                      <span className="sm:hidden">Asc</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`px-3 py-1 rounded-none ${
+                      className={`px-3 py-2 sm:py-1 rounded-none min-h-[44px] sm:min-h-auto flex-1 sm:flex-none ${
                         (activeTab === 'requests'
                           ? requestsSortOrder
                           : activeTab === 'in_process'
@@ -7703,9 +7708,11 @@ export default function EventRequestsManagement() {
                           setPastSortOrder('desc');
                         }
                       }}
+                      data-testid="sort-descending"
                     >
                       <ArrowUp className="w-4 h-4 mr-1 transform rotate-180" />
-                      Descending
+                      <span className="hidden sm:inline">Descending</span>
+                      <span className="sm:hidden">Desc</span>
                     </Button>
                   </div>
                 </div>
