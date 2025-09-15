@@ -45,9 +45,10 @@ export class CoreService {
 
   /**
    * Get weekly monitoring status
+   * @param weeksAgo - Number of weeks to go back (0 = current week, 1 = last week, etc.)
    */
-  static async getWeeklyMonitoringStatus() {
-    const submissionStatus = await checkWeeklySubmissions();
+  static async getWeeklyMonitoringStatus(weeksAgo: number = 0) {
+    const submissionStatus = await checkWeeklySubmissions(weeksAgo);
     return submissionStatus;
   }
 
