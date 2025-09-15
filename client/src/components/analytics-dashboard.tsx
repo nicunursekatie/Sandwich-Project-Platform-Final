@@ -28,12 +28,17 @@ import {
   calculateActualWeeklyAverage,
   getRecordWeek,
 } from '@/lib/analytics-utils';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function AnalyticsDashboard() {
+  // Get authenticated user - CRITICAL for API calls
+  const { user, loading: authLoading } = useAuth();
+  
   // Force complete cache busting and debugging
   const [debugKey] = useState(() => `analytics-v4-${Date.now()}-${Math.random()}`);
   
   console.log('\n🚀 ANALYTICS DASHBOARD v4 - COMPONENT LOADING:', debugKey);
+  console.log('🔐 Auth status:', { user: !!user, authLoading, userEmail: user?.email });
   
   const { data: collections, isLoading: collectionsLoading } = useQuery<
     SandwichCollection[]
@@ -41,7 +46,9 @@ export default function AnalyticsDashboard() {
     queryKey: ['/api/sandwich-collections/all', debugKey], // Unique key per component instance
     queryFn: async () => {
       console.log('\n🔄 ANALYTICS v4: Fetching collections with key:', debugKey);
-      const response = await fetch(`/api/sandwich-collections?limit=10000&cache=${Date.now()}`);
+      const response = await fetch(`/api/sandwich-collections?limit=10000&cache=${Date.now()}`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         console.error('❌ Failed to fetch collections:', response.status, response.statusText);
         throw new Error(`Failed to fetch collections: ${response.status}`);
@@ -50,6 +57,7 @@ export default function AnalyticsDashboard() {
       console.log('✅ ANALYTICS v4: Successfully fetched', data.collections?.length || 0, 'collections');
       return data.collections || [];
     },
+    enabled: !!user && !authLoading, // Only run when user is authenticated
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
@@ -60,18 +68,22 @@ export default function AnalyticsDashboard() {
     completeTotalSandwiches: number;
   }>({
     queryKey: ['/api/sandwich-collections/stats'],
+    enabled: !!user && !authLoading, // Only run when user is authenticated
   });
 
   const { data: hostsData, isLoading: hostsLoading } = useQuery<any[]>({
     queryKey: ['/api/hosts'],
     queryFn: async () => {
-      const response = await fetch('/api/hosts');
+      const response = await fetch('/api/hosts', {
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch hosts');
       return response.json();
     },
+    enabled: !!user && !authLoading, // Only run when user is authenticated
   });
 
-  const isLoading = collectionsLoading || statsLoading || hostsLoading;
+  const isLoading = authLoading || collectionsLoading || statsLoading || hostsLoading;
 
   const analyticsData = useMemo(() => {
     console.log('\n📊 ANALYTICS v4 - COMPUTING DATA:', {
@@ -288,13 +300,25 @@ export default function AnalyticsDashboard() {
     };
   }, [collections, statsData, hostsData]);
 
+  // Show loading state while authenticating or fetching data
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-brand-primary mx-auto mb-4"></div>
-          <p className="text-[#646464] text-lg">Loading analytics...</p>
+          <p className="text-[#646464] text-lg">
+            {authLoading ? 'Authenticating...' : 'Loading analytics...'}
+          </p>
         </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show message
+  if (!user) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-[#646464] text-lg">Please log in to view analytics</p>
       </div>
     );
   }
