@@ -1494,6 +1494,53 @@ export default function EventRequestsManagement() {
     },
   });
 
+  const completeEventDetailsMutation = useMutation({
+    mutationFn: (data: any) =>
+      apiRequest('POST', '/api/event-requests/complete-event-details', data),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ['/api/event-requests'] });
+      const previousEvents = queryClient.getQueryData(['/api/event-requests']);
+
+      // Optimistically update the event with new details
+      queryClient.setQueryData(['/api/event-requests'], (old: any) => {
+        if (!old) return old;
+        return old.map((event: any) =>
+          event.id === data.eventId
+            ? {
+                ...event,
+                status: 'completed',
+                actualEventDate: data.actualEventDate,
+                actualAttendeeCount: data.actualAttendeeCount,
+                notes: data.notes,
+              }
+            : event
+        );
+      });
+
+      return { previousEvents };
+    },
+    onSuccess: () => {
+      setShowEventDetailsDialog(false);
+      setDetailsRequest(null);
+      toast({ title: 'Event details saved successfully' });
+    },
+    onError: (error: any, variables, context: any) => {
+      queryClient.setQueryData(
+        ['/api/event-requests'],
+        context?.previousEvents
+      );
+      toast({
+        title: 'Error saving event details',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
+    },
+  });
+
   const syncToSheetsMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/import/sync-to-sheets'),
     onSuccess: (data: any) => {
@@ -3243,10 +3290,8 @@ export default function EventRequestsManagement() {
       </CardHeader>
     </Card>
   );
-  
-  // Helper function to render standard event card
-  const renderStandardEventCard = (request: EventRequest) => (
-    <Card
+    return (
+      <Card
         key={request.id}
         id={`event-${request.id}`}
         className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-white ${
@@ -5539,7 +5584,6 @@ export default function EventRequestsManagement() {
       </Card>
     );
   };
-
   // Function to render standard event cards (for requests and past events)
   const renderStandardEventCard = (request: EventRequest) => (
     <Card
@@ -7395,51 +7439,6 @@ export default function EventRequestsManagement() {
     completeContactMutation.mutate(data);
   };
 
-  const completeEventDetailsMutation = useMutation({
-    mutationFn: (data: any) =>
-      apiRequest('POST', '/api/event-requests/complete-event-details', data),
-    onMutate: async (data) => {
-      await queryClient.cancelQueries({ queryKey: ['/api/event-requests'] });
-      const previousEvents = queryClient.getQueryData(['/api/event-requests']);
-      // Optimistically update the event with new details
-      queryClient.setQueryData(['/api/event-requests'], (old: any) => {
-        if (!old) return old;
-        return old.map((event: any) =>
-          event.id === data.eventId
-            ? {
-                ...event,
-                status: 'completed',
-                actualEventDate: data.actualEventDate,
-                actualAttendeeCount: data.actualAttendeeCount,
-                notes: data.notes,
-              }
-            : event
-        );
-      });
-      return { previousEvents };
-    },
-    onSuccess: () => {
-      setShowEventDetailsDialog(false);
-      setDetailsRequest(null);
-      toast({ title: 'Event details saved successfully' });
-    },
-    onError: (error: any, variables, context: any) => {
-      queryClient.setQueryData(
-        ['/api/event-requests'],
-        context?.previousEvents
-      );
-      toast({
-        title: 'Error saving event details',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/groups-catalog'] });
-    },
-  });
-
   const handleCompleteEventDetails = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!detailsRequest) return;
@@ -7502,6 +7501,7 @@ export default function EventRequestsManagement() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
