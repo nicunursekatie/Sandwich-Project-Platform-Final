@@ -3243,8 +3243,10 @@ export default function EventRequestsManagement() {
       </CardHeader>
     </Card>
   );
-    return (
-      <Card
+  
+  // Helper function to render standard event card
+  const renderStandardEventCard = (request: EventRequest) => (
+    <Card
         key={request.id}
         id={`event-${request.id}`}
         className={`hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-white ${
@@ -5537,6 +5539,7 @@ export default function EventRequestsManagement() {
       </Card>
     );
   };
+
   // Function to render standard event cards (for requests and past events)
   const renderStandardEventCard = (request: EventRequest) => (
     <Card
