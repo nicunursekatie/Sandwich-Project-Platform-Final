@@ -185,9 +185,6 @@ function Router() {
       <Route path="/suggestions">
         {() => <Dashboard initialSection="suggestions" />}
       </Route>
-      <Route path="/governance">
-        {() => <Dashboard initialSection="governance" />}
-      </Route>
       <Route path="/google-sheets">
         {() => <Dashboard initialSection="google-sheets" />}
       </Route>

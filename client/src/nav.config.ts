@@ -230,13 +230,6 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.DOCUMENTS_VIEW,
     group: 'documentation',
   },
-  {
-    id: 'governance',
-    label: 'Governance',
-    icon: Scale,
-    href: 'governance',
-    group: 'documentation',
-  },
 
   // ADMIN
   {

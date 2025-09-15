@@ -75,7 +75,6 @@ import GoogleSheetsPage from '@/pages/google-sheets';
 
 import MessagingSystem from '@/components/messaging-system';
 import RealTimeMessages from '@/pages/real-time-messages';
-import Governance from '@/pages/governance';
 
 import GmailStyleInbox from '@/components/gmail-style-inbox';
 import { ToolkitTabs } from '@/components/toolkit-tabs';
@@ -360,8 +359,6 @@ export default function Dashboard({
         return <SuggestionsPortal />;
       case 'google-sheets':
         return <GoogleSheetsPage />;
-      case 'governance':
-        return <Governance />;
       case 'committee':
       case 'committee-chat':
         return (
