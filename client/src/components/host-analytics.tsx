@@ -9,6 +9,7 @@ import {
   MapPin,
   Clock,
   Target,
+  History,
 } from 'lucide-react';
 import {
   Card,
@@ -49,6 +50,12 @@ export default function HostAnalytics({
   const [timeRange, setTimeRange] = useState<
     '3months' | '6months' | '1year' | 'all'
   >('all');
+  const [includeHistoricalData, setIncludeHistoricalData] = useState(false);
+
+  // Reset historical data state when changing hosts
+  React.useEffect(() => {
+    setIncludeHistoricalData(false);
+  }, [selectedHost]);
 
   // Fetch all collections data
   const { data: collectionsResponse, isLoading } = useQuery({
@@ -76,6 +83,27 @@ export default function HostAnalytics({
     );
     return hostNames.sort();
   }, [collections]);
+
+  // Helper function to detect if a location is a combined location (contains "/")
+  const isCombinedLocation = (hostName: string): boolean => {
+    return hostName.includes('/');
+  };
+
+  // Helper function to parse component locations from a combined location name
+  const parseComponentLocations = (hostName: string): string[] => {
+    if (!isCombinedLocation(hostName)) return [hostName];
+    return hostName.split('/').map(name => name.trim());
+  };
+
+  // Helper function to get all relevant host names for filtering (includes historical component locations)
+  const getRelevantHostNames = (hostName: string, includeHistorical: boolean): string[] => {
+    if (!includeHistorical || !isCombinedLocation(hostName)) {
+      return [hostName];
+    }
+    // For combined locations with historical data enabled, include both the combined name and component names
+    const componentNames = parseComponentLocations(hostName);
+    return [hostName, ...componentNames];
+  };
 
   // Helper function to calculate group total for a collection
   const calculateGroupTotal = (collection: SandwichCollection) => {
@@ -117,9 +145,12 @@ export default function HostAnalytics({
   const hostData = useMemo(() => {
     if (!selectedHost || !collections.length) return null;
 
-    // Filter collections for selected host
+    // Get relevant host names (includes historical component locations if enabled)
+    const relevantHostNames = getRelevantHostNames(selectedHost, includeHistoricalData);
+    
+    // Filter collections for selected host and historical component locations if enabled
     const hostCollections = collections.filter(
-      (c: SandwichCollection) => c.hostName === selectedHost
+      (c: SandwichCollection) => relevantHostNames.includes(c.hostName)
     );
 
     if (hostCollections.length === 0) return null;
@@ -238,7 +269,7 @@ export default function HostAnalytics({
             )
           : 0,
     };
-  }, [selectedHost, collections, timeRange]);
+  }, [selectedHost, collections, timeRange, includeHistoricalData]);
 
   if (isLoading) {
     return (
@@ -321,6 +352,19 @@ export default function HostAnalytics({
                 </SelectItem>
               </SelectContent>
             </Select>
+          )}
+
+          {/* Historical Data Toggle for Combined Locations */}
+          {selectedHost && isCombinedLocation(selectedHost) && (
+            <Button
+              variant={includeHistoricalData ? "default" : "outline"}
+              onClick={() => setIncludeHistoricalData(!includeHistoricalData)}
+              className="flex items-center gap-2 whitespace-nowrap"
+              data-testid="button-toggle-historical-data"
+            >
+              <History className="w-4 h-4" />
+              {includeHistoricalData ? 'Hide Historical Data' : 'Include Historical Data'}
+            </Button>
           )}
         </div>
       </div>
@@ -437,16 +481,35 @@ export default function HostAnalytics({
                       {hostData.dateRange.latest}
                     </span>
                   </div>
-                  <Badge variant="outline" className="w-fit">
-                    {timeRange === 'all'
-                      ? 'All Time'
-                      : timeRange === '1year'
-                        ? '1 Year'
-                        : timeRange === '6months'
-                          ? '6 Months'
-                          : '3 Months'}
-                  </Badge>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Badge variant="outline" className="w-fit">
+                      {timeRange === 'all'
+                        ? 'All Time'
+                        : timeRange === '1year'
+                          ? '1 Year'
+                          : timeRange === '6months'
+                            ? '6 Months'
+                            : '3 Months'}
+                    </Badge>
+                    {includeHistoricalData && isCombinedLocation(selectedHost) && (
+                      <Badge variant="secondary" className="w-fit flex items-center gap-1">
+                        <History className="w-3 h-3" />
+                        Includes Historical Data
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+                {includeHistoricalData && isCombinedLocation(selectedHost) && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-blue-800">
+                      <History className="w-4 h-4" />
+                      <span className="font-medium">Historical Data Included</span>
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1">
+                      This view includes data from component locations: {parseComponentLocations(selectedHost).join(', ')}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
