@@ -3294,8 +3294,8 @@ export default function EventRequestsManagement() {
     </Card>
   );
 
-  // Render functions for different card types
-                          handleTrackChange(request.id, 'firstName', firstName);
+  // Function to render scheduled event cards (for scheduled events)
+  const renderScheduledEventCard = (request: EventRequest) => (
                           handleTrackChange(
                             request.id,
                             'lastName',
