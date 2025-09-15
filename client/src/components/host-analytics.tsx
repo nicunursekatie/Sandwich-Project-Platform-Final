@@ -72,13 +72,13 @@ export default function HostAnalytics({
     queryKey: ['/api/hosts'],
   });
 
-  const collections = collectionsResponse?.collections || [];
+  const collections: SandwichCollection[] = collectionsResponse?.collections || [];
 
   // Get available hosts from collections data
-  const availableHosts = useMemo(() => {
+  const availableHosts: string[] = useMemo(() => {
     const hostNames = Array.from(
       new Set(
-        collections.map((c: SandwichCollection) => c.hostName).filter(Boolean)
+        collections.map((c: SandwichCollection) => c.hostName).filter((name: string | undefined | null): name is string => Boolean(name))
       )
     );
     return hostNames.sort();
@@ -184,7 +184,7 @@ export default function HostAnalytics({
     const allGroups = new Set<string>();
     const dates: string[] = [];
 
-    filteredCollections.forEach((collection) => {
+    filteredCollections.forEach((collection: SandwichCollection) => {
       totalIndividual += collection.individualSandwiches || 0;
       totalGroup += calculateGroupTotal(collection);
       dates.push(collection.collectionDate);
@@ -196,7 +196,7 @@ export default function HostAnalytics({
     // Calculate monthly breakdown
     const monthlyData = new Map<string, MonthlyStats>();
 
-    filteredCollections.forEach((collection) => {
+    filteredCollections.forEach((collection: SandwichCollection) => {
       const date = new Date(collection.collectionDate);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('en-US', {
@@ -308,7 +308,7 @@ export default function HostAnalytics({
               <SelectValue placeholder="Select a host location" />
             </SelectTrigger>
             <SelectContent>
-              {availableHosts.map((hostName) => (
+              {availableHosts.map((hostName: string) => (
                 <SelectItem key={hostName} value={hostName}>
                   <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-2" />
