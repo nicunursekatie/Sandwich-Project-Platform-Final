@@ -855,12 +855,12 @@ export default function EventRequestsManagement() {
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [emailComposerRequest, setEmailComposerRequest] =
     useState<EventRequest | null>(null);
-  
+
   // State for recording actual sandwich counts
   const [showRecordSandwichesDialog, setShowRecordSandwichesDialog] = useState(false);
   const [recordSandwichesRequest, setRecordSandwichesRequest] = useState<EventRequest | null>(null);
   const [actualSandwichNotes, setActualSandwichNotes] = useState('');
-  
+
   // Toolkit Sent Dialog state
   const [showToolkitSentDialog, setShowToolkitSentDialog] = useState(false);
   const [toolkitSentRequest, setToolkitSentRequest] =
@@ -3045,7 +3045,7 @@ export default function EventRequestsManagement() {
                   </span>
                 </div>
               )}
-              
+
               {/* Event Address */}
               {request.eventAddress && (
                 <div className="flex items-center space-x-2">
@@ -3154,7 +3154,7 @@ export default function EventRequestsManagement() {
               {/* Assignments Summary */}
               {(() => {
                 const assignments = [];
-                
+
                 // Van Driver
                 if ((request as any).vanDriverNeeded) {
                   const hasVanDriver = (request as any).assignedVanDriverId || (request as any).customVanDriverName;
@@ -3322,7 +3322,7 @@ export default function EventRequestsManagement() {
                   </span>
                 </div>
               )}
-              
+
               <h3 className="text-xl font-bold text-gray-900 leading-tight mb-1">
                 {request.organizationName}
               </h3>
@@ -3331,7 +3331,7 @@ export default function EventRequestsManagement() {
                   {request.department}
                 </p>
               )}
-              
+
               {/* Event Date for non-in_process events */}
               {request.status !== 'in_process' && request.desiredEventDate && (
                 <div className="flex items-center text-base font-semibold text-brand-orange mb-2">
