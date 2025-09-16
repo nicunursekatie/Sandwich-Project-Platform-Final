@@ -26,7 +26,11 @@ interface MeetingAgenda {
 
 export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ 
+      size: 'A4', 
+      margin: 0,
+      layout: 'portrait'
+    });
     const chunks: Buffer[] = [];
 
     doc.on('data', (chunk) => chunks.push(chunk));
@@ -36,253 +40,287 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
     // TSP Brand Colors
     const colors = {
       navy: '#236383',
-      lightBlue: '#47B3CB',
+      lightBlue: '#47B3CB', 
+      orange: '#FF6B35',
+      green: '#4CAF50',
+      red: '#F44336',
       darkGray: '#333333',
       lightGray: '#666666',
       white: '#FFFFFF',
+      sectionBlue: '#E3F2FD',
+      dividerGray: '#CCCCCC'
     };
 
-    let yPosition = 50;
+    let yPosition = 0;
+    const pageWidth = 595.28; // A4 width
+    const pageHeight = 841.89; // A4 height
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
 
     // Helper function to sanitize text for PDF rendering
     const sanitizeText = (text: string): string => {
       if (!text) return '';
       
       return text
-        // Smart quotes to regular quotes
         .replace(/[\u2018\u2019]/g, "'")
         .replace(/[\u201C\u201D]/g, '"')
-        // En/em dashes to regular dashes
         .replace(/[\u2013\u2014]/g, '-')
-        // Bullet points
         .replace(/[\u2022\u2023\u25E6]/g, '•')
-        // Other common problematic characters
         .replace(/[\u2026]/g, '...')
         .replace(/[\u00A0]/g, ' ')
-        // Remove any remaining non-ASCII characters
         .replace(/[^\x00-\x7F]/g, '');
     };
 
     // Helper function to check if we need a new page
     const ensureSpace = (requiredSpace: number) => {
-      if (yPosition + requiredSpace > 720) {
-        addFooter();
+      if (yPosition + requiredSpace > pageHeight - 100) {
         doc.addPage();
-        yPosition = 50;
+        yPosition = 0;
       }
     };
 
-    // Helper function to add footer
-    const addFooter = () => {
-      doc
-        .fontSize(10)
-        .fillColor(colors.lightGray)
-        .text(
-          sanitizeText('The Sandwich Project | Meeting Agenda | Generated ') + 
-          new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          50, 
-          750, 
-          { align: 'center', width: doc.page.width - 100 }
-        );
+    // Helper function to add colored header bar
+    const addHeaderBar = (color: string, height: number) => {
+      doc.rect(0, yPosition, pageWidth, height)
+         .fill(color);
+      yPosition += height;
     };
 
-    // Header
-    doc
-      .fontSize(20)
-      .fillColor(colors.navy)
-      .text(sanitizeText('The Sandwich Project'), 50, yPosition);
-    yPosition += 30;
+    // Helper function to add text with proper positioning
+    const addText = (text: string, x: number, y: number, options: any = {}) => {
+      const sanitizedText = sanitizeText(text);
+      doc.text(sanitizedText, x, y, options);
+    };
 
-    doc
-      .fontSize(16)
-      .fillColor(colors.darkGray)
-      .text(sanitizeText('Meeting Agenda'), 50, yPosition);
-    yPosition += 40;
+    // Helper function to add divider line
+    const addDivider = (color: string, thickness: number = 1) => {
+      doc.rect(margin, yPosition, contentWidth, thickness)
+         .fill(color);
+      yPosition += thickness + 10;
+    };
 
-    // Meeting details
-    doc
-      .fontSize(14)
-      .fillColor(colors.darkGray)
-      .text(sanitizeText(agenda.title), 50, yPosition);
-    yPosition += 20;
+    // Main header section
+    addHeaderBar(colors.navy, 80);
+    
+    // Add "The Sandwich Project" title
+    doc.fontSize(24)
+       .fillColor(colors.white)
+       .text('The Sandwich Project', margin, yPosition - 60, { width: contentWidth });
+    
+    // Add "Meeting Agenda" in orange
+    doc.fontSize(20)
+       .fillColor(colors.orange)
+       .text('Meeting Agenda', margin, yPosition - 35, { width: contentWidth });
+    
+    // Add meeting date and time
+    const meetingDate = new Date(agenda.date).toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    doc.fontSize(14)
+       .fillColor(colors.white)
+       .text(`${meetingDate} at ${agenda.startTime}`, margin, yPosition - 15, { width: contentWidth });
 
-    doc
-      .fontSize(12)
-      .fillColor(colors.lightGray)
-      .text(sanitizeText(`${agenda.date} at ${agenda.startTime}`), 50, yPosition);
-    yPosition += 15;
+    yPosition = 100; // Move past header
 
-    doc
-      .fontSize(12)
-      .fillColor(colors.lightGray)
-      .text(sanitizeText(`Location: ${agenda.location}`), 50, yPosition);
-    yPosition += 30;
-
-    // Meeting description
+    // Meeting Description
     if (agenda.description) {
-      doc
-        .fontSize(12)
-        .fillColor(colors.darkGray)
-        .text(sanitizeText('Meeting Description:'), 50, yPosition);
+      addText('Meeting Description:', margin, yPosition, { 
+        fontSize: 12, 
+        fillColor: colors.darkGray 
+      });
       yPosition += 20;
-
-      doc
-        .fontSize(11)
-        .fillColor(colors.lightGray)
-        .text(sanitizeText(` ${agenda.description}`), 50, yPosition);
-      yPosition += 40;
+      
+      addText(agenda.description, margin, yPosition, { 
+        fontSize: 11, 
+        fillColor: colors.lightGray,
+        width: contentWidth
+      });
+      yPosition += 30;
     }
 
     // Process each section
     agenda.sections.forEach((section, sectionIndex) => {
-      ensureSpace(60);
+      ensureSpace(100);
 
-      // Section header
-      doc
-        .fontSize(16)
-        .fillColor(colors.darkGray)
-        .text(sanitizeText(`${sectionIndex + 1}. ${section.title}`), 50, yPosition);
-      yPosition += 40;
+      // Section header with light blue background
+      addHeaderBar(colors.sectionBlue, 30);
+      
+      addText(`${sectionIndex + 1}. ${section.title}`, margin, yPosition - 20, {
+        fontSize: 14,
+        fillColor: colors.navy,
+        width: contentWidth
+      });
+
+      yPosition += 20;
 
       // Section items
       if (section.items && section.items.length > 0) {
         section.items.forEach((item, itemIndex) => {
-          ensureSpace(100);
+          ensureSpace(150);
 
           // Item title
-          doc
-            .fontSize(12)
-            .fillColor(colors.darkGray)
-            .text(sanitizeText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`), 50, yPosition);
+          addText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`, margin, yPosition, {
+            fontSize: 12,
+            fillColor: colors.darkGray
+          });
           yPosition += 20;
+
+          // Add divider line
+          addDivider(colors.dividerGray);
 
           // If this is a project item, show detailed project information
           if (item.project) {
             const project = item.project;
             
-            // Project metadata on multiple lines
+            // Project metadata in two columns
             const leftColumn = [];
             const rightColumn = [];
             
-            if (project.assigneeName) leftColumn.push(`Owner:       ${project.assigneeName}`);
-            if (project.supportPeople) rightColumn.push(`Support:       ${project.supportPeople}`);
-            if (project.status) leftColumn.push(`Status:      ${project.status}`);
-            if (project.priority) rightColumn.push(`Priority:      ${project.priority}`);
+            if (project.assigneeName) leftColumn.push(`Owner: ${project.assigneeName}`);
+            if (project.status) leftColumn.push(`Status: ${project.status}`);
+            if (project.supportPeople) rightColumn.push(`Support: ${project.supportPeople}`);
+            if (project.priority) rightColumn.push(`Priority: ${project.priority}`);
 
             const maxLines = Math.max(leftColumn.length, rightColumn.length);
             for (let i = 0; i < maxLines; i++) {
               if (leftColumn[i]) {
-                doc
-                  .fontSize(10)
-                  .fillColor(colors.lightGray)
-                  .text(sanitizeText(`  ${leftColumn[i]}`), 50, yPosition);
+                addText(leftColumn[i], margin, yPosition, {
+                  fontSize: 10,
+                  fillColor: colors.lightGray
+                });
               }
               if (rightColumn[i]) {
-                doc
-                  .fontSize(10)
-                  .fillColor(colors.lightGray)
-                  .text(sanitizeText(`${rightColumn[i]}`), 350, yPosition);
+                addText(rightColumn[i], margin + 300, yPosition, {
+                  fontSize: 10,
+                  fillColor: colors.lightGray
+                });
               }
               yPosition += 12;
             }
             yPosition += 10;
 
-            // Project Description
-            if (project.description) {
-              doc
-                .fontSize(11)
-                .fillColor(colors.darkGray)
-                .text(sanitizeText('Description:'), 50, yPosition);
-              yPosition += 15;
-              
-              doc
-                .fontSize(10)
-                .fillColor(colors.lightGray)
-                .text(sanitizeText(`   ${project.description}`), 50, yPosition, { width: 500 });
-              yPosition += 25;
-            }
+            // Add orange divider
+            addDivider(colors.orange);
 
             // Discussion Points
             if (project.meetingDiscussionPoints) {
-              ensureSpace(40);
-              doc
-                .fontSize(11)
-                .fillColor(colors.darkGray)
-                .text(sanitizeText('   What do we need to talk about?'), 50, yPosition);
-              yPosition += 20;
+              addText('What do we need to talk about?', margin, yPosition, {
+                fontSize: 11,
+                fillColor: colors.darkGray
+              });
+              yPosition += 15;
               
-              doc
-                .fontSize(10)
-                .fillColor(colors.lightGray)
-                .text(sanitizeText(`      ${project.meetingDiscussionPoints}`), 50, yPosition, { width: 500 });
+              addText(project.meetingDiscussionPoints, margin, yPosition, {
+                fontSize: 10,
+                fillColor: colors.lightGray,
+                width: contentWidth
+              });
               yPosition += 25;
             }
+
+            // Add green divider
+            addDivider(colors.green);
 
             // Decision Items
             if (project.meetingDecisionItems) {
-              ensureSpace(40);
-              doc
-                .fontSize(11)
-                .fillColor(colors.darkGray)
-                .text(sanitizeText('   What decisions need to be made?'), 50, yPosition);
-              yPosition += 20;
+              addText('What decisions need to be made?', margin, yPosition, {
+                fontSize: 11,
+                fillColor: colors.darkGray
+              });
+              yPosition += 15;
               
-              doc
-                .fontSize(10)
-                .fillColor(colors.lightGray)
-                .text(sanitizeText(`      ${project.meetingDecisionItems}`), 50, yPosition, { width: 500 });
+              addText(project.meetingDecisionItems, margin, yPosition, {
+                fontSize: 10,
+                fillColor: colors.lightGray,
+                width: contentWidth
+              });
               yPosition += 25;
             }
 
+            // Add blue divider
+            addDivider(colors.lightBlue);
+
             // Project Tasks
             if (project.tasks && project.tasks.length > 0) {
-              ensureSpace(40);
-              doc
-                .fontSize(11)
-                .fillColor(colors.darkGray)
-                .text(sanitizeText('   Project Tasks:'), 50, yPosition);
-              yPosition += 20;
+              addText('Project Tasks:', margin, yPosition, {
+                fontSize: 11,
+                fillColor: colors.darkGray
+              });
+              yPosition += 15;
 
               project.tasks.forEach((task: any, taskIndex: number) => {
-                ensureSpace(40);
-                doc
-                  .fontSize(10)
-                  .fillColor(colors.lightGray)
-                  .text(sanitizeText(`      ${taskIndex + 1}. ${task.description || task.title || 'No description'}`), 50, yPosition, { width: 500 });
+                ensureSpace(30);
+                addText(`${taskIndex + 1}. ${task.description || task.title || 'No description'}`, margin, yPosition, {
+                  fontSize: 10,
+                  fillColor: colors.lightGray,
+                  width: contentWidth
+                });
                 yPosition += 15;
-
-                if (task.priority) {
-                  doc
-                    .fontSize(9)
-                    .fillColor(colors.lightGray)
-                    .text(sanitizeText(`           Priority: ${task.priority}`), 50, yPosition);
-                  yPosition += 15;
-                }
-                yPosition += 10;
               });
+              yPosition += 10;
+            }
+
+            // Attached Files
+            if (project.attachments && project.attachments.length > 0) {
+              addText('Attached Files:', margin, yPosition, {
+                fontSize: 11,
+                fillColor: colors.darkGray
+              });
+              yPosition += 15;
+
+              project.attachments.forEach((attachment: any, fileIndex: number) => {
+                addText(`${fileIndex + 1}. ${attachment.name || attachment.filename || 'Unknown file'}`, margin, yPosition, {
+                  fontSize: 10,
+                  fillColor: colors.lightGray
+                });
+                yPosition += 12;
+              });
+              yPosition += 10;
+            }
+
+            // Last Discussed Date
+            if (project.lastDiscussed) {
+              addText(`Last Discussed: ${new Date(project.lastDiscussed).toLocaleDateString()}`, margin, yPosition, {
+                fontSize: 9,
+                fillColor: colors.lightGray
+              });
+              yPosition += 15;
             }
 
             yPosition += 15;
           } else {
             // Regular agenda item (not a project)
             if (item.presenter) {
-              doc
-                .fontSize(10)
-                .fillColor(colors.lightGray)
-                .text(sanitizeText(`    Presenter: ${item.presenter} | Time: ${item.estimatedTime || '5'} mins | Type: ${item.type || 'agenda item'}`), 50, yPosition);
+              addText(`Presenter: ${item.presenter} | Time: ${item.estimatedTime || '5'} mins | Type: ${item.type || 'agenda item'}`, margin, yPosition, {
+                fontSize: 10,
+                fillColor: colors.lightGray
+              });
               yPosition += 20;
             }
           }
 
-          yPosition += 15;
+          yPosition += 10;
         });
       }
 
-      yPosition += 10;
+      yPosition += 20;
     });
 
-    // Add final footer
-    addFooter();
+    // Add footer
+    const footerY = pageHeight - 50;
+    doc.fontSize(10)
+       .fillColor(colors.lightGray)
+       .text(
+         'The Sandwich Project | Meeting Agenda | Generated ' + 
+         new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+         margin, 
+         footerY, 
+         { align: 'center', width: contentWidth }
+       );
+
     doc.end();
   });
 }
