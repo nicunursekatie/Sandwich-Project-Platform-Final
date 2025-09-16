@@ -31,9 +31,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import { EventEmailComposer } from '@/components/event-email-composer';
-import { EventRequestAuditLog } from '@/components/event-request-audit-log';
-import { DriverSelectionModal } from './driver-selection-modal';
-import { VolunteerSelectionModal } from './volunteer-selection-modal';
 import {
   Collapsible,
   CollapsibleContent,
@@ -1025,7 +1022,6 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                               setEditingDestination((prev) =>
                                 prev ? { ...prev, value } : null
                               )
-                              setEditingDestination((prev) => prev ? { ...prev, value } : null)
                             }
                             onSave={handleDestinationSave}
                             onCancel={handleDestinationCancel}
@@ -1351,6 +1347,7 @@ export default function EventRequestsManagement() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showWeeklyPlanningModal, setShowWeeklyPlanningModal] = useState(false);
 
   // Event details dialog states
   const [selectedEventRequest, setSelectedEventRequest] =
@@ -1439,8 +1436,6 @@ export default function EventRequestsManagement() {
       apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, {
         toolkitSentDate,
       }),
-    mutationFn: ({ id, toolkitSentDate }: { id: number; toolkitSentDate: string }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, { toolkitSentDate }),
     onSuccess: () => {
       toast({
         title: 'Toolkit marked as sent',
@@ -1470,8 +1465,6 @@ export default function EventRequestsManagement() {
       apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, {
         scheduledCallDate,
       }),
-    mutationFn: ({ id, scheduledCallDate }: { id: number; scheduledCallDate: string }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, { scheduledCallDate }),
     onSuccess: () => {
       toast({
         title: 'Call scheduled',
@@ -1627,7 +1620,15 @@ export default function EventRequestsManagement() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <SandwichForecastWidget />
+            <Button
+              onClick={() => setShowWeeklyPlanningModal(true)}
+              variant="outline"
+              className="flex items-center space-x-2"
+              data-testid="button-weekly-planning"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Weekly Planning</span>
+            </Button>
             <Badge
               variant="secondary"
               className="bg-brand-primary text-white px-3 py-1 text-sm"
@@ -1921,7 +1922,6 @@ export default function EventRequestsManagement() {
               </div>
             </TabsContent>
           ))}
-
         </Tabs>
 
         {/* Event Details Dialog */}
@@ -2310,6 +2310,29 @@ export default function EventRequestsManagement() {
                   </Button>
                 </DialogFooter>
               </form>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Weekly Planning Modal */}
+        {showWeeklyPlanningModal && (
+          <Dialog
+            open={showWeeklyPlanningModal}
+            onOpenChange={setShowWeeklyPlanningModal}
+          >
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <Calendar className="w-5 h-5 text-brand-primary" />
+                  <span>Weekly Planning & Sandwich Forecast</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Plan upcoming events and view sandwich preparation forecasts
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <SandwichForecastWidget />
+              </div>
             </DialogContent>
           </Dialog>
         )}
