@@ -89,6 +89,15 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
     // Helper function to add text with proper positioning
     const addText = (text: string, x: number, y: number, options: any = {}) => {
       const sanitizedText = sanitizeText(text);
+      
+      // Apply font size and color before adding text
+      if (options.fontSize) {
+        doc.fontSize(options.fontSize);
+      }
+      if (options.fillColor) {
+        doc.fillColor(options.fillColor);
+      }
+      
       doc.text(sanitizedText, x, y, options);
     };
 
