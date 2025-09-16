@@ -8,7 +8,7 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   console.log('🔧 Agenda Items Router - Initializing with authentication middleware');
 
   // Get agenda items (optionally filtered by meetingId)
-  router.get('/', async (req, res) => {
+  router.get('/', isAuthenticated, async (req, res) => {
     try {
       console.log('🟢 Agenda Items API - GET request received:', req.url, req.query);
       const { meetingId } = req.query;
@@ -30,7 +30,7 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   });
 
   // Create new agenda item
-  router.post('/', async (req: any, res) => {
+  router.post('/', isAuthenticated, async (req: any, res) => {
     try {
       console.log('🟢 Agenda Items API - Creating agenda item:', req.body);
       
@@ -64,7 +64,7 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   });
 
   // Update agenda item status
-  router.patch('/:id', async (req: any, res) => {
+  router.patch('/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id;
       if (!userId) {
@@ -104,7 +104,7 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   });
 
   // Update agenda item content
-  router.put('/:id', async (req, res) => {
+  router.put('/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { title, description } = req.body;
@@ -126,7 +126,7 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   });
 
   // Delete agenda item
-  router.delete('/:id', async (req: any, res) => {
+  router.delete('/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id;
       if (!userId) {
