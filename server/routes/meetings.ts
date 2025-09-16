@@ -16,7 +16,18 @@ router.get('/', isAuthenticated, async (req: any, res) => {
     
     console.log(`[Meetings API] Found ${meetingsArray.length} meetings`);
     console.log('[Meetings API] Meetings data:', JSON.stringify(meetingsArray, null, 2));
-    res.json(meetingsArray);
+    
+    // Map database field names to client field names
+    const mappedMeetings = meetingsArray.map(meeting => ({
+      ...meeting,
+      meetingDate: meeting.date, // Map date to meetingDate for client
+      startTime: meeting.time,   // Map time to startTime for client
+      meetingLink: meeting.location, // Map location to meetingLink for client
+      agenda: meeting.finalAgenda,   // Map finalAgenda to agenda for client
+    }));
+    
+    console.log('[Meetings API] Mapped meetings for client:', JSON.stringify(mappedMeetings, null, 2));
+    res.json(mappedMeetings);
   } catch (error) {
     logger.error('Failed to get meetings', error);
     console.error('[Meetings API] Error fetching meetings:', error);
@@ -78,7 +89,21 @@ router.post('/', isAuthenticated, async (req: any, res) => {
     console.log(`[Meetings API] Creating new meeting: ${meetingData.title}`);
     console.log('[Meetings API] Meeting data received:', JSON.stringify(meetingData, null, 2));
 
-    const newMeeting = await storage.createMeeting(meetingData);
+    // Map client field names to database field names
+    const mappedMeetingData = {
+      title: meetingData.title,
+      type: meetingData.type || 'weekly', // Default to weekly if not specified
+      date: meetingData.meetingDate || meetingData.date, // Map meetingDate to date
+      time: meetingData.startTime || meetingData.time, // Map startTime to time
+      location: meetingData.location || meetingData.meetingLink,
+      description: meetingData.description,
+      finalAgenda: meetingData.agenda,
+      status: meetingData.status || 'planning', // Default to planning if not specified
+    };
+
+    console.log('[Meetings API] Mapped meeting data:', JSON.stringify(mappedMeetingData, null, 2));
+
+    const newMeeting = await storage.createMeeting(mappedMeetingData);
     
     console.log(`[Meetings API] Created meeting with ID: ${newMeeting.id}`);
     console.log('[Meetings API] Created meeting data:', JSON.stringify(newMeeting, null, 2));
