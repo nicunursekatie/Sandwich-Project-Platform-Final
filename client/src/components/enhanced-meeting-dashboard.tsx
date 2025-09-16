@@ -392,6 +392,30 @@ export default function EnhancedMeetingDashboard() {
   // Ensure meetings is always an array to prevent filter errors
   const safeMeetings: Meeting[] = Array.isArray(meetings) ? meetings : [];
 
+  // Auto-select appropriate meeting when meetings load
+  useEffect(() => {
+    if (safeMeetings.length > 0 && !selectedMeeting) {
+      // Priority 1: Meeting with status 'planning' (most recent one)
+      const planningMeetings = safeMeetings.filter(m => m.status === 'planning');
+      if (planningMeetings.length > 0) {
+        // Sort by date (most recent first) and select the first one
+        const sortedPlanning = planningMeetings.sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        console.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
+        setSelectedMeeting(sortedPlanning[0]);
+        return;
+      }
+      
+      // Priority 2: Most recent meeting by date
+      const sortedMeetings = safeMeetings.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      console.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
+      setSelectedMeeting(sortedMeetings[0]);
+    }
+  }, [safeMeetings, selectedMeeting]);
+
   // Fetch projects for review
   const { data: projectsForReview = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects/for-review'],
