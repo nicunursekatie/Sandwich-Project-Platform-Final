@@ -65,10 +65,9 @@ export class MeetingAgendaPDFGenerator {
     meeting: Meeting,
     agenda?: CompiledAgenda
   ): Promise<Buffer> {
-    // Dynamic import for ES modules
     const PDFKit = (await import('pdfkit')).default;
     const doc = new PDFKit({ 
-      margin: 40,
+      margin: 50,
       size: 'A4',
       layout: 'portrait'
     });
@@ -76,8 +75,9 @@ export class MeetingAgendaPDFGenerator {
     const chunks: Buffer[] = [];
     doc.on('data', (chunk) => chunks.push(chunk));
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (error) => reject(error));
 
       // TSP Brand Colors
       const colors = {
@@ -93,7 +93,7 @@ export class MeetingAgendaPDFGenerator {
         danger: '#EF4444',
       };
 
-      let yPosition = 40;
+      let yPosition = 50;
 
       // Helper function to add a colored box
       const addColoredBox = (x: number, y: number, width: number, height: number, color: string) => {
@@ -192,7 +192,7 @@ export class MeetingAgendaPDFGenerator {
         .text(`${meetingDate} at ${meetingTime}`, 50, 110);
 
       if (meeting.location) {
-        doc.text(`📍 ${meeting.location}`, 50, 130);
+        doc.text(`Location: ${meeting.location}`, 50, 130);
       }
 
       yPosition = 160;
@@ -221,7 +221,7 @@ export class MeetingAgendaPDFGenerator {
           doc
             .fontSize(12)
             .fillColor(colors.darkGray)
-            .text(`⏱️ Estimated Duration: ${agenda.totalEstimatedTime}`, 60, yPosition);
+            .text(`Estimated Duration: ${agenda.totalEstimatedTime}`, 60, yPosition);
           yPosition += 40;
         }
 
@@ -260,7 +260,7 @@ export class MeetingAgendaPDFGenerator {
               doc
                 .fontSize(14)
                 .fillColor(colors.navy)
-                .text(`📋 ${sectionIndex + 1}.${itemIndex + 1} ${item.title}`, 60, yPosition);
+                .text(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`, 60, yPosition);
               yPosition += 25;
 
               // If this is a project item, show detailed project information
@@ -277,7 +277,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(10)
                     .fillColor(colors.darkGray)
-                    .text('👤 Owner:', leftColumn, metadataY);
+                    .text('Owner:', leftColumn, metadataY);
                   doc
                     .fontSize(10)
                     .fillColor(colors.navy)
@@ -289,7 +289,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(10)
                     .fillColor(colors.darkGray)
-                    .text('🤝 Support:', rightColumn, metadataY);
+                    .text('Support:', rightColumn, metadataY);
                   const supportLines = wrapText(project.supportPeople, 200, 10);
                   supportLines.forEach((line, idx) => {
                     doc
@@ -307,7 +307,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(10)
                     .fillColor(colors.darkGray)
-                    .text('📊 Status:', leftColumn, metadataY);
+                    .text('Status:', leftColumn, metadataY);
                   doc
                     .fontSize(10)
                     .fillColor(getStatusColor(project.status))
@@ -318,7 +318,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(10)
                     .fillColor(colors.darkGray)
-                    .text('⚡ Priority:', rightColumn, metadataY);
+                    .text('Priority:', rightColumn, metadataY);
                   doc
                     .fontSize(10)
                     .fillColor(getPriorityColor(project.priority))
@@ -332,7 +332,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('📝 Description:', 70, yPosition);
+                    .text('Description:', 70, yPosition);
                   yPosition += 20;
                   
                   const descLines = wrapText(project.description, 450, 11);
@@ -352,7 +352,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('💬 What do we need to talk about?', 80, yPosition);
+                    .text('What do we need to talk about?', 80, yPosition);
                   yPosition += 20;
                   
                   const discussionLines = wrapText(project.meetingDiscussionPoints, 430, 11);
@@ -372,7 +372,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('✅ What decisions need to be made?', 80, yPosition);
+                    .text('What decisions need to be made?', 80, yPosition);
                   yPosition += 20;
                   
                   const decisionLines = wrapText(project.meetingDecisionItems, 430, 11);
@@ -392,7 +392,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('📋 Project Tasks:', 80, yPosition);
+                    .text('Project Tasks:', 80, yPosition);
                   yPosition += 20;
                   
                   project.tasks.forEach((task, taskIndex) => {
@@ -415,9 +415,9 @@ export class MeetingAgendaPDFGenerator {
                     
                     // Task metadata
                     const taskMeta = [];
-                    if (task.assigneeName) taskMeta.push(`👤 ${task.assigneeName}`);
-                    if (task.dueDate) taskMeta.push(`📅 ${task.dueDate}`);
-                    if (task.priority) taskMeta.push(`⚡ ${task.priority}`);
+                    if (task.assigneeName) taskMeta.push(`Assignee: ${task.assigneeName}`);
+                    if (task.dueDate) taskMeta.push(`Due: ${task.dueDate}`);
+                    if (task.priority) taskMeta.push(`Priority: ${task.priority}`);
                     
                     if (taskMeta.length > 0) {
                       doc
@@ -437,23 +437,17 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('📎 Attachments:', 80, yPosition);
+                    .text('Attachments:', 80, yPosition);
                   yPosition += 20;
                   
                   project.attachments.forEach(attachment => {
                     doc
                       .fontSize(10)
                       .fillColor(colors.lightBlue)
-                      .text(`  📄 ${attachment}`, 90, yPosition);
+                      .text(`  • ${attachment}`, 90, yPosition);
                     yPosition += 15;
                   });
                   yPosition += 10;
-                } else {
-                  doc
-                    .fontSize(10)
-                    .fillColor(colors.lightGray)
-                    .text('  📎 No attachments', 80, yPosition);
-                  yPosition += 20;
                 }
 
               } else {
@@ -472,9 +466,9 @@ export class MeetingAgendaPDFGenerator {
 
                 // Item metadata
                 const metadata = [];
-                if (item.submittedBy) metadata.push(`👤 ${item.submittedBy}`);
-                if (item.estimatedTime) metadata.push(`⏱️ ${item.estimatedTime}`);
-                if (item.type) metadata.push(`📝 ${item.type.replace('_', ' ')}`);
+                if (item.submittedBy) metadata.push(`Presenter: ${item.submittedBy}`);
+                if (item.estimatedTime) metadata.push(`Time: ${item.estimatedTime}`);
+                if (item.type) metadata.push(`Type: ${item.type.replace('_', ' ')}`);
 
                 if (metadata.length > 0) {
                   doc
@@ -488,28 +482,25 @@ export class MeetingAgendaPDFGenerator {
               yPosition += 20; // Extra spacing between items
             });
           } else {
+            // Empty section
             doc
               .fontSize(10)
               .fillColor(colors.lightGray)
-              .text('  No items scheduled for this section', 70, yPosition);
-            yPosition += 25;
+              .text('  Items to be determined', 70, yPosition);
+            yPosition += 30;
           }
-
-          yPosition += 20; // Extra spacing between sections
         });
       } else {
-        // No compiled agenda available
-        addColoredBox(40, yPosition - 5, doc.page.width - 80, 35, colors.lightBlue);
+        // No compiled agenda - show standard sections
         doc
           .fontSize(16)
-          .fillColor(colors.white)
+          .fillColor(colors.navy)
           .text('AGENDA', 50, yPosition);
-        yPosition += 45;
+        yPosition += 35;
 
-        // Show the standard sections structure
         const standardSections = [
           'Old Business',
-          'Urgent Items',
+          'Urgent Items', 
           'Housekeeping',
           'New Business',
         ];
