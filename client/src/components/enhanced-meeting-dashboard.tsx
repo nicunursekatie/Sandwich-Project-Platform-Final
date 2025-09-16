@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { ObjectUploader } from '@/components/ObjectUploader';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
+import { TaskAssigneeSelector } from '@/components/task-assignee-selector';
 import {
   CalendarDays,
   Clock,
@@ -384,6 +385,19 @@ export default function EnhancedMeetingDashboard() {
   
   // Meeting details dialog visibility (separate from selectedMeeting)
   const [showMeetingDetailsDialog, setShowMeetingDetailsDialog] = useState(false);
+
+  // Add new project form states
+  const [showAddProjectDialog, setShowAddProjectDialog] = useState(false);
+  const [newProjectData, setNewProjectData] = useState({
+    title: '',
+    description: '',
+    assigneeName: '',
+    supportPeople: '',
+    dueDate: '',
+    priority: 'medium',
+    category: 'technology',
+    status: 'waiting'
+  });
 
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery<
@@ -737,6 +751,53 @@ export default function EnhancedMeetingDashboard() {
       });
     },
   });
+
+  // Create new project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async (projectData: typeof newProjectData) => {
+      return await apiRequest('POST', '/api/projects', projectData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
+      toast({
+        title: 'Project Created',
+        description: 'New project has been created and will appear in the agenda planning list',
+      });
+      setShowAddProjectDialog(false);
+      setNewProjectData({
+        title: '',
+        description: '',
+        assigneeName: '',
+        supportPeople: '',
+        dueDate: '',
+        priority: 'medium',
+        category: 'technology',
+        status: 'waiting'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to Create Project',
+        description: error?.message || 'Failed to create the new project',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Handler for creating a new project
+  const handleCreateProject = () => {
+    if (!newProjectData.title.trim()) {
+      toast({
+        title: 'Title Required',
+        description: 'Please enter a title for the project',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    createProjectMutation.mutate(newProjectData);
+  };
 
   // Handler for adding off-agenda items
   const handleAddOffAgendaItem = () => {
@@ -2472,6 +2533,16 @@ export default function EnhancedMeetingDashboard() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowAddProjectDialog(true)}
+                className="border-teal-300 text-teal-700 hover:bg-teal-50"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Project
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={async () => {
                   try {
                     setIsCompiling(true);
@@ -3716,6 +3787,194 @@ export default function EnhancedMeetingDashboard() {
                 <>
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Yes, Reset for Next Week
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Project Dialog */}
+      <Dialog
+        open={showAddProjectDialog}
+        onOpenChange={setShowAddProjectDialog}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-teal-600" />
+              Add New Project
+            </DialogTitle>
+            <DialogDescription>
+              Create a new project that will appear in the agenda planning list and sync to Google Sheets
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Project Title - Required */}
+            <div className="space-y-2">
+              <Label htmlFor="project-title">
+                Project Title <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="project-title"
+                value={newProjectData.title}
+                onChange={(e) =>
+                  setNewProjectData({
+                    ...newProjectData,
+                    title: e.target.value,
+                  })
+                }
+                placeholder="Enter project title"
+                className="text-base"
+              />
+            </div>
+
+            {/* Project Description */}
+            <div className="space-y-2">
+              <Label htmlFor="project-description">Description</Label>
+              <Textarea
+                id="project-description"
+                value={newProjectData.description}
+                onChange={(e) =>
+                  setNewProjectData({
+                    ...newProjectData,
+                    description: e.target.value,
+                  })
+                }
+                placeholder="Describe what this project involves..."
+                rows={3}
+              />
+            </div>
+
+            {/* Project Owner */}
+            <div className="space-y-2">
+              <Label htmlFor="project-owner">Project Owner</Label>
+              <ProjectAssigneeSelector
+                value={{
+                  assigneeName: newProjectData.assigneeName
+                }}
+                onChange={(value) => {
+                  setNewProjectData({
+                    ...newProjectData,
+                    assigneeName: value.assigneeName || '',
+                  });
+                }}
+                placeholder="Select or enter project owner"
+                multiple={false}
+              />
+            </div>
+
+            {/* Support People */}
+            <div className="space-y-2">
+              <Label htmlFor="project-support">Support People</Label>
+              <ProjectAssigneeSelector
+                value={{
+                  assigneeNames: newProjectData.supportPeople ? [newProjectData.supportPeople] : []
+                }}
+                onChange={(value) => {
+                  setNewProjectData({
+                    ...newProjectData,
+                    supportPeople: value.assigneeNames?.join(', ') || '',
+                  });
+                }}
+                placeholder="Select or enter support team members"
+                multiple={true}
+              />
+            </div>
+
+            {/* Due Date */}
+            <div className="space-y-2">
+              <Label htmlFor="project-due-date">Due Date</Label>
+              <Input
+                id="project-due-date"
+                type="date"
+                value={newProjectData.dueDate}
+                onChange={(e) =>
+                  setNewProjectData({
+                    ...newProjectData,
+                    dueDate: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            {/* Priority and Category */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-priority">Priority</Label>
+                <Select
+                  value={newProjectData.priority}
+                  onValueChange={(value) =>
+                    setNewProjectData({
+                      ...newProjectData,
+                      priority: value,
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-category">Category</Label>
+                <Select
+                  value={newProjectData.category}
+                  onValueChange={(value) =>
+                    setNewProjectData({
+                      ...newProjectData,
+                      category: value,
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="technology">Technology</SelectItem>
+                    <SelectItem value="events">Events</SelectItem>
+                    <SelectItem value="grants">Grants</SelectItem>
+                    <SelectItem value="outreach">Outreach</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="operations">Operations</SelectItem>
+                    <SelectItem value="community">Community</SelectItem>
+                    <SelectItem value="fundraising">Fundraising</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowAddProjectDialog(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateProject}
+              disabled={createProjectMutation.isPending || !newProjectData.title.trim()}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              {createProjectMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Creating...
+                </div>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Project
                 </>
               )}
             </Button>
