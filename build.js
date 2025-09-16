@@ -70,7 +70,6 @@ try {
   const pdfGeneratorCommand = [
     'esbuild server/meeting-agenda-pdf-generator.ts',
     '--platform=node',
-    '--external:pdfkit',
     '--external:date-fns',
     '--packages=external',
     '--bundle',

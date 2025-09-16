@@ -66,7 +66,7 @@ export class MeetingAgendaPDFGenerator {
     agenda?: CompiledAgenda
   ): Promise<Buffer> {
     try {
-      const PDFKit = (await import('pdfkit')) as any;
+      const PDFKit = (await import('pdfkit')).default;
       const doc = new PDFKit({ 
         margin: 50,
         size: 'A4',
