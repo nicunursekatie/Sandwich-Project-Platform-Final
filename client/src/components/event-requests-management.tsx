@@ -2183,12 +2183,17 @@ export default function EventRequestsManagement() {
                                           <UserCheck className="w-4 h-4 text-purple-600" />
                                           {editingScheduledId === request.id && editingField === 'tspContact' ? (
                                             <div className="flex items-center space-x-2 flex-1">
-                                              <Input
-                                                value={editingValue}
-                                                onChange={(e) => setEditingValue(e.target.value)}
-                                                className="text-sm"
-                                                placeholder="Enter TSP contact"
-                                              />
+                                              <div className="flex-1">
+                                                <TaskAssigneeSelector
+                                                  value={{
+                                                    assigneeName: editingValue
+                                                  }}
+                                                  onChange={(value) => {
+                                                    setEditingValue(value.assigneeName || '');
+                                                  }}
+                                                  placeholder="Select TSP contact"
+                                                />
+                                              </div>
                                               <Button size="sm" onClick={saveEdit} disabled={updateScheduledFieldMutation.isPending}>
                                                 <CheckCircle className="w-4 h-4" />
                                               </Button>
@@ -2819,8 +2824,111 @@ export default function EventRequestsManagement() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-first-name">First Name</Label>
+                        <Input
+                          id="edit-first-name"
+                          name="firstName"
+                          defaultValue={selectedEventRequest.firstName || ''}
+                          data-testid="input-edit-first-name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-last-name">Last Name</Label>
+                        <Input
+                          id="edit-last-name"
+                          name="lastName"
+                          defaultValue={selectedEventRequest.lastName || ''}
+                          data-testid="input-edit-last-name"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-email">Email</Label>
+                        <Input
+                          id="edit-email"
+                          name="email"
+                          type="email"
+                          defaultValue={selectedEventRequest.email || ''}
+                          data-testid="input-edit-email"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-phone">Phone</Label>
+                        <Input
+                          id="edit-phone"
+                          name="phone"
+                          type="tel"
+                          defaultValue={selectedEventRequest.phone || ''}
+                          data-testid="input-edit-phone"
+                        />
+                      </div>
+                    </div>
+
                     <div>
-                      <Label htmlFor="edit-notes">Notes</Label>
+                      <Label htmlFor="edit-organization">Organization Name</Label>
+                      <Input
+                        id="edit-organization"
+                        name="organizationName"
+                        defaultValue={selectedEventRequest.organizationName || ''}
+                        data-testid="input-edit-organization"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-department">Department</Label>
+                      <Input
+                        id="edit-department"
+                        name="department"
+                        defaultValue={selectedEventRequest.department || ''}
+                        data-testid="input-edit-department"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-event-date">Desired Event Date</Label>
+                      <Input
+                        id="edit-event-date"
+                        name="desiredEventDate"
+                        type="date"
+                        defaultValue={selectedEventRequest.desiredEventDate || ''}
+                        data-testid="input-edit-event-date"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-previously-hosted">Previously Hosted</Label>
+                      <Select
+                        name="previouslyHosted"
+                        defaultValue={selectedEventRequest.previouslyHosted}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                          <SelectItem value="i_dont_know">I don't know</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-message">Message</Label>
+                      <Textarea
+                        id="edit-message"
+                        name="message"
+                        defaultValue={selectedEventRequest.message || ''}
+                        rows={4}
+                        data-testid="textarea-edit-message"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-notes">Planning Notes</Label>
                       <Textarea
                         id="edit-notes"
                         name="planningNotes"
@@ -3009,7 +3117,7 @@ export default function EventRequestsManagement() {
                     vanDriverCount: formData.get('vanDriverCount') ? parseInt(formData.get('vanDriverCount') as string) : null,
                     speakerCount: formData.get('speakerCount') ? parseInt(formData.get('speakerCount') as string) : null,
                     volunteerCount: formData.get('volunteerCount') ? parseInt(formData.get('volunteerCount') as string) : null,
-                    tspContact: formData.get('tspContact'),
+                    tspContact: scheduleEventForm.tspContact,
                     additionalRequirements: formData.get('additionalRequirements'),
                     planningNotes: formData.get('planningNotes')
                   };
@@ -3153,11 +3261,17 @@ export default function EventRequestsManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="tspContact">TSP Contact</Label>
-                      <Input
-                        id="tspContact"
-                        name="tspContact"
-                        placeholder="Name of TSP contact person"
-                        data-testid="input-tsp-contact"
+                      <TaskAssigneeSelector
+                        value={{
+                          assigneeName: scheduleEventForm.tspContact
+                        }}
+                        onChange={(value) => {
+                          setScheduleEventForm(prev => ({
+                            ...prev,
+                            tspContact: value.assigneeName || ''
+                          }));
+                        }}
+                        placeholder="Select TSP contact person"
                       />
                     </div>
                     <div>
