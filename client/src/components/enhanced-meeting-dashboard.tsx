@@ -411,11 +411,14 @@ export default function EnhancedMeetingDashboard() {
 
   // Fetch agenda items for selected meeting
   const { data: agendaItems = [], isLoading: agendaItemsLoading } = useQuery<any[]>({
-    queryKey: ['/api/agenda-items'],
+    queryKey: ['agenda-items', selectedMeeting?.id],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/agenda-items');
+      console.log('[Frontend] Fetching agenda items from /api/agenda-items for meeting:', selectedMeeting?.id);
+      const response = await apiRequest('GET', `/api/agenda-items?meetingId=${selectedMeeting?.id || ''}`);
+      console.log('[Frontend] Agenda items response:', response);
       return response || [];
     },
+    enabled: !!selectedMeeting,
   });
 
   // Update project discussion mutation
@@ -667,7 +670,7 @@ export default function EnhancedMeetingDashboard() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agenda-items'] });
+      queryClient.invalidateQueries({ queryKey: ['agenda-items'] });
       toast({
         title: 'Agenda Item Added',
         description:
@@ -890,7 +893,7 @@ export default function EnhancedMeetingDashboard() {
       console.log('🔍 Send to Agenda Debug Info:', {
         user: user?.email,
         role: user?.role,
-        permissions: user?.permissions?.length || 0,
+        permissions: Array.isArray(user?.permissions) ? user.permissions.length : 0,
         projectId,
         timestamp: new Date().toISOString(),
       });
@@ -1063,10 +1066,11 @@ export default function EnhancedMeetingDashboard() {
       console.error('====================================');
 
       let errorMessage = 'Failed to generate agenda PDF';
-      if (error?.message?.includes('403')) {
+      const errorObj = error as { message?: string } | undefined;
+      if (errorObj?.message?.includes('403')) {
         errorMessage =
           'Permission denied - please contact an administrator to ensure you have meeting management permissions';
-      } else if (error?.message?.includes('400')) {
+      } else if (errorObj?.message?.includes('400')) {
         errorMessage =
           'Invalid agenda data - please ensure you have projects selected for the agenda';
       } else if (error?.message) {
@@ -3133,6 +3137,7 @@ export default function EnhancedMeetingDashboard() {
           </Card>
 
           {/* Display One-off Agenda Items */}
+          {console.log('[Frontend] Rendering agenda items:', agendaItems)}
           {agendaItems.length > 0 && (
             <Card className="border-gray-200">
               <CardHeader className="pb-3">

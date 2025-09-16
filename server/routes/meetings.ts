@@ -209,12 +209,16 @@ router.get('/agenda-items', isAuthenticated, async (req: any, res) => {
     const { meetingId } = req.query;
     console.log(`[Meetings API] Getting agenda items for meeting: ${meetingId}`);
 
-    // For now, return empty array since we don't have agenda items storage implemented
-    // TODO: Implement agenda items storage
-    const agendaItems: any[] = [];
+    // Get agenda items from storage
+    const agendaItems = await storage.getAllAgendaItems();
     
-    console.log(`[Meetings API] Found ${agendaItems.length} agenda items`);
-    res.json(agendaItems);
+    // Filter by meeting ID if provided
+    const filteredItems = meetingId 
+      ? agendaItems.filter(item => item.meetingId === parseInt(meetingId))
+      : agendaItems;
+    
+    console.log(`[Meetings API] Found ${filteredItems.length} agenda items`);
+    res.json(filteredItems);
   } catch (error) {
     logger.error('Failed to get agenda items', error);
     console.error('[Meetings API] Error fetching agenda items:', error);
@@ -234,15 +238,13 @@ router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
     console.log(`[Meetings API] Creating agenda item: ${agendaItemData.title}`);
     console.log('[Meetings API] Agenda item data received:', JSON.stringify(agendaItemData, null, 2));
 
-    // For now, return a mock response since we don't have agenda items storage implemented
-    // TODO: Implement agenda items storage
-    const newAgendaItem = {
-      id: Date.now(),
+    // Create agenda item using storage
+    const newAgendaItem = await storage.createAgendaItem({
       ...agendaItemData,
       submittedBy: user.id,
       submittedAt: new Date(),
       status: 'pending'
-    };
+    });
     
     console.log(`[Meetings API] Created agenda item with ID: ${newAgendaItem.id}`);
     res.status(201).json(newAgendaItem);
@@ -266,13 +268,12 @@ router.patch('/agenda-items/:id', isAuthenticated, async (req: any, res) => {
     
     console.log(`[Meetings API] Updating agenda item ${agendaItemId}`);
 
-    // For now, return a mock response since we don't have agenda items storage implemented
-    // TODO: Implement agenda items storage
-    const updatedAgendaItem = {
-      id: agendaItemId,
-      ...updates,
-      updatedAt: new Date()
-    };
+    // Update agenda item using storage
+    const updatedAgendaItem = await storage.updateAgendaItem(agendaItemId, updates);
+    
+    if (!updatedAgendaItem) {
+      return res.status(404).json({ message: 'Agenda item not found' });
+    }
     
     console.log(`[Meetings API] Updated agenda item ${agendaItemId}`);
     res.json(updatedAgendaItem);
@@ -294,8 +295,13 @@ router.delete('/agenda-items/:id', isAuthenticated, async (req: any, res) => {
     const agendaItemId = parseInt(req.params.id);
     console.log(`[Meetings API] Deleting agenda item ${agendaItemId}`);
 
-    // For now, return success since we don't have agenda items storage implemented
-    // TODO: Implement agenda items storage
+    // Delete agenda item using storage
+    const success = await storage.deleteAgendaItem(agendaItemId);
+    
+    if (!success) {
+      return res.status(404).json({ message: 'Agenda item not found' });
+    }
+    
     console.log(`[Meetings API] Deleted agenda item ${agendaItemId}`);
     res.status(204).send();
   } catch (error) {
