@@ -17,6 +17,7 @@ import searchRouter from './search';
 import storageRouter from './storage';
 import versioningRouter from './versioning';
 import coreRouter from './core';
+import createAgendaItemsRouter from '../routes/agenda-items';
 
 // Import centralized middleware
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
@@ -113,8 +114,7 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/meeting-minutes', createErrorHandler('meetings'));
 
-  // Import and setup agenda items router
-  const createAgendaItemsRouter = (await import('../agenda-items')).default;
+  // Setup agenda items router
   const agendaItemsRouter = createAgendaItemsRouter(deps.isAuthenticated, deps.storage);
   
   router.use(
