@@ -227,8 +227,8 @@ export class MeetingAgendaPDFGenerator {
 
         // Process each section
         agenda.sections.forEach((section, sectionIndex) => {
-          // Check if we need a new page
-          if (yPosition > 700) {
+          // Check if we need a new page (leave more room at bottom)
+          if (yPosition > 750) {
             addFooter(); // Add footer to current page before creating new one
             doc.addPage();
             yPosition = 50;
@@ -245,8 +245,11 @@ export class MeetingAgendaPDFGenerator {
           // Section items
           if (section.items && section.items.length > 0) {
             section.items.forEach((item, itemIndex) => {
-              // Check if we need a new page
-              if (yPosition > 720) {
+              // Estimate space needed for this item (minimum ~100 points)
+              const estimatedItemHeight = item.project ? 150 : 80;
+              
+              // Check if we need a new page - only break if we don't have enough space
+              if (yPosition + estimatedItemHeight > 750) {
                 addFooter(); // Add footer to current page before creating new one
                 doc.addPage();
                 yPosition = 50;
