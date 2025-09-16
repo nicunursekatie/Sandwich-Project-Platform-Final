@@ -436,6 +436,30 @@ meetingsRouter.post('/agenda-items', async (req, res) => {
   }
 });
 
+// When accessed via /api/agenda-items route, handle POST at root level
+meetingsRouter.post('/', async (req, res) => {
+  // Check if this request is coming from /api/agenda-items path
+  if (req.baseUrl === '/api/agenda-items') {
+    try {
+      const itemData = insertAgendaItemSchema.parse(req.body);
+      const item = await storage.createAgendaItem(itemData);
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res
+          .status(400)
+          .json({ message: 'Invalid agenda item data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to create agenda item' });
+      }
+    }
+    return;
+  }
+
+  // Otherwise, handle as meeting creation
+  try {
+    const meetingData = insertMeetingSchema.parse(req.body);
+
 meetingsRouter.patch('/agenda-items/:id', async (req: any, res) => {
   try {
     const userId = req.user?.claims?.sub || req.user?.id;
