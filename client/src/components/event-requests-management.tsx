@@ -848,7 +848,10 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
       setCollections([]);
     }
   }, [collectionsData]);
-  const handleDestinationEdit = (collectionId: number, currentValue: string) => {
+  const handleDestinationEdit = (
+    collectionId: number,
+    currentValue: string
+  ) => {
     setEditingDestination({ id: collectionId, value: currentValue || '' });
   };
 
@@ -983,7 +986,9 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                       <div className="flex items-center space-x-3">
                         <Calendar className="w-5 h-5 text-brand-primary" />
                         <span className="font-medium">
-                          {new Date(collection.collectionDate).toLocaleDateString('en-US', {
+                          {new Date(
+                            collection.collectionDate
+                          ).toLocaleDateString('en-US', {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
@@ -1002,7 +1007,8 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                       {collection.sandwichTypes && (
                         <div className="ml-8">
                           <p className="text-sm text-gray-600">
-                            Types: {getSandwichTypesSummary(collection).breakdown}
+                            Types:{' '}
+                            {getSandwichTypesSummary(collection).breakdown}
                           </p>
                         </div>
                       )}
@@ -1013,7 +1019,9 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                           <SandwichDestinationTracker
                             value={editingDestination?.value || ''}
                             onChange={(value) =>
-                              setEditingDestination((prev) => prev ? { ...prev, value } : null)
+                              setEditingDestination((prev) =>
+                                prev ? { ...prev, value } : null
+                              )
                             }
                             onSave={handleDestinationSave}
                             onCancel={handleDestinationCancel}
@@ -1091,7 +1099,9 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
     },
     onError: (error: any) => {
-      setImportResults({ error: error?.details || 'Failed to import 2023 events' });
+      setImportResults({
+        error: error?.details || 'Failed to import 2023 events',
+      });
       toast({
         title: 'Import Failed',
         description: error?.details || 'Failed to import 2023 events',
@@ -1104,11 +1114,12 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
     const file = event.target.files?.[0];
     if (file) {
       // Validate file type
-      const isExcel = file.name.toLowerCase().endsWith('.xlsx') || 
-                     file.name.toLowerCase().endsWith('.xls') ||
-                     file.type.includes('spreadsheet') ||
-                     file.type.includes('excel');
-      
+      const isExcel =
+        file.name.toLowerCase().endsWith('.xlsx') ||
+        file.name.toLowerCase().endsWith('.xls') ||
+        file.type.includes('spreadsheet') ||
+        file.type.includes('excel');
+
       if (isExcel) {
         setSelectedFile(file);
         setIsFileValid(true);
@@ -1166,7 +1177,8 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
             2023 Events Import
           </CardTitle>
           <CardDescription>
-            Upload a 2023 Events Excel file to import historical event data. This will add past events to the system for tracking and analysis.
+            Upload a 2023 Events Excel file to import historical event data.
+            This will add past events to the system for tracking and analysis.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -1233,7 +1245,11 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
             </div>
             <Button
               onClick={handleImport}
-              disabled={!selectedFile || !isFileValid || import2023EventsMutation.isPending}
+              disabled={
+                !selectedFile ||
+                !isFileValid ||
+                import2023EventsMutation.isPending
+              }
               className="bg-brand-primary hover:bg-brand-primary/90"
               data-testid="button-import-events"
             >
@@ -1273,12 +1289,14 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-green-600">
-                        <strong>Events Imported:</strong> {importResults.imported || 0}
+                        <strong>Events Imported:</strong>{' '}
+                        {importResults.imported || 0}
                       </p>
                     </div>
                     <div>
                       <p className="text-green-600">
-                        <strong>Duplicates Skipped:</strong> {importResults.duplicates || 0}
+                        <strong>Duplicates Skipped:</strong>{' '}
+                        {importResults.duplicates || 0}
                       </p>
                     </div>
                   </div>
@@ -1298,10 +1316,21 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
               📋 Import Guidelines
             </h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Ensure your Excel file contains 2023 event data in the expected format</li>
-              <li>• The system will automatically detect and skip duplicate entries</li>
-              <li>• Successfully imported events will appear in the Completed tab</li>
-              <li>• Import status and counts will be displayed above after completion</li>
+              <li>
+                • Ensure your Excel file contains 2023 event data in the
+                expected format
+              </li>
+              <li>
+                • The system will automatically detect and skip duplicate
+                entries
+              </li>
+              <li>
+                • Successfully imported events will appear in the Completed tab
+              </li>
+              <li>
+                • Import status and counts will be displayed above after
+                completion
+              </li>
             </ul>
           </div>
         </CardContent>
@@ -1397,8 +1426,16 @@ export default function EventRequestsManagement() {
   });
 
   const markToolkitSentMutation = useMutation({
-    mutationFn: ({ id, toolkitSentDate }: { id: number; toolkitSentDate: string }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, { toolkitSentDate }),
+    mutationFn: ({
+      id,
+      toolkitSentDate,
+    }: {
+      id: number;
+      toolkitSentDate: string;
+    }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, {
+        toolkitSentDate,
+      }),
     onSuccess: () => {
       toast({
         title: 'Toolkit marked as sent',
@@ -1418,8 +1455,16 @@ export default function EventRequestsManagement() {
   });
 
   const scheduleCallMutation = useMutation({
-    mutationFn: ({ id, scheduledCallDate }: { id: number; scheduledCallDate: string }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, { scheduledCallDate }),
+    mutationFn: ({
+      id,
+      scheduledCallDate,
+    }: {
+      id: number;
+      scheduledCallDate: string;
+    }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, {
+        scheduledCallDate,
+      }),
     onSuccess: () => {
       toast({
         title: 'Call scheduled',
@@ -1462,9 +1507,13 @@ export default function EventRequestsManagement() {
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case 'oldest':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
         case 'organization':
           return a.organizationName.localeCompare(b.organizationName);
         default:
@@ -1624,7 +1673,14 @@ export default function EventRequestsManagement() {
           </TabsContent>
 
           {/* Status-based tabs (existing logic) */}
-          {['new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined'].map((status) => (
+          {[
+            'new',
+            'followed_up',
+            'in_process',
+            'scheduled',
+            'completed',
+            'declined',
+          ].map((status) => (
             <TabsContent key={status} value={status} className="space-y-6">
               {/* Search and Filters for this specific status */}
               <div className="flex flex-col md:flex-row gap-4">
@@ -1638,14 +1694,19 @@ export default function EventRequestsManagement() {
                     data-testid="input-search-requests"
                   />
                 </div>
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <Select
+                  value={sortBy}
+                  onValueChange={(value: any) => setSortBy(value)}
+                >
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="newest">Newest First</SelectItem>
                     <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="organization">Organization A-Z</SelectItem>
+                    <SelectItem value="organization">
+                      Organization A-Z
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1659,26 +1720,42 @@ export default function EventRequestsManagement() {
                       request.organizationName
                         .toLowerCase()
                         .includes(searchQuery.toLowerCase()) ||
-                      request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      request.email.toLowerCase().includes(searchQuery.toLowerCase())
+                      request.firstName
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                      request.lastName
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                      request.email
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase())
                     );
                   })
                   .sort((a: EventRequest, b: EventRequest) => {
                     switch (sortBy) {
                       case 'newest':
-                        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                        return (
+                          new Date(b.createdAt).getTime() -
+                          new Date(a.createdAt).getTime()
+                        );
                       case 'oldest':
-                        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                        return (
+                          new Date(a.createdAt).getTime() -
+                          new Date(b.createdAt).getTime()
+                        );
                       case 'organization':
-                        return a.organizationName.localeCompare(b.organizationName);
+                        return a.organizationName.localeCompare(
+                          b.organizationName
+                        );
                       default:
                         return 0;
                     }
                   })
                   .map((request: EventRequest) => {
                     const StatusIcon = statusIcons[request.status];
-                    const dateInfo = formatEventDate(request.desiredEventDate || '');
+                    const dateInfo = formatEventDate(
+                      request.desiredEventDate || ''
+                    );
 
                     return (
                       <Card
@@ -1698,7 +1775,11 @@ export default function EventRequestsManagement() {
                                   {request.organizationName}
                                 </h3>
                                 <Badge className={statusColors[request.status]}>
-                                  {statusOptions.find((s) => s.value === request.status)?.label}
+                                  {
+                                    statusOptions.find(
+                                      (s) => s.value === request.status
+                                    )?.label
+                                  }
                                 </Badge>
                               </div>
 
@@ -1730,7 +1811,10 @@ export default function EventRequestsManagement() {
                                 {request.estimatedSandwichCount && (
                                   <div className="flex items-center space-x-2">
                                     <span className="text-sm">🥪</span>
-                                    <span>~{request.estimatedSandwichCount} sandwiches</span>
+                                    <span>
+                                      ~{request.estimatedSandwichCount}{' '}
+                                      sandwiches
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -1744,9 +1828,11 @@ export default function EventRequestsManagement() {
 
                             <div className="flex flex-col items-end space-y-2">
                               <span className="text-xs text-gray-500">
-                                {new Date(request.createdAt).toLocaleDateString()}
+                                {new Date(
+                                  request.createdAt
+                                ).toLocaleDateString()}
                               </span>
-                              
+
                               {/* Status-specific action buttons */}
                               <div className="flex space-x-1">
                                 {request.status === 'new' && (
@@ -1765,7 +1851,9 @@ export default function EventRequestsManagement() {
                                         <Shield className="w-4 h-4" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Send Toolkit</TooltipContent>
+                                    <TooltipContent>
+                                      Send Toolkit
+                                    </TooltipContent>
                                   </Tooltip>
                                 )}
 
@@ -1785,7 +1873,9 @@ export default function EventRequestsManagement() {
                                         <TrendingUp className="w-4 h-4" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>View Collections</TooltipContent>
+                                    <TooltipContent>
+                                      View Collections
+                                    </TooltipContent>
                                   </Tooltip>
                                 )}
 
@@ -1824,14 +1914,14 @@ export default function EventRequestsManagement() {
                       No {status.replace('_', ' ')} requests
                     </h3>
                     <p className="text-gray-600">
-                      There are currently no event requests with {status.replace('_', ' ')} status.
+                      There are currently no event requests with{' '}
+                      {status.replace('_', ' ')} status.
                     </p>
                   </div>
                 )}
               </div>
             </TabsContent>
           ))}
-
         </Tabs>
 
         {/* Event Details Dialog */}
@@ -1843,13 +1933,19 @@ export default function EventRequestsManagement() {
                   <Building className="w-5 h-5" />
                   <span>{selectedEventRequest.organizationName}</span>
                   <Badge className={statusColors[selectedEventRequest.status]}>
-                    {statusOptions.find((s) => s.value === selectedEventRequest.status)?.label}
+                    {
+                      statusOptions.find(
+                        (s) => s.value === selectedEventRequest.status
+                      )?.label
+                    }
                   </Badge>
                 </DialogTitle>
                 <DialogDescription>
                   Event request from {selectedEventRequest.firstName}{' '}
                   {selectedEventRequest.lastName} • Created{' '}
-                  {new Date(selectedEventRequest.createdAt).toLocaleDateString()}
+                  {new Date(
+                    selectedEventRequest.createdAt
+                  ).toLocaleDateString()}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1878,13 +1974,19 @@ export default function EventRequestsManagement() {
                       {selectedEventRequest.phone && (
                         <div>
                           <Label className="text-sm font-medium">Phone</Label>
-                          <p className="text-sm">{selectedEventRequest.phone}</p>
+                          <p className="text-sm">
+                            {selectedEventRequest.phone}
+                          </p>
                         </div>
                       )}
                       {selectedEventRequest.department && (
                         <div>
-                          <Label className="text-sm font-medium">Department</Label>
-                          <p className="text-sm">{selectedEventRequest.department}</p>
+                          <Label className="text-sm font-medium">
+                            Department
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.department}
+                          </p>
                         </div>
                       )}
                     </CardContent>
@@ -1900,9 +2002,15 @@ export default function EventRequestsManagement() {
                     <CardContent className="space-y-3">
                       {selectedEventRequest.desiredEventDate && (
                         <div>
-                          <Label className="text-sm font-medium">Desired Date</Label>
+                          <Label className="text-sm font-medium">
+                            Desired Date
+                          </Label>
                           <p className="text-sm">
-                            {formatEventDate(selectedEventRequest.desiredEventDate).text}
+                            {
+                              formatEventDate(
+                                selectedEventRequest.desiredEventDate
+                              ).text
+                            }
                           </p>
                         </div>
                       )}
@@ -1923,7 +2031,8 @@ export default function EventRequestsManagement() {
                         <p className="text-sm">
                           {previouslyHostedOptions.find(
                             (option) =>
-                              option.value === selectedEventRequest.previouslyHosted
+                              option.value ===
+                              selectedEventRequest.previouslyHosted
                           )?.label || 'Unknown'}
                         </p>
                       </div>
@@ -1950,7 +2059,9 @@ export default function EventRequestsManagement() {
                   <div className="flex space-x-2">
                     {selectedEventRequest.status === 'new' && (
                       <Button
-                        onClick={() => openToolkitSentDialog(selectedEventRequest)}
+                        onClick={() =>
+                          openToolkitSentDialog(selectedEventRequest)
+                        }
                         className="bg-green-600 hover:bg-green-700 text-white"
                         data-testid="button-send-toolkit-dialog"
                       >
@@ -1961,7 +2072,9 @@ export default function EventRequestsManagement() {
 
                     {selectedEventRequest.status === 'completed' && (
                       <Button
-                        onClick={() => handleViewCollectionLog(selectedEventRequest)}
+                        onClick={() =>
+                          handleViewCollectionLog(selectedEventRequest)
+                        }
                         className="bg-brand-primary hover:bg-brand-primary/90"
                         data-testid="button-view-collections-dialog"
                       >
@@ -2003,7 +2116,9 @@ export default function EventRequestsManagement() {
                               'Are you sure you want to delete this event request?'
                             )
                           ) {
-                            deleteEventRequestMutation.mutate(selectedEventRequest.id);
+                            deleteEventRequestMutation.mutate(
+                              selectedEventRequest.id
+                            );
                           }
                         }}
                         data-testid="button-delete-request"
@@ -2021,7 +2136,9 @@ export default function EventRequestsManagement() {
                     onSubmit={(e) => {
                       e.preventDefault();
                       const formData = new FormData(e.currentTarget);
-                      const updatedData = Object.fromEntries(formData.entries());
+                      const updatedData = Object.fromEntries(
+                        formData.entries()
+                      );
                       updateEventRequestMutation.mutate({
                         id: selectedEventRequest.id,
                         data: updatedData,
@@ -2041,7 +2158,10 @@ export default function EventRequestsManagement() {
                           </SelectTrigger>
                           <SelectContent>
                             {statusOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -2057,7 +2177,9 @@ export default function EventRequestsManagement() {
                           id="edit-estimated-count"
                           name="estimatedSandwichCount"
                           type="number"
-                          defaultValue={selectedEventRequest.estimatedSandwichCount || ''}
+                          defaultValue={
+                            selectedEventRequest.estimatedSandwichCount || ''
+                          }
                           data-testid="input-edit-sandwich-count"
                         />
                       </div>
@@ -2136,10 +2258,12 @@ export default function EventRequestsManagement() {
                   {selectedEventRequest.organizationName}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                handleScheduleCall();
-              }}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleScheduleCall();
+                }}
+              >
                 <div className="grid grid-cols-2 gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="schedule-date">Call Date</Label>
@@ -2192,7 +2316,10 @@ export default function EventRequestsManagement() {
 
         {/* Weekly Planning Modal */}
         {showWeeklyPlanningModal && (
-          <Dialog open={showWeeklyPlanningModal} onOpenChange={setShowWeeklyPlanningModal}>
+          <Dialog
+            open={showWeeklyPlanningModal}
+            onOpenChange={setShowWeeklyPlanningModal}
+          >
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
