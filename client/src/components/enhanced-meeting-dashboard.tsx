@@ -692,7 +692,8 @@ export default function EnhancedMeetingDashboard() {
       console.log('[Frontend] Creating agenda item via /api/meetings/agenda-items:', itemData);
       return await apiRequest('POST', '/api/meetings/agenda-items', {
         title: itemData.title,
-        description: `Section: ${itemData.section}`,
+        description: '', // Clear description since section is separate now
+        section: itemData.section, // Send section as proper field
         meetingId: itemData.meetingId,
       });
     },
