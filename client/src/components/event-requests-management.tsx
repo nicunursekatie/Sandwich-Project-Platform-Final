@@ -369,6 +369,7 @@ interface EventRequest {
   vanDriverAssignments?: string[];
   actualSandwiches?: number;
   actualSandwichTypes?: string;
+  sandwichTypes?: string;
   completedNotes?: string;
   nextDayFollowUp?: string;
   oneMonthFollowUp?: string;
@@ -1381,6 +1382,26 @@ export default function EventRequestsManagement() {
   const [scheduleCallDate, setScheduleCallDate] = useState('');
   const [scheduleCallTime, setScheduleCallTime] = useState('');
 
+  // Schedule event dialog state
+  const [showScheduleEventDialog, setShowScheduleEventDialog] = useState(false);
+  const [scheduleEventForm, setScheduleEventForm] = useState({
+    eventDate: '',
+    eventStartTime: '',
+    eventEndTime: '',
+    pickupTime: '',
+    eventAddress: '',
+    hasRefrigeration: '',
+    estimatedSandwichCount: '',
+    sandwichTypes: '',
+    driverCount: '',
+    vanDriverCount: '',
+    speakerCount: '',
+    volunteerCount: '',
+    tspContact: '',
+    additionalRequirements: '',
+    planningNotes: ''
+  });
+
   // 1. Add state for inline editing of completed event fields:
   const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
     null
@@ -1493,6 +1514,50 @@ export default function EventRequestsManagement() {
       toast({
         title: 'Error',
         description: 'Failed to schedule call.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const scheduleEventMutation = useMutation({
+    mutationFn: ({
+      id,
+      eventData,
+    }: {
+      id: number;
+      eventData: any;
+    }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}/schedule-event`, eventData),
+    onSuccess: () => {
+      toast({
+        title: 'Event scheduled',
+        description: 'Event has been scheduled successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setShowScheduleEventDialog(false);
+      setSelectedEventRequest(null);
+      setScheduleEventForm({
+        eventDate: '',
+        eventStartTime: '',
+        eventEndTime: '',
+        pickupTime: '',
+        eventAddress: '',
+        hasRefrigeration: '',
+        estimatedSandwichCount: '',
+        sandwichTypes: '',
+        driverCount: '',
+        vanDriverCount: '',
+        speakerCount: '',
+        volunteerCount: '',
+        tspContact: '',
+        additionalRequirements: '',
+        planningNotes: ''
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to schedule event.',
         variant: 'destructive',
       });
     },
@@ -2168,6 +2233,29 @@ export default function EventRequestsManagement() {
                                     </Tooltip>
                                   )}
 
+                                  {request.status === 'in_process' && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedEventRequest(request);
+                                            setShowScheduleEventDialog(true);
+                                          }}
+                                          className="text-brand-orange hover:bg-brand-orange hover:text-white"
+                                          data-testid={`button-mark-scheduled-${request.id}`}
+                                        >
+                                          <CalendarPlus className="w-4 h-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Mark as Scheduled
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+
                                   {(request.status === 'in_process' || request.status === 'scheduled') && (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -2672,6 +2760,248 @@ export default function EventRequestsManagement() {
               <div className="py-4">
                 <SandwichForecastWidget />
               </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Schedule Event Dialog */}
+        {showScheduleEventDialog && selectedEventRequest && (
+          <Dialog
+            open={showScheduleEventDialog}
+            onOpenChange={setShowScheduleEventDialog}
+          >
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <CalendarPlus className="w-5 h-5 text-brand-orange" />
+                  <span>Schedule Event - {selectedEventRequest.organizationName}</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Complete the event details to move this request to scheduled status
+                </DialogDescription>
+              </DialogHeader>
+              
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const eventData = {
+                    status: 'scheduled',
+                    desiredEventDate: formData.get('eventDate'),
+                    eventStartTime: formData.get('eventStartTime'),
+                    eventEndTime: formData.get('eventEndTime'),
+                    pickupTime: formData.get('pickupTime'),
+                    eventAddress: formData.get('eventAddress'),
+                    hasRefrigeration: formData.get('hasRefrigeration') === 'yes',
+                    estimatedSandwichCount: formData.get('estimatedSandwichCount') ? parseInt(formData.get('estimatedSandwichCount') as string) : null,
+                    sandwichTypes: formData.get('sandwichTypes'),
+                    driverCount: formData.get('driverCount') ? parseInt(formData.get('driverCount') as string) : null,
+                    vanDriverCount: formData.get('vanDriverCount') ? parseInt(formData.get('vanDriverCount') as string) : null,
+                    speakerCount: formData.get('speakerCount') ? parseInt(formData.get('speakerCount') as string) : null,
+                    volunteerCount: formData.get('volunteerCount') ? parseInt(formData.get('volunteerCount') as string) : null,
+                    tspContact: formData.get('tspContact'),
+                    additionalRequirements: formData.get('additionalRequirements'),
+                    planningNotes: formData.get('planningNotes')
+                  };
+                  
+                  scheduleEventMutation.mutate({
+                    id: selectedEventRequest.id,
+                    eventData
+                  });
+                }}
+                className="space-y-6"
+              >
+                {/* Event Date & Times */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="eventDate">Event Date *</Label>
+                    <Input
+                      id="eventDate"
+                      name="eventDate"
+                      type="date"
+                      required
+                      data-testid="input-event-date"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="eventAddress">Event Address</Label>
+                    <Input
+                      id="eventAddress"
+                      name="eventAddress"
+                      placeholder="123 Main St, City, State"
+                      data-testid="input-event-address"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="eventStartTime">Start Time</Label>
+                    <Input
+                      id="eventStartTime"
+                      name="eventStartTime"
+                      type="time"
+                      data-testid="input-event-start-time"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="eventEndTime">End Time</Label>
+                    <Input
+                      id="eventEndTime"
+                      name="eventEndTime"
+                      type="time"
+                      data-testid="input-event-end-time"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="pickupTime">Pickup Time</Label>
+                    <Input
+                      id="pickupTime"
+                      name="pickupTime"
+                      type="time"
+                      data-testid="input-pickup-time"
+                    />
+                  </div>
+                </div>
+
+                {/* Refrigeration */}
+                <div>
+                  <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                  <Select name="hasRefrigeration" defaultValue="">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select refrigeration status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Sandwich Planning */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Sandwich Planning</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estimatedSandwichCount">Total Sandwich Count</Label>
+                      <Input
+                        id="estimatedSandwichCount"
+                        name="estimatedSandwichCount"
+                        type="number"
+                        placeholder="e.g., 100"
+                        data-testid="input-sandwich-count"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sandwichTypes">Sandwich Types</Label>
+                      <SandwichTypesSelector
+                        name="sandwichTypes"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Staffing */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Staffing & Assignments</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="tspContact">TSP Contact</Label>
+                      <Input
+                        id="tspContact"
+                        name="tspContact"
+                        placeholder="Name of TSP contact person"
+                        data-testid="input-tsp-contact"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="driverCount">Drivers Needed</Label>
+                      <Input
+                        id="driverCount"
+                        name="driverCount"
+                        type="number"
+                        placeholder="0"
+                        data-testid="input-driver-count"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="vanDriverCount">Van Drivers Needed</Label>
+                      <Input
+                        id="vanDriverCount"
+                        name="vanDriverCount"
+                        type="number"
+                        placeholder="0"
+                        data-testid="input-van-driver-count"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="speakerCount">Speakers Needed</Label>
+                      <Input
+                        id="speakerCount"
+                        name="speakerCount"
+                        type="number"
+                        placeholder="0"
+                        data-testid="input-speaker-count"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="volunteerCount">Volunteers Needed</Label>
+                      <Input
+                        id="volunteerCount"
+                        name="volunteerCount"
+                        type="number"
+                        placeholder="0"
+                        data-testid="input-volunteer-count"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="additionalRequirements">Additional Requirements</Label>
+                    <Textarea
+                      id="additionalRequirements"
+                      name="additionalRequirements"
+                      placeholder="Any special requirements or notes..."
+                      rows={3}
+                      data-testid="textarea-additional-requirements"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="planningNotes">Planning Notes</Label>
+                    <Textarea
+                      id="planningNotes"
+                      name="planningNotes"
+                      placeholder="Internal planning notes..."
+                      rows={3}
+                      data-testid="textarea-planning-notes"
+                    />
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowScheduleEventDialog(false)}
+                    disabled={scheduleEventMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={scheduleEventMutation.isPending}
+                    className="bg-brand-orange hover:bg-brand-orange/90"
+                    data-testid="button-confirm-schedule-event"
+                  >
+                    {scheduleEventMutation.isPending ? 'Scheduling...' : 'Schedule Event'}
+                  </Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         )}
