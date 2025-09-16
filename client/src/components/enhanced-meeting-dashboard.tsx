@@ -69,6 +69,7 @@ import {
   UserPlus,
   Edit3,
   UserCog,
+  Trash2,
 } from 'lucide-react';
 
 interface Meeting {
@@ -407,6 +408,15 @@ export default function EnhancedMeetingDashboard() {
       queryKey: ['/api/meetings', selectedMeeting?.id, 'compiled-agenda'],
       enabled: !!selectedMeeting,
     });
+
+  // Fetch agenda items for selected meeting
+  const { data: agendaItems = [], isLoading: agendaItemsLoading } = useQuery<any[]>({
+    queryKey: ['/api/agenda-items'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/agenda-items');
+      return response || [];
+    },
+  });
 
   // Update project discussion mutation
   const updateProjectDiscussionMutation = useMutation({
@@ -3121,6 +3131,67 @@ export default function EnhancedMeetingDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Display One-off Agenda Items */}
+          {agendaItems.length > 0 && (
+            <Card className="border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <span className="text-gray-700">One-off Agenda Items</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {agendaItems.length}
+                  </Badge>
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Items added for this meeting
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {agendaItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">
+                          {item.title}
+                        </h4>
+                        {item.description && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {item.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {item.section || 'General'}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            Added {new Date(item.submittedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
+                              // TODO: Add delete mutation
+                              console.log('Delete agenda item:', item.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Summary */}
           {selectedProjectIds.length > 0 && (
