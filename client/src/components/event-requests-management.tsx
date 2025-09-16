@@ -1800,34 +1800,72 @@ export default function EventRequestsManagement() {
                                   </Badge>
                                 </div>
 
-                                {/* Contact Information - Larger fonts */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-base">
-                                  <div className="flex items-center space-x-3">
-                                    <User className="w-5 h-5 text-brand-teal" />
-                                    <span className="font-medium text-gray-800">
-                                      {request.firstName} {request.lastName}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-3">
-                                    <Mail className="w-5 h-5 text-brand-teal" />
-                                    <span className="font-medium text-gray-800">{request.email}</span>
-                                  </div>
-                                  {request.phone && (
+                                {/* Contact Information - Grouped together */}
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                                    <User className="w-4 h-4 mr-2 text-brand-teal" />
+                                    Contact Information
+                                  </h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-base">
                                     <div className="flex items-center space-x-3">
-                                      <Phone className="w-5 h-5 text-brand-teal" />
-                                      <span className="font-medium text-gray-800">{request.phone}</span>
-                                    </div>
-                                  )}
-                                  {request.estimatedSandwichCount && (
-                                    <div className="flex items-center space-x-3">
-                                      <span className="text-lg">🥪</span>
-                                      <span className="font-semibold text-brand-orange">
-                                        ~{request.estimatedSandwichCount}{' '}
-                                        sandwiches
+                                      <User className="w-4 h-4 text-brand-teal" />
+                                      <span className="font-medium text-gray-800">
+                                        {request.firstName} {request.lastName}
                                       </span>
                                     </div>
-                                  )}
+                                    <div className="flex items-center space-x-3">
+                                      <Mail className="w-4 h-4 text-brand-teal" />
+                                      <span className="font-medium text-gray-800">{request.email}</span>
+                                    </div>
+                                    {request.phone && (
+                                      <div className="flex items-center space-x-3">
+                                        <Phone className="w-4 h-4 text-brand-teal" />
+                                        <span className="font-medium text-gray-800">{request.phone}</span>
+                                      </div>
+                                    )}
+                                    {request.estimatedSandwichCount && (
+                                      <div className="flex items-center space-x-3">
+                                        <span className="text-lg">🥪</span>
+                                        <span className="font-semibold text-brand-orange">
+                                          ~{request.estimatedSandwichCount}{' '}
+                                          sandwiches
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
+
+                                {/* Toolkit Status - Only for In Process */}
+                                {request.status === 'in_process' && (
+                                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                    <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center">
+                                      <Shield className="w-4 h-4 mr-2 text-green-600" />
+                                      Toolkit Status
+                                    </h4>
+                                    <div className="flex items-center space-x-4">
+                                      {request.toolkitSent ? (
+                                        <div className="flex items-center space-x-2">
+                                          <CheckCircle className="w-5 h-5 text-green-600" />
+                                          <span className="text-green-800 font-medium">
+                                            Toolkit Sent
+                                          </span>
+                                          {request.toolkitSentDate && (
+                                            <span className="text-sm text-green-600">
+                                              on {new Date(request.toolkitSentDate).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center space-x-2">
+                                          <AlertTriangle className="w-5 h-5 text-orange-600" />
+                                          <span className="text-orange-800 font-medium">
+                                            Toolkit Not Sent
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
 
                                 {/* Additional details for scheduled events */}
                                 {request.status === 'scheduled' && (
@@ -1945,6 +1983,31 @@ export default function EventRequestsManagement() {
                                       </TooltipTrigger>
                                       <TooltipContent>
                                         Send Toolkit
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+
+                                  {(request.status === 'in_process' || request.status === 'scheduled') && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedEventRequest(request);
+                                            setScheduleCallDate('');
+                                            setScheduleCallTime('');
+                                            setShowScheduleCallDialog(true);
+                                          }}
+                                          className="text-brand-teal hover:bg-brand-teal hover:text-white"
+                                          data-testid={`button-schedule-call-${request.id}`}
+                                        >
+                                          <Phone className="w-4 h-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Schedule Call
                                       </TooltipContent>
                                     </Tooltip>
                                   )}
