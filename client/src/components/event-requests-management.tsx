@@ -297,7 +297,7 @@ const formatEventDate = (dateString: string) => {
     if (dayOfWeek === 2) {
       className = 'text-gray-700 font-medium';
     } else if (isWedOrThu) {
-      className = 'text-orange-600 font-medium';
+      className = 'text-brand-orange font-medium';
     } else {
       className = 'text-brand-primary font-bold';
     }
@@ -385,7 +385,7 @@ const statusColors = {
   in_process:
     'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
   scheduled:
-    'bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200',
+    'bg-gradient-to-r from-yellow-50 to-amber-100 text-brand-orange border border-amber-200',
   completed:
     'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
   declined:
@@ -571,7 +571,7 @@ const SandwichTypesSelector = ({
               </span>
             )}
             {estimatedCount && totalQuantity !== estimatedCount && (
-              <span className="ml-2 text-orange-600">
+              <span className="ml-2 text-brand-orange">
                 (Expected: {estimatedCount})
               </span>
             )}
@@ -1815,7 +1815,7 @@ export default function EventRequestsManagement() {
                                     <div className="flex items-center space-x-2">
                                       <Calendar className="w-4 h-4 text-gray-500" />
                                       <span
-                                        className={`text-2xl md:text-3xl font-extrabold text-brand-primary ${dateInfo.className}`}
+                                        className={`text-sm font-medium text-gray-700 ${dateInfo.className}`}
                                       >
                                         {dateInfo.text}
                                       </span>
