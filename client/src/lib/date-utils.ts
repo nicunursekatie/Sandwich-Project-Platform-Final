@@ -79,6 +79,7 @@ export function normalizeDate(dateInputValue: string): string {
 
 /**
  * Check if a date is in the past (for meeting status)
+ * Meetings stay as "current" for 3 hours after their scheduled time
  * Compares dates as local dates to avoid timezone issues
  */
 export function isDateInPast(dateString: string, timeString?: string): boolean {
@@ -97,7 +98,7 @@ export function isDateInPast(dateString: string, timeString?: string): boolean {
       meetingDate.getDate()
     );
 
-    // If we have time and it's today, check time too
+    // If we have time and it's today, check time too with buffer
     if (timeString && meetingDateOnly.getTime() === today.getTime()) {
       const [hours, minutes] = timeString.split(':').map(Number);
       const meetingDateTime = new Date(
@@ -108,11 +109,15 @@ export function isDateInPast(dateString: string, timeString?: string): boolean {
         minutes
       );
 
-      return meetingDateTime < now;
+      // Add 3-hour buffer - meeting stays "current" for 3 hours after start time
+      const meetingEndTime = new Date(meetingDateTime.getTime() + (3 * 60 * 60 * 1000));
+      return meetingEndTime < now;
     }
 
-    // Otherwise just compare dates
-    return meetingDateOnly < today;
+    // For dates without times, consider them past only after the day ends
+    // Add one day buffer for meetings without specific times
+    const dayAfterMeeting = new Date(meetingDateOnly.getTime() + (24 * 60 * 60 * 1000));
+    return dayAfterMeeting < today;
   } catch {
     return false;
   }
