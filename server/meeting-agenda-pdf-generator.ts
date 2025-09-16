@@ -80,13 +80,14 @@ export class MeetingAgendaPDFGenerator {
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', (error: any) => reject(error));
 
-        // TSP Brand Colors
+        // TSP Brand Colors with complete palette for gorgeous styling
         const colors = {
           orange: '#FBAD3F',
           navy: '#236383',
           lightBlue: '#47B3CB',
           darkGray: '#333333',
           lightGray: '#666666',
+          veryLightGray: '#F5F5F5',
           white: '#FFFFFF',
           success: '#28a745',
           warning: '#ffc107',
@@ -132,6 +133,33 @@ export class MeetingAgendaPDFGenerator {
               doc.page.height - 30,
               { align: 'center', width: doc.page.width - 100 }
             );
+        };
+
+        // Helper function to add gorgeous colored boxes for visual styling
+        const addColoredBox = (x: number, y: number, width: number, height: number, color: string) => {
+          doc
+            .rect(x, y, width, height)
+            .fillColor(color)
+            .fill();
+        };
+
+        // Helper function to get bottom limit for current page  
+        const getBottomLimit = (): number => {
+          return doc.page.height - 80; // Leave space for footer
+        };
+
+        // Helper function to add page with footer
+        const addPageWithFooter = (): void => {
+          addFooter();
+          doc.addPage();
+          yPosition = 50; // Reset Y position for new page
+        };
+
+        // Helper function to ensure space for content (prevents ugly page breaks)
+        const ensureSpace = (requiredHeight: number): void => {
+          if (yPosition + requiredHeight > getBottomLimit()) {
+            addPageWithFooter();
+          }
         };
 
         // HEADER WITH TSP BRANDING
@@ -188,41 +216,44 @@ export class MeetingAgendaPDFGenerator {
             yPosition += 25;
           }
 
-          doc.fontSize(16).fillColor(colors.navy).text('AGENDA', 50, yPosition);
-          yPosition += 30;
+          // Beautiful AGENDA header
+          addColoredBox(40, yPosition - 5, doc.page.width - 80, 35, colors.navy);
+          doc
+            .fontSize(18)
+            .fillColor(colors.white)
+            .text(sanitizeText('AGENDA'), 50, yPosition);
+          yPosition += 45;
 
-          // Process each section
+          // Process each section with gorgeous styling
           agenda.sections.forEach((section, sectionIndex) => {
-            // Check if we need a new page
-            if (yPosition > 700) {
-              addFooter();
-              doc.addPage();
-              yPosition = 50;
-            }
+            // Ensure space for section header
+            ensureSpace(50);
 
-            // Section header
+            // Beautiful section header with colored background
+            addColoredBox(40, yPosition - 5, doc.page.width - 80, 35, colors.lightBlue);
             doc
-              .fontSize(14)
-              .fillColor(colors.navy)
+              .fontSize(16)
+              .fillColor(colors.white)
               .text(sanitizeText(`${sectionIndex + 1}. ${section.title}`), 50, yPosition);
-            yPosition += 35;
+            yPosition += 45;
 
-            // Section items
+            // Section items with gorgeous styling
             if (section.items && section.items.length > 0) {
               section.items.forEach((item, itemIndex) => {
-                // Check if we need a new page
-                if (yPosition > 720) {
-                  addFooter();
-                  doc.addPage();
-                  yPosition = 50;
-                }
+                // Ensure space for agenda item
+                ensureSpace(80);
 
-                // Item title
+                // Beautiful project card with colored background
+                const cardHeight = item.project ? 200 : 80;
+                addColoredBox(50, yPosition - 8, doc.page.width - 100, cardHeight, colors.veryLightGray);
+                addColoredBox(50, yPosition - 8, doc.page.width - 100, 4, item.project ? colors.navy : colors.lightBlue); // Top colored border
+                
+                // Item title with enhanced styling
                 doc
-                  .fontSize(12)
-                  .fillColor(colors.darkGray)
-                  .text(sanitizeText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`), 70, yPosition);
-                yPosition += 22;
+                  .fontSize(14)
+                  .fillColor(colors.navy)
+                  .text(sanitizeText(`${itemIndex + 1}.${item.project ? ' [PROJECT]' : ''} ${item.title}`), 60, yPosition);
+                yPosition += 25;
 
                 // If this is a project item, show detailed project information
                 if (item.project) {
@@ -258,43 +289,49 @@ export class MeetingAgendaPDFGenerator {
                     yPosition += 30;
                   }
 
-                  // Discussion Points
+                  // Discussion Points with beautiful orange background
                   if (project.meetingDiscussionPoints) {
+                    ensureSpace(50);
+                    addColoredBox(70, yPosition - 5, doc.page.width - 140, 30, colors.orange);
                     doc
                       .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('What do we need to talk about?', 90, yPosition);
-                    yPosition += 20;
+                      .fillColor(colors.white)
+                      .text(sanitizeText('What do we need to talk about?'), 75, yPosition);
+                    yPosition += 35;
                     
                     doc
                       .fontSize(10)
                       .fillColor(colors.darkGray)
-                      .text(sanitizeText(project.meetingDiscussionPoints), 100, yPosition, { width: 430 });
-                    yPosition += 30;
+                      .text(sanitizeText(project.meetingDiscussionPoints), 80, yPosition, { width: 430 });
+                    yPosition += 35;
                   }
 
-                  // Decision Items
+                  // Decision Items with beautiful green background
                   if (project.meetingDecisionItems) {
+                    ensureSpace(50);
+                    addColoredBox(70, yPosition - 5, doc.page.width - 140, 30, colors.success);
                     doc
                       .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('What decisions need to be made?', 90, yPosition);
-                    yPosition += 20;
+                      .fillColor(colors.white)
+                      .text(sanitizeText('What decisions need to be made?'), 75, yPosition);
+                    yPosition += 35;
                     
                     doc
                       .fontSize(10)
                       .fillColor(colors.darkGray)
-                      .text(sanitizeText(project.meetingDecisionItems), 100, yPosition, { width: 430 });
-                    yPosition += 30;
+                      .text(sanitizeText(project.meetingDecisionItems), 80, yPosition, { width: 430 });
+                    yPosition += 35;
                   }
 
-                  // Project Tasks
+                  // Project Tasks with beautiful blue background
                   if (project.tasks && project.tasks.length > 0) {
+                    ensureSpace(50);
+                    addColoredBox(70, yPosition - 5, doc.page.width - 140, 30, colors.lightBlue);
                     doc
                       .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('Project Tasks:', 90, yPosition);
-                    yPosition += 20;
+                      .fillColor(colors.white)
+                      .text(sanitizeText('Project Tasks:'), 75, yPosition);
+                    yPosition += 35;
                     
                     project.tasks.forEach((task, taskIndex) => {
                       doc
