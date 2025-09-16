@@ -95,6 +95,32 @@ export class MeetingAgendaPDFGenerator {
 
       let yPosition = 50;
 
+      // Helper function to sanitize text for PDF rendering
+      const sanitizeText = (text: string): string => {
+        if (!text) return '';
+        
+        return text
+          // Replace smart quotes
+          .replace(/[""]/g, '"')
+          .replace(/['']/g, "'")
+          // Replace dashes
+          .replace(/[–—]/g, '-')
+          // Replace bullet point
+          .replace(/•/g, '-')
+          // Replace ellipsis
+          .replace(/…/g, '...')
+          // Replace non-breaking space
+          .replace(/\u00A0/g, ' ')
+          // Replace degree symbol
+          .replace(/°/g, ' deg')
+          // Replace trademark/registered/copyright
+          .replace(/™/g, '(TM)')
+          .replace(/®/g, '(R)')
+          .replace(/©/g, '(C)')
+          // Strip any remaining non-ASCII characters (including emojis)
+          .replace(/[^\x00-\x7F]/g, '');
+      };
+
       // Helper function to add a colored box
       const addColoredBox = (x: number, y: number, width: number, height: number, color: string) => {
         doc.rect(x, y, width, height).fill(color);
@@ -102,7 +128,8 @@ export class MeetingAgendaPDFGenerator {
 
       // Helper function to wrap text
       const wrapText = (text: string, maxWidth: number, fontSize: number = 10) => {
-        const words = text.split(' ');
+        const sanitizedText = sanitizeText(text);
+        const words = sanitizedText.split(' ');
         const lines = [];
         let currentLine = '';
 
@@ -161,7 +188,7 @@ export class MeetingAgendaPDFGenerator {
           .fontSize(8)
           .fillColor(colors.lightGray)
           .text(
-            `The Sandwich Project • Meeting Agenda • Generated ${format(new Date(), 'MMM dd, yyyy')}`,
+            sanitizeText(`The Sandwich Project | Meeting Agenda | Generated ${format(new Date(), 'MMM dd, yyyy')}`),
             50,
             currentPage.height - 25,
             { align: 'center', width: currentPage.width - 100 }
@@ -174,12 +201,12 @@ export class MeetingAgendaPDFGenerator {
       doc
         .fontSize(28)
         .fillColor(colors.white)
-        .text('The Sandwich Project', 50, 30, { align: 'left' });
+        .text(sanitizeText('The Sandwich Project'), 50, 30, { align: 'left' });
       
       doc
         .fontSize(20)
         .fillColor(colors.orange)
-        .text('Meeting Agenda', 50, 65, { align: 'left' });
+        .text(sanitizeText('Meeting Agenda'), 50, 65, { align: 'left' });
 
       // Meeting details in header
       const meetingDate = format(new Date(meeting.date), 'EEEE, MMMM dd, yyyy');
@@ -188,11 +215,11 @@ export class MeetingAgendaPDFGenerator {
       doc
         .fontSize(14)
         .fillColor(colors.white)
-        .text(`${meeting.title}`, 50, 90)
-        .text(`${meetingDate} at ${meetingTime}`, 50, 110);
+        .text(sanitizeText(meeting.title), 50, 90)
+        .text(sanitizeText(`${meetingDate} at ${meetingTime}`), 50, 110);
 
       if (meeting.location) {
-        doc.text(`Location: ${meeting.location}`, 50, 130);
+        doc.text(sanitizeText(`Location: ${meeting.location}`), 50, 130);
       }
 
       yPosition = 160;
@@ -202,12 +229,12 @@ export class MeetingAgendaPDFGenerator {
         doc
           .fontSize(12)
           .fillColor(colors.darkGray)
-          .text('Meeting Description:', 50, yPosition);
+          .text(sanitizeText('Meeting Description:'), 50, yPosition);
         yPosition += 25;
         
         const descriptionLines = wrapText(meeting.description, 500, 12);
         descriptionLines.forEach(line => {
-          doc.text(`  ${line}`, 50, yPosition);
+          doc.text(sanitizeText(`  ${line}`), 50, yPosition);
           yPosition += 15;
         });
         yPosition += 20;
@@ -221,7 +248,7 @@ export class MeetingAgendaPDFGenerator {
           doc
             .fontSize(12)
             .fillColor(colors.darkGray)
-            .text(`Estimated Duration: ${agenda.totalEstimatedTime}`, 60, yPosition);
+            .text(sanitizeText(`Estimated Duration: ${agenda.totalEstimatedTime}`), 60, yPosition);
           yPosition += 40;
         }
 
@@ -239,7 +266,7 @@ export class MeetingAgendaPDFGenerator {
           doc
             .fontSize(16)
             .fillColor(colors.white)
-            .text(`${sectionIndex + 1}. ${section.title}`, 50, yPosition);
+            .text(sanitizeText(`${sectionIndex + 1}. ${section.title}`), 50, yPosition);
           yPosition += 45;
 
           // Section items
@@ -263,7 +290,7 @@ export class MeetingAgendaPDFGenerator {
               doc
                 .fontSize(14)
                 .fillColor(colors.navy)
-                .text(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`, 60, yPosition);
+                .text(sanitizeText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`), 60, yPosition);
               yPosition += 25;
 
               // If this is a project item, show detailed project information
@@ -280,11 +307,11 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(10)
                     .fillColor(colors.darkGray)
-                    .text('Owner:', leftColumn, metadataY);
+                    .text(sanitizeText('Owner:'), leftColumn, metadataY);
                   doc
                     .fontSize(10)
                     .fillColor(colors.navy)
-                    .text(project.assigneeName, leftColumn + 60, metadataY);
+                    .text(sanitizeText(project.assigneeName), leftColumn + 60, metadataY);
                 }
 
                 // Support People
@@ -292,13 +319,13 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(10)
                     .fillColor(colors.darkGray)
-                    .text('Support:', rightColumn, metadataY);
+                    .text(sanitizeText('Support:'), rightColumn, metadataY);
                   const supportLines = wrapText(project.supportPeople, 200, 10);
                   supportLines.forEach((line, idx) => {
                     doc
                       .fontSize(10)
                       .fillColor(colors.navy)
-                      .text(line, rightColumn + 60, metadataY + (idx * 12));
+                      .text(sanitizeText(line), rightColumn + 60, metadataY + (idx * 12));
                   });
                   metadataY += Math.max(supportLines.length * 12, 15);
                 } else {
@@ -325,7 +352,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(10)
                     .fillColor(getPriorityColor(project.priority))
-                    .text(project.priority, rightColumn + 60, metadataY);
+                    .text(sanitizeText(project.priority), rightColumn + 60, metadataY);
                 }
 
                 yPosition = metadataY + 25;
@@ -343,7 +370,7 @@ export class MeetingAgendaPDFGenerator {
                     doc
                       .fontSize(10)
                       .fillColor(colors.lightGray)
-                      .text(`  ${line}`, 80, yPosition);
+                      .text(sanitizeText(`  ${line}`), 80, yPosition);
                     yPosition += 12;
                   });
                   yPosition += 10;
@@ -363,7 +390,7 @@ export class MeetingAgendaPDFGenerator {
                     doc
                       .fontSize(10)
                       .fillColor(colors.darkGray)
-                      .text(`  ${line}`, 90, yPosition);
+                      .text(sanitizeText(`  ${line}`), 90, yPosition);
                     yPosition += 12;
                   });
                   yPosition += 15;
@@ -383,7 +410,7 @@ export class MeetingAgendaPDFGenerator {
                     doc
                       .fontSize(10)
                       .fillColor(colors.darkGray)
-                      .text(`  ${line}`, 90, yPosition);
+                      .text(sanitizeText(`  ${line}`), 90, yPosition);
                     yPosition += 12;
                   });
                   yPosition += 15;
@@ -395,14 +422,14 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('Project Tasks:', 80, yPosition);
+                    .text(sanitizeText('Project Tasks:'), 80, yPosition);
                   yPosition += 20;
                   
                   project.tasks.forEach((task, taskIndex) => {
                     doc
                       .fontSize(10)
                       .fillColor(colors.navy)
-                      .text(`  ${taskIndex + 1}. ${task.title}`, 90, yPosition);
+                      .text(sanitizeText(`  ${taskIndex + 1}. ${task.title}`), 90, yPosition);
                     yPosition += 15;
                     
                     if (task.description) {
@@ -411,7 +438,7 @@ export class MeetingAgendaPDFGenerator {
                         doc
                           .fontSize(9)
                           .fillColor(colors.lightGray)
-                          .text(`     ${line}`, 100, yPosition);
+                          .text(sanitizeText(`     ${line}`), 100, yPosition);
                         yPosition += 11;
                       });
                     }
@@ -426,7 +453,7 @@ export class MeetingAgendaPDFGenerator {
                       doc
                         .fontSize(9)
                         .fillColor(colors.lightGray)
-                        .text(`     ${taskMeta.join(' • ')}`, 100, yPosition);
+                        .text(sanitizeText(`     ${taskMeta.join(' | ')}`), 100, yPosition);
                       yPosition += 12;
                     }
                     
@@ -440,14 +467,14 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('Attachments:', 80, yPosition);
+                    .text(sanitizeText('Attachments:'), 80, yPosition);
                   yPosition += 20;
                   
                   project.attachments.forEach(attachment => {
                     doc
                       .fontSize(10)
                       .fillColor(colors.lightBlue)
-                      .text(`  • ${attachment}`, 90, yPosition);
+                      .text(sanitizeText(`  - ${attachment}`), 90, yPosition);
                     yPosition += 15;
                   });
                   yPosition += 10;
@@ -461,7 +488,7 @@ export class MeetingAgendaPDFGenerator {
                     doc
                       .fontSize(10)
                       .fillColor(colors.lightGray)
-                      .text(`  ${line}`, 80, yPosition);
+                      .text(sanitizeText(`  ${line}`), 80, yPosition);
                     yPosition += 12;
                   });
                   yPosition += 10;
@@ -477,7 +504,7 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(9)
                     .fillColor(colors.lightGray)
-                    .text(`  ${metadata.join(' • ')}`, 80, yPosition);
+                    .text(sanitizeText(`  ${metadata.join(' | ')}`), 80, yPosition);
                   yPosition += 15;
                 }
               }
@@ -489,7 +516,7 @@ export class MeetingAgendaPDFGenerator {
             doc
               .fontSize(10)
               .fillColor(colors.lightGray)
-              .text('  Items to be determined', 70, yPosition);
+              .text(sanitizeText('  Items to be determined'), 70, yPosition);
             yPosition += 30;
           }
         });
@@ -498,7 +525,7 @@ export class MeetingAgendaPDFGenerator {
         doc
           .fontSize(16)
           .fillColor(colors.navy)
-          .text('AGENDA', 50, yPosition);
+          .text(sanitizeText('AGENDA'), 50, yPosition);
         yPosition += 35;
 
         const standardSections = [
@@ -512,13 +539,13 @@ export class MeetingAgendaPDFGenerator {
           doc
             .fontSize(14)
             .fillColor(colors.navy)
-            .text(`${index + 1}. ${section}`, 50, yPosition);
+            .text(sanitizeText(`${index + 1}. ${section}`), 50, yPosition);
           yPosition += 25;
 
           doc
             .fontSize(10)
             .fillColor(colors.lightGray)
-            .text('  Items to be determined', 70, yPosition);
+            .text(sanitizeText('  Items to be determined'), 70, yPosition);
           yPosition += 30;
         });
       }
