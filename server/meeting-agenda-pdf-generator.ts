@@ -129,7 +129,7 @@ export class MeetingAgendaPDFGenerator {
             .fontSize(14)
             .fillColor(colors.navy)
             .text(`${sectionIndex + 1}. ${section.title}`, 50, yPosition);
-          yPosition += 25;
+          yPosition += 35; // Increased spacing for section headers
 
           // Section items
           if (section.items && section.items.length > 0) {
@@ -149,7 +149,7 @@ export class MeetingAgendaPDFGenerator {
                   70,
                   yPosition
                 );
-              yPosition += 18;
+              yPosition += 22; // Increased spacing for title
 
               // Item description
               if (item.description) {
@@ -157,7 +157,10 @@ export class MeetingAgendaPDFGenerator {
                   .fontSize(10)
                   .fillColor(colors.lightGray)
                   .text(item.description, 90, yPosition, { width: 450 });
-                yPosition += 15;
+                
+                // Calculate proper height for description text
+                const descriptionHeight = Math.ceil(item.description.length / 60) * 12;
+                yPosition += Math.max(descriptionHeight, 18);
               }
 
               // Item metadata
@@ -174,10 +177,10 @@ export class MeetingAgendaPDFGenerator {
                   .fontSize(9)
                   .fillColor(colors.lightGray)
                   .text(metadata.join(' • '), 90, yPosition);
-                yPosition += 15;
+                yPosition += 18; // Increased spacing for metadata
               }
 
-              yPosition += 5; // Extra spacing between items
+              yPosition += 15; // Extra spacing between items
             });
           } else {
             doc
@@ -187,7 +190,7 @@ export class MeetingAgendaPDFGenerator {
             yPosition += 20;
           }
 
-          yPosition += 15; // Extra spacing between sections
+          yPosition += 25; // Extra spacing between sections
         });
       } else {
         // No compiled agenda available

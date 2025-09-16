@@ -269,18 +269,62 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
     };
     
     // Transform agenda projects to sections for PDF
-    const agendaSections = agendaData.agendaProjects ? [{
-      id: 1,
-      title: 'Needs Discussion',
-      items: agendaData.agendaProjects.map((project: any, index: number) => ({
-        id: index + 1,
-        title: project.title,
-        description: project.discussionPoints || project.decisionItems || '',
-        submittedBy: project.owner || 'Unknown',
-        type: 'project',
-        estimatedTime: '10 mins'
-      }))
-    }] : [];
+    const agendaSections = [];
+    
+    // Add regular agenda projects
+    if (agendaData.agendaProjects && agendaData.agendaProjects.length > 0) {
+      agendaSections.push({
+        id: 1,
+        title: 'Needs Discussion',
+        items: agendaData.agendaProjects.map((project: any, index: number) => ({
+          id: index + 1,
+          title: project.title,
+          description: project.discussionPoints || project.decisionItems || '',
+          submittedBy: project.owner || 'Unknown',
+          type: 'project',
+          estimatedTime: '10 mins'
+        }))
+      });
+    }
+    
+    // Add off-agenda items (fetch from database)
+    try {
+      const agendaItems = await storage.getAllAgendaItems();
+      const currentMeetingItems = agendaItems.filter(item => 
+        item.meetingId === 17 && item.status === 'pending'
+      );
+      
+      if (currentMeetingItems.length > 0) {
+        // Group by section
+        const itemsBySection = currentMeetingItems.reduce((acc, item) => {
+          const section = item.section || 'other_business';
+          if (!acc[section]) acc[section] = [];
+          acc[section].push(item);
+          return acc;
+        }, {} as any);
+        
+        // Add each section
+        Object.entries(itemsBySection).forEach(([sectionName, items]: [string, any]) => {
+          const sectionTitle = sectionName.replace(/_/g, ' ')
+            .replace(/\b\w/g, l => l.toUpperCase());
+          
+          agendaSections.push({
+            id: agendaSections.length + 1,
+            title: sectionTitle,
+            items: items.map((item: any, index: number) => ({
+              id: index + 1,
+              title: item.title,
+              description: item.description || '',
+              submittedBy: item.submittedBy || 'Unknown',
+              type: 'agenda_item',
+              estimatedTime: '5 mins'
+            }))
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching agenda items:', error);
+    }
     
     const compiledAgenda = {
       id: 1,
