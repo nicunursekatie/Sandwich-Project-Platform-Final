@@ -1825,6 +1825,81 @@ export default function EventRequestsManagement() {
                                   )}
                                 </div>
 
+                                {/* Additional details for scheduled events */}
+                                {request.status === 'scheduled' && (
+                                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
+                                      <Calendar className="w-4 h-4 mr-2" />
+                                      Event Details
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                      {request.eventStartTime && (
+                                        <div className="flex items-center space-x-2">
+                                          <Clock className="w-4 h-4 text-blue-600" />
+                                          <span className="text-blue-800">
+                                            <strong>Start:</strong> {formatTime12Hour(request.eventStartTime)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {request.eventEndTime && (
+                                        <div className="flex items-center space-x-2">
+                                          <Clock className="w-4 h-4 text-blue-600" />
+                                          <span className="text-blue-800">
+                                            <strong>End:</strong> {formatTime12Hour(request.eventEndTime)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {request.pickupTime && (
+                                        <div className="flex items-center space-x-2">
+                                          <Truck className="w-4 h-4 text-blue-600" />
+                                          <span className="text-blue-800">
+                                            <strong>Pickup:</strong> {formatTime12Hour(request.pickupTime)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {request.eventAddress && (
+                                        <div className="flex items-center space-x-2">
+                                          <MapPin className="w-4 h-4 text-blue-600" />
+                                          <span className="text-blue-800">
+                                            <strong>Location:</strong> {request.eventAddress}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {request.tspContact && (
+                                        <div className="flex items-center space-x-2">
+                                          <UserCheck className="w-4 h-4 text-blue-600" />
+                                          <span className="text-blue-800">
+                                            <strong>TSP Contact:</strong> {request.tspContact}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {request.driverCount && (
+                                        <div className="flex items-center space-x-2">
+                                          <Truck className="w-4 h-4 text-blue-600" />
+                                          <span className="text-blue-800">
+                                            <strong>Drivers:</strong> {request.driverCount}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {request.volunteerCount && (
+                                        <div className="flex items-center space-x-2">
+                                          <Users className="w-4 h-4 text-blue-600" />
+                                          <span className="text-blue-800">
+                                            <strong>Volunteers:</strong> {request.volunteerCount}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {request.planningNotes && (
+                                      <div className="mt-3 pt-3 border-t border-blue-200">
+                                        <p className="text-xs text-blue-700">
+                                          <strong>Notes:</strong> {request.planningNotes}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
                                 {request.message && (
                                   <p className="text-sm text-gray-600 mt-2 line-clamp-2">
                                     {request.message}
