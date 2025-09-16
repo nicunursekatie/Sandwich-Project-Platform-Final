@@ -73,9 +73,9 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
     // Helper function to check if we need a new page
     const ensureSpace = (requiredSpace: number) => {
-      if (yPosition + requiredSpace > pageHeight - 100) {
+      if (yPosition + requiredSpace > pageHeight - 150) {
         doc.addPage();
-        yPosition = 0;
+        yPosition = 50; // Start with some margin from top
       }
     };
 
@@ -86,7 +86,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
       yPosition += height;
     };
 
-    // Helper function to add text with proper positioning
+    // Helper function to add text with proper positioning and wrapping
     const addText = (text: string, x: number, y: number, options: any = {}) => {
       const sanitizedText = sanitizeText(text);
       
@@ -98,7 +98,14 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
         doc.fillColor(options.fillColor);
       }
       
-      doc.text(sanitizedText, x, y, options);
+      // Ensure text wraps properly within content width
+      const textOptions = {
+        ...options,
+        width: options.width || contentWidth,
+        align: options.align || 'left'
+      };
+      
+      doc.text(sanitizedText, x, y, textOptions);
     };
 
     // Helper function to add divider line
@@ -184,32 +191,46 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
           if (item.project) {
             const project = item.project;
             
-            // Project metadata in two columns
-            const leftColumn = [];
-            const rightColumn = [];
-            
-            if (project.assigneeName) leftColumn.push(`Owner: ${project.assigneeName}`);
-            if (project.status) leftColumn.push(`Status: ${project.status}`);
-            if (project.supportPeople) rightColumn.push(`Support: ${project.supportPeople}`);
-            if (project.priority) rightColumn.push(`Priority: ${project.priority}`);
-
-            const maxLines = Math.max(leftColumn.length, rightColumn.length);
-            for (let i = 0; i < maxLines; i++) {
-              if (leftColumn[i]) {
-                addText(leftColumn[i], margin, yPosition, {
-                  fontSize: 10,
-                  fillColor: colors.lightGray
-                });
-              }
-              if (rightColumn[i]) {
-                addText(rightColumn[i], margin + 300, yPosition, {
-                  fontSize: 10,
-                  fillColor: colors.lightGray
-                });
-              }
+            // Project metadata with better text wrapping
+            if (project.assigneeName) {
+              addText(`Owner: ${project.assigneeName}`, margin, yPosition, {
+                fontSize: 10,
+                fillColor: colors.lightGray,
+                width: contentWidth
+              });
               yPosition += 12;
             }
-            yPosition += 10;
+            
+            if (project.status) {
+              addText(`Status: ${project.status}`, margin, yPosition, {
+                fontSize: 10,
+                fillColor: colors.lightGray,
+                width: contentWidth
+              });
+              yPosition += 12;
+            }
+            
+            if (project.supportPeople) {
+              addText(`Support: ${project.supportPeople}`, margin, yPosition, {
+                fontSize: 10,
+                fillColor: colors.lightGray,
+                width: contentWidth
+              });
+              yPosition += 12;
+            }
+            
+            if (project.priority) {
+              const priorityColor = project.priority === 'high' ? colors.red : 
+                                  project.priority === 'medium' ? colors.orange : colors.lightGray;
+              addText(`Priority: ${project.priority}`, margin, yPosition, {
+                fontSize: 10,
+                fillColor: priorityColor,
+                width: contentWidth
+              });
+              yPosition += 12;
+            }
+            
+            yPosition += 5;
 
             // Add orange divider
             addDivider(colors.orange);
@@ -218,14 +239,15 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             if (project.meetingDiscussionPoints) {
               addText('What do we need to talk about?', margin, yPosition, {
                 fontSize: 11,
-                fillColor: colors.darkGray
+                fillColor: colors.darkGray,
+                width: contentWidth
               });
               yPosition += 15;
               
-              addText(project.meetingDiscussionPoints, margin, yPosition, {
+              addText(project.meetingDiscussionPoints, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.lightGray,
-                width: contentWidth
+                width: contentWidth - 20
               });
               yPosition += 25;
             }
@@ -237,14 +259,15 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             if (project.meetingDecisionItems) {
               addText('What decisions need to be made?', margin, yPosition, {
                 fontSize: 11,
-                fillColor: colors.darkGray
+                fillColor: colors.darkGray,
+                width: contentWidth
               });
               yPosition += 15;
               
-              addText(project.meetingDecisionItems, margin, yPosition, {
+              addText(project.meetingDecisionItems, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.lightGray,
-                width: contentWidth
+                width: contentWidth - 20
               });
               yPosition += 25;
             }
@@ -261,13 +284,14 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
               yPosition += 15;
 
               project.tasks.forEach((task: any, taskIndex: number) => {
-                ensureSpace(30);
-                addText(`${taskIndex + 1}. ${task.description || task.title || 'No description'}`, margin, yPosition, {
+                ensureSpace(40);
+                const taskText = `${taskIndex + 1}. ${task.description || task.title || 'No description'}`;
+                addText(taskText, margin, yPosition, {
                   fontSize: 10,
                   fillColor: colors.lightGray,
-                  width: contentWidth
+                  width: contentWidth - 20 // Leave some margin for indentation
                 });
-                yPosition += 15;
+                yPosition += 20; // More space between tasks
               });
               yPosition += 10;
             }
