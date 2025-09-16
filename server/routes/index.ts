@@ -113,13 +113,17 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/meeting-minutes', createErrorHandler('meetings'));
 
+  // Import and setup agenda items router
+  const createAgendaItemsRouter = (await import('../agenda-items')).default;
+  const agendaItemsRouter = createAgendaItemsRouter(deps.isAuthenticated, deps.storage);
+  
   router.use(
     '/api/agenda-items',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
-    meetingsRouter
+    agendaItemsRouter
   );
-  router.use('/api/agenda-items', createErrorHandler('meetings'));
+  router.use('/api/agenda-items', createErrorHandler('agenda-items'));
 
   router.use(
     '/api/current-meeting',
