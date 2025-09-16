@@ -15,6 +15,7 @@ router.get('/', isAuthenticated, async (req: any, res) => {
     const meetingsArray = Array.isArray(meetings) ? meetings : [];
     
     console.log(`[Meetings API] Found ${meetingsArray.length} meetings`);
+    console.log('[Meetings API] Meetings data:', JSON.stringify(meetingsArray, null, 2));
     res.json(meetingsArray);
   } catch (error) {
     logger.error('Failed to get meetings', error);
@@ -75,10 +76,12 @@ router.post('/', isAuthenticated, async (req: any, res) => {
 
     const meetingData = req.body;
     console.log(`[Meetings API] Creating new meeting: ${meetingData.title}`);
+    console.log('[Meetings API] Meeting data received:', JSON.stringify(meetingData, null, 2));
 
     const newMeeting = await storage.createMeeting(meetingData);
     
     console.log(`[Meetings API] Created meeting with ID: ${newMeeting.id}`);
+    console.log('[Meetings API] Created meeting data:', JSON.stringify(newMeeting, null, 2));
     res.status(201).json(newMeeting);
   } catch (error) {
     logger.error('Failed to create meeting', error);
