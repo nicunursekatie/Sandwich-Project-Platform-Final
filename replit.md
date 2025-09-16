@@ -3,6 +3,15 @@
 ## Overview
 This full-stack application for The Sandwich Project, a nonprofit, manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support the organization's growth and impact in addressing food insecurity. Its business vision is to become a vital tool for food security initiatives, with market potential in supporting volunteer-driven community projects. The ambition is to scale operations and improve outreach, ultimately contributing to a significant reduction in food waste and hunger.
 
+## Recent Changes
+**September 16, 2025 - Agenda Items Routing Fix:**
+- Fixed critical bug where `/api/agenda-items` requests were incorrectly routed to meetings creation logic instead of agenda items creation
+- Created dedicated agenda items router at `server/routes/agenda-items.ts` with proper validation using `insertAgendaItemSchema`
+- Updated `server/routes/index.ts` to use the dedicated agenda items router
+- Resolved persistent port conflicts preventing server restart by using `restart_workflow` tool
+- Logs now show requests correctly hitting `/api/agenda-items` endpoint instead of meetings logic
+- Authentication working properly through web interface for admin@sandwich.project
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
