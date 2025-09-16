@@ -81,6 +81,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { TaskAssigneeSelector } from './task-assignee-selector';
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24: string): string => {
@@ -373,6 +374,12 @@ interface EventRequest {
   driverAssignments?: string[];
   speakerAssignments?: string[];
   volunteerAssignments?: string[];
+  vanDriverAssignments?: string[];
+  actualSandwiches?: number;
+  actualSandwichTypes?: string;
+  completedNotes?: string;
+  nextDayFollowUp?: string;
+  oneMonthFollowUp?: string;
 }
 
 const statusColors = {
@@ -1370,6 +1377,10 @@ export default function EventRequestsManagement() {
   const [showScheduleCallDialog, setShowScheduleCallDialog] = useState(false);
   const [scheduleCallDate, setScheduleCallDate] = useState('');
   const [scheduleCallTime, setScheduleCallTime] = useState('');
+
+  // 1. Add state for inline editing of completed event fields:
+  const [editingCompletedId, setEditingCompletedId] = useState<number | null>(null);
+  const [completedEdit, setCompletedEdit] = useState<any>({});
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
