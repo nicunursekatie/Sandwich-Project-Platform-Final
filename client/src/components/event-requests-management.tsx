@@ -1321,6 +1321,7 @@ export default function EventRequestsManagement() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showWeeklyPlanningModal, setShowWeeklyPlanningModal] = useState(false);
 
   // Event details dialog states
   const [selectedEventRequest, setSelectedEventRequest] =
@@ -1573,7 +1574,15 @@ export default function EventRequestsManagement() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <SandwichForecastWidget />
+            <Button
+              onClick={() => setShowWeeklyPlanningModal(true)}
+              variant="outline"
+              className="flex items-center space-x-2"
+              data-testid="button-weekly-planning"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Weekly Planning</span>
+            </Button>
             <Badge
               variant="secondary"
               className="bg-brand-primary text-white px-3 py-1 text-sm"
@@ -1585,7 +1594,7 @@ export default function EventRequestsManagement() {
 
         {/* Tabs */}
         <Tabs defaultValue="new" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="new" className="relative">
               New ({statusCounts.new})
               {statusCounts.new > 0 && (
@@ -1610,11 +1619,20 @@ export default function EventRequestsManagement() {
             <TabsTrigger value="import" className="bg-blue-50 border-blue-200">
               Import
             </TabsTrigger>
+            <TabsTrigger value="audit-log" className="bg-purple-50 border-purple-200">
+              <Shield className="w-4 h-4 mr-1" />
+              Audit Log
+            </TabsTrigger>
           </TabsList>
 
           {/* Import Tab */}
           <TabsContent value="import">
             <ImportEventsTab />
+          </TabsContent>
+
+          {/* Audit Log Tab */}
+          <TabsContent value="audit-log">
+            <EventRequestAuditLog showFilters data-testid="audit-log" />
           </TabsContent>
 
           {/* Status-based tabs (existing logic) */}
@@ -2180,6 +2198,26 @@ export default function EventRequestsManagement() {
                   </Button>
                 </DialogFooter>
               </form>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Weekly Planning Modal */}
+        {showWeeklyPlanningModal && (
+          <Dialog open={showWeeklyPlanningModal} onOpenChange={setShowWeeklyPlanningModal}>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <Calendar className="w-5 h-5 text-brand-primary" />
+                  <span>Weekly Planning & Sandwich Forecast</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Plan upcoming events and view sandwich preparation forecasts
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <SandwichForecastWidget />
+              </div>
             </DialogContent>
           </Dialog>
         )}
