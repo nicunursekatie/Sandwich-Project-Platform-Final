@@ -144,9 +144,35 @@ export default function MeetingCalendar({
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (meetingId: number) => {
+      const response = await fetch(`/api/meetings/${meetingId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete meeting');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      toast({ title: 'Meeting deleted successfully' });
+    },
+    onError: () => {
+      toast({ 
+        title: 'Failed to delete meeting',
+        variant: 'destructive'
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(formData);
+  };
+
+  const handleDeleteMeeting = (meetingId: number, meetingTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete the meeting "${meetingTitle}"? This action cannot be undone.`)) {
+      deleteMutation.mutate(meetingId);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -448,6 +474,8 @@ export default function MeetingCalendar({
                         variant="outline"
                         size="sm"
                         className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteMeeting(meeting.id, meeting.title)}
+                        disabled={deleteMutation.isPending}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
