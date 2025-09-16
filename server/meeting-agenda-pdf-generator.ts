@@ -222,13 +222,13 @@ export class MeetingAgendaPDFGenerator {
 
       // Footer
       const pageCount = doc.bufferedPageRange();
-      for (let i = 0; i < pageCount.count; i++) {
+      for (let i = 1; i <= pageCount.count; i++) {
         doc.switchToPage(i);
         doc
           .fontSize(8)
           .fillColor(colors.lightGray)
           .text(
-            `The Sandwich Project • Meeting Agenda • Page ${i + 1} of ${
+            `The Sandwich Project • Meeting Agenda • Page ${i} of ${
               pageCount.count
             }`,
             50,
