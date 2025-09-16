@@ -2058,8 +2058,8 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Calendar className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Event Date</div>
-                                            <div className="text-blue-900 font-medium">
+                                            <div className="text-sm font-semibold text-blue-700">Event Date</div>
+                                            <div className="text-blue-900 font-medium text-base">
                                               {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'Not specified'}
                                             </div>
                                           </div>
@@ -2067,8 +2067,8 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Clock className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Start Time</div>
-                                            <div className="text-blue-900 font-medium">
+                                            <div className="text-sm font-semibold text-blue-700">Start Time</div>
+                                            <div className="text-blue-900 font-medium text-base">
                                               {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not specified'}
                                             </div>
                                           </div>
@@ -2076,8 +2076,8 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Clock className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">End Time</div>
-                                            <div className="text-blue-900 font-medium">
+                                            <div className="text-sm font-semibold text-blue-700">End Time</div>
+                                            <div className="text-blue-900 font-medium text-base">
                                               {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not specified'}
                                             </div>
                                           </div>
@@ -2085,8 +2085,8 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Truck className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Pickup Time</div>
-                                            <div className="text-blue-900 font-medium">
+                                            <div className="text-sm font-semibold text-blue-700">Pickup Time</div>
+                                            <div className="text-blue-900 font-medium text-base">
                                               {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not specified'}
                                             </div>
                                           </div>
@@ -2111,8 +2111,8 @@ export default function EventRequestsManagement() {
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Event Address</div>
-                                                <div className="text-blue-900 font-medium">
+                                                <div className="text-sm font-semibold text-blue-700">Event Address</div>
+                                                <div className="text-blue-900 font-medium text-base">
                                                   {request.eventAddress ? (
                                                     <a
                                                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
@@ -2141,8 +2141,8 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <span className="text-blue-600">❄️</span>
                                           <div>
-                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Refrigeration</div>
-                                            <div className="text-blue-900 font-medium">
+                                            <div className="text-sm font-semibold text-blue-700">Refrigeration</div>
+                                            <div className="text-blue-900 font-medium text-base">
                                               {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
                                             </div>
                                           </div>
@@ -2160,8 +2160,8 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <span className="text-green-600">📊</span>
                                           <div>
-                                            <div className="text-xs font-semibold text-green-700 uppercase tracking-wide">Total Sandwiches</div>
-                                            <div className="text-green-900 font-medium">
+                                            <div className="text-sm font-semibold text-green-700">Total Sandwiches</div>
+                                            <div className="text-green-900 font-medium text-base">
                                               {request.estimatedSandwichCount || 'Not specified'}
                                             </div>
                                           </div>
@@ -2169,8 +2169,8 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <span className="text-green-600">🏷️</span>
                                           <div>
-                                            <div className="text-xs font-semibold text-green-700 uppercase tracking-wide">Types</div>
-                                            <div className="text-green-900 font-medium">
+                                            <div className="text-sm font-semibold text-green-700">Types</div>
+                                            <div className="text-green-900 font-medium text-base">
                                               {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                             </div>
                                           </div>
@@ -2195,8 +2195,8 @@ export default function EventRequestsManagement() {
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-xs font-semibold text-green-700 uppercase tracking-wide">Destination</div>
-                                                <div className="text-green-900 font-medium">
+                                                <div className="text-sm font-semibold text-green-700">Destination</div>
+                                                <div className="text-green-900 font-medium text-base">
                                                   {request.sandwichDestination || 'Not specified'}
                                                 </div>
                                               </div>
@@ -2249,8 +2249,8 @@ export default function EventRequestsManagement() {
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">TSP Contact</div>
-                                                <div className="text-purple-900 font-medium">
+                                                <div className="text-sm font-semibold text-purple-700">TSP Contact</div>
+                                                <div className="text-purple-900 font-medium text-base">
                                                   {request.tspContact || 'Not assigned'}
                                                 </div>
                                               </div>
@@ -2273,8 +2273,8 @@ export default function EventRequestsManagement() {
                                           <div className="flex items-center space-x-2">
                                             <Truck className="w-4 h-4 text-purple-600" />
                                             <div>
-                                              <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Drivers Needed</div>
-                                              <div className="text-purple-900 font-medium">
+                                              <div className="text-sm font-semibold text-purple-700">Drivers Needed</div>
+                                              <div className="text-purple-900 font-medium text-base">
                                                 {request.driverCount || 0}
                                                 {request.vanNeeded && (
                                                   <span className="ml-2 text-purple-600 text-sm">
@@ -2286,8 +2286,8 @@ export default function EventRequestsManagement() {
                                           </div>
                                           {request.vanNeeded && request.vanDriverCount && request.vanDriverCount > 0 && (
                                             <div className="ml-6">
-                                              <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Van Drivers</div>
-                                              <div className="text-purple-800 font-medium">{request.vanDriverCount}</div>
+                                              <div className="text-sm font-semibold text-purple-600">Van Drivers</div>
+                                              <div className="text-purple-800 font-medium text-base">{request.vanDriverCount}</div>
                                             </div>
                                           )}
                                           {request.driverAssignments && request.driverAssignments.length > 0 ? (
@@ -2320,8 +2320,8 @@ export default function EventRequestsManagement() {
                                           <div className="flex items-center space-x-2">
                                             <Megaphone className="w-4 h-4 text-purple-600" />
                                             <div>
-                                              <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Speakers Needed</div>
-                                              <div className="text-purple-900 font-medium">
+                                              <div className="text-sm font-semibold text-purple-700">Speakers Needed</div>
+                                              <div className="text-purple-900 font-medium text-base">
                                                 {request.speakerCount || 0}
                                               </div>
                                             </div>
@@ -2351,8 +2351,8 @@ export default function EventRequestsManagement() {
                                           <div className="flex items-center space-x-2">
                                             <Users className="w-4 h-4 text-purple-600" />
                                             <div>
-                                              <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Volunteers Needed</div>
-                                              <div className="text-purple-900 font-medium">
+                                              <div className="text-sm font-semibold text-purple-700">Volunteers Needed</div>
+                                              <div className="text-purple-900 font-medium text-base">
                                                 {request.volunteerCount || 0}
                                               </div>
                                             </div>
