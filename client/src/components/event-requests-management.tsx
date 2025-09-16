@@ -100,6 +100,7 @@ const formatTime12Hour = (time24: string): string => {
   return `${hour24 - 12}:${minutes} PM`;
 };
 
+
 // Sandwich Destination Tracker Component - Simplified Free Text Entry
 interface SandwichDestinationTrackerProps {
   value: string;
@@ -371,6 +372,7 @@ interface EventRequest {
   actualSandwiches?: number;
   actualSandwichTypes?: string;
   sandwichTypes?: string;
+  sandwichDestination?: string; // Where sandwiches are going
   completedNotes?: string;
   nextDayFollowUp?: string;
   oneMonthFollowUp?: string;
@@ -1394,6 +1396,7 @@ export default function EventRequestsManagement() {
     hasRefrigeration: '',
     estimatedSandwichCount: '',
     sandwichTypes: '',
+    sandwichDestination: '',
     driverCount: '',
     vanDriverCount: '',
     speakerCount: '',
@@ -1407,6 +1410,34 @@ export default function EventRequestsManagement() {
   const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
     null
   );
+
+  // Add state for inline editing of scheduled event fields:
+  const [editingScheduledId, setEditingScheduledId] = useState<number | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+
+  // Helper functions for inline editing
+  const startEditing = (id: number, field: string, currentValue: string) => {
+    setEditingScheduledId(id);
+    setEditingField(field);
+    setEditingValue(currentValue || '');
+  };
+
+  const saveEdit = () => {
+    if (editingScheduledId && editingField) {
+      updateScheduledFieldMutation.mutate({
+        id: editingScheduledId,
+        field: editingField,
+        value: editingValue,
+      });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingScheduledId(null);
+    setEditingField(null);
+    setEditingValue('');
+  };
   const [completedEdit, setCompletedEdit] = useState<any>({});
 
   const { toast } = useToast();
@@ -1546,6 +1577,7 @@ export default function EventRequestsManagement() {
         hasRefrigeration: '',
         estimatedSandwichCount: '',
         sandwichTypes: '',
+        sandwichDestination: '',
         driverCount: '',
         vanDriverCount: '',
         speakerCount: '',
@@ -1559,6 +1591,37 @@ export default function EventRequestsManagement() {
       toast({
         title: 'Error',
         description: 'Failed to schedule event.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for inline editing of scheduled event fields
+  const updateScheduledFieldMutation = useMutation({
+    mutationFn: ({
+      id,
+      field,
+      value,
+    }: {
+      id: number;
+      field: string;
+      value: string;
+    }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
+    onSuccess: () => {
+      toast({
+        title: 'Field updated',
+        description: 'Event field has been updated successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setEditingScheduledId(null);
+      setEditingField(null);
+      setEditingValue('');
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update field.',
         variant: 'destructive',
       });
     },
@@ -2000,9 +2063,38 @@ export default function EventRequestsManagement() {
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <MapPin className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Event Address:</strong> {request.eventAddress || 'Not specified'}
-                                          </span>
+                                          {editingScheduledId === request.id && editingField === 'eventAddress' ? (
+                                            <div className="flex items-center space-x-2 flex-1">
+                                              <Input
+                                                value={editingValue}
+                                                onChange={(e) => setEditingValue(e.target.value)}
+                                                className="text-sm"
+                                                placeholder="Enter event address"
+                                              />
+                                              <Button size="sm" onClick={saveEdit} disabled={updateScheduledFieldMutation.isPending}>
+                                                <CheckCircle className="w-4 h-4" />
+                                              </Button>
+                                              <Button size="sm" variant="outline" onClick={cancelEdit}>
+                                                <X className="w-4 h-4" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center space-x-2 flex-1">
+                                              <span className="text-blue-800">
+                                                <strong>Event Address:</strong> {request.eventAddress || 'Not specified'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() => startEditing(request.id, 'eventAddress', request.eventAddress || '')}
+                                                  className="h-6 w-6 p-0"
+                                                >
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <span className="text-blue-600">❄️</span>
@@ -2045,9 +2137,38 @@ export default function EventRequestsManagement() {
                                         {/* TSP Contact */}
                                         <div className="flex items-center space-x-2">
                                           <UserCheck className="w-4 h-4 text-purple-600" />
-                                          <span className="text-purple-800">
-                                            <strong>TSP Contact:</strong> {request.tspContact || 'Not assigned'}
-                                          </span>
+                                          {editingScheduledId === request.id && editingField === 'tspContact' ? (
+                                            <div className="flex items-center space-x-2 flex-1">
+                                              <Input
+                                                value={editingValue}
+                                                onChange={(e) => setEditingValue(e.target.value)}
+                                                className="text-sm"
+                                                placeholder="Enter TSP contact"
+                                              />
+                                              <Button size="sm" onClick={saveEdit} disabled={updateScheduledFieldMutation.isPending}>
+                                                <CheckCircle className="w-4 h-4" />
+                                              </Button>
+                                              <Button size="sm" variant="outline" onClick={cancelEdit}>
+                                                <X className="w-4 h-4" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center space-x-2 flex-1">
+                                              <span className="text-purple-800">
+                                                <strong>TSP Contact:</strong> {request.tspContact || 'Not assigned'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() => startEditing(request.id, 'tspContact', request.tspContact || '')}
+                                                  className="h-6 w-6 p-0"
+                                                >
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
 
                                         {/* Drivers */}
@@ -2153,15 +2274,45 @@ export default function EventRequestsManagement() {
                                     )}
 
                                     {/* Planning Notes */}
-                                    {request.planningNotes && (
-                                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                        <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
-                                          <FileText className="w-4 h-4 mr-2" />
-                                          Planning Notes
-                                        </h4>
-                                        <p className="text-sm text-gray-700">{request.planningNotes}</p>
-                                      </div>
-                                    )}
+                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                      <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        Planning Notes
+                                        {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => startEditing(request.id, 'planningNotes', request.planningNotes || '')}
+                                            className="h-6 w-6 p-0 ml-2"
+                                          >
+                                            <Edit className="w-3 h-3" />
+                                          </Button>
+                                        )}
+                                      </h4>
+                                      {editingScheduledId === request.id && editingField === 'planningNotes' ? (
+                                        <div className="space-y-2">
+                                          <Textarea
+                                            value={editingValue}
+                                            onChange={(e) => setEditingValue(e.target.value)}
+                                            className="text-sm"
+                                            placeholder="Enter planning notes"
+                                            rows={3}
+                                          />
+                                          <div className="flex space-x-2">
+                                            <Button size="sm" onClick={saveEdit} disabled={updateScheduledFieldMutation.isPending}>
+                                              <CheckCircle className="w-4 h-4 mr-1" />
+                                              Save
+                                            </Button>
+                                            <Button size="sm" variant="outline" onClick={cancelEdit}>
+                                              <X className="w-4 h-4 mr-1" />
+                                              Cancel
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm text-gray-700">{request.planningNotes || 'No planning notes'}</p>
+                                      )}
+                                    </div>
 
                                     {/* Edit Details Button */}
                                     <div className="mt-4 flex justify-end">
