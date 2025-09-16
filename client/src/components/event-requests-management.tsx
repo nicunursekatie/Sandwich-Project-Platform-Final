@@ -798,6 +798,8 @@ const ToolkitSentDialog = ({
             <EventEmailComposer
               eventRequest={eventRequest}
               onEmailSent={handleEmailSent}
+              isOpen={showEmailComposer}
+              onClose={() => setShowEmailComposer(false)}
             />
           </div>
         )}
@@ -840,12 +842,14 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
   });
 
   useEffect(() => {
-    if (collectionsData) {
+    if (Array.isArray(collectionsData)) {
       setCollections(collectionsData);
+    } else if (collectionsData && typeof collectionsData === 'object') {
+      setCollections([collectionsData]);
+    } else {
+      setCollections([]);
     }
   }, [collectionsData]);
-
-  // Handle inline editing of destination
   const handleDestinationEdit = (collectionId: number, currentValue: string) => {
     setEditingDestination({ id: collectionId, value: currentValue || '' });
   };
@@ -854,11 +858,8 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
     if (!editingDestination) return;
 
     try {
-      await apiRequest(`/api/collections/${editingDestination.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          sandwichDestination: editingDestination.value,
-        }),
+      await apiRequest('PATCH', `/api/collections/${editingDestination.id}`, {
+        sandwichDestination: editingDestination.value,
       });
 
       // Update local state
