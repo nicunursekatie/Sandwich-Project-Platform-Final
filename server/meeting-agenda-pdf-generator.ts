@@ -267,7 +267,6 @@ export class MeetingAgendaPDFGenerator {
           doc
             .fontSize(12)
             .fillColor(colors.darkGray)
-<<<<<<< HEAD
             .text(sanitizeText(`Estimated Duration: ${agenda.totalEstimatedTime}`), 60, yPosition);
           yPosition += 40;
         }
@@ -566,45 +565,10 @@ export class MeetingAgendaPDFGenerator {
             .fontSize(10)
             .fillColor(colors.lightGray)
             .text(sanitizeText('  Items to be determined'), 70, yPosition);
-=======
-            .text('Meeting Description:', 50, yPosition);
-          yPosition += 25;
-          
-          doc
-            .fontSize(11)
-            .fillColor(colors.lightGray)
-            .text(meeting.description, 50, yPosition, { width: 500 });
-          yPosition += 40;
-        }
-
-        // If compiled agenda exists, show sections
-        if (agenda && agenda.sections && agenda.sections.length > 0) {
-          // Add estimated total time if available
-          if (agenda.totalEstimatedTime) {
-            doc
-              .fontSize(12)
-              .fillColor(colors.darkGray)
-              .text(`Estimated Duration: ${agenda.totalEstimatedTime}`, 50, yPosition);
-            yPosition += 25;
-          }
-
-          doc.fontSize(16).fillColor(colors.navy).text('AGENDA', 50, yPosition);
->>>>>>> 84e5fc81874114deef5446ad8a141480229d0152
           yPosition += 30;
 
       // Add footer to the final page
       addFooter();
-=======
-          // Process each section
-          agenda.sections.forEach((section, sectionIndex) => {
-            // Check if we need a new page
-            if (yPosition > 700) {
-              addFooter();
-              doc.addPage();
-              yPosition = 50;
-            }
->>>>>>> 84e5fc81874114deef5446ad8a141480229d0152
-
             // Section header
             doc
               .fontSize(14)
