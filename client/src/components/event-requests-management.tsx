@@ -747,32 +747,32 @@ const ToolkitSentDialog = ({
             {/* Action Buttons */}
             <div className="flex justify-between space-x-4">
               {!emailSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowEmailComposer(true)}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEmailComposer(true)}
                   className="flex items-center space-x-2"
                   data-testid="button-send-toolkit-email"
-                >
+              >
                   <Mail className="w-4 h-4" />
                   <span>Send Toolkit Email</span>
-                </Button>
+              </Button>
               )}
 
               <div className="flex space-x-2 ml-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isLoading}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isLoading}
                   data-testid="button-cancel-toolkit-sent"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
                   className="bg-green-600 hover:bg-green-700 text-white"
                   data-testid="button-confirm-toolkit-sent"
                 >
@@ -799,8 +799,8 @@ const ToolkitSentDialog = ({
               isOpen={showEmailComposer}
               onClose={() => setShowEmailComposer(false)}
             />
-          </div>
-        )}
+            </div>
+          )}
       </DialogContent>
     </Dialog>
   );
@@ -905,7 +905,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
     { totalSandwiches: 0 }
   );
 
-  return (
+    return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b">
@@ -917,7 +917,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
               <p className="text-gray-600">
                 {eventRequest.firstName} {eventRequest.lastName}
               </p>
-            </div>
+        </div>
             <Button
               variant="outline"
               size="sm"
@@ -926,7 +926,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
             >
               <X className="w-4 h-4" />
             </Button>
-          </div>
+      </div>
         </div>
 
         <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
@@ -940,9 +940,9 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                     <p className="text-sm text-gray-600">Total Sandwiches</p>
                     <p className="text-2xl font-bold text-brand-primary">
                       {totals.totalSandwiches.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+          </p>
+        </div>
+      </div>
               </CardContent>
             </Card>
 
@@ -1127,11 +1127,11 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
       } else {
         setSelectedFile(null);
         setIsFileValid(false);
-        toast({
+      toast({
           title: 'Invalid File Type',
           description: 'Please select a valid Excel file (.xlsx or .xls)',
-          variant: 'destructive',
-        });
+        variant: 'destructive',
+      });
       }
     }
   };
@@ -1491,7 +1491,7 @@ export default function EventRequestsManagement() {
       const matchesSearch =
         searchQuery === '' ||
         request.organizationName
-          .toLowerCase()
+            .toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1507,11 +1507,11 @@ export default function EventRequestsManagement() {
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
         case 'newest':
-          return (
+    return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
         case 'oldest':
-          return (
+    return (
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           );
         case 'organization':
@@ -1606,9 +1606,9 @@ export default function EventRequestsManagement() {
     scheduled: requestsByStatus.scheduled?.length || 0,
     completed: requestsByStatus.completed?.length || 0,
     declined: requestsByStatus.declined?.length || 0,
-  };
+    };
 
-  return (
+    return (
     <TooltipProvider>
       <div className="space-y-6">
         {/* Header */}
@@ -1618,9 +1618,9 @@ export default function EventRequestsManagement() {
             <p className="text-gray-600">
               Manage and track event requests from organizations
             </p>
-          </div>
+            </div>
           <div className="flex items-center space-x-2">
-            <Button
+          <Button
               onClick={() => setShowWeeklyPlanningModal(true)}
               variant="outline"
               className="flex items-center space-x-2"
@@ -1628,15 +1628,15 @@ export default function EventRequestsManagement() {
             >
               <Calendar className="w-4 h-4" />
               <span>Weekly Planning</span>
-            </Button>
+          </Button>
             <Badge
               variant="secondary"
               className="bg-brand-primary text-white px-3 py-1 text-sm"
             >
               {eventRequests.length} Total Requests
             </Badge>
-          </div>
-        </div>
+                  </div>
+                </div>
 
         {/* Tabs */}
         <Tabs defaultValue="new" className="space-y-6">
@@ -1693,7 +1693,7 @@ export default function EventRequestsManagement() {
                     className="pl-10"
                     data-testid="input-search-requests"
                   />
-                </div>
+                    </div>
                 <Select
                   value={sortBy}
                   onValueChange={(value: any) => setSortBy(value)}
@@ -1709,7 +1709,7 @@ export default function EventRequestsManagement() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+                    </div>
 
               {/* Event Requests List for this specific status */}
               <div className="space-y-4">
@@ -1747,7 +1747,7 @@ export default function EventRequestsManagement() {
                         return a.organizationName.localeCompare(
                           b.organizationName
                         );
-                      default:
+                            default:
                         return 0;
                     }
                   })
@@ -1757,9 +1757,9 @@ export default function EventRequestsManagement() {
                       request.desiredEventDate || ''
                     );
 
-                    return (
-                      <Card
-                        key={request.id}
+    return (
+      <Card
+        key={request.id}
                         className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
                           statusColors[request.status]
                         }`}
@@ -1767,80 +1767,80 @@ export default function EventRequestsManagement() {
                         data-testid={`card-event-request-${request.id}`}
                       >
                         <CardContent className="p-6">
-                          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between">
                             <div className="flex-1 space-y-3">
                               <div className="flex items-center space-x-3">
                                 <StatusIcon className="w-5 h-5" />
                                 <h3 className="text-lg font-semibold">
-                                  {request.organizationName}
-                                </h3>
+                {request.organizationName}
+              </h3>
                                 <Badge className={statusColors[request.status]}>
                                   {
                                     statusOptions.find(
                                       (s) => s.value === request.status
                                     )?.label
                                   }
-                                </Badge>
-                              </div>
+                      </Badge>
+              </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                                   <User className="w-4 h-4 text-gray-500" />
-                                  <span>
+                            <span>
                                     {request.firstName} {request.lastName}
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-2">
+                            </span>
+                    </div>
+                        <div className="flex items-center space-x-2">
                                   <Mail className="w-4 h-4 text-gray-500" />
                                   <span>{request.email}</span>
-                                </div>
+                        </div>
                                 {request.phone && (
-                                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                                     <Phone className="w-4 h-4 text-gray-500" />
                                     <span>{request.phone}</span>
-                                  </div>
+                    </div>
                                 )}
                                 {request.desiredEventDate && (
-                                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                                     <Calendar className="w-4 h-4 text-gray-500" />
                                     <span className={dateInfo.className}>
                                       {dateInfo.text}
-                                    </span>
-                                  </div>
-                                )}
+                      </span>
+                          </div>
+                        )}
                                 {request.estimatedSandwichCount && (
-                                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                                     <span className="text-sm">🥪</span>
                                     <span>
                                       ~{request.estimatedSandwichCount}{' '}
                                       sandwiches
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
+                        </span>
+                            </div>
+                    )}
+                  </div>
 
                               {request.message && (
                                 <p className="text-sm text-gray-600 mt-2 line-clamp-2">
                                   {request.message}
                                 </p>
-                              )}
-                            </div>
+                    )}
+                </div>
 
                             <div className="flex flex-col items-end space-y-2">
                               <span className="text-xs text-gray-500">
                                 {new Date(
                                   request.createdAt
                                 ).toLocaleDateString()}
-                              </span>
+                    </span>
 
                               {/* Status-specific action buttons */}
-                              <div className="flex space-x-1">
+            <div className="flex space-x-1">
                                 {request.status === 'new' && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
+              <Button
+                size="sm"
+                    variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           openToolkitSentDialog(request);
@@ -1849,7 +1849,7 @@ export default function EventRequestsManagement() {
                                         data-testid={`button-send-toolkit-${request.id}`}
                                       >
                                         <Shield className="w-4 h-4" />
-                                      </Button>
+                  </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       Send Toolkit
@@ -1860,9 +1860,9 @@ export default function EventRequestsManagement() {
                                 {request.status === 'completed' && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
+                  <Button
+                    size="sm"
+                  variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleViewCollectionLog(request);
@@ -1871,7 +1871,7 @@ export default function EventRequestsManagement() {
                                         data-testid={`button-view-collections-${request.id}`}
                                       >
                                         <TrendingUp className="w-4 h-4" />
-                                      </Button>
+                </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       View Collections
@@ -1881,9 +1881,9 @@ export default function EventRequestsManagement() {
 
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
+                        <Button
+                          size="sm"
+                          variant="outline"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleEventClick(request);
@@ -1892,16 +1892,16 @@ export default function EventRequestsManagement() {
                                       data-testid={`button-view-details-${request.id}`}
                                     >
                                       <ExternalLink className="w-4 h-4" />
-                                    </Button>
+                        </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>View Details</TooltipContent>
                                 </Tooltip>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
+                      </div>
+                    </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
                   })}
 
                 {/* Empty state */}
@@ -1917,9 +1917,9 @@ export default function EventRequestsManagement() {
                       There are currently no event requests with{' '}
                       {status.replace('_', ' ')} status.
                     </p>
-                  </div>
-                )}
               </div>
+            )}
+                </div>
             </TabsContent>
           ))}
         </Tabs>
@@ -1928,7 +1928,7 @@ export default function EventRequestsManagement() {
         {showEventDetails && selectedEventRequest && (
           <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
+            <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
                   <Building className="w-5 h-5" />
                   <span>{selectedEventRequest.organizationName}</span>
@@ -1940,14 +1940,14 @@ export default function EventRequestsManagement() {
                     }
                   </Badge>
                 </DialogTitle>
-                <DialogDescription>
+              <DialogDescription>
                   Event request from {selectedEventRequest.firstName}{' '}
                   {selectedEventRequest.lastName} • Created{' '}
                   {new Date(
                     selectedEventRequest.createdAt
                   ).toLocaleDateString()}
-                </DialogDescription>
-              </DialogHeader>
+              </DialogDescription>
+            </DialogHeader>
 
               <div className="space-y-6">
                 {/* Contact Information */}
@@ -1960,51 +1960,51 @@ export default function EventRequestsManagement() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <div>
+                <div>
                         <Label className="text-sm font-medium">Name</Label>
                         <p className="text-sm">
                           {selectedEventRequest.firstName}{' '}
                           {selectedEventRequest.lastName}
                         </p>
-                      </div>
-                      <div>
+                </div>
+                <div>
                         <Label className="text-sm font-medium">Email</Label>
                         <p className="text-sm">{selectedEventRequest.email}</p>
-                      </div>
+                </div>
                       {selectedEventRequest.phone && (
-                        <div>
+                <div>
                           <Label className="text-sm font-medium">Phone</Label>
                           <p className="text-sm">
                             {selectedEventRequest.phone}
                           </p>
-                        </div>
+                </div>
                       )}
                       {selectedEventRequest.department && (
-                        <div>
+                <div>
                           <Label className="text-sm font-medium">
                             Department
-                          </Label>
+                  </Label>
                           <p className="text-sm">
                             {selectedEventRequest.department}
                           </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                </div>
+              )}
+                  </CardContent>
+                </Card>
 
-                  <Card>
-                    <CardHeader>
+                <Card>
+                  <CardHeader>
                       <CardTitle className="text-base flex items-center space-x-2">
                         <Calendar className="w-4 h-4" />
                         <span>Event Details</span>
-                      </CardTitle>
-                    </CardHeader>
+                    </CardTitle>
+                  </CardHeader>
                     <CardContent className="space-y-3">
                       {selectedEventRequest.desiredEventDate && (
-                        <div>
+                  <div>
                           <Label className="text-sm font-medium">
                             Desired Date
-                          </Label>
+                    </Label>
                           <p className="text-sm">
                             {
                               formatEventDate(
@@ -2012,22 +2012,22 @@ export default function EventRequestsManagement() {
                               ).text
                             }
                           </p>
-                        </div>
+                    </div>
                       )}
                       {selectedEventRequest.estimatedSandwichCount && (
-                        <div>
+                    <div>
                           <Label className="text-sm font-medium">
                             Estimated Sandwich Count
-                          </Label>
+                      </Label>
                           <p className="text-sm">
                             {selectedEventRequest.estimatedSandwichCount}
                           </p>
-                        </div>
+                    </div>
                       )}
-                      <div>
+                    <div>
                         <Label className="text-sm font-medium">
                           Previously Hosted
-                        </Label>
+                      </Label>
                         <p className="text-sm">
                           {previouslyHostedOptions.find(
                             (option) =>
@@ -2038,7 +2038,7 @@ export default function EventRequestsManagement() {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
+                  </div>
 
                 {/* Message */}
                 {selectedEventRequest.message && (
@@ -2058,7 +2058,7 @@ export default function EventRequestsManagement() {
                 <div className="flex justify-between space-x-4">
                   <div className="flex space-x-2">
                     {selectedEventRequest.status === 'new' && (
-                      <Button
+                  <Button
                         onClick={() =>
                           openToolkitSentDialog(selectedEventRequest)
                         }
@@ -2067,25 +2067,25 @@ export default function EventRequestsManagement() {
                       >
                         <Shield className="w-4 h-4 mr-2" />
                         Send Toolkit
-                      </Button>
+                  </Button>
                     )}
 
                     {selectedEventRequest.status === 'completed' && (
-                      <Button
-                        onClick={() =>
+                          <Button
+                      onClick={() =>
                           handleViewCollectionLog(selectedEventRequest)
-                        }
+                      }
                         className="bg-brand-primary hover:bg-brand-primary/90"
                         data-testid="button-view-collections-dialog"
-                      >
+                    >
                         <TrendingUp className="w-4 h-4 mr-2" />
                         View Collections
-                      </Button>
+                    </Button>
                     )}
 
-                    <Button
-                      variant="outline"
-                      onClick={() => {
+                <Button
+                  variant="outline"
+                  onClick={() => {
                         setScheduleCallDate('');
                         setScheduleCallTime('');
                         setShowScheduleCallDialog(true);
@@ -2094,23 +2094,23 @@ export default function EventRequestsManagement() {
                     >
                       <Phone className="w-4 h-4 mr-2" />
                       Schedule Call
-                    </Button>
-                  </div>
+                </Button>
+              </div>
 
                   <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
+                <Button
+                  variant="outline"
                       onClick={() => setIsEditing(!isEditing)}
                       data-testid="button-edit-request"
                     >
                       <Edit className="w-4 h-4 mr-2" />
                       {isEditing ? 'Cancel Edit' : 'Edit'}
-                    </Button>
+                </Button>
 
                     {hasPermission(user, PERMISSIONS.DELETE_EVENT_REQUESTS) && (
-                      <Button
+                <Button
                         variant="destructive"
-                        onClick={() => {
+                  onClick={() => {
                           if (
                             confirm(
                               'Are you sure you want to delete this event request?'
@@ -2118,36 +2118,36 @@ export default function EventRequestsManagement() {
                           ) {
                             deleteEventRequestMutation.mutate(
                               selectedEventRequest.id
-                            );
-                          }
-                        }}
+                              );
+                            }
+                          }}
                         data-testid="button-delete-request"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
-                      </Button>
+                </Button>
                     )}
-                  </div>
                 </div>
+              </div>
 
                 {/* Edit Form */}
                 {isEditing && (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const formData = new FormData(e.currentTarget);
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
                       const updatedData = Object.fromEntries(
                         formData.entries()
                       );
                       updateEventRequestMutation.mutate({
                         id: selectedEventRequest.id,
                         data: updatedData,
-                      });
-                    }}
+                  });
+                }}
                     className="space-y-4 border-t pt-6"
-                  >
+              >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
+                <div>
                         <Label htmlFor="edit-status">Status</Label>
                         <Select
                           name="status"
@@ -2167,58 +2167,58 @@ export default function EventRequestsManagement() {
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
+                </div>
 
-                      <div>
+                  <div>
                         <Label htmlFor="edit-estimated-count">
                           Estimated Sandwich Count
-                        </Label>
-                        <Input
+                    </Label>
+                    <Input
                           id="edit-estimated-count"
-                          name="estimatedSandwichCount"
-                          type="number"
+                      name="estimatedSandwichCount"
+                      type="number"
                           defaultValue={
                             selectedEventRequest.estimatedSandwichCount || ''
                           }
                           data-testid="input-edit-sandwich-count"
-                        />
-                      </div>
-                    </div>
+                    />
+                  </div>
+                  </div>
 
-                    <div>
+                  <div>
                       <Label htmlFor="edit-notes">Notes</Label>
-                      <Textarea
+                  <Textarea
                         id="edit-notes"
                         name="planningNotes"
                         defaultValue={selectedEventRequest.planningNotes || ''}
-                        rows={3}
+                    rows={3}
                         data-testid="textarea-edit-notes"
-                      />
-                    </div>
+                  />
+                </div>
 
                     <div className="flex justify-end space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
+                  <Button
+                    type="button"
+                    variant="outline"
                         onClick={() => setIsEditing(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
                         disabled={updateEventRequestMutation.isPending}
                         data-testid="button-save-changes"
-                      >
+                  >
                         {updateEventRequestMutation.isPending
-                          ? 'Saving...'
+                      ? 'Saving...'
                           : 'Save Changes'}
-                      </Button>
-                    </div>
-                  </form>
+                  </Button>
+                </div>
+              </form>
                 )}
-              </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+          </DialogContent>
+        </Dialog>
         )}
 
         {/* Collection Log Modal */}
@@ -2231,88 +2231,88 @@ export default function EventRequestsManagement() {
           }}
         />
 
-        {/* Toolkit Sent Dialog */}
-        <ToolkitSentDialog
-          isOpen={showToolkitSentDialog}
-          onClose={() => {
-            setShowToolkitSentDialog(false);
+      {/* Toolkit Sent Dialog */}
+      <ToolkitSentDialog
+        isOpen={showToolkitSentDialog}
+        onClose={() => {
+          setShowToolkitSentDialog(false);
             setToolkitEventRequest(null);
           }}
           eventRequest={toolkitEventRequest}
           onToolkitSent={handleToolkitSent}
           isLoading={markToolkitSentMutation.isPending}
-        />
+      />
 
-        {/* Schedule Call Dialog */}
+      {/* Schedule Call Dialog */}
         {showScheduleCallDialog && selectedEventRequest && (
-          <Dialog
-            open={showScheduleCallDialog}
-            onOpenChange={setShowScheduleCallDialog}
-          >
+        <Dialog
+          open={showScheduleCallDialog}
+          onOpenChange={setShowScheduleCallDialog}
+        >
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Schedule Call</DialogTitle>
-                <DialogDescription>
+            <DialogHeader>
+              <DialogTitle>Schedule Call</DialogTitle>
+              <DialogDescription>
                   Schedule a call with {selectedEventRequest.firstName}{' '}
                   {selectedEventRequest.lastName} from{' '}
                   {selectedEventRequest.organizationName}
-                </DialogDescription>
-              </DialogHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
                   handleScheduleCall();
                 }}
               >
                 <div className="grid grid-cols-2 gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="schedule-date">Call Date</Label>
-                    <Input
+                  <Input
                       id="schedule-date"
-                      type="date"
+                    type="date"
                       value={scheduleCallDate}
                       onChange={(e) => setScheduleCallDate(e.target.value)}
-                      required
-                      className="mt-1"
-                      data-testid="input-scheduled-date"
-                    />
-                  </div>
+                    required
+                    className="mt-1"
+                    data-testid="input-scheduled-date"
+                  />
+                </div>
                   <div className="space-y-2">
                     <Label htmlFor="schedule-time">Call Time</Label>
-                    <Input
+                  <Input
                       id="schedule-time"
-                      type="time"
+                    type="time"
                       value={scheduleCallTime}
                       onChange={(e) => setScheduleCallTime(e.target.value)}
-                      required
-                      className="mt-1"
-                      data-testid="input-scheduled-time"
-                    />
-                  </div>
+                    required
+                    className="mt-1"
+                    data-testid="input-scheduled-time"
+                  />
                 </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowScheduleCallDialog(false)}
-                    disabled={scheduleCallMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={scheduleCallMutation.isPending}
-                    data-testid="button-confirm-schedule-call"
-                  >
-                    {scheduleCallMutation.isPending
-                      ? 'Scheduling...'
-                      : 'Schedule Call'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowScheduleCallDialog(false)}
+                  disabled={scheduleCallMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={scheduleCallMutation.isPending}
+                  data-testid="button-confirm-schedule-call"
+                >
+                  {scheduleCallMutation.isPending
+                    ? 'Scheduling...'
+                    : 'Schedule Call'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
 
         {/* Weekly Planning Modal */}
         {showWeeklyPlanningModal && (
