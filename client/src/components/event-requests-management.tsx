@@ -386,11 +386,11 @@ interface EventRequest {
 }
 
 const statusColors = {
-  new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-primary border border-teal-200',
-  in_process: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
-  scheduled: 'bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200',
-  completed: 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
-  declined: 'bg-gradient-to-r from-brand-burgundy to-red-700 text-white border-2 font-bold shadow-lg',
+  new: 'bg-[#47B3CB] border border-[#47B3CB] text-[#236383]', // light blue
+  in_process: 'bg-[#007E8C] border border-[#007E8C] text-white', // teal
+  scheduled: 'bg-[#FBAD3F] border border-[#FBAD3F] text-[#236383]', // gold
+  completed: 'bg-[#D1D3D4] border border-[#D1D3D4] text-[#236383]', // light gray
+  declined: 'bg-[#A31C41] border border-[#A31C41] text-white font-bold', // burgundy
 };
 
 const statusIcons = {
