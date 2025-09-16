@@ -116,6 +116,9 @@ export default function MeetingCalendar({
     queryKey: ['/api/meetings'],
   });
 
+  // Ensure meetings is always an array to prevent filter errors
+  const safeMeetings: Meeting[] = Array.isArray(meetings) ? meetings : [];
+
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await fetch('/api/meetings', {
@@ -177,13 +180,13 @@ export default function MeetingCalendar({
     return meetingDateTime > new Date();
   };
 
-  const upcomingMeetings = meetings.filter(
+  const upcomingMeetings = safeMeetings.filter(
     (meeting: Meeting) =>
       isUpcoming(meeting.meetingDate, meeting.startTime) &&
       meeting.status === 'scheduled'
   );
 
-  const pastMeetings = meetings.filter(
+  const pastMeetings = safeMeetings.filter(
     (meeting: Meeting) =>
       !isUpcoming(meeting.meetingDate, meeting.startTime) ||
       meeting.status === 'completed'

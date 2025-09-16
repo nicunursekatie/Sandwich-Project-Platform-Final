@@ -388,6 +388,9 @@ export default function EnhancedMeetingDashboard() {
     queryKey: ['/api/meetings'],
   });
 
+  // Ensure meetings is always an array to prevent filter errors
+  const safeMeetings: Meeting[] = Array.isArray(meetings) ? meetings : [];
+
   // Fetch projects for review
   const { data: projectsForReview = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects/for-review'],
@@ -1429,10 +1432,10 @@ export default function EnhancedMeetingDashboard() {
   };
 
   // Separate meetings into upcoming and past
-  const upcomingMeetings = meetings.filter(
+  const upcomingMeetings = safeMeetings.filter(
     (meeting: Meeting) => !isPastMeeting(meeting.date, meeting.time)
   );
-  const pastMeetings = meetings.filter((meeting: Meeting) =>
+  const pastMeetings = safeMeetings.filter((meeting: Meeting) =>
     isPastMeeting(meeting.date, meeting.time)
   );
 
