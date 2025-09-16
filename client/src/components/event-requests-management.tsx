@@ -1786,7 +1786,7 @@ export default function EventRequestsManagement() {
                                 {/* Organization and Status */}
                                 <div className="flex items-center space-x-3">
                                   <StatusIcon className="w-6 h-6 text-brand-primary" />
-                                  <h3 className="text-xl font-bold text-gray-900">
+                                  <h3 className="text-xl font-bold text-brand-primary">
                                     {request.organizationName}
                                   </h3>
                                   <Badge
@@ -1800,27 +1800,57 @@ export default function EventRequestsManagement() {
                                   </Badge>
                                 </div>
 
-                                {/* Contact Information - Grouped together */}
-                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                                    <User className="w-4 h-4 mr-2 text-brand-teal" />
-                                    Contact Information
-                                  </h4>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-base">
+                                {/* Contact Information - Grouped for In Process, inline for others */}
+                                {request.status === 'in_process' ? (
+                                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <h4 className="text-sm font-semibold text-brand-teal mb-3 flex items-center">
+                                      <User className="w-4 h-4 mr-2 text-brand-teal" />
+                                      Contact Information
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-base">
+                                      <div className="flex items-center space-x-3">
+                                        <User className="w-4 h-4 text-brand-teal" />
+                                        <span className="font-medium text-brand-primary">
+                                          {request.firstName} {request.lastName}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-3">
+                                        <Mail className="w-4 h-4 text-brand-teal" />
+                                        <span className="font-medium text-brand-primary">{request.email}</span>
+                                      </div>
+                                      {request.phone && (
+                                        <div className="flex items-center space-x-3">
+                                          <Phone className="w-4 h-4 text-brand-teal" />
+                                          <span className="font-medium text-brand-primary">{request.phone}</span>
+                                        </div>
+                                      )}
+                                      {request.estimatedSandwichCount && (
+                                        <div className="flex items-center space-x-3">
+                                          <span className="text-lg">🥪</span>
+                                          <span className="font-semibold text-brand-orange">
+                                            ~{request.estimatedSandwichCount}{' '}
+                                            sandwiches
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-base">
                                     <div className="flex items-center space-x-3">
-                                      <User className="w-4 h-4 text-brand-teal" />
-                                      <span className="font-medium text-gray-800">
+                                      <User className="w-5 h-5 text-brand-teal" />
+                                      <span className="font-medium text-brand-primary">
                                         {request.firstName} {request.lastName}
                                       </span>
                                     </div>
                                     <div className="flex items-center space-x-3">
-                                      <Mail className="w-4 h-4 text-brand-teal" />
-                                      <span className="font-medium text-gray-800">{request.email}</span>
+                                      <Mail className="w-5 h-5 text-brand-teal" />
+                                      <span className="font-medium text-brand-primary">{request.email}</span>
                                     </div>
                                     {request.phone && (
                                       <div className="flex items-center space-x-3">
-                                        <Phone className="w-4 h-4 text-brand-teal" />
-                                        <span className="font-medium text-gray-800">{request.phone}</span>
+                                        <Phone className="w-5 h-5 text-brand-teal" />
+                                        <span className="font-medium text-brand-primary">{request.phone}</span>
                                       </div>
                                     )}
                                     {request.estimatedSandwichCount && (
@@ -1833,7 +1863,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                     )}
                                   </div>
-                                </div>
+                                )}
 
                                 {/* Toolkit Status - Only for In Process */}
                                 {request.status === 'in_process' && (
@@ -1944,7 +1974,7 @@ export default function EventRequestsManagement() {
 
                                 {request.message && (
                                   <div className="mt-4 p-3 bg-gray-50 border-l-4 border-brand-primary rounded-r-lg">
-                                    <p className="text-base text-gray-700 line-clamp-2 font-medium">
+                                    <p className="text-base text-brand-primary line-clamp-2 font-medium">
                                       {request.message}
                                     </p>
                                   </div>
@@ -1953,10 +1983,10 @@ export default function EventRequestsManagement() {
 
                               <div className="flex flex-col items-end space-y-3">
                                 <div className="text-right">
-                                  <span className="text-sm font-medium text-gray-600">
+                                  <span className="text-sm font-medium text-brand-teal">
                                     Requested
                                   </span>
-                                  <p className="text-base font-semibold text-gray-800">
+                                  <p className="text-base font-semibold text-brand-primary">
                                     {new Date(
                                       request.createdAt
                                     ).toLocaleDateString()}
