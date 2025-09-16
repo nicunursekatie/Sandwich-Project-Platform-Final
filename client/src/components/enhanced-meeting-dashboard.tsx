@@ -1217,6 +1217,21 @@ export default function EnhancedMeetingDashboard() {
     return isDateInPast(dateString, timeString);
   };
 
+  // Helper function to format section names for display
+  const formatSectionName = (section: string | null | undefined) => {
+    if (!section) return 'General';
+    
+    const sectionMap: Record<string, string> = {
+      'urgent_items': 'Urgent Items',
+      'old_business': 'Old Business', 
+      'new_business': 'New Business',
+      'housekeeping': 'Housekeeping',
+      'general': 'General'
+    };
+    
+    return sectionMap[section] || section;
+  };
+
   // Helper function to get current date range for breadcrumbs
   const getCurrentDateRange = () => {
     const now = new Date();
@@ -3264,7 +3279,7 @@ export default function EnhancedMeetingDashboard() {
                   {agendaItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                      className="flex items-center justify-between p-3 border rounded-lg hover:shadow-sm transition-shadow"
                     >
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">
@@ -3277,7 +3292,7 @@ export default function EnhancedMeetingDashboard() {
                         )}
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="outline" className="text-xs">
-                            {item.section || 'General'}
+                            {formatSectionName(item.section)}
                           </Badge>
                           <span className="text-xs text-gray-500">
                             Added {new Date(item.submittedAt).toLocaleDateString()}
