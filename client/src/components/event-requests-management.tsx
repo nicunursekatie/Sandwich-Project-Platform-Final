@@ -362,6 +362,7 @@ interface EventRequest {
   driverCount?: number;
   speakerCount?: number;
   volunteerCount?: number;
+  vanDriverCount?: number;
   driverAssignments?: string[];
   speakerAssignments?: string[];
   volunteerAssignments?: string[];
@@ -1857,7 +1858,7 @@ export default function EventRequestsManagement() {
                                       <div className="flex items-center space-x-3">
                                         <span className="text-lg">🥪</span>
                                         <span className="font-semibold text-brand-orange">
-                                          ~{request.estimatedSandwichCount}{' '}
+                                          {request.status === 'completed' ? 'Est.' : '~'}{request.estimatedSandwichCount}{' '}
                                           sandwiches
                                         </span>
                                       </div>
@@ -1897,76 +1898,226 @@ export default function EventRequestsManagement() {
                                   </div>
                                 )}
 
-                                {/* Additional details for scheduled events */}
+                                {/* Comprehensive Event Details for Scheduled Events */}
                                 {request.status === 'scheduled' && (
-                                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
-                                      <Calendar className="w-4 h-4 mr-2" />
-                                      Event Details
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                      {request.eventStartTime && (
-                                        <div className="flex items-center space-x-2">
-                                          <Clock className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Start:</strong> {formatTime12Hour(request.eventStartTime)}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {request.eventEndTime && (
-                                        <div className="flex items-center space-x-2">
-                                          <Clock className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>End:</strong> {formatTime12Hour(request.eventEndTime)}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {request.pickupTime && (
-                                        <div className="flex items-center space-x-2">
-                                          <Truck className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Pickup:</strong> {formatTime12Hour(request.pickupTime)}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {request.eventAddress && (
-                                        <div className="flex items-center space-x-2">
-                                          <MapPin className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Location:</strong> {request.eventAddress}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {request.tspContact && (
-                                        <div className="flex items-center space-x-2">
-                                          <UserCheck className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>TSP Contact:</strong> {request.tspContact}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {request.driverCount && (
-                                        <div className="flex items-center space-x-2">
-                                          <Truck className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Drivers:</strong> {request.driverCount}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {request.volunteerCount && (
-                                        <div className="flex items-center space-x-2">
-                                          <Users className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Volunteers:</strong> {request.volunteerCount}
-                                          </span>
-                                        </div>
-                                      )}
+                                  <div className="mt-4 space-y-4">
+                                    {/* Event Date & Location */}
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                      <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center">
+                                        <Calendar className="w-4 h-4 mr-2" />
+                                        Event Schedule & Location
+                                      </h4>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                        {request.desiredEventDate && (
+                                          <div className="flex items-center space-x-2">
+                                            <Calendar className="w-4 h-4 text-blue-600" />
+                                            <span className="text-blue-800">
+                                              <strong>Event Date:</strong> {formatEventDate(request.desiredEventDate).text}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {request.eventStartTime && (
+                                          <div className="flex items-center space-x-2">
+                                            <Clock className="w-4 h-4 text-blue-600" />
+                                            <span className="text-blue-800">
+                                              <strong>Start Time:</strong> {formatTime12Hour(request.eventStartTime)}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {request.eventEndTime && (
+                                          <div className="flex items-center space-x-2">
+                                            <Clock className="w-4 h-4 text-blue-600" />
+                                            <span className="text-blue-800">
+                                              <strong>End Time:</strong> {formatTime12Hour(request.eventEndTime)}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {request.pickupTime && (
+                                          <div className="flex items-center space-x-2">
+                                            <Truck className="w-4 h-4 text-blue-600" />
+                                            <span className="text-blue-800">
+                                              <strong>Pickup Time:</strong> {formatTime12Hour(request.pickupTime)}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {request.eventAddress && (
+                                          <div className="flex items-center space-x-2">
+                                            <MapPin className="w-4 h-4 text-blue-600" />
+                                            <span className="text-blue-800">
+                                              <strong>Event Address:</strong> {request.eventAddress}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {request.hasRefrigeration !== undefined && (
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-blue-600">❄️</span>
+                                            <span className="text-blue-800">
+                                              <strong>Refrigeration:</strong> {request.hasRefrigeration ? 'Yes' : 'No'}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
+
+                                    {/* Sandwich Details */}
+                                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                      <h4 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
+                                        <span className="text-lg mr-2">🥪</span>
+                                        Sandwich Planning
+                                      </h4>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                        {request.estimatedSandwichCount && (
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-green-600">📊</span>
+                                            <span className="text-green-800">
+                                              <strong>Total Sandwiches:</strong> {request.estimatedSandwichCount}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {request.sandwichTypes && (
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-green-600">🏷️</span>
+                                            <span className="text-green-800">
+                                              <strong>Types:</strong> {getSandwichTypesSummary(request).breakdown}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Staffing & Assignments */}
+                                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                      <h4 className="text-sm font-semibold text-purple-900 mb-3 flex items-center">
+                                        <Users className="w-4 h-4 mr-2" />
+                                        Staffing & Assignments
+                                      </h4>
+                                      <div className="space-y-3">
+                                        {/* TSP Contact */}
+                                        {request.tspContact && (
+                                          <div className="flex items-center space-x-2">
+                                            <UserCheck className="w-4 h-4 text-purple-600" />
+                                            <span className="text-purple-800">
+                                              <strong>TSP Contact:</strong> {request.tspContact}
+                                            </span>
+                                          </div>
+                                        )}
+
+                                        {/* Drivers */}
+                                        {request.driverCount && request.driverCount > 0 && (
+                                          <div className="space-y-2">
+                                            <div className="flex items-center space-x-2">
+                                              <Truck className="w-4 h-4 text-purple-600" />
+                                              <span className="text-purple-800">
+                                                <strong>Drivers Needed:</strong> {request.driverCount}
+                                                {request.vanDriverCount && request.vanDriverCount > 0 && (
+                                                  <span className="ml-2 text-purple-600">
+                                                    ({request.vanDriverCount} van drivers)
+                                                  </span>
+                                                )}
+                                              </span>
+                                            </div>
+                                            {request.driverAssignments && request.driverAssignments.length > 0 ? (
+                                              <div className="ml-6">
+                                                <span className="text-xs text-purple-600">Assigned:</span>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {request.driverAssignments.map((driver, index) => (
+                                                    <span key={index} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                                      {driver}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="ml-6">
+                                                <Button size="sm" variant="outline" className="text-xs">
+                                                  Assign Driver
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Speakers */}
+                                        {request.speakerCount && request.speakerCount > 0 && (
+                                          <div className="space-y-2">
+                                            <div className="flex items-center space-x-2">
+                                              <Megaphone className="w-4 h-4 text-purple-600" />
+                                              <span className="text-purple-800">
+                                                <strong>Speakers Needed:</strong> {request.speakerCount}
+                                              </span>
+                                            </div>
+                                            {request.speakerAssignments && request.speakerAssignments.length > 0 ? (
+                                              <div className="ml-6">
+                                                <span className="text-xs text-purple-600">Assigned:</span>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {request.speakerAssignments.map((speaker, index) => (
+                                                    <span key={index} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                                      {speaker}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="ml-6">
+                                                <Button size="sm" variant="outline" className="text-xs">
+                                                  Assign Speaker
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Volunteers */}
+                                        {request.volunteerCount && request.volunteerCount > 0 && (
+                                          <div className="space-y-2">
+                                            <div className="flex items-center space-x-2">
+                                              <Users className="w-4 h-4 text-purple-600" />
+                                              <span className="text-purple-800">
+                                                <strong>Volunteers Needed:</strong> {request.volunteerCount}
+                                              </span>
+                                            </div>
+                                            {request.volunteerAssignments && request.volunteerAssignments.length > 0 ? (
+                                              <div className="ml-6">
+                                                <span className="text-xs text-purple-600">Assigned:</span>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {request.volunteerAssignments.map((volunteer, index) => (
+                                                    <span key={index} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                                      {volunteer}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="ml-6">
+                                                <Button size="sm" variant="outline" className="text-xs">
+                                                  Assign Volunteer
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Additional Requirements */}
+                                    {request.additionalRequirements && (
+                                      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                        <h4 className="text-sm font-semibold text-yellow-900 mb-2 flex items-center">
+                                          <AlertTriangle className="w-4 h-4 mr-2" />
+                                          Additional Requirements
+                                        </h4>
+                                        <p className="text-sm text-yellow-800">{request.additionalRequirements}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Planning Notes */}
                                     {request.planningNotes && (
-                                      <div className="mt-3 pt-3 border-t border-blue-200">
-                                        <p className="text-xs text-blue-700">
-                                          <strong>Notes:</strong> {request.planningNotes}
-                                        </p>
+                                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                                          <Edit className="w-4 h-4 mr-2" />
+                                          Planning Notes
+                                        </h4>
+                                        <p className="text-sm text-gray-700">{request.planningNotes}</p>
                                       </div>
                                     )}
                                   </div>
