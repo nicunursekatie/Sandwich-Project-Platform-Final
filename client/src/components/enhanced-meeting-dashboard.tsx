@@ -689,6 +689,27 @@ export default function EnhancedMeetingDashboard() {
     },
   });
 
+  // Delete agenda item mutation
+  const deleteAgendaItemMutation = useMutation({
+    mutationFn: async (itemId: number) => {
+      return await apiRequest('DELETE', `/api/agenda-items/${itemId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agenda-items'] });
+      toast({
+        title: 'Agenda Item Deleted',
+        description: 'The agenda item has been successfully removed',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete agenda item',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Handler for adding off-agenda items
   const handleAddOffAgendaItem = () => {
     if (!offAgendaTitle.trim()) {
@@ -1372,6 +1393,29 @@ export default function EnhancedMeetingDashboard() {
     },
   });
 
+  // Delete meeting mutation
+  const deleteMeetingMutation = useMutation({
+    mutationFn: async (meetingId: number) => {
+      return await apiRequest('DELETE', `/api/meetings/${meetingId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      toast({
+        title: 'Meeting Deleted',
+        description: 'The meeting has been successfully deleted.',
+      });
+      setShowEditMeetingDialog(false);
+      setEditingMeeting(null);
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete meeting',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleCreateMeeting = () => {
     if (!newMeetingData.title || !newMeetingData.date) {
       toast({
@@ -1411,6 +1455,14 @@ export default function EnhancedMeetingDashboard() {
         id: editingMeeting.id,
         ...editMeetingData,
       });
+    }
+  };
+
+  const handleDeleteMeeting = () => {
+    if (!editingMeeting) return;
+    
+    if (window.confirm(`Are you sure you want to delete "${editingMeeting.title}"? This action cannot be undone.`)) {
+      deleteMeetingMutation.mutate(editingMeeting.id);
     }
   };
 
@@ -2305,6 +2357,17 @@ export default function EnhancedMeetingDashboard() {
                     Cancel
                   </button>
                   <button
+                    onClick={handleDeleteMeeting}
+                    disabled={deleteMeetingMutation.isPending}
+                    className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleteMeetingMutation.isPending ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
                     onClick={handleUpdateMeeting}
                     disabled={updateMeetingMutation.isPending}
                     style={{ backgroundColor: '#FBAD3F' }}
@@ -3183,10 +3246,10 @@ export default function EnhancedMeetingDashboard() {
                           className="text-red-600 hover:text-red-700"
                           onClick={() => {
                             if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
-                              // TODO: Add delete mutation
-                              console.log('Delete agenda item:', item.id);
+                              deleteAgendaItemMutation.mutate(item.id);
                             }
                           }}
+                          disabled={deleteAgendaItemMutation.isPending}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
