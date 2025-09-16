@@ -257,9 +257,40 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
     // Import the PDF generator
     const { MeetingAgendaPDFGenerator } = await import('../meeting-agenda-pdf-generator.js');
     
-    // Generate the PDF with meeting data and agenda
-    const meetingData = agendaData.meeting || agendaData;
-    const pdfBuffer = await MeetingAgendaPDFGenerator.generatePDF(meetingData, agendaData.agenda);
+    // Transform agenda data to meeting format for PDF generator
+    const meetingData = {
+      id: 1,
+      title: `Meeting Agenda`,
+      date: agendaData.meetingDate || new Date().toISOString().split('T')[0],
+      time: '13:30',
+      type: 'core_team',
+      description: 'Weekly agenda planning',
+      location: 'Meeting location'
+    };
+    
+    // Transform agenda projects to sections for PDF
+    const agendaSections = agendaData.agendaProjects ? [{
+      id: 1,
+      title: 'Needs Discussion',
+      items: agendaData.agendaProjects.map((project: any, index: number) => ({
+        id: index + 1,
+        title: project.title,
+        description: project.discussionPoints || project.decisionItems || '',
+        submittedBy: project.owner || 'Unknown',
+        type: 'project',
+        estimatedTime: '10 mins'
+      }))
+    }] : [];
+    
+    const compiledAgenda = {
+      id: 1,
+      meetingId: 1,
+      date: agendaData.meetingDate || new Date().toISOString().split('T')[0],
+      status: 'draft',
+      sections: agendaSections
+    };
+    
+    const pdfBuffer = await MeetingAgendaPDFGenerator.generatePDF(meetingData, compiledAgenda);
     
     // Set appropriate headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
