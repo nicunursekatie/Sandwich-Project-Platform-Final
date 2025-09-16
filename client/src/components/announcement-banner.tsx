@@ -29,7 +29,7 @@ export default function AnnouncementBanner() {
   });
 
   // Filter active announcements that haven't been dismissed
-  const activeAnnouncements = announcements.filter((announcement) => {
+  const activeAnnouncements = (Array.isArray(announcements) ? announcements : []).filter((announcement) => {
     const now = new Date();
     const startDate = new Date(announcement.startDate);
     const endDate = new Date(announcement.endDate);

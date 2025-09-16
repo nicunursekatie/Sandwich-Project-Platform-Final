@@ -693,36 +693,107 @@ export default function EnhancedMeetingDashboard() {
       return;
     }
 
-    // Auto-select the most recent meeting if none is selected
-    let targetMeeting = selectedMeeting;
-    if (!targetMeeting && meetings.length > 0) {
-      // Find the most recent upcoming meeting, or the most recent past meeting
-      const upcomingMeetings = meetings.filter(
-        (meeting) => new Date(meeting.date) >= new Date()
-      );
-      const pastMeetings = meetings.filter(
-        (meeting) => new Date(meeting.date) < new Date()
-      );
+    // Debug logging for meeting selection
+    console.log('🔍 Meeting Auto-Selection Debug:', {
+      selectedMeeting: selectedMeeting?.id,
+      totalMeetings: meetings.length,
+      meetings: meetings.map(m => ({ id: m.id, title: m.title, date: m.date, status: m.status })),
+      timestamp: new Date().toISOString(),
+    });
 
-      if (upcomingMeetings.length > 0) {
-        targetMeeting = upcomingMeetings.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        )[0];
-      } else if (pastMeetings.length > 0) {
-        targetMeeting = pastMeetings.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        )[0];
+    // Auto-select the most appropriate meeting if none is selected
+    let targetMeeting = selectedMeeting;
+    
+    if (!targetMeeting && meetings.length > 0) {
+      try {
+        // Separate meetings by past/future using proper date utilities
+        const upcomingMeetings: Meeting[] = [];
+        const pastMeetings: Meeting[] = [];
+        
+        meetings.forEach((meeting) => {
+          try {
+            if (isDateInPast(meeting.date, meeting.time)) {
+              pastMeetings.push(meeting);
+            } else {
+              upcomingMeetings.push(meeting);
+            }
+          } catch (error) {
+            console.warn('Date parsing issue for meeting:', meeting.id, meeting.date, error);
+            // If date parsing fails, default to upcoming to be safe
+            upcomingMeetings.push(meeting);
+          }
+        });
+
+        console.log('🗓️ Meeting Classification:', {
+          upcoming: upcomingMeetings.map(m => ({ id: m.id, date: m.date })),
+          past: pastMeetings.map(m => ({ id: m.id, date: m.date })),
+        });
+
+        // Priority 1: Most recent upcoming meeting
+        if (upcomingMeetings.length > 0) {
+          // Sort by date ascending (earliest first) for upcoming meetings
+          targetMeeting = upcomingMeetings.sort((a, b) => {
+            try {
+              const dateA = new Date(normalizeDate(a.date) + 'T12:00:00');
+              const dateB = new Date(normalizeDate(b.date) + 'T12:00:00');
+              return dateA.getTime() - dateB.getTime();
+            } catch (error) {
+              console.warn('Date sorting error:', error);
+              return 0; // Keep original order if sorting fails
+            }
+          })[0];
+          console.log('✅ Selected upcoming meeting:', targetMeeting.id, targetMeeting.date);
+        }
+        
+        // Priority 2: Most recent past meeting
+        else if (pastMeetings.length > 0) {
+          // Sort by date descending (most recent first) for past meetings
+          targetMeeting = pastMeetings.sort((a, b) => {
+            try {
+              const dateA = new Date(normalizeDate(a.date) + 'T12:00:00');
+              const dateB = new Date(normalizeDate(b.date) + 'T12:00:00');
+              return dateB.getTime() - dateA.getTime();
+            } catch (error) {
+              console.warn('Date sorting error:', error);
+              return 0; // Keep original order if sorting fails
+            }
+          })[0];
+          console.log('✅ Selected past meeting:', targetMeeting.id, targetMeeting.date);
+        }
+        
+        // Priority 3: Fallback - just pick the first available meeting
+        else {
+          targetMeeting = meetings[0];
+          console.log('⚠️ Using fallback meeting selection:', targetMeeting.id);
+        }
+
+      } catch (error) {
+        console.error('Error in meeting selection logic:', error);
+        // Ultimate fallback - just pick any available meeting
+        if (meetings.length > 0) {
+          targetMeeting = meetings[0];
+          console.log('🚨 Emergency fallback meeting selection:', targetMeeting.id);
+        }
       }
     }
 
+    // Final validation
     if (!targetMeeting) {
+      console.error('❌ No target meeting found despite', meetings.length, 'meetings available');
       toast({
         title: 'No Meetings Available',
-        description: 'Please create a meeting first to add agenda items',
+        description: `Unable to find a suitable meeting from ${meetings.length} available meetings. Please select a meeting manually or create a new one.`,
         variant: 'destructive',
       });
       return;
     }
+
+    console.log('🎯 Final target meeting selected:', {
+      id: targetMeeting.id,
+      title: targetMeeting.title,
+      date: targetMeeting.date,
+      time: targetMeeting.time,
+    });
 
     createOffAgendaItemMutation.mutate({
       title: offAgendaTitle,
