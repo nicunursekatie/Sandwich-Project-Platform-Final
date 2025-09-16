@@ -254,12 +254,21 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
     const agendaData = req.body;
     console.log('Agenda data received:', JSON.stringify(agendaData, null, 2));
     
-    // For now, return a simple text response indicating the feature is not yet implemented
-    // TODO: Implement actual PDF generation using a library like puppeteer or pdfkit
-    res.status(501).json({ 
-      error: 'PDF generation not yet implemented',
-      message: 'The agenda PDF generation feature is under development. Please use the export to Google Sheets functionality for now.'
-    });
+    // Import the PDF generator
+    const { MeetingAgendaPDFGenerator } = await import('../meeting-agenda-pdf-generator.js');
+    
+    // Generate the PDF with meeting data and agenda
+    const meetingData = agendaData.meeting || agendaData;
+    const pdfBuffer = await MeetingAgendaPDFGenerator.generatePDF(meetingData, agendaData.agenda);
+    
+    // Set appropriate headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="agenda.pdf"');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send the PDF
+    res.send(pdfBuffer);
+    console.log('✅ Agenda PDF generated and sent successfully');
     
   } catch (error) {
     console.error('Error generating agenda PDF:', error);
