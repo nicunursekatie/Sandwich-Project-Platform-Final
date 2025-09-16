@@ -60,6 +60,20 @@ export default function createProjectRoutes(options: {
     }
   });
 
+  // GET /for-review - Get projects for review
+  projectsRouter.get('/for-review', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      console.log('[Projects API] Getting projects for review');
+      const projects = await storage.getProjectsForReview();
+      console.log(`[Projects API] Found ${projects.length} projects for review`);
+      res.json(projects);
+    } catch (error) {
+      logger.error('Failed to get projects for review', error);
+      console.error('[Projects API] Error fetching projects for review:', error);
+      res.json([]);
+    }
+  });
+
   // GET /archived - Get archived projects
   projectsRouter.get(
     '/archived',

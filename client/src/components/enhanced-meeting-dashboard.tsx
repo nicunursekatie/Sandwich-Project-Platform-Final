@@ -1094,8 +1094,8 @@ export default function EnhancedMeetingDashboard() {
       } else if (errorObj?.message?.includes('400')) {
         errorMessage =
           'Invalid agenda data - please ensure you have projects selected for the agenda';
-      } else if (error?.message) {
-        errorMessage = error.message;
+      } else if (errorObj?.message) {
+        errorMessage = errorObj.message;
       }
 
       toast({
@@ -1633,10 +1633,14 @@ export default function EnhancedMeetingDashboard() {
             </div>
             <button
               onClick={() => setShowNewMeetingDialog(true)}
-              style={{ backgroundColor: '#FBAD3F' }}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = '#e09d36')}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = '#FBAD3F')}
               className="flex items-center justify-center gap-2 text-white px-3 md:px-4 py-3 md:py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 w-full sm:w-auto text-sm"
+              style={{ backgroundColor: '#FBAD3F' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e09d36';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FBAD3F';
+              }}
             >
               <Plus className="w-4 h-4" />
               <span>Schedule Meeting</span>
