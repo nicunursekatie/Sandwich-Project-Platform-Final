@@ -2081,7 +2081,16 @@ export default function EventRequestsManagement() {
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <span className="text-blue-800">
-                                                <strong>Event Address:</strong> {request.eventAddress || 'Not specified'}
+                                                <strong>Event Address:</strong> {request.eventAddress ? (
+                                                  <a
+                                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 hover:text-blue-800 underline"
+                                                  >
+                                                    {request.eventAddress}
+                                                  </a>
+                                                ) : 'Not specified'}
                                               </span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button
@@ -2123,6 +2132,41 @@ export default function EventRequestsManagement() {
                                           <span className="text-green-800">
                                             <strong>Types:</strong> {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                           </span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-green-600">📍</span>
+                                          {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
+                                            <div className="flex items-center space-x-2 flex-1">
+                                              <Input
+                                                value={editingValue}
+                                                onChange={(e) => setEditingValue(e.target.value)}
+                                                className="text-sm"
+                                                placeholder="Enter sandwich destination"
+                                              />
+                                              <Button size="sm" onClick={saveEdit} disabled={updateScheduledFieldMutation.isPending}>
+                                                <CheckCircle className="w-4 h-4" />
+                                              </Button>
+                                              <Button size="sm" variant="outline" onClick={cancelEdit}>
+                                                <X className="w-4 h-4" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center space-x-2 flex-1">
+                                              <span className="text-green-800">
+                                                <strong>Destination:</strong> {request.sandwichDestination || 'Not specified'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() => startEditing(request.id, 'sandwichDestination', request.sandwichDestination || '')}
+                                                  className="h-6 w-6 p-0"
+                                                >
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
@@ -2330,6 +2374,7 @@ export default function EventRequestsManagement() {
                                             hasRefrigeration: request.hasRefrigeration ? 'true' : 'false',
                                             estimatedSandwichCount: request.estimatedSandwichCount?.toString() || '',
                                             sandwichTypes: request.sandwichTypes || '',
+                                            sandwichDestination: request.sandwichDestination || '',
                                             driverCount: request.driverCount?.toString() || '0',
                                             vanDriverCount: request.vanDriverCount?.toString() || '0',
                                             speakerCount: request.speakerCount?.toString() || '0',
@@ -2957,6 +3002,9 @@ export default function EventRequestsManagement() {
                     hasRefrigeration: formData.get('hasRefrigeration') === 'yes',
                     estimatedSandwichCount: formData.get('estimatedSandwichCount') ? parseInt(formData.get('estimatedSandwichCount') as string) : null,
                     sandwichTypes: formData.get('sandwichTypes'),
+                    sandwichDestination: formData.get('sandwichDestinationSelect') === 'custom' 
+                      ? formData.get('sandwichDestination') 
+                      : formData.get('sandwichDestinationSelect'),
                     driverCount: formData.get('driverCount') ? parseInt(formData.get('driverCount') as string) : null,
                     vanDriverCount: formData.get('vanDriverCount') ? parseInt(formData.get('vanDriverCount') as string) : null,
                     speakerCount: formData.get('speakerCount') ? parseInt(formData.get('speakerCount') as string) : null,
@@ -3060,6 +3108,40 @@ export default function EventRequestsManagement() {
                       <SandwichTypesSelector
                         name="sandwichTypes"
                         className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Sandwich Destination */}
+                  <div>
+                    <Label htmlFor="sandwichDestination">Sandwich Destination</Label>
+                    <div className="mt-1 space-y-2">
+                      <Select name="sandwichDestinationSelect">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select destination or enter custom" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="custom">Enter Custom Destination</SelectItem>
+                          <SelectItem value="Atlanta Community Food Bank">Atlanta Community Food Bank</SelectItem>
+                          <SelectItem value="Atlanta Mission">Atlanta Mission</SelectItem>
+                          <SelectItem value="Covenant House Georgia">Covenant House Georgia</SelectItem>
+                          <SelectItem value="Gateway Center">Gateway Center</SelectItem>
+                          <SelectItem value="Hosea Helps">Hosea Helps</SelectItem>
+                          <SelectItem value="Mercy Care">Mercy Care</SelectItem>
+                          <SelectItem value="Open Hand Atlanta">Open Hand Atlanta</SelectItem>
+                          <SelectItem value="Salvation Army">Salvation Army</SelectItem>
+                          <SelectItem value="St. Vincent de Paul">St. Vincent de Paul</SelectItem>
+                          <SelectItem value="The Atlanta Day Center">The Atlanta Day Center</SelectItem>
+                          <SelectItem value="The Extension">The Extension</SelectItem>
+                          <SelectItem value="The Shepherd's Inn">The Shepherd's Inn</SelectItem>
+                          <SelectItem value="Zaban Paradies Center">Zaban Paradies Center</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="sandwichDestination"
+                        name="sandwichDestination"
+                        placeholder="Or enter custom destination"
+                        className="mt-2"
                       />
                     </div>
                   </div>
