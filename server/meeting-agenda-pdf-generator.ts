@@ -75,7 +75,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
     const ensureSpace = (requiredSpace: number) => {
       if (yPosition + requiredSpace > pageHeight - 150) {
         doc.addPage();
-        yPosition = 50; // Start with some margin from top
+        yPosition = 80; // Start with more margin from top
       }
     };
 
@@ -110,9 +110,10 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
     // Helper function to add divider line
     const addDivider = (color: string, thickness: number = 1) => {
+      yPosition += 10; // Add space before divider
       doc.rect(margin, yPosition, contentWidth, thickness)
          .fill(color);
-      yPosition += thickness + 10;
+      yPosition += thickness + 15; // Add space after divider
     };
 
     // Main header section
@@ -159,7 +160,10 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
     // Process each section
     agenda.sections.forEach((section, sectionIndex) => {
-      ensureSpace(100);
+      ensureSpace(120);
+
+      // Add space before section
+      yPosition += 20;
 
       // Section header with light blue background
       addHeaderBar(colors.sectionBlue, 30);
@@ -175,14 +179,18 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
       // Section items
       if (section.items && section.items.length > 0) {
         section.items.forEach((item, itemIndex) => {
-          ensureSpace(150);
+          ensureSpace(200);
+
+          // Add space before item
+          yPosition += 15;
 
           // Item title
           addText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`, margin, yPosition, {
             fontSize: 12,
-            fillColor: colors.darkGray
+            fillColor: colors.darkGray,
+            width: contentWidth
           });
-          yPosition += 20;
+          yPosition += 25;
 
           // Add divider line
           addDivider(colors.dividerGray);
@@ -242,14 +250,14 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.darkGray,
                 width: contentWidth
               });
-              yPosition += 15;
+              yPosition += 20;
               
               addText(project.meetingDiscussionPoints, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.lightGray,
                 width: contentWidth - 20
               });
-              yPosition += 25;
+              yPosition += 30;
             }
 
             // Add green divider
@@ -262,14 +270,14 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.darkGray,
                 width: contentWidth
               });
-              yPosition += 15;
+              yPosition += 20;
               
               addText(project.meetingDecisionItems, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.lightGray,
                 width: contentWidth - 20
               });
-              yPosition += 25;
+              yPosition += 30;
             }
 
             // Add blue divider
@@ -279,21 +287,22 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             if (project.tasks && project.tasks.length > 0) {
               addText('Project Tasks:', margin, yPosition, {
                 fontSize: 11,
-                fillColor: colors.darkGray
+                fillColor: colors.darkGray,
+                width: contentWidth
               });
-              yPosition += 15;
+              yPosition += 20;
 
               project.tasks.forEach((task: any, taskIndex: number) => {
-                ensureSpace(40);
+                ensureSpace(50);
                 const taskText = `${taskIndex + 1}. ${task.description || task.title || 'No description'}`;
-                addText(taskText, margin, yPosition, {
+                addText(taskText, margin + 10, yPosition, {
                   fontSize: 10,
                   fillColor: colors.lightGray,
-                  width: contentWidth - 20 // Leave some margin for indentation
+                  width: contentWidth - 30 // Leave some margin for indentation
                 });
-                yPosition += 20; // More space between tasks
+                yPosition += 25; // More space between tasks
               });
-              yPosition += 10;
+              yPosition += 15;
             }
 
             // Attached Files
@@ -323,23 +332,24 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
               yPosition += 15;
             }
 
-            yPosition += 15;
+            yPosition += 25;
           } else {
             // Regular agenda item (not a project)
             if (item.presenter) {
               addText(`Presenter: ${item.presenter} | Time: ${item.estimatedTime || '5'} mins | Type: ${item.type || 'agenda item'}`, margin, yPosition, {
                 fontSize: 10,
-                fillColor: colors.lightGray
+                fillColor: colors.lightGray,
+                width: contentWidth
               });
-              yPosition += 20;
+              yPosition += 25;
             }
           }
 
-          yPosition += 10;
+          yPosition += 20; // Space between items
         });
       }
 
-      yPosition += 20;
+      yPosition += 30; // Space between sections
     });
 
     // Add footer
