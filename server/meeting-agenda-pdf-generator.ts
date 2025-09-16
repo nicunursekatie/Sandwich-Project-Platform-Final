@@ -93,6 +93,19 @@ export class MeetingAgendaPDFGenerator {
 
         let yPosition = 50;
 
+        // Helper function to add footer to current page
+        const addFooter = () => {
+          doc
+            .fontSize(8)
+            .fillColor(colors.lightGray)
+            .text(
+              `The Sandwich Project • Meeting Agenda • Generated ${format(new Date(), 'MMM dd, yyyy')}`,
+              50,
+              doc.page.height - 30,
+              { align: 'center', width: doc.page.width - 100 }
+            );
+        };
+
         // HEADER WITH TSP BRANDING
         doc
           .fontSize(24)
@@ -154,6 +167,7 @@ export class MeetingAgendaPDFGenerator {
           agenda.sections.forEach((section, sectionIndex) => {
             // Check if we need a new page
             if (yPosition > 700) {
+              addFooter();
               doc.addPage();
               yPosition = 50;
             }
@@ -170,6 +184,7 @@ export class MeetingAgendaPDFGenerator {
               section.items.forEach((item, itemIndex) => {
                 // Check if we need a new page
                 if (yPosition > 720) {
+                  addFooter();
                   doc.addPage();
                   yPosition = 50;
                 }
@@ -376,20 +391,8 @@ export class MeetingAgendaPDFGenerator {
           });
         }
 
-        // Footer
-        const pageCount = doc.bufferedPageRange();
-        for (let i = 1; i <= pageCount.count; i++) {
-          doc.switchToPage(i);
-          doc
-            .fontSize(8)
-            .fillColor(colors.lightGray)
-            .text(
-              `The Sandwich Project • Meeting Agenda • Page ${i} of ${pageCount.count} • Generated ${format(new Date(), 'MMM dd, yyyy')}`,
-              50,
-              doc.page.height - 50,
-              { align: 'center', width: doc.page.width - 100 }
-            );
-        }
+        // Add footer to final page
+        addFooter();
 
         doc.end();
       });
