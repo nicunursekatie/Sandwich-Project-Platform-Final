@@ -3870,7 +3870,7 @@ export default function EnhancedMeetingDashboard() {
               <Label htmlFor="project-support">Support People</Label>
               <ProjectAssigneeSelector
                 value={{
-                  assigneeNames: newProjectData.supportPeople ? [newProjectData.supportPeople] : []
+                  assigneeNames: newProjectData.supportPeople ? newProjectData.supportPeople.split(',').map(name => name.trim()).filter(name => name) : []
                 }}
                 onChange={(value) => {
                   setNewProjectData({
