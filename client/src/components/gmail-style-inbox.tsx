@@ -208,6 +208,12 @@ export default function GmailStyleInbox() {
     queryKey: ['/api/users'],
   });
 
+  // Add this after other useQuery hooks at the top of the component
+  const { data: kudos = [] } = useQuery<any[]>({
+    queryKey: ['/api/emails/kudos'],
+    queryFn: () => apiRequest('GET', '/api/emails/kudos'),
+  });
+
   // Use email system for Gmail inbox
   const apiBase = '/api/emails';
 
