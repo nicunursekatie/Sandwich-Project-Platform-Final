@@ -381,6 +381,9 @@ export default function EnhancedMeetingDashboard() {
   // Off-agenda item form states
   const [offAgendaTitle, setOffAgendaTitle] = useState('');
   const [offAgendaSection, setOffAgendaSection] = useState('');
+  
+  // Meeting details dialog visibility (separate from selectedMeeting)
+  const [showMeetingDetailsDialog, setShowMeetingDetailsDialog] = useState(false);
 
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery<
@@ -1836,7 +1839,10 @@ export default function EnhancedMeetingDashboard() {
                     </CardHeader>
                     <CardContent>
                       <button
-                        onClick={() => setSelectedMeeting(meeting)}
+                        onClick={() => {
+                          setSelectedMeeting(meeting);
+                          setShowMeetingDetailsDialog(true);
+                        }}
                         className="w-full flex items-center justify-start gap-3 px-4 py-2.5 border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 rounded-lg font-medium transition-all duration-200"
                       >
                         <FileText className="w-4 h-4" />
@@ -1851,8 +1857,8 @@ export default function EnhancedMeetingDashboard() {
 
           {/* Meeting Details Dialog */}
           <Dialog
-            open={!!selectedMeeting}
-            onOpenChange={() => setSelectedMeeting(null)}
+            open={showMeetingDetailsDialog}
+            onOpenChange={setShowMeetingDetailsDialog}
           >
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
