@@ -65,20 +65,20 @@ export class MeetingAgendaPDFGenerator {
     meeting: Meeting,
     agenda?: CompiledAgenda
   ): Promise<Buffer> {
-    const PDFKit = (await import('pdfkit')).default;
-    const doc = new PDFKit({ 
-      margin: 50,
-      size: 'A4',
-      layout: 'portrait'
-    });
+    try {
+      const PDFKit = (await import('pdfkit')) as any;
+      const doc = new PDFKit({ 
+        margin: 50,
+        size: 'A4',
+        layout: 'portrait'
+      });
 
       const chunks: Buffer[] = [];
       doc.on('data', (chunk) => chunks.push(chunk));
 
-    return new Promise((resolve, reject) => {
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (error) => reject(error));
-
+      return new Promise((resolve, reject) => {
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', (error) => reject(error));
 
         // TSP Brand Colors
         const colors = {
@@ -88,6 +88,9 @@ export class MeetingAgendaPDFGenerator {
           darkGray: '#333333',
           lightGray: '#666666',
           white: '#FFFFFF',
+          success: '#28a745',
+          warning: '#ffc107',
+          danger: '#dc3545',
         };
 
 
@@ -120,18 +123,6 @@ export class MeetingAgendaPDFGenerator {
       };
 
 
-        // Helper function to add footer to current page
-        const addFooter = () => {
-          doc
-            .fontSize(8)
-            .fillColor(colors.lightGray)
-            .text(
-              `The Sandwich Project • Meeting Agenda • Generated ${format(new Date(), 'MMM dd, yyyy')}`,
-              50,
-              doc.page.height - 30,
-              { align: 'center', width: doc.page.width - 100 }
-            );
-        };
 
       // Helper function to wrap text
       const wrapText = (text: string, maxWidth: number, fontSize: number = 10) => {
@@ -186,50 +177,44 @@ export class MeetingAgendaPDFGenerator {
 
       // Helper function to add footer to current page
       const addFooter = () => {
-        const currentPage = doc.page;
-        
-        // Footer background
-        addColoredBox(0, currentPage.height - 40, currentPage.width, 40, colors.veryLightGray);
-        
         doc
           .fontSize(8)
           .fillColor(colors.lightGray)
           .text(
             sanitizeText(`The Sandwich Project | Meeting Agenda | Generated ${format(new Date(), 'MMM dd, yyyy')}`),
             50,
-            currentPage.height - 25,
-            { align: 'center', width: currentPage.width - 100 }
+            doc.page.height - 30,
+            { align: 'center', width: doc.page.width - 100 }
           );
       };
 
       // HEADER WITH TSP BRANDING
-      addColoredBox(0, 0, doc.page.width, 120, colors.navy);
+      doc
+        .fontSize(24)
+        .fillColor(colors.navy)
+        .text(sanitizeText('The Sandwich Project'), 50, yPosition);
       
       doc
-        .fontSize(28)
-        .fillColor(colors.white)
-        .text(sanitizeText('The Sandwich Project'), 50, 30, { align: 'left' });
-      
-      doc
-        .fontSize(20)
+        .fontSize(18)
         .fillColor(colors.orange)
-        .text(sanitizeText('Meeting Agenda'), 50, 65, { align: 'left' });
+        .text(sanitizeText('Meeting Agenda'), 50, yPosition + 30);
 
-      // Meeting details in header
+      // Meeting details
       const meetingDate = format(new Date(meeting.date), 'EEEE, MMMM dd, yyyy');
       const meetingTime = meeting.time && meeting.time !== 'TBD' ? meeting.time : 'TBD';
 
       doc
         .fontSize(14)
-        .fillColor(colors.white)
-        .text(sanitizeText(meeting.title), 50, 90)
-        .text(sanitizeText(`${meetingDate} at ${meetingTime}`), 50, 110);
+        .fillColor(colors.darkGray)
+        .text(sanitizeText(meeting.title), 50, yPosition + 60)
+        .text(sanitizeText(`${meetingDate} at ${meetingTime}`), 50, yPosition + 80);
 
       if (meeting.location) {
-        doc.text(sanitizeText(`Location: ${meeting.location}`), 50, 130);
+        doc.text(sanitizeText(`Location: ${meeting.location}`), 50, yPosition + 100);
+        yPosition += 20;
       }
 
-      yPosition = 160;
+      yPosition += 140;
 
       // Meeting description if available
       if (meeting.description) {
@@ -248,32 +233,19 @@ export class MeetingAgendaPDFGenerator {
       }
 
 
-        // Meeting details
-        const meetingDate = format(new Date(meeting.date), 'EEEE, MMMM dd, yyyy');
-        const meetingTime = meeting.time && meeting.time !== 'TBD' ? meeting.time : 'TBD';
+        // If compiled agenda exists, show sections
+        if (agenda && agenda.sections && agenda.sections.length > 0) {
+          // Add estimated total time if available
+          if (agenda.totalEstimatedTime) {
+            doc
+              .fontSize(12)
+              .fillColor(colors.darkGray)
+              .text(sanitizeText(`Estimated Duration: ${agenda.totalEstimatedTime}`), 50, yPosition);
+            yPosition += 25;
+          }
 
-        doc
-          .fontSize(14)
-          .fillColor(colors.darkGray)
-          .text(`${meeting.title}`, 50, yPosition + 60)
-          .text(`${meetingDate} at ${meetingTime}`, 50, yPosition + 80);
-
-        if (meeting.location) {
-          doc.text(`Location: ${meeting.location}`, 50, yPosition + 100);
-          yPosition += 20;
-        }
-
-        yPosition += 140;
-
-        // Meeting description if available
-        if (meeting.description) {
-          doc
-            .fontSize(12)
-            .fillColor(colors.darkGray)
-
-            .text(sanitizeText(`Estimated Duration: ${agenda.totalEstimatedTime}`), 60, yPosition);
-          yPosition += 40;
-        }
+          doc.fontSize(16).fillColor(colors.navy).text('AGENDA', 50, yPosition);
+          yPosition += 30;
 
         // Process each section
         agenda.sections.forEach((section, sectionIndex) => {
@@ -284,13 +256,12 @@ export class MeetingAgendaPDFGenerator {
             yPosition = 50;
           }
 
-          // Section header with colored background
-          addColoredBox(40, yPosition - 5, doc.page.width - 80, 35, colors.lightBlue);
+          // Section header
           doc
-            .fontSize(16)
-            .fillColor(colors.white)
+            .fontSize(14)
+            .fillColor(colors.navy)
             .text(sanitizeText(`${sectionIndex + 1}. ${section.title}`), 50, yPosition);
-          yPosition += 45;
+          yPosition += 35;
 
           // Section items
           if (section.items && section.items.length > 0) {
@@ -305,165 +276,98 @@ export class MeetingAgendaPDFGenerator {
                 yPosition = 50;
               }
 
-              // Project card background
-              addColoredBox(50, yPosition - 5, doc.page.width - 100, 1, colors.lightGray);
-              yPosition += 10;
-
-              // Item title with project icon
+              // Item title
               doc
-                .fontSize(14)
-                .fillColor(colors.navy)
-                .text(sanitizeText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`), 60, yPosition);
-              yPosition += 25;
+                .fontSize(12)
+                .fillColor(colors.darkGray)
+                .text(sanitizeText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`), 70, yPosition);
+              yPosition += 22;
 
               // If this is a project item, show detailed project information
               if (item.project) {
                 const project = item.project;
                 
-                // Project metadata in a grid
-                const leftColumn = 70;
-                const rightColumn = 300;
-                let metadataY = yPosition;
+                // Project metadata
+                const metadata = [];
+                if (project.assigneeName) metadata.push(`Owner: ${project.assigneeName}`);
+                if (project.supportPeople) metadata.push(`Support: ${project.supportPeople}`);
+                if (project.status) metadata.push(`Status: ${project.status}`);
+                if (project.priority) metadata.push(`Priority: ${project.priority}`);
 
-                // Owner
-                if (project.assigneeName) {
+                if (metadata.length > 0) {
                   doc
                     .fontSize(10)
-                    .fillColor(colors.darkGray)
-                    .text(sanitizeText('Owner:'), leftColumn, metadataY);
-                  doc
-                    .fontSize(10)
-                    .fillColor(colors.navy)
-                    .text(sanitizeText(project.assigneeName), leftColumn + 60, metadataY);
+                    .fillColor(colors.lightGray)
+                    .text(sanitizeText(`  ${metadata.join(' | ')}`), 90, yPosition);
+                  yPosition += 18;
                 }
-
-                // Support People
-                if (project.supportPeople) {
-                  doc
-                    .fontSize(10)
-                    .fillColor(colors.darkGray)
-                    .text(sanitizeText('Support:'), rightColumn, metadataY);
-                  const supportLines = wrapText(project.supportPeople, 200, 10);
-                  supportLines.forEach((line, idx) => {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.navy)
-                      .text(sanitizeText(line), rightColumn + 60, metadataY + (idx * 12));
-                  });
-                  metadataY += Math.max(supportLines.length * 12, 15);
-                } else {
-                  metadataY += 15;
-                }
-
-                // Status and Priority
-                if (project.status) {
-                  doc
-                    .fontSize(10)
-                    .fillColor(colors.darkGray)
-                    .text('Status:', leftColumn, metadataY);
-                  doc
-                    .fontSize(10)
-                    .fillColor(getStatusColor(project.status))
-                    .text(project.status, leftColumn + 60, metadataY);
-                }
-
-                if (project.priority) {
-                  doc
-                    .fontSize(10)
-                    .fillColor(colors.darkGray)
-                    .text('Priority:', rightColumn, metadataY);
-                  doc
-                    .fontSize(10)
-                    .fillColor(getPriorityColor(project.priority))
-                    .text(sanitizeText(project.priority), rightColumn + 60, metadataY);
-                }
-
-                yPosition = metadataY + 25;
 
                 // Project Description
                 if (project.description) {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('Description:', 70, yPosition);
+                    .text('Description:', 90, yPosition);
                   yPosition += 20;
                   
-                  const descLines = wrapText(project.description, 450, 11);
-                  descLines.forEach(line => {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.lightGray)
-                      .text(sanitizeText(`  ${line}`), 80, yPosition);
-                    yPosition += 12;
-                  });
-                  yPosition += 10;
+                  doc
+                    .fontSize(10)
+                    .fillColor(colors.lightGray)
+                    .text(sanitizeText(project.description), 100, yPosition, { width: 450 });
+                  yPosition += 30;
                 }
 
                 // Discussion Points
                 if (project.meetingDiscussionPoints) {
-                  addColoredBox(70, yPosition - 5, doc.page.width - 140, 1, colors.orange);
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('What do we need to talk about?', 80, yPosition);
+                    .text('What do we need to talk about?', 90, yPosition);
                   yPosition += 20;
                   
-                  const discussionLines = wrapText(project.meetingDiscussionPoints, 430, 11);
-                  discussionLines.forEach(line => {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.darkGray)
-                      .text(sanitizeText(`  ${line}`), 90, yPosition);
-                    yPosition += 12;
-                  });
-                  yPosition += 15;
+                  doc
+                    .fontSize(10)
+                    .fillColor(colors.darkGray)
+                    .text(sanitizeText(project.meetingDiscussionPoints), 100, yPosition, { width: 430 });
+                  yPosition += 30;
                 }
 
                 // Decision Items
                 if (project.meetingDecisionItems) {
-                  addColoredBox(70, yPosition - 5, doc.page.width - 140, 1, colors.success);
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text('What decisions need to be made?', 80, yPosition);
+                    .text('What decisions need to be made?', 90, yPosition);
                   yPosition += 20;
                   
-                  const decisionLines = wrapText(project.meetingDecisionItems, 430, 11);
-                  decisionLines.forEach(line => {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.darkGray)
-                      .text(sanitizeText(`  ${line}`), 90, yPosition);
-                    yPosition += 12;
-                  });
-                  yPosition += 15;
+                  doc
+                    .fontSize(10)
+                    .fillColor(colors.darkGray)
+                    .text(sanitizeText(project.meetingDecisionItems), 100, yPosition, { width: 430 });
+                  yPosition += 30;
                 }
 
                 // Project Tasks
                 if (project.tasks && project.tasks.length > 0) {
-                  addColoredBox(70, yPosition - 5, doc.page.width - 140, 1, colors.lightBlue);
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text(sanitizeText('Project Tasks:'), 80, yPosition);
+                    .text('Project Tasks:', 90, yPosition);
                   yPosition += 20;
                   
                   project.tasks.forEach((task, taskIndex) => {
                     doc
                       .fontSize(10)
                       .fillColor(colors.navy)
-                      .text(sanitizeText(`  ${taskIndex + 1}. ${task.title}`), 90, yPosition);
+                      .text(sanitizeText(`  ${taskIndex + 1}. ${task.title}`), 100, yPosition);
                     yPosition += 15;
                     
                     if (task.description) {
-                      const taskDescLines = wrapText(task.description, 400, 10);
-                      taskDescLines.forEach(line => {
-                        doc
-                          .fontSize(9)
-                          .fillColor(colors.lightGray)
-                          .text(sanitizeText(`     ${line}`), 100, yPosition);
-                        yPosition += 11;
-                      });
+                      doc
+                        .fontSize(9)
+                        .fillColor(colors.lightGray)
+                        .text(sanitizeText(`     ${task.description}`), 110, yPosition, { width: 400 });
+                      yPosition += 20;
                     }
                     
                     // Task metadata
@@ -476,11 +380,11 @@ export class MeetingAgendaPDFGenerator {
                       doc
                         .fontSize(9)
                         .fillColor(colors.lightGray)
-                        .text(sanitizeText(`     ${taskMeta.join(' | ')}`), 100, yPosition);
-                      yPosition += 12;
+                        .text(sanitizeText(`     ${taskMeta.join(' | ')}`), 110, yPosition);
+                      yPosition += 15;
                     }
                     
-                    yPosition += 8;
+                    yPosition += 10;
                   });
                   yPosition += 10;
                 }
@@ -490,31 +394,33 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(11)
                     .fillColor(colors.darkGray)
-                    .text(sanitizeText('Attachments:'), 80, yPosition);
+                    .text('Attachments:', 90, yPosition);
                   yPosition += 20;
                   
                   project.attachments.forEach(attachment => {
                     doc
                       .fontSize(10)
                       .fillColor(colors.lightBlue)
-                      .text(sanitizeText(`  - ${attachment}`), 90, yPosition);
+                      .text(sanitizeText(`  • ${attachment}`), 100, yPosition);
                     yPosition += 15;
                   });
                   yPosition += 10;
+                } else {
+                  doc
+                    .fontSize(10)
+                    .fillColor(colors.lightGray)
+                    .text('  No attachments', 90, yPosition);
+                  yPosition += 20;
                 }
 
               } else {
                 // Regular agenda item (not a project)
                 if (item.description) {
-                  const descLines = wrapText(item.description, 450, 10);
-                  descLines.forEach(line => {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.lightGray)
-                      .text(sanitizeText(`  ${line}`), 80, yPosition);
-                    yPosition += 12;
-                  });
-                  yPosition += 10;
+                  doc
+                    .fontSize(10)
+                    .fillColor(colors.lightGray)
+                    .text(sanitizeText(item.description), 90, yPosition, { width: 450 });
+                  yPosition += 20;
                 }
 
                 // Item metadata
@@ -527,20 +433,19 @@ export class MeetingAgendaPDFGenerator {
                   doc
                     .fontSize(9)
                     .fillColor(colors.lightGray)
-                    .text(sanitizeText(`  ${metadata.join(' | ')}`), 80, yPosition);
-                  yPosition += 15;
+                    .text(sanitizeText(`  ${metadata.join(' | ')}`), 90, yPosition);
+                  yPosition += 18;
                 }
               }
 
               yPosition += 20; // Extra spacing between items
             });
           } else {
-            // Empty section
             doc
               .fontSize(10)
               .fillColor(colors.lightGray)
-              .text(sanitizeText('  Items to be determined'), 70, yPosition);
-            yPosition += 30;
+              .text(sanitizeText('  No items scheduled for this section'), 70, yPosition);
+            yPosition += 25;
           }
         });
       } else {
@@ -570,235 +475,15 @@ export class MeetingAgendaPDFGenerator {
             .fillColor(colors.lightGray)
             .text(sanitizeText('  Items to be determined'), 70, yPosition);
           yPosition += 30;
+        });
+      }
 
-      // Add footer to the final page
+      // Add footer to final page
       addFooter();
-            // Section header
-            doc
-              .fontSize(14)
-              .fillColor(colors.navy)
-              .text(`${sectionIndex + 1}. ${section.title}`, 50, yPosition);
-            yPosition += 35;
 
-
-            // Section items
-            if (section.items && section.items.length > 0) {
-              section.items.forEach((item, itemIndex) => {
-                // Check if we need a new page
-                if (yPosition > 720) {
-                  addFooter();
-                  doc.addPage();
-                  yPosition = 50;
-                }
-
-                // Item title
-                doc
-                  .fontSize(12)
-                  .fillColor(colors.darkGray)
-                  .text(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`, 70, yPosition);
-                yPosition += 22;
-
-                // If this is a project item, show detailed project information
-                if (item.project) {
-                  const project = item.project;
-                  
-                  // Project metadata
-                  const metadata = [];
-                  if (project.assigneeName) metadata.push(`Owner: ${project.assigneeName}`);
-                  if (project.supportPeople) metadata.push(`Support: ${project.supportPeople}`);
-                  if (project.status) metadata.push(`Status: ${project.status}`);
-                  if (project.priority) metadata.push(`Priority: ${project.priority}`);
-
-                  if (metadata.length > 0) {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.lightGray)
-                      .text(`  ${metadata.join(' • ')}`, 90, yPosition);
-                    yPosition += 18;
-                  }
-
-                  // Project Description
-                  if (project.description) {
-                    doc
-                      .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('Description:', 90, yPosition);
-                    yPosition += 20;
-                    
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.lightGray)
-                      .text(project.description, 100, yPosition, { width: 450 });
-                    yPosition += 30;
-                  }
-
-                  // Discussion Points
-                  if (project.meetingDiscussionPoints) {
-                    doc
-                      .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('What do we need to talk about?', 90, yPosition);
-                    yPosition += 20;
-                    
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.darkGray)
-                      .text(project.meetingDiscussionPoints, 100, yPosition, { width: 430 });
-                    yPosition += 30;
-                  }
-
-                  // Decision Items
-                  if (project.meetingDecisionItems) {
-                    doc
-                      .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('What decisions need to be made?', 90, yPosition);
-                    yPosition += 20;
-                    
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.darkGray)
-                      .text(project.meetingDecisionItems, 100, yPosition, { width: 430 });
-                    yPosition += 30;
-                  }
-
-                  // Project Tasks
-                  if (project.tasks && project.tasks.length > 0) {
-                    doc
-                      .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('Project Tasks:', 90, yPosition);
-                    yPosition += 20;
-                    
-                    project.tasks.forEach((task, taskIndex) => {
-                      doc
-                        .fontSize(10)
-                        .fillColor(colors.navy)
-                        .text(`  ${taskIndex + 1}. ${task.title}`, 100, yPosition);
-                      yPosition += 15;
-                      
-                      if (task.description) {
-                        doc
-                          .fontSize(9)
-                          .fillColor(colors.lightGray)
-                          .text(`     ${task.description}`, 110, yPosition, { width: 400 });
-                        yPosition += 20;
-                      }
-                      
-                      // Task metadata
-                      const taskMeta = [];
-                      if (task.assigneeName) taskMeta.push(`Assignee: ${task.assigneeName}`);
-                      if (task.dueDate) taskMeta.push(`Due: ${task.dueDate}`);
-                      if (task.priority) taskMeta.push(`Priority: ${task.priority}`);
-                      
-                      if (taskMeta.length > 0) {
-                        doc
-                          .fontSize(9)
-                          .fillColor(colors.lightGray)
-                          .text(`     ${taskMeta.join(' • ')}`, 110, yPosition);
-                        yPosition += 15;
-                      }
-                      
-                      yPosition += 10;
-                    });
-                    yPosition += 10;
-                  }
-
-                  // Project Attachments
-                  if (project.attachments && project.attachments.length > 0) {
-                    doc
-                      .fontSize(11)
-                      .fillColor(colors.darkGray)
-                      .text('Attachments:', 90, yPosition);
-                    yPosition += 20;
-                    
-                    project.attachments.forEach(attachment => {
-                      doc
-                        .fontSize(10)
-                        .fillColor(colors.lightBlue)
-                        .text(`  • ${attachment}`, 100, yPosition);
-                      yPosition += 15;
-                    });
-                    yPosition += 10;
-                  } else {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.lightGray)
-                      .text('  No attachments', 90, yPosition);
-                    yPosition += 20;
-                  }
-
-                } else {
-                  // Regular agenda item (not a project)
-                  if (item.description) {
-                    doc
-                      .fontSize(10)
-                      .fillColor(colors.lightGray)
-                      .text(item.description, 90, yPosition, { width: 450 });
-                    yPosition += 20;
-                  }
-
-                  // Item metadata
-                  const metadata = [];
-                  if (item.submittedBy) metadata.push(`Presenter: ${item.submittedBy}`);
-                  if (item.estimatedTime) metadata.push(`Time: ${item.estimatedTime}`);
-                  if (item.type) metadata.push(`Type: ${item.type.replace('_', ' ')}`);
-
-                  if (metadata.length > 0) {
-                    doc
-                      .fontSize(9)
-                      .fillColor(colors.lightGray)
-                      .text(`  ${metadata.join(' • ')}`, 90, yPosition);
-                    yPosition += 18;
-                  }
-                }
-
-                yPosition += 20; // Extra spacing between items
-              });
-            } else {
-              doc
-                .fontSize(10)
-                .fillColor(colors.lightGray)
-                .text('  No items scheduled for this section', 70, yPosition);
-              yPosition += 25;
-            }
-
-            yPosition += 25; // Extra spacing between sections
-          });
-        } else {
-          // No compiled agenda available
-          doc.fontSize(16).fillColor(colors.navy).text('AGENDA', 50, yPosition);
-          yPosition += 30;
-
-          // Show the standard sections structure
-          const standardSections = [
-            'Old Business',
-            'Urgent Items',
-            'Housekeeping',
-            'New Business',
-          ];
-
-          standardSections.forEach((section, index) => {
-            doc
-              .fontSize(14)
-              .fillColor(colors.navy)
-              .text(`${index + 1}. ${section}`, 50, yPosition);
-            yPosition += 25;
-
-            doc
-              .fontSize(10)
-              .fillColor(colors.lightGray)
-              .text('  Items to be determined', 70, yPosition);
-            yPosition += 30;
-          });
-        }
-
-        // Add footer to final page
-        addFooter();
-
-        doc.end();
-      });
-    } catch (error) {
+      doc.end();
+    });
+  } catch (error: any) {
       console.error('PDF Generation Error:', error);
       throw new Error(`Failed to generate PDF: ${error.message}`);
     }
