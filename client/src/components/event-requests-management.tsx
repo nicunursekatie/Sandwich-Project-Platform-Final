@@ -1770,14 +1770,27 @@ export default function EventRequestsManagement() {
                         >
                           <CardContent className="p-6">
                             <div className="flex items-start justify-between">
-                              <div className="flex-1 space-y-3">
+                              <div className="flex-1 space-y-4">
+                                {/* Date - Prominent at top */}
+                                {request.desiredEventDate && (
+                                  <div className="flex items-center space-x-2 mb-4">
+                                    <Calendar className="w-6 h-6 text-brand-primary" />
+                                    <span
+                                      className={`text-xl font-bold text-brand-primary ${dateInfo.className}`}
+                                    >
+                                      {dateInfo.text}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Organization and Status */}
                                 <div className="flex items-center space-x-3">
-                                  <StatusIcon className="w-5 h-5" />
-                                  <h3 className="text-lg font-semibold">
+                                  <StatusIcon className="w-6 h-6 text-brand-primary" />
+                                  <h3 className="text-xl font-bold text-gray-900">
                                     {request.organizationName}
                                   </h3>
                                   <Badge
-                                    className={statusColors[request.status]}
+                                    className={`${statusColors[request.status]} text-sm font-semibold px-3 py-1`}
                                   >
                                     {
                                       statusOptions.find(
@@ -1787,37 +1800,28 @@ export default function EventRequestsManagement() {
                                   </Badge>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                                  <div className="flex items-center space-x-2">
-                                    <User className="w-4 h-4 text-gray-500" />
-                                    <span>
+                                {/* Contact Information - Larger fonts */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-base">
+                                  <div className="flex items-center space-x-3">
+                                    <User className="w-5 h-5 text-brand-teal" />
+                                    <span className="font-medium text-gray-800">
                                       {request.firstName} {request.lastName}
                                     </span>
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Mail className="w-4 h-4 text-gray-500" />
-                                    <span>{request.email}</span>
+                                  <div className="flex items-center space-x-3">
+                                    <Mail className="w-5 h-5 text-brand-teal" />
+                                    <span className="font-medium text-gray-800">{request.email}</span>
                                   </div>
                                   {request.phone && (
-                                    <div className="flex items-center space-x-2">
-                                      <Phone className="w-4 h-4 text-gray-500" />
-                                      <span>{request.phone}</span>
-                                    </div>
-                                  )}
-                                  {request.desiredEventDate && (
-                                    <div className="flex items-center space-x-2">
-                                      <Calendar className="w-4 h-4 text-gray-500" />
-                                      <span
-                                        className={`text-sm font-medium text-gray-700 ${dateInfo.className}`}
-                                      >
-                                        {dateInfo.text}
-                                      </span>
+                                    <div className="flex items-center space-x-3">
+                                      <Phone className="w-5 h-5 text-brand-teal" />
+                                      <span className="font-medium text-gray-800">{request.phone}</span>
                                     </div>
                                   )}
                                   {request.estimatedSandwichCount && (
-                                    <div className="flex items-center space-x-2">
-                                      <span className="text-sm">🥪</span>
-                                      <span>
+                                    <div className="flex items-center space-x-3">
+                                      <span className="text-lg">🥪</span>
+                                      <span className="font-semibold text-brand-orange">
                                         ~{request.estimatedSandwichCount}{' '}
                                         sandwiches
                                       </span>
@@ -1901,18 +1905,25 @@ export default function EventRequestsManagement() {
                                 )}
 
                                 {request.message && (
-                                  <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                                    {request.message}
-                                  </p>
+                                  <div className="mt-4 p-3 bg-gray-50 border-l-4 border-brand-primary rounded-r-lg">
+                                    <p className="text-base text-gray-700 line-clamp-2 font-medium">
+                                      {request.message}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
 
-                              <div className="flex flex-col items-end space-y-2">
-                                <span className="text-xs text-gray-500">
-                                  {new Date(
-                                    request.createdAt
-                                  ).toLocaleDateString()}
-                                </span>
+                              <div className="flex flex-col items-end space-y-3">
+                                <div className="text-right">
+                                  <span className="text-sm font-medium text-gray-600">
+                                    Requested
+                                  </span>
+                                  <p className="text-base font-semibold text-gray-800">
+                                    {new Date(
+                                      request.createdAt
+                                    ).toLocaleDateString()}
+                                  </p>
+                                </div>
 
                                 {/* Status-specific action buttons */}
                                 <div className="flex space-x-1">
