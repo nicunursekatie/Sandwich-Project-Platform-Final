@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -381,6 +381,9 @@ export default function EnhancedMeetingDashboard() {
   // Off-agenda item form states
   const [offAgendaTitle, setOffAgendaTitle] = useState('');
   const [offAgendaSection, setOffAgendaSection] = useState('');
+  
+  // Meeting details dialog visibility (separate from selectedMeeting)
+  const [showMeetingDetailsDialog, setShowMeetingDetailsDialog] = useState(false);
 
   // Fetch meetings
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery<
@@ -391,6 +394,30 @@ export default function EnhancedMeetingDashboard() {
 
   // Ensure meetings is always an array to prevent filter errors
   const safeMeetings: Meeting[] = Array.isArray(meetings) ? meetings : [];
+
+  // Auto-select appropriate meeting when meetings load
+  useEffect(() => {
+    if (safeMeetings.length > 0 && !selectedMeeting) {
+      // Priority 1: Meeting with status 'planning' (most recent one)
+      const planningMeetings = safeMeetings.filter(m => m.status === 'planning');
+      if (planningMeetings.length > 0) {
+        // Sort by date (most recent first) and select the first one
+        const sortedPlanning = planningMeetings.sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        console.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
+        setSelectedMeeting(sortedPlanning[0]);
+        return;
+      }
+      
+      // Priority 2: Most recent meeting by date
+      const sortedMeetings = safeMeetings.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      console.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
+      setSelectedMeeting(sortedMeetings[0]);
+    }
+  }, [safeMeetings, selectedMeeting]);
 
   // Fetch projects for review
   const { data: projectsForReview = [] } = useQuery<Project[]>({
@@ -409,12 +436,12 @@ export default function EnhancedMeetingDashboard() {
       enabled: !!selectedMeeting,
     });
 
-  // Fetch agenda items for selected meeting - SIMPLE VERSION
+  // Fetch agenda items for selected meeting - FIXED VERSION
   const { data: agendaItems = [], isLoading: agendaItemsLoading } = useQuery<any[]>({
     queryKey: ['agenda-items', selectedMeeting?.id],
     queryFn: async () => {
-      console.log('[Frontend] Fetching agenda items from /api/meetings/agenda-items for meeting:', selectedMeeting?.id);
-      const response = await apiRequest('GET', `/api/meetings/agenda-items?meetingId=${selectedMeeting?.id || ''}`);
+      console.log('[Frontend] Fetching agenda items from /api/agenda-items for meeting:', selectedMeeting?.id);
+      const response = await apiRequest('GET', `/api/agenda-items?meetingId=${selectedMeeting?.id || ''}`);
       console.log('[Frontend] Agenda items response:', response);
       return response || [];
     },
@@ -1820,7 +1847,10 @@ export default function EnhancedMeetingDashboard() {
                     </CardHeader>
                     <CardContent>
                       <button
-                        onClick={() => setSelectedMeeting(meeting)}
+                        onClick={() => {
+                          setSelectedMeeting(meeting);
+                          setShowMeetingDetailsDialog(true);
+                        }}
                         className="w-full flex items-center justify-start gap-3 px-4 py-2.5 border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 rounded-lg font-medium transition-all duration-200"
                       >
                         <FileText className="w-4 h-4" />
@@ -1835,8 +1865,8 @@ export default function EnhancedMeetingDashboard() {
 
           {/* Meeting Details Dialog */}
           <Dialog
-            open={!!selectedMeeting}
-            onOpenChange={() => setSelectedMeeting(null)}
+            open={showMeetingDetailsDialog}
+            onOpenChange={setShowMeetingDetailsDialog}
           >
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
