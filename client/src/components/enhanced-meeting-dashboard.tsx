@@ -409,12 +409,12 @@ export default function EnhancedMeetingDashboard() {
       enabled: !!selectedMeeting,
     });
 
-  // Fetch agenda items for selected meeting
+  // Fetch agenda items for selected meeting - SIMPLE VERSION
   const { data: agendaItems = [], isLoading: agendaItemsLoading } = useQuery<any[]>({
     queryKey: ['agenda-items', selectedMeeting?.id],
     queryFn: async () => {
-      console.log('[Frontend] Fetching agenda items from /api/agenda-items for meeting:', selectedMeeting?.id);
-      const response = await apiRequest('GET', `/api/agenda-items?meetingId=${selectedMeeting?.id || ''}`);
+      console.log('[Frontend] Fetching agenda items from /api/meetings/agenda-items for meeting:', selectedMeeting?.id);
+      const response = await apiRequest('GET', `/api/meetings/agenda-items?meetingId=${selectedMeeting?.id || ''}`);
       console.log('[Frontend] Agenda items response:', response);
       return response || [];
     },
@@ -655,18 +655,18 @@ export default function EnhancedMeetingDashboard() {
     },
   });
 
-  // Create off-agenda item mutation
+  // Create off-agenda item mutation - SIMPLE VERSION
   const createOffAgendaItemMutation = useMutation({
     mutationFn: async (itemData: {
       title: string;
       section: string;
       meetingId: number;
     }) => {
-      return await apiRequest('POST', '/api/agenda-items', {
+      console.log('[Frontend] Creating agenda item via /api/meetings/agenda-items:', itemData);
+      return await apiRequest('POST', '/api/meetings/agenda-items', {
         title: itemData.title,
         description: `Section: ${itemData.section}`,
         meetingId: itemData.meetingId,
-        submittedBy: user?.email || 'unknown',
       });
     },
     onSuccess: () => {

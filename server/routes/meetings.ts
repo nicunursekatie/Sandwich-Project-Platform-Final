@@ -197,7 +197,53 @@ router.delete('/:id', isAuthenticated, async (req: any, res) => {
   }
 });
 
-// Note: Agenda items endpoints have been moved to a dedicated router at /api/agenda-items
-// This prevents routing conflicts and provides better separation of concerns
+// Simple One-Off Agenda Items - Fresh Implementation
+// GET agenda items for a meeting
+router.get('/agenda-items', isAuthenticated, async (req: any, res) => {
+  try {
+    console.log('🟢 Simple Agenda API - GET request:', req.query);
+    const { meetingId } = req.query;
+    
+    if (!meetingId) {
+      return res.json([]);
+    }
+    
+    const items = await storage.getAllAgendaItems();
+    const filteredItems = items.filter(item => item.meetingId === parseInt(meetingId));
+    
+    console.log('✅ Simple Agenda API - Returning', filteredItems.length, 'items for meeting', meetingId);
+    res.json(filteredItems);
+  } catch (error) {
+    console.error('❌ Simple Agenda API - Error:', error);
+    res.status(500).json({ message: 'Failed to fetch agenda items' });
+  }
+});
+
+// POST create agenda item
+router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
+  try {
+    console.log('🟢 Simple Agenda API - POST request:', req.body);
+    
+    const { title, description, meetingId } = req.body;
+    
+    if (!title || !meetingId) {
+      return res.status(400).json({ message: 'Title and meetingId are required' });
+    }
+    
+    const newItem = await storage.createAgendaItem({
+      title,
+      description: description || '',
+      meetingId: parseInt(meetingId),
+      submittedBy: req.user?.email || 'unknown',
+      status: 'pending'
+    });
+    
+    console.log('✅ Simple Agenda API - Created item:', newItem.id);
+    res.status(201).json(newItem);
+  } catch (error) {
+    console.error('❌ Simple Agenda API - Error:', error);
+    res.status(500).json({ message: 'Failed to create agenda item' });
+  }
+});
 
 export default router;
