@@ -44,11 +44,20 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
       orange: '#FF6B35',
       green: '#4CAF50',
       red: '#F44336',
+      purple: '#9C27B0',
+      teal: '#009688',
+      amber: '#FFC107',
+      indigo: '#3F51B5',
+      pink: '#E91E63',
       darkGray: '#333333',
       lightGray: '#666666',
       white: '#FFFFFF',
       sectionBlue: '#E3F2FD',
-      dividerGray: '#CCCCCC'
+      dividerGray: '#CCCCCC',
+      lightGreen: '#E8F5E8',
+      lightOrange: '#FFF3E0',
+      lightPurple: '#F3E5F5',
+      lightTeal: '#E0F2F1'
     };
 
     let yPosition = 0;
@@ -77,6 +86,21 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
         doc.addPage();
         yPosition = 80; // Start with more margin from top
       }
+    };
+
+    // Helper function to add section context on new pages
+    const addSectionContext = (sectionTitle: string, sectionIndex: number) => {
+      // Add a subtle background bar for context
+      doc.rect(0, yPosition - 5, pageWidth, 25)
+         .fill(colors.lightBlue);
+      
+      addText(`Continued from ${sectionIndex + 1}. ${sectionTitle}`, margin, yPosition, {
+        fontSize: 10,
+        fillColor: colors.navy,
+        width: contentWidth
+      });
+      
+      yPosition += 30;
     };
 
     // Helper function to add colored header bar
@@ -110,10 +134,10 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
     // Helper function to add divider line
     const addDivider = (color: string, thickness: number = 1) => {
-      yPosition += 10; // Add space before divider
+      yPosition += 5; // Add space before divider
       doc.rect(margin, yPosition, contentWidth, thickness)
          .fill(color);
-      yPosition += thickness + 15; // Add space after divider
+      yPosition += thickness + 8; // Add space after divider
     };
 
     // Main header section
@@ -160,13 +184,16 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
     // Process each section
     agenda.sections.forEach((section, sectionIndex) => {
-      ensureSpace(120);
+      ensureSpace(80);
 
       // Add space before section
-      yPosition += 20;
+      yPosition += 10;
 
-      // Section header with light blue background
-      addHeaderBar(colors.sectionBlue, 30);
+      // Section header with colored background
+      const sectionColors = [colors.sectionBlue, colors.lightGreen, colors.lightOrange, colors.lightPurple, colors.lightTeal];
+      const sectionColor = sectionColors[sectionIndex % sectionColors.length];
+      
+      addHeaderBar(sectionColor, 30);
       
       addText(`${sectionIndex + 1}. ${section.title}`, margin, yPosition - 20, {
         fontSize: 14,
@@ -174,66 +201,103 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
         width: contentWidth
       });
 
-      yPosition += 20;
+      yPosition += 15;
 
       // Section items
       if (section.items && section.items.length > 0) {
         section.items.forEach((item, itemIndex) => {
-          ensureSpace(200);
+          const currentY = yPosition;
+          ensureSpace(120);
+
+          // Add section context if we're on a new page
+          if (yPosition !== currentY) {
+            addSectionContext(section.title, sectionIndex);
+          }
 
           // Add space before item
-          yPosition += 15;
+          yPosition += 8;
 
-          // Item title
+          // Item title with colored background
+          const itemColors = [colors.lightGreen, colors.lightOrange, colors.lightPurple, colors.lightTeal, colors.lightBlue];
+          const itemColor = itemColors[itemIndex % itemColors.length];
+          
+          // Add subtle background for item
+          doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 20)
+             .fill(itemColor);
+          
           addText(`${sectionIndex + 1}.${itemIndex + 1} ${item.title}`, margin, yPosition, {
             fontSize: 12,
             fillColor: colors.darkGray,
             width: contentWidth
           });
-          yPosition += 25;
+          yPosition += 18;
 
-          // Add divider line
-          addDivider(colors.dividerGray);
+          // Add colored divider line
+          const dividerColors = [colors.orange, colors.green, colors.purple, colors.teal, colors.amber];
+          const dividerColor = dividerColors[itemIndex % dividerColors.length];
+          addDivider(dividerColor);
 
           // If this is a project item, show detailed project information
           if (item.project) {
             const project = item.project;
             
-            // Project metadata with better text wrapping
+            // Project metadata with colored labels
             if (project.assigneeName) {
-              addText(`Owner: ${project.assigneeName}`, margin, yPosition, {
+              addText(`Owner: `, margin, yPosition, {
                 fontSize: 10,
-                fillColor: colors.lightGray,
-                width: contentWidth
+                fillColor: colors.navy,
+                width: 60
+              });
+              addText(project.assigneeName, margin + 60, yPosition, {
+                fontSize: 10,
+                fillColor: colors.teal,
+                width: contentWidth - 60
               });
               yPosition += 12;
             }
             
             if (project.status) {
-              addText(`Status: ${project.status}`, margin, yPosition, {
+              addText(`Status: `, margin, yPosition, {
                 fontSize: 10,
-                fillColor: colors.lightGray,
-                width: contentWidth
+                fillColor: colors.navy,
+                width: 60
+              });
+              const statusColor = project.status === 'in_progress' ? colors.amber : 
+                                project.status === 'completed' ? colors.green : colors.lightGray;
+              addText(project.status, margin + 60, yPosition, {
+                fontSize: 10,
+                fillColor: statusColor,
+                width: contentWidth - 60
               });
               yPosition += 12;
             }
             
             if (project.supportPeople) {
-              addText(`Support: ${project.supportPeople}`, margin, yPosition, {
+              addText(`Support: `, margin, yPosition, {
                 fontSize: 10,
-                fillColor: colors.lightGray,
-                width: contentWidth
+                fillColor: colors.navy,
+                width: 60
+              });
+              addText(project.supportPeople, margin + 60, yPosition, {
+                fontSize: 10,
+                fillColor: colors.purple,
+                width: contentWidth - 60
               });
               yPosition += 12;
             }
             
             if (project.priority) {
+              addText(`Priority: `, margin, yPosition, {
+                fontSize: 10,
+                fillColor: colors.navy,
+                width: 60
+              });
               const priorityColor = project.priority === 'high' ? colors.red : 
-                                  project.priority === 'medium' ? colors.orange : colors.lightGray;
-              addText(`Priority: ${project.priority}`, margin, yPosition, {
+                                  project.priority === 'medium' ? colors.orange : colors.green;
+              addText(project.priority, margin + 60, yPosition, {
                 fontSize: 10,
                 fillColor: priorityColor,
-                width: contentWidth
+                width: contentWidth - 60
               });
               yPosition += 12;
             }
@@ -245,19 +309,23 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Discussion Points
             if (project.meetingDiscussionPoints) {
+              // Add colored background for section
+              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 15)
+                 .fill(colors.lightOrange);
+              
               addText('What do we need to talk about?', margin, yPosition, {
                 fontSize: 11,
-                fillColor: colors.darkGray,
+                fillColor: colors.orange,
                 width: contentWidth
               });
-              yPosition += 20;
+              yPosition += 12;
               
               addText(project.meetingDiscussionPoints, margin + 10, yPosition, {
                 fontSize: 10,
-                fillColor: colors.lightGray,
+                fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 30;
+              yPosition += 18;
             }
 
             // Add green divider
@@ -265,19 +333,23 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Decision Items
             if (project.meetingDecisionItems) {
+              // Add colored background for section
+              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 15)
+                 .fill(colors.lightGreen);
+              
               addText('What decisions need to be made?', margin, yPosition, {
                 fontSize: 11,
-                fillColor: colors.darkGray,
+                fillColor: colors.green,
                 width: contentWidth
               });
-              yPosition += 20;
+              yPosition += 12;
               
               addText(project.meetingDecisionItems, margin + 10, yPosition, {
                 fontSize: 10,
-                fillColor: colors.lightGray,
+                fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 30;
+              yPosition += 18;
             }
 
             // Add blue divider
@@ -285,24 +357,28 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Project Tasks
             if (project.tasks && project.tasks.length > 0) {
+              // Add colored background for section
+              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 15)
+                 .fill(colors.lightTeal);
+              
               addText('Project Tasks:', margin, yPosition, {
                 fontSize: 11,
-                fillColor: colors.darkGray,
+                fillColor: colors.teal,
                 width: contentWidth
               });
-              yPosition += 20;
+              yPosition += 12;
 
               project.tasks.forEach((task: any, taskIndex: number) => {
-                ensureSpace(50);
+                ensureSpace(30);
                 const taskText = `${taskIndex + 1}. ${task.description || task.title || 'No description'}`;
                 addText(taskText, margin + 10, yPosition, {
                   fontSize: 10,
-                  fillColor: colors.lightGray,
+                  fillColor: colors.darkGray,
                   width: contentWidth - 30 // Leave some margin for indentation
                 });
-                yPosition += 25; // More space between tasks
+                yPosition += 15; // Space between tasks
               });
-              yPosition += 15;
+              yPosition += 8;
             }
 
             // Attached Files
@@ -332,7 +408,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
               yPosition += 15;
             }
 
-            yPosition += 25;
+            yPosition += 12;
           } else {
             // Regular agenda item (not a project)
             if (item.presenter) {
@@ -341,15 +417,15 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.lightGray,
                 width: contentWidth
               });
-              yPosition += 25;
+              yPosition += 15;
             }
           }
 
-          yPosition += 20; // Space between items
+          yPosition += 12; // Space between items
         });
       }
 
-      yPosition += 30; // Space between sections
+      yPosition += 15; // Space between sections
     });
 
     // Add footer
