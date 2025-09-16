@@ -369,6 +369,7 @@ interface EventRequest {
   updatedEmail?: string;
   followUpDate?: string;
   scheduledCallDate?: string;
+  scheduledCallTime?: string;
   driverCount?: number;
   speakerCount?: number;
   volunteerCount?: number;
@@ -1626,7 +1627,7 @@ export default function EventRequestsManagement() {
 
     return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="space-y-6 text-base md:text-lg">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -1805,7 +1806,7 @@ export default function EventRequestsManagement() {
                                 {request.desiredEventDate && (
                     <div className="flex items-center space-x-2">
                                     <Calendar className="w-4 h-4 text-gray-500" />
-                                    <span className={dateInfo.className}>
+                                    <span className={`text-2xl md:text-3xl font-extrabold text-brand-primary ${dateInfo.className}`}>
                                       {dateInfo.text}
                       </span>
                           </div>
