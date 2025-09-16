@@ -255,7 +255,7 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
     console.log('Agenda data received:', JSON.stringify(agendaData, null, 2));
     
     // Import the PDF generator
-    const { generateMeetingAgendaPDF } = await import('../meeting-agenda-pdf-generator.js');
+    const { generateMeetingAgendaPDF } = await import('../meeting-agenda-pdf-generator');
     
     // Transform agenda data to meeting format for PDF generator
     const meetingData = {
