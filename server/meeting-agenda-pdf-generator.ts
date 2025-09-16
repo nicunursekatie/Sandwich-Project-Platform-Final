@@ -150,6 +150,24 @@ export class MeetingAgendaPDFGenerator {
         }
       };
 
+      // Helper function to add footer to current page
+      const addFooter = () => {
+        const currentPage = doc.page;
+        
+        // Footer background
+        addColoredBox(0, currentPage.height - 40, currentPage.width, 40, colors.veryLightGray);
+        
+        doc
+          .fontSize(8)
+          .fillColor(colors.lightGray)
+          .text(
+            `The Sandwich Project • Meeting Agenda • Generated ${format(new Date(), 'MMM dd, yyyy')}`,
+            50,
+            currentPage.height - 25,
+            { align: 'center', width: currentPage.width - 100 }
+          );
+      };
+
       // HEADER WITH TSP BRANDING
       addColoredBox(0, 0, doc.page.width, 120, colors.navy);
       
@@ -211,6 +229,7 @@ export class MeetingAgendaPDFGenerator {
         agenda.sections.forEach((section, sectionIndex) => {
           // Check if we need a new page
           if (yPosition > 700) {
+            addFooter(); // Add footer to current page before creating new one
             doc.addPage();
             yPosition = 50;
           }
@@ -228,6 +247,7 @@ export class MeetingAgendaPDFGenerator {
             section.items.forEach((item, itemIndex) => {
               // Check if we need a new page
               if (yPosition > 720) {
+                addFooter(); // Add footer to current page before creating new one
                 doc.addPage();
                 yPosition = 50;
               }
@@ -509,24 +529,8 @@ export class MeetingAgendaPDFGenerator {
         });
       }
 
-      // Footer
-      const pageCount = doc.bufferedPageRange();
-      for (let i = 1; i <= pageCount.count; i++) {
-        doc.switchToPage(i);
-        
-        // Footer background
-        addColoredBox(0, doc.page.height - 40, doc.page.width, 40, colors.veryLightGray);
-        
-        doc
-          .fontSize(8)
-          .fillColor(colors.lightGray)
-          .text(
-            `The Sandwich Project • Meeting Agenda • Page ${i} of ${pageCount.count} • Generated ${format(new Date(), 'MMM dd, yyyy')}`,
-            50,
-            doc.page.height - 25,
-            { align: 'center', width: doc.page.width - 100 }
-          );
-      }
+      // Add footer to the final page
+      addFooter();
 
       doc.end();
     });
