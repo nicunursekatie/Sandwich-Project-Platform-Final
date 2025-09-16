@@ -246,4 +246,44 @@ router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
   }
 });
 
+// POST /api/meetings/finalize-agenda-pdf - Generate and download agenda PDF
+router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
+  try {
+    console.log('📄 Generating agenda PDF...');
+    
+    const agendaData = req.body;
+    console.log('Agenda data received:', JSON.stringify(agendaData, null, 2));
+    
+    // For now, return a simple text response indicating the feature is not yet implemented
+    // TODO: Implement actual PDF generation using a library like puppeteer or pdfkit
+    res.status(501).json({ 
+      error: 'PDF generation not yet implemented',
+      message: 'The agenda PDF generation feature is under development. Please use the export to Google Sheets functionality for now.'
+    });
+    
+  } catch (error) {
+    console.error('Error generating agenda PDF:', error);
+    res.status(500).json({ error: 'Failed to generate agenda PDF' });
+  }
+});
+
+// GET /api/meetings/:id/download-pdf - Download existing meeting PDF
+router.get('/:id/download-pdf', isAuthenticated, async (req: any, res) => {
+  try {
+    const meetingId = req.params.id;
+    console.log('📄 Downloading PDF for meeting:', meetingId);
+    
+    // For now, return a simple text response indicating the feature is not yet implemented
+    // TODO: Implement actual PDF download functionality
+    res.status(501).json({ 
+      error: 'PDF download not yet implemented',
+      message: 'The PDF download feature is under development. Please use the export to Google Sheets functionality for now.'
+    });
+    
+  } catch (error) {
+    console.error('Error downloading meeting PDF:', error);
+    res.status(500).json({ error: 'Failed to download meeting PDF' });
+  }
+});
+
 export default router;

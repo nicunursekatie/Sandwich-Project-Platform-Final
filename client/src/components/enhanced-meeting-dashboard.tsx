@@ -1057,7 +1057,7 @@ export default function EnhancedMeetingDashboard() {
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage =
-            errorJson.error ||
+            errorJson.message || errorJson.error ||
             `HTTP ${response.status}: ${response.statusText}`;
         } catch {
           errorMessage =
@@ -1295,7 +1295,15 @@ export default function EnhancedMeetingDashboard() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to download PDF: ${response.statusText}`);
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || `Failed to download PDF: ${response.statusText}`;
+        } catch {
+          errorMessage = `Failed to download PDF: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       // Get the blob from response
