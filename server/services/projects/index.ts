@@ -375,6 +375,10 @@ export class ProjectService implements IProjectService {
 
   validateCreatePermissions(user: User): boolean {
     return (
+      user.permissions?.includes('PROJECTS_ADD') ||
+      user.permissions?.includes('PROJECTS_EDIT_ALL') ||
+      user.permissions?.includes('ADMIN_ACCESS') ||
+      // Legacy permission names for backward compatibility
       user.permissions?.includes('create_projects') ||
       user.permissions?.includes('edit_all_projects') ||
       user.permissions?.includes('manage_projects') ||

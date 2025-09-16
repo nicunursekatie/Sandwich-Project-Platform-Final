@@ -757,13 +757,26 @@ export default function EnhancedMeetingDashboard() {
     mutationFn: async (projectData: typeof newProjectData) => {
       return await apiRequest('POST', '/api/projects', projectData);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
-      toast({
-        title: 'Project Created',
-        description: 'New project has been created and will appear in the agenda planning list',
-      });
+      
+      // Automatically sync the new project to Google Sheets
+      try {
+        await apiRequest('POST', '/api/google-sheets/projects/sync/to-sheets');
+        toast({
+          title: 'Project Created & Synced',
+          description: 'New project has been created and synced to Google Sheets',
+        });
+      } catch (syncError) {
+        console.warn('Project created but sync to Google Sheets failed:', syncError);
+        toast({
+          title: 'Project Created',
+          description: 'New project has been created. Note: Sync to Google Sheets failed - you can sync manually later.',
+          variant: 'destructive',
+        });
+      }
+      
       setShowAddProjectDialog(false);
       setNewProjectData({
         title: '',
