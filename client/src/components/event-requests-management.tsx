@@ -293,14 +293,7 @@ const formatEventDate = (dateString: string) => {
     });
 
     const isWedOrThu = dayOfWeek === 3 || dayOfWeek === 4;
-    let className = '';
-    if (dayOfWeek === 2) {
-      className = 'text-gray-700 font-medium';
-    } else if (isWedOrThu) {
-      className = 'text-brand-orange font-medium';
-    } else {
-      className = 'text-brand-primary font-bold';
-    }
+    let className = 'text-gray-700 font-medium';
 
     return {
       text: dateFormatted,
