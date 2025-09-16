@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, TrendingUp, Users, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface EventRequest {
   id: number;
@@ -10,6 +12,8 @@ interface EventRequest {
   desiredEventDate?: string;
   estimatedSandwichCount?: number;
   status: 'new' | 'contact_completed' | 'scheduled' | 'completed' | 'declined';
+  needsDriver?: boolean;
+  needsSpeaker?: boolean;
 }
 
 export default function SandwichForecastWidget() {
@@ -174,6 +178,28 @@ export default function SandwichForecastWidget() {
     );
   }, [weeklySandwichForecast]);
 
+  // Add state for current week index
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+
+  // Only show one week at a time
+  const currentWeek = weeklySandwichForecast[currentWeekIndex] || null;
+
+  // Calculate driver/speaker needs for the current week
+  const driverCount = currentWeek?.events?.filter(e => e.needsDriver).length || 0;
+  const speakerCount = currentWeek?.events?.filter(e => e.needsSpeaker).length || 0;
+
+  // Separate Thursday events from others
+  const thursdayEvents = (currentWeek?.events || []).filter(e => {
+    if (!e.desiredEventDate) return false;
+    const d = new Date(e.desiredEventDate);
+    return d.getDay() === 4; // 4 = Thursday
+  });
+  const otherEvents = (currentWeek?.events || []).filter(e => {
+    if (!e.desiredEventDate) return false;
+    const d = new Date(e.desiredEventDate);
+    return d.getDay() !== 4;
+  });
+
   if (isLoading) {
     return (
       <Card className="border-2 border-brand-primary/20">
@@ -207,146 +233,111 @@ export default function SandwichForecastWidget() {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {weeklySandwichForecast.length === 0 ? (
-          <div className="text-center py-8 text-[#646464]">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-            <p className="text-lg font-medium">
-              No upcoming events with sandwich estimates
-            </p>
-            <p className="text-sm">
-              Events need contact completion and sandwich count estimates to
-              appear here
-            </p>
+        {/* Week Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentWeekIndex(i => Math.max(0, i - 1))}
+            disabled={currentWeekIndex === 0}
+            style={{ color: '#236383', borderColor: '#236383' }}
+          >
+            Previous Week
+          </Button>
+          <div className="font-bold text-lg text-brand-primary">
+            {currentWeek?.distributionDate || 'No week selected'}
           </div>
-        ) : (
-          <>
-            {/* Summary Cards Grid - Next 8 Weeks */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {weeklySandwichForecast.map((week, index) => (
-                <div
-                  key={week.weekKey}
-                  className={`rounded-lg p-3 border ${
-                    index === 0
-                      ? 'bg-gradient-to-r from-brand-primary to-brand-teal text-white border-brand-primary'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div
-                      className={`text-xs font-medium ${
-                        index === 0 ? 'opacity-90' : 'text-gray-600'
-                      }`}
-                    >
-                      {index === 0 ? 'UPCOMING WEEK' : week.distributionDate}
-                    </div>
-                    {index === 0 && (
-                      <div className="text-sm font-bold mt-1">
-                        {week.distributionDate}
+          <Button
+            variant="outline"
+            onClick={() => setCurrentWeekIndex(i => Math.min(weeklySandwichForecast.length - 1, i + 1))}
+            disabled={currentWeekIndex === weeklySandwichForecast.length - 1}
+            style={{ color: '#236383', borderColor: '#236383' }}
+          >
+            Next Week
+          </Button>
+        </div>
+        {/* Summary Row */}
+        <div className="flex gap-4 items-center mb-2">
+          <span style={{ color: '#007E8C', fontWeight: 600 }}>
+            🚗 Drivers Needed: {driverCount}
+          </span>
+          <span style={{ color: '#FBAD3F', fontWeight: 600 }}>
+            🎤 Speakers Needed: {speakerCount}
+          </span>
+        </div>
+        {/* Thursday Events */}
+        <div className="mb-4">
+          <h4 className="font-semibold" style={{ color: '#236383' }}>
+            Thursday Events
+          </h4>
+          {thursdayEvents.length === 0 ? (
+            <div className="text-gray-500 text-sm">No Thursday events this week.</div>
+          ) : (
+            <div className="grid gap-2">
+              {thursdayEvents.map(event => {
+                const eventDate = new Date(event.desiredEventDate!);
+                return (
+                  <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{event.organizationName}</div>
+                      <div className="text-xs text-gray-600">
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </div>
-                    )}
-                    <div
-                      className={`text-2xl font-bold mt-1 ${
-                        index === 0 ? 'text-white' : 'text-brand-primary'
-                      }`}
-                    >
-                      {(week.totalEstimated || 0).toLocaleString()}
                     </div>
-                    <div
-                      className={`text-xs ${
-                        index === 0 ? 'opacity-90' : 'text-gray-600'
-                      }`}
-                    >
-                      {week.events?.length || 0} event
-                      {(week.events?.length || 0) !== 1 ? 's' : ''}
+                    <div className="flex items-center gap-2">
+                      {event.needsDriver && (
+                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 Driver</Badge>
+                      )}
+                      {event.needsSpeaker && (
+                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 Speaker</Badge>
+                      )}
+                      <div className="font-semibold text-brand-primary">
+                        {(event.estimatedSandwichCount || 0).toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500">sandwiches</div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-
-            {/* Detailed Weekly Breakdown */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-brand-primary flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Weekly Breakdown (Next 8 Weeks)
-              </h4>
-              <div className="space-y-3">
-                {weeklySandwichForecast.map((week, index) => (
-                  <div
-                    key={week.weekKey}
-                    className="border rounded-lg p-4 bg-white"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h5 className="font-semibold text-brand-primary">
-                          {week.distributionDate}
-                        </h5>
-                        <p className="text-sm text-gray-600">
-                          Prep: {week.weekStartDate} • Distribute:{' '}
-                          {week.weekEndDate}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold text-brand-primary">
-                          {(week.totalEstimated || 0).toLocaleString()}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {week.events?.length || 0} group event
-                          {(week.events?.length || 0) !== 1 ? 's' : ''}
-                        </div>
+          )}
+        </div>
+        {/* Other Events */}
+        <div>
+          <h4 className="font-semibold" style={{ color: '#A31C41' }}>
+            Other Events This Week
+          </h4>
+          {otherEvents.length === 0 ? (
+            <div className="text-gray-500 text-sm">No other events this week.</div>
+          ) : (
+            <div className="grid gap-2">
+              {otherEvents.map(event => {
+                const eventDate = new Date(event.desiredEventDate!);
+                return (
+                  <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{event.organizationName}</div>
+                      <div className="text-xs text-gray-600">
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </div>
                     </div>
-
-                    {/* Event Details */}
-                    {Array.isArray(week.events) && week.events.length > 0 && (
-                      <div className="grid gap-2">
-                        {week.events.map((event, eventIndex) => {
-                          const eventDate = new Date(event.desiredEventDate!);
-                          const dayName = eventDate.toLocaleDateString(
-                            'en-US',
-                            { weekday: 'long' }
-                          );
-
-                          return (
-                            <div
-                              key={event.id}
-                              className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
-                            >
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">
-                                  {event.organizationName}
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                  {dayName}, {eventDate.toLocaleDateString()}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-semibold text-brand-primary">
-                                  {(
-                                    event.estimatedSandwichCount || 0
-                                  ).toLocaleString()}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  sandwiches
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                    <div className="flex items-center gap-2">
+                      {event.needsDriver && (
+                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 Driver</Badge>
+                      )}
+                      {event.needsSpeaker && (
+                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 Speaker</Badge>
+                      )}
+                      <div className="font-semibold text-brand-primary">
+                        {(event.estimatedSandwichCount || 0).toLocaleString()}
                       </div>
-                    )}
-
-                    {(!week.events || week.events.length === 0) && (
-                      <div className="text-center py-4 text-gray-500 text-sm">
-                        No events scheduled for this week
-                      </div>
-                    )}
+                      <div className="text-xs text-gray-500">sandwiches</div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          </>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
