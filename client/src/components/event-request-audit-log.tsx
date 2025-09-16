@@ -111,7 +111,8 @@ export function EventRequestAuditLog({
 
       const response = await fetch(`/api/event-requests/audit-logs?${params}`);
       if (!response.ok) throw new Error('Failed to fetch audit logs');
-      return response.json();
+      const data = await response.json();
+      return data.logs || []; // Extract the logs array from the response
     },
     refetchInterval: eventId ? undefined : 30000, // Auto-refresh every 30 seconds for general view
   });
@@ -215,7 +216,7 @@ export function EventRequestAuditLog({
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     if (value) {
-      trackSearch('Audit Log Search', value, 'Audit', 'Event Requests');
+      trackSearch(value, 'Audit', 'Event Requests');
     }
   };
 
