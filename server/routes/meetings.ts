@@ -282,7 +282,51 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
           description: project.discussionPoints || project.decisionItems || '',
           submittedBy: project.owner || 'Unknown',
           type: 'project',
-          estimatedTime: '10 mins'
+          estimatedTime: '10 mins',
+          project: {
+            id: project.id || index + 1,
+            title: project.title,
+            status: project.status || 'pending',
+            priority: project.priority || 'medium',
+            description: project.description || '',
+            reviewInNextMeeting: true,
+            meetingDiscussionPoints: project.discussionPoints || '',
+            meetingDecisionItems: project.decisionItems || '',
+            supportPeople: project.supportPeople || '',
+            assigneeName: project.owner || 'Unknown',
+            tasks: project.tasks || [],
+            attachments: project.attachments || []
+          }
+        }))
+      });
+    }
+    
+    // Add tabled projects if they exist
+    if (agendaData.tabledProjects && agendaData.tabledProjects.length > 0) {
+      agendaSections.push({
+        id: agendaSections.length + 1,
+        title: 'Tabled Items',
+        items: agendaData.tabledProjects.map((project: any, index: number) => ({
+          id: index + 1,
+          title: project.title,
+          description: project.reason || 'No reason specified',
+          submittedBy: project.owner || 'Unknown',
+          type: 'tabled_project',
+          estimatedTime: '5 mins',
+          project: {
+            id: project.id || index + 1000,
+            title: project.title,
+            status: 'tabled',
+            priority: 'low',
+            description: project.reason || 'No reason specified',
+            reviewInNextMeeting: false,
+            meetingDiscussionPoints: project.reason || '',
+            meetingDecisionItems: '',
+            supportPeople: project.supportPeople || '',
+            assigneeName: project.owner || 'Unknown',
+            tasks: [],
+            attachments: []
+          }
         }))
       });
     }
