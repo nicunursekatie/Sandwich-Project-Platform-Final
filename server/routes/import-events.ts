@@ -710,4 +710,278 @@ router.post('/sync-from-sheets', isAuthenticated, async (req, res) => {
   }
 });
 
+// Import 2023 historical events
+router.post('/import-2023-events', isAuthenticated, async (req, res) => {
+  try {
+    console.log('Starting 2023 events import...');
+
+    // Read the 2023 Excel file
+    const filePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'attached_assets',
+      '2023 Events_1757981703985.xlsx'
+    );
+    console.log('Reading 2023 events file:', filePath);
+
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames[0]; // '2023 groups'
+    const worksheet = workbook.Sheets[sheetName];
+
+    // Convert to JSON with proper headers
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+
+    console.log('2023 Events headers:', data[0]);
+    console.log(`Total 2023 rows: ${data.length}`);
+
+    // Skip header row and process data
+    const events = [];
+    let skippedRows = 0;
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+
+      // Skip completely empty rows
+      if (!row || row.length === 0) continue;
+
+      // Based on the Excel structure:
+      // 0: Sandwich-making date, 3: Estimate/Final # sandwiches made, 6: Group Name,
+      // 7: Sent toolkit, 8: Email Address, 9: Contact Name, 10: Contact Cell Number,
+      // 11: TSP Contact, 14: Where are sandwiches going?, 15: Notes
+      const eventDateRaw = row[0]; // Sandwich-making date
+      const estimatedSandwichCount = row[3]; // Estimate/Final # sandwiches made
+      const groupName = row[6]; // Group Name
+      const toolkitSent = row[7]; // Sent toolkit
+      const email = row[8]; // Email Address  
+      const contactName = row[9]; // Contact Name
+      const phone = row[10]; // Contact Cell Number
+      const tspContact = row[11]; // TSP Contact
+      const deliveryLocation = row[14]; // Where are sandwiches going?
+      const notes = row[15]; // Notes
+
+      // Parse date - handle both Excel numeric dates and text dates
+      let parsedDate = null;
+      if (eventDateRaw) {
+        try {
+          if (typeof eventDateRaw === 'number') {
+            // Excel numeric date - TIMEZONE SAFE
+            const excelEpoch = new Date(1899, 11, 30);
+            const tempDate = new Date(
+              excelEpoch.getTime() + eventDateRaw * 24 * 60 * 60 * 1000
+            );
+            // Create local date to avoid timezone shift
+            parsedDate = new Date(
+              tempDate.getFullYear(),
+              tempDate.getMonth(),
+              tempDate.getDate()
+            );
+          } else {
+            // Handle text dates like "1/14 Saturday night"
+            const dateStr = eventDateRaw.toString().trim();
+            
+            // Try to extract date from various formats
+            let dateMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})/); // MM/DD or M/D
+            if (dateMatch) {
+              const [, month, day] = dateMatch;
+              // Assume 2023 since this is 2023 events file
+              parsedDate = new Date(2023, parseInt(month) - 1, parseInt(day));
+            } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // YYYY-MM-DD format - add noon time
+              parsedDate = new Date(dateStr + 'T12:00:00');
+            } else {
+              // Fallback: try to parse as regular date
+              const tempDate = new Date(dateStr);
+              if (!isNaN(tempDate.getTime())) {
+                parsedDate = new Date(
+                  tempDate.getFullYear(),
+                  tempDate.getMonth(),
+                  tempDate.getDate()
+                );
+              }
+            }
+          }
+
+          if (parsedDate && isNaN(parsedDate.getTime())) {
+            parsedDate = null;
+          }
+        } catch (e) {
+          console.warn(`Could not parse 2023 date "${eventDateRaw}" for row ${i + 1}`);
+          parsedDate = null;
+        }
+      }
+
+      // Split contact name into first and last name
+      let firstName = '';
+      let lastName = '';
+      if (contactName && contactName.toString().trim()) {
+        const nameParts = contactName.toString().trim().split(/[\/\s]+/);
+        // Take first name as first part, rest as last name
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      // Parse toolkit sent status
+      const toolkitSentStatus = toolkitSent && 
+        toolkitSent.toString().toLowerCase().includes('yes');
+
+      // Parse estimated sandwich count
+      let parsedSandwichCount = null;
+      if (estimatedSandwichCount && !isNaN(parseInt(estimatedSandwichCount.toString()))) {
+        parsedSandwichCount = parseInt(estimatedSandwichCount.toString());
+      }
+
+      // Clean up email address
+      let cleanEmail = null;
+      if (email && email.toString().trim() && email.toString().trim() !== ' ') {
+        const emailStr = email.toString().trim();
+        // Basic email validation
+        if (emailStr.includes('@') && emailStr.includes('.')) {
+          cleanEmail = emailStr;
+        }
+      }
+
+      // Debug first few rows
+      if (i <= 5) {
+        console.log(`🔍 Row ${i + 1} debug:`, {
+          firstName,
+          lastName,
+          groupName: groupName ? groupName.toString() : 'N/A',
+          email: cleanEmail,
+          date: parsedDate ? parsedDate.toDateString() : 'N/A',
+          sandwichCount: parsedSandwichCount,
+          rawRow: row.slice(0, 12), // Show first 12 columns for debugging
+        });
+      }
+
+      // Only add if we have minimum required fields: groupName and either email or contactName
+      if (groupName && groupName.toString().trim() && 
+          (cleanEmail || (firstName && firstName.trim()))) {
+        
+        // Use a placeholder email if missing but we have contact info
+        const finalEmail = cleanEmail || `${firstName.toLowerCase().replace(/\s+/g, '')}@placeholder.org`;
+        
+        events.push({
+          firstName: firstName || 'Unknown',
+          lastName: lastName || '',
+          email: finalEmail,
+          phone: phone ? phone.toString() : null,
+          organizationName: groupName.toString(),
+          desiredEventDate: parsedDate,
+          status: 'completed', // 2023 events are completed
+          contactedAt: parsedDate, // Use event date as contacted date
+          previouslyHosted: 'yes', // These are past hosts
+          message: 'Imported 2023 historical event',
+          createdBy: req.user?.id,
+          estimatedSandwichCount: parsedSandwichCount,
+          actualSandwichCount: parsedSandwichCount, // Use same value for actual
+          toolkitSent: toolkitSentStatus,
+          toolkitStatus: toolkitSentStatus ? 'sent' : 'not_sent',
+          planningNotes: notes ? notes.toString() : null,
+          tspContactAssigned: tspContact ? tspContact.toString() : null,
+          additionalRequirements: deliveryLocation 
+            ? `Delivery location: ${deliveryLocation}` 
+            : null,
+        });
+
+        console.log(
+          `✅ Prepared 2023 event: ${firstName} ${lastName} from ${groupName.toString()}`
+        );
+      } else {
+        skippedRows++;
+        if (skippedRows <= 10) { // Only show first 10 skipped rows to avoid spam
+          console.log(`⚠️  Skipping 2023 row ${i + 1} - insufficient data:`, {
+            groupName: groupName ? groupName.toString() : 'N/A',
+            email: cleanEmail,
+            contactName: contactName ? contactName.toString() : 'N/A',
+          });
+        }
+      }
+    }
+
+    console.log(`\nPrepared ${events.length} 2023 events for import (skipped ${skippedRows} incomplete rows)`);
+
+    if (events.length === 0) {
+      return res.status(400).json({ 
+        error: 'No valid 2023 events found to import',
+        details: `Processed ${data.length - 1} rows, but none had sufficient data (group name + contact info)`
+      });
+    }
+
+    // Show sample events
+    if (events.length > 0) {
+      console.log('First 3 prepared 2023 events:');
+      events.slice(0, 3).forEach((event, idx) => {
+        console.log(
+          `  ${idx + 1}. ${event.firstName} ${event.lastName} - ${event.organizationName} (${event.email})`
+        );
+      });
+    }
+
+    // Import with duplicate checking
+    const importedEvents = [];
+    const skippedDuplicates = [];
+
+    for (const event of events) {
+      try {
+        // Check if event already exists (by email and organization)
+        const existingEvents = await storage.getAllEventRequests();
+        const isDuplicate = existingEvents.some(
+          (existing) =>
+            existing.email.toLowerCase() === event.email.toLowerCase() &&
+            existing.organizationName.toLowerCase() === 
+              event.organizationName.toLowerCase()
+        );
+
+        if (isDuplicate) {
+          console.log(
+            `⚠️  Skipping 2023 duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`
+          );
+          skippedDuplicates.push(event);
+          continue;
+        }
+
+        const result = await storage.createEventRequest(event);
+        importedEvents.push(result);
+        console.log(
+          `✅ Imported 2023: ${event.firstName} ${event.lastName} - ${event.organizationName}`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Failed to import 2023: ${event.firstName} ${event.lastName} - ${event.organizationName}`,
+          error
+        );
+      }
+    }
+
+    console.log(`✅ Successfully imported ${importedEvents.length} 2023 events!`);
+    if (skippedDuplicates.length > 0) {
+      console.log(`⚠️  Skipped ${skippedDuplicates.length} 2023 duplicates`);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully imported ${importedEvents.length} events from 2023`,
+      imported: importedEvents.length,
+      total: events.length,
+      skipped: skippedDuplicates.length + skippedRows,
+      duplicates: skippedDuplicates.length,
+      incompleteRows: skippedRows,
+      events: importedEvents.map((e) => ({
+        id: e.id,
+        name: `${e.firstName} ${e.lastName}`,
+        organization: e.organizationName,
+        email: e.email,
+        date: e.desiredEventDate,
+      })),
+    });
+  } catch (error) {
+    console.error('❌ Error importing 2023 events:', error);
+    res.status(500).json({
+      error: 'Failed to import 2023 events',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 export default router;

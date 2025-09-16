@@ -31,6 +31,8 @@ import {
   CheckCircle2,
   RefreshCw,
   Trash2,
+  Upload,
+  Calendar,
 } from 'lucide-react';
 
 export function DataManagementDashboard() {
@@ -163,6 +165,26 @@ export function DataManagementDashboard() {
     },
   });
 
+  // Import 2023 events mutation
+  const import2023EventsMutation = useMutation({
+    mutationFn: () =>
+      apiRequest('/api/import-events/import-2023-events', { method: 'POST' }),
+    onSuccess: (data: any) => {
+      toast({
+        title: 'Import Complete',
+        description: `Successfully imported ${data.imported || 0} events from 2023 (skipped ${data.duplicates || 0} duplicates)`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/data/summary'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Import Failed',
+        description: error?.details || 'Failed to import 2023 events',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleSearch = () => {
     if (searchQuery.trim()) {
       performSearch();
@@ -189,9 +211,10 @@ export function DataManagementDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="search">Search</TabsTrigger>
+          <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
           <TabsTrigger value="integrity">Data Integrity</TabsTrigger>
         </TabsList>
@@ -418,6 +441,52 @@ export function DataManagementDashboard() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="import" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Import Historical Events
+              </CardTitle>
+              <CardDescription>
+                Import historical event data from Excel files
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Calendar className="w-4 h-4" />
+                    2023 Events
+                  </CardTitle>
+                  <CardDescription>
+                    Import all 2023 historical events from the Excel file
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={() => import2023EventsMutation.mutate()}
+                    disabled={import2023EventsMutation.isPending}
+                    className="w-full"
+                    data-testid="button-import-2023-events"
+                  >
+                    {import2023EventsMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-2" />
+                    )}
+                    Import 2023 Events
+                  </Button>
+                  <p className="text-sm text-gray-600 mt-2">
+                    This will import events from "2023 Events_1757981703985.xlsx" 
+                    and automatically skip any duplicates that already exist.
+                  </p>
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
         </TabsContent>
