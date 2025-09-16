@@ -1418,6 +1418,11 @@ export default function EventRequestsManagement() {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
 
+  // Add state for assignment dialogs:
+  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
+  const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
+  const [assignmentEventId, setAssignmentEventId] = useState<number | null>(null);
+
   // Helper functions for inline editing
   const startEditing = (id: number, field: string, currentValue: string) => {
     setEditingScheduledId(id);
@@ -1439,6 +1444,13 @@ export default function EventRequestsManagement() {
     setEditingScheduledId(null);
     setEditingField(null);
     setEditingValue('');
+  };
+
+  // Helper function to open assignment dialog
+  const openAssignmentDialog = (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => {
+    setAssignmentEventId(eventId);
+    setAssignmentType(type);
+    setShowAssignmentDialog(true);
   };
   const [completedEdit, setCompletedEdit] = useState<any>({});
 
@@ -1935,34 +1947,37 @@ export default function EventRequestsManagement() {
 
                                 {/* Contact Information - Grouped for In Process, inline for others */}
                                 {request.status === 'in_process' ? (
-                                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                    <h4 className="text-sm font-semibold text-brand-teal mb-3 flex items-center">
+                                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 max-w-md">
+                                    <h4 className="text-sm font-semibold text-brand-teal mb-2 flex items-center">
                                       <User className="w-4 h-4 mr-2 text-brand-teal" />
                                       Contact Information
                                     </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-base">
-                                      <div className="flex items-center space-x-3">
-                                        <User className="w-4 h-4 text-brand-teal" />
+                                    <div className="space-y-2 text-sm">
+                                      <div className="flex items-center space-x-2">
+                                        <User className="w-3 h-3 text-brand-teal" />
                                         <span className="font-medium text-brand-primary">
                                           {request.firstName} {request.lastName}
                                         </span>
                                       </div>
-                                      <div className="flex items-center space-x-3">
-                                        <Mail className="w-4 h-4 text-brand-teal" />
-                                        <span className="font-medium text-brand-primary">{request.email}</span>
+                                      <div className="flex items-center space-x-2">
+                                        <Mail className="w-3 h-3 text-brand-teal" />
+                                        <span className="font-medium text-brand-primary text-xs">
+                                          {request.email}
+                                        </span>
                                       </div>
                                       {request.phone && (
-                                        <div className="flex items-center space-x-3">
-                                          <Phone className="w-4 h-4 text-brand-teal" />
-                                          <span className="font-medium text-brand-primary">{request.phone}</span>
+                                        <div className="flex items-center space-x-2">
+                                          <Phone className="w-3 h-3 text-brand-teal" />
+                                          <span className="font-medium text-brand-primary">
+                                            {request.phone}
+                                          </span>
                                         </div>
                                       )}
                                       {request.estimatedSandwichCount && (
-                                        <div className="flex items-center space-x-3">
-                                          <span className="text-lg">🥪</span>
-                                          <span className="font-semibold text-brand-orange">
-                                            ~{request.estimatedSandwichCount}{' '}
-                                            sandwiches
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-sm">🥪</span>
+                                          <span className="font-semibold text-brand-orange text-sm">
+                                            ~{request.estimatedSandwichCount} sandwiches
                                           </span>
                                         </div>
                                       )}
@@ -2042,27 +2057,39 @@ export default function EventRequestsManagement() {
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                         <div className="flex items-center space-x-2">
                                           <Calendar className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Event Date:</strong> {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'Not specified'}
-                                          </span>
+                                          <div>
+                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Event Date</div>
+                                            <div className="text-blue-900 font-medium">
+                                              {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'Not specified'}
+                                            </div>
+                                          </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <Clock className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Start Time:</strong> {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not specified'}
-                                          </span>
+                                          <div>
+                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Start Time</div>
+                                            <div className="text-blue-900 font-medium">
+                                              {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not specified'}
+                                            </div>
+                                          </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <Clock className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>End Time:</strong> {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not specified'}
-                                          </span>
+                                          <div>
+                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">End Time</div>
+                                            <div className="text-blue-900 font-medium">
+                                              {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not specified'}
+                                            </div>
+                                          </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <Truck className="w-4 h-4 text-blue-600" />
-                                          <span className="text-blue-800">
-                                            <strong>Pickup Time:</strong> {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not specified'}
-                                          </span>
+                                          <div>
+                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Pickup Time</div>
+                                            <div className="text-blue-900 font-medium">
+                                              {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not specified'}
+                                            </div>
+                                          </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <MapPin className="w-4 h-4 text-blue-600" />
@@ -2083,18 +2110,21 @@ export default function EventRequestsManagement() {
                                             </div>
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
-                                              <span className="text-blue-800">
-                                                <strong>Event Address:</strong> {request.eventAddress ? (
-                                                  <a
-                                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:text-blue-800 underline"
-                                                  >
-                                                    {request.eventAddress}
-                                                  </a>
-                                                ) : 'Not specified'}
-                                              </span>
+                                              <div className="flex-1">
+                                                <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Event Address</div>
+                                                <div className="text-blue-900 font-medium">
+                                                  {request.eventAddress ? (
+                                                    <a
+                                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-blue-600 hover:text-blue-800 underline"
+                                                    >
+                                                      {request.eventAddress}
+                                                    </a>
+                                                  ) : 'Not specified'}
+                                                </div>
+                                              </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button
                                                   size="sm"
@@ -2110,9 +2140,12 @@ export default function EventRequestsManagement() {
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <span className="text-blue-600">❄️</span>
-                                          <span className="text-blue-800">
-                                            <strong>Refrigeration:</strong> {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
-                                          </span>
+                                          <div>
+                                            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Refrigeration</div>
+                                            <div className="text-blue-900 font-medium">
+                                              {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
+                                            </div>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
@@ -2126,15 +2159,21 @@ export default function EventRequestsManagement() {
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                         <div className="flex items-center space-x-2">
                                           <span className="text-green-600">📊</span>
-                                          <span className="text-green-800">
-                                            <strong>Total Sandwiches:</strong> {request.estimatedSandwichCount || 'Not specified'}
-                                          </span>
+                                          <div>
+                                            <div className="text-xs font-semibold text-green-700 uppercase tracking-wide">Total Sandwiches</div>
+                                            <div className="text-green-900 font-medium">
+                                              {request.estimatedSandwichCount || 'Not specified'}
+                                            </div>
+                                          </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <span className="text-green-600">🏷️</span>
-                                          <span className="text-green-800">
-                                            <strong>Types:</strong> {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
-                                          </span>
+                                          <div>
+                                            <div className="text-xs font-semibold text-green-700 uppercase tracking-wide">Types</div>
+                                            <div className="text-green-900 font-medium">
+                                              {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                            </div>
+                                          </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <span className="text-green-600">📍</span>
@@ -2155,9 +2194,12 @@ export default function EventRequestsManagement() {
                                             </div>
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
-                                              <span className="text-green-800">
-                                                <strong>Destination:</strong> {request.sandwichDestination || 'Not specified'}
-                                              </span>
+                                              <div className="flex-1">
+                                                <div className="text-xs font-semibold text-green-700 uppercase tracking-wide">Destination</div>
+                                                <div className="text-green-900 font-medium">
+                                                  {request.sandwichDestination || 'Not specified'}
+                                                </div>
+                                              </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button
                                                   size="sm"
@@ -2206,9 +2248,12 @@ export default function EventRequestsManagement() {
                                             </div>
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
-                                              <span className="text-purple-800">
-                                                <strong>TSP Contact:</strong> {request.tspContact || 'Not assigned'}
-                                              </span>
+                                              <div className="flex-1">
+                                                <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">TSP Contact</div>
+                                                <div className="text-purple-900 font-medium">
+                                                  {request.tspContact || 'Not assigned'}
+                                                </div>
+                                              </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button
                                                   size="sm"
@@ -2227,20 +2272,22 @@ export default function EventRequestsManagement() {
                                         <div className="space-y-2">
                                           <div className="flex items-center space-x-2">
                                             <Truck className="w-4 h-4 text-purple-600" />
-                                            <span className="text-purple-800">
-                                              <strong>Drivers Needed:</strong> {request.driverCount || 0}
-                                              {request.vanNeeded && (
-                                                <span className="ml-2 text-purple-600">
-                                                  (Van needed)
-                                                </span>
-                                              )}
-                                            </span>
+                                            <div>
+                                              <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Drivers Needed</div>
+                                              <div className="text-purple-900 font-medium">
+                                                {request.driverCount || 0}
+                                                {request.vanNeeded && (
+                                                  <span className="ml-2 text-purple-600 text-sm">
+                                                    (Van needed)
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
                                           </div>
                                           {request.vanNeeded && request.vanDriverCount && request.vanDriverCount > 0 && (
                                             <div className="ml-6">
-                                              <span className="text-xs text-purple-600">
-                                                <strong>Van Drivers:</strong> {request.vanDriverCount}
-                                              </span>
+                                              <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Van Drivers</div>
+                                              <div className="text-purple-800 font-medium">{request.vanDriverCount}</div>
                                             </div>
                                           )}
                                           {request.driverAssignments && request.driverAssignments.length > 0 ? (
@@ -2256,7 +2303,12 @@ export default function EventRequestsManagement() {
                                             </div>
                                           ) : (
                                             <div className="ml-6">
-                                              <Button size="sm" variant="outline" className="text-xs">
+                                              <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="text-xs"
+                                                onClick={() => openAssignmentDialog(request.id, 'driver')}
+                                              >
                                                 Assign Driver
                                               </Button>
                                             </div>
@@ -2267,9 +2319,12 @@ export default function EventRequestsManagement() {
                                         <div className="space-y-2">
                                           <div className="flex items-center space-x-2">
                                             <Megaphone className="w-4 h-4 text-purple-600" />
-                                            <span className="text-purple-800">
-                                              <strong>Speakers Needed:</strong> {request.speakerCount || 0}
-                                            </span>
+                                            <div>
+                                              <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Speakers Needed</div>
+                                              <div className="text-purple-900 font-medium">
+                                                {request.speakerCount || 0}
+                                              </div>
+                                            </div>
                                           </div>
                                           {request.speakerAssignments && request.speakerAssignments.length > 0 ? (
                                             <div className="ml-6">
@@ -2295,9 +2350,12 @@ export default function EventRequestsManagement() {
                                         <div className="space-y-2">
                                           <div className="flex items-center space-x-2">
                                             <Users className="w-4 h-4 text-purple-600" />
-                                            <span className="text-purple-800">
-                                              <strong>Volunteers Needed:</strong> {request.volunteerCount || 0}
-                                            </span>
+                                            <div>
+                                              <div className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Volunteers Needed</div>
+                                              <div className="text-purple-900 font-medium">
+                                                {request.volunteerCount || 0}
+                                              </div>
+                                            </div>
                                           </div>
                                           {request.volunteerAssignments && request.volunteerAssignments.length > 0 ? (
                                             <div className="ml-6">
@@ -2733,18 +2791,20 @@ export default function EventRequestsManagement() {
                       </Button>
                     )}
 
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setScheduleCallDate('');
-                        setScheduleCallTime('');
-                        setShowScheduleCallDialog(true);
-                      }}
-                      data-testid="button-schedule-call"
-                    >
-                      <Phone className="w-4 h-4 mr-2" />
-                      Schedule Call
-                    </Button>
+                    {selectedEventRequest.status !== 'scheduled' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setScheduleCallDate('');
+                          setScheduleCallTime('');
+                          setShowScheduleCallDialog(true);
+                        }}
+                        data-testid="button-schedule-call"
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        Schedule Call
+                      </Button>
+                    )}
                   </div>
 
                   <div className="flex space-x-2">
