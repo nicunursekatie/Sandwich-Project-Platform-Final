@@ -368,6 +368,12 @@ interface EventRequest {
   updatedEmail?: string;
   followUpDate?: string;
   scheduledCallDate?: string;
+  driverCount?: number;
+  speakerCount?: number;
+  volunteerCount?: number;
+  driverAssignments?: string[];
+  speakerAssignments?: string[];
+  volunteerAssignments?: string[];
 }
 
 const statusColors = {
