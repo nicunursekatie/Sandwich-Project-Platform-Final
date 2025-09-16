@@ -76,6 +76,7 @@ import {
   CalendarPlus,
   ArrowUp,
   Calculator,
+  MapPin,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
