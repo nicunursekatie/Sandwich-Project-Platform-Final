@@ -31,6 +31,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import { EventEmailComposer } from '@/components/event-email-composer';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { DriverSelectionModal } from './driver-selection-modal';
 import { VolunteerSelectionModal } from './volunteer-selection-modal';
 import {
@@ -1595,7 +1596,7 @@ export default function EventRequestsManagement() {
 
         {/* Tabs */}
         <Tabs defaultValue="new" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="new" className="relative">
               New ({statusCounts.new})
               {statusCounts.new > 0 && (
@@ -1620,11 +1621,20 @@ export default function EventRequestsManagement() {
             <TabsTrigger value="import" className="bg-blue-50 border-blue-200">
               Import
             </TabsTrigger>
+            <TabsTrigger value="audit-log" className="bg-purple-50 border-purple-200">
+              <Shield className="w-4 h-4 mr-1" />
+              Audit Log
+            </TabsTrigger>
           </TabsList>
 
           {/* Import Tab */}
           <TabsContent value="import">
             <ImportEventsTab />
+          </TabsContent>
+
+          {/* Audit Log Tab */}
+          <TabsContent value="audit-log">
+            <EventRequestAuditLog showFilters data-testid="audit-log" />
           </TabsContent>
 
           {/* Status-based tabs (existing logic) */}
