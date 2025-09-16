@@ -1025,6 +1025,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                               setEditingDestination((prev) =>
                                 prev ? { ...prev, value } : null
                               )
+                              setEditingDestination((prev) => prev ? { ...prev, value } : null)
                             }
                             onSave={handleDestinationSave}
                             onCancel={handleDestinationCancel}
@@ -1438,6 +1439,8 @@ export default function EventRequestsManagement() {
       apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, {
         toolkitSentDate,
       }),
+    mutationFn: ({ id, toolkitSentDate }: { id: number; toolkitSentDate: string }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, { toolkitSentDate }),
     onSuccess: () => {
       toast({
         title: 'Toolkit marked as sent',
@@ -1467,6 +1470,8 @@ export default function EventRequestsManagement() {
       apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, {
         scheduledCallDate,
       }),
+    mutationFn: ({ id, scheduledCallDate }: { id: number; scheduledCallDate: string }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, { scheduledCallDate }),
     onSuccess: () => {
       toast({
         title: 'Call scheduled',
@@ -1916,6 +1921,7 @@ export default function EventRequestsManagement() {
               </div>
             </TabsContent>
           ))}
+
         </Tabs>
 
         {/* Event Details Dialog */}
