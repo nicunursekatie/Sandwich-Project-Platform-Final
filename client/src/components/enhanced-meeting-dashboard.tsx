@@ -409,12 +409,12 @@ export default function EnhancedMeetingDashboard() {
       enabled: !!selectedMeeting,
     });
 
-  // Fetch agenda items for selected meeting - SIMPLE VERSION
+  // Fetch agenda items for selected meeting - FIXED VERSION
   const { data: agendaItems = [], isLoading: agendaItemsLoading } = useQuery<any[]>({
     queryKey: ['agenda-items', selectedMeeting?.id],
     queryFn: async () => {
-      console.log('[Frontend] Fetching agenda items from /api/meetings/agenda-items for meeting:', selectedMeeting?.id);
-      const response = await apiRequest('GET', `/api/meetings/agenda-items?meetingId=${selectedMeeting?.id || ''}`);
+      console.log('[Frontend] Fetching agenda items from /api/agenda-items for meeting:', selectedMeeting?.id);
+      const response = await apiRequest('GET', `/api/agenda-items?meetingId=${selectedMeeting?.id || ''}`);
       console.log('[Frontend] Agenda items response:', response);
       return response || [];
     },

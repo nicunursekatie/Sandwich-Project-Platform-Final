@@ -7,13 +7,22 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   
   console.log('🔧 Agenda Items Router - Initializing with authentication middleware');
 
-  // Get all agenda items
+  // Get agenda items (optionally filtered by meetingId)
   router.get('/', async (req, res) => {
     try {
       console.log('🟢 Agenda Items API - GET request received:', req.url, req.query);
+      const { meetingId } = req.query;
+      
       const items = await storage.getAllAgendaItems();
-      console.log('✅ Agenda Items API - Returning', items.length, 'items');
-      res.json(items);
+      
+      // Filter by meetingId if provided
+      const filteredItems = meetingId 
+        ? items.filter(item => item.meetingId === parseInt(meetingId as string))
+        : items;
+      
+      console.log('✅ Agenda Items API - Returning', filteredItems.length, 'items', 
+        meetingId ? `for meeting ${meetingId}` : '(all meetings)');
+      res.json(filteredItems);
     } catch (error) {
       console.error('❌ Agenda Items API - Error fetching items:', error);
       res.status(500).json({ message: 'Failed to fetch agenda items' });
