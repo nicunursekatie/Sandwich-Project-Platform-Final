@@ -16,10 +16,24 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   });
 
   // Create new agenda item
-  router.post('/', async (req, res) => {
+  router.post('/', async (req: any, res) => {
     try {
       console.log('🟢 Agenda Items API - Creating agenda item:', req.body);
-      const itemData = insertAgendaItemSchema.parse(req.body);
+      
+      // Get user information from the authenticated request
+      const userId = req.user?.claims?.sub || req.user?.id;
+      const userEmail = req.user?.email || req.body.submittedBy || 'unknown';
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      // Parse and validate the request body
+      const itemData = insertAgendaItemSchema.parse({
+        ...req.body,
+        submittedBy: userEmail, // Use the user's email as submittedBy
+      });
+      
       const item = await storage.createAgendaItem(itemData);
       console.log('✅ Agenda Items API - Created agenda item:', item);
       res.status(201).json(item);
