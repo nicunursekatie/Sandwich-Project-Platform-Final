@@ -77,6 +77,7 @@ import {
   ArrowUp,
   Calculator,
   MapPin,
+  Megaphone,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -1627,7 +1628,7 @@ export default function EventRequestsManagement() {
 
     return (
     <TooltipProvider>
-      <div className="space-y-6 text-base md:text-lg">
+      <div className="space-y-6 text-lg md:text-xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
