@@ -65,6 +65,21 @@ try {
 
   execSync(esbuildCommand, { stdio: 'inherit' });
 
+  // Build PDF generator separately
+  console.log('📄 Building PDF generator...');
+  const pdfGeneratorCommand = [
+    'esbuild server/meeting-agenda-pdf-generator.ts',
+    '--platform=node',
+    '--external:pdfkit',
+    '--external:date-fns',
+    '--packages=external',
+    '--bundle',
+    '--format=esm',
+    '--outdir=dist',
+  ].join(' ');
+
+  execSync(pdfGeneratorCommand, { stdio: 'inherit' });
+
   console.log('✅ Build completed successfully!');
   console.log('📁 Output directory: dist/');
   console.log('🎯 Ready for deployment');
