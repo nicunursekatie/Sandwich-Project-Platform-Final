@@ -2375,14 +2375,16 @@ export default function EnhancedMeetingDashboard() {
                     onClick={handleUpdateMeeting}
                     disabled={updateMeetingMutation.isPending}
                     style={{ backgroundColor: '#FBAD3F' }}
-                    onMouseEnter={(e) =>
-                      !updateMeetingMutation.isPending &&
-                      (e.target.style.backgroundColor = '#e09d36')
-                    }
-                    onMouseLeave={(e) =>
-                      !updateMeetingMutation.isPending &&
-                      (e.target.style.backgroundColor = '#FBAD3F')
-                    }
+                    onMouseEnter={e => {
+                      if (!updateMeetingMutation.isPending) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e09d36';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!updateMeetingMutation.isPending) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FBAD3F';
+                      }
+                    }}
                     className="flex-1 flex items-center justify-center gap-2 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
                   >
                     {updateMeetingMutation.isPending ? (
@@ -2456,12 +2458,14 @@ export default function EnhancedMeetingDashboard() {
                 onClick={() => setShowResetConfirmDialog(true)}
                 disabled={resetAgendaPlanningMutation.isPending}
                 style={{ borderColor: '#FBAD3F', color: '#FBAD3F' }}
-                onMouseEnter={(e) =>
-                  (e.target.style.backgroundColor = '#fef7e6')
-                }
-                onMouseLeave={(e) =>
-                  (e.target.style.backgroundColor = 'transparent')
-                }
+                onMouseEnter={(e) => {
+                  const target = e.currentTarget as HTMLButtonElement;
+                  target.style.backgroundColor = '#fef7e6';
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.currentTarget as HTMLButtonElement;
+                  target.style.backgroundColor = 'transparent';
+                }}
                 className=""
               >
                 <RotateCcw className="w-4 h-4 mr-2" />

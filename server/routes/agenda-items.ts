@@ -4,13 +4,18 @@ import { insertAgendaItemSchema } from '@shared/schema';
 
 export default function createAgendaItemsRouter(isAuthenticated: any, storage: any) {
   const router = Router();
+  
+  console.log('🔧 Agenda Items Router - Initializing with authentication middleware');
 
   // Get all agenda items
   router.get('/', async (req, res) => {
     try {
+      console.log('🟢 Agenda Items API - GET request received:', req.url, req.query);
       const items = await storage.getAllAgendaItems();
+      console.log('✅ Agenda Items API - Returning', items.length, 'items');
       res.json(items);
     } catch (error) {
+      console.error('❌ Agenda Items API - Error fetching items:', error);
       res.status(500).json({ message: 'Failed to fetch agenda items' });
     }
   });
