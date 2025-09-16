@@ -41,23 +41,19 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
     const colors = {
       navy: '#236383',
       lightBlue: '#47B3CB', 
-      orange: '#FF6B35',
-      green: '#4CAF50',
-      red: '#F44336',
-      purple: '#9C27B0',
-      teal: '#009688',
-      amber: '#FFC107',
-      indigo: '#3F51B5',
-      pink: '#E91E63',
+      orange: '#FBAD3F',
+      red: '#A31C41',
+      teal: '#007E8C',
       darkGray: '#333333',
       lightGray: '#666666',
       white: '#FFFFFF',
       sectionBlue: '#E3F2FD',
       dividerGray: '#CCCCCC',
-      lightGreen: '#E8F5E8',
-      lightOrange: '#FFF3E0',
-      lightPurple: '#F3E5F5',
-      lightTeal: '#E0F2F1'
+      lightOrange: '#FEF4E0',
+      lightRed: '#FCE4E6',
+      lightTeal: '#E0F2F1',
+      lightNavy: '#E8F4F8',
+      lightBlueBg: '#E3F2FD'
     };
 
     let yPosition = 0;
@@ -107,7 +103,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
     const addHeaderBar = (color: string, height: number) => {
       doc.rect(0, yPosition, pageWidth, height)
          .fill(color);
-      yPosition += height;
+      yPosition += height + 5; // Add extra space after header bars
     };
 
     // Helper function to add text with proper positioning and wrapping
@@ -134,10 +130,10 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
     // Helper function to add divider line
     const addDivider = (color: string, thickness: number = 1) => {
-      yPosition += 5; // Add space before divider
+      yPosition += 8; // Add more space before divider
       doc.rect(margin, yPosition, contentWidth, thickness)
          .fill(color);
-      yPosition += thickness + 8; // Add space after divider
+      yPosition += thickness + 12; // Add more space after divider
     };
 
     // Main header section
@@ -190,7 +186,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
       yPosition += 10;
 
       // Section header with colored background
-      const sectionColors = [colors.sectionBlue, colors.lightGreen, colors.lightOrange, colors.lightPurple, colors.lightTeal];
+      const sectionColors = [colors.lightBlueBg, colors.lightNavy, colors.lightOrange, colors.lightRed, colors.lightTeal];
       const sectionColor = sectionColors[sectionIndex % sectionColors.length];
       
       addHeaderBar(sectionColor, 30);
@@ -218,7 +214,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
           yPosition += 8;
 
           // Item title with colored background
-          const itemColors = [colors.lightGreen, colors.lightOrange, colors.lightPurple, colors.lightTeal, colors.lightBlue];
+          const itemColors = [colors.lightOrange, colors.lightRed, colors.lightTeal, colors.lightNavy, colors.lightBlueBg];
           const itemColor = itemColors[itemIndex % itemColors.length];
           
           // Add subtle background for item
@@ -233,7 +229,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
           yPosition += 18;
 
           // Add colored divider line
-          const dividerColors = [colors.orange, colors.green, colors.purple, colors.teal, colors.amber];
+          const dividerColors = [colors.orange, colors.red, colors.teal, colors.navy, colors.lightBlue];
           const dividerColor = dividerColors[itemIndex % dividerColors.length];
           addDivider(dividerColor);
 
@@ -262,8 +258,8 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.navy,
                 width: 60
               });
-              const statusColor = project.status === 'in_progress' ? colors.amber : 
-                                project.status === 'completed' ? colors.green : colors.lightGray;
+              const statusColor = project.status === 'in_progress' ? colors.orange : 
+                                project.status === 'completed' ? colors.teal : colors.lightGray;
               addText(project.status, margin + 60, yPosition, {
                 fontSize: 10,
                 fillColor: statusColor,
@@ -280,7 +276,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
               });
               addText(project.supportPeople, margin + 60, yPosition, {
                 fontSize: 10,
-                fillColor: colors.purple,
+                fillColor: colors.lightBlue,
                 width: contentWidth - 60
               });
               yPosition += 12;
@@ -293,7 +289,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 width: 60
               });
               const priorityColor = project.priority === 'high' ? colors.red : 
-                                  project.priority === 'medium' ? colors.orange : colors.green;
+                                  project.priority === 'medium' ? colors.orange : colors.teal;
               addText(project.priority, margin + 60, yPosition, {
                 fontSize: 10,
                 fillColor: priorityColor,
@@ -310,7 +306,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             // Discussion Points
             if (project.meetingDiscussionPoints) {
               // Add colored background for section
-              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 15)
+              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 20)
                  .fill(colors.lightOrange);
               
               addText('What do we need to talk about?', margin, yPosition, {
@@ -318,38 +314,38 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.orange,
                 width: contentWidth
               });
-              yPosition += 12;
+              yPosition += 15;
               
               addText(project.meetingDiscussionPoints, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 18;
+              yPosition += 20;
             }
 
-            // Add green divider
-            addDivider(colors.green);
+            // Add teal divider
+            addDivider(colors.teal);
 
             // Decision Items
             if (project.meetingDecisionItems) {
               // Add colored background for section
-              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 15)
-                 .fill(colors.lightGreen);
+              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 20)
+                 .fill(colors.lightRed);
               
               addText('What decisions need to be made?', margin, yPosition, {
                 fontSize: 11,
-                fillColor: colors.green,
+                fillColor: colors.red,
                 width: contentWidth
               });
-              yPosition += 12;
+              yPosition += 15;
               
               addText(project.meetingDecisionItems, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 18;
+              yPosition += 20;
             }
 
             // Add blue divider
@@ -358,7 +354,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             // Project Tasks
             if (project.tasks && project.tasks.length > 0) {
               // Add colored background for section
-              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 15)
+              doc.rect(margin - 5, yPosition - 2, contentWidth + 10, 20)
                  .fill(colors.lightTeal);
               
               addText('Project Tasks:', margin, yPosition, {
@@ -366,7 +362,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.teal,
                 width: contentWidth
               });
-              yPosition += 12;
+              yPosition += 15;
 
               project.tasks.forEach((task: any, taskIndex: number) => {
                 ensureSpace(30);
@@ -376,9 +372,9 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                   fillColor: colors.darkGray,
                   width: contentWidth - 30 // Leave some margin for indentation
                 });
-                yPosition += 15; // Space between tasks
+                yPosition += 18; // More space between tasks
               });
-              yPosition += 8;
+              yPosition += 10;
             }
 
             // Attached Files
