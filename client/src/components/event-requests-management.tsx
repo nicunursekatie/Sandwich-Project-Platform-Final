@@ -911,7 +911,15 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
   );
 
     return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      style={{
+        left: window.innerWidth > 768 ? 240 : 0, // 240px nav bar width on desktop
+        width: window.innerWidth > 768 ? `calc(100vw - 240px)` : '100vw',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b">
           <div className="flex items-center justify-between">
