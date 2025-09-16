@@ -92,6 +92,7 @@ import GroupCatalog from '@/components/organizations-catalog';
 import ActionTracking from '@/components/action-tracking-enhanced';
 import LogosPage from '@/pages/logos';
 import ImportantLinks from '@/pages/important-links';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -388,7 +389,7 @@ export default function Dashboard({
       case 'user-management':
         return <UserManagementRedesigned />;
       case 'admin':
-        return <ImportantDocuments />;
+        return <EventRequestAuditLog showFilters data-testid="audit-log" />;
       default:
         // Handle project detail pages
         if (projectId) {

@@ -31,6 +31,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import { EventEmailComposer } from '@/components/event-email-composer';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { DriverSelectionModal } from './driver-selection-modal';
 import { VolunteerSelectionModal } from './volunteer-selection-modal';
 import {
@@ -1013,12 +1014,9 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                       <div className="ml-8 flex items-center space-x-2">
                         {editingDestination?.id === collection.id ? (
                           <SandwichDestinationTracker
-                            value={editingDestination.value}
+                            value={editingDestination?.value || ''}
                             onChange={(value) =>
-                              setEditingDestination({
-                                ...editingDestination,
-                                value,
-                              })
+                              setEditingDestination((prev) => prev ? { ...prev, value } : null)
                             }
                             onSave={handleDestinationSave}
                             onCancel={handleDestinationCancel}
@@ -1086,7 +1084,7 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
   // Import 2023 events mutation
   const import2023EventsMutation = useMutation({
     mutationFn: () =>
-      apiRequest('/api/import-events/import-2023-events', { method: 'POST' }),
+      apiRequest('POST', '/api/import-events/import-2023-events'),
     onSuccess: (data: any) => {
       setImportResults(data);
       toast({
@@ -1354,14 +1352,14 @@ export default function EventRequestsManagement() {
   const { user } = useAuth();
 
   // Fetch event requests
-  const { data: eventRequests = [], isLoading } = useQuery({
+  const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
   });
 
   // Mutations
   const deleteEventRequestMutation = useMutation({
     mutationFn: (id: number) =>
-      apiRequest(`/api/event-requests/${id}`, { method: 'DELETE' }),
+      apiRequest('DELETE', `/api/event-requests/${id}`),
     onSuccess: () => {
       toast({
         title: 'Event request deleted',
@@ -1382,10 +1380,7 @@ export default function EventRequestsManagement() {
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
-      apiRequest(`/api/event-requests/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      }),
+      apiRequest('PATCH', `/api/event-requests/${id}`, data),
     onSuccess: () => {
       toast({
         title: 'Event request updated',
@@ -1405,10 +1400,7 @@ export default function EventRequestsManagement() {
 
   const markToolkitSentMutation = useMutation({
     mutationFn: ({ id, toolkitSentDate }: { id: number; toolkitSentDate: string }) =>
-      apiRequest(`/api/event-requests/${id}/toolkit-sent`, {
-        method: 'PATCH',
-        body: JSON.stringify({ toolkitSentDate }),
-      }),
+      apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, { toolkitSentDate }),
     onSuccess: () => {
       toast({
         title: 'Toolkit marked as sent',
@@ -1429,10 +1421,7 @@ export default function EventRequestsManagement() {
 
   const scheduleCallMutation = useMutation({
     mutationFn: ({ id, scheduledCallDate }: { id: number; scheduledCallDate: string }) =>
-      apiRequest(`/api/event-requests/${id}/schedule-call`, {
-        method: 'PATCH',
-        body: JSON.stringify({ scheduledCallDate }),
-      }),
+      apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, { scheduledCallDate }),
     onSuccess: () => {
       toast({
         title: 'Call scheduled',
@@ -1836,6 +1825,7 @@ export default function EventRequestsManagement() {
               </div>
             </TabsContent>
           ))}
+
         </Tabs>
 
         {/* Event Details Dialog */}
