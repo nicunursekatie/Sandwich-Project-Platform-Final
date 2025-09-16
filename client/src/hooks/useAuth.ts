@@ -26,7 +26,9 @@ export function useAuth() {
         navigator.userAgent
       );
 
-    if (isMobile && (error || !user)) {
+    // Only log mobile authentication issues if there's an actual error AND not loading
+    // This prevents false positives during normal loading states
+    if (isMobile && error && !isLoading) {
       console.log('[useAuth] Mobile authentication issue detected:', {
         error: error?.message,
         user: !!user,

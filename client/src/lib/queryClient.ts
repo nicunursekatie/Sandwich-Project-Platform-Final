@@ -2,7 +2,13 @@ import { QueryClient, QueryFunction } from '@tanstack/react-query';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
+    let text = '';
+    try {
+      text = (await res.text()) || res.statusText;
+    } catch (e) {
+      // If we can't read the response text, use status text
+      text = res.statusText || 'Unknown error';
+    }
 
     // Create more specific error messages based on status codes
     let errorMessage = `${res.status}: ${text}`;
@@ -15,7 +21,7 @@ async function throwIfResNotOk(res: Response) {
       errorMessage = 'DATA_LOADING_ERROR';
     } else if (res.status >= 500) {
       errorMessage = 'DATABASE_ERROR';
-    } else if (!navigator.onLine) {
+    } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
       errorMessage = 'NETWORK_ERROR';
     }
 
@@ -46,11 +52,19 @@ export async function apiRequest(
   // If response has content, parse as JSON
   const contentType = res.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {
-    return await res.json();
+    try {
+      const jsonData = await res.json();
+      // Ensure we return a valid object, not null/undefined
+      return jsonData ?? {};
+    } catch (parseError) {
+      console.warn('Failed to parse JSON response:', parseError);
+      return {};
+    }
   }
 
-  // For empty responses (like 204), return null
-  return null;
+  // For empty responses (like 204), return empty object instead of null
+  // This prevents "null is not an object" errors when accessing properties
+  return {};
 }
 
 type UnauthorizedBehavior = 'returnNull' | 'throw';
@@ -68,7 +82,14 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    try {
+      const jsonData = await res.json();
+      // Ensure we return a valid object, not null/undefined
+      return jsonData ?? {};
+    } catch (parseError) {
+      console.warn('Failed to parse JSON response for query:', parseError);
+      return {};
+    }
   };
 
 export const queryClient = new QueryClient({
