@@ -2,9 +2,10 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, TrendingUp, Users, AlertTriangle } from 'lucide-react';
+import { Calendar, TrendingUp, Users, AlertTriangle, Info } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EventRequest {
   id: number;
@@ -237,7 +238,7 @@ export default function SandwichForecastWidget() {
           Weekly Sandwich Planning
         </CardTitle>
         <p className="text-sm text-[#646464] mt-1">
-          Group sandwich production forecast by Thursday distribution dates
+          This view helps you plan for Thursday group distributions and see all sandwich events for the week.
         </p>
         <p className="text-xs text-brand-primary mt-1 font-medium">
           📅 Individual makers prep Wednesdays • Group distributions Thursdays
@@ -266,30 +267,71 @@ export default function SandwichForecastWidget() {
             Next Week
           </Button>
         </div>
-        {/* Summary Row */}
-        <div className="flex flex-col gap-2 mb-2">
-          <div className="flex gap-4 items-center">
-            <span style={{ color: '#007E8C', fontWeight: 600 }}>
-              🚗 Drivers Needed: {driverCount}
-            </span>
-            <span style={{ color: '#FBAD3F', fontWeight: 600 }}>
-              🎤 Speakers Needed: {speakerCount}
-            </span>
-          </div>
-          <div className="flex gap-4 items-center">
+        {/* Totals Section - separated visually */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex-1 flex items-center gap-2 p-3 rounded-lg border border-[#007E8C] bg-[#F0FBFC]">
             <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
-              Thursday Distribution Total: {thursdayTotal.toLocaleString()} sandwiches
+              Thursday Distribution Total:
+            </span>
+            <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
+              {thursdayTotal.toLocaleString()} sandwiches
+            </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-[#007E8C] cursor-pointer ml-1" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Sandwiches needed for Thursday group distribution (includes events on Tuesday, Wednesday, and Thursday).
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex-1 flex items-center gap-2 p-3 rounded-lg border border-[#A31C41] bg-[#FDF6F8]">
+            <span style={{ color: '#A31C41', fontWeight: 700, fontSize: '1.1em' }}>
+              Week Total:
             </span>
             <span style={{ color: '#A31C41', fontWeight: 700, fontSize: '1.1em' }}>
-              Week Total: {weekTotal.toLocaleString()} sandwiches
+              {weekTotal.toLocaleString()} sandwiches
             </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-[#A31C41] cursor-pointer ml-1" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Total sandwiches for all events this week (includes early events not counted for Thursday distribution).
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
-        {/* Thursday Events */}
+        {/* Needs summary row */}
+        <div className="flex gap-4 items-center mb-2">
+          <span style={{ color: '#007E8C', fontWeight: 600 }}>
+            🚗 Drivers Needed: {driverCount}
+          </span>
+          <span style={{ color: '#FBAD3F', fontWeight: 600 }}>
+            🎤 Speakers Needed: {speakerCount}
+          </span>
+        </div>
+        {/* Distribution Events Section */}
         <div className="mb-4">
-          <h4 className="font-semibold" style={{ color: '#236383' }}>
-            Distribution Events (Tue/Wed/Thu)
-          </h4>
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-semibold" style={{ color: '#236383' }}>
+              Distribution Events (Tue/Wed/Thu)
+            </h4>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-[#236383] cursor-pointer" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  These events are counted toward Thursday's group distribution total.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           {distributionEvents.length === 0 ? (
             <div className="text-gray-500 text-sm">No distribution events this week.</div>
           ) : (
@@ -322,11 +364,23 @@ export default function SandwichForecastWidget() {
             </div>
           )}
         </div>
-        {/* Other Events */}
+        {/* Other Events Section */}
         <div>
-          <h4 className="font-semibold" style={{ color: '#A31C41' }}>
-            Other Events This Week
-          </h4>
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-semibold" style={{ color: '#A31C41' }}>
+              Other Events This Week
+            </h4>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-[#A31C41] cursor-pointer" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  These events are not counted toward Thursday's group distribution total, but are included in the week total.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           {otherEvents.length === 0 ? (
             <div className="text-gray-500 text-sm">No other events this week.</div>
           ) : (
