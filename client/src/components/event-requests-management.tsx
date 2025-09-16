@@ -1504,6 +1504,27 @@ export default function EventRequestsManagement() {
     queryKey: ['/api/event-requests'],
   });
 
+  // Fetch users for resolving user IDs to names
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ['/api/users'],
+  });
+
+  // Helper function to resolve user ID to name
+  const resolveUserName = (userIdOrName: string | undefined): string => {
+    if (!userIdOrName) return 'Not assigned';
+    
+    // If it looks like a user ID, try to resolve it
+    if (userIdOrName.startsWith('user_') && userIdOrName.includes('_')) {
+      const user = users.find((u) => u.id === userIdOrName);
+      if (user) {
+        return `${user.firstName} ${user.lastName}`.trim() || user.email;
+      }
+    }
+    
+    // Return as-is if it's already a name or user not found
+    return userIdOrName;
+  };
+
   // Mutations
   const deleteEventRequestMutation = useMutation({
     mutationFn: (id: number) =>
@@ -2275,6 +2296,7 @@ export default function EventRequestsManagement() {
                                                     assigneeName: editingValue
                                                   }}
                                                   onChange={(value) => {
+                                                    // Always save the human-readable name, not the user ID
                                                     setEditingValue(value.assigneeName || '');
                                                   }}
                                                   placeholder="Select TSP contact"
@@ -2292,14 +2314,14 @@ export default function EventRequestsManagement() {
                                               <div className="flex-1">
                                                 <div className="text-sm font-semibold text-purple-700">TSP Contact</div>
                                                 <div className="text-purple-900 font-medium text-base">
-                                                  {request.tspContact || 'Not assigned'}
+                                                  {resolveUserName(request.tspContact)}
                                                 </div>
                                               </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button
                                                   size="sm"
                                                   variant="ghost"
-                                                  onClick={() => startEditing(request.id, 'tspContact', request.tspContact || '')}
+                                                  onClick={() => startEditing(request.id, 'tspContact', resolveUserName(request.tspContact))}
                                                   className="h-6 w-6 p-0"
                                                 >
                                                   <Edit className="w-3 h-3" />

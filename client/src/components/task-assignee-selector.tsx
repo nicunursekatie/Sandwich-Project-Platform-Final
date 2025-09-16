@@ -69,13 +69,41 @@ export function TaskAssigneeSelector({
         setTextInput(names.join(', '));
       }
     } else {
-      // Single user mode - backward compatibility
-      if (value?.assigneeName && !value?.assigneeId) {
-        setTextInput(value.assigneeName);
-        setInputMode('text');
+      // Single user mode - handle both user ID and name
+      if (value?.assigneeId) {
+        // We have a user ID, find the corresponding user
+        const user = users.find((u) => u.id === value.assigneeId);
+        if (user) {
+          const userName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+          setTextInput(userName);
+          setInputMode('text');
+        } else {
+          // User not found, treat as text
+          setTextInput(value.assigneeName || '');
+          setInputMode('text');
+        }
+      } else if (value?.assigneeName) {
+        // We have a name, check if it looks like a user ID
+        if (value.assigneeName.startsWith('user_') && value.assigneeName.includes('_')) {
+          // This looks like a user ID, try to find the user
+          const user = users.find((u) => u.id === value.assigneeName);
+          if (user) {
+            const userName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+            setTextInput(userName);
+            setInputMode('text');
+          } else {
+            // User not found, treat as text
+            setTextInput(value.assigneeName);
+            setInputMode('text');
+          }
+        } else {
+          // Regular text name
+          setTextInput(value.assigneeName);
+          setInputMode('text');
+        }
       }
     }
-  }, [value, multiple]);
+  }, [value, multiple, users]);
 
   const handleUserSelect = (userId: string) => {
     if (userId === 'none') {
