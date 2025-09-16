@@ -188,17 +188,28 @@ export default function SandwichForecastWidget() {
   const driverCount = currentWeek?.events?.filter(e => e.needsDriver).length || 0;
   const speakerCount = currentWeek?.events?.filter(e => e.needsSpeaker).length || 0;
 
-  // Separate Thursday events from others
-  const thursdayEvents = (currentWeek?.events || []).filter(e => {
+  // New logic for distribution events (Tue/Wed/Thu) and other events
+  const isDistributionEvent = (date: Date) => {
+    const day = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu
+    return day === 2 || day === 3 || day === 4; // Tue, Wed, Thu
+  };
+  const isOtherEvent = (date: Date) => {
+    const day = date.getDay();
+    return day !== 2 && day !== 3 && day !== 4;
+  };
+
+  const distributionEvents = (currentWeek?.events || []).filter(e => {
     if (!e.desiredEventDate) return false;
-    const d = new Date(e.desiredEventDate);
-    return d.getDay() === 4; // 4 = Thursday
+    return isDistributionEvent(new Date(e.desiredEventDate));
   });
   const otherEvents = (currentWeek?.events || []).filter(e => {
     if (!e.desiredEventDate) return false;
-    const d = new Date(e.desiredEventDate);
-    return d.getDay() !== 4;
+    return isOtherEvent(new Date(e.desiredEventDate));
   });
+
+  // Totals
+  const thursdayTotal = distributionEvents.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+  const weekTotal = (currentWeek?.events || []).reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
 
   if (isLoading) {
     return (
@@ -256,24 +267,34 @@ export default function SandwichForecastWidget() {
           </Button>
         </div>
         {/* Summary Row */}
-        <div className="flex gap-4 items-center mb-2">
-          <span style={{ color: '#007E8C', fontWeight: 600 }}>
-            🚗 Drivers Needed: {driverCount}
-          </span>
-          <span style={{ color: '#FBAD3F', fontWeight: 600 }}>
-            🎤 Speakers Needed: {speakerCount}
-          </span>
+        <div className="flex flex-col gap-2 mb-2">
+          <div className="flex gap-4 items-center">
+            <span style={{ color: '#007E8C', fontWeight: 600 }}>
+              🚗 Drivers Needed: {driverCount}
+            </span>
+            <span style={{ color: '#FBAD3F', fontWeight: 600 }}>
+              🎤 Speakers Needed: {speakerCount}
+            </span>
+          </div>
+          <div className="flex gap-4 items-center">
+            <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
+              Thursday Distribution Total: {thursdayTotal.toLocaleString()} sandwiches
+            </span>
+            <span style={{ color: '#A31C41', fontWeight: 700, fontSize: '1.1em' }}>
+              Week Total: {weekTotal.toLocaleString()} sandwiches
+            </span>
+          </div>
         </div>
         {/* Thursday Events */}
         <div className="mb-4">
           <h4 className="font-semibold" style={{ color: '#236383' }}>
-            Thursday Events
+            Distribution Events (Tue/Wed/Thu)
           </h4>
-          {thursdayEvents.length === 0 ? (
-            <div className="text-gray-500 text-sm">No Thursday events this week.</div>
+          {distributionEvents.length === 0 ? (
+            <div className="text-gray-500 text-sm">No distribution events this week.</div>
           ) : (
             <div className="grid gap-2">
-              {thursdayEvents.map(event => {
+              {distributionEvents.map(event => {
                 const eventDate = new Date(event.desiredEventDate!);
                 return (
                   <div key={event.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">

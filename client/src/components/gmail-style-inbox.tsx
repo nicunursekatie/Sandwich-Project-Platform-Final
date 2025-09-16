@@ -538,21 +538,16 @@ export default function GmailStyleInbox() {
 
     // Mark as read if not already read
     if (!message.isRead) {
-      if (message.messageType === 'kudos') {
-        // For kudos, use the special kudos mark-as-read endpoint
-        markAsReadMutation.mutate([message.id]);
-      } else {
-        // For regular messages, use the regular mark-as-read
-        markAsReadMutation.mutate([message.id]);
-      }
+      // For all messages, use the regular mark-as-read endpoint
+      markAsReadMutation.mutate([message.id]);
     }
   };
 
   const handleSelectAll = () => {
-    if (selectedMessages.size === messages.length) {
+    if (selectedMessages && messages && selectedMessages.size === messages.length) {
       setSelectedMessages(new Set());
-    } else {
-      setSelectedMessages(new Set(messages.map((m) => m.id)));
+    } else if (messages) {
+      setSelectedMessages(new Set(messages.map((m: any) => m.id)));
     }
   };
 
@@ -691,6 +686,16 @@ export default function GmailStyleInbox() {
     selectedMessage: !!selectedMessage,
     messageCount: messages.length,
   });
+
+  // Add this helper function near other helpers
+  const markKudosAsRead = async (kudoId: number) => {
+    try {
+      await apiRequest('PATCH', `/api/emails/kudos/${kudoId}`, { isRead: true });
+      queryClient.invalidateQueries({ queryKey: ['/api/emails/kudos'] });
+    } catch (error) {
+      console.error('Failed to mark kudos as read', error);
+    }
+  };
 
   return (
     <div className="flex h-full bg-white relative min-w-0 max-w-full overflow-hidden">
