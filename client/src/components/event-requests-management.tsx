@@ -324,12 +324,7 @@ interface EventRequest {
   desiredEventDate?: string;
   message?: string;
   previouslyHosted: 'yes' | 'no' | 'i_dont_know';
-  status:
-    | 'new'
-    | 'in_process'
-    | 'scheduled'
-    | 'completed'
-    | 'declined';
+  status: 'new' | 'in_process' | 'scheduled' | 'completed' | 'declined';
   assignedTo?: string;
   organizationExists: boolean;
   duplicateNotes?: string;
@@ -387,10 +382,14 @@ interface EventRequest {
 
 const statusColors = {
   new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-primary border border-teal-200',
-  in_process: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
-  scheduled: 'bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200',
-  completed: 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
-  declined: 'bg-gradient-to-r from-brand-burgundy to-red-700 text-white border-2 font-bold shadow-lg',
+  in_process:
+    'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
+  scheduled:
+    'bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200',
+  completed:
+    'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
+  declined:
+    'bg-gradient-to-r from-brand-burgundy to-red-700 text-white border-2 font-bold shadow-lg',
 };
 
 const statusIcons = {
@@ -754,32 +753,32 @@ const ToolkitSentDialog = ({
             {/* Action Buttons */}
             <div className="flex justify-between space-x-4">
               {!emailSent && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowEmailComposer(true)}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowEmailComposer(true)}
                   className="flex items-center space-x-2"
                   data-testid="button-send-toolkit-email"
-              >
+                >
                   <Mail className="w-4 h-4" />
                   <span>Send Toolkit Email</span>
-              </Button>
+                </Button>
               )}
 
               <div className="flex space-x-2 ml-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isLoading}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isLoading}
                   data-testid="button-cancel-toolkit-sent"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
                   className="bg-green-600 hover:bg-green-700 text-white"
                   data-testid="button-confirm-toolkit-sent"
                 >
@@ -806,8 +805,8 @@ const ToolkitSentDialog = ({
               isOpen={showEmailComposer}
               onClose={() => setShowEmailComposer(false)}
             />
-            </div>
-          )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -911,8 +910,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
     },
     { totalSandwiches: 0 }
   );
-
-    return (
+  return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
       style={{
@@ -932,7 +930,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
               <p className="text-gray-600">
                 {eventRequest.firstName} {eventRequest.lastName}
               </p>
-        </div>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -941,7 +939,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
             >
               <X className="w-4 h-4" />
             </Button>
-      </div>
+          </div>
         </div>
 
         <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
@@ -955,9 +953,9 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                     <p className="text-sm text-gray-600">Total Sandwiches</p>
                     <p className="text-2xl font-bold text-brand-primary">
                       {totals.totalSandwiches.toLocaleString()}
-          </p>
-        </div>
-      </div>
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -1142,11 +1140,11 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
       } else {
         setSelectedFile(null);
         setIsFileValid(false);
-      toast({
+        toast({
           title: 'Invalid File Type',
           description: 'Please select a valid Excel file (.xlsx or .xls)',
-        variant: 'destructive',
-      });
+          variant: 'destructive',
+        });
       }
     }
   };
@@ -1390,7 +1388,9 @@ export default function EventRequestsManagement() {
   const [scheduleCallTime, setScheduleCallTime] = useState('');
 
   // 1. Add state for inline editing of completed event fields:
-  const [editingCompletedId, setEditingCompletedId] = useState<number | null>(null);
+  const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
+    null
+  );
   const [completedEdit, setCompletedEdit] = useState<any>({});
 
   const { toast } = useToast();
@@ -1510,7 +1510,7 @@ export default function EventRequestsManagement() {
       const matchesSearch =
         searchQuery === '' ||
         request.organizationName
-            .toLowerCase()
+          .toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1526,11 +1526,11 @@ export default function EventRequestsManagement() {
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
         case 'newest':
-    return (
+          return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
         case 'oldest':
-    return (
+          return (
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           );
         case 'organization':
@@ -1624,9 +1624,9 @@ export default function EventRequestsManagement() {
     scheduled: requestsByStatus.scheduled?.length || 0,
     completed: requestsByStatus.completed?.length || 0,
     declined: requestsByStatus.declined?.length || 0,
-    };
+  };
 
-    return (
+  return (
     <TooltipProvider>
       <div className="space-y-6 text-lg md:text-xl">
         {/* Header */}
@@ -1636,9 +1636,9 @@ export default function EventRequestsManagement() {
             <p className="text-gray-600">
               Manage and track event requests from organizations
             </p>
-            </div>
+          </div>
           <div className="flex items-center space-x-2">
-          <Button
+            <Button
               onClick={() => setShowWeeklyPlanningModal(true)}
               variant="outline"
               className="flex items-center space-x-2"
@@ -1646,15 +1646,15 @@ export default function EventRequestsManagement() {
             >
               <Calendar className="w-4 h-4" />
               <span>Weekly Planning</span>
-          </Button>
+            </Button>
             <Badge
               variant="secondary"
               className="bg-brand-primary text-white px-3 py-1 text-sm"
             >
               {eventRequests.length} Total Requests
             </Badge>
-                  </div>
-                </div>
+          </div>
+        </div>
 
         {/* Tabs */}
         <Tabs defaultValue="new" className="space-y-6">
@@ -1665,11 +1665,21 @@ export default function EventRequestsManagement() {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="in_process">In Process ({statusCounts.in_process})</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled ({statusCounts.scheduled})</TabsTrigger>
-            <TabsTrigger value="completed">Completed ({statusCounts.completed})</TabsTrigger>
-            <TabsTrigger value="declined">Declined ({statusCounts.declined})</TabsTrigger>
-            <TabsTrigger value="import" className="bg-blue-50 border-blue-200">Import</TabsTrigger>
+            <TabsTrigger value="in_process">
+              In Process ({statusCounts.in_process})
+            </TabsTrigger>
+            <TabsTrigger value="scheduled">
+              Scheduled ({statusCounts.scheduled})
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              Completed ({statusCounts.completed})
+            </TabsTrigger>
+            <TabsTrigger value="declined">
+              Declined ({statusCounts.declined})
+            </TabsTrigger>
+            <TabsTrigger value="import" className="bg-blue-50 border-blue-200">
+              Import
+            </TabsTrigger>
           </TabsList>
 
           {/* Import Tab */}
@@ -1678,261 +1688,263 @@ export default function EventRequestsManagement() {
           </TabsContent>
 
           {/* Status-based tabs (existing logic) */}
-          {[
-            'new',
-            'in_process',
-            'scheduled',
-            'completed',
-            'declined',
-          ].map((status) => (
-            <TabsContent key={status} value={status} className="space-y-6">
-              {/* Search and Filters for this specific status */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search by organization, name, or email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search-requests"
-                  />
-                    </div>
-                <Select
-                  value={sortBy}
-                  onValueChange={(value: any) => setSortBy(value)}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="organization">
-                      Organization A-Z
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                    </div>
-
-              {/* Event Requests List for this specific status */}
-              <div className="space-y-4">
-                {(requestsByStatus[status] || [])
-                  .filter((request: EventRequest) => {
-                    return (
-                      searchQuery === '' ||
-                      request.organizationName
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                      request.firstName
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                      request.lastName
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                      request.email
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                    );
-                  })
-                  .sort((a: EventRequest, b: EventRequest) => {
-                    switch (sortBy) {
-                      case 'newest':
-                        return (
-                          new Date(b.createdAt).getTime() -
-                          new Date(a.createdAt).getTime()
-                        );
-                      case 'oldest':
-                        return (
-                          new Date(a.createdAt).getTime() -
-                          new Date(b.createdAt).getTime()
-                        );
-                      case 'organization':
-                        return a.organizationName.localeCompare(
-                          b.organizationName
-                        );
-                            default:
-                        return 0;
-                    }
-                  })
-                  .map((request: EventRequest) => {
-                    const StatusIcon = statusIcons[request.status];
-                    const dateInfo = formatEventDate(
-                      request.desiredEventDate || ''
-                    );
-
-    return (
-      <Card
-        key={request.id}
-                        className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
-                          statusColors[request.status]
-                        }`}
-                        onClick={() => handleEventClick(request)}
-                        data-testid={`card-event-request-${request.id}`}
-                      >
-                        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-                            <div className="flex-1 space-y-3">
-                              <div className="flex items-center space-x-3">
-                                <StatusIcon className="w-5 h-5" />
-                                <h3 className="text-lg font-semibold">
-                {request.organizationName}
-              </h3>
-                                <Badge className={statusColors[request.status]}>
-                                  {
-                                    statusOptions.find(
-                                      (s) => s.value === request.status
-                                    )?.label
-                                  }
-                      </Badge>
-              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center space-x-2">
-                                  <User className="w-4 h-4 text-gray-500" />
-                            <span>
-                                    {request.firstName} {request.lastName}
-                            </span>
-                    </div>
-                        <div className="flex items-center space-x-2">
-                                  <Mail className="w-4 h-4 text-gray-500" />
-                                  <span>{request.email}</span>
-                        </div>
-                                {request.phone && (
-                    <div className="flex items-center space-x-2">
-                                    <Phone className="w-4 h-4 text-gray-500" />
-                                    <span>{request.phone}</span>
-                    </div>
-                                )}
-                                {request.desiredEventDate && (
-                    <div className="flex items-center space-x-2">
-                                    <Calendar className="w-4 h-4 text-gray-500" />
-                                    <span className={`text-2xl md:text-3xl font-extrabold text-brand-primary ${dateInfo.className}`}>
-                                      {dateInfo.text}
-                      </span>
-                          </div>
-                        )}
-                                {request.estimatedSandwichCount && (
-                    <div className="flex items-center space-x-2">
-                                    <span className="text-sm">🥪</span>
-                                    <span>
-                                      ~{request.estimatedSandwichCount}{' '}
-                                      sandwiches
-                        </span>
-                            </div>
-                    )}
+          {['new', 'in_process', 'scheduled', 'completed', 'declined'].map(
+            (status) => (
+              <TabsContent key={status} value={status} className="space-y-6">
+                {/* Search and Filters for this specific status */}
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search by organization, name, or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-requests"
+                    />
                   </div>
-
-                              {request.message && (
-                                <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                                  {request.message}
-                                </p>
-                    )}
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value: any) => setSortBy(value)}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                      <SelectItem value="oldest">Oldest First</SelectItem>
+                      <SelectItem value="organization">
+                        Organization A-Z
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                            <div className="flex flex-col items-end space-y-2">
-                              <span className="text-xs text-gray-500">
-                                {new Date(
-                                  request.createdAt
-                                ).toLocaleDateString()}
-                    </span>
+                {/* Event Requests List for this specific status */}
+                <div className="space-y-4">
+                  {(requestsByStatus[status] || [])
+                    .filter((request: EventRequest) => {
+                      return (
+                        searchQuery === '' ||
+                        request.organizationName
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                        request.firstName
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                        request.lastName
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                        request.email
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase())
+                      );
+                    })
+                    .sort((a: EventRequest, b: EventRequest) => {
+                      switch (sortBy) {
+                        case 'newest':
+                          return (
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                          );
+                        case 'oldest':
+                          return (
+                            new Date(a.createdAt).getTime() -
+                            new Date(b.createdAt).getTime()
+                          );
+                        case 'organization':
+                          return a.organizationName.localeCompare(
+                            b.organizationName
+                          );
+                        default:
+                          return 0;
+                      }
+                    })
+                    .map((request: EventRequest) => {
+                      const StatusIcon = statusIcons[request.status];
+                      const dateInfo = formatEventDate(
+                        request.desiredEventDate || ''
+                      );
 
-                              {/* Status-specific action buttons */}
-            <div className="flex space-x-1">
-                                {request.status === 'new' && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                    variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openToolkitSentDialog(request);
-                                        }}
-                                        className="text-green-600 hover:bg-green-50"
-                                        data-testid={`button-send-toolkit-${request.id}`}
+                      return (
+                        <Card
+                          key={request.id}
+                          className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
+                            statusColors[request.status]
+                          }`}
+                          onClick={() => handleEventClick(request)}
+                          data-testid={`card-event-request-${request.id}`}
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 space-y-3">
+                                <div className="flex items-center space-x-3">
+                                  <StatusIcon className="w-5 h-5" />
+                                  <h3 className="text-lg font-semibold">
+                                    {request.organizationName}
+                                  </h3>
+                                  <Badge
+                                    className={statusColors[request.status]}
+                                  >
+                                    {
+                                      statusOptions.find(
+                                        (s) => s.value === request.status
+                                      )?.label
+                                    }
+                                  </Badge>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                  <div className="flex items-center space-x-2">
+                                    <User className="w-4 h-4 text-gray-500" />
+                                    <span>
+                                      {request.firstName} {request.lastName}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Mail className="w-4 h-4 text-gray-500" />
+                                    <span>{request.email}</span>
+                                  </div>
+                                  {request.phone && (
+                                    <div className="flex items-center space-x-2">
+                                      <Phone className="w-4 h-4 text-gray-500" />
+                                      <span>{request.phone}</span>
+                                    </div>
+                                  )}
+                                  {request.desiredEventDate && (
+                                    <div className="flex items-center space-x-2">
+                                      <Calendar className="w-4 h-4 text-gray-500" />
+                                      <span
+                                        className={`text-2xl md:text-3xl font-extrabold text-brand-primary ${dateInfo.className}`}
                                       >
-                                        <Shield className="w-4 h-4" />
-                  </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      Send Toolkit
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
+                                        {dateInfo.text}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {request.estimatedSandwichCount && (
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-sm">🥪</span>
+                                      <span>
+                                        ~{request.estimatedSandwichCount}{' '}
+                                        sandwiches
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
 
-                                {request.status === 'completed' && (
+                                {request.message && (
+                                  <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                                    {request.message}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="flex flex-col items-end space-y-2">
+                                <span className="text-xs text-gray-500">
+                                  {new Date(
+                                    request.createdAt
+                                  ).toLocaleDateString()}
+                                </span>
+
+                                {/* Status-specific action buttons */}
+                                <div className="flex space-x-1">
+                                  {request.status === 'new' && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openToolkitSentDialog(request);
+                                          }}
+                                          className="text-green-600 hover:bg-green-50"
+                                          data-testid={`button-send-toolkit-${request.id}`}
+                                        >
+                                          <Shield className="w-4 h-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Send Toolkit
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+
+                                  {request.status === 'completed' && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewCollectionLog(request);
+                                          }}
+                                          className="text-brand-primary hover:bg-brand-primary hover:text-white"
+                                          data-testid={`button-view-collections-${request.id}`}
+                                        >
+                                          <TrendingUp className="w-4 h-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        View Collections
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                  variant="outline"
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleViewCollectionLog(request);
+                                          handleEventClick(request);
                                         }}
                                         className="text-brand-primary hover:bg-brand-primary hover:text-white"
-                                        data-testid={`button-view-collections-${request.id}`}
+                                        data-testid={`button-view-details-${request.id}`}
                                       >
-                                        <TrendingUp className="w-4 h-4" />
-                </Button>
+                                        <ExternalLink className="w-4 h-4" />
+                                      </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      View Collections
+                                      View Details
                                     </TooltipContent>
                                   </Tooltip>
-                                )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
 
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEventClick(request);
-                                      }}
-                                      className="text-brand-primary hover:bg-brand-primary hover:text-white"
-                                      data-testid={`button-view-details-${request.id}`}
-                                    >
-                                      <ExternalLink className="w-4 h-4" />
-                        </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>View Details</TooltipContent>
-                                </Tooltip>
+                  {/* Empty state */}
+                  {(requestsByStatus[status] || []).length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <Clock className="w-12 h-12 text-gray-400" />
                       </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No {status.replace('_', ' ')} requests
+                      </h3>
+                      <p className="text-gray-600">
+                        There are currently no event requests with{' '}
+                        {status.replace('_', ' ')} status.
+                      </p>
                     </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-                  })}
-
-                {/* Empty state */}
-                {(requestsByStatus[status] || []).length === 0 && (
-                  <div className="text-center py-12">
-                    <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <Clock className="w-12 h-12 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No {status.replace('_', ' ')} requests
-                    </h3>
-                    <p className="text-gray-600">
-                      There are currently no event requests with{' '}
-                      {status.replace('_', ' ')} status.
-                    </p>
-              </div>
-            )}
+                  )}
                 </div>
-            </TabsContent>
-          ))}
+              </TabsContent>
+            )
+          )}
         </Tabs>
 
         {/* Event Details Dialog */}
         {showEventDetails && selectedEventRequest && (
           <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+              <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
                   <Building className="w-5 h-5" />
                   <span>{selectedEventRequest.organizationName}</span>
@@ -1944,14 +1956,14 @@ export default function EventRequestsManagement() {
                     }
                   </Badge>
                 </DialogTitle>
-              <DialogDescription>
+                <DialogDescription>
                   Event request from {selectedEventRequest.firstName}{' '}
                   {selectedEventRequest.lastName} • Created{' '}
                   {new Date(
                     selectedEventRequest.createdAt
                   ).toLocaleDateString()}
-              </DialogDescription>
-            </DialogHeader>
+                </DialogDescription>
+              </DialogHeader>
 
               <div className="space-y-6">
                 {/* Contact Information */}
@@ -1964,51 +1976,51 @@ export default function EventRequestsManagement() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                <div>
+                      <div>
                         <Label className="text-sm font-medium">Name</Label>
                         <p className="text-sm">
                           {selectedEventRequest.firstName}{' '}
                           {selectedEventRequest.lastName}
                         </p>
-                </div>
-                <div>
+                      </div>
+                      <div>
                         <Label className="text-sm font-medium">Email</Label>
                         <p className="text-sm">{selectedEventRequest.email}</p>
-                </div>
+                      </div>
                       {selectedEventRequest.phone && (
-                <div>
+                        <div>
                           <Label className="text-sm font-medium">Phone</Label>
                           <p className="text-sm">
                             {selectedEventRequest.phone}
                           </p>
-                </div>
+                        </div>
                       )}
                       {selectedEventRequest.department && (
-                <div>
+                        <div>
                           <Label className="text-sm font-medium">
                             Department
-                  </Label>
+                          </Label>
                           <p className="text-sm">
                             {selectedEventRequest.department}
                           </p>
-                </div>
-              )}
-                  </CardContent>
-                </Card>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader>
+                  <Card>
+                    <CardHeader>
                       <CardTitle className="text-base flex items-center space-x-2">
                         <Calendar className="w-4 h-4" />
                         <span>Event Details</span>
-                    </CardTitle>
-                  </CardHeader>
+                      </CardTitle>
+                    </CardHeader>
                     <CardContent className="space-y-3">
                       {selectedEventRequest.desiredEventDate && (
-                  <div>
+                        <div>
                           <Label className="text-sm font-medium">
                             Desired Date
-                    </Label>
+                          </Label>
                           <p className="text-sm">
                             {
                               formatEventDate(
@@ -2016,22 +2028,22 @@ export default function EventRequestsManagement() {
                               ).text
                             }
                           </p>
-                    </div>
+                        </div>
                       )}
                       {selectedEventRequest.estimatedSandwichCount && (
-                    <div>
+                        <div>
                           <Label className="text-sm font-medium">
                             Estimated Sandwich Count
-                      </Label>
+                          </Label>
                           <p className="text-sm">
                             {selectedEventRequest.estimatedSandwichCount}
                           </p>
-                    </div>
+                        </div>
                       )}
-                    <div>
+                      <div>
                         <Label className="text-sm font-medium">
                           Previously Hosted
-                      </Label>
+                        </Label>
                         <p className="text-sm">
                           {previouslyHostedOptions.find(
                             (option) =>
@@ -2042,7 +2054,7 @@ export default function EventRequestsManagement() {
                       </div>
                     </CardContent>
                   </Card>
-                  </div>
+                </div>
 
                 {/* Message */}
                 {selectedEventRequest.message && (
@@ -2062,7 +2074,7 @@ export default function EventRequestsManagement() {
                 <div className="flex justify-between space-x-4">
                   <div className="flex space-x-2">
                     {selectedEventRequest.status === 'new' && (
-                  <Button
+                      <Button
                         onClick={() =>
                           openToolkitSentDialog(selectedEventRequest)
                         }
@@ -2071,25 +2083,25 @@ export default function EventRequestsManagement() {
                       >
                         <Shield className="w-4 h-4 mr-2" />
                         Send Toolkit
-                  </Button>
+                      </Button>
                     )}
 
                     {selectedEventRequest.status === 'completed' && (
-                          <Button
-                      onClick={() =>
+                      <Button
+                        onClick={() =>
                           handleViewCollectionLog(selectedEventRequest)
-                      }
+                        }
                         className="bg-brand-primary hover:bg-brand-primary/90"
                         data-testid="button-view-collections-dialog"
-                    >
+                      >
                         <TrendingUp className="w-4 h-4 mr-2" />
                         View Collections
-                    </Button>
+                      </Button>
                     )}
 
-                <Button
-                  variant="outline"
-                  onClick={() => {
+                    <Button
+                      variant="outline"
+                      onClick={() => {
                         setScheduleCallDate('');
                         setScheduleCallTime('');
                         setShowScheduleCallDialog(true);
@@ -2098,23 +2110,23 @@ export default function EventRequestsManagement() {
                     >
                       <Phone className="w-4 h-4 mr-2" />
                       Schedule Call
-                </Button>
-              </div>
+                    </Button>
+                  </div>
 
                   <div className="flex space-x-2">
-                <Button
-                  variant="outline"
+                    <Button
+                      variant="outline"
                       onClick={() => setIsEditing(!isEditing)}
                       data-testid="button-edit-request"
                     >
                       <Edit className="w-4 h-4 mr-2" />
                       {isEditing ? 'Cancel Edit' : 'Edit'}
-                </Button>
+                    </Button>
 
                     {hasPermission(user, PERMISSIONS.DELETE_EVENT_REQUESTS) && (
-                <Button
+                      <Button
                         variant="destructive"
-                  onClick={() => {
+                        onClick={() => {
                           if (
                             confirm(
                               'Are you sure you want to delete this event request?'
@@ -2122,36 +2134,36 @@ export default function EventRequestsManagement() {
                           ) {
                             deleteEventRequestMutation.mutate(
                               selectedEventRequest.id
-                              );
-                            }
-                          }}
+                            );
+                          }
+                        }}
                         data-testid="button-delete-request"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
-                </Button>
+                      </Button>
                     )}
+                  </div>
                 </div>
-              </div>
 
                 {/* Edit Form */}
                 {isEditing && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
                       const updatedData = Object.fromEntries(
                         formData.entries()
                       );
                       updateEventRequestMutation.mutate({
                         id: selectedEventRequest.id,
                         data: updatedData,
-                  });
-                }}
+                      });
+                    }}
                     className="space-y-4 border-t pt-6"
-              >
+                  >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                      <div>
                         <Label htmlFor="edit-status">Status</Label>
                         <Select
                           name="status"
@@ -2171,58 +2183,58 @@ export default function EventRequestsManagement() {
                             ))}
                           </SelectContent>
                         </Select>
-                </div>
+                      </div>
 
-                  <div>
+                      <div>
                         <Label htmlFor="edit-estimated-count">
                           Estimated Sandwich Count
-                    </Label>
-                    <Input
+                        </Label>
+                        <Input
                           id="edit-estimated-count"
-                      name="estimatedSandwichCount"
-                      type="number"
+                          name="estimatedSandwichCount"
+                          type="number"
                           defaultValue={
                             selectedEventRequest.estimatedSandwichCount || ''
                           }
                           data-testid="input-edit-sandwich-count"
-                    />
-                  </div>
-                  </div>
+                        />
+                      </div>
+                    </div>
 
-                  <div>
+                    <div>
                       <Label htmlFor="edit-notes">Notes</Label>
-                  <Textarea
+                      <Textarea
                         id="edit-notes"
                         name="planningNotes"
                         defaultValue={selectedEventRequest.planningNotes || ''}
-                    rows={3}
+                        rows={3}
                         data-testid="textarea-edit-notes"
-                  />
-                </div>
+                      />
+                    </div>
 
                     <div className="flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
+                      <Button
+                        type="button"
+                        variant="outline"
                         onClick={() => setIsEditing(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
                         disabled={updateEventRequestMutation.isPending}
                         data-testid="button-save-changes"
-                  >
+                      >
                         {updateEventRequestMutation.isPending
-                      ? 'Saving...'
+                          ? 'Saving...'
                           : 'Save Changes'}
-                  </Button>
-                </div>
-              </form>
+                      </Button>
+                    </div>
+                  </form>
                 )}
-            </div>
-          </DialogContent>
-        </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* Collection Log Modal */}
@@ -2235,88 +2247,88 @@ export default function EventRequestsManagement() {
           }}
         />
 
-      {/* Toolkit Sent Dialog */}
-      <ToolkitSentDialog
-        isOpen={showToolkitSentDialog}
-        onClose={() => {
-          setShowToolkitSentDialog(false);
+        {/* Toolkit Sent Dialog */}
+        <ToolkitSentDialog
+          isOpen={showToolkitSentDialog}
+          onClose={() => {
+            setShowToolkitSentDialog(false);
             setToolkitEventRequest(null);
           }}
           eventRequest={toolkitEventRequest}
           onToolkitSent={handleToolkitSent}
           isLoading={markToolkitSentMutation.isPending}
-      />
+        />
 
-      {/* Schedule Call Dialog */}
+        {/* Schedule Call Dialog */}
         {showScheduleCallDialog && selectedEventRequest && (
-        <Dialog
-          open={showScheduleCallDialog}
-          onOpenChange={setShowScheduleCallDialog}
-        >
+          <Dialog
+            open={showScheduleCallDialog}
+            onOpenChange={setShowScheduleCallDialog}
+          >
             <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Schedule Call</DialogTitle>
-              <DialogDescription>
+              <DialogHeader>
+                <DialogTitle>Schedule Call</DialogTitle>
+                <DialogDescription>
                   Schedule a call with {selectedEventRequest.firstName}{' '}
                   {selectedEventRequest.lastName} from{' '}
                   {selectedEventRequest.organizationName}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
+                </DialogDescription>
+              </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
                   handleScheduleCall();
                 }}
               >
                 <div className="grid grid-cols-2 gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="schedule-date">Call Date</Label>
-                  <Input
+                    <Input
                       id="schedule-date"
-                    type="date"
+                      type="date"
                       value={scheduleCallDate}
                       onChange={(e) => setScheduleCallDate(e.target.value)}
-                    required
-                    className="mt-1"
-                    data-testid="input-scheduled-date"
-                  />
-                </div>
+                      required
+                      className="mt-1"
+                      data-testid="input-scheduled-date"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="schedule-time">Call Time</Label>
-                  <Input
+                    <Input
                       id="schedule-time"
-                    type="time"
+                      type="time"
                       value={scheduleCallTime}
                       onChange={(e) => setScheduleCallTime(e.target.value)}
-                    required
-                    className="mt-1"
-                    data-testid="input-scheduled-time"
-                  />
+                      required
+                      className="mt-1"
+                      data-testid="input-scheduled-time"
+                    />
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowScheduleCallDialog(false)}
-                  disabled={scheduleCallMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={scheduleCallMutation.isPending}
-                  data-testid="button-confirm-schedule-call"
-                >
-                  {scheduleCallMutation.isPending
-                    ? 'Scheduling...'
-                    : 'Schedule Call'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowScheduleCallDialog(false)}
+                    disabled={scheduleCallMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={scheduleCallMutation.isPending}
+                    data-testid="button-confirm-schedule-call"
+                  >
+                    {scheduleCallMutation.isPending
+                      ? 'Scheduling...'
+                      : 'Schedule Call'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Weekly Planning Modal */}
         {showWeeklyPlanningModal && (
