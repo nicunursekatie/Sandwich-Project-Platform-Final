@@ -373,6 +373,7 @@ interface EventRequest {
   actualSandwichTypes?: string;
   sandwichTypes?: string;
   sandwichDestination?: string; // Where sandwiches are going
+  vanNeeded?: boolean; // Whether a van is needed for this event
   completedNotes?: string;
   nextDayFollowUp?: string;
   oneMonthFollowUp?: string;
@@ -1398,6 +1399,7 @@ export default function EventRequestsManagement() {
     sandwichTypes: '',
     sandwichDestination: '',
     driverCount: '',
+    vanNeeded: false,
     vanDriverCount: '',
     speakerCount: '',
     volunteerCount: '',
@@ -1579,6 +1581,7 @@ export default function EventRequestsManagement() {
         sandwichTypes: '',
         sandwichDestination: '',
         driverCount: '',
+        vanNeeded: false,
         vanDriverCount: '',
         speakerCount: '',
         volunteerCount: '',
@@ -2226,13 +2229,20 @@ export default function EventRequestsManagement() {
                                             <Truck className="w-4 h-4 text-purple-600" />
                                             <span className="text-purple-800">
                                               <strong>Drivers Needed:</strong> {request.driverCount || 0}
-                                              {request.vanDriverCount && request.vanDriverCount > 0 && (
+                                              {request.vanNeeded && (
                                                 <span className="ml-2 text-purple-600">
-                                                  ({request.vanDriverCount} van drivers)
+                                                  (Van needed)
                                                 </span>
                                               )}
                                             </span>
                                           </div>
+                                          {request.vanNeeded && request.vanDriverCount && request.vanDriverCount > 0 && (
+                                            <div className="ml-6">
+                                              <span className="text-xs text-purple-600">
+                                                <strong>Van Drivers:</strong> {request.vanDriverCount}
+                                              </span>
+                                            </div>
+                                          )}
                                           {request.driverAssignments && request.driverAssignments.length > 0 ? (
                                             <div className="ml-6">
                                               <span className="text-xs text-purple-600">Assigned:</span>
@@ -2381,6 +2391,7 @@ export default function EventRequestsManagement() {
                                             sandwichTypes: request.sandwichTypes || '',
                                             sandwichDestination: request.sandwichDestination || '',
                                             driverCount: request.driverCount?.toString() || '0',
+                                            vanNeeded: request.vanNeeded || false,
                                             vanDriverCount: request.vanDriverCount?.toString() || '0',
                                             speakerCount: request.speakerCount?.toString() || '0',
                                             volunteerCount: request.volunteerCount?.toString() || '0',
@@ -3114,7 +3125,8 @@ export default function EventRequestsManagement() {
                       ? formData.get('sandwichDestination') 
                       : formData.get('sandwichDestinationSelect'),
                     driverCount: formData.get('driverCount') ? parseInt(formData.get('driverCount') as string) : null,
-                    vanDriverCount: formData.get('vanDriverCount') ? parseInt(formData.get('vanDriverCount') as string) : null,
+                    vanNeeded: scheduleEventForm.vanNeeded,
+                    vanDriverCount: scheduleEventForm.vanNeeded && formData.get('vanDriverCount') ? parseInt(formData.get('vanDriverCount') as string) : null,
                     speakerCount: formData.get('speakerCount') ? parseInt(formData.get('speakerCount') as string) : null,
                     volunteerCount: formData.get('volunteerCount') ? parseInt(formData.get('volunteerCount') as string) : null,
                     tspContact: scheduleEventForm.tspContact,
@@ -3285,14 +3297,36 @@ export default function EventRequestsManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="vanDriverCount">Van Drivers Needed</Label>
-                      <Input
-                        id="vanDriverCount"
-                        name="vanDriverCount"
-                        type="number"
-                        placeholder="0"
-                        data-testid="input-van-driver-count"
-                      />
+                      <div className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="checkbox"
+                          id="vanNeeded"
+                          checked={scheduleEventForm.vanNeeded}
+                          onChange={(e) => {
+                            setScheduleEventForm(prev => ({
+                              ...prev,
+                              vanNeeded: e.target.checked,
+                              vanDriverCount: e.target.checked ? prev.vanDriverCount : '0'
+                            }));
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <Label htmlFor="vanNeeded" className="text-sm font-medium">
+                          Van Needed for this Event
+                        </Label>
+                      </div>
+                      {scheduleEventForm.vanNeeded && (
+                        <div>
+                          <Label htmlFor="vanDriverCount">Van Drivers Needed</Label>
+                          <Input
+                            id="vanDriverCount"
+                            name="vanDriverCount"
+                            type="number"
+                            placeholder="0"
+                            data-testid="input-van-driver-count"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="speakerCount">Speakers Needed</Label>
