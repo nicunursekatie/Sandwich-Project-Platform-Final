@@ -90,6 +90,7 @@ export class MeetingAgendaPDFGenerator {
           white: '#FFFFFF',
         };
 
+
       let yPosition = 50;
 
       // Helper function to sanitize text for PDF rendering
@@ -117,6 +118,7 @@ export class MeetingAgendaPDFGenerator {
           // Strip any remaining non-ASCII characters (including emojis)
           .replace(/[^\x00-\x7F]/g, '');
       };
+
 
         // Helper function to add footer to current page
         const addFooter = () => {
@@ -245,6 +247,7 @@ export class MeetingAgendaPDFGenerator {
         yPosition += 20;
       }
 
+
         // Meeting details
         const meetingDate = format(new Date(meeting.date), 'EEEE, MMMM dd, yyyy');
         const meetingTime = meeting.time && meeting.time !== 'TBD' ? meeting.time : 'TBD';
@@ -267,6 +270,7 @@ export class MeetingAgendaPDFGenerator {
           doc
             .fontSize(12)
             .fillColor(colors.darkGray)
+
             .text(sanitizeText(`Estimated Duration: ${agenda.totalEstimatedTime}`), 60, yPosition);
           yPosition += 40;
         }
@@ -575,6 +579,7 @@ export class MeetingAgendaPDFGenerator {
               .fillColor(colors.navy)
               .text(`${sectionIndex + 1}. ${section.title}`, 50, yPosition);
             yPosition += 35;
+
 
             // Section items
             if (section.items && section.items.length > 0) {
