@@ -323,7 +323,6 @@ interface EventRequest {
   previouslyHosted: 'yes' | 'no' | 'i_dont_know';
   status:
     | 'new'
-    | 'followed_up'
     | 'in_process'
     | 'scheduled'
     | 'completed'
@@ -378,21 +377,14 @@ interface EventRequest {
 
 const statusColors = {
   new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-primary border border-teal-200',
-  followed_up:
-    'bg-gradient-to-r from-orange-50 to-amber-100 text-brand-orange border border-orange-200',
-  in_process:
-    'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
-  scheduled:
-    'bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200',
-  completed:
-    'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
-  declined:
-    'bg-gradient-to-r from-brand-burgundy to-red-700 text-white border-2 font-bold shadow-lg',
+  in_process: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
+  scheduled: 'bg-gradient-to-r from-yellow-50 to-orange-100 text-yellow-800 border border-yellow-200',
+  completed: 'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
+  declined: 'bg-gradient-to-r from-brand-burgundy to-red-700 text-white border-2 font-bold shadow-lg',
 };
 
 const statusIcons = {
   new: Clock,
-  followed_up: Mail,
   in_process: Phone,
   scheduled: Calendar,
   completed: CheckCircle,
@@ -407,7 +399,6 @@ const previouslyHostedOptions = [
 
 const statusOptions = [
   { value: 'new', label: 'New Request' },
-  { value: 'followed_up', label: 'Followed Up' },
   { value: 'in_process', label: 'In Process' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'completed', label: 'Completed' },
@@ -1607,7 +1598,6 @@ export default function EventRequestsManagement() {
 
   const statusCounts = {
     new: requestsByStatus.new?.length || 0,
-    followed_up: requestsByStatus.followed_up?.length || 0,
     in_process: requestsByStatus.in_process?.length || 0,
     scheduled: requestsByStatus.scheduled?.length || 0,
     completed: requestsByStatus.completed?.length || 0,
@@ -1646,31 +1636,18 @@ export default function EventRequestsManagement() {
 
         {/* Tabs */}
         <Tabs defaultValue="new" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="new" className="relative">
               New ({statusCounts.new})
               {statusCounts.new > 0 && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="followed_up">
-              Followed Up ({statusCounts.followed_up})
-            </TabsTrigger>
-            <TabsTrigger value="in_process">
-              In Process ({statusCounts.in_process})
-            </TabsTrigger>
-            <TabsTrigger value="scheduled">
-              Scheduled ({statusCounts.scheduled})
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              Completed ({statusCounts.completed})
-            </TabsTrigger>
-            <TabsTrigger value="declined">
-              Declined ({statusCounts.declined})
-            </TabsTrigger>
-            <TabsTrigger value="import" className="bg-blue-50 border-blue-200">
-              Import
-            </TabsTrigger>
+            <TabsTrigger value="in_process">In Process ({statusCounts.in_process})</TabsTrigger>
+            <TabsTrigger value="scheduled">Scheduled ({statusCounts.scheduled})</TabsTrigger>
+            <TabsTrigger value="completed">Completed ({statusCounts.completed})</TabsTrigger>
+            <TabsTrigger value="declined">Declined ({statusCounts.declined})</TabsTrigger>
+            <TabsTrigger value="import" className="bg-blue-50 border-blue-200">Import</TabsTrigger>
           </TabsList>
 
           {/* Import Tab */}
@@ -1681,7 +1658,6 @@ export default function EventRequestsManagement() {
           {/* Status-based tabs (existing logic) */}
           {[
             'new',
-            'followed_up',
             'in_process',
             'scheduled',
             'completed',
