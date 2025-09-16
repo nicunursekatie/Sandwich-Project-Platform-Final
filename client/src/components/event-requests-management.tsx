@@ -78,6 +78,7 @@ import {
   Calculator,
   MapPin,
   Megaphone,
+  FileText,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -383,8 +384,8 @@ const statusColors = {
     'bg-gradient-to-r from-yellow-50 to-amber-100 text-brand-orange border border-amber-200',
   completed:
     'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
-  declined:
-    'bg-gradient-to-r from-brand-burgundy to-red-700 text-white border-2 font-bold shadow-lg',
+      declined:
+        'bg-gradient-to-r from-red-50 to-red-100 text-red-900 border-2 border-red-300 font-bold shadow-lg',
 };
 
 const statusIcons = {
@@ -2155,12 +2156,46 @@ export default function EventRequestsManagement() {
                                     {request.planningNotes && (
                                       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                         <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
-                                          <Edit className="w-4 h-4 mr-2" />
+                                          <FileText className="w-4 h-4 mr-2" />
                                           Planning Notes
                                         </h4>
                                         <p className="text-sm text-gray-700">{request.planningNotes}</p>
                                       </div>
                                     )}
+
+                                    {/* Edit Details Button */}
+                                    <div className="mt-4 flex justify-end">
+                                      <Button
+                                        onClick={() => {
+                                          setSelectedEventRequest(request);
+                                          setShowScheduleEventDialog(true);
+                                          // Pre-populate the form with existing data
+                                          setScheduleEventForm({
+                                            eventDate: request.desiredEventDate || '',
+                                            eventStartTime: request.eventStartTime || '',
+                                            eventEndTime: request.eventEndTime || '',
+                                            pickupTime: request.pickupTime || '',
+                                            eventAddress: request.eventAddress || '',
+                                            hasRefrigeration: request.hasRefrigeration ? 'true' : 'false',
+                                            estimatedSandwichCount: request.estimatedSandwichCount?.toString() || '',
+                                            sandwichTypes: request.sandwichTypes || '',
+                                            driverCount: request.driverCount?.toString() || '0',
+                                            vanDriverCount: request.vanDriverCount?.toString() || '0',
+                                            speakerCount: request.speakerCount?.toString() || '0',
+                                            volunteerCount: request.volunteerCount?.toString() || '0',
+                                            tspContact: request.tspContact || '',
+                                            additionalRequirements: request.additionalRequirements || '',
+                                            planningNotes: request.planningNotes || '',
+                                          });
+                                        }}
+                                        variant="outline"
+                                        size="sm"
+                                        className="bg-brand-orange/10 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white"
+                                      >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Edit Details
+                                      </Button>
+                                    </div>
                                   </div>
                                 )}
 
