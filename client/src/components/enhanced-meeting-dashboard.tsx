@@ -3208,7 +3208,6 @@ export default function EnhancedMeetingDashboard() {
           </Card>
 
           {/* Display One-off Agenda Items */}
-          {console.log('[Frontend] Rendering agenda items:', agendaItems)}
           {agendaItems.length > 0 && (
             <Card className="border-gray-200">
               <CardHeader className="pb-3">
