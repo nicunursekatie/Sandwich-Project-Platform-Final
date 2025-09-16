@@ -197,4 +197,112 @@ router.delete('/:id', isAuthenticated, async (req: any, res) => {
   }
 });
 
+// Agenda Items endpoints
+// Get agenda items for a meeting
+router.get('/agenda-items', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { meetingId } = req.query;
+    console.log(`[Meetings API] Getting agenda items for meeting: ${meetingId}`);
+
+    // For now, return empty array since we don't have agenda items storage implemented
+    // TODO: Implement agenda items storage
+    const agendaItems: any[] = [];
+    
+    console.log(`[Meetings API] Found ${agendaItems.length} agenda items`);
+    res.json(agendaItems);
+  } catch (error) {
+    logger.error('Failed to get agenda items', error);
+    console.error('[Meetings API] Error fetching agenda items:', error);
+    res.json([]);
+  }
+});
+
+// Create agenda item
+router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const agendaItemData = req.body;
+    console.log(`[Meetings API] Creating agenda item: ${agendaItemData.title}`);
+    console.log('[Meetings API] Agenda item data received:', JSON.stringify(agendaItemData, null, 2));
+
+    // For now, return a mock response since we don't have agenda items storage implemented
+    // TODO: Implement agenda items storage
+    const newAgendaItem = {
+      id: Date.now(),
+      ...agendaItemData,
+      submittedBy: user.id,
+      submittedAt: new Date(),
+      status: 'pending'
+    };
+    
+    console.log(`[Meetings API] Created agenda item with ID: ${newAgendaItem.id}`);
+    res.status(201).json(newAgendaItem);
+  } catch (error) {
+    logger.error('Failed to create agenda item', error);
+    console.error('[Meetings API] Error creating agenda item:', error);
+    res.status(500).json({ message: 'Failed to create agenda item' });
+  }
+});
+
+// Update agenda item
+router.patch('/agenda-items/:id', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const agendaItemId = parseInt(req.params.id);
+    const updates = req.body;
+    
+    console.log(`[Meetings API] Updating agenda item ${agendaItemId}`);
+
+    // For now, return a mock response since we don't have agenda items storage implemented
+    // TODO: Implement agenda items storage
+    const updatedAgendaItem = {
+      id: agendaItemId,
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    console.log(`[Meetings API] Updated agenda item ${agendaItemId}`);
+    res.json(updatedAgendaItem);
+  } catch (error) {
+    logger.error('Failed to update agenda item', error);
+    console.error('[Meetings API] Error updating agenda item:', error);
+    res.status(500).json({ message: 'Failed to update agenda item' });
+  }
+});
+
+// Delete agenda item
+router.delete('/agenda-items/:id', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const agendaItemId = parseInt(req.params.id);
+    console.log(`[Meetings API] Deleting agenda item ${agendaItemId}`);
+
+    // For now, return success since we don't have agenda items storage implemented
+    // TODO: Implement agenda items storage
+    console.log(`[Meetings API] Deleted agenda item ${agendaItemId}`);
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Failed to delete agenda item', error);
+    console.error('[Meetings API] Error deleting agenda item:', error);
+    res.status(500).json({ message: 'Failed to delete agenda item' });
+  }
+});
+
 export default router;
