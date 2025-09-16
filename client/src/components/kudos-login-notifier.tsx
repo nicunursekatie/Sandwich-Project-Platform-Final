@@ -35,9 +35,12 @@ export function KudosLoginNotifier() {
       queryKey: ['/api/messaging/kudos/unnotified'],
       enabled: !!user && !hasShownNotifications,
       staleTime: 0, // Always fetch fresh data
-      cacheTime: 0, // Don't cache the results
+      gcTime: 0, // Don't cache the results
     }
   );
+
+  // Ensure unnotifiedKudos is always an array to prevent slice errors
+  const safeUnnotifiedKudos: UnnotifiedKudos[] = Array.isArray(unnotifiedKudos) ? unnotifiedKudos : [];
 
   // Mutation to mark kudos as initially notified
   const markInitiallyNotifiedMutation = useMutation({
@@ -61,8 +64,8 @@ export function KudosLoginNotifier() {
   useEffect(() => {
     if (
       !user ||
-      !unnotifiedKudos ||
-      unnotifiedKudos.length === 0 ||
+      !safeUnnotifiedKudos ||
+      safeUnnotifiedKudos.length === 0 ||
       hasShownNotifications ||
       isLoading
     ) {
@@ -71,8 +74,8 @@ export function KudosLoginNotifier() {
 
     // Prepare kudos for toast display
     const maxToasts = 3;
-    const kudosToDisplay = unnotifiedKudos.slice(0, maxToasts);
-    const remainingCount = Math.max(0, unnotifiedKudos.length - maxToasts);
+    const kudosToDisplay = safeUnnotifiedKudos.slice(0, maxToasts);
+    const remainingCount = Math.max(0, safeUnnotifiedKudos.length - maxToasts);
 
     // Show individual toasts for the first few kudos
     kudosToDisplay.forEach((kudos, index) => {
@@ -94,20 +97,20 @@ export function KudosLoginNotifier() {
     // Show summary toast if there are more kudos
     if (remainingCount > 0) {
       setTimeout(() => {
-        showSummaryToast(remainingCount, unnotifiedKudos.length);
+        showSummaryToast(remainingCount, safeUnnotifiedKudos.length);
       }, kudosToDisplay.length * 800);
     }
 
     // Mark all kudos as initially notified
-    if (unnotifiedKudos.length > 0) {
-      const kudosIds = unnotifiedKudos.map((k) => k.id);
+    if (safeUnnotifiedKudos.length > 0) {
+      const kudosIds = safeUnnotifiedKudos.map((k) => k.id);
       setTimeout(() => {
         markInitiallyNotifiedMutation.mutate(kudosIds);
       }, 1000); // Wait 1 second before marking as notified
     }
 
     setHasShownNotifications(true);
-  }, [unnotifiedKudos, user, hasShownNotifications, isLoading]);
+  }, [safeUnnotifiedKudos, user, hasShownNotifications, isLoading]);
 
   const showKudosToast = (kudos: KudosToast) => {
     const timeAgo = formatDistanceToNow(new Date(kudos.createdAt), {
