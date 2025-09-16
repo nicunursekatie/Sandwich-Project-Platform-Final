@@ -391,6 +391,47 @@ const statusColors = {
         'bg-gradient-to-r from-red-50 to-red-100 text-red-900 border-2 border-red-300 font-bold shadow-lg',
 };
 
+const SANDWICH_DESTINATIONS = [
+  'Atlanta Community Food Bank',
+  'Atlanta Mission',
+  'Covenant House Georgia',
+  'Gateway Center',
+  'Hosea Helps',
+  'Mercy Care',
+  'Open Hand Atlanta',
+  'Salvation Army',
+  'St. Vincent de Paul',
+  'The Atlanta Day Center',
+  'The Extension',
+  'The Shepherd\'s Inn',
+  'Zaban Paradies Center'
+];
+
+// Helper function to format date for input field
+const formatDateForInput = (dateString: string | null | undefined): string => {
+  if (!dateString) return '';
+  
+  // If it's already in YYYY-MM-DD format, return as is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // Try to parse various date formats and convert to YYYY-MM-DD
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.warn('Error formatting date:', error);
+    return '';
+  }
+};
+
 const statusIcons = {
   new: Clock,
   in_process: Phone,
@@ -3210,6 +3251,7 @@ export default function EventRequestsManagement() {
                       name="eventDate"
                       type="date"
                       required
+                      defaultValue={formatDateForInput(scheduleEventForm.eventDate)}
                       data-testid="input-event-date"
                     />
                   </div>
@@ -3219,6 +3261,7 @@ export default function EventRequestsManagement() {
                       id="eventAddress"
                       name="eventAddress"
                       placeholder="123 Main St, City, State"
+                      defaultValue={scheduleEventForm.eventAddress}
                       data-testid="input-event-address"
                     />
                   </div>
@@ -3231,6 +3274,7 @@ export default function EventRequestsManagement() {
                       id="eventStartTime"
                       name="eventStartTime"
                       type="time"
+                      defaultValue={scheduleEventForm.eventStartTime}
                       data-testid="input-event-start-time"
                     />
                   </div>
@@ -3240,6 +3284,7 @@ export default function EventRequestsManagement() {
                       id="eventEndTime"
                       name="eventEndTime"
                       type="time"
+                      defaultValue={scheduleEventForm.eventEndTime}
                       data-testid="input-event-end-time"
                     />
                   </div>
@@ -3249,6 +3294,7 @@ export default function EventRequestsManagement() {
                       id="pickupTime"
                       name="pickupTime"
                       type="time"
+                      defaultValue={scheduleEventForm.pickupTime}
                       data-testid="input-pickup-time"
                     />
                   </div>
@@ -3257,7 +3303,7 @@ export default function EventRequestsManagement() {
                 {/* Refrigeration */}
                 <div>
                   <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                  <Select name="hasRefrigeration" defaultValue="">
+                  <Select name="hasRefrigeration" defaultValue={scheduleEventForm.hasRefrigeration}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select refrigeration status" />
                     </SelectTrigger>
@@ -3280,6 +3326,7 @@ export default function EventRequestsManagement() {
                         name="estimatedSandwichCount"
                         type="number"
                         placeholder="e.g., 100"
+                        defaultValue={scheduleEventForm.estimatedSandwichCount}
                         data-testid="input-sandwich-count"
                       />
                     </div>
@@ -3287,6 +3334,8 @@ export default function EventRequestsManagement() {
                       <Label htmlFor="sandwichTypes">Sandwich Types</Label>
                       <SandwichTypesSelector
                         name="sandwichTypes"
+                        defaultValue={scheduleEventForm.sandwichTypes}
+                        estimatedCount={parseInt(scheduleEventForm.estimatedSandwichCount) || null}
                         className="mt-1"
                       />
                     </div>
@@ -3296,31 +3345,24 @@ export default function EventRequestsManagement() {
                   <div>
                     <Label htmlFor="sandwichDestination">Sandwich Destination</Label>
                     <div className="mt-1 space-y-2">
-                      <Select name="sandwichDestinationSelect">
+                      <Select name="sandwichDestinationSelect" defaultValue={scheduleEventForm.sandwichDestination && !SANDWICH_DESTINATIONS.includes(scheduleEventForm.sandwichDestination) ? 'custom' : scheduleEventForm.sandwichDestination}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select destination or enter custom" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="custom">Enter Custom Destination</SelectItem>
-                          <SelectItem value="Atlanta Community Food Bank">Atlanta Community Food Bank</SelectItem>
-                          <SelectItem value="Atlanta Mission">Atlanta Mission</SelectItem>
-                          <SelectItem value="Covenant House Georgia">Covenant House Georgia</SelectItem>
-                          <SelectItem value="Gateway Center">Gateway Center</SelectItem>
-                          <SelectItem value="Hosea Helps">Hosea Helps</SelectItem>
-                          <SelectItem value="Mercy Care">Mercy Care</SelectItem>
-                          <SelectItem value="Open Hand Atlanta">Open Hand Atlanta</SelectItem>
-                          <SelectItem value="Salvation Army">Salvation Army</SelectItem>
-                          <SelectItem value="St. Vincent de Paul">St. Vincent de Paul</SelectItem>
-                          <SelectItem value="The Atlanta Day Center">The Atlanta Day Center</SelectItem>
-                          <SelectItem value="The Extension">The Extension</SelectItem>
-                          <SelectItem value="The Shepherd's Inn">The Shepherd's Inn</SelectItem>
-                          <SelectItem value="Zaban Paradies Center">Zaban Paradies Center</SelectItem>
+                          {SANDWICH_DESTINATIONS.map((destination) => (
+                            <SelectItem key={destination} value={destination}>
+                              {destination}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <Input
                         id="sandwichDestination"
                         name="sandwichDestination"
                         placeholder="Or enter custom destination"
+                        defaultValue={scheduleEventForm.sandwichDestination && !SANDWICH_DESTINATIONS.includes(scheduleEventForm.sandwichDestination) ? scheduleEventForm.sandwichDestination : ''}
                         className="mt-2"
                       />
                     </div>
@@ -3353,6 +3395,7 @@ export default function EventRequestsManagement() {
                         name="driverCount"
                         type="number"
                         placeholder="0"
+                        defaultValue={scheduleEventForm.driverCount}
                         data-testid="input-driver-count"
                       />
                     </div>
@@ -3383,6 +3426,7 @@ export default function EventRequestsManagement() {
                             name="vanDriverCount"
                             type="number"
                             placeholder="0"
+                            defaultValue={scheduleEventForm.vanDriverCount}
                             data-testid="input-van-driver-count"
                           />
                         </div>
@@ -3395,6 +3439,7 @@ export default function EventRequestsManagement() {
                         name="speakerCount"
                         type="number"
                         placeholder="0"
+                        defaultValue={scheduleEventForm.speakerCount}
                         data-testid="input-speaker-count"
                       />
                     </div>
@@ -3405,6 +3450,7 @@ export default function EventRequestsManagement() {
                         name="volunteerCount"
                         type="number"
                         placeholder="0"
+                        defaultValue={scheduleEventForm.volunteerCount}
                         data-testid="input-volunteer-count"
                       />
                     </div>
@@ -3420,6 +3466,7 @@ export default function EventRequestsManagement() {
                       name="additionalRequirements"
                       placeholder="Any special requirements or notes..."
                       rows={3}
+                      defaultValue={scheduleEventForm.additionalRequirements}
                       data-testid="textarea-additional-requirements"
                     />
                   </div>
@@ -3430,6 +3477,7 @@ export default function EventRequestsManagement() {
                       name="planningNotes"
                       placeholder="Internal planning notes..."
                       rows={3}
+                      defaultValue={scheduleEventForm.planningNotes}
                       data-testid="textarea-planning-notes"
                     />
                   </div>
