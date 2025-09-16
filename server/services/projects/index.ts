@@ -241,11 +241,15 @@ export class ProjectService implements IProjectService {
     taskData: any,
     user: User
   ): Promise<ProjectTask> {
-    // Check permissions for task creation
+    // Check permissions for task creation - use project editing permissions
     if (
-      !user.permissions?.includes('create_tasks') &&
+      !user.permissions?.includes('PROJECTS_EDIT_ALL') &&
+      !user.permissions?.includes('PROJECTS_EDIT_OWN') &&
+      !user.permissions?.includes('PROJECTS_ADD') &&
       !user.permissions?.includes('edit_all_projects') &&
-      !user.permissions?.includes('manage_projects')
+      !user.permissions?.includes('manage_projects') &&
+      user.role !== 'admin' &&
+      user.role !== 'super_admin'
     ) {
       throw new Error('Permission denied. You cannot create tasks.');
     }
