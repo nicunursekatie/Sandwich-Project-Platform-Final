@@ -118,12 +118,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerPerformanceRoutes(app);
 
   // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML
-  app.use('/api/*', (req, res) => {
-    res.status(404).json({ 
-      error: 'API endpoint not found',
-      path: req.path,
-      method: req.method 
-    });
+  // This must come AFTER all legitimate API routes but BEFORE static file serving
+  app.use('/api', (req, res, next) => {
+    // Only catch unmatched API routes, not the root path or static files
+    if (req.path.startsWith('/api/') && !res.headersSent) {
+      res.status(404).json({ 
+        error: 'API endpoint not found',
+        path: req.path,
+        method: req.method 
+      });
+    } else {
+      next();
+    }
   });
 
   // Create HTTP server

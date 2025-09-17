@@ -101,7 +101,15 @@ export const getQueryFn: <T>(options: {
       // Ensure we return a valid object, not null/undefined
       return jsonData ?? {};
     } catch (parseError) {
-      console.warn('Failed to parse JSON response for query:', parseError);
+      // Get a preview of the actual response to debug HTML vs JSON issues
+      const preview = await res.clone().text().catch(() => '');
+      console.warn('DEBUGGING: Failed to parse JSON response', { 
+        url: res.url, 
+        status: res.status, 
+        contentType: res.headers.get('content-type'),
+        bodyPreview: preview?.slice(0, 200),
+        error: parseError 
+      });
       return {};
     }
   };

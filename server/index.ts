@@ -180,48 +180,9 @@ async function startServer() {
       path: '/notifications',
     });
 
-    // CRITICAL: Aggressive API protection middleware - ensure API routes NEVER return HTML
+    // Simple API request logging (without interfering with responses)
     app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-      // Force JSON content type for ALL API routes
-      res.setHeader('Content-Type', 'application/json');
-      
-      // Log API requests for debugging
-      serverLogger.info(`🔍 API Request: ${req.method} ${req.originalUrl}`);
-      
-      // Override ALL response methods to prevent HTML
-      const originalSend = res.send;
-      const originalJson = res.json;
-      const originalEnd = res.end;
-      const originalSendFile = res.sendFile;
-      
-      // Block sendFile for API routes (prevents serving HTML files)
-      res.sendFile = function(...args: any[]) {
-        serverLogger.error(`🚨 BLOCKED: Attempted to send file for API route ${req.originalUrl}`);
-        return originalJson.call(this, { error: 'API routes cannot serve files', path: req.originalUrl });
-      };
-      
-      // Ensure res.send always returns JSON
-      res.send = function(data: any) {
-        // If it's already an object, send as JSON
-        if (typeof data === 'object') {
-          return originalJson.call(this, data);
-        }
-        
-        // If it's a string that looks like HTML, block it
-        if (typeof data === 'string' && data.trim().startsWith('<!DOCTYPE')) {
-          serverLogger.error(`🚨 BLOCKED: Attempted to send HTML for API route ${req.originalUrl}`);
-          return originalJson.call(this, { error: 'API routes cannot serve HTML', path: req.originalUrl });
-        }
-        
-        // If it's a non-JSON string, wrap it
-        if (typeof data === 'string' && !data.startsWith('{') && !data.startsWith('[')) {
-          serverLogger.warn(`⚠️ Converting string to JSON for ${req.originalUrl}`);
-          return originalJson.call(this, { message: data });
-        }
-        
-        return originalSend.call(this, data);
-      };
-      
+      serverLogger.debug(`API Request: ${req.method} ${req.originalUrl}`);
       next();
     });
 
@@ -519,10 +480,7 @@ async function startServer() {
     return httpServer;
   } catch (error) {
     console.error('✗ Server startup failed:', error);
-    const fallbackServer = app.listen(5000, '0.0.0.0', () => {
-      console.log('✓ Minimal fallback server listening on http://0.0.0.0:5000');
-    });
-    return fallbackServer;
+    throw error; // Don't create fallback server that conflicts with main server
   }
 }
 
