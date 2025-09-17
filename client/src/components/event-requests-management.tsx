@@ -1782,7 +1782,9 @@ export default function EventRequestsManagement() {
           .includes(searchQuery.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.email.toLowerCase().includes(searchQuery.toLowerCase());
+        request.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
@@ -1964,7 +1966,7 @@ export default function EventRequestsManagement() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
-                      placeholder="Search by organization, name, or email..."
+                      placeholder="Search by organization, name, email, date, or location..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -2005,7 +2007,9 @@ export default function EventRequestsManagement() {
                           .includes(searchQuery.toLowerCase()) ||
                         request.email
                           .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
+                          .includes(searchQuery.toLowerCase()) ||
+                        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()))
                       );
                     })
                     .sort((a: EventRequest, b: EventRequest) => {
