@@ -2770,6 +2770,49 @@ export default function EventRequestsManagement() {
                                     </Button>
                                   </div>
                                 )}
+
+                                {/* Action Buttons for Scheduled Status */}
+                                {request.status === 'scheduled' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        setIsEditing(true);
+                                        setShowEventDetails(true);
+                                      }}
+                                      data-testid={`button-edit-${request.id}`}
+                                    >
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit Event Details
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Create contact options - call or email
+                                        const phone = request.phone;
+                                        const email = request.email;
+                                        const contactName = `${request.firstName} ${request.lastName}`;
+                                        
+                                        let message = `Contact ${contactName}:\n\n`;
+                                        if (phone) message += `📞 Call: ${phone}\n`;
+                                        if (email) message += `📧 Email: ${email}\n`;
+                                        
+                                        alert(message);
+                                      }}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                      data-testid={`button-contact-${request.id}`}
+                                    >
+                                      <Phone className="w-4 h-4 mr-2" />
+                                      Contact Organizer
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
