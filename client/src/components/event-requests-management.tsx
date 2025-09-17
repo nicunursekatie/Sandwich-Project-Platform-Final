@@ -80,6 +80,7 @@ import {
   MapPin,
   Megaphone,
   FileText,
+  UserPlus,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -769,24 +770,13 @@ const ToolkitSentDialog = ({
                         if (phoneNumber) {
                           navigator.clipboard.writeText(phoneNumber)
                             .then(() => {
-                              toast({
-                                title: 'Phone number copied!',
-                                description: `${phoneNumber} has been copied to your clipboard.`,
-                              });
+                              window.alert(`Phone number copied!\n${phoneNumber} has been copied to your clipboard.`);
                             })
                             .catch(() => {
-                            toast({
-                              title: 'Failed to copy',
-                              description: 'Please copy manually: ' + phoneNumber,
-                              variant: 'destructive',
+                              window.alert(`Failed to copy phone number.\nPlease copy manually: ${phoneNumber}`);
                             });
-                          });
                         } else {
-                          toast({
-                            title: 'No phone number',
-                            description: 'No phone number available to copy.',
-                            variant: 'destructive',
-                          });
+                          window.alert('No phone number available to copy.');
                         }
                       }
                     }}
@@ -2227,21 +2217,86 @@ export default function EventRequestsManagement() {
   const [assignmentEventId, setAssignmentEventId] = useState<number | null>(
     null
   );
+  const [customPersonData, setCustomPersonData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    vanCapable: false,
+  });
+
+  // Inline sandwich editing states
+  const [inlineSandwichMode, setInlineSandwichMode] = useState<'total' | 'types'>('total');
+  const [inlineTotalCount, setInlineTotalCount] = useState(0);
+  const [inlineSandwichTypes, setInlineSandwichTypes] = useState<Array<{type: string, quantity: number}>>([]);
 
   // Helper functions for inline editing
   const startEditing = (id: number, field: string, currentValue: string) => {
     setEditingScheduledId(id);
     setEditingField(field);
     setEditingValue(currentValue || '');
+    
+    // Special handling for sandwich types
+    if (field === 'sandwichTypes') {
+      const eventRequest = eventRequests.find(req => req.id === id);
+      if (eventRequest) {
+        // Initialize sandwich editing state based on current data
+        const existingSandwichTypes = eventRequest.sandwichTypes ? 
+          (typeof eventRequest.sandwichTypes === 'string' ? 
+            JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [];
+        
+        const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
+        const totalCount = eventRequest.estimatedSandwichCount || 0;
+        
+        setInlineSandwichMode(hasTypesData ? 'types' : 'total');
+        setInlineTotalCount(totalCount);
+        setInlineSandwichTypes(hasTypesData ? existingSandwichTypes : []);
+      }
+    }
   };
 
   const saveEdit = () => {
     if (editingScheduledId && editingField) {
-      updateScheduledFieldMutation.mutate({
-        id: editingScheduledId,
-        field: editingField,
-        value: editingValue,
-      });
+      // Special handling for sandwich types
+      if (editingField === 'sandwichTypes') {
+        const updateData: any = {};
+        
+        if (inlineSandwichMode === 'total') {
+          updateData.estimatedSandwichCount = inlineTotalCount;
+          updateData.sandwichTypes = null; // Clear specific types
+        } else {
+          updateData.sandwichTypes = JSON.stringify(inlineSandwichTypes);
+          updateData.estimatedSandwichCount = inlineSandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+        }
+        
+        // Use the regular update mutation with multiple fields
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: updateData,
+        });
+      } else if (editingField === 'hasRefrigeration') {
+        // Special handling for refrigeration - convert string to boolean/null
+        let refrigerationValue: boolean | null;
+        if (editingValue === 'true') {
+          refrigerationValue = true;
+        } else if (editingValue === 'false') {
+          refrigerationValue = false;
+        } else {
+          refrigerationValue = null; // for 'unknown'
+        }
+        
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: { hasRefrigeration: refrigerationValue },
+        });
+      } else {
+        // Regular single field update
+        updateScheduledFieldMutation.mutate({
+          id: editingScheduledId,
+          field: editingField,
+          value: editingValue,
+        });
+      }
     }
   };
 
@@ -2249,6 +2304,25 @@ export default function EventRequestsManagement() {
     setEditingScheduledId(null);
     setEditingField(null);
     setEditingValue('');
+    // Reset sandwich editing state
+    setInlineSandwichMode('total');
+    setInlineTotalCount(0);
+    setInlineSandwichTypes([]);
+  };
+
+  // Helper functions for inline sandwich editing
+  const addInlineSandwichType = () => {
+    setInlineSandwichTypes(prev => [...prev, { type: 'turkey', quantity: 0 }]);
+  };
+
+  const updateInlineSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setInlineSandwichTypes(prev => prev.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const removeInlineSandwichType = (index: number) => {
+    setInlineSandwichTypes(prev => prev.filter((_, i) => i !== index));
   };
 
   // Helper function to open assignment dialog
@@ -2962,6 +3036,20 @@ export default function EventRequestsManagement() {
           </div>
           <div className="flex items-center space-x-2">
             <Button
+              onClick={() => {
+                // Set up for manual event request creation
+                setSelectedEventRequest(null);
+                setIsEditing(true);
+                setShowEventDetails(true);
+              }}
+              className="text-white"
+              style={{ backgroundColor: '#007E8C' }}
+              data-testid="button-add-manual-event"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Manual Event Request
+            </Button>
+            <Button
               onClick={() => setShowWeeklyPlanningModal(true)}
               variant="outline"
               className="flex items-center space-x-2"
@@ -3530,15 +3618,17 @@ export default function EventRequestsManagement() {
                                         </h4>
                                         
                                         <div className="space-y-2">
+                                          {/* Total Sandwiches Count */}
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
-                                            {editingScheduledId === request.id && editingField === 'sandwichTypes' ? (
+                                            <span className="text-[#FBAD3F] text-base font-semibold">Total:</span>
+                                            {editingScheduledId === request.id && editingField === 'estimatedSandwichCount' ? (
                                               <div className="flex items-center space-x-2">
                                                 <Input
+                                                  type="number"
                                                   value={editingValue}
                                                   onChange={(e) => setEditingValue(e.target.value)}
-                                                  className="text-base w-48"
-                                                  placeholder="Enter sandwich types (JSON format)"
+                                                  className="w-24 h-7 text-sm"
+                                                  min="0"
                                                 />
                                                 <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
                                                   <CheckCircle className="w-4 h-4" />
@@ -3548,10 +3638,26 @@ export default function EventRequestsManagement() {
                                                 </Button>
                                               </div>
                                             ) : (
-                                            <div className="flex items-center space-x-1">
-                                              <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
-                                                {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
-                                              </span>
+                                              <div className="flex items-center space-x-1">
+                                                <span className="font-bold text-[#1A2332] text-lg">
+                                                  {request.estimatedSandwichCount || 0} sandwiches
+                                                </span>
+                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditing(request.id, 'estimatedSandwichCount', request.estimatedSandwichCount?.toString() || '0');
+                                                  }} className="h-4 w-4 p-0">
+                                                    <Edit className="w-3 h-3" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Sandwich Types */}
+                                          <div className="flex flex-col space-y-2">
+                                            <div className="flex justify-between items-center">
+                                              <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button size="sm" variant="ghost" onClick={(e) => {
                                                   e.stopPropagation();
@@ -3561,6 +3667,123 @@ export default function EventRequestsManagement() {
                                                 </Button>
                                               )}
                                             </div>
+                                            
+                                            {editingScheduledId === request.id && editingField === 'sandwichTypes' ? (
+                                              <div className="space-y-3 p-3 bg-white border rounded-lg">
+                                                {/* Mode Selector */}
+                                                <div className="flex gap-2">
+                                                  <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
+                                                    onClick={() => setInlineSandwichMode('total')}
+                                                    className="text-xs"
+                                                  >
+                                                    Total Only
+                                                  </Button>
+                                                  <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant={inlineSandwichMode === 'types' ? 'default' : 'outline'}
+                                                    onClick={() => setInlineSandwichMode('types')}
+                                                    className="text-xs"
+                                                  >
+                                                    Specify Types
+                                                  </Button>
+                                                </div>
+
+                                                {/* Total Count Mode */}
+                                                {inlineSandwichMode === 'total' && (
+                                                  <div>
+                                                    <Label htmlFor="inlineTotalCount" className="text-xs">Total Sandwiches</Label>
+                                                    <Input
+                                                      id="inlineTotalCount"
+                                                      type="number"
+                                                      value={inlineTotalCount}
+                                                      onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
+                                                      className="w-24 text-sm"
+                                                      min="0"
+                                                    />
+                                                  </div>
+                                                )}
+
+                                                {/* Types Mode */}
+                                                {inlineSandwichMode === 'types' && (
+                                                  <div className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                      <Label className="text-xs">Type Breakdown</Label>
+                                                      <Button type="button" onClick={addInlineSandwichType} size="sm" className="text-xs">
+                                                        <Plus className="w-3 h-3 mr-1" />
+                                                        Add
+                                                      </Button>
+                                                    </div>
+                                                    
+                                                    {inlineSandwichTypes.length === 0 ? (
+                                                      <div className="text-center py-2 text-gray-500 text-xs">
+                                                        Click "Add" to specify types
+                                                      </div>
+                                                    ) : (
+                                                      <div className="space-y-1">
+                                                        {inlineSandwichTypes.map((sandwich, index) => (
+                                                          <div key={index} className="flex items-center gap-2">
+                                                            <Select
+                                                              value={sandwich.type}
+                                                              onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
+                                                            >
+                                                              <SelectTrigger className="w-20 h-7 text-xs">
+                                                                <SelectValue />
+                                                              </SelectTrigger>
+                                                              <SelectContent>
+                                                                <SelectItem value="turkey">Turkey</SelectItem>
+                                                                <SelectItem value="ham">Ham</SelectItem>
+                                                                <SelectItem value="deli">Deli</SelectItem>
+                                                                <SelectItem value="pbj">PB&J</SelectItem>
+                                                              </SelectContent>
+                                                            </Select>
+                                                            <Input
+                                                              type="number"
+                                                              value={sandwich.quantity}
+                                                              onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                                                              className="w-16 h-7 text-xs"
+                                                              min="0"
+                                                            />
+                                                            <Button
+                                                              type="button"
+                                                              variant="outline"
+                                                              size="sm"
+                                                              onClick={() => removeInlineSandwichType(index)}
+                                                              className="h-7 w-7 p-0"
+                                                            >
+                                                              <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                          </div>
+                                                        ))}
+                                                        <div className="text-xs text-gray-600 bg-blue-50 p-1 rounded">
+                                                          <strong>Total:</strong> {inlineSandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )}
+
+                                                {/* Action Buttons */}
+                                                <div className="flex justify-end space-x-2">
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="text-xs">
+                                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                                    Save
+                                                  </Button>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="text-xs">
+                                                    <X className="w-3 h-3 mr-1" />
+                                                    Cancel
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="text-right">
+                                                <span className="font-bold text-[#1A2332] text-sm">
+                                                  {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                                </span>
+                                              </div>
                                             )}
                                           </div>
                                           
@@ -4020,30 +4243,25 @@ export default function EventRequestsManagement() {
                                         </div>
                                         
                                         {/* Show assigned people if any */}
-                                        {((request.assignedDriverIds?.length ?? 0) > 0 || (request.assignedSpeakerIds?.length ?? 0) > 0 || (request.assignedVolunteerIds?.length ?? 0) > 0 || request.assignedVanDriverId) && (
+                                        {((request.driverAssignments?.length ?? 0) > 0 || (request.speakerAssignments?.length ?? 0) > 0 || (request.volunteerAssignments?.length ?? 0) > 0) && (
                                           <div className="pt-2 border-t border-gray-100">
                                             <div className="text-xs text-gray-600 mb-1">Assigned:</div>
                                             <div className="space-y-1 text-xs">
-                                              {request.assignedDriverIds?.map((driver, i) => (
+                                              {request.driverAssignments?.map((driver, i) => (
                                                 <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
                                                   🚗 {driver}
                                                 </div>
                                               ))}
-                                              {request.assignedSpeakerIds?.map((speaker, i) => (
+                                              {request.speakerAssignments?.map((speaker, i) => (
                                                 <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
                                                   🎤 {speaker}
                                                 </div>
                                               ))}
-                                              {request.assignedVolunteerIds?.map((volunteer, i) => (
+                                              {request.volunteerAssignments?.map((volunteer, i) => (
                                                 <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
                                                   👥 {volunteer}
                                                 </div>
                                               ))}
-                                              {request.assignedVanDriverId && (
-                                                <div className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
-                                                  🚐 {request.assignedVanDriverId}
-                                                </div>
-                                              )}
                                             </div>
                                           </div>
                                         )}
@@ -4817,32 +5035,257 @@ export default function EventRequestsManagement() {
           </Dialog>
         )}
 
-        {/* Assignment Dialog */}
+        {/* Enhanced Assignment Dialog */}
         {showAssignmentDialog && assignmentType && assignmentEventId && (
           <Dialog open={showAssignmentDialog} onOpenChange={setShowAssignmentDialog}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  Assign {assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}
+                <DialogTitle className="flex items-center space-x-2">
+                  <UserPlus className="w-5 h-5 text-blue-600" />
+                  <span>Assign {assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}s</span>
                 </DialogTitle>
+                <DialogDescription>
+                  Select multiple people from the {assignmentType} database or add custom entries. 
+                  You can assign multiple {assignmentType}s to this event.
+                </DialogDescription>
               </DialogHeader>
               
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Select a person to assign as {assignmentType} for this event:
-                </p>
+              <div className="space-y-6">
+                {/* Database Selection */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <h4 className="font-semibold text-gray-900">
+                      {assignmentType === 'driver' ? 'Available Drivers' : 
+                       assignmentType === 'speaker' ? 'Available Hosts' : 
+                       'Available Volunteers'}
+                    </h4>
+                    <Badge variant="outline" className="text-xs">
+                      {assignmentType === 'driver' ? drivers.length : 
+                       assignmentType === 'speaker' ? hosts.length : 
+                       volunteers.length} in database
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto border rounded-lg p-3">
+                    {(assignmentType === 'driver' ? drivers : 
+                      assignmentType === 'speaker' ? hosts : 
+                      volunteers).map((person: any) => (
+                      <div
+                        key={person.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            {person.firstName} {person.lastName}
+                          </div>
+                          {person.email && (
+                            <div className="text-sm text-gray-600">{person.email}</div>
+                          )}
+                          {person.phone && (
+                            <div className="text-sm text-gray-600">{person.phone}</div>
+                          )}
+                          {assignmentType === 'driver' && person.vanCapable && (
+                            <Badge className="text-xs bg-purple-100 text-purple-800 mt-1">
+                              Van Capable
+                            </Badge>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const personName = `${person.firstName} ${person.lastName}`;
+                            handleAssignment(person.id, personName);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <UserCheck className="w-4 h-4 mr-1" />
+                          Assign
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {(assignmentType === 'driver' ? drivers.length : 
+                      assignmentType === 'speaker' ? hosts.length : 
+                      volunteers.length) === 0 && (
+                      <div className="col-span-2 text-center py-4 text-gray-500">
+                        No {assignmentType}s found in database
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Custom Entry Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 flex items-center space-x-2">
+                    <Plus className="w-4 h-4" />
+                    <span>Add Custom {assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}</span>
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Input
+                      placeholder="First Name"
+                      value={customPersonData.firstName}
+                      onChange={(e) => setCustomPersonData(prev => ({ ...prev, firstName: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Last Name"
+                      value={customPersonData.lastName}
+                      onChange={(e) => setCustomPersonData(prev => ({ ...prev, lastName: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Email (optional)"
+                      type="email"
+                      value={customPersonData.email}
+                      onChange={(e) => setCustomPersonData(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Phone (optional)"
+                      value={customPersonData.phone}
+                      onChange={(e) => setCustomPersonData(prev => ({ ...prev, phone: e.target.value }))}
+                    />
+                    {assignmentType === 'driver' && (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="vanCapable"
+                          checked={customPersonData.vanCapable}
+                          onChange={(e) => setCustomPersonData(prev => ({ ...prev, vanCapable: e.target.checked }))}
+                        />
+                        <Label htmlFor="vanCapable" className="text-sm">Van capable</Label>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Button
+                    onClick={() => {
+                      if (!customPersonData.firstName.trim() || !customPersonData.lastName.trim()) {
+                        toast({
+                          title: 'Name required',
+                          description: 'Please enter both first and last name',
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+                      
+                      const personName = `${customPersonData.firstName} ${customPersonData.lastName}`;
+                      const customId = `custom_${Date.now()}`;
+                      handleAssignment(customId, personName);
+                      
+                      // Reset custom form
+                      setCustomPersonData({
+                        firstName: '',
+                        lastName: '',
+                        email: '',
+                        phone: '',
+                        vanCapable: false,
+                      });
+                    }}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Custom {assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}
+                  </Button>
+                </div>
+
+                {/* Currently Assigned Section */}
+                {(() => {
+                  const eventRequest = eventRequests.find(req => req.id === assignmentEventId);
+                  if (!eventRequest) return null;
+                  
+                  let assignedPeople: string[] = [];
+                  if (assignmentType === 'driver') {
+                    assignedPeople = eventRequest.assignedDriverIds || [];
+                  } else if (assignmentType === 'speaker') {
+                    assignedPeople = Object.keys(eventRequest.speakerDetails || {});
+                  } else if (assignmentType === 'volunteer') {
+                    assignedPeople = eventRequest.assignedVolunteerIds || [];
+                  }
+                  
+                  if (assignedPeople.length === 0) return null;
+                  
+                  return (
+                    <div className="space-y-3 border-t pt-4">
+                      <h4 className="font-semibold text-gray-900">Currently Assigned</h4>
+                      <div className="space-y-2">
+                        {assignedPeople.map((personId, index) => {
+                          // Try to resolve name from different sources
+                          let personName = 'Unknown';
+                          let personDetails = null;
+                          
+                          if (assignmentType === 'driver') {
+                            const driverDetails = eventRequest.driverDetails?.[personId];
+                            if (driverDetails) {
+                              personName = driverDetails.name;
+                              personDetails = driverDetails;
+                            } else {
+                              // Try to find in drivers database
+                              const driver = drivers.find(d => d.id === personId);
+                              if (driver) {
+                                personName = `${driver.firstName} ${driver.lastName}`;
+                              }
+                            }
+                          } else if (assignmentType === 'speaker') {
+                            const speakerDetails = eventRequest.speakerDetails?.[personId];
+                            if (speakerDetails) {
+                              personName = speakerDetails.name;
+                              personDetails = speakerDetails;
+                            } else {
+                              // Try to find in hosts database
+                              const host = hosts.find(h => h.id === personId);
+                              if (host) {
+                                personName = `${host.firstName} ${host.lastName}`;
+                              }
+                            }
+                          } else if (assignmentType === 'volunteer') {
+                            const volunteerDetails = eventRequest.volunteerDetails?.[personId];
+                            if (volunteerDetails) {
+                              personName = volunteerDetails.name;
+                              personDetails = volunteerDetails;
+                            } else {
+                              // Try to find in volunteers database
+                              const volunteer = volunteers.find(v => v.id === personId);
+                              if (volunteer) {
+                                personName = `${volunteer.firstName} ${volunteer.lastName}`;
+                              }
+                            }
+                          }
+                          
+                          return (
+                            <div key={index} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                              <div className="flex-1">
+                                <div className="font-medium text-green-800">{personName}</div>
+                                {personDetails?.assignedAt && (
+                                  <div className="text-xs text-green-600">
+                                    Assigned {new Date(personDetails.assignedAt).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // Remove assignment logic would go here
+                                  toast({
+                                    title: 'Remove assignment',
+                                    description: 'Remove assignment functionality needs to be implemented',
+                                  });
+                                }}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
                 
-                <TaskAssigneeSelector
-                  value={{ assigneeName: '' }}
-                  onChange={(value) => {
-                    if (value.assigneeName) {
-                      handleAssignment(value.assigneeName, value.assigneeName);
-                    }
-                  }}
-                  placeholder={`Select ${assignmentType}`}
-                />
-                
-                <div className="flex justify-end space-x-2">
+                <div className="flex justify-end space-x-2 pt-4 border-t">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -4851,7 +5294,7 @@ export default function EventRequestsManagement() {
                       setAssignmentEventId(null);
                     }}
                   >
-                    Cancel
+                    Done
                   </Button>
                 </div>
               </div>

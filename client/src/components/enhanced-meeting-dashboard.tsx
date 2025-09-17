@@ -3050,8 +3050,8 @@ export default function EnhancedMeetingDashboard() {
                                         const supportList =
                                           project.supportPeople
                                             .split(',')
-                                            .map((p) => p.trim())
-                                            .filter((p) => p);
+                                            .map((p: string) => p.trim())
+                                            .filter((p: string) => p);
                                         supportList.forEach((person) => {
                                           people.push({
                                             role: 'Support',
