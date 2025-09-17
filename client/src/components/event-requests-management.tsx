@@ -2111,28 +2111,28 @@ export default function EventRequestsManagement() {
                                   <div className="hidden sm:block w-px h-4 bg-slate-300"></div>
                                   
                                   {/* Contact */}
-                                  <div className="flex items-center space-x-2" data-testid="meta-contact">
-                                    <User className="w-4 h-4 text-slate-600" />
-                                    <span className="text-sm font-semibold text-[#1A2332] truncate max-w-[120px]">
-                                      {request.firstName} {request.lastName?.charAt(0)}.
-                                    </span>
+                                  <div className="flex flex-col space-y-1" data-testid="meta-contact">
+                                    <div className="flex items-center space-x-1">
+                                      <User className="w-4 h-4 text-slate-600" />
+                                      <span className="text-sm font-semibold text-[#1A2332]">
+                                        {request.firstName} {request.lastName}
+                                      </span>
+                                    </div>
                                     {request.email && (
-                                      <a 
-                                        href={`mailto:${request.email}`}
-                                        className="text-slate-500 hover:text-[#236383]"
-                                        data-testid="link-email"
-                                      >
-                                        <Mail className="w-4 h-4" />
-                                      </a>
+                                      <div className="flex items-center space-x-1">
+                                        <Mail className="w-3 h-3 text-slate-500" />
+                                        <span className="text-xs text-[#1A2332] truncate max-w-[140px]">
+                                          {request.email}
+                                        </span>
+                                      </div>
                                     )}
                                     {request.phone && (
-                                      <a 
-                                        href={`tel:${request.phone}`}
-                                        className="text-slate-500 hover:text-[#236383]"
-                                        data-testid="link-phone"
-                                      >
-                                        <Phone className="w-4 h-4" />
-                                      </a>
+                                      <div className="flex items-center space-x-1">
+                                        <Phone className="w-3 h-3 text-slate-500" />
+                                        <span className="text-xs text-[#1A2332]">
+                                          {request.phone}
+                                        </span>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
