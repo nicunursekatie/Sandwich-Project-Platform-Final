@@ -375,10 +375,9 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 
         if (existingRequest) {
           // Selectively update message field from Google Sheets if missing in database
-          const shouldUpdateMessage = 
-            row.message && 
-            row.message.trim() && 
-            (!existingRequest.message || !existingRequest.message.trim());
+          const hasSheetMessage = row.message && row.message.trim() && row.message.trim().length > 0;
+          const hasDbMessage = existingRequest.message && existingRequest.message.trim() && existingRequest.message.trim().length > 0;
+          const shouldUpdateMessage = hasSheetMessage && !hasDbMessage;
           
           if (shouldUpdateMessage) {
             console.log(
