@@ -2077,171 +2077,104 @@ export default function EventRequestsManagement() {
                                   </Badge>
                                 </div>
 
-                                {/* Compact Meta Row - Date, Count, Contact */}
-                                <div className="flex items-center flex-wrap sm:flex-nowrap justify-between gap-2 sm:gap-4 rounded-md bg-white/60 border border-slate-200 px-3 py-2 mb-4">
-                                  {/* Date */}
-                                  <div className="flex items-center space-x-2" data-testid="meta-date">
-                                    <Calendar className="w-4 h-4 text-[#236383]" />
-                                    <span className="text-sm font-semibold text-[#1A2332]">
-                                      {request.desiredEventDate ? 
-                                        new Date(request.desiredEventDate).toLocaleDateString('en-US', { 
-                                          weekday: 'short', 
-                                          month: 'short', 
-                                          day: 'numeric' 
-                                        }) : 'TBD'
-                                      }
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="hidden sm:block w-px h-4 bg-slate-300"></div>
-                                  
-                                  {/* Sandwich Count */}
-                                  <div className="flex items-center space-x-2" data-testid="meta-count">
-                                    <span className="text-[#FBAD3F]">🥪</span>
-                                    <span className="text-sm font-semibold text-[#1A2332]">
-                                      {(() => {
-                                        const summary = getSandwichTypesSummary(request);
-                                        return summary.total > 0 ? 
-                                          `${summary.total}${summary.hasBreakdown && summary.breakdown.includes(',') ? ' mixed' : ''}` : 
-                                          '—';
-                                      })()}
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="hidden sm:block w-px h-4 bg-slate-300"></div>
-                                  
-                                  {/* Contact */}
-                                  <div className="flex flex-col space-y-1" data-testid="meta-contact">
-                                    <div className="flex items-center space-x-1">
-                                      <User className="w-4 h-4 text-slate-600" />
-                                      <span className="text-sm font-semibold text-[#1A2332]">
-                                        {request.firstName} {request.lastName}
+                                {/* Event Date - Secondary Prominence */}
+                                {request.desiredEventDate && (
+                                  <div className="flex items-center space-x-3 mb-4 bg-gray-50 p-3 rounded-lg border-l-4 border-brand-primary">
+                                    <Calendar className="w-5 h-5 text-brand-primary" />
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                                        Event Date
                                       </span>
+                                      <div
+                                        className={`text-lg font-semibold ${dateInfo.className}`}
+                                      >
+                                        {dateInfo.text}
+                                      </div>
                                     </div>
-                                    {request.email && (
-                                      <div className="flex items-center space-x-1">
-                                        <Mail className="w-3 h-3 text-slate-500" />
-                                        <span className="text-xs text-[#1A2332] truncate max-w-[140px]">
+                                  </div>
+                                )}
+
+                                {/* Contact Information - Grouped for In Process, inline for others */}
+                                {request.status === 'in_process' ? (
+                                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 max-w-md">
+                                    <h4 className="text-xs font-bold text-blue-900 mb-3 flex items-center uppercase tracking-wider">
+                                      <User className="w-4 h-4 mr-2 text-blue-600" />
+                                      Contact Information
+                                    </h4>
+                                    <div className="space-y-3">
+                                      <div className="flex items-center space-x-3">
+                                        <User className="w-4 h-4 text-blue-600" />
+                                        <span className="font-bold text-blue-900 text-base">
+                                          {request.firstName} {request.lastName}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-3">
+                                        <Mail className="w-4 h-4 text-blue-600" />
+                                        <span className="font-medium text-blue-700 text-sm">
                                           {request.email}
                                         </span>
                                       </div>
-                                    )}
-                                    {request.phone && (
-                                      <div className="flex items-center space-x-1">
-                                        <Phone className="w-3 h-3 text-slate-500" />
-                                        <span className="text-xs text-[#1A2332]">
-                                          {request.phone}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Detailed Information Grid - 3 Column Layout */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                                  {/* Column 1: Schedule & Location */}
-                                  <div className="space-y-3 bg-[#f0f8fa] p-4 rounded-lg border border-[#236383]/20">
-                                    <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
-                                      <Calendar className="w-4 h-4 mr-2" />
-                                      Schedule & Location
-                                    </h4>
-                                    
-                                    <div className="space-y-3">
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#236383] text-sm font-medium">Start:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.desiredStartTime || 'Not set'}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#236383] text-sm font-medium">End:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.desiredEndTime || 'Not set'}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#236383] text-sm font-medium">Pickup:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.pickupTime || 'Not set'}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="flex flex-col space-y-1 pt-2 border-t border-gray-100">
-                                        <span className="text-[#236383] text-sm font-medium">Address:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.eventAddress || 'Not specified'}
-                                        </span>
-                                      </div>
+                                      {request.phone && (
+                                        <div className="flex items-center space-x-3">
+                                          <Phone className="w-4 h-4 text-blue-600" />
+                                          <span className="font-medium text-blue-700 text-sm">
+                                            {request.phone}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
+                                ) : (
+                                  // Compact Basic Info Grid
+                                  <div className="bg-white rounded-lg border border-gray-200 p-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                      {/* Contact Info */}
+                                      <div className="space-y-2">
+                                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                          Contact Information
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className="flex items-center space-x-2">
+                                            <User className="w-4 h-4 text-brand-teal flex-shrink-0" />
+                                            <span className="font-bold text-brand-primary text-base">
+                                              {request.firstName} {request.lastName}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                            <span className="font-medium text-gray-700 text-sm truncate">
+                                              {request.email}
+                                            </span>
+                                          </div>
+                                          {request.phone && (
+                                            <div className="flex items-center space-x-2">
+                                              <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                              <span className="font-medium text-gray-700 text-sm">
+                                                {request.phone}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
 
-                                  {/* Column 2: Sandwich Details */}
-                                  <div className="space-y-3 bg-[#fff8f0] p-4 rounded-lg border border-[#FBAD3F]/20">
-                                    <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
-                                      <span className="mr-2">🥪</span>
-                                      Sandwich Details
-                                    </h4>
-                                    
-                                    <div className="space-y-3">
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#FBAD3F] text-sm font-medium">Types:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm text-right max-w-[120px] truncate">
-                                          {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#47B3CB] text-sm font-medium">Refrigeration:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="flex flex-col space-y-1 pt-2 border-t border-gray-100">
-                                        <span className="text-[#FBAD3F] text-sm font-medium">Destination:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.sandwichDestination || 'Not specified'}
-                                        </span>
-                                      </div>
+
+                                      {/* Sandwich Count */}
+                                      {request.estimatedSandwichCount && (
+                                        <div className="space-y-2">
+                                          <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                            {request.status === 'completed' ? 'Estimated' : 'Requested'}
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-xl">🥪</span>
+                                            <span className="font-bold text-brand-orange text-lg">
+                                              {request.estimatedSandwichCount} sandwiches
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-
-                                  {/* Column 3: Staffing */}
-                                  <div className="space-y-3 bg-[#f0f6f8] p-4 rounded-lg border border-[#007E8C]/20">
-                                    <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
-                                      <Users className="w-4 h-4 mr-2" />
-                                      Staffing
-                                    </h4>
-                                    
-                                    <div className="space-y-3">
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#007E8C] text-sm font-medium">TSP Contact:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.assignedVolunteers ? '1 assigned' : '0'}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#007E8C] text-sm font-medium">Drivers:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">
-                                          {request.assignedDrivers ? request.assignedDrivers.split(',').length : '0'}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#007E8C] text-sm font-medium">Speakers:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">0</span>
-                                      </div>
-                                      
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[#007E8C] text-sm font-medium">Volunteers:</span>
-                                        <span className="font-semibold text-[#1A2332] text-sm">0</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
+                                )}
 
                                 {/* Toolkit Status - Only for In Process */}
                                 {request.status === 'in_process' && (
