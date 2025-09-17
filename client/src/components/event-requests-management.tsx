@@ -2049,7 +2049,7 @@ export default function EventRequestsManagement() {
                           <CardContent className="p-0">
                             {/* Brand accent bar for scheduled events */}
                             {request.status === 'scheduled' && (
-                              <div className="h-1 bg-gradient-to-r from-[#236383] via-[#FBAD3F] to-[#A31C41] rounded-t-md"></div>
+                              <div className="h-1 bg-gradient-to-r from-[#236383] via-[#47B3CB] to-[#FBAD3F] rounded-t-md"></div>
                             )}
                             <div className="p-6">
                               <div className="flex items-start justify-between">
