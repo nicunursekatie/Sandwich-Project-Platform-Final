@@ -96,7 +96,7 @@ export default function PhoneDirectoryPage() {
             <button
               onClick={async () => {
                 try {
-                  await fetch('/api/logout', {
+                  await fetch('/api/auth/logout', {
                     method: 'POST',
                     credentials: 'include',
                   });
@@ -105,14 +105,14 @@ export default function PhoneDirectoryPage() {
                     queryKey: ['/api/auth/user'],
                   });
                   queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                  window.location.href = '/api/login';
+                  window.location.href = '/';
                 } catch (error) {
                   queryClient.clear();
                   queryClient.invalidateQueries({
                     queryKey: ['/api/auth/user'],
                   });
                   queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                  window.location.href = '/api/login';
+                  window.location.href = '/';
                 }
               }}
               className="text-slate-400 hover:text-slate-600"
