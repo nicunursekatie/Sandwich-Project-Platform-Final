@@ -395,6 +395,10 @@ interface EventRequest {
   assignedVolunteerIds?: string[];
   driverDetails?: any;
   speakerDetails?: any;
+  driversNeeded?: number;
+  speakersNeeded?: number;
+  volunteersNeeded?: boolean;
+  vanDriverNeeded?: boolean;
 }
 
 const statusColors = {
@@ -865,6 +869,402 @@ const ToolkitSentDialog = ({
             />
           </div>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Event Scheduling Form Component
+interface EventSchedulingFormProps {
+  eventRequest: EventRequest | null;
+  isVisible: boolean;
+  onClose: () => void;
+  onScheduled: () => void;
+}
+
+const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
+  eventRequest,
+  isVisible,
+  onClose,
+  onScheduled,
+}) => {
+  const [formData, setFormData] = useState({
+    eventStartTime: '',
+    eventEndTime: '',
+    pickupTime: '',
+    eventAddress: '',
+    sandwichTypes: [] as Array<{type: string, quantity: number}>,
+    hasRefrigeration: '',
+    driversNeeded: 0,
+    vanDriverNeeded: false,
+    speakersNeeded: 0,
+    volunteersNeeded: false,
+    tspContact: '',
+  });
+
+  const [showContactInfo, setShowContactInfo] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch users for TSP contact selection
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ['/api/users'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Initialize form with existing data when dialog opens
+  useEffect(() => {
+    if (isVisible && eventRequest) {
+      setFormData({
+        eventStartTime: eventRequest.eventStartTime || '',
+        eventEndTime: eventRequest.eventEndTime || '',
+        pickupTime: eventRequest.pickupTime || '',
+        eventAddress: eventRequest.eventAddress || '',
+        sandwichTypes: eventRequest.sandwichTypes ? 
+          (typeof eventRequest.sandwichTypes === 'string' ? 
+            JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [],
+        hasRefrigeration: eventRequest.hasRefrigeration?.toString() || '',
+        driversNeeded: eventRequest.driversNeeded || 0,
+        vanDriverNeeded: eventRequest.vanDriverNeeded || false,
+        speakersNeeded: eventRequest.speakersNeeded || 0,
+        volunteersNeeded: eventRequest.volunteersNeeded || false,
+        tspContact: eventRequest.tspContact || '',
+      });
+    }
+  }, [isVisible, eventRequest]);
+
+  const updateEventRequestMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}`, data),
+    onSuccess: () => {
+      toast({
+        title: 'Event scheduled successfully',
+        description: 'The event has been moved to scheduled status with all details.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      onScheduled();
+      onClose();
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to schedule event.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!eventRequest) return;
+
+    // Validate required fields
+    if (!formData.eventStartTime || !formData.eventEndTime || !formData.pickupTime) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Please fill in start time, end time, and pickup time.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Prepare update data
+    const updateData = {
+      status: 'scheduled',
+      ...formData,
+      sandwichTypes: JSON.stringify(formData.sandwichTypes),
+      hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
+                        formData.hasRefrigeration === 'false' ? false : null,
+    };
+
+    updateEventRequestMutation.mutate({
+      id: eventRequest.id,
+      data: updateData,
+    });
+  };
+
+  const addSandwichType = () => {
+    setFormData(prev => ({
+      ...prev,
+      sandwichTypes: [...prev.sandwichTypes, { type: 'turkey', quantity: 0 }]
+    }));
+  };
+
+  const updateSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      sandwichTypes: prev.sandwichTypes.map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const removeSandwichType = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      sandwichTypes: prev.sandwichTypes.filter((_, i) => i !== index)
+    }));
+  };
+
+  if (!eventRequest) return null;
+
+  return (
+    <Dialog open={isVisible} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-[#236383]">
+            Schedule Event: {eventRequest.organizationName}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Contact Information Section - Collapsible */}
+          <div className="border rounded-lg">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full flex justify-between items-center p-4"
+              onClick={() => setShowContactInfo(!showContactInfo)}
+            >
+              <span className="font-semibold">Contact Information (Pre-filled)</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
+            </Button>
+            
+            {showContactInfo && (
+              <div className="p-4 border-t bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Contact Name</Label>
+                  <Input value={`${eventRequest.firstName} ${eventRequest.lastName}`} disabled />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input value={eventRequest.email} disabled />
+                </div>
+                <div>
+                  <Label>Phone</Label>
+                  <Input value={eventRequest.phone || 'Not provided'} disabled />
+                </div>
+                <div>
+                  <Label>Organization</Label>
+                  <Input value={eventRequest.organizationName} disabled />
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Input value={eventRequest.department || 'Not provided'} disabled />
+                </div>
+                <div>
+                  <Label>Desired Date</Label>
+                  <Input value={eventRequest.desiredEventDate || 'Not provided'} disabled />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Event Schedule */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="eventStartTime">Start Time *</Label>
+              <Input
+                id="eventStartTime"
+                type="time"
+                value={formData.eventStartTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, eventStartTime: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="eventEndTime">End Time *</Label>
+              <Input
+                id="eventEndTime"
+                type="time"
+                value={formData.eventEndTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, eventEndTime: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="pickupTime">Pickup Time *</Label>
+              <Input
+                id="pickupTime"
+                type="time"
+                value={formData.pickupTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, pickupTime: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <Label htmlFor="eventAddress">Event Address</Label>
+            <Input
+              id="eventAddress"
+              value={formData.eventAddress}
+              onChange={(e) => setFormData(prev => ({ ...prev, eventAddress: e.target.value }))}
+              placeholder="Enter the event location address"
+            />
+          </div>
+
+          {/* Sandwich Types */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <Label>Sandwich Types</Label>
+              <Button type="button" onClick={addSandwichType} size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Type
+              </Button>
+            </div>
+            
+            {formData.sandwichTypes.length === 0 ? (
+              <div className="text-center py-4 text-gray-500 border-2 border-dashed border-gray-300 rounded">
+                <p>No sandwich types added yet. Click "Add Type" to get started.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {formData.sandwichTypes.map((sandwich, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 border rounded">
+                    <Select
+                      value={sandwich.type}
+                      onValueChange={(value) => updateSandwichType(index, 'type', value)}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="turkey">Turkey</SelectItem>
+                        <SelectItem value="ham">Ham</SelectItem>
+                        <SelectItem value="deli">Deli (Generic)</SelectItem>
+                        <SelectItem value="pbj">PB&J</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      placeholder="Quantity"
+                      value={sandwich.quantity}
+                      onChange={(e) => updateSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                      className="w-24"
+                      min="0"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeSandwichType(index)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Refrigeration */}
+          <div>
+            <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+            <Select value={formData.hasRefrigeration} onValueChange={(value) => setFormData(prev => ({ ...prev, hasRefrigeration: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select refrigeration status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Yes</SelectItem>
+                <SelectItem value="false">No</SelectItem>
+                <SelectItem value="">Unknown</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Resource Requirements */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Drivers */}
+            <div className="space-y-3">
+              <Label>Driver Requirements</Label>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="driversNeeded">How many drivers needed?</Label>
+                  <Input
+                    id="driversNeeded"
+                    type="number"
+                    value={formData.driversNeeded}
+                    onChange={(e) => setFormData(prev => ({ ...prev, driversNeeded: parseInt(e.target.value) || 0 }))}
+                    min="0"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="vanDriverNeeded"
+                    checked={formData.vanDriverNeeded}
+                    onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked }))}
+                  />
+                  <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* Speakers and Volunteers */}
+            <div className="space-y-3">
+              <Label>Additional Resources</Label>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="speakersNeeded">How many speakers needed?</Label>
+                  <Input
+                    id="speakersNeeded"
+                    type="number"
+                    value={formData.speakersNeeded}
+                    onChange={(e) => setFormData(prev => ({ ...prev, speakersNeeded: parseInt(e.target.value) || 0 }))}
+                    min="0"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="volunteersNeeded"
+                    checked={formData.volunteersNeeded}
+                    onChange={(e) => setFormData(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
+                  />
+                  <Label htmlFor="volunteersNeeded">Volunteers needed?</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* TSP Contact Assignment */}
+          <div>
+            <Label htmlFor="tspContact">TSP Contact Assignment</Label>
+            <Select value={formData.tspContact} onValueChange={(value) => setFormData(prev => ({ ...prev, tspContact: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select TSP contact" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.firstName && user.lastName
+                      ? `${user.firstName} ${user.lastName}`
+                      : user.email}{' '}
+                    ({user.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="text-white"
+              style={{ backgroundColor: '#236383' }}
+              disabled={updateEventRequestMutation.isPending}
+            >
+              {updateEventRequestMutation.isPending ? 'Scheduling...' : 'Schedule Event'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -1425,6 +1825,11 @@ export default function EventRequestsManagement() {
     useState<EventRequest | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Event scheduling dialog state
+  const [showSchedulingDialog, setShowSchedulingDialog] = useState(false);
+  const [schedulingEventRequest, setSchedulingEventRequest] =
+    useState<EventRequest | null>(null);
 
   // Collection log dialog state
   const [showCollectionLog, setShowCollectionLog] = useState(false);
@@ -2562,42 +2967,173 @@ export default function EventRequestsManagement() {
                                             </div>
                                           </div>
                                           
+                                          {/* Drivers Needed */}
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-semibold">Drivers:</span>
-                                            <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-[#1A2332] text-lg">{request.driverCount || 0}</span>
-                                              <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
-                                                e.stopPropagation();
-                                                openAssignmentDialog(request.id, 'driver');
-                                              }}>
-                                                Assign
-                                              </Button>
+                                            <span className="text-[#007E8C] text-base font-semibold">Drivers Needed:</span>
+                                            <div className="flex items-center space-x-1">
+                                              {editingScheduledId === request.id && editingField === 'driversNeeded' ? (
+                                                <div className="flex items-center space-x-2">
+                                                  <Input
+                                                    type="number"
+                                                    value={editingValue}
+                                                    onChange={(e) => setEditingValue(e.target.value)}
+                                                    className="text-base w-20"
+                                                    min="0"
+                                                  />
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="font-semibold text-[#1A2332] text-lg">{request.driversNeeded || 0}</span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'driversNeeded', request.driversNeeded?.toString() || '0');
+                                                    }} className="h-4 w-4 p-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                  )}
+                                                  <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openAssignmentDialog(request.id, 'driver');
+                                                  }}>
+                                                    Assign ({request.driverCount || 0})
+                                                  </Button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Van Driver */}
+                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
+                                            <span className="text-[#007E8C] text-base font-semibold">Van Driver:</span>
+                                            <div className="flex items-center space-x-1">
+                                              {editingScheduledId === request.id && editingField === 'vanDriverNeeded' ? (
+                                                <div className="flex items-center space-x-2">
+                                                  <Select value={editingValue} onValueChange={setEditingValue}>
+                                                    <SelectTrigger className="w-24">
+                                                      <SelectValue placeholder="Select..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      <SelectItem value="true">Yes</SelectItem>
+                                                      <SelectItem value="false">No</SelectItem>
+                                                    </SelectContent>
+                                                  </Select>
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="font-bold text-[#1A2332] text-base">
+                                                    {request.vanDriverNeeded ? 'Yes' : 'No'}
+                                                  </span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'vanDriverNeeded', request.vanDriverNeeded?.toString() || 'false');
+                                                    }} className="h-4 w-4 p-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                           
+                                          {/* Speakers Needed */}
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-semibold">Speakers:</span>
-                                            <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-[#1A2332] text-lg">{request.speakerCount || 0}</span>
-                                              <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
-                                                e.stopPropagation();
-                                                openAssignmentDialog(request.id, 'speaker');
-                                              }}>
-                                                Assign
-                                              </Button>
+                                            <span className="text-[#007E8C] text-base font-semibold">Speakers Needed:</span>
+                                            <div className="flex items-center space-x-1">
+                                              {editingScheduledId === request.id && editingField === 'speakersNeeded' ? (
+                                                <div className="flex items-center space-x-2">
+                                                  <Input
+                                                    type="number"
+                                                    value={editingValue}
+                                                    onChange={(e) => setEditingValue(e.target.value)}
+                                                    className="text-base w-20"
+                                                    min="0"
+                                                  />
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="font-semibold text-[#1A2332] text-lg">{request.speakersNeeded || 0}</span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'speakersNeeded', request.speakersNeeded?.toString() || '0');
+                                                    }} className="h-4 w-4 p-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                  )}
+                                                  <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openAssignmentDialog(request.id, 'speaker');
+                                                  }}>
+                                                    Assign ({request.speakerCount || 0})
+                                                  </Button>
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                           
+                                          {/* Volunteers Needed */}
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-semibold">Volunteers:</span>
-                                            <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-[#1A2332] text-lg">{request.volunteerCount || 0}</span>
-                                              <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
-                                                e.stopPropagation();
-                                                openAssignmentDialog(request.id, 'volunteer');
-                                              }}>
-                                                Assign
-                                              </Button>
+                                            <span className="text-[#007E8C] text-base font-semibold">Volunteers Needed:</span>
+                                            <div className="flex items-center space-x-1">
+                                              {editingScheduledId === request.id && editingField === 'volunteersNeeded' ? (
+                                                <div className="flex items-center space-x-2">
+                                                  <Select value={editingValue} onValueChange={setEditingValue}>
+                                                    <SelectTrigger className="w-24">
+                                                      <SelectValue placeholder="Select..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      <SelectItem value="true">Yes</SelectItem>
+                                                      <SelectItem value="false">No</SelectItem>
+                                                    </SelectContent>
+                                                  </Select>
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="font-bold text-[#1A2332] text-base">
+                                                    {request.volunteersNeeded ? 'Yes' : 'No'}
+                                                  </span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'volunteersNeeded', request.volunteersNeeded?.toString() || 'false');
+                                                    }} className="h-4 w-4 p-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                  )}
+                                                  <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openAssignmentDialog(request.id, 'volunteer');
+                                                  }}>
+                                                    Assign ({request.volunteerCount || 0})
+                                                  </Button>
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
@@ -2705,7 +3241,7 @@ export default function EventRequestsManagement() {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedEventRequest(request);
-                                        setShowToolkitDialog(true);
+                                        setShowToolkitSentDialog(true);
                                       }}
                                       className="text-white"
                                       style={{ backgroundColor: '#007E8C' }}
@@ -2739,8 +3275,8 @@ export default function EventRequestsManagement() {
                                       size="sm"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setSelectedEventRequest(request);
-                                        handleStatusChange(request.id, 'scheduled');
+                                        setSchedulingEventRequest(request);
+                                        setShowSchedulingDialog(true);
                                       }}
                                       className="text-white"
                                       style={{ backgroundColor: '#47B3CB' }}
@@ -2971,8 +3507,8 @@ export default function EventRequestsManagement() {
                         <div>
                           <h3 className="text-base font-medium text-gray-900">Event Logistics</h3>
                           <div className="mt-2 space-y-2">
-                            <p><span className="font-medium">Start Time:</span> {selectedEventRequest.startTime || 'Not set'}</p>
-                            <p><span className="font-medium">End Time:</span> {selectedEventRequest.endTime || 'Not set'}</p>
+                            <p><span className="font-medium">Start Time:</span> {selectedEventRequest.eventStartTime || 'Not set'}</p>
+                            <p><span className="font-medium">End Time:</span> {selectedEventRequest.eventEndTime || 'Not set'}</p>
                             <p><span className="font-medium">Pickup Time:</span> {selectedEventRequest.pickupTime || 'Not set'}</p>
                             <p><span className="font-medium">Address:</span> {selectedEventRequest.eventAddress || 'Not set'}</p>
                             <p><span className="font-medium">Destination:</span> {selectedEventRequest.sandwichDestination || 'Not set'}</p>
@@ -2983,7 +3519,7 @@ export default function EventRequestsManagement() {
                           <div className="mt-2 space-y-2">
                             <p><span className="font-medium">TSP Contact:</span> {selectedEventRequest.tspContact || 'Not assigned'}</p>
                             <p><span className="font-medium">Sandwich Types:</span> {selectedEventRequest.sandwichTypes || 'Not specified'}</p>
-                            <p><span className="font-medium">Refrigeration:</span> {selectedEventRequest.refrigeration || 'Not specified'}</p>
+                            <p><span className="font-medium">Refrigeration:</span> {selectedEventRequest.hasRefrigeration === true ? 'Yes' : selectedEventRequest.hasRefrigeration === false ? 'No' : 'Not specified'}</p>
                           </div>
                         </div>
                       </div>
@@ -3016,14 +3552,14 @@ export default function EventRequestsManagement() {
                           phone: (e.target as any).phone.value,
                           organizationName: (e.target as any).organizationName.value,
                           desiredEventDate: (e.target as any).desiredEventDate.value,
-                          startTime: (e.target as any).startTime.value,
-                          endTime: (e.target as any).endTime.value,
+                          eventStartTime: (e.target as any).startTime.value,
+                          eventEndTime: (e.target as any).endTime.value,
                           pickupTime: (e.target as any).pickupTime.value,
                           eventAddress: (e.target as any).eventAddress.value,
                           sandwichDestination: (e.target as any).sandwichDestination.value,
                           tspContact: (e.target as any).tspContact.value,
                           sandwichTypes: (e.target as any).sandwichTypes.value,
-                          refrigeration: (e.target as any).refrigeration.value,
+                          hasRefrigeration: (e.target as any).refrigeration.value,
                           planningNotes: (e.target as any).planningNotes.value,
                           status: (e.target as any).status.value
                         }
@@ -3122,7 +3658,7 @@ export default function EventRequestsManagement() {
                                   id="startTime"
                                   name="startTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.startTime}
+                                  defaultValue={selectedEventRequest.eventStartTime}
                                 />
                               </div>
                               <div>
@@ -3131,7 +3667,7 @@ export default function EventRequestsManagement() {
                                   id="endTime"
                                   name="endTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.endTime}
+                                  defaultValue={selectedEventRequest.eventEndTime}
                                 />
                               </div>
                               <div>
@@ -3185,7 +3721,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="refrigeration"
                                   name="refrigeration"
-                                  defaultValue={selectedEventRequest.refrigeration}
+                                  defaultValue={selectedEventRequest.hasRefrigeration?.toString()}
                                 />
                               </div>
                             </div>
@@ -3267,6 +3803,20 @@ export default function EventRequestsManagement() {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Event Scheduling Dialog */}
+        <EventSchedulingForm
+          eventRequest={schedulingEventRequest}
+          isVisible={showSchedulingDialog}
+          onClose={() => {
+            setShowSchedulingDialog(false);
+            setSchedulingEventRequest(null);
+          }}
+          onScheduled={() => {
+            // Refresh the data after successful scheduling
+            queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+          }}
+        />
 
         {/* Other modals and dialogs */}
       </div>
