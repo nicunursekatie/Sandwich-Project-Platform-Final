@@ -3535,7 +3535,7 @@ export default function EventRequestsManagement() {
                                     : selectedEventRequest.sandwichTypes;
                                   
                                   const typesList = Object.entries(types)
-                                    .filter(([_, count]) => count && count > 0)
+                                    .filter(([_, count]) => typeof count === 'number' && count > 0)
                                     .map(([type, count]) => `${count} ${type}`)
                                     .join(', ');
                                   
