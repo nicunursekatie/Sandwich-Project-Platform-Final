@@ -3637,7 +3637,27 @@ export default function EventRequestsManagement() {
                                   id="desiredEventDate"
                                   name="desiredEventDate"
                                   type="date"
-                                  defaultValue={selectedEventRequest.desiredEventDate}
+                                  defaultValue={
+                                    selectedEventRequest.desiredEventDate ? 
+                                    (() => {
+                                      // Convert MM/DD/YYYY to YYYY-MM-DD for HTML date input
+                                      const dateStr = selectedEventRequest.desiredEventDate;
+                                      if (dateStr.includes('/')) {
+                                        const [month, day, year] = dateStr.split('/');
+                                        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                                      }
+                                      // If already in YYYY-MM-DD format or ISO, try to parse and format
+                                      try {
+                                        const date = new Date(dateStr);
+                                        if (!isNaN(date.getTime())) {
+                                          return date.toISOString().split('T')[0];
+                                        }
+                                      } catch (e) {
+                                        console.warn('Date conversion failed:', dateStr);
+                                      }
+                                      return dateStr;
+                                    })() : ''
+                                  }
                                 />
                               </div>
                               <div>
