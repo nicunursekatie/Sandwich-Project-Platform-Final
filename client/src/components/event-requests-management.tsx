@@ -323,7 +323,6 @@ const formatEventDate = (dateString: string) => {
   }
 };
 
-// Using EventRequest type from shared schema
 
 const statusColors = {
   new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-primary border border-teal-200',
@@ -739,18 +738,18 @@ const ToolkitSentDialog = ({
             {/* Action Buttons */}
             <div className="flex justify-between space-x-4">
               <div className="flex space-x-2">
-                {!emailSent && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowEmailComposer(true)}
-                    className="flex items-center space-x-2"
-                    data-testid="button-send-toolkit-email"
-                  >
-                    <Mail className="w-4 h-4" />
-                    <span>Send Toolkit Email</span>
-                  </Button>
-                )}
+              {!emailSent && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowEmailComposer(true)}
+                  className="flex items-center space-x-2"
+                  data-testid="button-send-toolkit-email"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Send Toolkit Email</span>
+                </Button>
+              )}
                 
                 {eventRequest?.phone && (
                   <Button
@@ -1229,6 +1228,311 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               disabled={updateEventRequestMutation.isPending}
             >
               {updateEventRequestMutation.isPending ? 'Scheduling...' : 'Schedule Event'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Schedule Call Dialog Component
+interface ScheduleCallDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  eventRequest: EventRequest | null;
+  onCallScheduled: () => void;
+  isLoading: boolean;
+  scheduleCallDate: string;
+  setScheduleCallDate: (date: string) => void;
+  scheduleCallTime: string;
+  setScheduleCallTime: (time: string) => void;
+}
+
+const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
+  isOpen,
+  onClose,
+  eventRequest,
+  onCallScheduled,
+  isLoading,
+  scheduleCallDate,
+  setScheduleCallDate,
+  scheduleCallTime,
+  setScheduleCallTime,
+}) => {
+  // Initialize date/time when dialog opens
+  useEffect(() => {
+    if (isOpen && eventRequest) {
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const timeStr = now.toTimeString().slice(0, 5); // HH:MM format
+      setScheduleCallDate(dateStr);
+      setScheduleCallTime(timeStr);
+    }
+  }, [isOpen, eventRequest, setScheduleCallDate, setScheduleCallTime]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scheduleCallDate || !scheduleCallTime) return;
+    onCallScheduled();
+  };
+
+  if (!eventRequest) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Phone className="w-5 h-5 text-blue-600" />
+            <span>Schedule Follow-up Call</span>
+          </DialogTitle>
+          <DialogDescription>
+            Schedule a follow-up call with{' '}
+            <strong>
+              {eventRequest.firstName} {eventRequest.lastName}
+            </strong>{' '}
+            at <strong>{eventRequest.organizationName}</strong>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Contact Information */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <h4 className="font-medium text-blue-900 mb-2">Contact Details</h4>
+            <div className="space-y-1 text-sm">
+              <div className="flex items-center space-x-2">
+                <Mail className="w-4 h-4 text-blue-600" />
+                <span>{eventRequest.email}</span>
+              </div>
+              {eventRequest.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-4 h-4 text-blue-600" />
+                  <span>{eventRequest.phone}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const phoneNumber = eventRequest.phone;
+                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                      
+                      if (isMobile) {
+                        window.location.href = `tel:${phoneNumber}`;
+                      } else {
+                        navigator.clipboard.writeText(phoneNumber || '');
+                      }
+                    }}
+                    className="ml-auto text-xs"
+                  >
+                    {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Call' : 'Copy'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Date and Time Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="schedule-call-date">Call Date</Label>
+              <Input
+                id="schedule-call-date"
+                type="date"
+                value={scheduleCallDate}
+                onChange={(e) => setScheduleCallDate(e.target.value)}
+                required
+                data-testid="input-schedule-call-date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="schedule-call-time">Call Time</Label>
+              <Input
+                id="schedule-call-time"
+                type="time"
+                value={scheduleCallTime}
+                onChange={(e) => setScheduleCallTime(e.target.value)}
+                required
+                data-testid="input-schedule-call-time"
+              />
+            </div>
+          </div>
+
+          {/* Information */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <h4 className="font-medium text-amber-900 mb-2">What happens when you schedule a call:</h4>
+            <ul className="text-sm text-amber-800 space-y-1">
+              <li>• A reminder will be set for the scheduled time</li>
+              <li>• The event will remain in "In Process" status</li>
+              <li>• You can update the call time later if needed</li>
+            </ul>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={!scheduleCallDate || !scheduleCallTime || isLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              data-testid="button-confirm-schedule-call"
+            >
+              {isLoading ? 'Scheduling...' : 'Schedule Call'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Follow-up Dialog Component
+interface FollowUpDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  eventRequest: EventRequest | null;
+  onFollowUpCompleted: (notes: string) => void;
+  isLoading: boolean;
+  followUpType: '1-day' | '1-month';
+  notes: string;
+  setNotes: (notes: string) => void;
+}
+
+const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
+  isOpen,
+  onClose,
+  eventRequest,
+  onFollowUpCompleted,
+  isLoading,
+  followUpType,
+  notes,
+  setNotes,
+}) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onFollowUpCompleted(notes);
+  };
+
+  if (!eventRequest) return null;
+
+  const isOneDay = followUpType === '1-day';
+  const title = isOneDay ? '1-Day Follow-up' : '1-Month Follow-up';
+  const description = isOneDay 
+    ? 'Record follow-up communication one day after the event'
+    : 'Record follow-up communication one month after the event';
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Clock className="w-5 h-5 text-orange-600" />
+            <span>{title}</span>
+          </DialogTitle>
+          <DialogDescription>
+            {description} with{' '}
+            <strong>
+              {eventRequest.firstName} {eventRequest.lastName}
+            </strong>{' '}
+            at <strong>{eventRequest.organizationName}</strong>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Event Information */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <h4 className="font-medium text-gray-900 mb-2">Event Details</h4>
+            <div className="space-y-1 text-sm">
+              <div><strong>Event Date:</strong> {eventRequest.desiredEventDate || 'Not specified'}</div>
+              <div><strong>Address:</strong> {eventRequest.eventAddress || 'Not specified'}</div>
+              <div><strong>Estimated Sandwiches:</strong> {eventRequest.estimatedSandwichCount || 'Not specified'}</div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <h4 className="font-medium text-blue-900 mb-2">Contact Information</h4>
+            <div className="space-y-1 text-sm">
+              <div className="flex items-center space-x-2">
+                <Mail className="w-4 h-4 text-blue-600" />
+                <span>{eventRequest.email}</span>
+              </div>
+              {eventRequest.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-4 h-4 text-blue-600" />
+                  <span>{eventRequest.phone}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const phoneNumber = eventRequest.phone;
+                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                      
+                      if (isMobile) {
+                        window.location.href = `tel:${phoneNumber}`;
+                      } else {
+                        navigator.clipboard.writeText(phoneNumber || '');
+                      }
+                    }}
+                    className="ml-auto text-xs"
+                  >
+                    {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Call' : 'Copy'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Follow-up Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="followup-notes">Follow-up Notes</Label>
+            <Textarea
+              id="followup-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={`Record notes from your ${followUpType} follow-up communication...`}
+              className="min-h-[120px]"
+              required
+            />
+          </div>
+
+          {/* Information */}
+          <div className={`${isOneDay ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'} border rounded-lg p-3`}>
+            <h4 className={`font-medium ${isOneDay ? 'text-orange-900' : 'text-green-900'} mb-2`}>
+              {title} Guidelines:
+            </h4>
+            <ul className={`text-sm ${isOneDay ? 'text-orange-800' : 'text-green-800'} space-y-1`}>
+              {isOneDay ? (
+                <>
+                  <li>• Ask how the event went and if there were any issues</li>
+                  <li>• Gather feedback on sandwich quality and quantity</li>
+                  <li>• Note any suggestions for future events</li>
+                </>
+              ) : (
+                <>
+                  <li>• Check if they're planning any future events</li>
+                  <li>• Ask about their overall experience with TSP</li>
+                  <li>• Gather feedback for program improvement</li>
+                </>
+              )}
+            </ul>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={!notes.trim() || isLoading}
+              className={`text-white ${isOneDay ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}`}
+              data-testid={`button-confirm-followup-${followUpType}`}
+            >
+              {isLoading ? 'Saving...' : `Complete ${title}`}
             </Button>
           </div>
         </form>
@@ -1817,6 +2121,11 @@ export default function EventRequestsManagement() {
   const [scheduleCallDate, setScheduleCallDate] = useState('');
   const [scheduleCallTime, setScheduleCallTime] = useState('');
 
+  // Follow-up dialog states
+  const [showOneDayFollowUpDialog, setShowOneDayFollowUpDialog] = useState(false);
+  const [showOneMonthFollowUpDialog, setShowOneMonthFollowUpDialog] = useState(false);
+  const [followUpNotes, setFollowUpNotes] = useState('');
+
   // 1. Add state for inline editing of completed event fields:
   const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
     null
@@ -2369,6 +2678,59 @@ export default function EventRequestsManagement() {
     },
   });
 
+  // Follow-up mutations
+  const oneDayFollowUpMutation = useMutation({
+    mutationFn: ({ id, notes }: { id: number; notes: string }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}`, {
+        followUpOneDayCompleted: true,
+        followUpOneDayDate: new Date().toISOString(),
+        followUpNotes: notes,
+      }),
+    onSuccess: () => {
+      toast({
+        title: '1-day follow-up completed',
+        description: 'Follow-up has been marked as completed.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setShowOneDayFollowUpDialog(false);
+      setSelectedEventRequest(null);
+      setFollowUpNotes('');
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to complete follow-up.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const oneMonthFollowUpMutation = useMutation({
+    mutationFn: ({ id, notes }: { id: number; notes: string }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}`, {
+        followUpOneMonthCompleted: true,
+        followUpOneMonthDate: new Date().toISOString(),
+        followUpNotes: notes,
+      }),
+    onSuccess: () => {
+      toast({
+        title: '1-month follow-up completed',
+        description: 'Follow-up has been marked as completed.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setShowOneMonthFollowUpDialog(false);
+      setSelectedEventRequest(null);
+      setFollowUpNotes('');
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to complete follow-up.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Handle status change for event requests
   const handleStatusChange = (id: number, status: string) => {
     updateEventRequestMutation.mutate({
@@ -2678,10 +3040,10 @@ export default function EventRequestsManagement() {
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex-1">
                                     <div className="flex items-center space-x-3">
-                                      <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
-                                      <h2 className="text-2xl font-bold text-brand-primary leading-tight">
-                                        {request.organizationName}
-                                      </h2>
+                                    <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
+                                    <h2 className="text-2xl font-bold text-brand-primary leading-tight">
+                                      {request.organizationName}
+                                    </h2>
                                     </div>
                                     {/* Request Submitted Date */}
                                     <div className="flex items-center space-x-2 mt-1 ml-10">
@@ -3105,19 +3467,19 @@ export default function EventRequestsManagement() {
                                                 </Button>
                                               </div>
                                             ) : (
-                                              <div className="flex items-center space-x-1">
-                                                <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
-                                                  {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
-                                                </span>
-                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                  <Button size="sm" variant="ghost" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
-                                                  }} className="h-4 w-4 p-0">
-                                                    <Edit className="w-3 h-3" />
-                                                  </Button>
-                                                )}
-                                              </div>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
+                                                {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
+                                                }} className="h-4 w-4 p-0">
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
                                             )}
                                           </div>
                                           
@@ -3143,19 +3505,19 @@ export default function EventRequestsManagement() {
                                                 </Button>
                                               </div>
                                             ) : (
-                                              <div className="flex items-center space-x-1">
-                                                <span className="font-bold text-[#1A2332] text-base">
-                                                  {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
-                                                </span>
-                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                  <Button size="sm" variant="ghost" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    startEditing(request.id, 'hasRefrigeration', request.hasRefrigeration?.toString() || '');
-                                                  }} className="h-4 w-4 p-0">
-                                                    <Edit className="w-3 h-3" />
-                                                  </Button>
-                                                )}
-                                              </div>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-bold text-[#1A2332] text-base">
+                                                {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startEditing(request.id, 'hasRefrigeration', request.hasRefrigeration?.toString() || '');
+                                                }} className="h-4 w-4 p-0">
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
                                             )}
                                           </div>
                                           
@@ -3245,7 +3607,7 @@ export default function EventRequestsManagement() {
                                           {/* Drivers Section */}
                                           <div className="space-y-2 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg">
                                             <div className="flex items-center justify-between">
-                                              <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2">
                                                 <Truck className="w-4 h-4 text-[#007E8C]" />
                                                 <span className="text-[#007E8C] text-base font-semibold">Drivers</span>
                                                 {editingScheduledId === request.id && editingField === 'driversNeeded' ? (
@@ -3326,24 +3688,24 @@ export default function EventRequestsManagement() {
                                                   variant="outline" 
                                                   className="text-[#007E8C] border-[#007E8C] hover:bg-[#007E8C] hover:text-white text-xs px-3 py-1" 
                                                   onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openAssignmentDialog(request.id, 'driver');
+                                                e.stopPropagation();
+                                                openAssignmentDialog(request.id, 'driver');
                                                   }}
                                                   data-testid={`button-assign-driver-${request.id}`}
                                                 >
                                                   <Users className="w-3 h-3 mr-1" />
-                                                  Assign
-                                                </Button>
+                                                Assign
+                                              </Button>
                                               )}
                                             </div>
                                           </div>
-
+                                          
                                           {/* Van Driver */}
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
                                             <span className="text-[#007E8C] text-base font-semibold">Van Driver:</span>
                                             <div className="flex items-center space-x-1">
                                               {editingScheduledId === request.id && editingField === 'vanDriverNeeded' ? (
-                                                <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2">
                                                   <Select value={editingValue} onValueChange={setEditingValue}>
                                                     <SelectTrigger className="w-24">
                                                       <SelectValue placeholder="Select..." />
@@ -3462,14 +3824,14 @@ export default function EventRequestsManagement() {
                                                   variant="outline" 
                                                   className="text-[#FBAD3F] border-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white text-xs px-3 py-1" 
                                                   onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openAssignmentDialog(request.id, 'speaker');
+                                                e.stopPropagation();
+                                                openAssignmentDialog(request.id, 'speaker');
                                                   }}
                                                   data-testid={`button-assign-speaker-${request.id}`}
                                                 >
                                                   <Users className="w-3 h-3 mr-1" />
-                                                  Assign
-                                                </Button>
+                                                Assign
+                                              </Button>
                                               )}
                                             </div>
                                           </div>
@@ -3477,7 +3839,7 @@ export default function EventRequestsManagement() {
                                           {/* Volunteers Section */}
                                           <div className="space-y-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-300 rounded-lg">
                                             <div className="flex items-center justify-between">
-                                              <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2">
                                                 <Users className="w-4 h-4 text-blue-600" />
                                                 <span className="text-blue-600 text-base font-semibold">Volunteers</span>
                                                 {editingScheduledId === request.id && editingField === 'volunteersNeeded' ? (
@@ -3562,16 +3924,16 @@ export default function EventRequestsManagement() {
                                                     variant="outline" 
                                                     className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white text-xs px-3 py-1" 
                                                     onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      openAssignmentDialog(request.id, 'volunteer');
+                                                e.stopPropagation();
+                                                openAssignmentDialog(request.id, 'volunteer');
                                                     }}
                                                     data-testid={`button-assign-volunteer-${request.id}`}
                                                   >
                                                     <Users className="w-3 h-3 mr-1" />
-                                                    Assign
-                                                  </Button>
+                                                Assign
+                                              </Button>
                                                 )}
-                                              </div>
+                                            </div>
                                             )}
                                           </div>
                                         </div>
@@ -3741,7 +4103,7 @@ export default function EventRequestsManagement() {
                                       <Edit className="w-4 h-4 mr-2" />
                                       Edit
                                     </Button>
-                                  </div>
+                              </div>
                                 )}
 
                                 {/* Action Buttons for In Process Status */}
@@ -3860,8 +4222,8 @@ export default function EventRequestsManagement() {
                                       variant="outline"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        // TODO: Implement 1-day follow-up functionality
-                                        alert("1-day follow-up feature will be implemented");
+                                        setSelectedEventRequest(request);
+                                        setShowOneDayFollowUpDialog(true);
                                       }}
                                       className="text-white"
                                       style={{ backgroundColor: '#FBAD3F' }}
@@ -3876,8 +4238,8 @@ export default function EventRequestsManagement() {
                                       variant="outline"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        // TODO: Implement 1-month follow-up functionality
-                                        alert("1-month follow-up feature will be implemented");
+                                        setSelectedEventRequest(request);
+                                        setShowOneMonthFollowUpDialog(true);
                                       }}
                                       className="text-white"
                                       style={{ backgroundColor: '#1A2332' }}
@@ -4546,6 +4908,57 @@ export default function EventRequestsManagement() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Schedule Call Dialog */}
+        <ScheduleCallDialog
+          isOpen={showScheduleCallDialog}
+          onClose={() => setShowScheduleCallDialog(false)}
+          eventRequest={selectedEventRequest}
+          onCallScheduled={handleScheduleCall}
+          isLoading={scheduleCallMutation.isPending}
+          scheduleCallDate={scheduleCallDate}
+          setScheduleCallDate={setScheduleCallDate}
+          scheduleCallTime={scheduleCallTime}
+          setScheduleCallTime={setScheduleCallTime}
+        />
+
+        {/* 1-Day Follow-up Dialog */}
+        <FollowUpDialog
+          isOpen={showOneDayFollowUpDialog}
+          onClose={() => setShowOneDayFollowUpDialog(false)}
+          eventRequest={selectedEventRequest}
+          onFollowUpCompleted={(notes) => {
+            if (selectedEventRequest) {
+              oneDayFollowUpMutation.mutate({
+                id: selectedEventRequest.id,
+                notes,
+              });
+            }
+          }}
+          isLoading={oneDayFollowUpMutation.isPending}
+          followUpType="1-day"
+          notes={followUpNotes}
+          setNotes={setFollowUpNotes}
+        />
+
+        {/* 1-Month Follow-up Dialog */}
+        <FollowUpDialog
+          isOpen={showOneMonthFollowUpDialog}
+          onClose={() => setShowOneMonthFollowUpDialog(false)}
+          eventRequest={selectedEventRequest}
+          onFollowUpCompleted={(notes) => {
+            if (selectedEventRequest) {
+              oneMonthFollowUpMutation.mutate({
+                id: selectedEventRequest.id,
+                notes,
+              });
+            }
+          }}
+          isLoading={oneMonthFollowUpMutation.isPending}
+          followUpType="1-month"
+          notes={followUpNotes}
+          setNotes={setFollowUpNotes}
+        />
 
         {/* Other modals and dialogs */}
       </div>
