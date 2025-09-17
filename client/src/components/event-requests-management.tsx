@@ -2219,8 +2219,8 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 1: Schedule & Location */}
                                       <div className="space-y-2 bg-[#f0f8fa] p-3 rounded-lg border border-[#236383]/20">
-                                        <h4 className="text-lg font-bold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
-                                          <Calendar className="w-5 h-5 mr-2 text-brand-teal" />
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                          <Calendar className="w-4 h-4 mr-2 text-brand-teal" />
                                           Schedule & Location
                                         </h4>
                                         
@@ -2229,20 +2229,37 @@ export default function EventRequestsManagement() {
                                           {/* Start and End times on same line */}
                                           <div className="flex justify-between items-center">
                                             <div className="flex items-center space-x-3">
-                                              <span className="text-[#236383] text-lg font-bold">Start:</span>
-                                              <div className="flex items-center space-x-1">
-                                                <span className="font-bold text-[#1A2332] text-xl">
-                                                  {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
-                                                </span>
-                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                  <Button size="sm" variant="ghost" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    startEditing(request.id, 'eventStartTime', request.eventStartTime || '');
-                                                  }} className="h-4 w-4 p-0">
-                                                    <Edit className="w-3 h-3" />
+                                              <span className="text-[#236383] text-base font-semibold">Start:</span>
+                                              {editingScheduledId === request.id && editingField === 'eventStartTime' ? (
+                                                <div className="flex items-center space-x-2">
+                                                  <Input
+                                                    type="time"
+                                                    value={editingValue}
+                                                    onChange={(e) => setEditingValue(e.target.value)}
+                                                    className="text-base w-32"
+                                                  />
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
                                                   </Button>
-                                                )}
-                                              </div>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center space-x-1">
+                                                  <span className="font-semibold text-[#1A2332] text-base">
+                                                    {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
+                                                  </span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'eventStartTime', request.eventStartTime || '');
+                                                    }} className="h-4 w-4 p-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                             <div className="flex items-center space-x-3">
                                               <span className="text-[#236383] text-lg font-bold">End:</span>
