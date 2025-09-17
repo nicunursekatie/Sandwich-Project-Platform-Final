@@ -4,6 +4,31 @@ import { isAuthenticated } from '../temp-auth';
 
 const router = Router();
 
+// Get unread messages for the user
+router.get('/unread', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { groupByContext } = req.query;
+
+    if (groupByContext) {
+      // Get unread counts by context
+      const contextCounts = await messagingService.getUnreadCountsByContext(user.id);
+      res.json(contextCounts);
+    } else {
+      // Get unread messages
+      const messages = await messagingService.getUnreadMessages(user.id);
+      res.json({ messages });
+    }
+  } catch (error) {
+    console.error('[Messaging API] Error fetching unread messages:', error);
+    res.json({ messages: [] });
+  }
+});
+
 // Get unnotified kudos for login notifications
 router.get('/kudos/unnotified', isAuthenticated, async (req: any, res) => {
   try {
