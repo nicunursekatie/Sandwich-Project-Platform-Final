@@ -1104,7 +1104,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 type="time"
                 value={formData.eventStartTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, eventStartTime: e.target.value }))}
-                required
               />
             </div>
             <div>
@@ -1114,7 +1113,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 type="time"
                 value={formData.eventEndTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, eventEndTime: e.target.value }))}
-                required
               />
             </div>
             <div>
@@ -1124,7 +1122,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 type="time"
                 value={formData.pickupTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, pickupTime: e.target.value }))}
-                required
               />
             </div>
           </div>
