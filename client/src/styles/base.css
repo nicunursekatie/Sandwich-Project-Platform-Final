@@ -38,8 +38,14 @@ body {
     --card-foreground: 24 5% 38%; /* #605251 */
     --border: 0 0% 90%; /* Light border */
     --input: 0 0% 96%; /* Light input background */
-    /* --primary moved to ThemeProvider */
+    --primary: 197 100% 28%; /* #236383 - Brand Primary */
     --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    /* TSP Brand Variables */
+    --tsp-teal: #007E8C;
+    --tsp-teal-light: #47B3CB;
+    --tsp-teal-hover: #006B75;
+    --tsp-orange: #FBAD3F;
+    --tsp-navy: #1A2332;
     --secondary: 27 92% 62%; /* #FBAD3F - Orange */
     --secondary-foreground: 24 5% 38%; /* #605251 */
     --accent: 342 63% 38%; /* #A31C41 - Burgundy */

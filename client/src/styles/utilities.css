@@ -1,16 +1,16 @@
 @tailwind utilities;
 
 @layer utilities {
-  /* Brand color overrides */
+  /* Brand color overrides - Use actual brand colors */
   .bg-blue-100 { background-color: hsl(193 60% 91%); }
   .bg-blue-50 { background-color: hsl(193 60% 95%); }
-  .text-blue-600 { color: hsl(var(--primary)); }
-  .text-blue-700 { color: hsl(193 60% 35%); }
-  .text-blue-800 { color: hsl(193 60% 25%); }
-  .text-blue-900 { color: hsl(var(--primary)); }
+  .text-blue-600 { color: #007E8C; } /* Brand Teal */
+  .text-blue-700 { color: #236383; } /* Brand Primary */
+  .text-blue-800 { color: #1e5a75; } /* Brand Primary Dark */
+  .text-blue-900 { color: #1A2332; } /* Brand Navy */
   .border-blue-200 { border-color: hsl(193 60% 85%); }
   .border-blue-300 { border-color: hsl(193 60% 75%); }
-  .hover\:text-blue-800:hover { color: hsl(193 60% 25%); }
+  .hover\:text-blue-800:hover { color: #1e5a75; }
   .hover\:bg-blue-50:hover { background-color: hsl(193 60% 95%); }
 
   .gradient-mesh {

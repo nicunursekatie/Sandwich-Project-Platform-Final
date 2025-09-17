@@ -290,17 +290,19 @@
       min-height: 40px;
     }
 
-    /* Form grid responsive behavior */
-    .grid-cols-2 {
-      grid-template-columns: 1fr;
-    }
+    /* Form grid responsive behavior - Only override on very small screens */
+    @media (max-width: 480px) {
+      .grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
 
-    .grid-cols-3 {
-      grid-template-columns: 1fr;
-    }
+      .grid-cols-3 {
+        grid-template-columns: 1fr;
+      }
 
-    .grid-cols-4 {
-      grid-template-columns: repeat(2, 1fr);
+      .grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     /* Project card mobile optimizations */
