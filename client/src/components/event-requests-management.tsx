@@ -2813,6 +2813,90 @@ export default function EventRequestsManagement() {
                                     </Button>
                                   </div>
                                 )}
+
+                                {/* Action Buttons for Completed Status */}
+                                {request.status === 'completed' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        setIsEditing(true);
+                                        setShowEventDetails(true);
+                                      }}
+                                      data-testid={`button-edit-${request.id}`}
+                                    >
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Implement 1-day follow-up functionality
+                                        alert("1-day follow-up feature will be implemented");
+                                      }}
+                                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                                      data-testid={`button-followup-1day-${request.id}`}
+                                    >
+                                      <Clock className="w-4 h-4 mr-2" />
+                                      1 Day Follow-up
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Implement 1-month follow-up functionality
+                                        alert("1-month follow-up feature will be implemented");
+                                      }}
+                                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                                      data-testid={`button-followup-1month-${request.id}`}
+                                    >
+                                      <Calendar className="w-4 h-4 mr-2" />
+                                      1 Month Follow-up
+                                    </Button>
+                                  </div>
+                                )}
+
+                                {/* Action Buttons for Declined Status */}
+                                {request.status === 'declined' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        setIsEditing(true);
+                                        setShowEventDetails(true);
+                                      }}
+                                      data-testid={`button-edit-${request.id}`}
+                                    >
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        handleStatusChange(request.id, 'new');
+                                      }}
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      data-testid={`button-reschedule-${request.id}`}
+                                    >
+                                      <RotateCcw className="w-4 h-4 mr-2" />
+                                      Reschedule
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
