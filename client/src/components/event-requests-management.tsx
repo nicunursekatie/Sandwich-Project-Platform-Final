@@ -2688,6 +2688,54 @@ export default function EventRequestsManagement() {
                                     </p>
                                   </div>
                                 )}
+
+                                {/* Action Buttons for In Process Status */}
+                                {request.status === 'in_process' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        handleStatusChange(request.id, 'scheduled');
+                                      }}
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      data-testid={`button-mark-scheduled-${request.id}`}
+                                    >
+                                      <Calendar className="w-4 h-4 mr-2" />
+                                      Mark Scheduled
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        setShowScheduleCallDialog(true);
+                                      }}
+                                      data-testid={`button-schedule-call-${request.id}`}
+                                    >
+                                      <Phone className="w-4 h-4 mr-2" />
+                                      Schedule Call
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        setIsEditing(true);
+                                        setShowEventDetails(true);
+                                      }}
+                                      data-testid={`button-edit-${request.id}`}
+                                    >
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
