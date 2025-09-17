@@ -379,6 +379,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           const hasDbMessage = existingRequest.message && existingRequest.message.trim() && existingRequest.message.trim().length > 0;
           const shouldUpdateMessage = hasSheetMessage && !hasDbMessage;
           
+          console.log(`🔍 DEBUG: Checking message update for ${row.organizationName} - ${row.contactName}`);
+          console.log(`🔍 Sheet message: "${row.message?.substring(0, 50)}..."`);
+          console.log(`🔍 DB message: "${existingRequest.message?.substring(0, 50) || 'NULL'}..."`);
+          console.log(`🔍 hasSheetMessage: ${hasSheetMessage}, hasDbMessage: ${hasDbMessage}`);
+          
           if (shouldUpdateMessage) {
             console.log(
               `📝 Updating message field for existing request: ${row.organizationName} - ${row.contactName}`
