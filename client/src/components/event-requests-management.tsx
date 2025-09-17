@@ -402,7 +402,7 @@ const statusColors = {
   in_process:
     'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
   scheduled:
-    'bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-300',
+    'bg-white border border-slate-200 shadow-sm',
   completed:
     'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
   declined:
@@ -2046,9 +2046,14 @@ export default function EventRequestsManagement() {
                           }`}
                           data-testid={`card-event-request-${request.id}`}
                         >
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 space-y-4">
+                          <CardContent className="p-0">
+                            {/* Brand accent bar for scheduled events */}
+                            {request.status === 'scheduled' && (
+                              <div className="h-1 bg-gradient-to-r from-[#236383] via-[#FBAD3F] to-[#A31C41] rounded-t-md"></div>
+                            )}
+                            <div className="p-6">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 space-y-4">
                                 {/* Organization Name - Most Prominent */}
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-center space-x-3 flex-1">
@@ -2058,7 +2063,11 @@ export default function EventRequestsManagement() {
                                     </h2>
                                   </div>
                                   <Badge
-                                    className={`${statusColors[request.status]} text-sm font-bold px-4 py-2 rounded-full uppercase tracking-wide flex-shrink-0 ml-3`}
+                                    className={`${
+                                      request.status === 'scheduled' 
+                                        ? 'bg-[#E7F1F5] text-[#236383] border border-[#B8D4DE] font-semibold' 
+                                        : statusColors[request.status]
+                                    } text-sm font-bold px-4 py-2 rounded-full uppercase tracking-wide flex-shrink-0 ml-3`}
                                   >
                                     {
                                       statusOptions.find(
