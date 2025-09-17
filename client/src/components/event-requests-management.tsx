@@ -766,18 +766,28 @@ const ToolkitSentDialog = ({
                         window.location.href = `tel:${phoneNumber}`;
                       } else {
                         // On desktop, copy to clipboard
-                        navigator.clipboard.writeText(phoneNumber).then(() => {
-                          toast({
-                            title: 'Phone number copied!',
-                            description: `${phoneNumber} has been copied to your clipboard.`,
+                        if (phoneNumber) {
+                          navigator.clipboard.writeText(phoneNumber)
+                            .then(() => {
+                              toast({
+                                title: 'Phone number copied!',
+                                description: `${phoneNumber} has been copied to your clipboard.`,
+                              });
+                            })
+                            .catch(() => {
+                            toast({
+                              title: 'Failed to copy',
+                              description: 'Please copy manually: ' + phoneNumber,
+                              variant: 'destructive',
+                            });
                           });
-                        }).catch(() => {
+                        } else {
                           toast({
-                            title: 'Failed to copy',
-                            description: 'Please copy manually: ' + phoneNumber,
+                            title: 'No phone number',
+                            description: 'No phone number available to copy.',
                             variant: 'destructive',
                           });
-                        });
+                        }
                       }
                     }}
                     className="flex items-center space-x-2"
@@ -864,7 +874,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     volunteersNeeded: false,
     tspContact: '',
     schedulingNotes: '',
+    totalSandwichCount: 0,
   });
+
+  const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
 
   const [showContactInfo, setShowContactInfo] = useState(false);
   const { toast } = useToast();
@@ -879,22 +892,32 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // Initialize form with existing data when dialog opens
   useEffect(() => {
     if (isVisible && eventRequest) {
+      const existingSandwichTypes = eventRequest.sandwichTypes ? 
+        (typeof eventRequest.sandwichTypes === 'string' ? 
+          JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [];
+      
+      // Determine mode based on existing data
+      const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
+      const totalCount = eventRequest.estimatedSandwichCount || 0;
+      
       setFormData({
         eventStartTime: eventRequest.eventStartTime || '',
         eventEndTime: eventRequest.eventEndTime || '',
         pickupTime: eventRequest.pickupTime || '',
         eventAddress: eventRequest.eventAddress || '',
-        sandwichTypes: eventRequest.sandwichTypes ? 
-          (typeof eventRequest.sandwichTypes === 'string' ? 
-            JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [],
+        sandwichTypes: existingSandwichTypes,
         hasRefrigeration: eventRequest.hasRefrigeration?.toString() || '',
         driversNeeded: eventRequest.driversNeeded || 0,
         vanDriverNeeded: eventRequest.vanDriverNeeded || false,
         speakersNeeded: eventRequest.speakersNeeded || 0,
         volunteersNeeded: eventRequest.volunteersNeeded || false,
         tspContact: eventRequest.tspContact || '',
-        schedulingNotes: eventRequest.schedulingNotes || ''
+        schedulingNotes: eventRequest.schedulingNotes || '',
+        totalSandwichCount: totalCount,
       });
+      
+      // Set mode based on existing data
+      setSandwichMode(hasTypesData ? 'types' : 'total');
     }
   }, [isVisible, eventRequest]);
 
@@ -930,7 +953,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     const updateData = {
       status: 'scheduled',
       ...formData,
-      sandwichTypes: JSON.stringify(formData.sandwichTypes),
+      // Handle sandwich data based on mode
+      ...(sandwichMode === 'total' ? {
+        estimatedSandwichCount: formData.totalSandwichCount,
+        sandwichTypes: null, // Clear specific types when using total mode
+      } : {
+        sandwichTypes: JSON.stringify(formData.sandwichTypes),
+        estimatedSandwichCount: formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0),
+      }),
       hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
                         formData.hasRefrigeration === 'false' ? false : null,
     };
@@ -1060,56 +1090,107 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             />
           </div>
 
-          {/* Sandwich Types */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <Label>Sandwich Types</Label>
-              <Button type="button" onClick={addSandwichType} size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Type
+          {/* Sandwich Planning */}
+          <div className="space-y-4">
+            <Label>Sandwich Planning</Label>
+            
+            {/* Mode Selector */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={sandwichMode === 'total' ? 'default' : 'outline'}
+                onClick={() => setSandwichMode('total')}
+                className="text-xs"
+              >
+                Total Count Only
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={sandwichMode === 'types' ? 'default' : 'outline'}
+                onClick={() => setSandwichMode('types')}
+                className="text-xs"
+              >
+                Specify Types
               </Button>
             </div>
-            
-            {formData.sandwichTypes.length === 0 ? (
-              <div className="text-center py-4 text-gray-500 border-2 border-dashed border-gray-300 rounded">
-                <p>No sandwich types added yet. Click "Add Type" to get started.</p>
-              </div>
-            ) : (
+
+            {/* Total Count Mode */}
+            {sandwichMode === 'total' && (
               <div className="space-y-2">
-                {formData.sandwichTypes.map((sandwich, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 border rounded">
-                    <Select
-                      value={sandwich.type}
-                      onValueChange={(value) => updateSandwichType(index, 'type', value)}
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="turkey">Turkey</SelectItem>
-                        <SelectItem value="ham">Ham</SelectItem>
-                        <SelectItem value="deli">Deli (Generic)</SelectItem>
-                        <SelectItem value="pbj">PB&J</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      placeholder="Quantity"
-                      value={sandwich.quantity}
-                      onChange={(e) => updateSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
-                      className="w-24"
-                      min="0"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeSandwichType(index)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                <Label htmlFor="totalSandwichCount">Total Number of Sandwiches</Label>
+                <Input
+                  id="totalSandwichCount"
+                  type="number"
+                  value={formData.totalSandwichCount}
+                  onChange={(e) => setFormData(prev => ({ ...prev, totalSandwichCount: parseInt(e.target.value) || 0 }))}
+                  placeholder="Enter total sandwich count"
+                  min="0"
+                  className="w-40"
+                />
+                <p className="text-sm text-gray-600">
+                  Use this when you know the total count but types will be determined later.
+                </p>
+              </div>
+            )}
+
+            {/* Specific Types Mode */}
+            {sandwichMode === 'types' && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label>Sandwich Types & Quantities</Label>
+                  <Button type="button" onClick={addSandwichType} size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Type
+                  </Button>
+                </div>
+                
+                {formData.sandwichTypes.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 border-2 border-dashed border-gray-300 rounded">
+                    <p>No sandwich types added yet. Click "Add Type" to get started.</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-2">
+                    {formData.sandwichTypes.map((sandwich, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 border rounded">
+                        <Select
+                          value={sandwich.type}
+                          onValueChange={(value) => updateSandwichType(index, 'type', value)}
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="turkey">Turkey</SelectItem>
+                            <SelectItem value="ham">Ham</SelectItem>
+                            <SelectItem value="deli">Deli (Generic)</SelectItem>
+                            <SelectItem value="pbj">PB&J</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          placeholder="Quantity"
+                          value={sandwich.quantity}
+                          onChange={(e) => updateSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                          className="w-24"
+                          min="0"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeSandwichType(index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                      <strong>Total:</strong> {formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
