@@ -2240,9 +2240,9 @@ export default function EventRequestsManagement() {
                                         {/* Times in compact rows */}
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-700 text-base font-medium">Start:</span>
+                                            <span className="text-[#1A2332] text-base font-medium">Start:</span>
                                             <div className="flex items-center space-x-1">
-                                              <span className="font-semibold text-gray-900 text-base">
+                                              <span className="font-semibold text-[#236383] text-base">
                                                 {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
                                               </span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2257,9 +2257,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-700 text-base font-medium">End:</span>
+                                            <span className="text-[#1A2332] text-base font-medium">End:</span>
                                             <div className="flex items-center space-x-1">
-                                              <span className="font-semibold text-gray-900 text-base">
+                                              <span className="font-semibold text-[#236383] text-base">
                                                 {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                                               </span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2274,9 +2274,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-700 text-base font-medium">Pickup:</span>
+                                            <span className="text-[#1A2332] text-base font-medium">Pickup:</span>
                                             <div className="flex items-center space-x-1">
-                                              <span className="font-semibold text-gray-900 text-base">
+                                              <span className="font-semibold text-[#236383] text-base">
                                                 {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
                                               </span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2294,7 +2294,7 @@ export default function EventRequestsManagement() {
                                         {/* Address */}
                                         <div className="pt-2 border-t border-gray-100">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0">
-                                            <span className="text-gray-700 text-base font-medium flex-shrink-0">Address:</span>
+                                            <span className="text-[#1A2332] text-base font-medium flex-shrink-0">Address:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'eventAddress' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -2346,15 +2346,15 @@ export default function EventRequestsManagement() {
                                         
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-700 text-base font-medium">Types:</span>
-                                            <span className="font-semibold text-gray-900 text-base text-right max-w-[150px] truncate">
+                                            <span className="text-[#1A2332] text-base font-medium">Types:</span>
+                                            <span className="font-semibold text-[#FBAD3F] text-base text-right max-w-[150px] truncate">
                                               {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                             </span>
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-700 text-base font-medium">Refrigeration:</span>
-                                            <span className="font-semibold text-gray-900 text-base">
+                                            <span className="text-[#1A2332] text-base font-medium">Refrigeration:</span>
+                                            <span className="font-semibold text-[#47B3CB] text-base">
                                               {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
                                             </span>
                                           </div>
@@ -2406,7 +2406,7 @@ export default function EventRequestsManagement() {
                                         
                                         <div className="space-y-2">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-700 text-base font-medium flex-shrink-0">TSP Contact:</span>
+                                            <span className="text-[#1A2332] text-base font-medium flex-shrink-0">TSP Contact:</span>
                                             <div className="flex items-center space-x-1">
                                               {editingScheduledId === request.id && editingField === 'tspContact' ? (
                                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
@@ -2443,9 +2443,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-700 text-base font-medium">Drivers:</span>
+                                            <span className="text-[#1A2332] text-base font-medium">Drivers:</span>
                                             <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-gray-900 text-base">{request.driverCount || 0}</span>
+                                              <span className="font-semibold text-[#007E8C] text-base">{request.driverCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
                                                 e.stopPropagation();
                                                 openAssignmentDialog(request.id, 'driver');
@@ -2456,9 +2456,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-700 text-base font-medium">Speakers:</span>
+                                            <span className="text-[#1A2332] text-base font-medium">Speakers:</span>
                                             <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-gray-900 text-base">{request.speakerCount || 0}</span>
+                                              <span className="font-semibold text-[#007E8C] text-base">{request.speakerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
                                                 e.stopPropagation();
                                                 openAssignmentDialog(request.id, 'speaker');
@@ -2469,9 +2469,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-700 text-base font-medium">Volunteers:</span>
+                                            <span className="text-[#1A2332] text-base font-medium">Volunteers:</span>
                                             <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-gray-900 text-base">{request.volunteerCount || 0}</span>
+                                              <span className="font-semibold text-[#007E8C] text-base">{request.volunteerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
                                                 e.stopPropagation();
                                                 openAssignmentDialog(request.id, 'volunteer');
