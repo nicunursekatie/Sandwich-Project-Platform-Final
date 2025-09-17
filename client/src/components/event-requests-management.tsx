@@ -1427,27 +1427,6 @@ export default function EventRequestsManagement() {
   const [scheduleCallDate, setScheduleCallDate] = useState('');
   const [scheduleCallTime, setScheduleCallTime] = useState('');
 
-  // Schedule event dialog state
-  const [showScheduleEventDialog, setShowScheduleEventDialog] = useState(false);
-  const [scheduleEventForm, setScheduleEventForm] = useState({
-    eventDate: '',
-    eventStartTime: '',
-    eventEndTime: '',
-    pickupTime: '',
-    eventAddress: '',
-    hasRefrigeration: '',
-    estimatedSandwichCount: '',
-    sandwichTypes: '',
-    sandwichDestination: '',
-    driverCount: '',
-    vanNeeded: false,
-    vanDriverCount: '',
-    speakerCount: '',
-    volunteerCount: '',
-    tspContact: '',
-    additionalRequirements: '',
-    planningNotes: ''
-  });
 
   // 1. Add state for inline editing of completed event fields:
   const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
@@ -1627,51 +1606,6 @@ export default function EventRequestsManagement() {
     },
   });
 
-  const scheduleEventMutation = useMutation({
-    mutationFn: ({
-      id,
-      eventData,
-    }: {
-      id: number;
-      eventData: any;
-    }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}/schedule-event`, eventData),
-    onSuccess: () => {
-      toast({
-        title: 'Event scheduled',
-        description: 'Event has been scheduled successfully.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      setShowScheduleEventDialog(false);
-      setSelectedEventRequest(null);
-      setScheduleEventForm({
-        eventDate: '',
-        eventStartTime: '',
-        eventEndTime: '',
-        pickupTime: '',
-        eventAddress: '',
-        hasRefrigeration: '',
-        estimatedSandwichCount: '',
-        sandwichTypes: '',
-        sandwichDestination: '',
-        driverCount: '',
-        vanNeeded: false,
-        vanDriverCount: '',
-        speakerCount: '',
-        volunteerCount: '',
-        tspContact: '',
-        additionalRequirements: '',
-        planningNotes: ''
-      });
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to schedule event.',
-        variant: 'destructive',
-      });
-    },
-  });
 
   // Mutation for inline editing of scheduled event fields
   const updateScheduledFieldMutation = useMutation({
@@ -2499,27 +2433,8 @@ export default function EventRequestsManagement() {
                                       <Button
                                         onClick={() => {
                                           setSelectedEventRequest(request);
-                                          setShowScheduleEventDialog(true);
-                                          // Pre-populate the form with existing data
-                                          setScheduleEventForm({
-                                            eventDate: request.desiredEventDate || '',
-                                            eventStartTime: request.eventStartTime || '',
-                                            eventEndTime: request.eventEndTime || '',
-                                            pickupTime: request.pickupTime || '',
-                                            eventAddress: request.eventAddress || '',
-                                            hasRefrigeration: request.hasRefrigeration ? 'true' : 'false',
-                                            estimatedSandwichCount: request.estimatedSandwichCount?.toString() || '',
-                                            sandwichTypes: request.sandwichTypes || '',
-                                            sandwichDestination: request.sandwichDestination || '',
-                                            driverCount: request.driverCount?.toString() || '0',
-                                            vanNeeded: request.vanNeeded || false,
-                                            vanDriverCount: request.vanDriverCount?.toString() || '0',
-                                            speakerCount: request.speakerCount?.toString() || '0',
-                                            volunteerCount: request.volunteerCount?.toString() || '0',
-                                            tspContact: request.tspContact || '',
-                                            additionalRequirements: request.additionalRequirements || '',
-                                            planningNotes: request.planningNotes || '',
-                                          });
+                                          setShowEventDetails(true);
+                                          setIsEditing(true);
                                         }}
                                         variant="outline"
                                         size="sm"
@@ -2586,7 +2501,8 @@ export default function EventRequestsManagement() {
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setSelectedEventRequest(request);
-                                            setShowScheduleEventDialog(true);
+                                            setShowEventDetails(true);
+                                            setIsEditing(true);
                                           }}
                                           className="text-brand-orange hover:bg-brand-orange hover:text-white"
                                           data-testid={`button-mark-scheduled-${request.id}`}
@@ -2774,7 +2690,7 @@ export default function EventRequestsManagement() {
                       {selectedEventRequest.desiredEventDate && (
                         <div>
                           <Label className="text-sm font-medium">
-                            Desired Date
+                            Event Date
                           </Label>
                           <p className="text-sm">
                             {
@@ -2785,6 +2701,60 @@ export default function EventRequestsManagement() {
                           </p>
                         </div>
                       )}
+                      {selectedEventRequest.eventAddress && (
+                        <div>
+                          <Label className="text-sm font-medium">
+                            Event Address
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.eventAddress}
+                          </p>
+                        </div>
+                      )}
+                      {(selectedEventRequest.eventStartTime || selectedEventRequest.eventEndTime || selectedEventRequest.pickupTime) && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {selectedEventRequest.eventStartTime && (
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Start Time
+                              </Label>
+                              <p className="text-sm">
+                                {selectedEventRequest.eventStartTime}
+                              </p>
+                            </div>
+                          )}
+                          {selectedEventRequest.eventEndTime && (
+                            <div>
+                              <Label className="text-sm font-medium">
+                                End Time
+                              </Label>
+                              <p className="text-sm">
+                                {selectedEventRequest.eventEndTime}
+                              </p>
+                            </div>
+                          )}
+                          {selectedEventRequest.pickupTime && (
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Pickup Time
+                              </Label>
+                              <p className="text-sm">
+                                {selectedEventRequest.pickupTime}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {selectedEventRequest.hasRefrigeration !== null && (
+                        <div>
+                          <Label className="text-sm font-medium">
+                            Refrigeration Available
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.hasRefrigeration ? 'Yes' : 'No'}
+                          </p>
+                        </div>
+                      )}
                       {selectedEventRequest.estimatedSandwichCount && (
                         <div>
                           <Label className="text-sm font-medium">
@@ -2792,6 +2762,101 @@ export default function EventRequestsManagement() {
                           </Label>
                           <p className="text-sm">
                             {selectedEventRequest.estimatedSandwichCount}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEventRequest.sandwichTypes && (
+                        <div>
+                          <Label className="text-sm font-medium">
+                            Sandwich Types
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.sandwichTypes}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEventRequest.sandwichDestination && (
+                        <div>
+                          <Label className="text-sm font-medium">
+                            Sandwich Destination
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.sandwichDestination}
+                          </p>
+                        </div>
+                      )}
+                      {(selectedEventRequest.driverCount || selectedEventRequest.vanNeeded || selectedEventRequest.speakerCount || selectedEventRequest.volunteerCount) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {selectedEventRequest.driverCount && (
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Drivers Needed
+                              </Label>
+                              <p className="text-sm">
+                                {selectedEventRequest.driverCount}
+                              </p>
+                            </div>
+                          )}
+                          {selectedEventRequest.vanNeeded && (
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Van Needed
+                              </Label>
+                              <p className="text-sm">
+                                {selectedEventRequest.vanNeeded ? 'Yes' : 'No'}
+                                {selectedEventRequest.vanDriverCount && ` (${selectedEventRequest.vanDriverCount} drivers)`}
+                              </p>
+                            </div>
+                          )}
+                          {selectedEventRequest.speakerCount && (
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Speakers Needed
+                              </Label>
+                              <p className="text-sm">
+                                {selectedEventRequest.speakerCount}
+                              </p>
+                            </div>
+                          )}
+                          {selectedEventRequest.volunteerCount && (
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Volunteers Needed
+                              </Label>
+                              <p className="text-sm">
+                                {selectedEventRequest.volunteerCount}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {selectedEventRequest.tspContact && (
+                        <div>
+                          <Label className="text-sm font-medium">
+                            TSP Contact
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.tspContact}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEventRequest.additionalRequirements && (
+                        <div>
+                          <Label className="text-sm font-medium">
+                            Additional Requirements
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.additionalRequirements}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEventRequest.planningNotes && (
+                        <div>
+                          <Label className="text-sm font-medium">
+                            Planning Notes
+                          </Label>
+                          <p className="text-sm">
+                            {selectedEventRequest.planningNotes}
                           </p>
                         </div>
                       )}
@@ -2998,6 +3063,203 @@ export default function EventRequestsManagement() {
                           type="tel"
                           defaultValue={selectedEventRequest.phone || ''}
                           data-testid="input-edit-phone"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Scheduled Event Fields */}
+                    <div className="space-y-4 border-t pt-4">
+                      <h3 className="text-lg font-semibold">Event Scheduling Details</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="edit-event-date">Event Date</Label>
+                          <Input
+                            id="edit-event-date"
+                            name="desiredEventDate"
+                            type="date"
+                            defaultValue={selectedEventRequest.desiredEventDate || ''}
+                            data-testid="input-edit-event-date"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-event-address">Event Address</Label>
+                          <Input
+                            id="edit-event-address"
+                            name="eventAddress"
+                            defaultValue={selectedEventRequest.eventAddress || ''}
+                            placeholder="123 Main St, City, State"
+                            data-testid="input-edit-event-address"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="edit-start-time">Start Time</Label>
+                          <Input
+                            id="edit-start-time"
+                            name="eventStartTime"
+                            type="time"
+                            defaultValue={selectedEventRequest.eventStartTime || ''}
+                            data-testid="input-edit-start-time"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-end-time">End Time</Label>
+                          <Input
+                            id="edit-end-time"
+                            name="eventEndTime"
+                            type="time"
+                            defaultValue={selectedEventRequest.eventEndTime || ''}
+                            data-testid="input-edit-end-time"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-pickup-time">Pickup Time</Label>
+                          <Input
+                            id="edit-pickup-time"
+                            name="pickupTime"
+                            type="time"
+                            defaultValue={selectedEventRequest.pickupTime || ''}
+                            data-testid="input-edit-pickup-time"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-refrigeration">Refrigeration Available?</Label>
+                        <Select name="hasRefrigeration" defaultValue={selectedEventRequest.hasRefrigeration ? 'true' : 'false'}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select refrigeration status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="edit-sandwich-count">Total Sandwich Count</Label>
+                          <Input
+                            id="edit-sandwich-count"
+                            name="estimatedSandwichCount"
+                            type="number"
+                            defaultValue={selectedEventRequest.estimatedSandwichCount || ''}
+                            placeholder="e.g., 100"
+                            data-testid="input-edit-sandwich-count"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-sandwich-types">Sandwich Types</Label>
+                          <Input
+                            id="edit-sandwich-types"
+                            name="sandwichTypes"
+                            defaultValue={selectedEventRequest.sandwichTypes || ''}
+                            placeholder="e.g., Deli (Turkey), PB&J"
+                            data-testid="input-edit-sandwich-types"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-sandwich-destination">Sandwich Destination</Label>
+                        <Input
+                          id="edit-sandwich-destination"
+                          name="sandwichDestination"
+                          defaultValue={selectedEventRequest.sandwichDestination || ''}
+                          placeholder="e.g., Local Shelter, Food Bank"
+                          data-testid="input-edit-sandwich-destination"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="edit-driver-count">Drivers Needed</Label>
+                          <Input
+                            id="edit-driver-count"
+                            name="driverCount"
+                            type="number"
+                            defaultValue={selectedEventRequest.driverCount || ''}
+                            placeholder="0"
+                            data-testid="input-edit-driver-count"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-van-needed">Van Needed</Label>
+                          <Select name="vanNeeded" defaultValue={selectedEventRequest.vanNeeded ? 'true' : 'false'}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select van requirement" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">Yes</SelectItem>
+                              <SelectItem value="false">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {selectedEventRequest.vanNeeded && (
+                        <div>
+                          <Label htmlFor="edit-van-driver-count">Van Drivers Needed</Label>
+                          <Input
+                            id="edit-van-driver-count"
+                            name="vanDriverCount"
+                            type="number"
+                            defaultValue={selectedEventRequest.vanDriverCount || ''}
+                            placeholder="0"
+                            data-testid="input-edit-van-driver-count"
+                          />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="edit-speaker-count">Speakers Needed</Label>
+                          <Input
+                            id="edit-speaker-count"
+                            name="speakerCount"
+                            type="number"
+                            defaultValue={selectedEventRequest.speakerCount || ''}
+                            placeholder="0"
+                            data-testid="input-edit-speaker-count"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-volunteer-count">Volunteers Needed</Label>
+                          <Input
+                            id="edit-volunteer-count"
+                            name="volunteerCount"
+                            type="number"
+                            defaultValue={selectedEventRequest.volunteerCount || ''}
+                            placeholder="0"
+                            data-testid="input-edit-volunteer-count"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-tsp-contact">TSP Contact</Label>
+                        <Input
+                          id="edit-tsp-contact"
+                          name="tspContact"
+                          defaultValue={selectedEventRequest.tspContact || ''}
+                          placeholder="Enter TSP contact person"
+                          data-testid="input-edit-tsp-contact"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-additional-requirements">Additional Requirements</Label>
+                        <Textarea
+                          id="edit-additional-requirements"
+                          name="additionalRequirements"
+                          defaultValue={selectedEventRequest.additionalRequirements || ''}
+                          placeholder="Any special requirements or notes..."
+                          rows={3}
+                          data-testid="textarea-edit-additional-requirements"
                         />
                       </div>
                     </div>
@@ -3213,320 +3475,6 @@ export default function EventRequestsManagement() {
           </Dialog>
         )}
 
-        {/* Schedule Event Dialog */}
-        {showScheduleEventDialog && selectedEventRequest && (
-          <Dialog
-            open={showScheduleEventDialog}
-            onOpenChange={setShowScheduleEventDialog}
-          >
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center space-x-2">
-                  <CalendarPlus className="w-5 h-5 text-brand-orange" />
-                  <span>Schedule Event - {selectedEventRequest.organizationName}</span>
-                </DialogTitle>
-                <DialogDescription>
-                  Complete the event details to move this request to scheduled status
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const eventData = {
-                    status: 'scheduled',
-                    desiredEventDate: formData.get('eventDate'),
-                    eventStartTime: formData.get('eventStartTime'),
-                    eventEndTime: formData.get('eventEndTime'),
-                    pickupTime: formData.get('pickupTime'),
-                    eventAddress: formData.get('eventAddress'),
-                    hasRefrigeration: formData.get('hasRefrigeration') === 'yes',
-                    estimatedSandwichCount: formData.get('estimatedSandwichCount') ? parseInt(formData.get('estimatedSandwichCount') as string) : null,
-                    sandwichTypes: formData.get('sandwichTypes'),
-                    sandwichDestination: formData.get('sandwichDestinationSelect') === 'custom' 
-                      ? formData.get('sandwichDestination') 
-                      : formData.get('sandwichDestinationSelect'),
-                    driverCount: formData.get('driverCount') ? parseInt(formData.get('driverCount') as string) : null,
-                    vanNeeded: scheduleEventForm.vanNeeded,
-                    vanDriverCount: scheduleEventForm.vanNeeded && formData.get('vanDriverCount') ? parseInt(formData.get('vanDriverCount') as string) : null,
-                    speakerCount: formData.get('speakerCount') ? parseInt(formData.get('speakerCount') as string) : null,
-                    volunteerCount: formData.get('volunteerCount') ? parseInt(formData.get('volunteerCount') as string) : null,
-                    tspContact: scheduleEventForm.tspContact,
-                    additionalRequirements: formData.get('additionalRequirements'),
-                    planningNotes: formData.get('planningNotes')
-                  };
-                  
-                  scheduleEventMutation.mutate({
-                    id: selectedEventRequest.id,
-                    eventData
-                  });
-                }}
-                className="space-y-6"
-              >
-                {/* Event Date & Times */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="eventDate">Event Date *</Label>
-                    <Input
-                      id="eventDate"
-                      name="eventDate"
-                      type="date"
-                      required
-                      defaultValue={formatDateForInput(scheduleEventForm.eventDate)}
-                      data-testid="input-event-date"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="eventAddress">Event Address</Label>
-                    <Input
-                      id="eventAddress"
-                      name="eventAddress"
-                      placeholder="123 Main St, City, State"
-                      defaultValue={scheduleEventForm.eventAddress}
-                      data-testid="input-event-address"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="eventStartTime">Start Time</Label>
-                    <Input
-                      id="eventStartTime"
-                      name="eventStartTime"
-                      type="time"
-                      defaultValue={scheduleEventForm.eventStartTime}
-                      data-testid="input-event-start-time"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="eventEndTime">End Time</Label>
-                    <Input
-                      id="eventEndTime"
-                      name="eventEndTime"
-                      type="time"
-                      defaultValue={scheduleEventForm.eventEndTime}
-                      data-testid="input-event-end-time"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="pickupTime">Pickup Time</Label>
-                    <Input
-                      id="pickupTime"
-                      name="pickupTime"
-                      type="time"
-                      defaultValue={scheduleEventForm.pickupTime}
-                      data-testid="input-pickup-time"
-                    />
-                  </div>
-                </div>
-
-                {/* Refrigeration */}
-                <div>
-                  <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-                  <Select name="hasRefrigeration" defaultValue={scheduleEventForm.hasRefrigeration}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select refrigeration status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                      <SelectItem value="unknown">Unknown</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Sandwich Planning */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Sandwich Planning</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="estimatedSandwichCount">Total Sandwich Count</Label>
-                      <Input
-                        id="estimatedSandwichCount"
-                        name="estimatedSandwichCount"
-                        type="number"
-                        placeholder="e.g., 100"
-                        defaultValue={scheduleEventForm.estimatedSandwichCount}
-                        data-testid="input-sandwich-count"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="sandwichTypes">Sandwich Types</Label>
-                      <SandwichTypesSelector
-                        name="sandwichTypes"
-                        defaultValue={scheduleEventForm.sandwichTypes}
-                        estimatedCount={parseInt(scheduleEventForm.estimatedSandwichCount) || null}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Sandwich Destination */}
-                  <div>
-                    <Label htmlFor="sandwichDestination">Sandwich Destination</Label>
-                    <div className="mt-1 space-y-2">
-                      <Select name="sandwichDestinationSelect" defaultValue={scheduleEventForm.sandwichDestination && !SANDWICH_DESTINATIONS.includes(scheduleEventForm.sandwichDestination) ? 'custom' : scheduleEventForm.sandwichDestination}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select destination or enter custom" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="custom">Enter Custom Destination</SelectItem>
-                          {SANDWICH_DESTINATIONS.map((destination) => (
-                            <SelectItem key={destination} value={destination}>
-                              {destination}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        id="sandwichDestination"
-                        name="sandwichDestination"
-                        placeholder="Or enter custom destination"
-                        defaultValue={scheduleEventForm.sandwichDestination && !SANDWICH_DESTINATIONS.includes(scheduleEventForm.sandwichDestination) ? scheduleEventForm.sandwichDestination : ''}
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Staffing */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Staffing & Assignments</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="tspContact">TSP Contact</Label>
-                      <TaskAssigneeSelector
-                        value={{
-                          assigneeName: scheduleEventForm.tspContact
-                        }}
-                        onChange={(value) => {
-                          setScheduleEventForm(prev => ({
-                            ...prev,
-                            tspContact: value.assigneeName || ''
-                          }));
-                        }}
-                        placeholder="Select TSP contact person"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="driverCount">Drivers Needed</Label>
-                      <Input
-                        id="driverCount"
-                        name="driverCount"
-                        type="number"
-                        placeholder="0"
-                        defaultValue={scheduleEventForm.driverCount}
-                        data-testid="input-driver-count"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <input
-                          type="checkbox"
-                          id="vanNeeded"
-                          checked={scheduleEventForm.vanNeeded}
-                          onChange={(e) => {
-                            setScheduleEventForm(prev => ({
-                              ...prev,
-                              vanNeeded: e.target.checked,
-                              vanDriverCount: e.target.checked ? prev.vanDriverCount : '0'
-                            }));
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        <Label htmlFor="vanNeeded" className="text-sm font-medium">
-                          Van Needed for this Event
-                        </Label>
-                      </div>
-                      {scheduleEventForm.vanNeeded && (
-                        <div>
-                          <Label htmlFor="vanDriverCount">Van Drivers Needed</Label>
-                          <Input
-                            id="vanDriverCount"
-                            name="vanDriverCount"
-                            type="number"
-                            placeholder="0"
-                            defaultValue={scheduleEventForm.vanDriverCount}
-                            data-testid="input-van-driver-count"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="speakerCount">Speakers Needed</Label>
-                      <Input
-                        id="speakerCount"
-                        name="speakerCount"
-                        type="number"
-                        placeholder="0"
-                        defaultValue={scheduleEventForm.speakerCount}
-                        data-testid="input-speaker-count"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="volunteerCount">Volunteers Needed</Label>
-                      <Input
-                        id="volunteerCount"
-                        name="volunteerCount"
-                        type="number"
-                        placeholder="0"
-                        defaultValue={scheduleEventForm.volunteerCount}
-                        data-testid="input-volunteer-count"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Information */}
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="additionalRequirements">Additional Requirements</Label>
-                    <Textarea
-                      id="additionalRequirements"
-                      name="additionalRequirements"
-                      placeholder="Any special requirements or notes..."
-                      rows={3}
-                      defaultValue={scheduleEventForm.additionalRequirements}
-                      data-testid="textarea-additional-requirements"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="planningNotes">Planning Notes</Label>
-                    <Textarea
-                      id="planningNotes"
-                      name="planningNotes"
-                      placeholder="Internal planning notes..."
-                      rows={3}
-                      defaultValue={scheduleEventForm.planningNotes}
-                      data-testid="textarea-planning-notes"
-                    />
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowScheduleEventDialog(false)}
-                    disabled={scheduleEventMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={scheduleEventMutation.isPending}
-                    className="bg-brand-orange hover:bg-brand-orange/90"
-                    data-testid="button-confirm-schedule-event"
-                  >
-                    {scheduleEventMutation.isPending ? 'Scheduling...' : 'Schedule Event'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
     </TooltipProvider>
   );
