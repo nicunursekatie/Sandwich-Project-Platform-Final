@@ -2401,36 +2401,74 @@ export default function EventRequestsManagement() {
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
-                                            <div className="flex items-center space-x-1">
-                                              <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
-                                                {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
-                                              </span>
-                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                <Button size="sm" variant="ghost" onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
-                                                }} className="h-4 w-4 p-0">
-                                                  <Edit className="w-3 h-3" />
+                                            {editingScheduledId === request.id && editingField === 'sandwichTypes' ? (
+                                              <div className="flex items-center space-x-2">
+                                                <Input
+                                                  value={editingValue}
+                                                  onChange={(e) => setEditingValue(e.target.value)}
+                                                  className="text-base w-48"
+                                                  placeholder="Enter sandwich types (JSON format)"
+                                                />
+                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                  <CheckCircle className="w-4 h-4" />
                                                 </Button>
-                                              )}
-                                            </div>
+                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                  <X className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-center space-x-1">
+                                                <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
+                                                  {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                                </span>
+                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
+                                                  }} className="h-4 w-4 p-0">
+                                                    <Edit className="w-3 h-3" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )}
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
-                                            <div className="flex items-center space-x-1">
-                                              <span className="font-bold text-[#1A2332] text-base">
-                                                {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
-                                              </span>
-                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                <Button size="sm" variant="ghost" onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  startEditing(request.id, 'hasRefrigeration', request.hasRefrigeration?.toString() || '');
-                                                }} className="h-4 w-4 p-0">
-                                                  <Edit className="w-3 h-3" />
+                                            {editingScheduledId === request.id && editingField === 'hasRefrigeration' ? (
+                                              <div className="flex items-center space-x-2">
+                                                <Select value={editingValue} onValueChange={setEditingValue}>
+                                                  <SelectTrigger className="w-32">
+                                                    <SelectValue placeholder="Select..." />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="true">Yes</SelectItem>
+                                                    <SelectItem value="false">No</SelectItem>
+                                                    <SelectItem value="">Unknown</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                  <CheckCircle className="w-4 h-4" />
                                                 </Button>
-                                              )}
-                                            </div>
+                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                  <X className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-center space-x-1">
+                                                <span className="font-bold text-[#1A2332] text-base">
+                                                  {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
+                                                </span>
+                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditing(request.id, 'hasRefrigeration', request.hasRefrigeration?.toString() || '');
+                                                  }} className="h-4 w-4 p-0">
+                                                    <Edit className="w-3 h-3" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )}
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-gray-100">
