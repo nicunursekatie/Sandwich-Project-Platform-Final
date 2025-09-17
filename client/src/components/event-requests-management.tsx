@@ -100,6 +100,20 @@ const formatTime12Hour = (time24: string): string => {
   return `${hour24 - 12}:${minutes} PM`;
 };
 
+// Utility function to convert 24-hour time to 12-hour format for input display
+const formatTimeForInput = (time24: string): string => {
+  if (!time24) return '';
+  
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours);
+  
+  if (hour24 === 0) return `12:${minutes}`;
+  if (hour24 < 12) return `${hour24}:${minutes}`;
+  if (hour24 === 12) return `12:${minutes}`;
+  
+  return `${hour24 - 12}:${minutes}`;
+};
+
 
 // Sandwich Destination Tracker Component - Simplified Free Text Entry
 interface SandwichDestinationTrackerProps {
@@ -2836,7 +2850,7 @@ export default function EventRequestsManagement() {
                             TSP Contact
                           </Label>
                           <p className="text-sm">
-                            {selectedEventRequest.tspContact}
+                            {resolveUserName(selectedEventRequest.tspContact)}
                           </p>
                         </div>
                       )}
@@ -3101,7 +3115,7 @@ export default function EventRequestsManagement() {
                             id="edit-start-time"
                             name="eventStartTime"
                             type="time"
-                            defaultValue={selectedEventRequest.eventStartTime || ''}
+                            defaultValue={formatTimeForInput(selectedEventRequest.eventStartTime || '')}
                             data-testid="input-edit-start-time"
                           />
                         </div>
@@ -3111,7 +3125,7 @@ export default function EventRequestsManagement() {
                             id="edit-end-time"
                             name="eventEndTime"
                             type="time"
-                            defaultValue={selectedEventRequest.eventEndTime || ''}
+                            defaultValue={formatTimeForInput(selectedEventRequest.eventEndTime || '')}
                             data-testid="input-edit-end-time"
                           />
                         </div>
@@ -3121,7 +3135,7 @@ export default function EventRequestsManagement() {
                             id="edit-pickup-time"
                             name="pickupTime"
                             type="time"
-                            defaultValue={selectedEventRequest.pickupTime || ''}
+                            defaultValue={formatTimeForInput(selectedEventRequest.pickupTime || '')}
                             data-testid="input-edit-pickup-time"
                           />
                         </div>
@@ -3157,7 +3171,7 @@ export default function EventRequestsManagement() {
                           <Input
                             id="edit-sandwich-types"
                             name="sandwichTypes"
-                            defaultValue={selectedEventRequest.sandwichTypes || ''}
+                            defaultValue={selectedEventRequest.sandwichTypes ? getSandwichTypesSummary(selectedEventRequest).breakdown : ''}
                             placeholder="e.g., Deli (Turkey), PB&J"
                             data-testid="input-edit-sandwich-types"
                           />
