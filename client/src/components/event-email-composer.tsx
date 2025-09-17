@@ -193,7 +193,6 @@ The Sandwich Project
         '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
         '/attached_assets/20250205-TSP-PBJ Sandwich Making 101_1753670644141.pdf',
         '/attached_assets/20230525-TSP-Food Safety Volunteers (1)_1753670644140.pdf',
-        '/attached_assets/20250205-TSP-Food Safety Recipients_1753670644140.pdf',
       ]);
     }
   }, [isOpen, eventRequest, formatEventDetails]);
