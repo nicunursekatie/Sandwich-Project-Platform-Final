@@ -79,11 +79,15 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   // Development-only GET /login route for auto-login (fixes infinite auth loop)
   router.get('/login', async (req: any, res) => {
     try {
-      // Only allow in development
-      if (process.env.NODE_ENV === 'production') {
+      // Allow auto-login in Replit development environment
+      // Don't check NODE_ENV as Replit may set it to production
+      const isLocalDev = process.env.REPL_ID || process.env.REPLIT_DB_URL || 
+                        req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+      
+      if (!isLocalDev) {
         return res.status(400).json({
           success: false,
-          message: 'Use POST /api/auth/login for authentication in production',
+          message: 'Auto-login only available in development environment',
         });
       }
 
