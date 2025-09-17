@@ -2082,11 +2082,11 @@ export default function EventRequestsManagement() {
                                   <div className="flex items-center space-x-3 mb-4 bg-gray-50 p-3 rounded-lg border-l-4 border-brand-primary">
                                     <Calendar className="w-5 h-5 text-brand-primary" />
                                     <div>
-                                      <span className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                                      <span className="text-sm font-medium text-gray-600">
                                         Event Date
                                       </span>
                                       <div
-                                        className={`text-sm font-semibold ${dateInfo.className}`}
+                                        className={`text-base font-semibold ${dateInfo.className}`}
                                       >
                                         {dateInfo.text}
                                       </div>
@@ -2130,21 +2130,21 @@ export default function EventRequestsManagement() {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                       {/* Contact Info */}
                                       <div className="space-y-2 md:col-span-2">
-                                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                        <div className="text-sm font-semibold text-gray-700">
                                           Contact Information
                                         </div>
                                         <div className="space-y-1">
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
                                               <User className="w-4 h-4 text-brand-teal flex-shrink-0" />
-                                              <span className="font-bold text-brand-primary text-sm">
+                                              <span className="font-bold text-brand-primary text-base">
                                                 {request.firstName} {request.lastName}
                                               </span>
                                             </div>
                                             {request.phone && (
                                               <div className="flex items-center space-x-1">
                                                 <Phone className="w-3 h-3 text-gray-500" />
-                                                <span className="font-medium text-gray-700 text-sm">
+                                                <span className="font-medium text-gray-700 text-base">
                                                   {request.phone}
                                                 </span>
                                               </div>
@@ -2152,7 +2152,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           <div className="flex items-center space-x-2">
                                             <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                            <span className="font-medium text-gray-700 text-sm truncate">
+                                            <span className="font-medium text-gray-700 text-base truncate">
                                               {request.email}
                                             </span>
                                           </div>
