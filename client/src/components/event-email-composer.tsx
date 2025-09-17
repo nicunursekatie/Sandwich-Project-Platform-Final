@@ -97,6 +97,7 @@ export function EventEmailComposer({
   const [selectedAttachments, setSelectedAttachments] = useState<string[]>([]);
   const [isDraft, setIsDraft] = useState(false);
   const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
+  const [requestPhoneCall, setRequestPhoneCall] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -104,6 +105,71 @@ export function EventEmailComposer({
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ['/api/documents'],
   });
+
+  // Regenerate email content based on selected options
+  const regenerateEmailContent = (includeScheduling: boolean, requestPhone: boolean) => {
+    const userName = user?.firstName && user?.lastName 
+      ? `${user.firstName} ${user.lastName}`
+      : user?.email || 'The Sandwich Project Team';
+    
+    const userPhone = user?.phoneNumber || '';
+    const userEmail = user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
+    
+    // Determine the next steps section based on selected options
+    let nextStepsSection = '';
+    let introText = 'Read through this email, then ';
+    
+    if (includeScheduling) {
+      nextStepsSection = `Schedule a planning call to get your event on our calendar:
+🗓️ https://thesandwichproject.as.me/`;
+      introText += 'schedule a call with us so we can';
+    } else if (requestPhone) {
+      nextStepsSection = `Reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days to schedule your event.`;
+      introText += 'reply with your contact information so we can';
+    } else {
+      // Default if neither is selected (though we warn about this)
+      nextStepsSection = `Reply to this email with your preferred event dates and we'll work with you to get your event scheduled.`;
+      introText += 'let us know your preferred dates so we can';
+    }
+    
+    const template = `Hi ${eventRequest.firstName},
+
+Thanks for your interest in organizing a sandwich-making event! We're thrilled you want to help us feed our community—every sandwich makes a real difference in someone's day. ${introText} get you on our event roster as soon as possible!
+
+Here's how it works: Groups make 200+ sandwiches at their events—but you'd be surprised how quickly they come together when everyone's working as a team. Many of our groups make 500 or even 1,000 sandwiches in just a few hours. You can choose any day that works for your group.
+
+Planning your budget:
+📊 Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+This tool lets you:
+• Enter your budget to see how many sandwiches you can make, OR
+• Enter your sandwich goal to see what it'll cost
+• Export a complete shopping list with quantities and supplies needed
+
+What you'll need for your event (the basics):
+• Food-safe gloves for all volunteers
+• Hair & beard nets for volunteers  
+• Indoor space for sandwich making
+• Refrigerator access (if making deli sandwiches)
+
+Next steps to book your event:
+• Review the attached food safety guidelines
+• ${nextStepsSection}
+
+When choosing your event date, we prefer about 2 weeks' notice to schedule drivers, but we can usually accommodate tighter timelines.
+
+Resources attached:
+• Sandwich-making instructions (PBJ and deli options)
+• Food safety guidelines
+• Sandwich labels (for day of event)
+
+We really appreciate you taking the time to do this. Looking forward to working together!
+
+Best,
+${userName}${userPhone ? '\n' + userPhone : ''}
+${userEmail}`;
+
+    setContent(template);
+  };
 
   // Format event details for template insertion
   const formatEventDetails = () => {
@@ -425,72 +491,61 @@ ${userEmail}`;
             />
           </div>
           
-          {/* Scheduling Link Option */}
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-            <Checkbox
-              id="include-scheduling"
-              checked={includeSchedulingLink}
-              onCheckedChange={(checked) => {
-                setIncludeSchedulingLink(checked as boolean);
-                // Regenerate email content with updated scheduling link
-                const userName = user?.firstName && user?.lastName 
-                  ? `${user.firstName} ${user.lastName}`
-                  : user?.email || 'The Sandwich Project Team';
-                
-                const userPhone = user?.phoneNumber || '';
-                const userEmail = user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
-                
-                const schedulingSection = checked 
-                  ? `Schedule a planning call to get your event on our calendar:
-🗓️ https://thesandwichproject.as.me/`
-                  : '';
-                
-                const template = `Hi ${eventRequest.firstName},
-
-Thanks for your interest in organizing a sandwich-making event! We're thrilled you want to help us feed our community—every sandwich makes a real difference in someone's day. Read through this email, then ${checked ? 'schedule a call with us so we can' : 'we can'} get you on our event roster as soon as possible!
-
-Here's how it works: Groups make 200+ sandwiches at their events—but you'd be surprised how quickly they come together when everyone's working as a team. Many of our groups make 500 or even 1,000 sandwiches in just a few hours. You can choose any day that works for your group.
-
-Planning your budget:
-📊 Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
-This tool lets you:
-• Enter your budget to see how many sandwiches you can make, OR
-• Enter your sandwich goal to see what it'll cost
-• Export a complete shopping list with quantities and supplies needed
-
-What you'll need for your event (the basics):
-• Food-safe gloves for all volunteers
-• Hair & beard nets for volunteers  
-• Indoor space for sandwich making
-• Refrigerator access (if making deli sandwiches)
-
-Next steps to book your event:
-• Review the attached food safety guidelines
-${schedulingSection ? '• ' + schedulingSection : ''}
-
-When choosing your event date, we prefer about 2 weeks' notice to schedule drivers, but we can usually accommodate tighter timelines.
-
-Resources attached:
-• Sandwich-making instructions (PBJ and deli options)
-• Food safety guidelines
-• Sandwich labels (for day of event)
-
-We really appreciate you taking the time to do this. Looking forward to working together!
-
-Best,
-${userName}${userPhone ? '\n' + userPhone : ''}
-${userEmail}`;
-
-                setContent(template);
-              }}
-            />
-            <Label 
-              htmlFor="include-scheduling" 
-              className="flex items-center gap-2 cursor-pointer text-sm"
-            >
-              <Calendar className="w-4 h-4 text-teal-600" />
-              Include scheduling link in the email
+          {/* Next Step Options */}
+          <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <Label className="text-sm font-medium text-gray-700">
+              Next Steps for Event Scheduling (select at least one):
             </Label>
+            
+            {/* Scheduling Link Option */}
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="include-scheduling"
+                checked={includeSchedulingLink}
+                onCheckedChange={(checked) => {
+                  setIncludeSchedulingLink(checked as boolean);
+                  if (checked) {
+                    setRequestPhoneCall(false); // Make them mutually exclusive
+                  }
+                  regenerateEmailContent(checked as boolean, false);
+                }}
+              />
+              <Label 
+                htmlFor="include-scheduling" 
+                className="flex items-center gap-2 cursor-pointer text-sm"
+              >
+                <Calendar className="w-4 h-4 text-teal-600" />
+                Include self-service scheduling link
+              </Label>
+            </div>
+            
+            {/* Phone Call Request Option */}
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="request-phone"
+                checked={requestPhoneCall}
+                onCheckedChange={(checked) => {
+                  setRequestPhoneCall(checked as boolean);
+                  if (checked) {
+                    setIncludeSchedulingLink(false); // Make them mutually exclusive
+                  }
+                  regenerateEmailContent(false, checked as boolean);
+                }}
+              />
+              <Label 
+                htmlFor="request-phone" 
+                className="flex items-center gap-2 cursor-pointer text-sm"
+              >
+                <Users className="w-4 h-4 text-orange-600" />
+                Request they reply with phone number for follow-up call
+              </Label>
+            </div>
+            
+            {!includeSchedulingLink && !requestPhoneCall && (
+              <p className="text-xs text-amber-600 italic">
+                ⚠️ At least one follow-up method should be selected
+              </p>
+            )}
           </div>
 
           {/* Attachments */}
