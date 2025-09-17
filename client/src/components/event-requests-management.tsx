@@ -85,6 +85,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import type { EventRequest } from '@shared/schema';
 import { TaskAssigneeSelector } from './task-assignee-selector';
 
 // Utility function to convert 24-hour time to 12-hour format
@@ -322,85 +323,7 @@ const formatEventDate = (dateString: string) => {
   }
 };
 
-interface EventRequest {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  organizationName: string;
-  department?: string;
-  desiredEventDate?: string;
-  message?: string;
-  previouslyHosted: 'yes' | 'no' | 'i_dont_know';
-  status: 'new' | 'in_process' | 'scheduled' | 'completed' | 'declined';
-  assignedTo?: string;
-  organizationExists: boolean;
-  duplicateNotes?: string;
-  createdAt: string;
-  isUnresponsive?: boolean;
-  contactAttempts?: number;
-  lastContactAttempt?: string;
-  unresponsiveAfterAttempts?: number;
-  firstAttemptDate?: string;
-  lastAttemptDate?: string;
-  unresponsiveStatus?: string;
-  unresponsiveNotes?: string;
-  updatedAt: string;
-  contactedAt?: string;
-  createdBy?: string;
-  contactCompletedAt?: string;
-  completedByUserId?: string;
-  communicationMethod?: string;
-  eventAddress?: string;
-  estimatedSandwichCount?: number;
-  hasRefrigeration?: boolean;
-  contactCompletionNotes?: string;
-  tspContactAssigned?: string;
-  toolkitSent?: boolean;
-  toolkitSentDate?: string;
-  eventStartTime?: string;
-  eventEndTime?: string;
-  pickupTime?: string;
-  additionalRequirements?: string;
-  planningNotes?: string;
-  toolkitStatus?: string;
-  tspContact?: string;
-  additionalTspContacts?: string;
-  additionalContact1?: string;
-  additionalContact2?: string;
-  customTspContact?: string;
-  followUpMethod?: string;
-  updatedEmail?: string;
-  followUpDate?: string;
-  scheduledCallDate?: string;
-  scheduledCallTime?: string;
-  driverCount?: number;
-  speakerCount?: number;
-  volunteerCount?: number;
-  vanDriverCount?: number;
-  driverAssignments?: string[];
-  speakerAssignments?: string[];
-  volunteerAssignments?: string[];
-  vanDriverAssignments?: string[];
-  actualSandwiches?: number;
-  actualSandwichTypes?: string;
-  sandwichTypes?: string;
-  sandwichDestination?: string; // Where sandwiches are going
-  hostLocation?: string; // Where sandwiches are stored overnight
-  vanNeeded?: boolean; // Whether a van is needed for this event
-  completedNotes?: string;
-  nextDayFollowUp?: string;
-  oneMonthFollowUp?: string;
-  assignedDriverIds?: string[];
-  assignedVolunteerIds?: string[];
-  driverDetails?: any;
-  speakerDetails?: any;
-  driversNeeded?: number;
-  speakersNeeded?: number;
-  volunteersNeeded?: boolean;
-  vanDriverNeeded?: boolean;
-}
+// Using EventRequest type from shared schema
 
 const statusColors = {
   new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-primary border border-teal-200',
@@ -2901,7 +2824,7 @@ export default function EventRequestsManagement() {
 
                                     // Check speakers needed
                                     const speakersNeeded = request.speakersNeeded || 0;
-                                    const assignedSpeakers = request.speakerAssignments?.length || 0;
+                                    const assignedSpeakers = request.assignedSpeakerIds?.length || 0;
                                     if (speakersNeeded > assignedSpeakers) {
                                       const speakersShort = speakersNeeded - assignedSpeakers;
                                       staffingBadges.push({
@@ -2913,7 +2836,7 @@ export default function EventRequestsManagement() {
                                     }
 
                                     // Check volunteers needed
-                                    if (request.volunteersNeeded && (!request.volunteerAssignments || request.volunteerAssignments.length === 0)) {
+                                    if (request.volunteersNeeded && (!request.assignedVolunteerIds || request.assignedVolunteerIds.length === 0)) {
                                       staffingBadges.push({
                                         key: 'volunteers',
                                         icon: '👥',
@@ -2923,7 +2846,7 @@ export default function EventRequestsManagement() {
                                     }
 
                                     // Check van driver needed
-                                    if (request.vanDriverNeeded && (!request.vanDriverAssignments || request.vanDriverAssignments.length === 0)) {
+                                    if (request.vanDriverNeeded && !request.assignedVanDriverId) {
                                       staffingBadges.push({
                                         key: 'van',
                                         icon: '🚐',
