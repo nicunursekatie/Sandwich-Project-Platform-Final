@@ -1170,7 +1170,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <SelectContent>
                 <SelectItem value="true">Yes</SelectItem>
                 <SelectItem value="false">No</SelectItem>
-                <SelectItem value="">Unknown</SelectItem>
+                <SelectItem value="unknown">Unknown</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -2865,7 +2865,7 @@ export default function EventRequestsManagement() {
                                                   <SelectContent>
                                                     <SelectItem value="true">Yes</SelectItem>
                                                     <SelectItem value="false">No</SelectItem>
-                                                    <SelectItem value="">Unknown</SelectItem>
+                                                    <SelectItem value="unknown">Unknown</SelectItem>
                                                   </SelectContent>
                                                 </Select>
                                                 <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
