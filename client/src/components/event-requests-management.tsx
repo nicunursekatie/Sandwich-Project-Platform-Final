@@ -2185,45 +2185,45 @@ export default function EventRequestsManagement() {
                                         <Calendar className="w-4 h-4 mr-2" />
                                         Event Schedule & Location
                                       </h4>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                        <div className="flex items-center space-x-2">
-                                          <Calendar className="w-4 h-4 text-blue-600" />
-                                          <div>
-                                            <div className="text-base font-bold text-blue-800">Event Date</div>
-                                            <div className="text-blue-900 font-medium text-base">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="flex items-start space-x-3">
+                                          <Calendar className="w-5 h-5 text-blue-600 mt-1" />
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Event Date</div>
+                                            <div className="text-xl font-bold text-gray-900">
                                               {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'Not specified'}
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                          <Clock className="w-4 h-4 text-blue-600" />
-                                          <div>
-                                            <div className="text-base font-bold text-blue-800">Start Time</div>
-                                            <div className="text-blue-900 font-medium text-base">
+                                        <div className="flex items-start space-x-3">
+                                          <Clock className="w-5 h-5 text-blue-600 mt-1" />
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Start Time</div>
+                                            <div className="text-xl font-bold text-gray-900">
                                               {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not specified'}
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                          <Clock className="w-4 h-4 text-blue-600" />
-                                          <div>
-                                            <div className="text-base font-bold text-blue-800">End Time</div>
-                                            <div className="text-blue-900 font-medium text-base">
+                                        <div className="flex items-start space-x-3">
+                                          <Clock className="w-5 h-5 text-blue-600 mt-1" />
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">End Time</div>
+                                            <div className="text-xl font-bold text-gray-900">
                                               {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not specified'}
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                          <Truck className="w-4 h-4 text-blue-600" />
-                                          <div>
-                                            <div className="text-base font-bold text-blue-800">Pickup Time</div>
-                                            <div className="text-blue-900 font-medium text-base">
+                                        <div className="flex items-start space-x-3">
+                                          <Truck className="w-5 h-5 text-blue-600 mt-1" />
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Pickup Time</div>
+                                            <div className="text-xl font-bold text-gray-900">
                                               {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not specified'}
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                          <MapPin className="w-4 h-4 text-blue-600" />
+                                        <div className="flex items-start space-x-3">
+                                          <MapPin className="w-5 h-5 text-blue-600 mt-1" />
                                           {editingScheduledId === request.id && editingField === 'eventAddress' ? (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <Input
@@ -2240,10 +2240,10 @@ export default function EventRequestsManagement() {
                                               </Button>
                                             </div>
                                           ) : (
-                                            <div className="flex items-center space-x-2 flex-1">
+                                            <div className="flex items-start space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-base font-bold text-blue-800">Event Address</div>
-                                                <div className="text-blue-900 font-medium text-base">
+                                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Event Address</div>
+                                                <div className="text-lg font-bold text-gray-900">
                                                   {request.eventAddress ? (
                                                     <a
                                                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
@@ -2253,7 +2253,9 @@ export default function EventRequestsManagement() {
                                                     >
                                                       {request.eventAddress}
                                                     </a>
-                                                  ) : 'Not specified'}
+                                                  ) : (
+                                                    <span className="text-gray-500">Not specified</span>
+                                                  )}
                                                 </div>
                                               </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2261,7 +2263,7 @@ export default function EventRequestsManagement() {
                                                   size="sm"
                                                   variant="ghost"
                                                   onClick={() => startEditing(request.id, 'eventAddress', request.eventAddress || '')}
-                                                  className="h-6 w-6 p-0"
+                                                  className="h-6 w-6 p-0 mt-1"
                                                 >
                                                   <Edit className="w-3 h-3" />
                                                 </Button>
@@ -2269,11 +2271,11 @@ export default function EventRequestsManagement() {
                                             </div>
                                           )}
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-blue-600">❄️</span>
-                                          <div>
-                                            <div className="text-base font-bold text-blue-800">Refrigeration</div>
-                                            <div className="text-blue-900 font-medium text-base">
+                                        <div className="flex items-start space-x-3">
+                                          <span className="text-blue-600 text-xl mt-1">❄️</span>
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Refrigeration</div>
+                                            <div className="text-xl font-bold text-gray-900">
                                               {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
                                             </div>
                                           </div>
@@ -2287,27 +2289,31 @@ export default function EventRequestsManagement() {
                                         <span className="text-lg mr-2">🥪</span>
                                         Sandwich Planning
                                       </h4>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-green-600">📊</span>
-                                          <div>
-                                            <div className="text-base font-bold text-green-800">Total Sandwiches</div>
-                                            <div className="text-green-900 font-medium text-base">
-                                              {request.estimatedSandwichCount || 'Not specified'}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="flex items-start space-x-3">
+                                          <span className="text-green-600 text-xl mt-1">📊</span>
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Sandwiches</div>
+                                            <div className="text-2xl font-bold text-gray-900">
+                                              {request.estimatedSandwichCount || (
+                                                <span className="text-gray-500 text-lg">Not specified</span>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-green-600">🏷️</span>
-                                          <div>
-                                            <div className="text-base font-bold text-green-800">Types</div>
-                                            <div className="text-green-900 font-medium text-base">
-                                              {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                        <div className="flex items-start space-x-3">
+                                          <span className="text-green-600 text-xl mt-1">🏷️</span>
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Types</div>
+                                            <div className="text-lg font-bold text-gray-900">
+                                              {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : (
+                                                <span className="text-gray-500">Not specified</span>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-green-600">📍</span>
+                                        <div className="flex items-start space-x-3 md:col-span-2">
+                                          <span className="text-green-600 text-xl mt-1">📍</span>
                                           {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <Input
@@ -2324,11 +2330,13 @@ export default function EventRequestsManagement() {
                                               </Button>
                                             </div>
                                           ) : (
-                                            <div className="flex items-center space-x-2 flex-1">
+                                            <div className="flex items-start space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-base font-bold text-green-800">Destination</div>
-                                                <div className="text-green-900 font-medium text-base">
-                                                  {resolveRecipientName(request.sandwichDestination)}
+                                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Destination</div>
+                                                <div className="text-lg font-bold text-gray-900">
+                                                  {resolveRecipientName(request.sandwichDestination) || (
+                                                    <span className="text-gray-500">Not specified</span>
+                                                  )}
                                                 </div>
                                               </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2336,7 +2344,7 @@ export default function EventRequestsManagement() {
                                                   size="sm"
                                                   variant="ghost"
                                                   onClick={() => startEditing(request.id, 'sandwichDestination', request.sandwichDestination || '')}
-                                                  className="h-6 w-6 p-0"
+                                                  className="h-6 w-6 p-0 mt-1"
                                                 >
                                                   <Edit className="w-3 h-3" />
                                                 </Button>
@@ -2355,8 +2363,8 @@ export default function EventRequestsManagement() {
                                       </h4>
                                       <div className="space-y-3">
                                         {/* TSP Contact */}
-                                        <div className="flex items-center space-x-2">
-                                          <UserCheck className="w-4 h-4 text-purple-600" />
+                                        <div className="flex items-start space-x-3 mb-4">
+                                          <UserCheck className="w-5 h-5 text-purple-600 mt-1" />
                                           {editingScheduledId === request.id && editingField === 'tspContact' ? (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <div className="flex-1">
@@ -2379,11 +2387,13 @@ export default function EventRequestsManagement() {
                                               </Button>
                                             </div>
                                           ) : (
-                                            <div className="flex items-center space-x-2 flex-1">
+                                            <div className="flex items-start space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-base font-bold text-purple-800">TSP Contact</div>
-                                                <div className="text-purple-900 font-medium text-base">
-                                                  {resolveUserName(request.tspContact)}
+                                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">TSP Contact</div>
+                                                <div className="text-xl font-bold text-gray-900">
+                                                  {resolveUserName(request.tspContact) || (
+                                                    <span className="text-gray-500 text-lg">Not assigned</span>
+                                                  )}
                                                 </div>
                                               </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2391,7 +2401,7 @@ export default function EventRequestsManagement() {
                                                   size="sm"
                                                   variant="ghost"
                                                   onClick={() => startEditing(request.id, 'tspContact', resolveUserName(request.tspContact))}
-                                                  className="h-6 w-6 p-0"
+                                                  className="h-6 w-6 p-0 mt-1"
                                                 >
                                                   <Edit className="w-3 h-3" />
                                                 </Button>
@@ -2401,15 +2411,15 @@ export default function EventRequestsManagement() {
                                         </div>
 
                                         {/* Drivers */}
-                                        <div className="space-y-2">
-                                          <div className="flex items-center space-x-2">
-                                            <Truck className="w-4 h-4 text-purple-600" />
-                                            <div>
-                                              <div className="text-base font-bold text-purple-800">Drivers Needed</div>
-                                              <div className="text-purple-900 font-medium text-base">
+                                        <div className="space-y-3 mb-4">
+                                          <div className="flex items-start space-x-3">
+                                            <Truck className="w-5 h-5 text-purple-600 mt-1" />
+                                            <div className="flex-1">
+                                              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Drivers Needed</div>
+                                              <div className="text-xl font-bold text-gray-900">
                                                 {request.driverCount || 0}
                                                 {request.vanNeeded && (
-                                                  <span className="ml-2 text-purple-600 text-sm">
+                                                  <span className="ml-3 text-purple-600 text-base font-medium">
                                                     (Van needed)
                                                   </span>
                                                 )}
@@ -2451,12 +2461,12 @@ export default function EventRequestsManagement() {
                                         </div>
 
                                         {/* Speakers */}
-                                        <div className="space-y-2">
-                                          <div className="flex items-center space-x-2">
-                                            <Megaphone className="w-4 h-4 text-purple-600" />
-                                            <div>
-                                              <div className="text-base font-bold text-purple-800">Speakers Needed</div>
-                                              <div className="text-purple-900 font-medium text-base">
+                                        <div className="space-y-3">
+                                          <div className="flex items-start space-x-3">
+                                            <Megaphone className="w-5 h-5 text-purple-600 mt-1" />
+                                            <div className="flex-1">
+                                              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Speakers Needed</div>
+                                              <div className="text-xl font-bold text-gray-900">
                                                 {request.speakerCount || 0}
                                               </div>
                                             </div>
