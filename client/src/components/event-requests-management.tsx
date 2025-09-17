@@ -392,6 +392,10 @@ interface EventRequest {
   completedNotes?: string;
   nextDayFollowUp?: string;
   oneMonthFollowUp?: string;
+  assignedDriverIds?: string[];
+  assignedVolunteerIds?: string[];
+  driverDetails?: any;
+  speakerDetails?: any;
 }
 
 const statusColors = {
@@ -1487,6 +1491,75 @@ export default function EventRequestsManagement() {
     setAssignmentType(type);
     setShowAssignmentDialog(true);
   };
+
+  // Helper function to handle assignment
+  const handleAssignment = async (personId: string, personName: string) => {
+    if (!assignmentEventId || !assignmentType) return;
+
+    try {
+      const eventRequest = eventRequests.find(req => req.id === assignmentEventId);
+      if (!eventRequest) return;
+
+      let updateData: any = {};
+
+      if (assignmentType === 'driver') {
+        // Add to assignedDriverIds array
+        const currentDrivers = eventRequest.assignedDriverIds || [];
+        const newDrivers = [...currentDrivers, personId];
+        updateData.assignedDriverIds = newDrivers;
+        
+        // Update driver details
+        const currentDriverDetails = eventRequest.driverDetails || {};
+        updateData.driverDetails = {
+          ...currentDriverDetails,
+          [personId]: {
+            name: personName,
+            assignedAt: new Date().toISOString(),
+            assignedBy: user?.id
+          }
+        };
+      } else if (assignmentType === 'speaker') {
+        // Update speaker details
+        const currentSpeakerDetails = eventRequest.speakerDetails || {};
+        updateData.speakerDetails = {
+          ...currentSpeakerDetails,
+          [personId]: {
+            name: personName,
+            assignedAt: new Date().toISOString(),
+            assignedBy: user?.id
+          }
+        };
+      } else if (assignmentType === 'volunteer') {
+        // Add to assignedVolunteerIds array
+        const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+        const newVolunteers = [...currentVolunteers, personId];
+        updateData.assignedVolunteerIds = newVolunteers;
+      }
+
+      // Update the event request
+      await updateEventRequestMutation.mutateAsync({
+        id: assignmentEventId,
+        data: updateData
+      });
+
+      toast({
+        title: 'Assignment successful',
+        description: `${personName} has been assigned as ${assignmentType}`,
+      });
+
+    } catch (error) {
+      console.error('Failed to assign person:', error);
+      toast({
+        title: 'Assignment failed',
+        description: 'Failed to assign person. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setShowAssignmentDialog(false);
+      setAssignmentType(null);
+      setAssignmentEventId(null);
+    }
+  };
   const [completedEdit, setCompletedEdit] = useState<any>({});
 
   const { toast } = useToast();
@@ -1501,6 +1574,19 @@ export default function EventRequestsManagement() {
   // Fetch users for resolving user IDs to names
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ['/api/users'],
+  });
+
+  // Fetch drivers, hosts, and volunteers for assignment modal
+  const { data: drivers = [] } = useQuery<any[]>({
+    queryKey: ['/api/drivers'],
+  });
+
+  const { data: hosts = [] } = useQuery<any[]>({
+    queryKey: ['/api/hosts'],
+  });
+
+  const { data: volunteers = [] } = useQuery<any[]>({
+    queryKey: ['/api/volunteers'],
   });
 
   // Fetch recipients for sandwich destination dropdown
@@ -3564,6 +3650,91 @@ export default function EventRequestsManagement() {
               <div className="py-4">
                 <SandwichForecastWidget />
               </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Assignment Modal */}
+        {showAssignmentDialog && assignmentType && assignmentEventId && (
+          <Dialog open={showAssignmentDialog} onOpenChange={setShowAssignmentDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <Users className="w-5 h-5" />
+                  <span>
+                    {updateEventRequestMutation.isPending 
+                      ? `Assigning ${assignmentType}...` 
+                      : `Assign ${assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}`
+                    }
+                  </span>
+                </DialogTitle>
+                <DialogDescription>
+                  {updateEventRequestMutation.isPending 
+                    ? 'Please wait while we assign the person...'
+                    : `Select a ${assignmentType} for this event`
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="assignment-select">Choose {assignmentType}:</Label>
+                  <Select
+                    onValueChange={(value) => {
+                      // Find the person's name based on the selected value
+                      let personName = '';
+                      if (assignmentType === 'driver') {
+                        const driver = drivers.find(d => d.id.toString() === value);
+                        personName = driver ? `${driver.firstName} ${driver.lastName}` : value;
+                      } else if (assignmentType === 'speaker') {
+                        const user = users.find(u => u.id.toString() === value);
+                        personName = user ? `${user.firstName} ${user.lastName}` : value;
+                      } else if (assignmentType === 'volunteer') {
+                        const volunteer = volunteers.find(v => v.id.toString() === value);
+                        personName = volunteer ? `${volunteer.firstName} ${volunteer.lastName}` : value;
+                      }
+                      
+                      handleAssignment(value, personName);
+                    }}
+                    disabled={updateEventRequestMutation.isPending}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Select a ${assignmentType}...`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assignmentType === 'driver' && drivers.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id.toString()}>
+                          {driver.firstName} {driver.lastName} {driver.email && `(${driver.email})`}
+                        </SelectItem>
+                      ))}
+                      {assignmentType === 'speaker' && users.map((user) => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.firstName} {user.lastName} {user.email && `(${user.email})`}
+                        </SelectItem>
+                      ))}
+                      {assignmentType === 'volunteer' && volunteers.map((volunteer) => (
+                        <SelectItem key={volunteer.id} value={volunteer.id.toString()}>
+                          {volunteer.firstName} {volunteer.lastName} {volunteer.email && `(${volunteer.email})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAssignmentDialog(false);
+                    setAssignmentType(null);
+                    setAssignmentEventId(null);
+                  }}
+                  disabled={updateEventRequestMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         )}
