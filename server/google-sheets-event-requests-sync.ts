@@ -374,11 +374,37 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         });
 
         if (existingRequest) {
-          // SKIP updating existing requests - let the app be the authoritative source
-          console.log(
-            `⏭️ Skipping existing event request (app is authoritative): ${row.organizationName} - ${row.contactName}`
-          );
-          // Do not update existing requests to preserve user changes
+          // Selectively update message field from Google Sheets if missing in database
+          const shouldUpdateMessage = 
+            row.message && 
+            row.message.trim() && 
+            (!existingRequest.message || !existingRequest.message.trim());
+          
+          if (shouldUpdateMessage) {
+            console.log(
+              `📝 Updating message field for existing request: ${row.organizationName} - ${row.contactName}`
+            );
+            
+            try {
+              await this.storage.updateEventRequest(existingRequest.id, {
+                message: row.message.trim(),
+                updatedAt: new Date()
+              });
+              updatedCount++;
+              console.log(
+                `✅ Successfully updated message for: ${row.organizationName} - ${row.contactName}`
+              );
+            } catch (error) {
+              console.error(
+                `❌ Failed to update message for ${row.organizationName} - ${row.contactName}:`,
+                error
+              );
+            }
+          } else {
+            console.log(
+              `⏭️ Skipping existing event request (no message update needed): ${row.organizationName} - ${row.contactName}`
+            );
+          }
         } else {
           // Create new
           console.log(
