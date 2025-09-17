@@ -142,6 +142,35 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
     }
   });
 
+  // Logout endpoint
+  router.post('/logout', async (req: any, res) => {
+    try {
+      // Destroy the session
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destroy error:', err);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Failed to logout' 
+          });
+        }
+        
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        res.json({ 
+          success: true, 
+          message: 'Logged out successfully' 
+        });
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Logout failed' 
+      });
+    }
+  });
+
   // Get current authenticated user
   router.get('/user', async (req: any, res) => {
     try {
