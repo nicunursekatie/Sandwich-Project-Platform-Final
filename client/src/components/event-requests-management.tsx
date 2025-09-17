@@ -1503,6 +1503,11 @@ export default function EventRequestsManagement() {
     queryKey: ['/api/users'],
   });
 
+  // Fetch recipients for sandwich destination dropdown
+  const { data: recipients = [] } = useQuery<any[]>({
+    queryKey: ['/api/recipients'],
+  });
+
   // Helper function to resolve user ID to name
   const resolveUserName = (userIdOrName: string | undefined): string => {
     if (!userIdOrName) return 'Not assigned';
@@ -1517,6 +1522,20 @@ export default function EventRequestsManagement() {
     
     // Return as-is if it's already a name or user not found
     return userIdOrName;
+  };
+
+  // Helper function to resolve recipient ID to name
+  const resolveRecipientName = (recipientIdOrName: string | undefined): string => {
+    if (!recipientIdOrName) return 'Not specified';
+    
+    // Check if it's a recipient ID (numeric string)
+    if (/^\d+$/.test(recipientIdOrName)) {
+      const recipient = recipients.find(r => r.id.toString() === recipientIdOrName);
+      return recipient ? recipient.name : recipientIdOrName;
+    }
+    
+    // Otherwise, it's already a name
+    return recipientIdOrName;
   };
 
   // Mutations
@@ -2208,7 +2227,7 @@ export default function EventRequestsManagement() {
                                               <div className="flex-1">
                                                 <div className="text-sm font-semibold text-green-700">Destination</div>
                                                 <div className="text-green-900 font-medium text-base">
-                                                  {request.sandwichDestination || 'Not specified'}
+                                                  {resolveRecipientName(request.sandwichDestination)}
                                                 </div>
                                               </div>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2796,7 +2815,7 @@ export default function EventRequestsManagement() {
                             Sandwich Destination
                           </Label>
                           <p className="text-sm">
-                            {selectedEventRequest.sandwichDestination}
+                            {resolveRecipientName(selectedEventRequest.sandwichDestination)}
                           </p>
                         </div>
                       )}
@@ -3084,7 +3103,11 @@ export default function EventRequestsManagement() {
                             id="edit-event-date"
                             name="desiredEventDate"
                             type="date"
-                            defaultValue={selectedEventRequest.desiredEventDate || ''}
+                            defaultValue={
+                              selectedEventRequest.desiredEventDate 
+                                ? new Date(selectedEventRequest.desiredEventDate).toISOString().split('T')[0]
+                                : ''
+                            }
                             data-testid="input-edit-event-date"
                           />
                         </div>
@@ -3135,13 +3158,18 @@ export default function EventRequestsManagement() {
 
                       <div>
                         <Label htmlFor="edit-refrigeration">Refrigeration Available?</Label>
-                        <Select name="hasRefrigeration" defaultValue={selectedEventRequest.hasRefrigeration ? 'true' : 'false'}>
+                        <Select name="hasRefrigeration" defaultValue={
+                          selectedEventRequest.hasRefrigeration === true ? 'true' : 
+                          selectedEventRequest.hasRefrigeration === false ? 'false' : 
+                          'unknown'
+                        }>
                           <SelectTrigger>
                             <SelectValue placeholder="Select refrigeration status" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="true">Yes</SelectItem>
                             <SelectItem value="false">No</SelectItem>
+                            <SelectItem value="unknown">Unknown</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -3195,13 +3223,11 @@ export default function EventRequestsManagement() {
                               <SelectValue placeholder="Select destination" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="local-shelter">Local Shelter</SelectItem>
-                              <SelectItem value="food-bank">Food Bank</SelectItem>
-                              <SelectItem value="homeless-services">Homeless Services</SelectItem>
-                              <SelectItem value="community-center">Community Center</SelectItem>
-                              <SelectItem value="church-outreach">Church Outreach</SelectItem>
-                              <SelectItem value="school-program">School Program</SelectItem>
-                              <SelectItem value="senior-center">Senior Center</SelectItem>
+                              {recipients.map((recipient) => (
+                                <SelectItem key={recipient.id} value={recipient.id.toString()}>
+                                  {recipient.name}
+                                </SelectItem>
+                              ))}
                               <SelectItem value="other">Other (specify in notes)</SelectItem>
                             </SelectContent>
                           </Select>
@@ -3296,7 +3322,7 @@ export default function EventRequestsManagement() {
                             <SelectContent>
                               {users.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
-                                  {user.name || user.email}
+                                  {user.name || user.email || `User ${user.id}`}
                                 </SelectItem>
                               ))}
                               <SelectItem value="custom">Custom Entry</SelectItem>
@@ -3344,16 +3370,6 @@ export default function EventRequestsManagement() {
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="edit-event-date">Desired Event Date</Label>
-                      <Input
-                        id="edit-event-date"
-                        name="desiredEventDate"
-                        type="date"
-                        defaultValue={selectedEventRequest.desiredEventDate || ''}
-                        data-testid="input-edit-event-date"
-                      />
-                    </div>
 
                     <div>
                       <Label htmlFor="edit-previously-hosted">Previously Hosted</Label>
