@@ -1657,10 +1657,11 @@ export default function EventRequestsManagement() {
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       setIsEditing(false);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Update event request error:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update event request.',
+        title: 'Update Failed',
+        description: error?.message || error?.details || 'Failed to update event request. Please check your data and try again.',
         variant: 'destructive',
       });
     },
@@ -3070,17 +3071,51 @@ export default function EventRequestsManagement() {
                       onSubmit={(e) => {
                         e.preventDefault();
                         const formData = new FormData(e.currentTarget);
-                        const updatedData = Object.fromEntries(
-                          formData.entries()
-                        );
+                        const rawData = Object.fromEntries(formData.entries());
                         
-                        // Process sandwich types from individual inputs
+                        // Validate required fields
+                        if (!rawData.firstName || !rawData.lastName || !rawData.email) {
+                          toast({
+                            title: 'Validation Error',
+                            description: 'First name, last name, and email are required.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        
+                        // Process sandwich types from individual inputs - PRESERVE zero quantities
                         const sandwichTypes = SANDWICH_TYPES.map(type => {
                           const quantity = parseInt(formData.get(`sandwichType_${type.value}`) as string) || 0;
                           return { type: type.value, quantity };
-                        }).filter(item => item.quantity > 0);
+                        }); // Don't filter out zero quantities - they need to be preserved
                         
-                        updatedData.sandwichTypes = JSON.stringify(sandwichTypes);
+                        // Create properly typed update data
+                        const updatedData: any = {
+                          ...rawData,
+                          sandwichTypes: JSON.stringify(sandwichTypes),
+                        };
+                        
+                        // Convert boolean fields properly
+                        if (rawData.hasRefrigeration) {
+                          updatedData.hasRefrigeration = rawData.hasRefrigeration === 'true';
+                        }
+                        if (rawData.vanNeeded) {
+                          updatedData.vanNeeded = rawData.vanNeeded === 'true';
+                        }
+                        
+                        // Convert numeric fields
+                        if (rawData.estimatedSandwichCount) {
+                          updatedData.estimatedSandwichCount = parseInt(rawData.estimatedSandwichCount as string) || 0;
+                        }
+                        if (rawData.driverCount) {
+                          updatedData.driverCount = parseInt(rawData.driverCount as string) || 0;
+                        }
+                        if (rawData.speakerCount) {
+                          updatedData.speakerCount = parseInt(rawData.speakerCount as string) || 0;
+                        }
+                        if (rawData.volunteerCount) {
+                          updatedData.volunteerCount = parseInt(rawData.volunteerCount as string) || 0;
+                        }
                         
                         updateEventRequestMutation.mutate({
                           id: selectedEventRequest.id,
@@ -3727,13 +3762,13 @@ export default function EventRequestsManagement() {
                       let personName = '';
                       if (assignmentType === 'driver') {
                         const driver = drivers.find(d => d.id.toString() === value);
-                        personName = driver ? `${driver.firstName} ${driver.lastName}` : value;
+                        personName = driver ? driver.name : value; // Drivers use 'name' field
                       } else if (assignmentType === 'speaker') {
                         const user = users.find(u => u.id.toString() === value);
-                        personName = user ? `${user.firstName} ${user.lastName}` : value;
+                        personName = user ? `${user.firstName} ${user.lastName}`.trim() : value; // Users use firstName/lastName
                       } else if (assignmentType === 'volunteer') {
                         const volunteer = volunteers.find(v => v.id.toString() === value);
-                        personName = volunteer ? `${volunteer.firstName} ${volunteer.lastName}` : value;
+                        personName = volunteer ? volunteer.name : value; // Volunteers use 'name' field
                       }
                       
                       handleAssignment(value, personName);
