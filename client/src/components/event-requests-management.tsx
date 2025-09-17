@@ -2161,11 +2161,11 @@ export default function EventRequestsManagement() {
 
                                       {/* Sandwich Count - Right side */}
                                       {request.estimatedSandwichCount && (
-                                        <div className="space-y-2 md:col-start-3 md:text-right">
+                                        <div className="space-y-2 md:col-start-3 flex flex-col items-end text-right">
                                           <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                             {request.status === 'completed' ? 'Estimated' : 'Requested'}
                                           </div>
-                                          <div className="flex items-center space-x-2 md:justify-end">
+                                          <div className="flex items-center space-x-2">
                                             <span className="text-lg">🥪</span>
                                             <span className="font-bold text-brand-orange text-lg">
                                               {request.estimatedSandwichCount} sandwiches
