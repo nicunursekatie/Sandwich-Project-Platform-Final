@@ -2128,41 +2128,39 @@ export default function EventRequestsManagement() {
                                   // Compact Basic Info Grid
                                   <div className="bg-white rounded-lg border border-gray-200 p-3">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      {/* Contact Info */}
-                                      <div className="space-y-2 md:col-span-2">
-                                        <div className="text-sm font-semibold text-gray-700">
+                                      {/* Contact Info - Grouped */}
+                                      <div className="md:col-span-2 bg-brand-teal/5 border border-brand-teal/20 rounded-lg p-3">
+                                        <div className="text-sm font-semibold text-brand-teal mb-2">
                                           Contact Information
                                         </div>
-                                        <div className="space-y-1">
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                              <User className="w-4 h-4 text-brand-teal flex-shrink-0" />
-                                              <span className="font-bold text-brand-primary text-base">
-                                                {request.firstName} {request.lastName}
-                                              </span>
-                                            </div>
-                                            {request.phone && (
-                                              <div className="flex items-center space-x-1">
-                                                <Phone className="w-3 h-3 text-gray-500" />
-                                                <span className="font-medium text-gray-700 text-base">
-                                                  {request.phone}
-                                                </span>
-                                              </div>
-                                            )}
+                                        <div className="space-y-2">
+                                          <div className="flex items-center space-x-3">
+                                            <User className="w-4 h-4 text-brand-teal flex-shrink-0" />
+                                            <span className="font-bold text-brand-primary text-base">
+                                              {request.firstName} {request.lastName}
+                                            </span>
                                           </div>
-                                          <div className="flex items-center space-x-2">
+                                          <div className="flex items-center space-x-3">
                                             <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                             <span className="font-medium text-gray-700 text-base truncate">
                                               {request.email}
                                             </span>
                                           </div>
+                                          {request.phone && (
+                                            <div className="flex items-center space-x-3">
+                                              <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                              <span className="font-medium text-gray-700 text-base">
+                                                {request.phone}
+                                              </span>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
 
                                       {/* Sandwich Count - Right side */}
                                       {request.estimatedSandwichCount && (
                                         <div className="space-y-2 md:col-start-3 flex flex-col items-end text-right">
-                                          <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                          <div className="text-sm font-semibold text-brand-orange mb-1">
                                             {request.status === 'completed' ? 'Estimated' : 'Requested'}
                                           </div>
                                           <div className="flex items-center space-x-2">
@@ -2301,7 +2299,7 @@ export default function EventRequestsManagement() {
                                         {/* Address */}
                                         <div className="pt-2 border-t border-gray-100">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0">
-                                            <span className="text-[#FBAD3F] text-sm font-medium flex-shrink-0">Address:</span>
+                                            <span className="text-[#FBAD3F] text-base font-semibold flex-shrink-0">Address:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'eventAddress' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -2320,14 +2318,14 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <>
-                                                  <span className="font-medium text-sm sm:text-right sm:max-w-[200px] break-words">
+                                                  <span className="font-semibold text-base sm:text-right sm:max-w-[200px] break-words">
                                                     {request.eventAddress ? (
                                                       <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
                                                          target="_blank" rel="noopener noreferrer"
                                                          className="text-blue-600 hover:text-blue-800 underline">
                                                         {request.eventAddress}
                                                       </a>
-                                                    ) : 'Not specified'}
+                                                    ) : <span className="text-gray-500">Not specified</span>}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                     <Button size="sm" variant="ghost" onClick={(e) => {
@@ -2354,16 +2352,36 @@ export default function EventRequestsManagement() {
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
-                                            <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
-                                              {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
-                                            </span>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
+                                                {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
+                                                }} className="h-4 w-4 p-0">
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
-                                            <span className="font-bold text-[#1A2332] text-base">
-                                              {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
-                                            </span>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-bold text-[#1A2332] text-base">
+                                                {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startEditing(request.id, 'hasRefrigeration', request.hasRefrigeration?.toString() || '');
+                                                }} className="h-4 w-4 p-0">
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-gray-100">
