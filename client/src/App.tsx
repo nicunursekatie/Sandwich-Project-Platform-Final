@@ -68,7 +68,7 @@ function Router() {
             again.
           </p>
           <button
-            onClick={() => (window.location.href = '/api/login')}
+            onClick={() => (window.location.href = '/')}
             className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
           >
             Try Again
@@ -91,7 +91,7 @@ function Router() {
         <Route path="/login">
           {() => {
             // Redirect to the backend login page
-            window.location.href = '/api/login';
+            window.location.href = '/';
             return (
               <LoadingState
                 text="Redirecting to login..."
@@ -134,7 +134,7 @@ function Router() {
                   work.
                 </p>
                 <button
-                  onClick={() => (window.location.href = '/api/login')}
+                  onClick={() => (window.location.href = '/')}
                   className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
                 >
                   Login to Continue
@@ -146,7 +146,7 @@ function Router() {
         <Route path="/">
           {() => {
             // Redirect unauthenticated users directly to login
-            window.location.href = '/api/login';
+            window.location.href = '/';
             return (
               <LoadingState
                 text="Redirecting to login..."
@@ -159,7 +159,7 @@ function Router() {
         <Route>
           {() => {
             // Default fallback - redirect to login
-            window.location.href = '/api/login';
+            window.location.href = '/';
             return (
               <LoadingState
                 text="Redirecting to login..."

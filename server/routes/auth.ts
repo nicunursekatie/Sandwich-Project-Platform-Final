@@ -155,8 +155,8 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
           });
         }
         
-        // Clear the session cookie
-        res.clearCookie('connect.sid');
+        // Clear the session cookie (using actual session name from routes.ts)
+        res.clearCookie('tsp.session');
         res.json({ 
           success: true, 
           message: 'Logged out successfully' 

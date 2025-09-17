@@ -795,7 +795,7 @@ export function setupTempAuth(app: Express) {
           .status(500)
           .json({ success: false, message: 'Logout failed' });
       }
-      res.clearCookie('connect.sid');
+      res.clearCookie('tsp.session');
       res.json({ success: true, message: 'Logged out successfully' });
     });
   });
