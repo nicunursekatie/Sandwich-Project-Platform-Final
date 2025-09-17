@@ -105,14 +105,14 @@ export default function PhoneDirectoryPage() {
                     queryKey: ['/api/auth/user'],
                   });
                   queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                  window.location.href = '/';
+                  window.location.href = '/api/login';
                 } catch (error) {
                   queryClient.clear();
                   queryClient.invalidateQueries({
                     queryKey: ['/api/auth/user'],
                   });
                   queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                  window.location.href = '/';
+                  window.location.href = '/api/login';
                 }
               }}
               className="text-slate-400 hover:text-slate-600"

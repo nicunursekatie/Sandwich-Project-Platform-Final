@@ -43,7 +43,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Import authentication middleware for legacy routes that still need it
-  const { isAuthenticated } = await import('./temp-auth');
+  const { isAuthenticated, setupTempAuth } = await import('./temp-auth');
+  
+  // Setup temp auth routes (including login page)
+  setupTempAuth(app);
 
   // Add activity logging middleware after authentication setup
   app.use(createActivityLogger({ storage }));
