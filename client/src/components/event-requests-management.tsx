@@ -2137,6 +2137,111 @@ export default function EventRequestsManagement() {
                                   </div>
                                 </div>
 
+                                {/* Detailed Information Grid - 3 Column Layout */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                                  {/* Column 1: Schedule & Location */}
+                                  <div className="space-y-3 bg-[#f0f8fa] p-4 rounded-lg border border-[#236383]/20">
+                                    <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                      <Calendar className="w-4 h-4 mr-2" />
+                                      Schedule & Location
+                                    </h4>
+                                    
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#236383] text-sm font-medium">Start:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.desiredStartTime || 'Not set'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#236383] text-sm font-medium">End:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.desiredEndTime || 'Not set'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#236383] text-sm font-medium">Pickup:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.pickupTime || 'Not set'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex flex-col space-y-1 pt-2 border-t border-gray-100">
+                                        <span className="text-[#236383] text-sm font-medium">Address:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.eventAddress || 'Not specified'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Column 2: Sandwich Details */}
+                                  <div className="space-y-3 bg-[#fff8f0] p-4 rounded-lg border border-[#FBAD3F]/20">
+                                    <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                      <span className="mr-2">🥪</span>
+                                      Sandwich Details
+                                    </h4>
+                                    
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#FBAD3F] text-sm font-medium">Types:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm text-right max-w-[120px] truncate">
+                                          {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#47B3CB] text-sm font-medium">Refrigeration:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex flex-col space-y-1 pt-2 border-t border-gray-100">
+                                        <span className="text-[#FBAD3F] text-sm font-medium">Destination:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.sandwichDestination || 'Not specified'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Column 3: Staffing */}
+                                  <div className="space-y-3 bg-[#f0f6f8] p-4 rounded-lg border border-[#007E8C]/20">
+                                    <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                      <Users className="w-4 h-4 mr-2" />
+                                      Staffing
+                                    </h4>
+                                    
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#007E8C] text-sm font-medium">TSP Contact:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.assignedVolunteers ? '1 assigned' : '0'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#007E8C] text-sm font-medium">Drivers:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">
+                                          {request.assignedDrivers ? request.assignedDrivers.split(',').length : '0'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#007E8C] text-sm font-medium">Speakers:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">0</span>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#007E8C] text-sm font-medium">Volunteers:</span>
+                                        <span className="font-semibold text-[#1A2332] text-sm">0</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
 
                                 {/* Toolkit Status - Only for In Process */}
                                 {request.status === 'in_process' && (
