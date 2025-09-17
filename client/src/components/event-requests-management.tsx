@@ -1986,11 +1986,34 @@ export default function EventRequestsManagement() {
             assignedBy: user?.id,
           },
         };
+
+        // Update speaker assignments array for consistency
+        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
+        if (!currentSpeakerAssignments.includes(personName)) {
+          updateData.speakerAssignments = [...currentSpeakerAssignments, personName];
+        }
       } else if (assignmentType === 'volunteer') {
         // Add to assignedVolunteerIds array
         const currentVolunteers = eventRequest.assignedVolunteerIds || [];
         const newVolunteers = [...currentVolunteers, personId];
         updateData.assignedVolunteerIds = newVolunteers;
+
+        // Update volunteer details for consistency
+        const currentVolunteerDetails = eventRequest.volunteerDetails || {};
+        updateData.volunteerDetails = {
+          ...currentVolunteerDetails,
+          [personId]: {
+            name: personName,
+            assignedAt: new Date().toISOString(),
+            assignedBy: user?.id,
+          },
+        };
+
+        // Update volunteer assignments array for consistency
+        const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
+        if (!currentVolunteerAssignments.includes(personName)) {
+          updateData.volunteerAssignments = [...currentVolunteerAssignments, personName];
+        }
       }
 
       // Update the event request
@@ -2016,6 +2039,208 @@ export default function EventRequestsManagement() {
       setAssignmentEventId(null);
     }
   };
+
+  // Self-signup functions
+  const handleSelfSignup = async (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => {
+    if (!user) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to sign up for roles',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const eventRequest = eventRequests.find(req => req.id === eventId);
+      if (!eventRequest) return;
+
+      let updateData: any = {};
+
+      if (type === 'driver') {
+        // Check if user is already assigned
+        const currentDrivers = eventRequest.assignedDriverIds || [];
+        if (currentDrivers.includes(user.id)) {
+          toast({
+            title: 'Already signed up',
+            description: 'You are already assigned as a driver for this event',
+          });
+          return;
+        }
+
+        // Check if there are available spots (only if driversNeeded is explicitly set)
+        const driversNeeded = eventRequest.driversNeeded;
+        if (typeof driversNeeded === 'number' && currentDrivers.length >= driversNeeded) {
+          toast({
+            title: 'No spots available',
+            description: 'All driver spots are filled for this event',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Add user to driver assignments
+        const newDrivers = [...currentDrivers, user.id];
+        updateData.assignedDriverIds = newDrivers;
+
+        // Update driver details
+        const currentDriverDetails = eventRequest.driverDetails || {};
+        updateData.driverDetails = {
+          ...currentDriverDetails,
+          [user.id]: {
+            name: `${user.firstName} ${user.lastName}`.trim(),
+            assignedAt: new Date().toISOString(),
+            assignedBy: user.id,
+            selfAssigned: true,
+          },
+        };
+      } else if (type === 'speaker') {
+        // Check if user is already assigned
+        const currentSpeakerDetails = eventRequest.speakerDetails || {};
+        if (currentSpeakerDetails[user.id]) {
+          toast({
+            title: 'Already signed up',
+            description: 'You are already assigned as a speaker for this event',
+          });
+          return;
+        }
+
+        // Check if there are available spots (only if speakersNeeded is explicitly set)
+        const speakersNeeded = eventRequest.speakersNeeded;
+        const currentSpeakersCount = Object.keys(currentSpeakerDetails).length;
+        if (typeof speakersNeeded === 'number' && currentSpeakersCount >= speakersNeeded) {
+          toast({
+            title: 'No spots available',
+            description: 'All speaker spots are filled for this event',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Update speaker details
+        updateData.speakerDetails = {
+          ...currentSpeakerDetails,
+          [user.id]: {
+            name: `${user.firstName} ${user.lastName}`.trim(),
+            assignedAt: new Date().toISOString(),
+            assignedBy: user.id,
+            selfAssigned: true,
+          },
+        };
+
+        // Update speaker assignments array for consistency
+        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
+        const userName = `${user.firstName} ${user.lastName}`.trim();
+        if (!currentSpeakerAssignments.includes(userName)) {
+          updateData.speakerAssignments = [...currentSpeakerAssignments, userName];
+        }
+      } else if (type === 'volunteer') {
+        // Check if volunteers are needed
+        if (!eventRequest.volunteersNeeded) {
+          toast({
+            title: 'Volunteers not needed',
+            description: 'This event does not require volunteers',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Check if user is already assigned
+        const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+        if (currentVolunteers.includes(user.id)) {
+          toast({
+            title: 'Already signed up',
+            description: 'You are already assigned as a volunteer for this event',
+          });
+          return;
+        }
+
+        // Add user to volunteer assignments
+        const newVolunteers = [...currentVolunteers, user.id];
+        updateData.assignedVolunteerIds = newVolunteers;
+
+        // Update volunteer details for consistency
+        const currentVolunteerDetails = eventRequest.volunteerDetails || {};
+        updateData.volunteerDetails = {
+          ...currentVolunteerDetails,
+          [user.id]: {
+            name: `${user.firstName} ${user.lastName}`.trim(),
+            assignedAt: new Date().toISOString(),
+            assignedBy: user.id,
+            selfAssigned: true,
+          },
+        };
+
+        // Update volunteer assignments array for consistency
+        const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
+        const userName = `${user.firstName} ${user.lastName}`.trim();
+        if (!currentVolunteerAssignments.includes(userName)) {
+          updateData.volunteerAssignments = [...currentVolunteerAssignments, userName];
+        }
+      }
+
+      // Update the event request
+      await updateEventRequestMutation.mutateAsync({
+        id: eventId,
+        data: updateData,
+      });
+
+      toast({
+        title: 'Signed up successfully!',
+        description: `You have been signed up as a ${type} for this event`,
+      });
+    } catch (error) {
+      console.error('Failed to self-signup:', error);
+      toast({
+        title: 'Signup failed',
+        description: 'Failed to sign up. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Check if user can sign up for a specific role
+  const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
+    if (!user) return false;
+
+    if (type === 'driver') {
+      const currentDrivers = eventRequest.assignedDriverIds || [];
+      const driversNeeded = eventRequest.driversNeeded;
+      // Allow signup if user not already assigned and either no limit set or under the limit
+      return !currentDrivers.includes(user.id) && (typeof driversNeeded !== 'number' || currentDrivers.length < driversNeeded);
+    } else if (type === 'speaker') {
+      const currentSpeakerDetails = eventRequest.speakerDetails || {};
+      const speakersNeeded = eventRequest.speakersNeeded;
+      const currentSpeakersCount = Object.keys(currentSpeakerDetails).length;
+      // Allow signup if user not already assigned and either no limit set or under the limit
+      return !currentSpeakerDetails[user.id] && (typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded);
+    } else if (type === 'volunteer') {
+      if (!eventRequest.volunteersNeeded) return false;
+      const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+      return !currentVolunteers.includes(user.id);
+    }
+
+    return false;
+  };
+
+  // Check if user is already signed up for a role
+  const isUserSignedUp = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
+    if (!user) return false;
+
+    if (type === 'driver') {
+      const currentDrivers = eventRequest.assignedDriverIds || [];
+      return currentDrivers.includes(user.id);
+    } else if (type === 'speaker') {
+      const currentSpeakerDetails = eventRequest.speakerDetails || {};
+      return !!currentSpeakerDetails[user.id];
+    } else if (type === 'volunteer') {
+      const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+      return currentVolunteers.includes(user.id);
+    }
+
+    return false;
+  };
+
   const [completedEdit, setCompletedEdit] = useState<any>({});
 
   const { toast } = useToast();
@@ -3018,44 +3243,98 @@ export default function EventRequestsManagement() {
                                             </div>
                                           </div>
                                           
-                                          {/* Drivers Needed */}
-                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-semibold">Drivers Needed:</span>
-                                            <div className="flex items-center space-x-1">
-                                              {editingScheduledId === request.id && editingField === 'driversNeeded' ? (
-                                                <div className="flex items-center space-x-2">
-                                                  <Input
-                                                    type="number"
-                                                    value={editingValue}
-                                                    onChange={(e) => setEditingValue(e.target.value)}
-                                                    className="text-base w-20"
-                                                    min="0"
-                                                  />
-                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-                                                    <CheckCircle className="w-4 h-4" />
-                                                  </Button>
-                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-                                                    <X className="w-4 h-4" />
-                                                  </Button>
-                                                </div>
-                                              ) : (
-                                                <div className="flex items-center space-x-2">
-                                                  <span className="font-semibold text-[#1A2332] text-lg">{request.driversNeeded || 0}</span>
-                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                          {/* Drivers Section */}
+                                          <div className="space-y-2 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center space-x-2">
+                                                <Truck className="w-4 h-4 text-[#007E8C]" />
+                                                <span className="text-[#007E8C] text-base font-semibold">Drivers</span>
+                                                {editingScheduledId === request.id && editingField === 'driversNeeded' ? (
+                                                  <div className="flex items-center space-x-2">
+                                                    <Input
+                                                      type="number"
+                                                      value={editingValue}
+                                                      onChange={(e) => setEditingValue(e.target.value)}
+                                                      className="w-16 h-6 text-sm"
+                                                      min="0"
+                                                    />
+                                                    <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-6 px-2">
+                                                      <CheckCircle className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-6 px-2">
+                                                      <X className="w-3 h-3" />
+                                                    </Button>
+                                                  </div>
+                                                ) : (
+                                                  hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                     <Button size="sm" variant="ghost" onClick={(e) => {
                                                       e.stopPropagation();
                                                       startEditing(request.id, 'driversNeeded', request.driversNeeded?.toString() || '0');
-                                                    }} className="h-4 w-4 p-0">
+                                                    }} className="h-6 w-6 p-0">
                                                       <Edit className="w-3 h-3" />
                                                     </Button>
-                                                  )}
-                                                  <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
+                                                  )
+                                                )}
+                                              </div>
+                                              
+                                              <div className="text-right">
+                                                {(() => {
+                                                  const assignedCount = (request.assignedDriverIds || []).length;
+                                                  const neededCount = request.driversNeeded || 0;
+                                                  return (
+                                                    <div className="text-[#1A2332] font-bold text-lg">
+                                                      <span className={assignedCount >= neededCount ? "text-green-600" : "text-[#007E8C]"}>
+                                                        {assignedCount}
+                                                      </span>
+                                                      <span className="text-gray-500 mx-1">of</span>
+                                                      <span className="text-[#1A2332]">{neededCount}</span>
+                                                      <span className="text-gray-600 text-sm ml-1">assigned</span>
+                                                    </div>
+                                                  );
+                                                })()}
+                                              </div>
+                                            </div>
+                                            
+                                            <div className="flex flex-wrap gap-2 justify-end">
+                                              {/* Self-signup button */}
+                                              {canSelfSignup(request, 'driver') && (
+                                                <Button 
+                                                  size="sm" 
+                                                  className="bg-[#47B3CB] hover:bg-[#007E8C] text-white text-xs px-3 py-1"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelfSignup(request.id, 'driver');
+                                                  }}
+                                                  data-testid={`button-self-signup-driver-${request.id}`}
+                                                >
+                                                  <UserCheck className="w-3 h-3 mr-1" />
+                                                  Sign Me Up
+                                                </Button>
+                                              )}
+                                              
+                                              {/* Already signed up indicator */}
+                                              {isUserSignedUp(request, 'driver') && (
+                                                <Badge className="bg-green-100 text-green-800 text-xs">
+                                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                                  You're signed up
+                                                </Badge>
+                                              )}
+                                              
+                                              {/* Admin assign button */}
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button 
+                                                  size="sm" 
+                                                  variant="outline" 
+                                                  className="text-[#007E8C] border-[#007E8C] hover:bg-[#007E8C] hover:text-white text-xs px-3 py-1" 
+                                                  onClick={(e) => {
                                                     e.stopPropagation();
                                                     openAssignmentDialog(request.id, 'driver');
-                                                  }}>
-                                                    Assign ({request.driverCount || 0})
-                                                  </Button>
-                                                </div>
+                                                  }}
+                                                  data-testid={`button-assign-driver-${request.id}`}
+                                                >
+                                                  <Users className="w-3 h-3 mr-1" />
+                                                  Assign
+                                                </Button>
                                               )}
                                             </div>
                                           </div>
@@ -3100,92 +3379,201 @@ export default function EventRequestsManagement() {
                                             </div>
                                           </div>
                                           
-                                          {/* Speakers Needed */}
-                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-semibold">Speakers Needed:</span>
-                                            <div className="flex items-center space-x-1">
-                                              {editingScheduledId === request.id && editingField === 'speakersNeeded' ? (
-                                                <div className="flex items-center space-x-2">
-                                                  <Input
-                                                    type="number"
-                                                    value={editingValue}
-                                                    onChange={(e) => setEditingValue(e.target.value)}
-                                                    className="text-base w-20"
-                                                    min="0"
-                                                  />
-                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-                                                    <CheckCircle className="w-4 h-4" />
-                                                  </Button>
-                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-                                                    <X className="w-4 h-4" />
-                                                  </Button>
-                                                </div>
-                                              ) : (
-                                                <div className="flex items-center space-x-2">
-                                                  <span className="font-semibold text-[#1A2332] text-lg">{request.speakersNeeded || 0}</span>
-                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                          {/* Speakers Section */}
+                                          <div className="space-y-2 p-3 bg-gradient-to-r from-orange-50 to-yellow-50 border border-[#FBAD3F] rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center space-x-2">
+                                                <Megaphone className="w-4 h-4 text-[#FBAD3F]" />
+                                                <span className="text-[#FBAD3F] text-base font-semibold">Speakers</span>
+                                                {editingScheduledId === request.id && editingField === 'speakersNeeded' ? (
+                                                  <div className="flex items-center space-x-2">
+                                                    <Input
+                                                      type="number"
+                                                      value={editingValue}
+                                                      onChange={(e) => setEditingValue(e.target.value)}
+                                                      className="w-16 h-6 text-sm"
+                                                      min="0"
+                                                    />
+                                                    <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-6 px-2">
+                                                      <CheckCircle className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-6 px-2">
+                                                      <X className="w-3 h-3" />
+                                                    </Button>
+                                                  </div>
+                                                ) : (
+                                                  hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                     <Button size="sm" variant="ghost" onClick={(e) => {
                                                       e.stopPropagation();
                                                       startEditing(request.id, 'speakersNeeded', request.speakersNeeded?.toString() || '0');
-                                                    }} className="h-4 w-4 p-0">
+                                                    }} className="h-6 w-6 p-0">
                                                       <Edit className="w-3 h-3" />
                                                     </Button>
-                                                  )}
-                                                  <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
+                                                  )
+                                                )}
+                                              </div>
+                                              
+                                              <div className="text-right">
+                                                {(() => {
+                                                  const assignedCount = Object.keys(request.speakerDetails || {}).length;
+                                                  const neededCount = request.speakersNeeded || 0;
+                                                  return (
+                                                    <div className="text-[#1A2332] font-bold text-lg">
+                                                      <span className={assignedCount >= neededCount ? "text-green-600" : "text-[#FBAD3F]"}>
+                                                        {assignedCount}
+                                                      </span>
+                                                      <span className="text-gray-500 mx-1">of</span>
+                                                      <span className="text-[#1A2332]">{neededCount}</span>
+                                                      <span className="text-gray-600 text-sm ml-1">assigned</span>
+                                                    </div>
+                                                  );
+                                                })()}
+                                              </div>
+                                            </div>
+                                            
+                                            <div className="flex flex-wrap gap-2 justify-end">
+                                              {/* Self-signup button */}
+                                              {canSelfSignup(request, 'speaker') && (
+                                                <Button 
+                                                  size="sm" 
+                                                  className="bg-[#FBAD3F] hover:bg-orange-600 text-white text-xs px-3 py-1"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelfSignup(request.id, 'speaker');
+                                                  }}
+                                                  data-testid={`button-self-signup-speaker-${request.id}`}
+                                                >
+                                                  <UserCheck className="w-3 h-3 mr-1" />
+                                                  Sign Me Up
+                                                </Button>
+                                              )}
+                                              
+                                              {/* Already signed up indicator */}
+                                              {isUserSignedUp(request, 'speaker') && (
+                                                <Badge className="bg-green-100 text-green-800 text-xs">
+                                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                                  You're signed up
+                                                </Badge>
+                                              )}
+                                              
+                                              {/* Admin assign button */}
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button 
+                                                  size="sm" 
+                                                  variant="outline" 
+                                                  className="text-[#FBAD3F] border-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white text-xs px-3 py-1" 
+                                                  onClick={(e) => {
                                                     e.stopPropagation();
                                                     openAssignmentDialog(request.id, 'speaker');
-                                                  }}>
-                                                    Assign ({request.speakerCount || 0})
-                                                  </Button>
-                                                </div>
+                                                  }}
+                                                  data-testid={`button-assign-speaker-${request.id}`}
+                                                >
+                                                  <Users className="w-3 h-3 mr-1" />
+                                                  Assign
+                                                </Button>
                                               )}
                                             </div>
                                           </div>
                                           
-                                          {/* Volunteers Needed */}
-                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-semibold">Volunteers Needed:</span>
-                                            <div className="flex items-center space-x-1">
-                                              {editingScheduledId === request.id && editingField === 'volunteersNeeded' ? (
-                                                <div className="flex items-center space-x-2">
-                                                  <Select value={editingValue} onValueChange={setEditingValue}>
-                                                    <SelectTrigger className="w-24">
-                                                      <SelectValue placeholder="Select..." />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                      <SelectItem value="true">Yes</SelectItem>
-                                                      <SelectItem value="false">No</SelectItem>
-                                                    </SelectContent>
-                                                  </Select>
-                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-                                                    <CheckCircle className="w-4 h-4" />
-                                                  </Button>
-                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-                                                    <X className="w-4 h-4" />
-                                                  </Button>
-                                                </div>
-                                              ) : (
-                                                <div className="flex items-center space-x-2">
-                                                  <span className="font-bold text-[#1A2332] text-base">
-                                                    {request.volunteersNeeded ? 'Yes' : 'No'}
-                                                  </span>
-                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                          {/* Volunteers Section */}
+                                          <div className="space-y-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-300 rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center space-x-2">
+                                                <Users className="w-4 h-4 text-blue-600" />
+                                                <span className="text-blue-600 text-base font-semibold">Volunteers</span>
+                                                {editingScheduledId === request.id && editingField === 'volunteersNeeded' ? (
+                                                  <div className="flex items-center space-x-2">
+                                                    <Select value={editingValue} onValueChange={setEditingValue}>
+                                                      <SelectTrigger className="w-20 h-6 text-sm">
+                                                        <SelectValue placeholder="Select..." />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        <SelectItem value="true">Yes</SelectItem>
+                                                        <SelectItem value="false">No</SelectItem>
+                                                      </SelectContent>
+                                                    </Select>
+                                                    <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-6 px-2">
+                                                      <CheckCircle className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-6 px-2">
+                                                      <X className="w-3 h-3" />
+                                                    </Button>
+                                                  </div>
+                                                ) : (
+                                                  hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                     <Button size="sm" variant="ghost" onClick={(e) => {
                                                       e.stopPropagation();
                                                       startEditing(request.id, 'volunteersNeeded', request.volunteersNeeded?.toString() || 'false');
-                                                    }} className="h-4 w-4 p-0">
+                                                    }} className="h-6 w-6 p-0">
                                                       <Edit className="w-3 h-3" />
                                                     </Button>
-                                                  )}
-                                                  <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openAssignmentDialog(request.id, 'volunteer');
-                                                  }}>
-                                                    Assign ({request.volunteerCount || 0})
-                                                  </Button>
-                                                </div>
-                                              )}
+                                                  )
+                                                )}
+                                              </div>
+                                              
+                                              <div className="text-right">
+                                                {request.volunteersNeeded ? (
+                                                  (() => {
+                                                    const assignedCount = (request.assignedVolunteerIds || []).length;
+                                                    return (
+                                                      <div className="text-[#1A2332] font-bold text-lg">
+                                                        <span className="text-blue-600">{assignedCount}</span>
+                                                        <span className="text-gray-600 text-sm ml-1">volunteers assigned</span>
+                                                      </div>
+                                                    );
+                                                  })()
+                                                ) : (
+                                                  <div className="text-gray-500 font-medium text-base">
+                                                    Not needed
+                                                  </div>
+                                                )}
+                                              </div>
                                             </div>
+                                            
+                                            {request.volunteersNeeded && (
+                                              <div className="flex flex-wrap gap-2 justify-end">
+                                                {/* Self-signup button */}
+                                                {canSelfSignup(request, 'volunteer') && (
+                                                  <Button 
+                                                    size="sm" 
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleSelfSignup(request.id, 'volunteer');
+                                                    }}
+                                                    data-testid={`button-self-signup-volunteer-${request.id}`}
+                                                  >
+                                                    <UserCheck className="w-3 h-3 mr-1" />
+                                                    Sign Me Up
+                                                  </Button>
+                                                )}
+                                                
+                                                {/* Already signed up indicator */}
+                                                {isUserSignedUp(request, 'volunteer') && (
+                                                  <Badge className="bg-green-100 text-green-800 text-xs">
+                                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                                    You're signed up
+                                                  </Badge>
+                                                )}
+                                                
+                                                {/* Admin assign button */}
+                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                  <Button 
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white text-xs px-3 py-1" 
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      openAssignmentDialog(request.id, 'volunteer');
+                                                    }}
+                                                    data-testid={`button-assign-volunteer-${request.id}`}
+                                                  >
+                                                    <Users className="w-3 h-3 mr-1" />
+                                                    Assign
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                         
