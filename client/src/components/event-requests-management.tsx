@@ -2157,20 +2157,6 @@ export default function EventRequestsManagement() {
                                         </div>
                                       </div>
 
-                                      {/* Event Date */}
-                                      <div className="space-y-2">
-                                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                          Event Date
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                          <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                          <span className="font-bold text-gray-900 text-base">
-                                            {request.desiredEventDate
-                                              ? formatEventDate(request.desiredEventDate).text
-                                              : 'Not specified'}
-                                          </span>
-                                        </div>
-                                      </div>
 
                                       {/* Sandwich Count */}
                                       {request.estimatedSandwichCount && (
