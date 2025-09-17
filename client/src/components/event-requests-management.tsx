@@ -2771,7 +2771,7 @@ export default function EventRequestsManagement() {
                             Sandwich Types
                           </Label>
                           <p className="text-sm">
-                            {selectedEventRequest.sandwichTypes}
+                            {getSandwichTypesSummary(selectedEventRequest).breakdown}
                           </p>
                         </div>
                       )}
