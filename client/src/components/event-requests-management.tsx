@@ -3712,13 +3712,11 @@ export default function EventRequestsManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       {assignmentType === 'driver' && drivers
-                        .filter(driver => driver && (driver.firstName || driver.lastName))
+                        .filter(driver => driver && driver.name)
                         .map((driver) => {
-                          const name = `${driver.firstName || ''} ${driver.lastName || ''}`.trim();
-                          const displayName = name || `Driver ${driver.id}`;
                           return (
                             <SelectItem key={driver.id} value={driver.id.toString()}>
-                              {displayName}
+                              {driver.name}
                             </SelectItem>
                           );
                         })}
@@ -3734,13 +3732,11 @@ export default function EventRequestsManagement() {
                           );
                         })}
                       {assignmentType === 'volunteer' && volunteers
-                        .filter(volunteer => volunteer && (volunteer.firstName || volunteer.lastName))
+                        .filter(volunteer => volunteer && volunteer.name)
                         .map((volunteer) => {
-                          const name = `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim();
-                          const displayName = name || `Volunteer ${volunteer.id}`;
                           return (
                             <SelectItem key={volunteer.id} value={volunteer.id.toString()}>
-                              {displayName}
+                              {volunteer.name}
                             </SelectItem>
                           );
                         })}
