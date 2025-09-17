@@ -1267,8 +1267,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   <SelectItem key={user.id} value={user.id}>
                     {user.firstName && user.lastName
                       ? `${user.firstName} ${user.lastName}`
-                      : user.email}{' '}
-                    ({user.email})
+                      : user.email} ({user.email})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -2749,6 +2748,32 @@ export default function EventRequestsManagement() {
     },
   });
 
+  const createEventRequestMutation = useMutation({
+    mutationFn: (data: any) =>
+      apiRequest('POST', '/api/event-requests', data),
+    onSuccess: () => {
+      toast({
+        title: 'Event request created',
+        description: 'The new event request has been successfully created.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setShowEventDetails(false);
+      setSelectedEventRequest(null);
+      setIsEditing(false);
+    },
+    onError: (error: any) => {
+      console.error('Create event request error:', error);
+      toast({
+        title: 'Creation Failed',
+        description:
+          error?.message ||
+          error?.details ||
+          'Failed to create event request. Please check your data and try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const markToolkitSentMutation = useMutation({
     mutationFn: ({
       id,
@@ -2900,6 +2925,38 @@ export default function EventRequestsManagement() {
     });
   };
 
+  // Helper function to check if a date matches the search query
+  const dateMatchesSearch = (dateValue: string | Date | null | undefined, searchQuery: string): boolean => {
+    if (!dateValue || !searchQuery) return false;
+    
+    try {
+      // Convert date to string if it's a Date object
+      const dateStr = dateValue instanceof Date ? dateValue.toISOString() : dateValue.toString();
+      
+      // Try multiple date formats for matching
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return false;
+      
+      const searchLower = searchQuery.toLowerCase();
+      
+      // Format date in various ways to match user input
+      const formats = [
+        dateStr.toLowerCase(), // Original format
+        date.toLocaleDateString(), // MM/DD/YYYY
+        date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }), // MM/DD/YYYY
+        date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), // Sep 18, 2025
+        date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), // September 18, 2025
+        date.toISOString().split('T')[0], // YYYY-MM-DD
+        `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`, // M/D/YYYY
+        `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`, // MM/DD/YYYY
+      ];
+      
+      return formats.some(format => format.toLowerCase().includes(searchLower));
+    } catch (error) {
+      return false;
+    }
+  };
+
   // Filter and sort event requests
   const filteredAndSortedRequests = useMemo(() => {
     let filtered = eventRequests.filter((request: EventRequest) => {
@@ -2911,8 +2968,8 @@ export default function EventRequestsManagement() {
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                        (request.desiredEventDate && typeof request.desiredEventDate === 'string' && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()));
+        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        dateMatchesSearch(request.desiredEventDate, searchQuery);
 
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
@@ -3161,7 +3218,7 @@ export default function EventRequestsManagement() {
                           .toLowerCase()
                           .includes(searchQuery.toLowerCase()) ||
                         (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                        (request.desiredEventDate && typeof request.desiredEventDate === 'string' && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()))
+                        dateMatchesSearch(request.desiredEventDate, searchQuery)
                       );
                     })
                     .sort((a: EventRequest, b: EventRequest) => {
@@ -4614,22 +4671,31 @@ export default function EventRequestsManagement() {
         </Tabs>
 
         {/* Event Details Modal */}
-        {showEventDetails && selectedEventRequest && (
+        {showEventDetails && (
           <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      statusColors[selectedEventRequest.status]
-                    }`}
-                  />
-                  <span>{selectedEventRequest.organizationName}</span>
+                  {selectedEventRequest ? (
+                    <>
+                      <div
+                        className={`w-3 h-3 rounded-full ${
+                          statusColors[selectedEventRequest.status]
+                        }`}
+                      />
+                      <span>{selectedEventRequest.organizationName}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5 text-green-600" />
+                      <span>Add New Event Request</span>
+                    </>
+                  )}
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-6">
-                {!isEditing ? (
+                {!isEditing && selectedEventRequest ? (
                   <>
                     {/* Read-only view - comprehensive event details */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -4715,10 +4781,8 @@ export default function EventRequestsManagement() {
                     {/* Edit mode - comprehensive form */}
                     <form onSubmit={(e) => {
                       e.preventDefault();
-                      // Handle form submission
-                      updateEventRequestMutation.mutate({
-                        id: selectedEventRequest.id,
-                        data: {
+                      // Handle form submission - create or update
+                      const formData = {
                           firstName: (e.target as any).firstName.value,
                           lastName: (e.target as any).lastName.value,
                           email: (e.target as any).email.value,
@@ -4745,9 +4809,17 @@ export default function EventRequestsManagement() {
                           volunteersNeeded: (e.target as any).volunteersNeeded.checked || false,
                           planningNotes: (e.target as any).planningNotes.value,
                           status: (e.target as any).status.value
-                        }
-                      });
-                      setIsEditing(false);
+                        };
+
+                      // Create or update based on whether we have an existing event
+                      if (selectedEventRequest) {
+                        updateEventRequestMutation.mutate({
+                          id: selectedEventRequest.id,
+                          data: formData
+                        });
+                      } else {
+                        createEventRequestMutation.mutate(formData);
+                      }
                     }} className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
@@ -4759,7 +4831,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="firstName"
                                   name="firstName"
-                                  defaultValue={selectedEventRequest.firstName}
+                                  defaultValue={selectedEventRequest?.firstName || ''}
                                   required
                                 />
                               </div>
@@ -4768,7 +4840,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="lastName"
                                   name="lastName"
-                                  defaultValue={selectedEventRequest.lastName}
+                                  defaultValue={selectedEventRequest?.lastName || ''}
                                   required
                                 />
                               </div>
@@ -4778,7 +4850,7 @@ export default function EventRequestsManagement() {
                                   id="email"
                                   name="email"
                                   type="email"
-                                  defaultValue={selectedEventRequest.email}
+                                  defaultValue={selectedEventRequest?.email || ''}
                                   required
                                 />
                               </div>
@@ -4800,7 +4872,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="organizationName"
                                   name="organizationName"
-                                  defaultValue={selectedEventRequest.organizationName}
+                                  defaultValue={selectedEventRequest?.organizationName || ''}
                                   required
                                 />
                               </div>
@@ -4839,7 +4911,7 @@ export default function EventRequestsManagement() {
                               </div>
                               <div>
                                 <Label htmlFor="status">Status</Label>
-                                <Select name="status" defaultValue={selectedEventRequest.status}>
+                                <Select name="status" defaultValue={selectedEventRequest?.status || 'new'}>
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
@@ -4867,7 +4939,7 @@ export default function EventRequestsManagement() {
                                   id="startTime"
                                   name="startTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.eventStartTime || ''}
+                                  defaultValue={selectedEventRequest?.eventStartTime || ''}
                                 />
                               </div>
                               <div>
@@ -4876,7 +4948,7 @@ export default function EventRequestsManagement() {
                                   id="endTime"
                                   name="endTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.eventEndTime || ''}
+                                  defaultValue={selectedEventRequest?.eventEndTime || ''}
                                 />
                               </div>
                               <div>
@@ -4885,7 +4957,7 @@ export default function EventRequestsManagement() {
                                   id="pickupTime"
                                   name="pickupTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.pickupTime || ''}
+                                  defaultValue={selectedEventRequest?.pickupTime || ''}
                                 />
                               </div>
                               <div>
@@ -4893,7 +4965,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="eventAddress"
                                   name="eventAddress"
-                                  defaultValue={selectedEventRequest.eventAddress || ''}
+                                  defaultValue={selectedEventRequest?.eventAddress || ''}
                                 />
                               </div>
                               <div>
@@ -4901,7 +4973,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="sandwichDestination"
                                   name="sandwichDestination"
-                                  defaultValue={selectedEventRequest.sandwichDestination || ''}
+                                  defaultValue={selectedEventRequest?.sandwichDestination || ''}
                                 />
                               </div>
                             </div>
@@ -4911,15 +4983,17 @@ export default function EventRequestsManagement() {
                             <div className="space-y-3">
                               <div>
                                 <Label htmlFor="tspContact">TSP Contact</Label>
-                                <Select name="tspContact" defaultValue={selectedEventRequest.tspContact || "none"}>
+                                <Select name="tspContact" defaultValue={selectedEventRequest?.tspContact || "none"}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select TSP contact" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="none">No contact assigned</SelectItem>
                                     {users?.map((user: any) => (
-                                      <SelectItem key={user.id} value={user.email}>
-                                        {user.firstName} {user.lastName} ({user.email})
+                                      <SelectItem key={user.id} value={user.id}>
+                                        {user.firstName && user.lastName
+                                          ? `${user.firstName} ${user.lastName}`
+                                          : user.email} ({user.email})
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -4959,7 +5033,7 @@ export default function EventRequestsManagement() {
                               </div>
                               <div>
                                 <Label htmlFor="refrigeration">Refrigeration Available</Label>
-                                <Select name="refrigeration" defaultValue={selectedEventRequest.hasRefrigeration === true ? "yes" : selectedEventRequest.hasRefrigeration === false ? "no" : "unknown"}>
+                                <Select name="refrigeration" defaultValue={selectedEventRequest?.hasRefrigeration === true ? "yes" : selectedEventRequest?.hasRefrigeration === false ? "no" : "unknown"}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select refrigeration status" />
                                   </SelectTrigger>
@@ -4978,14 +5052,14 @@ export default function EventRequestsManagement() {
                                     name="driversNeeded"
                                     placeholder="Number of drivers needed"
                                     min="0"
-                                    defaultValue={selectedEventRequest.driversNeeded || 0}
+                                    defaultValue={selectedEventRequest?.driversNeeded || 0}
                                   />
                                   <div className="flex items-center space-x-2">
                                     <input
                                       type="checkbox"
                                       id="vanDriverNeeded"
                                       name="vanDriverNeeded"
-                                      defaultChecked={selectedEventRequest.vanDriverNeeded || false}
+                                      defaultChecked={selectedEventRequest?.vanDriverNeeded || false}
                                     />
                                     <Label htmlFor="vanDriverNeeded" className="text-sm">Van driver required</Label>
                                   </div>
@@ -4998,7 +5072,7 @@ export default function EventRequestsManagement() {
                                   name="speakersNeeded"
                                   placeholder="Number of speakers needed"
                                   min="0"
-                                  defaultValue={selectedEventRequest.speakersNeeded || 0}
+                                  defaultValue={selectedEventRequest?.speakersNeeded || 0}
                                 />
                               </div>
                               <div>
@@ -5008,7 +5082,7 @@ export default function EventRequestsManagement() {
                                     type="checkbox"
                                     id="volunteersNeeded"
                                     name="volunteersNeeded"
-                                    defaultChecked={selectedEventRequest.volunteersNeeded || false}
+                                    defaultChecked={selectedEventRequest?.volunteersNeeded || false}
                                   />
                                   <Label htmlFor="volunteersNeeded" className="text-sm">Additional volunteers needed</Label>
                                 </div>
@@ -5022,7 +5096,7 @@ export default function EventRequestsManagement() {
                         <Textarea
                           id="planningNotes"
                           name="planningNotes"
-                          defaultValue={selectedEventRequest.planningNotes || ''}
+                          defaultValue={selectedEventRequest?.planningNotes || ''}
                           rows={4}
                           placeholder="Add planning notes..."
                         />
@@ -5039,8 +5113,12 @@ export default function EventRequestsManagement() {
                           type="submit"
                           className="text-white"
                           style={{ backgroundColor: '#236383' }}
+                          disabled={createEventRequestMutation.isPending || updateEventRequestMutation.isPending}
                         >
-                          Save Changes
+                          {selectedEventRequest ? 
+                            (updateEventRequestMutation.isPending ? 'Saving...' : 'Save Changes') :
+                            (createEventRequestMutation.isPending ? 'Creating...' : 'Create Event Request')
+                          }
                         </Button>
                       </div>
                     </form>
