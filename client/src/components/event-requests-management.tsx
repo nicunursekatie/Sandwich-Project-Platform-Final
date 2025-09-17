@@ -2104,7 +2104,7 @@ export default function EventRequestsManagement() {
                                     <div className="space-y-3">
                                       <div className="flex items-center space-x-3">
                                         <User className="w-4 h-4 text-blue-600" />
-                                        <span className="font-bold text-blue-900 text-base">
+                                        <span className="font-bold text-blue-900 text-sm">
                                           {request.firstName} {request.lastName}
                                         </span>
                                       </div>
@@ -2433,9 +2433,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-medium">Drivers:</span>
+                                            <span className="text-[#007E8C] text-xs font-medium">Drivers:</span>
                                             <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-[#1A2332] text-base">{request.driverCount || 0}</span>
+                                              <span className="font-semibold text-[#1A2332] text-sm">{request.driverCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
                                                 e.stopPropagation();
                                                 openAssignmentDialog(request.id, 'driver');
@@ -2446,9 +2446,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-medium">Speakers:</span>
+                                            <span className="text-[#007E8C] text-xs font-medium">Speakers:</span>
                                             <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-[#1A2332] text-base">{request.speakerCount || 0}</span>
+                                              <span className="font-semibold text-[#1A2332] text-sm">{request.speakerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
                                                 e.stopPropagation();
                                                 openAssignmentDialog(request.id, 'speaker');
@@ -2459,9 +2459,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-medium">Volunteers:</span>
+                                            <span className="text-[#007E8C] text-xs font-medium">Volunteers:</span>
                                             <div className="flex items-center space-x-2">
-                                              <span className="font-semibold text-[#1A2332] text-base">{request.volunteerCount || 0}</span>
+                                              <span className="font-semibold text-[#1A2332] text-sm">{request.volunteerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
                                                 e.stopPropagation();
                                                 openAssignmentDialog(request.id, 'volunteer');
@@ -2503,7 +2503,7 @@ export default function EventRequestsManagement() {
                                       <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
                                         {request.additionalRequirements && (
                                           <div>
-                                            <div className="text-base font-semibold text-blue-900 mb-1 flex items-center">
+                                            <div className="text-sm font-semibold text-blue-900 mb-1 flex items-center">
                                               <AlertTriangle className="w-4 h-4 mr-1 text-brand-orange" />
                                               Additional Requirements
                                             </div>
@@ -2514,7 +2514,7 @@ export default function EventRequestsManagement() {
                                         )}
                                         
                                         <div>
-                                          <div className="text-base font-semibold text-blue-900 mb-1 flex items-center justify-between">
+                                          <div className="text-sm font-semibold text-blue-900 mb-1 flex items-center justify-between">
                                             <span className="flex items-center">
                                               <FileText className="w-4 h-4 mr-1 text-brand-primary" />
                                               Planning Notes
@@ -2561,7 +2561,7 @@ export default function EventRequestsManagement() {
 
                                 {request.message && (
                                   <div className="mt-4 p-3 bg-gray-50 border-l-4 border-brand-primary rounded-r-lg">
-                                    <p className="text-base text-brand-primary line-clamp-2 font-medium">
+                                    <p className="text-sm text-brand-primary line-clamp-2 font-medium">
                                       {request.message}
                                     </p>
                                   </div>
