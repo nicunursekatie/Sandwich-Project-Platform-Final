@@ -306,6 +306,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Discussion Points
             if (project.meetingDiscussionPoints) {
+              ensureSpace(50); // Ensure space for header and content
               addColoredSection('What do we need to talk about?', colors.lightOrange, colors.orange, 11);
               
               addText(project.meetingDiscussionPoints, margin + 10, yPosition, {
@@ -321,6 +322,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Decision Items
             if (project.meetingDecisionItems) {
+              ensureSpace(50); // Ensure space for header and content
               addColoredSection('What decisions need to be made?', colors.lightRed, colors.red, 11);
               
               addText(project.meetingDecisionItems, margin + 10, yPosition, {
@@ -336,10 +338,15 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Project Tasks
             if (project.tasks && project.tasks.length > 0) {
+              // Calculate total space needed: header + all tasks + spacing
+              const headerSpace = 30; // Space for colored section header
+              const taskSpace = project.tasks.length * 18; // 18px per task
+              const totalSpace = headerSpace + taskSpace + 15; // +15 for final spacing
+              
+              ensureSpace(totalSpace); // Ensure space for entire section
               addColoredSection('Project Tasks:', colors.lightTeal, colors.teal, 11);
 
               project.tasks.forEach((task: any, taskIndex: number) => {
-                ensureSpace(30);
                 const taskText = `${taskIndex + 1}. ${task.description || task.title || 'No description'}`;
                 addText(taskText, margin + 10, yPosition, {
                   fontSize: 10,
@@ -353,6 +360,12 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Attached Files
             if (project.attachments && project.attachments.length > 0) {
+              // Calculate total space needed: header + all files + spacing
+              const headerSpace = 30; // Space for colored section header
+              const fileSpace = project.attachments.length * 15; // 15px per file
+              const totalSpace = headerSpace + fileSpace + 15; // +15 for final spacing
+              
+              ensureSpace(totalSpace); // Ensure space for entire section
               addColoredSection('Attached Files:', colors.lightNavy, colors.navy, 11);
 
               project.attachments.forEach((attachment: any, fileIndex: number) => {
