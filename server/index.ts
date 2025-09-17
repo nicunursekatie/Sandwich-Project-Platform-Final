@@ -121,11 +121,17 @@ async function startServer() {
   try {
     serverLogger.info('Starting The Sandwich Project server...');
 
-    // Basic error handler
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    // Basic error handler - ensure JSON responses for API routes
+    app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || 'Internal Server Error';
       serverLogger.error('Unhandled error:', err);
+      
+      // Ensure API routes always return JSON
+      if (req.originalUrl.startsWith('/api')) {
+        return res.status(status).json({ message, error: true });
+      }
+      
       res.status(status).json({ message });
     });
 
@@ -163,21 +169,6 @@ async function startServer() {
       });
     });
 
-    if (process.env.NODE_ENV === 'production') {
-      // In production, serve static files from the built frontend
-      app.use(express.static('dist/public'));
-
-      // Simple SPA fallback for production - serve index.html for non-API routes
-      app.get(/^(?!\/api).*/, async (_req: Request, res: Response) => {
-        const path = await import('path');
-        res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
-      });
-
-      serverLogger.info(
-        'Static file serving and SPA routing configured for production'
-      );
-    }
-
     const httpServer = createServer(app);
 
     // Set up Socket.io for chat system
@@ -189,12 +180,51 @@ async function startServer() {
       path: '/notifications',
     });
 
-    // CRITICAL FIX: Register all API routes BEFORE Vite middleware to prevent route interception
+    // Add debugging middleware for API routes to ensure JSON responses
+    app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+      // Ensure API routes always set JSON content type
+      res.setHeader('Content-Type', 'application/json');
+      
+      // Log API requests for debugging
+      serverLogger.info(`🔍 API Request: ${req.method} ${req.originalUrl}`);
+      
+      // Override res.send to ensure JSON for API routes
+      const originalSend = res.send;
+      res.send = function(data: any) {
+        if (typeof data === 'string' && !data.startsWith('{') && !data.startsWith('[')) {
+          // If sending non-JSON string, wrap it in JSON
+          serverLogger.warn(`⚠️ Converting non-JSON response to JSON for ${req.originalUrl}`);
+          return originalSend.call(this, JSON.stringify({ message: data }));
+        }
+        return originalSend.call(this, data);
+      };
+      
+      next();
+    });
+
+    // CRITICAL FIX: Register all API routes FIRST to prevent route interception
     try {
       await registerRoutes(app);
-      serverLogger.info('API routes registered BEFORE Vite middleware');
+      serverLogger.info('✅ API routes registered FIRST - before static files');
     } catch (error) {
       serverLogger.error('Route registration failed:', error);
+    }
+
+    // IMPORTANT: Static files and SPA fallback MUST come AFTER API routes
+    if (process.env.NODE_ENV === 'production') {
+      // In production, serve static files from the built frontend
+      app.use(express.static('dist/public'));
+
+      // Simple SPA fallback for production - serve index.html for non-API routes
+      // This MUST be after API routes to prevent catching API requests
+      app.get(/^(?!\/api).*/, async (_req: Request, res: Response) => {
+        const path = await import('path');
+        res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+      });
+
+      serverLogger.info(
+        '✅ Static file serving and SPA routing configured AFTER API routes'
+      );
     }
 
     // Set up Vite middleware AFTER API routes to prevent catch-all interference
