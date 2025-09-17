@@ -2287,7 +2287,10 @@ export default function EventRequestsManagement() {
                                                   />
                                                   <Button
                                                     size="sm"
-                                                    onClick={saveEdit}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      saveEdit();
+                                                    }}
                                                     disabled={
                                                       updateScheduledFieldMutation.isPending
                                                     }
@@ -2297,7 +2300,10 @@ export default function EventRequestsManagement() {
                                                   <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={cancelEdit}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      cancelEdit();
+                                                    }}
                                                   >
                                                     <X className="w-4 h-4" />
                                                   </Button>
@@ -2332,13 +2338,14 @@ export default function EventRequestsManagement() {
                                                     <Button
                                                       size="sm"
                                                       variant="ghost"
-                                                      onClick={() =>
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
                                                         startEditing(
                                                           request.id,
                                                           'eventAddress',
                                                           request.eventAddress || ''
-                                                        )
-                                                      }
+                                                        );
+                                                      }}
                                                       className="h-6 w-6 p-0 flex-shrink-0"
                                                     >
                                                       <Edit className="w-3 h-3" />
@@ -2421,7 +2428,10 @@ export default function EventRequestsManagement() {
                                                   />
                                                   <Button
                                                     size="sm"
-                                                    onClick={saveEdit}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      saveEdit();
+                                                    }}
                                                     disabled={
                                                       updateScheduledFieldMutation.isPending
                                                     }
@@ -2431,7 +2441,10 @@ export default function EventRequestsManagement() {
                                                   <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={cancelEdit}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      cancelEdit();
+                                                    }}
                                                   >
                                                     <X className="w-4 h-4" />
                                                   </Button>
@@ -2459,14 +2472,15 @@ export default function EventRequestsManagement() {
                                                     <Button
                                                       size="sm"
                                                       variant="ghost"
-                                                      onClick={() =>
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
                                                         startEditing(
                                                           request.id,
                                                           'sandwichDestination',
                                                           request.sandwichDestination ||
                                                             ''
-                                                        )
-                                                      }
+                                                        );
+                                                      }}
                                                       className="h-6 w-6 p-0 flex-shrink-0"
                                                     >
                                                       <Edit className="w-3 h-3" />
@@ -2552,15 +2566,16 @@ export default function EventRequestsManagement() {
                                                   <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    onClick={() =>
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
                                                       startEditing(
                                                         request.id,
                                                         'tspContact',
                                                         resolveUserName(
                                                           request.tspContact
                                                         )
-                                                      )
-                                                    }
+                                                      );
+                                                    }}
                                                     className="h-8 w-8 p-0 flex-shrink-0"
                                                   >
                                                     <Edit className="w-4 h-4" />
@@ -2781,13 +2796,14 @@ export default function EventRequestsManagement() {
                                             <Button
                                               size="sm"
                                               variant="ghost"
-                                              onClick={() =>
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 startEditing(
                                                   request.id,
                                                   'planningNotes',
                                                   request.planningNotes || ''
-                                                )
-                                              }
+                                                );
+                                              }}
                                               className="h-8 w-8 p-0"
                                             >
                                               <Edit className="w-4 h-4" />
