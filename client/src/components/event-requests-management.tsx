@@ -814,18 +814,58 @@ const ToolkitSentDialog = ({
 
             {/* Action Buttons */}
             <div className="flex justify-between space-x-4">
-              {!emailSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowEmailComposer(true)}
-                  className="flex items-center space-x-2"
-                  data-testid="button-send-toolkit-email"
-                >
-                  <Mail className="w-4 h-4" />
-                  <span>Send Toolkit Email</span>
-                </Button>
-              )}
+              <div className="flex space-x-2">
+                {!emailSent && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowEmailComposer(true)}
+                    className="flex items-center space-x-2"
+                    data-testid="button-send-toolkit-email"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>Send Toolkit Email</span>
+                  </Button>
+                )}
+                
+                {eventRequest?.phone && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const phoneNumber = eventRequest.phone;
+                      
+                      // Check if on mobile device
+                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                      
+                      if (isMobile) {
+                        // On mobile, open the dialer
+                        window.location.href = `tel:${phoneNumber}`;
+                      } else {
+                        // On desktop, copy to clipboard
+                        navigator.clipboard.writeText(phoneNumber).then(() => {
+                          toast({
+                            title: 'Phone number copied!',
+                            description: `${phoneNumber} has been copied to your clipboard.`,
+                          });
+                        }).catch(() => {
+                          toast({
+                            title: 'Failed to copy',
+                            description: 'Please copy manually: ' + phoneNumber,
+                            variant: 'destructive',
+                          });
+                        });
+                      }
+                    }}
+                    className="flex items-center space-x-2"
+                    data-testid="button-call-contact"
+                    title={eventRequest.phone}
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>Call Contact</span>
+                  </Button>
+                )}
+              </div>
 
               <div className="flex space-x-2 ml-auto">
                 <Button
@@ -3264,6 +3304,44 @@ export default function EventRequestsManagement() {
                                       <Shield className="w-4 h-4 mr-2" />
                                       Send Toolkit
                                     </Button>
+                                    
+                                    {request.phone && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const phoneNumber = request.phone;
+                                          
+                                          // Check if on mobile device
+                                          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                          
+                                          if (isMobile) {
+                                            // On mobile, open the dialer
+                                            window.location.href = `tel:${phoneNumber}`;
+                                          } else {
+                                            // On desktop, copy to clipboard
+                                            navigator.clipboard.writeText(phoneNumber).then(() => {
+                                              toast({
+                                                title: 'Phone number copied!',
+                                                description: `${phoneNumber} has been copied to your clipboard.`,
+                                              });
+                                            }).catch(() => {
+                                              toast({
+                                                title: 'Failed to copy',
+                                                description: 'Please copy manually: ' + phoneNumber,
+                                                variant: 'destructive',
+                                              });
+                                            });
+                                          }
+                                        }}
+                                        data-testid={`button-call-${request.id}`}
+                                        title={request.phone}
+                                      >
+                                        <Phone className="w-4 h-4 mr-2" />
+                                        Call Contact
+                                      </Button>
+                                    )}
                                     
                                     <Button
                                       size="sm"
