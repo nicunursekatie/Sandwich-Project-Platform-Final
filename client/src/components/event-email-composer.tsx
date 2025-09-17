@@ -49,6 +49,7 @@ interface EventRequest {
   estimatedSandwichCount?: number;
   eventStartTime?: string;
   eventEndTime?: string;
+  message?: string;
 }
 
 interface Document {
@@ -342,6 +343,27 @@ ${userEmail}`;
               </div>
             </CardContent>
           </Card>
+
+          {/* Original Request Message */}
+          {eventRequest.message && (
+            <Card className="bg-gray-50 border border-gray-200">
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-gray-600" />
+                    <Label className="text-sm font-medium text-gray-700">
+                      Original Request Message:
+                    </Label>
+                  </div>
+                  <div className="pl-7">
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                      {eventRequest.message}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Subject Suggestions */}
           <div className="space-y-3">
