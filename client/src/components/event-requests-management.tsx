@@ -2629,8 +2629,8 @@ export default function EventRequestsManagement() {
         {/* Event Details Dialog */}
         {showEventDetails && selectedEventRequest && (
           <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200">
-              <DialogHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 -m-6 mb-6 rounded-t-lg">
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-[#236383]">
+              <DialogHeader className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white p-6 -m-6 mb-6 rounded-t-lg">
                 <DialogTitle className="flex items-center space-x-2 text-xl font-bold">
                   <Building className="w-6 h-6" />
                   <span>{selectedEventRequest.organizationName}</span>
@@ -2985,8 +2985,8 @@ export default function EventRequestsManagement() {
 
                 {/* Edit Form */}
                 {isEditing && (
-                  <div className="bg-gradient-to-br from-white to-blue-50 p-6 rounded-lg border-2 border-blue-200 shadow-lg">
-                    <h3 className="text-lg font-bold text-blue-800 mb-6 flex items-center">
+                  <div className="bg-gradient-to-br from-white to-[#47B3CB]/10 p-6 rounded-lg border-2 border-[#236383] shadow-lg">
+                    <h3 className="text-lg font-bold text-[#236383] mb-6 flex items-center">
                       <Edit className="w-5 h-5 mr-2" />
                       Edit Event Details
                     </h3>
@@ -3160,14 +3160,14 @@ export default function EventRequestsManagement() {
                         </div>
                         <div>
                           <Label htmlFor="edit-sandwich-types">Sandwich Types</Label>
-                          <div className="space-y-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="space-y-3 p-4 bg-[#FBAD3F]/10 rounded-lg border border-[#FBAD3F]">
                             {SANDWICH_TYPES.map((type) => (
                               <div key={type.value} className="flex items-center space-x-3">
                                 <Input
                                   type="number"
                                   min="0"
                                   placeholder="0"
-                                  className="w-20"
+                                  className="w-20 border-[#FBAD3F] focus:border-[#FBAD3F] focus:ring-[#FBAD3F]"
                                   name={`sandwichType_${type.value}`}
                                   defaultValue={
                                     selectedEventRequest.sandwichTypes && Array.isArray(selectedEventRequest.sandwichTypes)
@@ -3175,7 +3175,7 @@ export default function EventRequestsManagement() {
                                       : 0
                                   }
                                 />
-                                <Label className="text-sm font-medium text-green-800">
+                                <Label className="text-sm font-medium text-[#236383]">
                                   {type.label}
                                 </Label>
                               </div>
@@ -3191,7 +3191,7 @@ export default function EventRequestsManagement() {
                             name="sandwichDestination"
                             defaultValue={selectedEventRequest.sandwichDestination || ''}
                           >
-                            <SelectTrigger className="bg-blue-50 border-blue-200">
+                            <SelectTrigger className="bg-[#47B3CB]/10 border-[#47B3CB] focus:border-[#47B3CB] focus:ring-[#47B3CB]">
                               <SelectValue placeholder="Select destination" />
                             </SelectTrigger>
                             <SelectContent>
@@ -3213,7 +3213,7 @@ export default function EventRequestsManagement() {
                             name="hostLocation"
                             defaultValue={selectedEventRequest.hostLocation || ''}
                             placeholder="e.g., Church basement, Community center, Host home"
-                            className="bg-purple-50 border-purple-200"
+                            className="bg-[#007E8C]/10 border-[#007E8C] focus:border-[#007E8C] focus:ring-[#007E8C]"
                           />
                         </div>
                       </div>
@@ -3290,7 +3290,7 @@ export default function EventRequestsManagement() {
                             name="tspContact"
                             defaultValue={selectedEventRequest.tspContact || ''}
                           >
-                            <SelectTrigger className="bg-orange-50 border-orange-200">
+                            <SelectTrigger className="bg-[#FBAD3F]/10 border-[#FBAD3F] focus:border-[#FBAD3F] focus:ring-[#FBAD3F]">
                               <SelectValue placeholder="Select TSP contact or enter custom" />
                             </SelectTrigger>
                             <SelectContent>
@@ -3306,7 +3306,7 @@ export default function EventRequestsManagement() {
                             id="edit-tsp-contact-custom"
                             name="tspContactCustom"
                             placeholder="Or enter custom contact name"
-                            className="bg-orange-50 border-orange-200"
+                            className="bg-[#FBAD3F]/10 border-[#FBAD3F] focus:border-[#FBAD3F] focus:ring-[#FBAD3F]"
                           />
                         </div>
                       </div>
