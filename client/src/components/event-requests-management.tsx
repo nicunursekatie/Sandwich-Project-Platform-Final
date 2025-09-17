@@ -3557,9 +3557,19 @@ export default function EventRequestsManagement() {
                           pickupTime: (e.target as any).pickupTime.value,
                           eventAddress: (e.target as any).eventAddress.value,
                           sandwichDestination: (e.target as any).sandwichDestination.value,
-                          tspContact: (e.target as any).tspContact.value,
-                          sandwichTypes: (e.target as any).sandwichTypes.value,
-                          hasRefrigeration: (e.target as any).refrigeration.value,
+                          tspContact: (e.target as any).tspContact.value === 'none' ? '' : (e.target as any).tspContact.value,
+                          sandwichTypes: JSON.stringify({
+                            deli: parseInt((e.target as any).deliCount.value) || 0,
+                            turkey: parseInt((e.target as any).turkeyCount.value) || 0,
+                            ham: parseInt((e.target as any).hamCount.value) || 0,
+                            pbj: parseInt((e.target as any).pbjCount.value) || 0
+                          }),
+                          hasRefrigeration: (e.target as any).refrigeration.value === 'yes' ? true : 
+                                           (e.target as any).refrigeration.value === 'no' ? false : null,
+                          driversNeeded: parseInt((e.target as any).driversNeeded.value) || 0,
+                          vanDriverNeeded: (e.target as any).vanDriverNeeded.checked || false,
+                          speakersNeeded: parseInt((e.target as any).speakersNeeded.value) || 0,
+                          volunteersNeeded: (e.target as any).volunteersNeeded.checked || false,
                           planningNotes: (e.target as any).planningNotes.value,
                           status: (e.target as any).status.value
                         }
@@ -3702,12 +3712,12 @@ export default function EventRequestsManagement() {
                             <div className="space-y-3">
                               <div>
                                 <Label htmlFor="tspContact">TSP Contact</Label>
-                                <Select name="tspContact" defaultValue={selectedEventRequest.tspContact || ""}>
+                                <Select name="tspContact" defaultValue={selectedEventRequest.tspContact || "none"}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select TSP contact" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="">No contact assigned</SelectItem>
+                                    <SelectItem value="none">No contact assigned</SelectItem>
                                     {users?.map((user: any) => (
                                       <SelectItem key={user.id} value={user.email}>
                                         {user.firstName} {user.lastName} ({user.email})
