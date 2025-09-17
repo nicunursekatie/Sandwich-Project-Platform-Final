@@ -48,16 +48,16 @@ localPort = 37757
 externalPort = 4200
 
 [[ports]]
+localPort = 40415
+externalPort = 8008
+
+[[ports]]
 localPort = 40575
 externalPort = 6000
 
 [[ports]]
 localPort = 41759
 externalPort = 3003
-
-[[ports]]
-localPort = 44321
-externalPort = 8008
 
 [workflows]
 runButton = "Development Server"

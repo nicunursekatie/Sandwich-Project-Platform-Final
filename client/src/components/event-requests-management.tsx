@@ -3712,35 +3712,35 @@ export default function EventRequestsManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       {assignmentType === 'driver' && drivers
-                        .filter(driver => driver && (driver.firstName || driver.lastName || driver.email))
+                        .filter(driver => driver && (driver.firstName || driver.lastName))
                         .map((driver) => {
                           const name = `${driver.firstName || ''} ${driver.lastName || ''}`.trim();
-                          const displayName = name || driver.email || `Driver ${driver.id}`;
+                          const displayName = name || `Driver ${driver.id}`;
                           return (
                             <SelectItem key={driver.id} value={driver.id.toString()}>
-                              {displayName} {driver.email && name && `(${driver.email})`}
+                              {displayName}
                             </SelectItem>
                           );
                         })}
                       {assignmentType === 'speaker' && users
-                        .filter(user => user && (user.firstName || user.lastName || user.email))
+                        .filter(user => user && (user.firstName || user.lastName))
                         .map((user) => {
                           const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-                          const displayName = name || user.email || `User ${user.id}`;
+                          const displayName = name || `User ${user.id}`;
                           return (
                             <SelectItem key={user.id} value={user.id.toString()}>
-                              {displayName} {user.email && name && `(${user.email})`}
+                              {displayName}
                             </SelectItem>
                           );
                         })}
                       {assignmentType === 'volunteer' && volunteers
-                        .filter(volunteer => volunteer && (volunteer.firstName || volunteer.lastName || volunteer.email))
+                        .filter(volunteer => volunteer && (volunteer.firstName || volunteer.lastName))
                         .map((volunteer) => {
                           const name = `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim();
-                          const displayName = name || volunteer.email || `Volunteer ${volunteer.id}`;
+                          const displayName = name || `Volunteer ${volunteer.id}`;
                           return (
                             <SelectItem key={volunteer.id} value={volunteer.id.toString()}>
-                              {displayName} {volunteer.email && name && `(${volunteer.email})`}
+                              {displayName}
                             </SelectItem>
                           );
                         })}
