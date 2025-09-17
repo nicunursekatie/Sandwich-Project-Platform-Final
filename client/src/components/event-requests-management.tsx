@@ -1772,6 +1772,14 @@ export default function EventRequestsManagement() {
     },
   });
 
+  // Handle status change for event requests
+  const handleStatusChange = (id: number, status: string) => {
+    updateEventRequestMutation.mutate({
+      id,
+      data: { status }
+    });
+  };
+
   // Filter and sort event requests
   const filteredAndSortedRequests = useMemo(() => {
     let filtered = eventRequests.filter((request: EventRequest) => {
