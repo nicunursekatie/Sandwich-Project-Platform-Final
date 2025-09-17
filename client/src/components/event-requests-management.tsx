@@ -3071,9 +3071,33 @@ export default function EventRequestsManagement() {
                       onSubmit={(e) => {
                         e.preventDefault();
                         const formData = new FormData(e.currentTarget);
-                        const updatedData = Object.fromEntries(
+                        const rawData = Object.fromEntries(
                           formData.entries()
                         );
+                        
+                        // Process and clean the form data
+                        const updatedData = { ...rawData };
+                        
+                        // Convert empty strings to null for integer fields
+                        const integerFields = [
+                          'estimatedSandwichCount', 'driverCount', 'speakerCount', 
+                          'volunteerCount', 'vanDriverCount'
+                        ];
+                        
+                        integerFields.forEach(field => {
+                          if (updatedData[field] === '') {
+                            updatedData[field] = null;
+                          } else if (updatedData[field] && !isNaN(Number(updatedData[field]))) {
+                            updatedData[field] = Number(updatedData[field]);
+                          }
+                        });
+                        
+                        // Handle boolean fields
+                        if (updatedData.vanNeeded === 'false' || updatedData.vanNeeded === '') {
+                          updatedData.vanNeeded = false;
+                        } else if (updatedData.vanNeeded === 'true') {
+                          updatedData.vanNeeded = true;
+                        }
                         
                         // Process sandwich types from individual inputs
                         const sandwichTypes = SANDWICH_TYPES.map(type => {
