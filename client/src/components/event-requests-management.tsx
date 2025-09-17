@@ -3518,7 +3518,26 @@ export default function EventRequestsManagement() {
                           <h3 className="text-base font-medium text-gray-900">Additional Details</h3>
                           <div className="mt-2 space-y-2">
                             <p><span className="font-medium">TSP Contact:</span> {selectedEventRequest.tspContact || 'Not assigned'}</p>
-                            <p><span className="font-medium">Sandwich Types:</span> {selectedEventRequest.sandwichTypes || 'Not specified'}</p>
+                            <p><span className="font-medium">Sandwich Types:</span> {
+                              (() => {
+                                if (!selectedEventRequest.sandwichTypes) return 'Not specified';
+                                try {
+                                  const types = typeof selectedEventRequest.sandwichTypes === 'string' 
+                                    ? JSON.parse(selectedEventRequest.sandwichTypes) 
+                                    : selectedEventRequest.sandwichTypes;
+                                  
+                                  const typesList = Object.entries(types)
+                                    .filter(([_, count]) => count && count > 0)
+                                    .map(([type, count]) => `${count} ${type}`)
+                                    .join(', ');
+                                  
+                                  return typesList || 'Not specified';
+                                } catch (e) {
+                                  console.warn('Failed to parse sandwich types:', selectedEventRequest.sandwichTypes);
+                                  return selectedEventRequest.sandwichTypes;
+                                }
+                              })()
+                            }</p>
                             <p><span className="font-medium">Refrigeration:</span> {selectedEventRequest.hasRefrigeration === true ? 'Yes' : selectedEventRequest.hasRefrigeration === false ? 'No' : 'Not specified'}</p>
                           </div>
                         </div>
