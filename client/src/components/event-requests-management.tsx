@@ -2264,7 +2264,7 @@ export default function EventRequestsManagement() {
                                             <div className="flex items-center space-x-3">
                                               <span className="text-[#236383] text-base font-semibold">End:</span>
                                               <div className="flex items-center space-x-1">
-                                                <span className="font-bold text-[#1A2332] text-xl">
+                                                <span className="font-bold text-[#1A2332] text-base">
                                                   {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                                                 </span>
                                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2283,7 +2283,7 @@ export default function EventRequestsManagement() {
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#236383] text-base font-semibold">Pickup:</span>
                                             <div className="flex items-center space-x-1">
-                                              <span className="font-bold text-[#1A2332] text-xl">
+                                              <span className="font-bold text-[#1A2332] text-base">
                                                 {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
                                               </span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -2347,21 +2347,21 @@ export default function EventRequestsManagement() {
                                       {/* Column 2: Sandwich & Logistics */}
                                       <div className="space-y-2 bg-[#fff8f0] p-3 rounded-lg border border-[#FBAD3F]/20">
                                         <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
-                                          <span className="mr-2 text-xl">🥪</span>
+                                          <span className="mr-2 text-base">🥪</span>
                                           Sandwich Details
                                         </h4>
                                         
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
-                                            <span className="font-bold text-[#1A2332] text-xl text-right max-w-[150px] truncate">
+                                            <span className="font-bold text-[#1A2332] text-base text-right max-w-[150px] truncate">
                                               {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                             </span>
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
-                                            <span className="font-bold text-[#1A2332] text-xl">
+                                            <span className="font-bold text-[#1A2332] text-base">
                                               {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
                                             </span>
                                           </div>
