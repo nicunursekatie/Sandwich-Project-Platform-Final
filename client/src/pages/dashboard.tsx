@@ -299,6 +299,7 @@ export default function Dashboard({
           />
         );
       case 'action-tracking':
+      case 'my-actions':
         return <ActionTracking />;
 
       case 'wishlist':

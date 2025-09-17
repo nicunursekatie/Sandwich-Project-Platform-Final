@@ -41,6 +41,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'dashboard',
   },
 
+  // MY ACTIONS - Personal dashboard for user assignments
+  {
+    id: 'my-actions',
+    label: 'My Actions',
+    icon: ListTodo,
+    href: 'my-actions',
+    group: 'dashboard',
+  },
+
   // COLLECTIONS LOG
   {
     id: 'collections',

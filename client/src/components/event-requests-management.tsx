@@ -1516,7 +1516,13 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
             <h4 className="font-medium text-gray-900 mb-2">Event Details</h4>
             <div className="space-y-1 text-sm">
-              <div><strong>Event Date:</strong> {eventRequest.desiredEventDate || 'Not specified'}</div>
+                              <div><strong>Event Date:</strong> {
+                                eventRequest.desiredEventDate ? 
+                                  (eventRequest.desiredEventDate instanceof Date ? 
+                                    eventRequest.desiredEventDate.toLocaleDateString() : 
+                                    eventRequest.desiredEventDate.toString()) : 
+                                  'Not specified'
+                              }</div>
               <div><strong>Address:</strong> {eventRequest.eventAddress || 'Not specified'}</div>
               <div><strong>Estimated Sandwiches:</strong> {eventRequest.estimatedSandwichCount || 'Not specified'}</div>
             </div>
@@ -2905,8 +2911,8 @@ export default function EventRequestsManagement() {
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()));
+                        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                        (request.desiredEventDate && typeof request.desiredEventDate === 'string' && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
@@ -3155,7 +3161,7 @@ export default function EventRequestsManagement() {
                           .toLowerCase()
                           .includes(searchQuery.toLowerCase()) ||
                         (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()))
+                        (request.desiredEventDate && typeof request.desiredEventDate === 'string' && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()))
                       );
                     })
                     .sort((a: EventRequest, b: EventRequest) => {
@@ -4633,14 +4639,20 @@ export default function EventRequestsManagement() {
                           <div className="mt-2 space-y-2">
                             <p><span className="font-medium">Name:</span> {selectedEventRequest.firstName} {selectedEventRequest.lastName}</p>
                             <p><span className="font-medium">Email:</span> {selectedEventRequest.email}</p>
-                            <p><span className="font-medium">Phone:</span> {selectedEventRequest.phone}</p>
+                            <p><span className="font-medium">Phone:</span> {selectedEventRequest.phone || 'Not provided'}</p>
                           </div>
                         </div>
                         <div>
                           <h3 className="text-base font-medium text-gray-900">Event Details</h3>
                           <div className="mt-2 space-y-2">
                             <p><span className="font-medium">Organization:</span> {selectedEventRequest.organizationName}</p>
-                            <p><span className="font-medium">Desired Date:</span> {selectedEventRequest.desiredEventDate}</p>
+                            <p><span className="font-medium">Desired Date:</span> {
+                              selectedEventRequest.desiredEventDate ? 
+                                (selectedEventRequest.desiredEventDate instanceof Date ? 
+                                  selectedEventRequest.desiredEventDate.toLocaleDateString() : 
+                                  selectedEventRequest.desiredEventDate.toString()) : 
+                                'Not specified'
+                            }</p>
                             <p><span className="font-medium">Status:</span> <Badge className={statusColors[selectedEventRequest.status]}>{selectedEventRequest.status}</Badge></p>
                           </div>
                         </div>
@@ -4775,7 +4787,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="phone"
                                   name="phone"
-                                  defaultValue={selectedEventRequest.phone}
+                                  defaultValue={selectedEventRequest.phone || ''}
                                 />
                               </div>
                             </div>
@@ -4794,31 +4806,35 @@ export default function EventRequestsManagement() {
                               </div>
                               <div>
                                 <Label htmlFor="desiredEventDate">Desired Event Date</Label>
-                                <Input
-                                  id="desiredEventDate"
-                                  name="desiredEventDate"
-                                  type="date"
-                                  defaultValue={
-                                    selectedEventRequest.desiredEventDate ? 
-                                    (() => {
-                                      // Convert MM/DD/YYYY to YYYY-MM-DD for HTML date input
-                                      const dateStr = selectedEventRequest.desiredEventDate;
-                                      if (dateStr.includes('/')) {
-                                        const [month, day, year] = dateStr.split('/');
-                                        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                                      }
-                                      // If already in YYYY-MM-DD format or ISO, try to parse and format
-                                      try {
-                                        const date = new Date(dateStr);
-                                        if (!isNaN(date.getTime())) {
-                                          return date.toISOString().split('T')[0];
+                                  <Input
+                                    id="desiredEventDate"
+                                    name="desiredEventDate"
+                                    type="date"
+                                    defaultValue={
+                                      selectedEventRequest.desiredEventDate ? 
+                                      (() => {
+                                        // Handle Date object or string
+                                        const dateValue = selectedEventRequest.desiredEventDate;
+                                        if (dateValue instanceof Date) {
+                                          return dateValue.toISOString().split('T')[0];
                                         }
-                                      } catch (e) {
-                                        console.warn('Date conversion failed:', dateStr);
-                                      }
-                                      return dateStr;
-                                    })() : ''
-                                  }
+                                        const dateStr = dateValue.toString();
+                                        if (dateStr.includes('/')) {
+                                          const [month, day, year] = dateStr.split('/');
+                                          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                                        }
+                                        // If already in YYYY-MM-DD format or ISO, try to parse and format
+                                        try {
+                                          const date = new Date(dateStr);
+                                          if (!isNaN(date.getTime())) {
+                                            return date.toISOString().split('T')[0];
+                                          }
+                                        } catch (e) {
+                                          console.warn('Date conversion failed:', dateStr);
+                                        }
+                                        return dateStr;
+                                      })() : ''
+                                    }
                                 />
                               </div>
                               <div>
@@ -4851,7 +4867,7 @@ export default function EventRequestsManagement() {
                                   id="startTime"
                                   name="startTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.eventStartTime}
+                                  defaultValue={selectedEventRequest.eventStartTime || ''}
                                 />
                               </div>
                               <div>
@@ -4860,7 +4876,7 @@ export default function EventRequestsManagement() {
                                   id="endTime"
                                   name="endTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.eventEndTime}
+                                  defaultValue={selectedEventRequest.eventEndTime || ''}
                                 />
                               </div>
                               <div>
@@ -4869,7 +4885,7 @@ export default function EventRequestsManagement() {
                                   id="pickupTime"
                                   name="pickupTime"
                                   type="time"
-                                  defaultValue={selectedEventRequest.pickupTime}
+                                  defaultValue={selectedEventRequest.pickupTime || ''}
                                 />
                               </div>
                               <div>
@@ -4877,7 +4893,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="eventAddress"
                                   name="eventAddress"
-                                  defaultValue={selectedEventRequest.eventAddress}
+                                  defaultValue={selectedEventRequest.eventAddress || ''}
                                 />
                               </div>
                               <div>
@@ -4885,7 +4901,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="sandwichDestination"
                                   name="sandwichDestination"
-                                  defaultValue={selectedEventRequest.sandwichDestination}
+                                  defaultValue={selectedEventRequest.sandwichDestination || ''}
                                 />
                               </div>
                             </div>
@@ -5006,7 +5022,7 @@ export default function EventRequestsManagement() {
                         <Textarea
                           id="planningNotes"
                           name="planningNotes"
-                          defaultValue={selectedEventRequest.planningNotes}
+                          defaultValue={selectedEventRequest.planningNotes || ''}
                           rows={4}
                           placeholder="Add planning notes..."
                         />
