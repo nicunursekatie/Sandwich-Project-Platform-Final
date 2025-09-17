@@ -38,6 +38,68 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
+   * Convert Excel serial number or date string to JavaScript Date
+   * Handles both submission dates and event dates properly
+   */
+  private parseExcelDate(dateValue: string | undefined, fieldName: string = 'date'): Date | null {
+    if (!dateValue || !dateValue.trim()) return null;
+
+    try {
+      const cleaned = dateValue.trim();
+
+      // Check if it's an Excel serial number (numeric string)
+      if (/^\d+(\.\d+)?$/.test(cleaned)) {
+        const serialNumber = parseFloat(cleaned);
+        
+        // Convert Excel serial number to JavaScript Date
+        // Excel epoch starts from January 1, 1900 (with a leap year bug adjustment)
+        const excelEpoch = new Date(1899, 11, 30); // December 30, 1899 (Excel's day 0)
+        const millisecondsPerDay = 24 * 60 * 60 * 1000;
+        
+        const date = new Date(excelEpoch.getTime() + serialNumber * millisecondsPerDay);
+        
+        if (isNaN(date.getTime())) {
+          console.error(
+            `❌ CRITICAL: Invalid Excel serial number for ${fieldName}: "${dateValue}"`
+          );
+          return null;
+        }
+
+        console.log(
+          `✅ Converted Excel serial number "${dateValue}" (${fieldName}) to:`,
+          date.toISOString(),
+          `(${date.toLocaleDateString()})`
+        );
+        
+        return date;
+      } else {
+        // Try parsing as regular date string
+        const date = new Date(cleaned);
+        
+        if (isNaN(date.getTime())) {
+          console.error(
+            `❌ CRITICAL: Invalid ${fieldName} format: "${dateValue}"`
+          );
+          return null;
+        }
+
+        console.log(
+          `✅ Parsed ${fieldName} "${dateValue}" to:`,
+          date.toISOString()
+        );
+        
+        return date;
+      }
+    } catch (error) {
+      console.error(
+        `❌ CRITICAL: Error parsing ${fieldName} "${dateValue}":`,
+        error
+      );
+      return null;
+    }
+  }
+
+  /**
    * Convert EventRequest to Google Sheets row format
    */
   private eventRequestToSheetRow(
@@ -105,36 +167,8 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Parse the submission date from Google Sheets
-    let submissionDate;
-    if (row.submittedOn && row.submittedOn.trim()) {
-      try {
-        const dateStr = row.submittedOn.trim();
-        submissionDate = new Date(dateStr);
-
-        // Validate the parsed date
-        if (isNaN(submissionDate.getTime())) {
-          console.warn(
-            `Invalid submission date format in Google Sheets: ${row.submittedOn}`
-          );
-          submissionDate = new Date(); // Fallback to current date
-        } else {
-          console.log(
-            `✅ Parsed submission date "${row.submittedOn}" to:`,
-            submissionDate.toISOString()
-          );
-        }
-      } catch (error) {
-        console.warn(
-          `Error parsing submission date format in Google Sheets: ${row.submittedOn}`,
-          error
-        );
-        submissionDate = new Date(); // Fallback to current date
-      }
-    } else {
-      console.warn('No submittedOn field found, using current date');
-      submissionDate = new Date();
-    }
+    // Parse the submission date from Google Sheets using proper Excel serial number handling
+    const submissionDate = this.parseExcelDate(row.submittedOn, 'submission date') || new Date();
 
     return {
       organizationName: row.organizationName,
@@ -143,40 +177,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       email: row.email,
       phone: row.phone,
       department: row.department,
-      desiredEventDate: row.desiredEventDate
-        ? (() => {
-            // Timezone-safe date parsing from Google Sheets
-            const dateStr = row.desiredEventDate.trim();
-            if (!dateStr) return null;
-
-            try {
-              if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
-                // Handle MM/DD/YYYY format from Google Sheets
-                const [month, day, year] = dateStr.split('/');
-                const date = new Date(
-                  parseInt(year),
-                  parseInt(month) - 1,
-                  parseInt(day),
-                  12,
-                  0,
-                  0
-                );
-                return isNaN(date.getTime()) ? null : date;
-              } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                // Handle YYYY-MM-DD format
-                const date = new Date(dateStr + 'T12:00:00.000Z');
-                return isNaN(date.getTime()) ? null : date;
-              } else {
-                // Try parsing as-is with noon time to avoid timezone issues
-                const date = new Date(dateStr + 'T12:00:00.000Z');
-                return isNaN(date.getTime()) ? null : date;
-              }
-            } catch (error) {
-              console.warn(`Failed to parse date "${dateStr}":`, error);
-              return null;
-            }
-          })()
-        : null,
+      desiredEventDate: this.parseExcelDate(row.desiredEventDate, 'desired event date'),
       status: (() => {
         // Smart status assignment: preserve existing status or determine based on event date
         if (

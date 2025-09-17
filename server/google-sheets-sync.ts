@@ -445,28 +445,55 @@ export class GoogleSheetsSyncService {
       // Handle various date formats from Google Sheets
       const cleaned = dateString.trim();
 
-      // Try parsing common formats: MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD
-      // Use Date constructor but adjust for timezone to avoid day-off issues
-      const date = new Date(cleaned);
+      // Check if it's an Excel serial number (numeric string)
+      if (/^\d+(\.\d+)?$/.test(cleaned)) {
+        const serialNumber = parseFloat(cleaned);
+        
+        // Convert Excel serial number to JavaScript Date
+        const excelEpoch = new Date(1899, 11, 30); // December 30, 1899 (Excel's day 0)
+        const millisecondsPerDay = 24 * 60 * 60 * 1000;
+        
+        const date = new Date(excelEpoch.getTime() + serialNumber * millisecondsPerDay);
+        
+        if (isNaN(date.getTime())) {
+          console.error(
+            `❌ CRITICAL: Invalid Excel serial number from Google Sheets: "${dateString}"`
+          );
+          return undefined;
+        }
 
-      // Check if it's a valid date
-      if (isNaN(date.getTime())) {
-        console.warn(
-          `⚠️ Invalid date format from Google Sheets: "${dateString}"`
-        );
-        return undefined;
+        // Get local date components to avoid timezone offset issues
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const isoString = `${year}-${month}-${day}`;
+
+        console.log(`✅ Converted Excel serial number "${dateString}" to: ${isoString}`);
+        return isoString;
+      } else {
+        // Try parsing common formats: MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD
+        // Use Date constructor but adjust for timezone to avoid day-off issues
+        const date = new Date(cleaned);
+
+        // Check if it's a valid date
+        if (isNaN(date.getTime())) {
+          console.error(
+            `❌ CRITICAL: Invalid date format from Google Sheets: "${dateString}"`
+          );
+          return undefined;
+        }
+
+        // Get local date components to avoid timezone offset issues
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const isoString = `${year}-${month}-${day}`;
+
+        console.log(`✅ Parsed date "${dateString}" to: ${isoString}`);
+        return isoString;
       }
-
-      // Get local date components to avoid timezone offset issues
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const isoString = `${year}-${month}-${day}`;
-
-      console.log(`✅ Parsed date "${dateString}" to: ${isoString}`);
-      return isoString;
     } catch (error) {
-      console.warn(`⚠️ Failed to parse date "${dateString}":`, error);
+      console.error(`❌ CRITICAL: Failed to parse date "${dateString}":`, error);
       return undefined;
     }
   }
