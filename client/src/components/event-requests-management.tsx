@@ -2340,6 +2340,76 @@ export default function EventRequestsManagement() {
     setShowAssignmentDialog(true);
   };
 
+  // Helper function to handle removing assignment
+  const handleRemoveAssignment = async (personId: string, type: 'driver' | 'speaker' | 'volunteer', eventId: number) => {
+    try {
+      const eventRequest = eventRequests.find(req => req.id === eventId);
+      if (!eventRequest) return;
+
+      let updateData: any = {};
+
+      if (type === 'driver') {
+        // Remove from assignedDriverIds array
+        const currentDrivers = eventRequest.assignedDriverIds || [];
+        updateData.assignedDriverIds = currentDrivers.filter(id => id !== personId);
+
+        // Remove from driver details
+        const currentDriverDetails = eventRequest.driverDetails || {};
+        const newDriverDetails = { ...currentDriverDetails };
+        delete newDriverDetails[personId];
+        updateData.driverDetails = newDriverDetails;
+      } else if (type === 'speaker') {
+        // Remove from speaker details
+        const currentSpeakerDetails = eventRequest.speakerDetails || {};
+        const newSpeakerDetails = { ...currentSpeakerDetails };
+        delete newSpeakerDetails[personId];
+        updateData.speakerDetails = newSpeakerDetails;
+
+        // Remove from speaker assignments array
+        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
+        const speakerName = currentSpeakerDetails[personId]?.name;
+        if (speakerName) {
+          updateData.speakerAssignments = currentSpeakerAssignments.filter(name => name !== speakerName);
+        }
+      } else if (type === 'volunteer') {
+        // Remove from assignedVolunteerIds array
+        const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+        updateData.assignedVolunteerIds = currentVolunteers.filter(id => id !== personId);
+
+        // Remove from volunteer details
+        const currentVolunteerDetails = eventRequest.volunteerDetails || {};
+        const newVolunteerDetails = { ...currentVolunteerDetails };
+        delete newVolunteerDetails[personId];
+        updateData.volunteerDetails = newVolunteerDetails;
+
+        // Remove from volunteer assignments array
+        const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
+        const volunteerName = currentVolunteerDetails[personId]?.name;
+        if (volunteerName) {
+          updateData.volunteerAssignments = currentVolunteerAssignments.filter(name => name !== volunteerName);
+        }
+      }
+
+      // Update the event request
+      await updateEventRequestMutation.mutateAsync({
+        id: eventId,
+        data: updateData,
+      });
+
+      toast({
+        title: 'Assignment removed',
+        description: `Person has been removed from ${type} assignments`,
+      });
+    } catch (error) {
+      console.error('Failed to remove assignment:', error);
+      toast({
+        title: 'Removal failed',
+        description: 'Failed to remove assignment. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Helper function to handle assignment
   const handleAssignment = async (personId: string, personName: string) => {
     if (!assignmentEventId || !assignmentType) return;
@@ -4306,28 +4376,93 @@ export default function EventRequestsManagement() {
                                         </div>
                                         
                                         {/* Show assigned people if any */}
-                                        {((request.driverAssignments?.length ?? 0) > 0 || (request.speakerAssignments?.length ?? 0) > 0 || (request.volunteerAssignments?.length ?? 0) > 0) && (
-                                          <div className="pt-2 border-t border-gray-100">
-                                            <div className="text-xs text-gray-600 mb-1">Assigned:</div>
-                                            <div className="space-y-1 text-xs">
-                                              {request.driverAssignments?.map((driver, i) => (
-                                                <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
-                                                  🚗 {driver}
-                                                </div>
-                                              ))}
-                                              {request.speakerAssignments?.map((speaker, i) => (
-                                                <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
-                                                  🎤 {speaker}
-                                                </div>
-                                              ))}
-                                              {request.volunteerAssignments?.map((volunteer, i) => (
-                                                <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
-                                                  👥 {volunteer}
-                                                </div>
-                                              ))}
+                                        {(() => {
+                                          const assignedDrivers = request.assignedDriverIds || [];
+                                          const assignedSpeakers = Object.keys(request.speakerDetails || {});
+                                          const assignedVolunteers = request.assignedVolunteerIds || [];
+                                          const hasAssignments = assignedDrivers.length > 0 || assignedSpeakers.length > 0 || assignedVolunteers.length > 0;
+                                          
+                                          if (!hasAssignments) return null;
+                                          
+                                          return (
+                                            <div className="pt-2 border-t border-gray-100">
+                                              <div className="text-xs text-gray-600 mb-1">Assigned:</div>
+                                              <div className="space-y-1 text-xs">
+                                                {/* Drivers */}
+                                                {assignedDrivers.map((driverId, i) => {
+                                                  const driverDetails = request.driverDetails?.[driverId];
+                                                  const driverName = driverDetails?.name || resolveUserName(driverId);
+                                                  return (
+                                                    <div key={`driver-${i}`} className="flex items-center justify-between bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
+                                                      <span>🚗 {driverName}</span>
+                                                      {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                        <Button
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveAssignment(driverId, 'driver', request.id);
+                                                          }}
+                                                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700"
+                                                        >
+                                                          <X className="w-3 h-3" />
+                                                        </Button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                                
+                                                {/* Speakers */}
+                                                {assignedSpeakers.map((speakerId, i) => {
+                                                  const speakerDetails = request.speakerDetails?.[speakerId];
+                                                  const speakerName = speakerDetails?.name || resolveUserName(speakerId);
+                                                  return (
+                                                    <div key={`speaker-${i}`} className="flex items-center justify-between bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
+                                                      <span>🎤 {speakerName}</span>
+                                                      {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                        <Button
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveAssignment(speakerId, 'speaker', request.id);
+                                                          }}
+                                                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700"
+                                                        >
+                                                          <X className="w-3 h-3" />
+                                                        </Button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                                
+                                                {/* Volunteers */}
+                                                {assignedVolunteers.map((volunteerId, i) => {
+                                                  const volunteerDetails = request.volunteerDetails?.[volunteerId];
+                                                  const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
+                                                  return (
+                                                    <div key={`volunteer-${i}`} className="flex items-center justify-between bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
+                                                      <span>👥 {volunteerName}</span>
+                                                      {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                        <Button
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveAssignment(volunteerId, 'volunteer', request.id);
+                                                          }}
+                                                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700"
+                                                        >
+                                                          <X className="w-3 h-3" />
+                                                        </Button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
                                             </div>
-                                          </div>
-                                        )}
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                     
@@ -5361,11 +5496,7 @@ export default function EventRequestsManagement() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  // Remove assignment logic would go here
-                                  toast({
-                                    title: 'Remove assignment',
-                                    description: 'Remove assignment functionality needs to be implemented',
-                                  });
+                                  handleRemoveAssignment(personId, assignmentType!, assignmentEventId!);
                                 }}
                                 className="text-red-600 hover:text-red-700"
                               >
