@@ -306,7 +306,16 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Discussion Points
             if (project.meetingDiscussionPoints) {
-              ensureSpace(50); // Ensure space for header and content
+              // Be aggressive about keeping section together
+              const headerSpace = 40;
+              const contentSpace = 50; // Generous space for content
+              const totalSpace = headerSpace + contentSpace;
+              
+              if (yPosition + totalSpace > pageHeight - 150) {
+                doc.addPage();
+                yPosition = 80;
+              }
+              
               addColoredSection('What do we need to talk about?', colors.lightOrange, colors.orange, 11);
               
               addText(project.meetingDiscussionPoints, margin + 10, yPosition, {
@@ -314,7 +323,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 25; // Increased spacing after discussion points
+              yPosition += 30; // Generous spacing after discussion points
             }
 
             // Add teal divider
@@ -322,7 +331,16 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Decision Items
             if (project.meetingDecisionItems) {
-              ensureSpace(50); // Ensure space for header and content
+              // Be aggressive about keeping section together
+              const headerSpace = 40;
+              const contentSpace = 50; // Generous space for content
+              const totalSpace = headerSpace + contentSpace;
+              
+              if (yPosition + totalSpace > pageHeight - 150) {
+                doc.addPage();
+                yPosition = 80;
+              }
+              
               addColoredSection('What decisions need to be made?', colors.lightRed, colors.red, 11);
               
               addText(project.meetingDecisionItems, margin + 10, yPosition, {
@@ -330,7 +348,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 25; // Increased spacing after decision items
+              yPosition += 30; // Generous spacing after decision items
             }
 
             // Add blue divider
@@ -338,14 +356,21 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
             // Project Tasks
             if (project.tasks && project.tasks.length > 0) {
-              // Calculate total space needed: header + all tasks + spacing
-              const headerSpace = 30; // Space for colored section header
-              const taskSpace = project.tasks.length * 18; // 18px per task
-              const totalSpace = headerSpace + taskSpace + 15; // +15 for final spacing
+              // Be very aggressive about keeping the entire section together
+              // Calculate generous space needed for the entire section
+              const headerSpace = 40; // Extra space for colored section header
+              const taskSpace = project.tasks.length * 25; // More generous spacing per task
+              const totalSpace = headerSpace + taskSpace + 30; // Extra generous final spacing
               
-              ensureSpace(totalSpace); // Ensure space for entire section
+              // If we can't fit the entire section, force a new page
+              if (yPosition + totalSpace > pageHeight - 150) {
+                doc.addPage();
+                yPosition = 80; // Start with proper margin from top
+              }
+              
               addColoredSection('Project Tasks:', colors.lightTeal, colors.teal, 11);
 
+              // Add all tasks without any individual space checks - keep them together
               project.tasks.forEach((task: any, taskIndex: number) => {
                 const taskText = `${taskIndex + 1}. ${task.description || task.title || 'No description'}`;
                 addText(taskText, margin + 10, yPosition, {
@@ -353,30 +378,36 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                   fillColor: colors.darkGray,
                   width: contentWidth - 30 // Leave some margin for indentation
                 });
-                yPosition += 18; // Space between tasks
+                yPosition += 20; // Consistent spacing between tasks
               });
-              yPosition += 15; // Extra space after all tasks
+              yPosition += 20; // Extra space after all tasks
             }
 
             // Attached Files
             if (project.attachments && project.attachments.length > 0) {
-              // Calculate total space needed: header + all files + spacing
-              const headerSpace = 30; // Space for colored section header
-              const fileSpace = project.attachments.length * 15; // 15px per file
-              const totalSpace = headerSpace + fileSpace + 15; // +15 for final spacing
+              // Be very aggressive about keeping the entire section together
+              const headerSpace = 40; // Extra space for colored section header
+              const fileSpace = project.attachments.length * 20; // More generous spacing per file
+              const totalSpace = headerSpace + fileSpace + 30; // Extra generous final spacing
               
-              ensureSpace(totalSpace); // Ensure space for entire section
+              // If we can't fit the entire section, force a new page
+              if (yPosition + totalSpace > pageHeight - 150) {
+                doc.addPage();
+                yPosition = 80; // Start with proper margin from top
+              }
+              
               addColoredSection('Attached Files:', colors.lightNavy, colors.navy, 11);
 
+              // Add all files without any individual space checks - keep them together
               project.attachments.forEach((attachment: any, fileIndex: number) => {
                 addText(`${fileIndex + 1}. ${attachment.name || attachment.filename || 'Unknown file'}`, margin + 10, yPosition, {
                   fontSize: 10,
                   fillColor: colors.lightGray,
                   width: contentWidth - 20
                 });
-                yPosition += 15; // Consistent spacing between files
+                yPosition += 18; // Consistent spacing between files
               });
-              yPosition += 15; // Extra space after all files
+              yPosition += 20; // Extra space after all files
             }
 
             // Last Discussed Date
