@@ -387,6 +387,7 @@ interface EventRequest {
   actualSandwichTypes?: string;
   sandwichTypes?: string;
   sandwichDestination?: string; // Where sandwiches are going
+  hostLocation?: string; // Where sandwiches are stored overnight
   vanNeeded?: boolean; // Whether a van is needed for this event
   completedNotes?: string;
   nextDayFollowUp?: string;
@@ -2628,10 +2629,10 @@ export default function EventRequestsManagement() {
         {/* Event Details Dialog */}
         {showEventDetails && selectedEventRequest && (
           <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center space-x-2">
-                  <Building className="w-5 h-5" />
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200">
+              <DialogHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 -m-6 mb-6 rounded-t-lg">
+                <DialogTitle className="flex items-center space-x-2 text-xl font-bold">
+                  <Building className="w-6 h-6" />
                   <span>{selectedEventRequest.organizationName}</span>
                   <Badge className={statusColors[selectedEventRequest.status]}>
                     {
@@ -2984,19 +2985,24 @@ export default function EventRequestsManagement() {
 
                 {/* Edit Form */}
                 {isEditing && (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const formData = new FormData(e.currentTarget);
-                      const updatedData = Object.fromEntries(
-                        formData.entries()
-                      );
-                      updateEventRequestMutation.mutate({
-                        id: selectedEventRequest.id,
-                        data: updatedData,
-                      });
-                    }}
-                    className="space-y-4 border-t pt-6"
+                  <div className="bg-gradient-to-br from-white to-blue-50 p-6 rounded-lg border-2 border-blue-200 shadow-lg">
+                    <h3 className="text-lg font-bold text-blue-800 mb-6 flex items-center">
+                      <Edit className="w-5 h-5 mr-2" />
+                      Edit Event Details
+                    </h3>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const updatedData = Object.fromEntries(
+                          formData.entries()
+                        );
+                        updateEventRequestMutation.mutate({
+                          id: selectedEventRequest.id,
+                          data: updatedData,
+                        });
+                      }}
+                      className="space-y-6"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -3021,20 +3027,6 @@ export default function EventRequestsManagement() {
                         </Select>
                       </div>
 
-                      <div>
-                        <Label htmlFor="edit-estimated-count">
-                          Estimated Sandwich Count
-                        </Label>
-                        <Input
-                          id="edit-estimated-count"
-                          name="estimatedSandwichCount"
-                          type="number"
-                          defaultValue={
-                            selectedEventRequest.estimatedSandwichCount || ''
-                          }
-                          data-testid="input-edit-sandwich-count"
-                        />
-                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3168,25 +3160,62 @@ export default function EventRequestsManagement() {
                         </div>
                         <div>
                           <Label htmlFor="edit-sandwich-types">Sandwich Types</Label>
-                          <Input
-                            id="edit-sandwich-types"
-                            name="sandwichTypes"
-                            defaultValue={selectedEventRequest.sandwichTypes ? getSandwichTypesSummary(selectedEventRequest).breakdown : ''}
-                            placeholder="e.g., Deli (Turkey), PB&J"
-                            data-testid="input-edit-sandwich-types"
-                          />
+                          <div className="space-y-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                            {SANDWICH_TYPES.map((type) => (
+                              <div key={type.value} className="flex items-center space-x-3">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  placeholder="0"
+                                  className="w-20"
+                                  name={`sandwichType_${type.value}`}
+                                  defaultValue={
+                                    selectedEventRequest.sandwichTypes && Array.isArray(selectedEventRequest.sandwichTypes)
+                                      ? selectedEventRequest.sandwichTypes.find((item: any) => item.type === type.value)?.quantity || 0
+                                      : 0
+                                  }
+                                />
+                                <Label className="text-sm font-medium text-green-800">
+                                  {type.label}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
-                      <div>
-                        <Label htmlFor="edit-sandwich-destination">Sandwich Destination</Label>
-                        <Input
-                          id="edit-sandwich-destination"
-                          name="sandwichDestination"
-                          defaultValue={selectedEventRequest.sandwichDestination || ''}
-                          placeholder="e.g., Local Shelter, Food Bank"
-                          data-testid="input-edit-sandwich-destination"
-                        />
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="edit-sandwich-destination">Sandwich Destination</Label>
+                          <Select
+                            name="sandwichDestination"
+                            defaultValue={selectedEventRequest.sandwichDestination || ''}
+                          >
+                            <SelectTrigger className="bg-blue-50 border-blue-200">
+                              <SelectValue placeholder="Select destination" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="local-shelter">Local Shelter</SelectItem>
+                              <SelectItem value="food-bank">Food Bank</SelectItem>
+                              <SelectItem value="homeless-services">Homeless Services</SelectItem>
+                              <SelectItem value="community-center">Community Center</SelectItem>
+                              <SelectItem value="church-outreach">Church Outreach</SelectItem>
+                              <SelectItem value="school-program">School Program</SelectItem>
+                              <SelectItem value="senior-center">Senior Center</SelectItem>
+                              <SelectItem value="other">Other (specify in notes)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-host-location">Host Location (Overnight Storage)</Label>
+                          <Input
+                            id="edit-host-location"
+                            name="hostLocation"
+                            defaultValue={selectedEventRequest.hostLocation || ''}
+                            placeholder="e.g., Church basement, Community center, Host home"
+                            className="bg-purple-50 border-purple-200"
+                          />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3256,13 +3285,30 @@ export default function EventRequestsManagement() {
 
                       <div>
                         <Label htmlFor="edit-tsp-contact">TSP Contact</Label>
-                        <Input
-                          id="edit-tsp-contact"
-                          name="tspContact"
-                          defaultValue={selectedEventRequest.tspContact || ''}
-                          placeholder="Enter TSP contact person"
-                          data-testid="input-edit-tsp-contact"
-                        />
+                        <div className="space-y-2">
+                          <Select
+                            name="tspContact"
+                            defaultValue={selectedEventRequest.tspContact || ''}
+                          >
+                            <SelectTrigger className="bg-orange-50 border-orange-200">
+                              <SelectValue placeholder="Select TSP contact or enter custom" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {users.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.name || user.email}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="custom">Custom Entry</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            id="edit-tsp-contact-custom"
+                            name="tspContactCustom"
+                            placeholder="Or enter custom contact name"
+                            className="bg-orange-50 border-orange-200"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -3367,6 +3413,7 @@ export default function EventRequestsManagement() {
                       </Button>
                     </div>
                   </form>
+                  </div>
                 )}
               </div>
             </DialogContent>
