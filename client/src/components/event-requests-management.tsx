@@ -2484,11 +2484,19 @@ export default function EventRequestsManagement() {
                                 <div className="flex-1 space-y-4">
                                 {/* Organization Name - Most Prominent */}
                                 <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-center space-x-3 flex-1">
-                                    <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
-                                    <h2 className="text-2xl font-bold text-brand-primary leading-tight">
-                                      {request.organizationName}
-                                    </h2>
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-3">
+                                      <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
+                                      <h2 className="text-2xl font-bold text-brand-primary leading-tight">
+                                        {request.organizationName}
+                                      </h2>
+                                    </div>
+                                    {/* Request Submitted Date */}
+                                    <div className="flex items-center space-x-2 mt-1 ml-10">
+                                      <span className="text-sm text-gray-500">
+                                        Submitted: {new Date(request.createdAt).toLocaleDateString()} at {new Date(request.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
                                   </div>
                                   <Badge
                                     className={`${
@@ -3956,13 +3964,17 @@ export default function EventRequestsManagement() {
           eventRequest={selectedEventRequest}
           onToolkitSent={(toolkitSentDate) => {
             // Update the event request status
-            updateEventRequestMutation.mutate({
-              id: selectedEventRequest?.id,
-              data: {
-                status: 'in_process',
-                toolkitSentDate: toolkitSentDate,
-              }
-            });
+            if (selectedEventRequest?.id) {
+              updateEventRequestMutation.mutate({
+                id: selectedEventRequest.id,
+                data: {
+                  status: 'in_process',
+                  toolkitSent: true,
+                  toolkitSentDate: toolkitSentDate,
+                  toolkitStatus: 'sent'
+                }
+              });
+            }
             setShowToolkitSentDialog(false);
           }}
           isLoading={updateEventRequestMutation.isPending}
