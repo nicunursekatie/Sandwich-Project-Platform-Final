@@ -961,15 +961,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     
     if (!eventRequest) return;
 
-    // Validate required fields
-    if (!formData.eventStartTime || !formData.eventEndTime || !formData.pickupTime) {
-      toast({
-        title: 'Missing required fields',
-        description: 'Please fill in start time, end time, and pickup time.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // All fields are optional - no validation required
 
     // Prepare update data
     const updateData = {
@@ -1066,7 +1058,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Event Schedule */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="eventStartTime">Start Time *</Label>
+              <Label htmlFor="eventStartTime">Start Time</Label>
               <Input
                 id="eventStartTime"
                 type="time"
@@ -1076,7 +1068,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               />
             </div>
             <div>
-              <Label htmlFor="eventEndTime">End Time *</Label>
+              <Label htmlFor="eventEndTime">End Time</Label>
               <Input
                 id="eventEndTime"
                 type="time"
@@ -1086,7 +1078,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               />
             </div>
             <div>
-              <Label htmlFor="pickupTime">Pickup Time *</Label>
+              <Label htmlFor="pickupTime">Pickup Time</Label>
               <Input
                 id="pickupTime"
                 type="time"
