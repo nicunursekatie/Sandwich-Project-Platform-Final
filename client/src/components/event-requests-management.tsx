@@ -2865,7 +2865,8 @@ export default function EventRequestsManagement() {
                                       {request.estimatedSandwichCount && (
                                         <div className="space-y-2 md:col-start-3 flex flex-col items-end text-right">
                                           <div className="text-sm font-semibold text-brand-orange mb-1">
-                                            {request.status === 'completed' ? 'Estimated' : 'Requested'}
+                                            {request.status === 'completed' ? 'Estimated' : 
+                                             request.status === 'scheduled' ? 'Planned' : 'Requested'}
                                           </div>
                                           <div className="flex items-center space-x-2">
                                             <span className="text-lg">🥪</span>
