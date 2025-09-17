@@ -7,15 +7,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-interface EventRequest {
-  id: number;
-  organizationName: string;
-  desiredEventDate?: string;
-  estimatedSandwichCount?: number;
-  status: 'new' | 'contact_completed' | 'scheduled' | 'completed' | 'declined';
-  needsDriver?: boolean;
-  needsSpeaker?: boolean;
-}
+import type { EventRequest } from '@shared/schema';
 
 export default function SandwichForecastWidget() {
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
@@ -84,7 +76,7 @@ export default function SandwichForecastWidget() {
 
       // Only include events that are likely to happen
       if (
-        !['contact_completed', 'scheduled', 'completed'].includes(
+        !['in_process', 'scheduled', 'completed'].includes(
           request.status
         )
       ) {
@@ -186,8 +178,8 @@ export default function SandwichForecastWidget() {
   const currentWeek = weeklySandwichForecast[currentWeekIndex] || null;
 
   // Calculate driver/speaker needs for the current week
-  const driverCount = currentWeek?.events?.filter(e => e.needsDriver).length || 0;
-  const speakerCount = currentWeek?.events?.filter(e => e.needsSpeaker).length || 0;
+  const driverCount = currentWeek?.events?.reduce((count, e) => count + (e.driversNeeded || 0), 0) || 0;
+  const speakerCount = currentWeek?.events?.reduce((count, e) => count + (e.speakersNeeded || 0), 0) || 0;
 
   // New logic for distribution events (Tue/Wed/Thu) and other events
   const isDistributionEvent = (date: Date) => {
@@ -347,11 +339,11 @@ export default function SandwichForecastWidget() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {event.needsDriver && (
-                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 Driver</Badge>
+                      {(event.driversNeeded && event.driversNeeded > 0) && (
+                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{event.driversNeeded > 1 ? 's' : ''}</Badge>
                       )}
-                      {event.needsSpeaker && (
-                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 Speaker</Badge>
+                      {(event.speakersNeeded && event.speakersNeeded > 0) && (
+                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{event.speakersNeeded > 1 ? 's' : ''}</Badge>
                       )}
                       <div className="font-semibold text-brand-primary">
                         {(event.estimatedSandwichCount || 0).toLocaleString()}
@@ -396,11 +388,11 @@ export default function SandwichForecastWidget() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {event.needsDriver && (
-                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 Driver</Badge>
+                      {(event.driversNeeded && event.driversNeeded > 0) && (
+                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{event.driversNeeded > 1 ? 's' : ''}</Badge>
                       )}
-                      {event.needsSpeaker && (
-                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 Speaker</Badge>
+                      {(event.speakersNeeded && event.speakersNeeded > 0) && (
+                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{event.speakersNeeded > 1 ? 's' : ''}</Badge>
                       )}
                       <div className="font-semibold text-brand-primary">
                         {(event.estimatedSandwichCount || 0).toLocaleString()}

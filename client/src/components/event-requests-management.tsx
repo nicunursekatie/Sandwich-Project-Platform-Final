@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
+import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 import { EventEmailComposer } from '@/components/event-email-composer';
 import {
   Collapsible,
@@ -2880,6 +2881,80 @@ export default function EventRequestsManagement() {
                                   </div>
                                 )}
 
+                                {/* Staffing Need Badges - For Scheduled/In Process Events */}
+                                {(request.status === 'scheduled' || request.status === 'in_process') && (
+                                  (() => {
+                                    const staffingBadges = [];
+                                    
+                                    // Check drivers needed
+                                    const driversNeeded = request.driversNeeded || 0;
+                                    const assignedDrivers = request.assignedDriverIds?.length || 0;
+                                    if (driversNeeded > assignedDrivers) {
+                                      const driversShort = driversNeeded - assignedDrivers;
+                                      staffingBadges.push({
+                                        key: 'drivers',
+                                        icon: '🚗',
+                                        text: `${driversShort} driver${driversShort > 1 ? 's' : ''} needed`,
+                                        className: 'bg-red-100 text-red-800 border border-red-300'
+                                      });
+                                    }
+
+                                    // Check speakers needed
+                                    const speakersNeeded = request.speakersNeeded || 0;
+                                    const assignedSpeakers = request.speakerAssignments?.length || 0;
+                                    if (speakersNeeded > assignedSpeakers) {
+                                      const speakersShort = speakersNeeded - assignedSpeakers;
+                                      staffingBadges.push({
+                                        key: 'speakers',
+                                        icon: '🎤',
+                                        text: `${speakersShort} speaker${speakersShort > 1 ? 's' : ''} needed`,
+                                        className: 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                                      });
+                                    }
+
+                                    // Check volunteers needed
+                                    if (request.volunteersNeeded && (!request.volunteerAssignments || request.volunteerAssignments.length === 0)) {
+                                      staffingBadges.push({
+                                        key: 'volunteers',
+                                        icon: '👥',
+                                        text: 'Volunteers needed',
+                                        className: 'bg-blue-100 text-blue-800 border border-blue-300'
+                                      });
+                                    }
+
+                                    // Check van driver needed
+                                    if (request.vanDriverNeeded && (!request.vanDriverAssignments || request.vanDriverAssignments.length === 0)) {
+                                      staffingBadges.push({
+                                        key: 'van',
+                                        icon: '🚐',
+                                        text: 'Van driver needed',
+                                        className: 'bg-purple-100 text-purple-800 border border-purple-300'
+                                      });
+                                    }
+
+                                    return staffingBadges.length > 0 ? (
+                                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                        <div className="text-sm font-semibold text-amber-800 mb-2 flex items-center">
+                                          <AlertTriangle className="w-4 h-4 mr-2" />
+                                          Staffing Needs
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                          {staffingBadges.map((badge) => (
+                                            <Badge
+                                              key={badge.key}
+                                              className={`${badge.className} text-xs font-medium px-2 py-1 flex items-center space-x-1`}
+                                              data-testid={`badge-${badge.key}-needed`}
+                                            >
+                                              <span>{badge.icon}</span>
+                                              <span>{badge.text}</span>
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : null;
+                                  })()
+                                )}
+
                                 {/* Toolkit Status - Only for In Process */}
                                 {request.status === 'in_process' && (
                                   <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -4449,6 +4524,105 @@ export default function EventRequestsManagement() {
           }}
           isLoading={updateEventRequestMutation.isPending}
         />
+
+        {/* Weekly Planning Modal */}
+        <Dialog open={showWeeklyPlanningModal} onOpenChange={setShowWeeklyPlanningModal}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
+                <Calendar className="w-8 h-8" />
+                Weekly Planning Dashboard
+              </DialogTitle>
+              <DialogDescription>
+                Plan sandwich production and staffing for upcoming weeks. View both sandwich forecasts and staffing needs in one place.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6 mt-6">
+              {/* Planning Tabs */}
+              <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="overview">📊 Overview</TabsTrigger>
+                  <TabsTrigger value="sandwiches">🥪 Sandwich Planning</TabsTrigger>
+                  <TabsTrigger value="staffing">👥 Staffing Planning</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview" className="mt-6">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Sandwich Overview */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-brand-primary flex items-center gap-2">
+                          <TrendingUp className="w-5 h-5" />
+                          Sandwich Production Overview
+                        </h3>
+                        <SandwichForecastWidget />
+                      </div>
+                      
+                      {/* Staffing Overview */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-brand-orange flex items-center gap-2">
+                          <Users className="w-5 h-5" />
+                          Staffing Requirements Overview
+                        </h3>
+                        <StaffingForecastWidget />
+                      </div>
+                    </div>
+                    
+                    {/* Quick Tips */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                        <HelpCircle className="w-4 h-4" />
+                        Planning Tips
+                      </h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• Individual makers typically prep sandwiches on Wednesdays</li>
+                        <li>• Group distributions happen on Thursdays</li>
+                        <li>• Check staffing needs early - driver and speaker assignments are crucial</li>
+                        <li>• Van drivers are needed for large events or special delivery requirements</li>
+                      </ul>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="sandwiches" className="mt-6">
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-4">
+                      <h3 className="text-xl font-bold text-brand-orange mb-2">🥪 Sandwich Production Planning</h3>
+                      <p className="text-orange-800">
+                        Plan sandwich making for upcoming weeks. Track distribution days and coordinate with individual makers and group events.
+                      </p>
+                    </div>
+                    <SandwichForecastWidget />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="staffing" className="mt-6">
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+                      <h3 className="text-xl font-bold text-brand-primary mb-2">👥 Staffing & Volunteer Planning</h3>
+                      <p className="text-blue-800">
+                        Coordinate drivers, speakers, and volunteers for scheduled events. Ensure all positions are filled before event dates.
+                      </p>
+                    </div>
+                    <StaffingForecastWidget />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            
+            <div className="flex justify-end mt-6 pt-4 border-t">
+              <Button
+                onClick={() => setShowWeeklyPlanningModal(false)}
+                className="text-white"
+                style={{ backgroundColor: '#236383' }}
+                data-testid="button-close-weekly-planning"
+              >
+                Close Planning Dashboard
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Other modals and dialogs */}
       </div>
