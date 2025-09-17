@@ -130,10 +130,10 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
 
     // Helper function to add divider line
     const addDivider = (color: string, thickness: number = 1) => {
-      yPosition += 8; // Add more space before divider
+      yPosition += 12; // Add more space before divider
       doc.rect(margin, yPosition, contentWidth, thickness)
          .fill(color);
-      yPosition += thickness + 12; // Add more space after divider
+      yPosition += thickness + 15; // Add more space after divider
     };
 
     // Main header section
@@ -306,7 +306,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             // Discussion Points
             if (project.meetingDiscussionPoints) {
               // Add bold colored background for section
-              doc.rect(margin - 5, yPosition - 3, contentWidth + 10, 25)
+              doc.rect(margin - 5, yPosition - 3, contentWidth + 10, 20)
                  .fill(colors.orange);
               
               addText('What do we need to talk about?', margin, yPosition, {
@@ -314,14 +314,14 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.white,
                 width: contentWidth
               });
-              yPosition += 18;
+              yPosition += 25; // More space after header
               
               addText(project.meetingDiscussionPoints, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 20;
+              yPosition += 25; // More space after content
             }
 
             // Add teal divider
@@ -330,7 +330,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             // Decision Items
             if (project.meetingDecisionItems) {
               // Add bold colored background for section
-              doc.rect(margin - 5, yPosition - 3, contentWidth + 10, 25)
+              doc.rect(margin - 5, yPosition - 3, contentWidth + 10, 20)
                  .fill(colors.red);
               
               addText('What decisions need to be made?', margin, yPosition, {
@@ -338,14 +338,14 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.white,
                 width: contentWidth
               });
-              yPosition += 18;
+              yPosition += 25; // More space after header
               
               addText(project.meetingDecisionItems, margin + 10, yPosition, {
                 fontSize: 10,
                 fillColor: colors.darkGray,
                 width: contentWidth - 20
               });
-              yPosition += 20;
+              yPosition += 25; // More space after content
             }
 
             // Add blue divider
@@ -354,7 +354,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
             // Project Tasks
             if (project.tasks && project.tasks.length > 0) {
               // Add bold colored background for section
-              doc.rect(margin - 5, yPosition - 3, contentWidth + 10, 25)
+              doc.rect(margin - 5, yPosition - 3, contentWidth + 10, 20)
                  .fill(colors.teal);
               
               addText('Project Tasks:', margin, yPosition, {
@@ -362,7 +362,7 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                 fillColor: colors.white,
                 width: contentWidth
               });
-              yPosition += 18;
+              yPosition += 25; // More space after header
 
               project.tasks.forEach((task: any, taskIndex: number) => {
                 ensureSpace(30);
@@ -372,9 +372,9 @@ export async function generateMeetingAgendaPDF(agenda: MeetingAgenda): Promise<B
                   fillColor: colors.darkGray,
                   width: contentWidth - 30 // Leave some margin for indentation
                 });
-                yPosition += 18; // More space between tasks
+                yPosition += 20; // More space between tasks
               });
-              yPosition += 10;
+              yPosition += 15; // More space after all tasks
             }
 
             // Attached Files
