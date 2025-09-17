@@ -2664,6 +2664,48 @@ export default function EventRequestsManagement() {
           </Dialog>
         )}
 
+        {/* Assignment Dialog */}
+        {showAssignmentDialog && assignmentType && assignmentEventId && (
+          <Dialog open={showAssignmentDialog} onOpenChange={setShowAssignmentDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  Assign {assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Select a person to assign as {assignmentType} for this event:
+                </p>
+                
+                <TaskAssigneeSelector
+                  value={{ assigneeName: '' }}
+                  onChange={(value) => {
+                    if (value.assigneeName) {
+                      handleAssignment(value.assigneeName, value.assigneeName);
+                    }
+                  }}
+                  placeholder={`Select ${assignmentType}`}
+                />
+                
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowAssignmentDialog(false);
+                      setAssignmentType(null);
+                      setAssignmentEventId(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
         {/* Other modals and dialogs */}
       </div>
     </TooltipProvider>
