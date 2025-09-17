@@ -1413,7 +1413,7 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
 export default function EventRequestsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'organization'>(
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'organization' | 'event_date'>(
     'newest'
   );
   const [currentPage, setCurrentPage] = useState(1);
@@ -1805,6 +1805,11 @@ export default function EventRequestsManagement() {
           );
         case 'organization':
           return a.organizationName.localeCompare(b.organizationName);
+        case 'event_date':
+          // Sort by desired event date for scheduled events
+          const dateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+          const dateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+          return dateA - dateB; // Earliest dates first
         default:
           return 0;
       }
@@ -1986,6 +1991,11 @@ export default function EventRequestsManagement() {
                       <SelectItem value="organization">
                         Organization A-Z
                       </SelectItem>
+                      {status === 'scheduled' && (
+                        <SelectItem value="event_date">
+                          Event Date
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2028,6 +2038,11 @@ export default function EventRequestsManagement() {
                           return a.organizationName.localeCompare(
                             b.organizationName
                           );
+                        case 'event_date':
+                          // Sort by desired event date for scheduled events
+                          const dateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+                          const dateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+                          return dateA - dateB; // Earliest dates first
                         default:
                           return 0;
                       }
