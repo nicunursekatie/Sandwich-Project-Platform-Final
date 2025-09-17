@@ -239,7 +239,12 @@ export function TaskAssigneeSelector({
   const getAssignedUsers = () => {
     if (multiple) {
       // Multi-user mode
-      const allAssignees = [];
+      const allAssignees: Array<{
+        id: string;
+        name: string;
+        isSystemUser: boolean;
+        index: number;
+      }> = [];
 
       // Add system users
       selectedUsers.forEach((userId, index) => {
