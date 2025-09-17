@@ -2661,7 +2661,7 @@ export default function EventRequestsManagement() {
                     }
                   </Badge>
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-white/90">
                   Event request from {selectedEventRequest.firstName}{' '}
                   {selectedEventRequest.lastName} • Created{' '}
                   {new Date(
@@ -2682,19 +2682,19 @@ export default function EventRequestsManagement() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div>
-                        <Label className="text-sm font-medium">Name</Label>
+                        <Label className="text-sm font-medium text-gray-800">Name</Label>
                         <p className="text-sm">
                           {selectedEventRequest.firstName}{' '}
                           {selectedEventRequest.lastName}
                         </p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Email</Label>
+                        <Label className="text-sm font-medium text-gray-800">Email</Label>
                         <p className="text-sm">{selectedEventRequest.email}</p>
                       </div>
                       {selectedEventRequest.phone && (
                         <div>
-                          <Label className="text-sm font-medium">Phone</Label>
+                          <Label className="text-sm font-medium text-gray-800">Phone</Label>
                           <p className="text-sm">
                             {selectedEventRequest.phone}
                           </p>
@@ -2723,7 +2723,7 @@ export default function EventRequestsManagement() {
                     <CardContent className="space-y-3">
                       {selectedEventRequest.desiredEventDate && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Event Date
                           </Label>
                           <p className="text-sm">
@@ -2737,7 +2737,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.eventAddress && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Event Address
                           </Label>
                           <p className="text-sm">
@@ -2749,7 +2749,7 @@ export default function EventRequestsManagement() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {selectedEventRequest.eventStartTime && (
                             <div>
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium text-gray-800">
                                 Start Time
                               </Label>
                               <p className="text-sm">
@@ -2759,7 +2759,7 @@ export default function EventRequestsManagement() {
                           )}
                           {selectedEventRequest.eventEndTime && (
                             <div>
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium text-gray-800">
                                 End Time
                               </Label>
                               <p className="text-sm">
@@ -2769,7 +2769,7 @@ export default function EventRequestsManagement() {
                           )}
                           {selectedEventRequest.pickupTime && (
                             <div>
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium text-gray-800">
                                 Pickup Time
                               </Label>
                               <p className="text-sm">
@@ -2781,7 +2781,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.hasRefrigeration !== null && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Refrigeration Available
                           </Label>
                           <p className="text-sm">
@@ -2791,7 +2791,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.estimatedSandwichCount && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Estimated Sandwich Count
                           </Label>
                           <p className="text-sm">
@@ -2801,7 +2801,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.sandwichTypes && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Sandwich Types
                           </Label>
                           <p className="text-sm">
@@ -2811,7 +2811,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.sandwichDestination && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Sandwich Destination
                           </Label>
                           <p className="text-sm">
@@ -2823,7 +2823,7 @@ export default function EventRequestsManagement() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {selectedEventRequest.driverCount && (
                             <div>
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium text-gray-800">
                                 Drivers Needed
                               </Label>
                               <p className="text-sm">
@@ -2833,7 +2833,7 @@ export default function EventRequestsManagement() {
                           )}
                           {selectedEventRequest.vanNeeded && (
                             <div>
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium text-gray-800">
                                 Van Needed
                               </Label>
                               <p className="text-sm">
@@ -2844,7 +2844,7 @@ export default function EventRequestsManagement() {
                           )}
                           {selectedEventRequest.speakerCount && (
                             <div>
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium text-gray-800">
                                 Speakers Needed
                               </Label>
                               <p className="text-sm">
@@ -2854,7 +2854,7 @@ export default function EventRequestsManagement() {
                           )}
                           {selectedEventRequest.volunteerCount && (
                             <div>
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium text-gray-800">
                                 Volunteers Needed
                               </Label>
                               <p className="text-sm">
@@ -2866,7 +2866,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.tspContact && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             TSP Contact
                           </Label>
                           <p className="text-sm">
@@ -2876,7 +2876,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.additionalRequirements && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Additional Requirements
                           </Label>
                           <p className="text-sm">
@@ -2886,7 +2886,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.planningNotes && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Planning Notes
                           </Label>
                           <p className="text-sm">
@@ -2895,7 +2895,7 @@ export default function EventRequestsManagement() {
                         </div>
                       )}
                       <div>
-                        <Label className="text-sm font-medium">
+                        <Label className="text-sm font-medium text-gray-800">
                           Previously Hosted
                         </Label>
                         <p className="text-sm">
@@ -3322,7 +3322,7 @@ export default function EventRequestsManagement() {
                             <SelectContent>
                               {users.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
-                                  {user.name || user.email || `User ${user.id}`}
+                                  {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || `User ${user.id}`}
                                 </SelectItem>
                               ))}
                               <SelectItem value="custom">Custom Entry</SelectItem>
