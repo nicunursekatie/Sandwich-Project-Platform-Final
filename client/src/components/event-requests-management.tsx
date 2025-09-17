@@ -3702,27 +3702,107 @@ export default function EventRequestsManagement() {
                             <div className="space-y-3">
                               <div>
                                 <Label htmlFor="tspContact">TSP Contact</Label>
-                                <Input
-                                  id="tspContact"
-                                  name="tspContact"
-                                  defaultValue={selectedEventRequest.tspContact}
-                                />
+                                <Select name="tspContact" defaultValue={selectedEventRequest.tspContact || ""}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select TSP contact" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="">No contact assigned</SelectItem>
+                                    {users?.map((user: any) => (
+                                      <SelectItem key={user.id} value={user.email}>
+                                        {user.firstName} {user.lastName} ({user.email})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
                               <div>
                                 <Label htmlFor="sandwichTypes">Sandwich Types</Label>
+                                <div className="space-y-3">
+                                  <Select name="sandwichTypeMode" defaultValue="single">
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select sandwich distribution" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="single">All one type</SelectItem>
+                                      <SelectItem value="mixed">Split between types</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                      <Label className="w-20">Deli:</Label>
+                                      <Input type="number" name="deliCount" placeholder="0" min="0" className="flex-1" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Label className="w-20">Turkey:</Label>
+                                      <Input type="number" name="turkeyCount" placeholder="0" min="0" className="flex-1" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Label className="w-20">Ham:</Label>
+                                      <Input type="number" name="hamCount" placeholder="0" min="0" className="flex-1" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Label className="w-20">PBJ:</Label>
+                                      <Input type="number" name="pbjCount" placeholder="0" min="0" className="flex-1" />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
+                                <Label htmlFor="refrigeration">Refrigeration Available</Label>
+                                <Select name="refrigeration" defaultValue={selectedEventRequest.hasRefrigeration === true ? "yes" : selectedEventRequest.hasRefrigeration === false ? "no" : "unknown"}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select refrigeration status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="yes">Yes</SelectItem>
+                                    <SelectItem value="no">No</SelectItem>
+                                    <SelectItem value="unknown">Unknown</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor="driversNeeded">Drivers Needed</Label>
+                                <div className="space-y-2">
+                                  <Input
+                                    type="number"
+                                    name="driversNeeded"
+                                    placeholder="Number of drivers needed"
+                                    min="0"
+                                    defaultValue={selectedEventRequest.driversNeeded || 0}
+                                  />
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id="vanDriverNeeded"
+                                      name="vanDriverNeeded"
+                                      defaultChecked={selectedEventRequest.vanDriverNeeded || false}
+                                    />
+                                    <Label htmlFor="vanDriverNeeded" className="text-sm">Van driver required</Label>
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
+                                <Label htmlFor="speakersNeeded">Speakers Needed</Label>
                                 <Input
-                                  id="sandwichTypes"
-                                  name="sandwichTypes"
-                                  defaultValue={selectedEventRequest.sandwichTypes}
+                                  type="number"
+                                  name="speakersNeeded"
+                                  placeholder="Number of speakers needed"
+                                  min="0"
+                                  defaultValue={selectedEventRequest.speakersNeeded || 0}
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="refrigeration">Refrigeration</Label>
-                                <Input
-                                  id="refrigeration"
-                                  name="refrigeration"
-                                  defaultValue={selectedEventRequest.hasRefrigeration?.toString()}
-                                />
+                                <Label htmlFor="volunteersNeeded">Additional Volunteers Needed</Label>
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id="volunteersNeeded"
+                                    name="volunteersNeeded"
+                                    defaultChecked={selectedEventRequest.volunteersNeeded || false}
+                                  />
+                                  <Label htmlFor="volunteersNeeded" className="text-sm">Additional volunteers needed</Label>
+                                </div>
                               </div>
                             </div>
                           </div>
