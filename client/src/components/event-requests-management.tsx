@@ -1782,7 +1782,9 @@ export default function EventRequestsManagement() {
           .includes(searchQuery.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.email.toLowerCase().includes(searchQuery.toLowerCase());
+        request.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
@@ -1964,7 +1966,7 @@ export default function EventRequestsManagement() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
-                      placeholder="Search by organization, name, or email..."
+                      placeholder="Search by organization, name, email, date, or location..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -2005,7 +2007,9 @@ export default function EventRequestsManagement() {
                           .includes(searchQuery.toLowerCase()) ||
                         request.email
                           .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
+                          .includes(searchQuery.toLowerCase()) ||
+                        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                        (request.desiredEventDate && request.desiredEventDate.toLowerCase().includes(searchQuery.toLowerCase()))
                       );
                     })
                     .sort((a: EventRequest, b: EventRequest) => {
@@ -2326,7 +2330,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 2: Sandwich & Logistics */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold text-blue-900 flex items-center border-b border-gray-200 pb-2">
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <span className="mr-2">🥪</span>
                                           Sandwich Details
                                         </h4>
@@ -2386,7 +2390,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 3: Staffing */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold text-blue-900 flex items-center border-b border-gray-200 pb-2">
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <Users className="w-4 h-4 mr-2 text-brand-primary" />
                                           Staffing
                                         </h4>
