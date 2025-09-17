@@ -2202,44 +2202,26 @@ export default function EventRequestsManagement() {
 
                                 {/* Comprehensive Event Details for Scheduled Events */}
                                 {request.status === 'scheduled' && (
-                                  <div className="mt-6 space-y-6">
+                                  <div className="mt-4 space-y-4">
                                     {/* Event Schedule & Location - Redesigned */}
                                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
-                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                                          <Calendar className="w-5 h-5 text-blue-600 mr-3" />
+                                      <div className="bg-blue-50 px-4 py-2 border-b border-blue-100">
+                                        <h3 className="text-base font-semibold text-gray-900 flex items-center">
+                                          <Calendar className="w-4 h-4 text-blue-600 mr-2" />
                                           Event Schedule & Location
                                         </h3>
                                       </div>
-                                      <div className="p-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                              <Calendar className="w-5 h-5 text-blue-600" />
+                                      <div className="p-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div className="flex items-center space-x-3">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                                              <Clock className="w-4 h-4 text-blue-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                              <div className="text-sm font-medium text-gray-600 mb-1">
-                                                Event Date
-                                              </div>
-                                              <div className="text-lg font-semibold text-gray-900">
-                                                {request.desiredEventDate
-                                                  ? formatEventDate(
-                                                      request.desiredEventDate
-                                                    ).text
-                                                  : <span className="text-gray-500">Not specified</span>}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                              <Clock className="w-5 h-5 text-blue-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
                                                 Start Time
                                               </div>
-                                              <div className="text-lg font-semibold text-gray-900">
+                                              <div className="text-sm font-semibold text-gray-900">
                                                 {request.eventStartTime
                                                   ? formatTime12Hour(
                                                       request.eventStartTime
@@ -2249,15 +2231,15 @@ export default function EventRequestsManagement() {
                                             </div>
                                           </div>
                                           
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                              <Clock className="w-5 h-5 text-blue-600" />
+                                          <div className="flex items-center space-x-3">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                                              <Clock className="w-4 h-4 text-blue-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
                                                 End Time
                                               </div>
-                                              <div className="text-lg font-semibold text-gray-900">
+                                              <div className="text-sm font-semibold text-gray-900">
                                                 {request.eventEndTime
                                                   ? formatTime12Hour(
                                                       request.eventEndTime
@@ -2267,15 +2249,15 @@ export default function EventRequestsManagement() {
                                             </div>
                                           </div>
                                           
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                              <Truck className="w-5 h-5 text-blue-600" />
+                                          <div className="flex items-center space-x-3">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                                              <Truck className="w-4 h-4 text-blue-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
                                                 Pickup Time
                                               </div>
-                                              <div className="text-lg font-semibold text-gray-900">
+                                              <div className="text-sm font-semibold text-gray-900">
                                                 {request.pickupTime
                                                   ? formatTime12Hour(
                                                       request.pickupTime
@@ -2286,9 +2268,9 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="md:col-span-2">
-                                            <div className="flex items-start space-x-4">
-                                              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                <MapPin className="w-5 h-5 text-blue-600" />
+                                            <div className="flex items-center space-x-3">
+                                              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                                                <MapPin className="w-4 h-4 text-blue-600" />
                                               </div>
                                               {editingScheduledId === request.id &&
                                               editingField === 'eventAddress' ? (
@@ -2321,12 +2303,12 @@ export default function EventRequestsManagement() {
                                                   </Button>
                                                 </div>
                                               ) : (
-                                                <div className="flex items-start space-x-3 flex-1">
+                                                <div className="flex items-center space-x-2 flex-1">
                                                   <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-medium text-gray-600 mb-1">
+                                                    <div className="text-xs font-medium text-gray-600 mb-0.5">
                                                       Event Address
                                                     </div>
-                                                    <div className="text-base text-gray-900">
+                                                    <div className="text-sm text-gray-900">
                                                       {request.eventAddress ? (
                                                         <a
                                                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
@@ -2357,74 +2339,38 @@ export default function EventRequestsManagement() {
                                                           request.eventAddress || ''
                                                         )
                                                       }
-                                                      className="h-8 w-8 p-0 flex-shrink-0"
+                                                      className="h-6 w-6 p-0 flex-shrink-0"
                                                     >
-                                                      <Edit className="w-4 h-4" />
+                                                      <Edit className="w-3 h-3" />
                                                     </Button>
                                                   )}
                                                 </div>
                                               )}
                                             </div>
                                           </div>
-                                          
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                              <span className="text-blue-600 text-lg">❄️</span>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-sm font-medium text-gray-600 mb-1">
-                                                Refrigeration
-                                              </div>
-                                              <div className="text-lg font-semibold text-gray-900">
-                                                {request.hasRefrigeration === true
-                                                  ? 'Yes'
-                                                  : request.hasRefrigeration === false
-                                                    ? 'No'
-                                                    : <span className="text-gray-500">Unknown</span>}
-                                              </div>
-                                            </div>
-                                          </div>
                                         </div>
                                       </div>
                                     </div>
 
-                                    {/* Sandwich Planning - Redesigned */}
+                                    {/* Sandwich Details - Redesigned */}
                                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-green-50 px-6 py-4 border-b border-green-100">
-                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                                          <span className="text-xl mr-3">🥪</span>
-                                          Sandwich Planning
+                                      <div className="bg-green-50 px-4 py-2 border-b border-green-100">
+                                        <h3 className="text-base font-semibold text-gray-900 flex items-center">
+                                          <span className="text-lg mr-2">🥪</span>
+                                          Sandwich Details
                                         </h3>
                                       </div>
-                                      <div className="p-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                              <span className="text-green-600 text-lg">📊</span>
+                                      <div className="p-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div className="flex items-center space-x-3">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded flex items-center justify-center">
+                                              <span className="text-green-600 text-sm">🏷️</span>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                              <div className="text-sm font-medium text-gray-600 mb-1">
-                                                Total Sandwiches
-                                              </div>
-                                              <div className="text-2xl font-bold text-gray-900">
-                                                {request.estimatedSandwichCount || (
-                                                  <span className="text-gray-500 text-lg">
-                                                    Not specified
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                              <span className="text-green-600 text-lg">🏷️</span>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
                                                 Types
                                               </div>
-                                              <div className="text-base text-gray-900 font-medium">
+                                              <div className="text-sm text-gray-900 font-medium">
                                                 {request.sandwichTypes ? (
                                                   getSandwichTypesSummary(request)
                                                     .breakdown
@@ -2437,10 +2383,28 @@ export default function EventRequestsManagement() {
                                             </div>
                                           </div>
                                           
+                                          <div className="flex items-center space-x-3">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded flex items-center justify-center">
+                                              <span className="text-green-600 text-sm">❄️</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
+                                                Refrigeration
+                                              </div>
+                                              <div className="text-sm font-semibold text-gray-900">
+                                                {request.hasRefrigeration === true
+                                                  ? 'Yes'
+                                                  : request.hasRefrigeration === false
+                                                    ? 'No'
+                                                    : <span className="text-gray-500">Unknown</span>}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
                                           <div className="md:col-span-2">
-                                            <div className="flex items-start space-x-4">
-                                              <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                                <span className="text-green-600 text-lg">📍</span>
+                                            <div className="flex items-center space-x-3">
+                                              <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded flex items-center justify-center">
+                                                <span className="text-green-600 text-sm">📍</span>
                                               </div>
                                               {editingScheduledId === request.id &&
                                               editingField === 'sandwichDestination' ? (
@@ -2473,12 +2437,12 @@ export default function EventRequestsManagement() {
                                                   </Button>
                                                 </div>
                                               ) : (
-                                                <div className="flex items-start space-x-3 flex-1">
+                                                <div className="flex items-center space-x-2 flex-1">
                                                   <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-medium text-gray-600 mb-1">
+                                                    <div className="text-xs font-medium text-gray-600 mb-0.5">
                                                       Destination
                                                     </div>
-                                                    <div className="text-base text-gray-900 font-medium">
+                                                    <div className="text-sm text-gray-900 font-medium">
                                                       {resolveRecipientName(
                                                         request.sandwichDestination
                                                       ) || (
@@ -2503,9 +2467,9 @@ export default function EventRequestsManagement() {
                                                             ''
                                                         )
                                                       }
-                                                      className="h-8 w-8 p-0 flex-shrink-0"
+                                                      className="h-6 w-6 p-0 flex-shrink-0"
                                                     >
-                                                      <Edit className="w-4 h-4" />
+                                                      <Edit className="w-3 h-3" />
                                                     </Button>
                                                   )}
                                                 </div>
@@ -2518,18 +2482,18 @@ export default function EventRequestsManagement() {
 
                                     {/* Staffing & Assignments - Redesigned */}
                                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-purple-50 px-6 py-4 border-b border-purple-100">
-                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                                          <Users className="w-5 h-5 text-purple-600 mr-3" />
+                                      <div className="bg-purple-50 px-4 py-2 border-b border-purple-100">
+                                        <h3 className="text-base font-semibold text-gray-900 flex items-center">
+                                          <Users className="w-4 h-4 text-purple-600 mr-2" />
                                           Staffing & Assignments
                                         </h3>
                                       </div>
-                                      <div className="p-6">
-                                        <div className="space-y-6">
+                                      <div className="p-4">
+                                        <div className="space-y-4">
                                           {/* TSP Contact */}
-                                          <div className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                              <UserCheck className="w-5 h-5 text-purple-600" />
+                                          <div className="flex items-center space-x-3">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
+                                              <UserCheck className="w-4 h-4 text-purple-600" />
                                             </div>
                                             {editingScheduledId === request.id &&
                                             editingField === 'tspContact' ? (
@@ -2788,14 +2752,14 @@ export default function EventRequestsManagement() {
                                     {/* Additional Requirements */}
                                     {request.additionalRequirements && (
                                       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                        <div className="bg-amber-50 px-6 py-4 border-b border-amber-100">
-                                          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                                            <AlertTriangle className="w-5 h-5 text-amber-600 mr-3" />
+                                        <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
+                                          <h3 className="text-base font-semibold text-gray-900 flex items-center">
+                                            <AlertTriangle className="w-4 h-4 text-amber-600 mr-2" />
                                             Additional Requirements
                                           </h3>
                                         </div>
-                                        <div className="p-6">
-                                          <p className="text-base text-gray-800">
+                                        <div className="p-4">
+                                          <p className="text-sm text-gray-800">
                                             {request.additionalRequirements}
                                           </p>
                                         </div>
@@ -2804,10 +2768,10 @@ export default function EventRequestsManagement() {
 
                                     {/* Planning Notes */}
                                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
-                                          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                                            <FileText className="w-5 h-5 text-gray-600 mr-3" />
+                                          <h3 className="text-base font-semibold text-gray-900 flex items-center">
+                                            <FileText className="w-4 h-4 text-gray-600 mr-2" />
                                             Planning Notes
                                           </h3>
                                           {hasPermission(
@@ -2831,10 +2795,10 @@ export default function EventRequestsManagement() {
                                           )}
                                         </div>
                                       </div>
-                                      <div className="p-6">
+                                      <div className="p-4">
                                         {editingScheduledId === request.id &&
                                         editingField === 'planningNotes' ? (
-                                          <div className="space-y-4">
+                                          <div className="space-y-3">
                                             <Textarea
                                               value={editingValue}
                                               onChange={(e) =>
@@ -2844,7 +2808,7 @@ export default function EventRequestsManagement() {
                                               placeholder="Enter planning notes"
                                               rows={3}
                                             />
-                                            <div className="flex space-x-3">
+                                            <div className="flex space-x-2">
                                               <Button
                                                 size="sm"
                                                 onClick={saveEdit}
@@ -2852,7 +2816,7 @@ export default function EventRequestsManagement() {
                                                   updateScheduledFieldMutation.isPending
                                                 }
                                               >
-                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                <CheckCircle className="w-4 h-4 mr-1" />
                                                 Save
                                               </Button>
                                               <Button
@@ -2860,13 +2824,13 @@ export default function EventRequestsManagement() {
                                                 variant="outline"
                                                 onClick={cancelEdit}
                                               >
-                                                <X className="w-4 h-4 mr-2" />
+                                                <X className="w-4 h-4 mr-1" />
                                                 Cancel
                                               </Button>
                                             </div>
                                           </div>
                                         ) : (
-                                          <p className="text-base text-gray-800">
+                                          <p className="text-sm text-gray-800">
                                             {request.planningNotes ||
                                               <span className="text-gray-500">No planning notes</span>}
                                           </p>
