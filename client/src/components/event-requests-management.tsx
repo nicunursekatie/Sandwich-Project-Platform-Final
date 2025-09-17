@@ -1898,7 +1898,7 @@ export default function EventRequestsManagement() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6 text-lg md:text-xl">
+      <div className="space-y-4 text-lg md:text-xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -1927,7 +1927,7 @@ export default function EventRequestsManagement() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="new" className="space-y-6">
+        <Tabs defaultValue="new" className="space-y-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="new" className="relative">
               New ({statusCounts.new})
@@ -1960,7 +1960,7 @@ export default function EventRequestsManagement() {
           {/* Status-based tabs (existing logic) */}
           {['new', 'in_process', 'scheduled', 'completed', 'declined'].map(
             (status) => (
-              <TabsContent key={status} value={status} className="space-y-6">
+              <TabsContent key={status} value={status} className="space-y-4">
                 {/* Search and Filters for this specific status */}
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-1">
@@ -2134,26 +2134,28 @@ export default function EventRequestsManagement() {
                                           Contact Information
                                         </div>
                                         <div className="space-y-1">
-                                          <div className="flex items-center space-x-2">
-                                            <User className="w-4 h-4 text-brand-teal flex-shrink-0" />
-                                            <span className="font-bold text-brand-primary text-base">
-                                              {request.firstName} {request.lastName}
-                                            </span>
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                              <User className="w-4 h-4 text-brand-teal flex-shrink-0" />
+                                              <span className="font-bold text-brand-primary text-sm">
+                                                {request.firstName} {request.lastName}
+                                              </span>
+                                            </div>
+                                            {request.phone && (
+                                              <div className="flex items-center space-x-1">
+                                                <Phone className="w-3 h-3 text-gray-500" />
+                                                <span className="font-medium text-gray-700 text-xs">
+                                                  {request.phone}
+                                                </span>
+                                              </div>
+                                            )}
                                           </div>
                                           <div className="flex items-center space-x-2">
                                             <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                            <span className="font-medium text-gray-700 text-sm truncate">
+                                            <span className="font-medium text-gray-700 text-xs truncate">
                                               {request.email}
                                             </span>
                                           </div>
-                                          {request.phone && (
-                                            <div className="flex items-center space-x-2">
-                                              <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                              <span className="font-medium text-gray-700 text-sm">
-                                                {request.phone}
-                                              </span>
-                                            </div>
-                                          )}
                                         </div>
                                       </div>
 
@@ -2217,59 +2219,62 @@ export default function EventRequestsManagement() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                       
                                       {/* Column 1: Schedule & Location */}
-                                      <div className="space-y-3 bg-[#f0f8fa] p-4 rounded-lg border border-[#236383]/20">
+                                      <div className="space-y-2 bg-[#f0f8fa] p-3 rounded-lg border border-[#236383]/20">
                                         <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <Calendar className="w-4 h-4 mr-2 text-brand-teal" />
                                           Schedule & Location
                                         </h4>
                                         
                                         {/* Times in compact rows */}
-                                        <div className="space-y-2">
+                                        <div className="space-y-1">
+                                          {/* Start and End times on same line */}
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#236383] text-base font-medium">Start:</span>
-                                            <div className="flex items-center space-x-1">
-                                              <span className="font-semibold text-[#1A2332] text-base">
-                                                {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
-                                              </span>
-                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                <Button size="sm" variant="ghost" onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  startEditing(request.id, 'eventStartTime', request.eventStartTime || '');
-                                                }} className="h-5 w-5 p-0">
-                                                  <Edit className="w-3 h-3" />
-                                                </Button>
-                                              )}
+                                            <div className="flex items-center space-x-3">
+                                              <span className="text-[#236383] text-sm font-medium">Start:</span>
+                                              <div className="flex items-center space-x-1">
+                                                <span className="font-semibold text-[#1A2332] text-sm">
+                                                  {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
+                                                </span>
+                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditing(request.id, 'eventStartTime', request.eventStartTime || '');
+                                                  }} className="h-4 w-4 p-0">
+                                                    <Edit className="w-3 h-3" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center space-x-3">
+                                              <span className="text-[#236383] text-sm font-medium">End:</span>
+                                              <div className="flex items-center space-x-1">
+                                                <span className="font-semibold text-[#1A2332] text-sm">
+                                                  {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
+                                                </span>
+                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditing(request.id, 'eventEndTime', request.eventEndTime || '');
+                                                  }} className="h-4 w-4 p-0">
+                                                    <Edit className="w-3 h-3" />
+                                                  </Button>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
                                           
+                                          {/* Pickup time on separate line below */}
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#236383] text-base font-medium">End:</span>
+                                            <span className="text-[#236383] text-sm font-medium">Pickup:</span>
                                             <div className="flex items-center space-x-1">
-                                              <span className="font-semibold text-[#1A2332] text-base">
-                                                {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
-                                              </span>
-                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                <Button size="sm" variant="ghost" onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  startEditing(request.id, 'eventEndTime', request.eventEndTime || '');
-                                                }} className="h-5 w-5 p-0">
-                                                  <Edit className="w-3 h-3" />
-                                                </Button>
-                                              )}
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="flex justify-between items-center">
-                                            <span className="text-[#236383] text-base font-medium">Pickup:</span>
-                                            <div className="flex items-center space-x-1">
-                                              <span className="font-semibold text-[#1A2332] text-base">
+                                              <span className="font-semibold text-[#1A2332] text-sm">
                                                 {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
                                               </span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button size="sm" variant="ghost" onClick={(e) => {
                                                   e.stopPropagation();
                                                   startEditing(request.id, 'pickupTime', request.pickupTime || '');
-                                                }} className="h-5 w-5 p-0">
+                                                }} className="h-4 w-4 p-0">
                                                   <Edit className="w-3 h-3" />
                                                 </Button>
                                               )}
@@ -2324,7 +2329,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                       
                                       {/* Column 2: Sandwich & Logistics */}
-                                      <div className="space-y-3 bg-[#fff8f0] p-4 rounded-lg border border-[#FBAD3F]/20">
+                                      <div className="space-y-2 bg-[#fff8f0] p-3 rounded-lg border border-[#FBAD3F]/20">
                                         <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <span className="mr-2">🥪</span>
                                           Sandwich Details
@@ -2384,7 +2389,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                       
                                       {/* Column 3: Staffing */}
-                                      <div className="space-y-3 bg-[#f0f6f8] p-4 rounded-lg border border-[#007E8C]/20">
+                                      <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
                                         <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <Users className="w-4 h-4 mr-2 text-brand-primary" />
                                           Staffing
