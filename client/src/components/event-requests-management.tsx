@@ -402,7 +402,7 @@ const statusColors = {
   in_process:
     'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
   scheduled:
-    'bg-gradient-to-r from-yellow-50 to-amber-100 text-brand-orange border border-amber-200',
+    'bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-300',
   completed:
     'bg-gradient-to-r from-gray-50 to-slate-100 text-gray-700 border border-gray-200',
   declined:
