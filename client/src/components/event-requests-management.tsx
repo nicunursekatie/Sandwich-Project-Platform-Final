@@ -2030,7 +2030,7 @@ export default function EventRequestsManagement() {
                           data-testid={`card-event-request-${request.id}`}
                         >
                           <CardContent className="p-6">
-                            <div className="flex items-start justify-between">
+                            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
                               <div className="flex-1 space-y-4">
                                 {/* Organization Name - Most Prominent */}
                                 <div className="flex items-start justify-between mb-3">
@@ -2620,8 +2620,9 @@ export default function EventRequestsManagement() {
                                 )}
                               </div>
 
-                              <div className="flex flex-col items-end space-y-3">
-                                <div className="text-right">
+                              {/* Action buttons and meta info - Mobile responsive */}
+                              <div className="flex flex-col lg:items-end space-y-3 w-full lg:w-auto">
+                                <div className="lg:text-right">
                                   <span className="text-sm font-medium text-brand-teal">
                                     Requested
                                   </span>
@@ -2633,7 +2634,7 @@ export default function EventRequestsManagement() {
                                 </div>
 
                                 {/* Status-specific action buttons */}
-                                <div className="flex space-x-1">
+                                <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
                                   {request.status === 'new' && (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
