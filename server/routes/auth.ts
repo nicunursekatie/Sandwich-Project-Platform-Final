@@ -76,6 +76,68 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
     }
   });
 
+  // Development-only GET /login route for auto-login (fixes infinite auth loop)
+  router.get('/login', async (req: any, res) => {
+    try {
+      // Only allow in development
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(400).json({
+          success: false,
+          message: 'Use POST /api/auth/login for authentication in production',
+        });
+      }
+
+      // Auto-login as admin in development
+      const adminEmail = 'admin@sandwich.project';
+      const user = await storage.getUserByEmail(adminEmail);
+      
+      if (!user || !user.isActive) {
+        return res.status(500).json({
+          success: false,
+          message: 'Admin user not found or inactive',
+        });
+      }
+
+      // Create session user object
+      const sessionUser = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        role: user.role,
+        permissions: user.permissions,
+        isActive: user.isActive,
+      };
+
+      // Store user in session with explicit save
+      req.session.user = sessionUser;
+      req.user = sessionUser;
+
+      // Force session save to ensure persistence
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Dev auto-login session save error:', err);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Session save failed' 
+          });
+        }
+        console.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
+        console.log('🔧 Session ID:', req.sessionID);
+        
+        // Redirect to dashboard after successful login
+        res.redirect('/');
+      });
+    } catch (error) {
+      console.error('Dev auto-login error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Auto-login failed' 
+      });
+    }
+  });
+
   // Get current authenticated user
   router.get('/user', async (req: any, res) => {
     try {

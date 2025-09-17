@@ -3910,6 +3910,25 @@ export default function EventRequestsManagement() {
           }}
         />
 
+        {/* Toolkit Sent Dialog */}
+        <ToolkitSentDialog
+          isOpen={showToolkitSentDialog}
+          onClose={() => setShowToolkitSentDialog(false)}
+          eventRequest={selectedEventRequest}
+          onToolkitSent={(toolkitSentDate) => {
+            // Update the event request status
+            updateEventRequestMutation.mutate({
+              id: selectedEventRequest?.id,
+              data: {
+                status: 'in_process',
+                toolkitSentDate: toolkitSentDate,
+              }
+            });
+            setShowToolkitSentDialog(false);
+          }}
+          isLoading={updateEventRequestMutation.isPending}
+        />
+
         {/* Other modals and dialogs */}
       </div>
     </TooltipProvider>

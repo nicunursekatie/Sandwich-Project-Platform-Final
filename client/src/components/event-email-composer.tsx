@@ -148,57 +148,52 @@ export function EventEmailComposer({
       const eventDetails = formatEventDetails();
       const template = `Hi ${eventRequest.firstName}!
 
+Thanks for reaching out and for your interest in making sandwiches for us! I've attached our complete toolkit to help you prepare for a successful sandwich-making event.
 
+Groups can hold their events any day of the week if they can make 200 or more sandwiches. We also use volunteer drivers to pick up deli sandwiches, so you don't have to transport them. Once you set a date for your event, we'd appreciate at least two weeks' notice to add you to our schedule.
 
-Thanks for reaching out and for your interest in making sandwiches for us. I've attached our toolkit link with what you will need to prepare for a sandwich-making event. 
+🔗 HELPFUL RESOURCES:
 
+📊 Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+Use this tool to calculate exactly how much food you'll need for your event!
 
+📋 Food Safety Guidelines & Sandwich Making Instructions (attached)
+- Deli Sandwich Making 101
+- PBJ Sandwich Making 101  
+- Food Safety Guidelines for Volunteers
 
-Groups can hold their events any day of the week if they can make 200 or more sandwiches. We also use volunteer drivers to pick up deli sandwiches, so you don't have to transport them. Once you set a date for your event, we'd appreciate at least two weeks' notice to add you to our schedule. 
+⚠️ IMPORTANT FOOD SAFETY REQUIREMENTS:
+• A refrigerator is necessary to make deli sandwiches so that meat, cheese, and sandwiches are always cold
+• Food-safe gloves must be worn at all times
+• Anyone with long hair must tie it back
+• Sandwiches must be made indoors
+• Do not use the heel of the bread loaf
 
+📅 NEXT STEP - Schedule Your Planning Call:
+Once you've reviewed everything, we'd love to schedule a brief planning call! Please use the link below to book a time within 2-3 business days:
 
+🗓️ Schedule a Call: https://thesandwichproject.as.me/
 
-Food safety is our top priority, so please take a look at the attached link:
+We look forward to working with you to make a difference in our community!
 
-TSP Toolkit: 
-Inventory calculator (with link)
-Food safety guidelines
-
-A couple of important things I want to highlight are:
-
-A refrigerator is necessary to make deli sandwiches so that meat, cheese, and sandwiches are always cold
-Food- safe Gloves must be worn
-Anyone with long hair must tie it back
-Sandwiches must be made indoors
-Do not use the heel of the bread loaf
-
-
-Once you've reviewed everything, we'd love to schedule a chat. Please use the link below to schedule a brief call to take place within 2-3 business days of receiving this email.
-
-
-
-We look forward to working with you!
-
-
-
-Schedule a Call with The Sandwich Project
-
-
-
+Best regards,
 Stephanie Luis
-678.372.9024
-info@thesandwichproject.org`;
+The Sandwich Project
+📞 678.372.9024
+📧 info@thesandwichproject.org
+🌐 www.thesandwichproject.org`;
 
       setContent(template);
       setSubject(
         `The Sandwich Project - Event Resources for ${eventRequest.organizationName}`
       );
 
-      // Pre-select all toolkit documents (use full URLs)
+      // Pre-select toolkit documents from attached_assets folder
       setSelectedAttachments([
-        '/toolkit/food-safety-volunteers.pdf',
-        '/toolkit/deli-sandwich-making-101.pdf',
-        '/toolkit/pbj-sandwich-making-101.pdf',
+        '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
+        '/attached_assets/20250205-TSP-PBJ Sandwich Making 101_1753670644141.pdf',
+        '/attached_assets/20230525-TSP-Food Safety Volunteers (1)_1753670644140.pdf',
+        '/attached_assets/20250205-TSP-Food Safety Recipients_1753670644140.pdf',
       ]);
     }
   }, [isOpen, eventRequest, formatEventDetails]);

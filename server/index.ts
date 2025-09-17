@@ -194,6 +194,17 @@ async function startServer() {
       serverLogger.error('Route registration failed:', error);
     }
 
+    // CRITICAL FIX: Add JSON 404 catch-all for unmatched API routes
+    // This prevents API routes from falling through to Vite/SPA and returning HTML
+    app.all('/api/*', (req: Request, res: Response) => {
+      serverLogger.warn(`🚨 API route not found: ${req.originalUrl}`);
+      res.status(404).json({ 
+        error: `API route not found: ${req.originalUrl}`,
+        method: req.method,
+        path: req.originalUrl
+      });
+    });
+
     // IMPORTANT: Static files and SPA fallback MUST come AFTER API routes
     if (process.env.NODE_ENV === 'production') {
       // In production, serve static files from the built frontend
