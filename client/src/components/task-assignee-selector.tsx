@@ -333,9 +333,6 @@ export function TaskAssigneeSelector({
                         {`${user.firstName} ${user.lastName}`.trim() ||
                           user.email}
                       </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {user.role}
-                      </Badge>
                     </div>
                   </SelectItem>
                 ))}
@@ -368,11 +365,6 @@ export function TaskAssigneeSelector({
                 className="flex items-center gap-1 pr-1"
               >
                 {assignee.name}
-                {assignee.isSystemUser && (
-                  <Badge variant="secondary" className="text-xs ml-1">
-                    User
-                  </Badge>
-                )}
                 <button
                   type="button"
                   onClick={() => removeUser(assignee.index)}
@@ -399,11 +391,6 @@ export function TaskAssigneeSelector({
               <X className="h-3 w-3" />
             </button>
           </Badge>
-          {value?.assigneeId && (
-            <Badge variant="secondary" className="text-xs">
-              System User
-            </Badge>
-          )}
         </div>
       )}
     </div>

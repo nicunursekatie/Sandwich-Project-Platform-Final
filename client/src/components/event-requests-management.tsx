@@ -2276,38 +2276,72 @@ export default function EventRequestsManagement() {
                                             </div>
                                             <div className="flex items-center space-x-3">
                                               <span className="text-[#236383] text-base font-semibold">End:</span>
-                                              <div className="flex items-center space-x-1">
-                                                <span className="font-bold text-[#1A2332] text-base">
-                                                  {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
-                                                </span>
-                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                  <Button size="sm" variant="ghost" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    startEditing(request.id, 'eventEndTime', request.eventEndTime || '');
-                                                  }} className="h-4 w-4 p-0">
-                                                    <Edit className="w-3 h-3" />
+                                              {editingScheduledId === request.id && editingField === 'eventEndTime' ? (
+                                                <div className="flex items-center space-x-2">
+                                                  <Input
+                                                    type="time"
+                                                    value={editingValue}
+                                                    onChange={(e) => setEditingValue(e.target.value)}
+                                                    className="text-base w-32"
+                                                  />
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
                                                   </Button>
-                                                )}
-                                              </div>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center space-x-1">
+                                                  <span className="font-bold text-[#1A2332] text-base">
+                                                    {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
+                                                  </span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'eventEndTime', request.eventEndTime || '');
+                                                    }} className="h-4 w-4 p-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                           
                                           {/* Pickup time on separate line below */}
                                           <div className="flex justify-between items-center">
                                             <span className="text-[#236383] text-base font-semibold">Pickup:</span>
-                                            <div className="flex items-center space-x-1">
-                                              <span className="font-bold text-[#1A2332] text-base">
-                                                {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
-                                              </span>
-                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                <Button size="sm" variant="ghost" onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  startEditing(request.id, 'pickupTime', request.pickupTime || '');
-                                                }} className="h-4 w-4 p-0">
-                                                  <Edit className="w-3 h-3" />
+                                            {editingScheduledId === request.id && editingField === 'pickupTime' ? (
+                                              <div className="flex items-center space-x-2">
+                                                <Input
+                                                  type="time"
+                                                  value={editingValue}
+                                                  onChange={(e) => setEditingValue(e.target.value)}
+                                                  className="text-base w-32"
+                                                />
+                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                  <CheckCircle className="w-4 h-4" />
                                                 </Button>
-                                              )}
-                                            </div>
+                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                  <X className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-center space-x-1">
+                                                <span className="font-bold text-[#1A2332] text-base">
+                                                  {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
+                                                </span>
+                                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditing(request.id, 'pickupTime', request.pickupTime || '');
+                                                  }} className="h-4 w-4 p-0">
+                                                    <Edit className="w-3 h-3" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                         
