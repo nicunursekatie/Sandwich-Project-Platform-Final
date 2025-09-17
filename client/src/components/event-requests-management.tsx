@@ -2689,6 +2689,40 @@ export default function EventRequestsManagement() {
                                   </div>
                                 )}
 
+                                {/* Action Buttons for New Status */}
+                                {request.status === 'new' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        setShowToolkitDialog(true);
+                                      }}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                      data-testid={`button-send-toolkit-${request.id}`}
+                                    >
+                                      <Shield className="w-4 h-4 mr-2" />
+                                      Send Toolkit
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventRequest(request);
+                                        setIsEditing(true);
+                                        setShowEventDetails(true);
+                                      }}
+                                      data-testid={`button-edit-${request.id}`}
+                                    >
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </Button>
+                                  </div>
+                                )}
+
                                 {/* Action Buttons for In Process Status */}
                                 {request.status === 'in_process' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                   <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-gray-200">
