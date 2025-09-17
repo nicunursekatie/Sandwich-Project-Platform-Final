@@ -1004,36 +1004,95 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               className="w-full flex justify-between items-center p-4"
               onClick={() => setShowContactInfo(!showContactInfo)}
             >
-              <span className="font-semibold">Contact Information (Pre-filled)</span>
+              <span className="font-semibold">
+                {eventRequest ? 'Contact Information (Pre-filled)' : 'Contact Information (Enter details)'}
+              </span>
               <ChevronDown className={`w-4 h-4 transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
             </Button>
             
             {showContactInfo && (
               <div className="p-4 border-t bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Contact Name</Label>
-                  <Input value={`${eventRequest.firstName} ${eventRequest.lastName}`} disabled />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input value={eventRequest.email} disabled />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input value={eventRequest.phone || 'Not provided'} disabled />
-                </div>
-                <div>
-                  <Label>Organization</Label>
-                  <Input value={eventRequest.organizationName} disabled />
-                </div>
-                <div>
-                  <Label>Department</Label>
-                  <Input value={eventRequest.department || 'Not provided'} disabled />
-                </div>
-                <div>
-                  <Label>Desired Date</Label>
-                  <Input value={eventRequest.desiredEventDate || 'Not provided'} disabled />
-                </div>
+                {eventRequest ? (
+                  // Existing event - show pre-filled data
+                  <>
+                    <div>
+                      <Label>Contact Name</Label>
+                      <Input value={`${eventRequest.firstName} ${eventRequest.lastName}`} disabled />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input value={eventRequest.email} disabled />
+                    </div>
+                    <div>
+                      <Label>Phone</Label>
+                      <Input value={eventRequest.phone || 'Not provided'} disabled />
+                    </div>
+                    <div>
+                      <Label>Organization</Label>
+                      <Input value={eventRequest.organizationName} disabled />
+                    </div>
+                    <div>
+                      <Label>Department</Label>
+                      <Input value={eventRequest.department || 'Not provided'} disabled />
+                    </div>
+                    <div>
+                      <Label>Desired Date</Label>
+                      <Input value={eventRequest.desiredEventDate || 'Not provided'} disabled />
+                    </div>
+                  </>
+                ) : (
+                  // New event - show editable contact fields
+                  <>
+                    <div>
+                      <Label htmlFor="newFirstName">First Name *</Label>
+                      <Input 
+                        id="newFirstName"
+                        placeholder="Enter first name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newLastName">Last Name *</Label>
+                      <Input 
+                        id="newLastName"
+                        placeholder="Enter last name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newEmail">Email *</Label>
+                      <Input 
+                        id="newEmail"
+                        type="email"
+                        placeholder="Enter email address"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newPhone">Phone</Label>
+                      <Input 
+                        id="newPhone"
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newOrganization">Organization *</Label>
+                      <Input 
+                        id="newOrganization"
+                        placeholder="Enter organization name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newDesiredDate">Desired Event Date</Label>
+                      <Input 
+                        id="newDesiredDate"
+                        type="date"
+                        placeholder="Select desired date"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
