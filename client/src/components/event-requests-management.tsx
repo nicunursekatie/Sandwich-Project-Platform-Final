@@ -2129,7 +2129,7 @@ export default function EventRequestsManagement() {
                                   <div className="bg-white rounded-lg border border-gray-200 p-3">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                       {/* Contact Info */}
-                                      <div className="space-y-2">
+                                      <div className="space-y-2 md:col-span-2">
                                         <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                           Contact Information
                                         </div>
@@ -2159,14 +2159,13 @@ export default function EventRequestsManagement() {
                                         </div>
                                       </div>
 
-
-                                      {/* Sandwich Count */}
+                                      {/* Sandwich Count - Right side */}
                                       {request.estimatedSandwichCount && (
-                                        <div className="space-y-2">
+                                        <div className="space-y-2 md:col-start-3 md:text-right">
                                           <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                             {request.status === 'completed' ? 'Estimated' : 'Requested'}
                                           </div>
-                                          <div className="flex items-center space-x-2">
+                                          <div className="flex items-center space-x-2 md:justify-end">
                                             <span className="text-xl">🥪</span>
                                             <span className="font-bold text-brand-orange text-lg">
                                               {request.estimatedSandwichCount} sandwiches
