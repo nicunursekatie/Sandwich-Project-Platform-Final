@@ -3939,25 +3939,30 @@ export default function EventRequestsManagement() {
                                         </div>
                                         
                                         {/* Show assigned people if any */}
-                                        {((request.driverAssignments?.length ?? 0) > 0 || (request.speakerAssignments?.length ?? 0) > 0 || (request.volunteerAssignments?.length ?? 0) > 0) && (
+                                        {((request.assignedDriverIds?.length ?? 0) > 0 || (request.assignedSpeakerIds?.length ?? 0) > 0 || (request.assignedVolunteerIds?.length ?? 0) > 0 || request.assignedVanDriverId) && (
                                           <div className="pt-2 border-t border-gray-100">
                                             <div className="text-xs text-gray-600 mb-1">Assigned:</div>
                                             <div className="space-y-1 text-xs">
-                                              {request.driverAssignments?.map((driver, i) => (
+                                              {request.assignedDriverIds?.map((driver, i) => (
                                                 <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
                                                   🚗 {driver}
                                                 </div>
                                               ))}
-                                              {request.speakerAssignments?.map((speaker, i) => (
+                                              {request.assignedSpeakerIds?.map((speaker, i) => (
                                                 <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
                                                   🎤 {speaker}
                                                 </div>
                                               ))}
-                                              {request.volunteerAssignments?.map((volunteer, i) => (
+                                              {request.assignedVolunteerIds?.map((volunteer, i) => (
                                                 <div key={i} className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
                                                   👥 {volunteer}
                                                 </div>
                                               ))}
+                                              {request.assignedVanDriverId && (
+                                                <div className="bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
+                                                  🚐 {request.assignedVanDriverId}
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         )}
