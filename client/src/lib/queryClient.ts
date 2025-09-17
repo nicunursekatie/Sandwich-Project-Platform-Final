@@ -82,6 +82,20 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
+    
+    // Check content-type to prevent parsing HTML as JSON
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const preview = await res.text().catch(() => '');
+      console.warn('DATA_LOADING_ERROR: Non-JSON API response', { 
+        url: res.url, 
+        status: res.status, 
+        contentType, 
+        preview: preview?.slice(0, 200) 
+      });
+      throw new Error('DATA_LOADING_ERROR: Non-JSON response from API');
+    }
+    
     try {
       const jsonData = await res.json();
       // Ensure we return a valid object, not null/undefined

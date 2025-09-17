@@ -117,6 +117,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerPerformanceRoutes } = await import('./routes/performance');
   registerPerformanceRoutes(app);
 
+  // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ 
+      error: 'API endpoint not found',
+      path: req.path,
+      method: req.method 
+    });
+  });
+
   // Create HTTP server
   const server = createServer(app);
 
