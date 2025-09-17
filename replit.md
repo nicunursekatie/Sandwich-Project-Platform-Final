@@ -4,6 +4,14 @@
 This full-stack application for The Sandwich Project, a nonprofit, manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support the organization's growth and impact in addressing food insecurity. Its business vision is to become a vital tool for food security initiatives, with market potential in supporting volunteer-driven community projects. The ambition is to scale operations and improve outreach, ultimately contributing to a significant reduction in food waste and hunger.
 
 ## Recent Changes
+**September 17, 2025 - Send Toolkit Customization & Event Scheduling Enhancement:**
+- Made Send Toolkit emails fully customizable with logged-in user's information (name, phone, email)
+- Added phoneNumber and preferredEmail fields to user profile management
+- Replaced hardcoded Stephanie Carter details with dynamic user data in email composer
+- Added optional scheduling link checkbox - users can choose whether to include scheduling call link
+- Enhanced Mark Scheduled form with notes field for event requests
+- Email signature now dynamically displays user's name, phone (if provided), and preferred email (if provided)
+
 **September 16, 2025 - Agenda Items Routing Fix:**
 - Fixed critical bug where `/api/agenda-items` requests were incorrectly routed to meetings creation logic instead of agenda items creation
 - Created dedicated agenda items router at `server/routes/agenda-items.ts` with proper validation using `insertAgendaItemSchema`
