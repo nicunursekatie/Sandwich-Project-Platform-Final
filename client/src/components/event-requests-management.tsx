@@ -2416,7 +2416,10 @@ export default function EventRequestsManagement() {
                                                 size="sm" 
                                                 variant="outline" 
                                                 className="text-xs"
-                                                onClick={() => openAssignmentDialog(request.id, 'driver')}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  openAssignmentDialog(request.id, 'driver');
+                                                }}
                                               >
                                                 Assign Driver
                                               </Button>
@@ -2452,7 +2455,10 @@ export default function EventRequestsManagement() {
                                                 size="sm" 
                                                 variant="outline" 
                                                 className="text-xs"
-                                                onClick={() => openAssignmentDialog(request.id, 'speaker')}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  openAssignmentDialog(request.id, 'speaker');
+                                                }}
                                               >
                                                 Assign Speaker
                                               </Button>
@@ -2488,7 +2494,10 @@ export default function EventRequestsManagement() {
                                                 size="sm" 
                                                 variant="outline" 
                                                 className="text-xs"
-                                                onClick={() => openAssignmentDialog(request.id, 'volunteer')}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  openAssignmentDialog(request.id, 'volunteer');
+                                                }}
                                               >
                                                 Assign Volunteer
                                               </Button>
@@ -3702,21 +3711,39 @@ export default function EventRequestsManagement() {
                       <SelectValue placeholder={`Select a ${assignmentType}...`} />
                     </SelectTrigger>
                     <SelectContent>
-                      {assignmentType === 'driver' && drivers.map((driver) => (
-                        <SelectItem key={driver.id} value={driver.id.toString()}>
-                          {driver.firstName} {driver.lastName} {driver.email && `(${driver.email})`}
-                        </SelectItem>
-                      ))}
-                      {assignmentType === 'speaker' && users.map((user) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          {user.firstName} {user.lastName} {user.email && `(${user.email})`}
-                        </SelectItem>
-                      ))}
-                      {assignmentType === 'volunteer' && volunteers.map((volunteer) => (
-                        <SelectItem key={volunteer.id} value={volunteer.id.toString()}>
-                          {volunteer.firstName} {volunteer.lastName} {volunteer.email && `(${volunteer.email})`}
-                        </SelectItem>
-                      ))}
+                      {assignmentType === 'driver' && drivers
+                        .filter(driver => driver && (driver.firstName || driver.lastName || driver.email))
+                        .map((driver) => {
+                          const name = `${driver.firstName || ''} ${driver.lastName || ''}`.trim();
+                          const displayName = name || driver.email || `Driver ${driver.id}`;
+                          return (
+                            <SelectItem key={driver.id} value={driver.id.toString()}>
+                              {displayName} {driver.email && name && `(${driver.email})`}
+                            </SelectItem>
+                          );
+                        })}
+                      {assignmentType === 'speaker' && users
+                        .filter(user => user && (user.firstName || user.lastName || user.email))
+                        .map((user) => {
+                          const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+                          const displayName = name || user.email || `User ${user.id}`;
+                          return (
+                            <SelectItem key={user.id} value={user.id.toString()}>
+                              {displayName} {user.email && name && `(${user.email})`}
+                            </SelectItem>
+                          );
+                        })}
+                      {assignmentType === 'volunteer' && volunteers
+                        .filter(volunteer => volunteer && (volunteer.firstName || volunteer.lastName || volunteer.email))
+                        .map((volunteer) => {
+                          const name = `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim();
+                          const displayName = name || volunteer.email || `Volunteer ${volunteer.id}`;
+                          return (
+                            <SelectItem key={volunteer.id} value={volunteer.id.toString()}>
+                              {displayName} {volunteer.email && name && `(${volunteer.email})`}
+                            </SelectItem>
+                          );
+                        })}
                     </SelectContent>
                   </Select>
                 </div>
