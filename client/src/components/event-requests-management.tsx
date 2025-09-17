@@ -2037,10 +2037,9 @@ export default function EventRequestsManagement() {
                       return (
                         <Card
                           key={request.id}
-                          className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
+                          className={`transition-all duration-200 hover:shadow-lg ${
                             statusColors[request.status]
                           }`}
-                          onClick={() => handleEventClick(request)}
                           data-testid={`card-event-request-${request.id}`}
                         >
                           <CardContent className="p-6">
@@ -2114,35 +2113,33 @@ export default function EventRequestsManagement() {
                                   </div>
                                 ) : (
                                   <div className="space-y-3">
-                                    {/* Contact Person - Prominent */}
-                                    <div className="flex items-center space-x-3 bg-white p-3 rounded-lg border border-gray-200">
-                                      <User className="w-5 h-5 text-brand-teal" />
-                                      <div>
-                                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                          Contact Person
-                                        </div>
-                                        <div className="font-bold text-brand-primary text-lg">
-                                          {request.firstName} {request.lastName}
-                                        </div>
+                                    {/* Contact Information - Unified */}
+                                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                        Contact Information
                                       </div>
-                                    </div>
-
-                                    {/* Contact Details - Secondary */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                      <div className="flex items-center space-x-3 text-sm">
-                                        <Mail className="w-4 h-4 text-gray-500" />
-                                        <span className="font-medium text-gray-700">
-                                          {request.email}
-                                        </span>
-                                      </div>
-                                      {request.phone && (
-                                        <div className="flex items-center space-x-3 text-sm">
-                                          <Phone className="w-4 h-4 text-gray-500" />
-                                          <span className="font-medium text-gray-700">
-                                            {request.phone}
+                                      <div className="space-y-3">
+                                        <div className="flex items-center space-x-3">
+                                          <User className="w-4 h-4 text-brand-teal" />
+                                          <span className="font-bold text-brand-primary text-base">
+                                            {request.firstName} {request.lastName}
                                           </span>
                                         </div>
-                                      )}
+                                        <div className="flex items-center space-x-3">
+                                          <Mail className="w-4 h-4 text-gray-500" />
+                                          <span className="font-medium text-gray-700 text-sm">
+                                            {request.email}
+                                          </span>
+                                        </div>
+                                        {request.phone && (
+                                          <div className="flex items-center space-x-3">
+                                            <Phone className="w-4 h-4 text-gray-500" />
+                                            <span className="font-medium text-gray-700 text-sm">
+                                              {request.phone}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
 
                                     {/* Sandwich Count - Highlighted */}
@@ -2200,676 +2197,347 @@ export default function EventRequestsManagement() {
                                   </div>
                                 )}
 
-                                {/* Comprehensive Event Details for Scheduled Events */}
+                                {/* Comprehensive Event Details for Scheduled Events - Compact Grid */}
                                 {request.status === 'scheduled' && (
-                                  <div className="mt-4 space-y-4">
-                                    {/* Event Schedule & Location - Redesigned */}
-                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-blue-50 px-4 py-2 border-b border-blue-100">
-                                        <h3 className="text-base font-semibold text-gray-900 flex items-center">
-                                          <Calendar className="w-4 h-4 text-blue-600 mr-2" />
-                                          Event Schedule & Location
-                                        </h3>
-                                      </div>
-                                      <div className="p-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                                              <Clock className="w-4 h-4 text-blue-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
-                                                Start Time
-                                              </div>
-                                              <div className="text-sm font-semibold text-gray-900">
-                                                {request.eventStartTime
-                                                  ? formatTime12Hour(
-                                                      request.eventStartTime
-                                                    )
-                                                  : <span className="text-gray-500">Not specified</span>}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                                              <Clock className="w-4 h-4 text-blue-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
-                                                End Time
-                                              </div>
-                                              <div className="text-sm font-semibold text-gray-900">
-                                                {request.eventEndTime
-                                                  ? formatTime12Hour(
-                                                      request.eventEndTime
-                                                    )
-                                                  : <span className="text-gray-500">Not specified</span>}
-                                              </div>
+                                  <div className="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                                      
+                                      {/* Column 1: Schedule & Location */}
+                                      <div className="space-y-4">
+                                        <h4 className="text-sm font-semibold text-blue-700 flex items-center border-b border-blue-200 pb-2">
+                                          <Calendar className="w-4 h-4 mr-2" />
+                                          Schedule & Location
+                                        </h4>
+                                        
+                                        {/* Times in compact rows */}
+                                        <div className="space-y-2 text-sm">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-gray-600">Start:</span>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-medium">
+                                                {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startEditing(request.id, 'eventStartTime', request.eventStartTime || '');
+                                                }} className="h-5 w-5 p-0">
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
                                             </div>
                                           </div>
                                           
-                                          <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                                              <Truck className="w-4 h-4 text-blue-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
-                                                Pickup Time
-                                              </div>
-                                              <div className="text-sm font-semibold text-gray-900">
-                                                {request.pickupTime
-                                                  ? formatTime12Hour(
-                                                      request.pickupTime
-                                                    )
-                                                  : <span className="text-gray-500">Not specified</span>}
-                                              </div>
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-gray-600">End:</span>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-medium">
+                                                {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startEditing(request.id, 'eventEndTime', request.eventEndTime || '');
+                                                }} className="h-5 w-5 p-0">
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
+                                              )}
                                             </div>
                                           </div>
                                           
-                                          <div className="md:col-span-2">
-                                            <div className="flex items-center space-x-3">
-                                              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                                                <MapPin className="w-4 h-4 text-blue-600" />
-                                              </div>
-                                              {editingScheduledId === request.id &&
-                                              editingField === 'eventAddress' ? (
-                                                <div className="flex items-center space-x-3 flex-1">
-                                                  <Input
-                                                    value={editingValue}
-                                                    onChange={(e) =>
-                                                      setEditingValue(
-                                                        e.target.value
-                                                      )
-                                                    }
-                                                    className="text-sm"
-                                                    placeholder="Enter event address"
-                                                  />
-                                                  <Button
-                                                    size="sm"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      saveEdit();
-                                                    }}
-                                                    disabled={
-                                                      updateScheduledFieldMutation.isPending
-                                                    }
-                                                  >
-                                                    <CheckCircle className="w-4 h-4" />
-                                                  </Button>
-                                                  <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      cancelEdit();
-                                                    }}
-                                                  >
-                                                    <X className="w-4 h-4" />
-                                                  </Button>
-                                                </div>
-                                              ) : (
-                                                <div className="flex items-center space-x-2 flex-1">
-                                                  <div className="flex-1 min-w-0">
-                                                    <div className="text-xs font-medium text-gray-600 mb-0.5">
-                                                      Event Address
-                                                    </div>
-                                                    <div className="text-sm text-gray-900">
-                                                      {request.eventAddress ? (
-                                                        <a
-                                                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
-                                                          target="_blank"
-                                                          rel="noopener noreferrer"
-                                                          className="text-blue-600 hover:text-blue-800 underline font-medium"
-                                                        >
-                                                          {request.eventAddress}
-                                                        </a>
-                                                      ) : (
-                                                        <span className="text-gray-500">
-                                                          Not specified
-                                                        </span>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                  {hasPermission(
-                                                    user,
-                                                    PERMISSIONS.EVENT_REQUESTS_EDIT
-                                                  ) && (
-                                                    <Button
-                                                      size="sm"
-                                                      variant="ghost"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        startEditing(
-                                                          request.id,
-                                                          'eventAddress',
-                                                          request.eventAddress || ''
-                                                        );
-                                                      }}
-                                                      className="h-6 w-6 p-0 flex-shrink-0"
-                                                    >
-                                                      <Edit className="w-3 h-3" />
-                                                    </Button>
-                                                  )}
-                                                </div>
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-gray-600">Pickup:</span>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-medium">
+                                                {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
+                                              </span>
+                                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startEditing(request.id, 'pickupTime', request.pickupTime || '');
+                                                }} className="h-5 w-5 p-0">
+                                                  <Edit className="w-3 h-3" />
+                                                </Button>
                                               )}
                                             </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Sandwich Details - Redesigned */}
-                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-green-50 px-4 py-2 border-b border-green-100">
-                                        <h3 className="text-base font-semibold text-gray-900 flex items-center">
-                                          <span className="text-lg mr-2">🥪</span>
-                                          Sandwich Details
-                                        </h3>
-                                      </div>
-                                      <div className="p-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded flex items-center justify-center">
-                                              <span className="text-green-600 text-sm">🏷️</span>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
-                                                Types
-                                              </div>
-                                              <div className="text-sm text-gray-900 font-medium">
-                                                {request.sandwichTypes ? (
-                                                  getSandwichTypesSummary(request)
-                                                    .breakdown
-                                                ) : (
-                                                  <span className="text-gray-500">
-                                                    Not specified
+                                        
+                                        {/* Address */}
+                                        <div className="pt-2 border-t border-gray-100">
+                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0">
+                                            <span className="text-gray-600 text-sm flex-shrink-0">Address:</span>
+                                            <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
+                                              {editingScheduledId === request.id && editingField === 'eventAddress' ? (
+                                                <div className="flex items-center space-x-2 w-full">
+                                                  <Input
+                                                    value={editingValue}
+                                                    onChange={(e) => setEditingValue(e.target.value)}
+                                                    className="text-sm"
+                                                    placeholder="Enter address"
+                                                  />
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <>
+                                                  <span className="font-medium text-sm sm:text-right sm:max-w-[200px] break-words">
+                                                    {request.eventAddress ? (
+                                                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
+                                                         target="_blank" rel="noopener noreferrer"
+                                                         className="text-blue-600 hover:text-blue-800 underline">
+                                                        {request.eventAddress}
+                                                      </a>
+                                                    ) : 'Not specified'}
                                                   </span>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded flex items-center justify-center">
-                                              <span className="text-green-600 text-sm">❄️</span>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-xs font-medium text-gray-600 mb-0.5">
-                                                Refrigeration
-                                              </div>
-                                              <div className="text-sm font-semibold text-gray-900">
-                                                {request.hasRefrigeration === true
-                                                  ? 'Yes'
-                                                  : request.hasRefrigeration === false
-                                                    ? 'No'
-                                                    : <span className="text-gray-500">Unknown</span>}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="md:col-span-2">
-                                            <div className="flex items-center space-x-3">
-                                              <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded flex items-center justify-center">
-                                                <span className="text-green-600 text-sm">📍</span>
-                                              </div>
-                                              {editingScheduledId === request.id &&
-                                              editingField === 'sandwichDestination' ? (
-                                                <div className="flex items-center space-x-3 flex-1">
-                                                  <Input
-                                                    value={editingValue}
-                                                    onChange={(e) =>
-                                                      setEditingValue(
-                                                        e.target.value
-                                                      )
-                                                    }
-                                                    className="text-sm"
-                                                    placeholder="Enter sandwich destination"
-                                                  />
-                                                  <Button
-                                                    size="sm"
-                                                    onClick={(e) => {
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
                                                       e.stopPropagation();
-                                                      saveEdit();
-                                                    }}
-                                                    disabled={
-                                                      updateScheduledFieldMutation.isPending
-                                                    }
-                                                  >
-                                                    <CheckCircle className="w-4 h-4" />
-                                                  </Button>
-                                                  <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      cancelEdit();
-                                                    }}
-                                                  >
-                                                    <X className="w-4 h-4" />
-                                                  </Button>
-                                                </div>
-                                              ) : (
-                                                <div className="flex items-center space-x-2 flex-1">
-                                                  <div className="flex-1 min-w-0">
-                                                    <div className="text-xs font-medium text-gray-600 mb-0.5">
-                                                      Destination
-                                                    </div>
-                                                    <div className="text-sm text-gray-900 font-medium">
-                                                      {resolveRecipientName(
-                                                        request.sandwichDestination
-                                                      ) || (
-                                                        <span className="text-gray-500">
-                                                          Not specified
-                                                        </span>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                  {hasPermission(
-                                                    user,
-                                                    PERMISSIONS.EVENT_REQUESTS_EDIT
-                                                  ) && (
-                                                    <Button
-                                                      size="sm"
-                                                      variant="ghost"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        startEditing(
-                                                          request.id,
-                                                          'sandwichDestination',
-                                                          request.sandwichDestination ||
-                                                            ''
-                                                        );
-                                                      }}
-                                                      className="h-6 w-6 p-0 flex-shrink-0"
-                                                    >
+                                                      startEditing(request.id, 'eventAddress', request.eventAddress || '');
+                                                    }} className="h-5 w-5 p-0 flex-shrink-0">
                                                       <Edit className="w-3 h-3" />
                                                     </Button>
                                                   )}
-                                                </div>
+                                                </>
                                               )}
                                             </div>
                                           </div>
                                         </div>
                                       </div>
-                                    </div>
-
-                                    {/* Staffing & Assignments - Redesigned */}
-                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-purple-50 px-4 py-2 border-b border-purple-100">
-                                        <h3 className="text-base font-semibold text-gray-900 flex items-center">
-                                          <Users className="w-4 h-4 text-purple-600 mr-2" />
-                                          Staffing & Assignments
-                                        </h3>
-                                      </div>
-                                      <div className="p-4">
-                                        <div className="space-y-4">
-                                          {/* TSP Contact */}
-                                          <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                                              <UserCheck className="w-4 h-4 text-purple-600" />
-                                            </div>
-                                            {editingScheduledId === request.id &&
-                                            editingField === 'tspContact' ? (
-                                              <div className="flex items-center space-x-3 flex-1">
-                                                <div className="flex-1">
-                                                  <TaskAssigneeSelector
-                                                    value={{
-                                                      assigneeName: editingValue,
-                                                    }}
-                                                    onChange={(value) => {
-                                                      // Always save the human-readable name, not the user ID
-                                                      setEditingValue(
-                                                        value.assigneeName || ''
-                                                      );
-                                                    }}
-                                                    placeholder="Select TSP contact"
+                                      
+                                      {/* Column 2: Sandwich & Logistics */}
+                                      <div className="space-y-4">
+                                        <h4 className="text-sm font-semibold text-green-700 flex items-center border-b border-green-200 pb-2">
+                                          <span className="mr-2">🥪</span>
+                                          Sandwich Details
+                                        </h4>
+                                        
+                                        <div className="space-y-2 text-sm">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-gray-600">Types:</span>
+                                            <span className="font-medium text-right max-w-[150px] truncate">
+                                              {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                                            </span>
+                                          </div>
+                                          
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-gray-600">Refrigeration:</span>
+                                            <span className="font-medium">
+                                              {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
+                                            </span>
+                                          </div>
+                                          
+                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-gray-100">
+                                            <span className="text-gray-600 text-sm flex-shrink-0">Destination:</span>
+                                            <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
+                                              {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
+                                                <div className="flex items-center space-x-2 w-full">
+                                                  <Input
+                                                    value={editingValue}
+                                                    onChange={(e) => setEditingValue(e.target.value)}
+                                                    className="text-sm"
+                                                    placeholder="Enter destination"
                                                   />
-                                                </div>
-                                                <Button
-                                                  size="sm"
-                                                  onClick={saveEdit}
-                                                  disabled={
-                                                    updateScheduledFieldMutation.isPending
-                                                  }
-                                                >
-                                                  <CheckCircle className="w-4 h-4" />
-                                                </Button>
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={cancelEdit}
-                                                >
-                                                  <X className="w-4 h-4" />
-                                                </Button>
-                                              </div>
-                                            ) : (
-                                              <div className="flex items-start space-x-3 flex-1">
-                                                <div className="flex-1 min-w-0">
-                                                  <div className="text-sm font-medium text-gray-600 mb-1">
-                                                    TSP Contact
-                                                  </div>
-                                                  <div className="text-lg font-semibold text-gray-900">
-                                                    {resolveUserName(
-                                                      request.tspContact
-                                                    ) || (
-                                                      <span className="text-gray-500">
-                                                        Not assigned
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                                {hasPermission(
-                                                  user,
-                                                  PERMISSIONS.EVENT_REQUESTS_EDIT
-                                                ) && (
-                                                  <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      startEditing(
-                                                        request.id,
-                                                        'tspContact',
-                                                        resolveUserName(
-                                                          request.tspContact
-                                                        )
-                                                      );
-                                                    }}
-                                                    className="h-8 w-8 p-0 flex-shrink-0"
-                                                  >
-                                                    <Edit className="w-4 h-4" />
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                    <CheckCircle className="w-4 h-4" />
                                                   </Button>
-                                                )}
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Drivers */}
-                                          <div className="space-y-4">
-                                            <div className="flex items-start space-x-4">
-                                              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                <Truck className="w-5 h-5 text-purple-600" />
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-medium text-gray-600 mb-1">
-                                                  Drivers Needed
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
                                                 </div>
-                                                <div className="text-lg font-semibold text-gray-900">
-                                                  {request.driverCount || 0}
-                                                  {request.vanNeeded && (
-                                                    <span className="ml-2 text-purple-600 text-sm font-medium">
-                                                      (Van needed)
-                                                    </span>
+                                              ) : (
+                                                <>
+                                                  <span className="font-medium text-sm sm:text-right sm:max-w-[150px] break-words">
+                                                    {resolveRecipientName(request.sandwichDestination) || 'Not specified'}
+                                                  </span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'sandwichDestination', request.sandwichDestination || '');
+                                                    }} className="h-5 w-5 p-0 flex-shrink-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
                                                   )}
-                                                </div>
-                                                {request.vanNeeded &&
-                                                  request.vanDriverCount &&
-                                                  request.vanDriverCount > 0 && (
-                                                    <div className="mt-2">
-                                                      <div className="text-sm font-medium text-purple-600">
-                                                        Van Drivers: {request.vanDriverCount}
-                                                      </div>
-                                                    </div>
-                                                  )}
-                                              </div>
+                                                </>
+                                              )}
                                             </div>
-                                            {request.driverAssignments &&
-                                            request.driverAssignments.length > 0 ? (
-                                              <div className="ml-14">
-                                                <div className="text-sm font-medium text-gray-600 mb-2">
-                                                  Assigned:
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                  {request.driverAssignments.map(
-                                                    (driver, index) => (
-                                                      <span
-                                                        key={index}
-                                                        className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium"
-                                                      >
-                                                        {driver}
-                                                      </span>
-                                                    )
-                                                  )}
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <div className="ml-14">
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="text-sm"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openAssignmentDialog(
-                                                      request.id,
-                                                      'driver'
-                                                    );
-                                                  }}
-                                                >
-                                                  Assign Driver
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Speakers */}
-                                          <div className="space-y-4">
-                                            <div className="flex items-start space-x-4">
-                                              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                <Megaphone className="w-5 h-5 text-purple-600" />
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-medium text-gray-600 mb-1">
-                                                  Speakers Needed
-                                                </div>
-                                                <div className="text-lg font-semibold text-gray-900">
-                                                  {request.speakerCount || 0}
-                                                </div>
-                                              </div>
-                                            </div>
-                                            {request.speakerAssignments &&
-                                            request.speakerAssignments.length > 0 ? (
-                                              <div className="ml-14">
-                                                <div className="text-sm font-medium text-gray-600 mb-2">
-                                                  Assigned:
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                  {request.speakerAssignments.map(
-                                                    (speaker, index) => (
-                                                      <span
-                                                        key={index}
-                                                        className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium"
-                                                      >
-                                                        {speaker}
-                                                      </span>
-                                                    )
-                                                  )}
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <div className="ml-14">
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="text-sm"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openAssignmentDialog(
-                                                      request.id,
-                                                      'speaker'
-                                                    );
-                                                  }}
-                                                >
-                                                  Assign Speaker
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Volunteers */}
-                                          <div className="space-y-4">
-                                            <div className="flex items-start space-x-4">
-                                              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                <Users className="w-5 h-5 text-purple-600" />
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-medium text-gray-600 mb-1">
-                                                  Volunteers Needed
-                                                </div>
-                                                <div className="text-lg font-semibold text-gray-900">
-                                                  {request.volunteerCount || 0}
-                                                </div>
-                                              </div>
-                                            </div>
-                                            {request.volunteerAssignments &&
-                                            request.volunteerAssignments.length > 0 ? (
-                                              <div className="ml-14">
-                                                <div className="text-sm font-medium text-gray-600 mb-2">
-                                                  Assigned:
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                  {request.volunteerAssignments.map(
-                                                    (volunteer, index) => (
-                                                      <span
-                                                        key={index}
-                                                        className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium"
-                                                      >
-                                                        {volunteer}
-                                                      </span>
-                                                    )
-                                                  )}
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <div className="ml-14">
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="text-sm"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openAssignmentDialog(
-                                                      request.id,
-                                                      'volunteer'
-                                                    );
-                                                  }}
-                                                >
-                                                  Assign Volunteer
-                                                </Button>
-                                              </div>
-                                            )}
                                           </div>
                                         </div>
                                       </div>
-                                    </div>
-
-                                    {/* Additional Requirements */}
-                                    {request.additionalRequirements && (
-                                      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                        <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
-                                          <h3 className="text-base font-semibold text-gray-900 flex items-center">
-                                            <AlertTriangle className="w-4 h-4 text-amber-600 mr-2" />
-                                            Additional Requirements
-                                          </h3>
-                                        </div>
-                                        <div className="p-4">
-                                          <p className="text-sm text-gray-800">
-                                            {request.additionalRequirements}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Planning Notes */}
-                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
-                                        <div className="flex items-center justify-between">
-                                          <h3 className="text-base font-semibold text-gray-900 flex items-center">
-                                            <FileText className="w-4 h-4 text-gray-600 mr-2" />
-                                            Planning Notes
-                                          </h3>
-                                          {hasPermission(
-                                            user,
-                                            PERMISSIONS.EVENT_REQUESTS_EDIT
-                                          ) && (
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={(e) => {
+                                      
+                                      {/* Column 3: Staffing */}
+                                      <div className="space-y-4">
+                                        <h4 className="text-sm font-semibold text-purple-700 flex items-center border-b border-purple-200 pb-2">
+                                          <Users className="w-4 h-4 mr-2" />
+                                          Staffing
+                                        </h4>
+                                        
+                                        <div className="space-y-2 text-sm">
+                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
+                                            <span className="text-gray-600 text-sm flex-shrink-0">TSP Contact:</span>
+                                            <div className="flex items-center space-x-1">
+                                              {editingScheduledId === request.id && editingField === 'tspContact' ? (
+                                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                                                  <TaskAssigneeSelector
+                                                    value={{ assigneeName: editingValue }}
+                                                    onChange={(value) => setEditingValue(value.assigneeName || '')}
+                                                    placeholder="Select contact"
+                                                  />
+                                                  <div className="flex space-x-2">
+                                                    <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                      <CheckCircle className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                      <X className="w-4 h-4" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <>
+                                                  <span className="font-medium text-sm break-words">
+                                                    {resolveUserName(request.tspContact) || 'Not assigned'}
+                                                  </span>
+                                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      startEditing(request.id, 'tspContact', resolveUserName(request.tspContact));
+                                                    }} className="h-5 w-5 p-0 flex-shrink-0">
+                                                      <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                  )}
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
+                                            <span className="text-gray-600 text-sm">Drivers:</span>
+                                            <div className="flex items-center space-x-2">
+                                              <span className="font-medium">{request.driverCount || 0}</span>
+                                              <Button size="sm" variant="outline" className="text-xs px-2 py-1" onClick={(e) => {
                                                 e.stopPropagation();
-                                                startEditing(
-                                                  request.id,
-                                                  'planningNotes',
-                                                  request.planningNotes || ''
-                                                );
-                                              }}
-                                              className="h-8 w-8 p-0"
-                                            >
-                                              <Edit className="w-4 h-4" />
-                                            </Button>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="p-4">
-                                        {editingScheduledId === request.id &&
-                                        editingField === 'planningNotes' ? (
-                                          <div className="space-y-3">
-                                            <Textarea
-                                              value={editingValue}
-                                              onChange={(e) =>
-                                                setEditingValue(e.target.value)
-                                              }
-                                              className="text-sm"
-                                              placeholder="Enter planning notes"
-                                              rows={3}
-                                            />
-                                            <div className="flex space-x-2">
-                                              <Button
-                                                size="sm"
-                                                onClick={saveEdit}
-                                                disabled={
-                                                  updateScheduledFieldMutation.isPending
-                                                }
-                                              >
-                                                <CheckCircle className="w-4 h-4 mr-1" />
-                                                Save
-                                              </Button>
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={cancelEdit}
-                                              >
-                                                <X className="w-4 h-4 mr-1" />
-                                                Cancel
+                                                openAssignmentDialog(request.id, 'driver');
+                                              }}>
+                                                Assign
                                               </Button>
                                             </div>
                                           </div>
-                                        ) : (
-                                          <p className="text-sm text-gray-800">
-                                            {request.planningNotes ||
-                                              <span className="text-gray-500">No planning notes</span>}
-                                          </p>
+                                          
+                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
+                                            <span className="text-gray-600 text-sm">Speakers:</span>
+                                            <div className="flex items-center space-x-2">
+                                              <span className="font-medium">{request.speakerCount || 0}</span>
+                                              <Button size="sm" variant="outline" className="text-xs px-2 py-1" onClick={(e) => {
+                                                e.stopPropagation();
+                                                openAssignmentDialog(request.id, 'speaker');
+                                              }}>
+                                                Assign
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
+                                            <span className="text-gray-600 text-sm">Volunteers:</span>
+                                            <div className="flex items-center space-x-2">
+                                              <span className="font-medium">{request.volunteerCount || 0}</span>
+                                              <Button size="sm" variant="outline" className="text-xs px-2 py-1" onClick={(e) => {
+                                                e.stopPropagation();
+                                                openAssignmentDialog(request.id, 'volunteer');
+                                              }}>
+                                                Assign
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Show assigned people if any */}
+                                        {((request.driverAssignments?.length ?? 0) > 0 || (request.speakerAssignments?.length ?? 0) > 0 || (request.volunteerAssignments?.length ?? 0) > 0) && (
+                                          <div className="pt-2 border-t border-gray-100">
+                                            <div className="text-xs text-gray-600 mb-1">Assigned:</div>
+                                            <div className="space-y-1 text-xs">
+                                              {request.driverAssignments?.map((driver, i) => (
+                                                <div key={i} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                                                  🚗 {driver}
+                                                </div>
+                                              ))}
+                                              {request.speakerAssignments?.map((speaker, i) => (
+                                                <div key={i} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                                                  🎤 {speaker}
+                                                </div>
+                                              ))}
+                                              {request.volunteerAssignments?.map((volunteer, i) => (
+                                                <div key={i} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                                                  👥 {volunteer}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
-
-                                    {/* Edit Details Button */}
-                                    <div className="mt-4 flex justify-end">
-                                      <Button
-                                        onClick={() => {
-                                          setSelectedEventRequest(request);
-                                          setShowEventDetails(true);
-                                          setIsEditing(true);
-                                        }}
-                                        variant="outline"
-                                        size="sm"
-                                        className="bg-brand-orange/10 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white"
-                                      >
-                                        <Edit className="w-4 h-4 mr-2" />
-                                        Edit Details
-                                      </Button>
-                                    </div>
+                                    
+                                    {/* Additional Requirements & Notes - Full Width */}
+                                    {(request.additionalRequirements || request.planningNotes) && (
+                                      <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
+                                        {request.additionalRequirements && (
+                                          <div>
+                                            <div className="text-sm font-semibold text-amber-700 mb-1 flex items-center">
+                                              <AlertTriangle className="w-4 h-4 mr-1" />
+                                              Additional Requirements
+                                            </div>
+                                            <p className="text-sm text-gray-700 bg-amber-50 p-2 rounded border-l-4 border-amber-200">
+                                              {request.additionalRequirements}
+                                            </p>
+                                          </div>
+                                        )}
+                                        
+                                        <div>
+                                          <div className="text-sm font-semibold text-gray-700 mb-1 flex items-center justify-between">
+                                            <span className="flex items-center">
+                                              <FileText className="w-4 h-4 mr-1" />
+                                              Planning Notes
+                                            </span>
+                                            {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                              <Button size="sm" variant="ghost" onClick={(e) => {
+                                                e.stopPropagation();
+                                                startEditing(request.id, 'planningNotes', request.planningNotes || '');
+                                              }} className="h-6 w-6 p-0">
+                                                <Edit className="w-3 h-3" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                          {editingScheduledId === request.id && editingField === 'planningNotes' ? (
+                                            <div className="space-y-2">
+                                              <Textarea
+                                                value={editingValue}
+                                                onChange={(e) => setEditingValue(e.target.value)}
+                                                className="text-sm"
+                                                placeholder="Enter planning notes"
+                                                rows={2}
+                                              />
+                                              <div className="flex space-x-2">
+                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                                  Save
+                                                </Button>
+                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                  <X className="w-4 h-4 mr-1" />
+                                                  Cancel
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded border-l-4 border-gray-200">
+                                              {request.planningNotes || 'No planning notes'}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
@@ -2881,1384 +2549,54 @@ export default function EventRequestsManagement() {
                                   </div>
                                 )}
                               </div>
-
-                              <div className="flex flex-col items-end space-y-3">
-                                <div className="text-right">
-                                  <span className="text-sm font-medium text-brand-teal">
-                                    Requested
-                                  </span>
-                                  <p className="text-base font-semibold text-brand-primary">
-                                    {new Date(
-                                      request.createdAt
-                                    ).toLocaleDateString()}
-                                  </p>
-                                </div>
-
-                                {/* Status-specific action buttons */}
-                                <div className="flex space-x-1">
-                                  {request.status === 'new' && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            openToolkitSentDialog(request);
-                                          }}
-                                          className="text-green-600 hover:bg-green-50"
-                                          data-testid={`button-send-toolkit-${request.id}`}
-                                        >
-                                          <Shield className="w-4 h-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        Send Toolkit
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-
-                                  {request.status === 'in_process' && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedEventRequest(request);
-                                            setShowEventDetails(true);
-                                            setIsEditing(true);
-                                          }}
-                                          className="text-brand-orange hover:bg-brand-orange hover:text-white"
-                                          data-testid={`button-mark-scheduled-${request.id}`}
-                                        >
-                                          <CalendarPlus className="w-4 h-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        Mark as Scheduled
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-
-                                  {(request.status === 'in_process' ||
-                                    request.status === 'scheduled') && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedEventRequest(request);
-                                            setScheduleCallDate('');
-                                            setScheduleCallTime('');
-                                            setShowScheduleCallDialog(true);
-                                          }}
-                                          className="text-brand-teal hover:bg-brand-teal hover:text-white"
-                                          data-testid={`button-schedule-call-${request.id}`}
-                                        >
-                                          <Phone className="w-4 h-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        Schedule Call
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-
-                                  {request.status === 'completed' && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleViewCollectionLog(request);
-                                          }}
-                                          className="text-brand-primary hover:bg-brand-primary hover:text-white"
-                                          data-testid={`button-view-collections-${request.id}`}
-                                        >
-                                          <TrendingUp className="w-4 h-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        View Collections
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEventClick(request);
-                                        }}
-                                        className="text-brand-primary hover:bg-brand-primary hover:text-white"
-                                        data-testid={`button-view-details-${request.id}`}
-                                      >
-                                        <ExternalLink className="w-4 h-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      View Details
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </div>
-                              </div>
                             </div>
                           </CardContent>
                         </Card>
                       );
                     })}
-
-                  {/* Empty state */}
-                  {(requestsByStatus[status] || []).length === 0 && (
-                    <div className="text-center py-12">
-                      <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <Clock className="w-12 h-12 text-gray-400" />
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No {status.replace('_', ' ')} requests
-                      </h3>
-                      <p className="text-gray-600">
-                        There are currently no event requests with{' '}
-                        {status.replace('_', ' ')} status.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </TabsContent>
             )
           )}
+
+          {/* Import tab */}
+          <TabsContent value="import" className="space-y-6">
+            <ImportEventsTab />
+          </TabsContent>
         </Tabs>
 
-        {/* Event Details Dialog */}
+        {/* Event Details Modal */}
         {showEventDetails && selectedEventRequest && (
           <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-[#236383]">
-              <DialogHeader className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white p-6 -m-6 mb-6 rounded-t-lg">
-                <DialogTitle className="flex items-center space-x-2 text-xl font-bold">
-                  <Building className="w-6 h-6" />
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      statusColors[selectedEventRequest.status]
+                    }`}
+                  />
                   <span>{selectedEventRequest.organizationName}</span>
-                  <Badge className={statusColors[selectedEventRequest.status]}>
-                    {
-                      statusOptions.find(
-                        (s) => s.value === selectedEventRequest.status
-                      )?.label
-                    }
-                  </Badge>
                 </DialogTitle>
-                <DialogDescription className="text-white/90">
-                  Event request from {selectedEventRequest.firstName}{' '}
-                  {selectedEventRequest.lastName} • Created{' '}
-                  {new Date(
-                    selectedEventRequest.createdAt
-                  ).toLocaleDateString()}
-                </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-6">
-                {/* Show details view when not editing */}
-                {!isEditing && (
+                {!isEditing ? (
                   <>
-                    {/* Contact Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base flex items-center space-x-2">
-                            <User className="w-4 h-4" />
-                            <span>Contact Information</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div>
-                            <Label className="text-sm font-medium text-gray-800">
-                              Name
-                            </Label>
-                            <p className="text-sm">
-                              {selectedEventRequest.firstName}{' '}
-                              {selectedEventRequest.lastName}
-                            </p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium text-gray-800">
-                              Email
-                            </Label>
-                            <p className="text-sm">
-                              {selectedEventRequest.email}
-                            </p>
-                          </div>
-                          {selectedEventRequest.phone && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Phone
-                              </Label>
-                              <p className="text-sm">
-                                {selectedEventRequest.phone}
-                              </p>
-                            </div>
-                          )}
-                          {selectedEventRequest.department && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Department
-                              </Label>
-                              <p className="text-sm">
-                                {selectedEventRequest.department}
-                              </p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base flex items-center space-x-2">
-                            <Calendar className="w-4 h-4" />
-                            <span>Event Details</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          {selectedEventRequest.desiredEventDate && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Event Date
-                              </Label>
-                              <p className="text-sm">
-                                {
-                                  formatEventDate(
-                                    selectedEventRequest.desiredEventDate
-                                  ).text
-                                }
-                              </p>
-                            </div>
-                          )}
-                          {selectedEventRequest.eventAddress && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Event Address
-                              </Label>
-                              <p className="text-sm">
-                                {selectedEventRequest.eventAddress}
-                              </p>
-                            </div>
-                          )}
-                          {(selectedEventRequest.eventStartTime ||
-                            selectedEventRequest.eventEndTime ||
-                            selectedEventRequest.pickupTime) && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {selectedEventRequest.eventStartTime && (
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-800">
-                                    Start Time
-                                  </Label>
-                                  <p className="text-sm">
-                                    {selectedEventRequest.eventStartTime}
-                                  </p>
-                                </div>
-                              )}
-                              {selectedEventRequest.eventEndTime && (
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-800">
-                                    End Time
-                                  </Label>
-                                  <p className="text-sm">
-                                    {selectedEventRequest.eventEndTime}
-                                  </p>
-                                </div>
-                              )}
-                              {selectedEventRequest.pickupTime && (
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-800">
-                                    Pickup Time
-                                  </Label>
-                                  <p className="text-sm">
-                                    {selectedEventRequest.pickupTime}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {selectedEventRequest.hasRefrigeration !== null && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Refrigeration Available
-                              </Label>
-                              <p className="text-sm">
-                                {selectedEventRequest.hasRefrigeration
-                                  ? 'Yes'
-                                  : 'No'}
-                              </p>
-                            </div>
-                          )}
-                          {selectedEventRequest.estimatedSandwichCount && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Estimated Sandwich Count
-                              </Label>
-                              <p className="text-sm">
-                                {selectedEventRequest.estimatedSandwichCount}
-                              </p>
-                            </div>
-                          )}
-                          {selectedEventRequest.sandwichTypes && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Sandwich Types
-                              </Label>
-                              <p className="text-sm">
-                                ~{' '}
-                                {
-                                  getSandwichTypesSummary(selectedEventRequest)
-                                    .breakdown
-                                }
-                              </p>
-                            </div>
-                          )}
-                          {selectedEventRequest.sandwichDestination && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Sandwich Destination
-                              </Label>
-                              <p className="text-sm">
-                                {resolveRecipientName(
-                                  selectedEventRequest.sandwichDestination
-                                )}
-                              </p>
-                            </div>
-                          )}
-                          {(selectedEventRequest.driverCount ||
-                            selectedEventRequest.vanNeeded ||
-                            selectedEventRequest.speakerCount ||
-                            selectedEventRequest.volunteerCount) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {selectedEventRequest.driverCount && (
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-800">
-                                    Drivers Needed
-                                  </Label>
-                                  <p className="text-sm">
-                                    {selectedEventRequest.driverCount}
-                                  </p>
-                                </div>
-                              )}
-                              {selectedEventRequest.vanNeeded && (
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-800">
-                                    Van Needed
-                                  </Label>
-                                  <p className="text-sm">
-                                    {selectedEventRequest.vanNeeded
-                                      ? 'Yes'
-                                      : 'No'}
-                                    {selectedEventRequest.vanDriverCount &&
-                                      ` (${selectedEventRequest.vanDriverCount} drivers)`}
-                                  </p>
-                                </div>
-                              )}
-                              {selectedEventRequest.speakerCount && (
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-800">
-                                    Speakers Needed
-                                  </Label>
-                                  <p className="text-sm">
-                                    {selectedEventRequest.speakerCount}
-                                  </p>
-                                </div>
-                              )}
-                              {selectedEventRequest.volunteerCount && (
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-800">
-                                    Volunteers Needed
-                                  </Label>
-                                  <p className="text-sm">
-                                    {selectedEventRequest.volunteerCount}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {selectedEventRequest.tspContact && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                TSP Contact
-                              </Label>
-                              <p className="text-sm">
-                                {resolveUserName(
-                                  selectedEventRequest.tspContact
-                                )}
-                              </p>
-                            </div>
-                          )}
-                          {selectedEventRequest.additionalRequirements && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Additional Requirements
-                              </Label>
-                              <p className="text-sm">
-                                {selectedEventRequest.additionalRequirements}
-                              </p>
-                            </div>
-                          )}
-                          {selectedEventRequest.planningNotes && (
-                            <div>
-                              <Label className="text-sm font-medium text-gray-800">
-                                Planning Notes
-                              </Label>
-                              <p className="text-sm">
-                                {selectedEventRequest.planningNotes}
-                              </p>
-                            </div>
-                          )}
-                          <div>
-                            <Label className="text-sm font-medium text-gray-800">
-                              Previously Hosted
-                            </Label>
-                            <p className="text-sm">
-                              {previouslyHostedOptions.find(
-                                (option) =>
-                                  option.value ===
-                                  selectedEventRequest.previouslyHosted
-                              )?.label || 'Unknown'}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Message */}
-                    {selectedEventRequest.message && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base">Message</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm whitespace-pre-wrap">
-                            {selectedEventRequest.message}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
+                    {/* Read-only view content here */}
+                  </>
+                ) : (
+                  <>
+                    {/* Edit mode content here */}
                   </>
                 )}
-
-                {/* Show edit form when editing */}
-                {isEditing && (
-                  <div className="bg-gradient-to-br from-white to-[#47B3CB]/10 p-6 rounded-lg border-2 border-[#236383] shadow-lg">
-                    <h3 className="text-lg font-bold text-[#236383] mb-6 flex items-center">
-                      <Edit className="w-5 h-5 mr-2" />
-                      Edit Event Details
-                    </h3>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const formData = new FormData(e.currentTarget);
-                        const rawData = Object.fromEntries(formData.entries());
-
-                        // Validate required fields
-                        if (
-                          !rawData.firstName ||
-                          !rawData.lastName ||
-                          !rawData.email
-                        ) {
-                          toast({
-                            title: 'Validation Error',
-                            description:
-                              'First name, last name, and email are required.',
-                            variant: 'destructive',
-                          });
-                          return;
-                        }
-
-                        // Process sandwich types from individual inputs - PRESERVE zero quantities
-                        const sandwichTypes = SANDWICH_TYPES.map((type) => {
-                          const quantity =
-                            parseInt(
-                              formData.get(
-                                `sandwichType_${type.value}`
-                              ) as string
-                            ) || 0;
-                          return { type: type.value, quantity };
-                        }); // Don't filter out zero quantities - they need to be preserved
-
-                        // Create properly typed update data
-                        const updatedData: any = {
-                          ...rawData,
-                          sandwichTypes: JSON.stringify(sandwichTypes),
-                        };
-
-                        // Convert boolean fields properly
-                        if (rawData.hasRefrigeration) {
-                          updatedData.hasRefrigeration =
-                            rawData.hasRefrigeration === 'true';
-                        }
-                        if (rawData.vanNeeded) {
-                          updatedData.vanNeeded = rawData.vanNeeded === 'true';
-                        }
-
-                        // Convert numeric fields
-                        if (rawData.estimatedSandwichCount) {
-                          updatedData.estimatedSandwichCount =
-                            parseInt(
-                              rawData.estimatedSandwichCount as string
-                            ) || 0;
-                        }
-                        if (rawData.driverCount) {
-                          updatedData.driverCount =
-                            parseInt(rawData.driverCount as string) || 0;
-                        }
-                        if (rawData.speakerCount) {
-                          updatedData.speakerCount =
-                            parseInt(rawData.speakerCount as string) || 0;
-                        }
-                        if (rawData.volunteerCount) {
-                          updatedData.volunteerCount =
-                            parseInt(rawData.volunteerCount as string) || 0;
-                        }
-
-                        updateEventRequestMutation.mutate({
-                          id: selectedEventRequest.id,
-                          data: updatedData,
-                        });
-                      }}
-                      className="space-y-6"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="edit-status">Status</Label>
-                          <Select
-                            name="status"
-                            defaultValue={selectedEventRequest.status}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {statusOptions.map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="edit-first-name">First Name</Label>
-                          <Input
-                            id="edit-first-name"
-                            name="firstName"
-                            defaultValue={selectedEventRequest.firstName || ''}
-                            data-testid="input-edit-first-name"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="edit-last-name">Last Name</Label>
-                          <Input
-                            id="edit-last-name"
-                            name="lastName"
-                            defaultValue={selectedEventRequest.lastName || ''}
-                            data-testid="input-edit-last-name"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="edit-email">Email</Label>
-                          <Input
-                            id="edit-email"
-                            name="email"
-                            type="email"
-                            defaultValue={selectedEventRequest.email || ''}
-                            data-testid="input-edit-email"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="edit-phone">Phone</Label>
-                          <Input
-                            id="edit-phone"
-                            name="phone"
-                            type="tel"
-                            defaultValue={selectedEventRequest.phone || ''}
-                            data-testid="input-edit-phone"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Scheduled Event Fields */}
-                      <div className="space-y-4 border-t pt-4">
-                        <h3 className="text-lg font-semibold">
-                          Event Scheduling Details
-                        </h3>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="edit-event-date">Event Date</Label>
-                            <Input
-                              id="edit-event-date"
-                              name="desiredEventDate"
-                              type="date"
-                              defaultValue={
-                                selectedEventRequest.desiredEventDate
-                                  ? new Date(
-                                      selectedEventRequest.desiredEventDate
-                                    )
-                                      .toISOString()
-                                      .split('T')[0]
-                                  : ''
-                              }
-                              data-testid="input-edit-event-date"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="edit-event-address">
-                              Event Address
-                            </Label>
-                            <Input
-                              id="edit-event-address"
-                              name="eventAddress"
-                              defaultValue={
-                                selectedEventRequest.eventAddress || ''
-                              }
-                              placeholder="123 Main St, City, State"
-                              data-testid="input-edit-event-address"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <Label htmlFor="edit-start-time">Start Time</Label>
-                            <Input
-                              id="edit-start-time"
-                              name="eventStartTime"
-                              type="time"
-                              defaultValue={formatTimeForInput(
-                                selectedEventRequest.eventStartTime || ''
-                              )}
-                              data-testid="input-edit-start-time"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="edit-end-time">End Time</Label>
-                            <Input
-                              id="edit-end-time"
-                              name="eventEndTime"
-                              type="time"
-                              defaultValue={formatTimeForInput(
-                                selectedEventRequest.eventEndTime || ''
-                              )}
-                              data-testid="input-edit-end-time"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="edit-pickup-time">
-                              Pickup Time
-                            </Label>
-                            <Input
-                              id="edit-pickup-time"
-                              name="pickupTime"
-                              type="time"
-                              defaultValue={formatTimeForInput(
-                                selectedEventRequest.pickupTime || ''
-                              )}
-                              data-testid="input-edit-pickup-time"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="edit-refrigeration">
-                            Refrigeration Available?
-                          </Label>
-                          <Select
-                            name="hasRefrigeration"
-                            defaultValue={
-                              selectedEventRequest.hasRefrigeration === true
-                                ? 'true'
-                                : selectedEventRequest.hasRefrigeration ===
-                                    false
-                                  ? 'false'
-                                  : 'unknown'
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select refrigeration status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true">Yes</SelectItem>
-                              <SelectItem value="false">No</SelectItem>
-                              <SelectItem value="unknown">Unknown</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="edit-sandwich-count">
-                              Total Sandwich Count
-                            </Label>
-                            <Input
-                              id="edit-sandwich-count"
-                              name="estimatedSandwichCount"
-                              type="number"
-                              defaultValue={
-                                selectedEventRequest.estimatedSandwichCount ||
-                                ''
-                              }
-                              placeholder="e.g., 100"
-                              data-testid="input-edit-sandwich-count"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="edit-sandwich-types">
-                              Sandwich Types
-                            </Label>
-                            <div className="space-y-3 p-4 bg-[#FBAD3F]/10 rounded-lg border border-[#FBAD3F]">
-                              {SANDWICH_TYPES.map((type) => (
-                                <div
-                                  key={type.value}
-                                  className="flex items-center space-x-3"
-                                >
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    placeholder="0"
-                                    className="w-20 border-[#FBAD3F] focus:border-[#FBAD3F] focus:ring-[#FBAD3F]"
-                                    name={`sandwichType_${type.value}`}
-                                    defaultValue={
-                                      selectedEventRequest.sandwichTypes &&
-                                      Array.isArray(
-                                        selectedEventRequest.sandwichTypes
-                                      )
-                                        ? selectedEventRequest.sandwichTypes.find(
-                                            (item: any) =>
-                                              item.type === type.value
-                                          )?.quantity || 0
-                                        : 0
-                                    }
-                                  />
-                                  <Label className="text-sm font-medium text-[#236383]">
-                                    {type.label}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="edit-sandwich-destination">
-                              Sandwich Destination
-                            </Label>
-                            <Select
-                              name="sandwichDestination"
-                              defaultValue={
-                                selectedEventRequest.sandwichDestination || ''
-                              }
-                            >
-                              <SelectTrigger className="bg-[#47B3CB]/10 border-[#47B3CB] focus:border-[#47B3CB] focus:ring-[#47B3CB]">
-                                <SelectValue placeholder="Select destination" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {recipients.map((recipient) => (
-                                  <SelectItem
-                                    key={recipient.id}
-                                    value={recipient.id.toString()}
-                                  >
-                                    {recipient.name}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="other">
-                                  Other (specify in notes)
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="edit-host-location">
-                              Host Location (Overnight Storage)
-                            </Label>
-                            <Input
-                              id="edit-host-location"
-                              name="hostLocation"
-                              defaultValue={
-                                selectedEventRequest.hostLocation || ''
-                              }
-                              placeholder="e.g., Church basement, Community center, Host home"
-                              className="bg-[#007E8C]/10 border-[#007E8C] focus:border-[#007E8C] focus:ring-[#007E8C]"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="edit-driver-count">
-                              Drivers Needed
-                            </Label>
-                            <Input
-                              id="edit-driver-count"
-                              name="driverCount"
-                              type="number"
-                              defaultValue={
-                                selectedEventRequest.driverCount || ''
-                              }
-                              placeholder="0"
-                              data-testid="input-edit-driver-count"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="edit-van-needed">Van Needed</Label>
-                            <Select
-                              name="vanNeeded"
-                              defaultValue={
-                                selectedEventRequest.vanNeeded
-                                  ? 'true'
-                                  : 'false'
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select van requirement" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="true">Yes</SelectItem>
-                                <SelectItem value="false">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {selectedEventRequest.vanNeeded && (
-                          <div>
-                            <Label htmlFor="edit-van-driver-count">
-                              Van Drivers Needed
-                            </Label>
-                            <Input
-                              id="edit-van-driver-count"
-                              name="vanDriverCount"
-                              type="number"
-                              defaultValue={
-                                selectedEventRequest.vanDriverCount || ''
-                              }
-                              placeholder="0"
-                              data-testid="input-edit-van-driver-count"
-                            />
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="edit-speaker-count">
-                              Speakers Needed
-                            </Label>
-                            <Input
-                              id="edit-speaker-count"
-                              name="speakerCount"
-                              type="number"
-                              defaultValue={
-                                selectedEventRequest.speakerCount || ''
-                              }
-                              placeholder="0"
-                              data-testid="input-edit-speaker-count"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="edit-volunteer-count">
-                              Volunteers Needed
-                            </Label>
-                            <Input
-                              id="edit-volunteer-count"
-                              name="volunteerCount"
-                              type="number"
-                              defaultValue={
-                                selectedEventRequest.volunteerCount || ''
-                              }
-                              placeholder="0"
-                              data-testid="input-edit-volunteer-count"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="edit-tsp-contact">TSP Contact</Label>
-                          <div className="space-y-2">
-                            <Select
-                              name="tspContact"
-                              defaultValue={
-                                selectedEventRequest.tspContact || ''
-                              }
-                            >
-                              <SelectTrigger className="bg-[#FBAD3F]/10 border-[#FBAD3F] focus:border-[#FBAD3F] focus:ring-[#FBAD3F]">
-                                <SelectValue placeholder="Select TSP contact or enter custom" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {users.map((user) => (
-                                  <SelectItem key={user.id} value={user.id}>
-                                    {`${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-                                      user.email ||
-                                      `User ${user.id}`}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="custom">
-                                  Custom Entry
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              id="edit-tsp-contact-custom"
-                              name="tspContactCustom"
-                              placeholder="Or enter custom contact name"
-                              className="bg-[#FBAD3F]/10 border-[#FBAD3F] focus:border-[#FBAD3F] focus:ring-[#FBAD3F]"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="edit-additional-requirements">
-                            Additional Requirements
-                          </Label>
-                          <Textarea
-                            id="edit-additional-requirements"
-                            name="additionalRequirements"
-                            defaultValue={
-                              selectedEventRequest.additionalRequirements || ''
-                            }
-                            placeholder="Any special requirements or notes..."
-                            rows={3}
-                            data-testid="textarea-edit-additional-requirements"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-organization">
-                          Organization Name
-                        </Label>
-                        <Input
-                          id="edit-organization"
-                          name="organizationName"
-                          defaultValue={
-                            selectedEventRequest.organizationName || ''
-                          }
-                          data-testid="input-edit-organization"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-department">Department</Label>
-                        <Input
-                          id="edit-department"
-                          name="department"
-                          defaultValue={selectedEventRequest.department || ''}
-                          data-testid="input-edit-department"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-previously-hosted">
-                          Previously Hosted
-                        </Label>
-                        <Select
-                          name="previouslyHosted"
-                          defaultValue={selectedEventRequest.previouslyHosted}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="yes">Yes</SelectItem>
-                            <SelectItem value="no">No</SelectItem>
-                            <SelectItem value="i_dont_know">
-                              I don't know
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-message">Message</Label>
-                        <Textarea
-                          id="edit-message"
-                          name="message"
-                          defaultValue={selectedEventRequest.message || ''}
-                          rows={4}
-                          data-testid="textarea-edit-message"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-notes">Planning Notes</Label>
-                        <Textarea
-                          id="edit-notes"
-                          name="planningNotes"
-                          defaultValue={
-                            selectedEventRequest.planningNotes || ''
-                          }
-                          rows={3}
-                          data-testid="textarea-edit-notes"
-                        />
-                      </div>
-
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setIsEditing(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="submit"
-                          disabled={updateEventRequestMutation.isPending}
-                          data-testid="button-save-changes"
-                        >
-                          {updateEventRequestMutation.isPending
-                            ? 'Saving...'
-                            : 'Save Changes'}
-                        </Button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex justify-between space-x-4">
-                  <div className="flex space-x-2">
-                    {selectedEventRequest.status === 'new' && (
-                      <Button
-                        onClick={() =>
-                          openToolkitSentDialog(selectedEventRequest)
-                        }
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                        data-testid="button-send-toolkit-dialog"
-                      >
-                        <Shield className="w-4 h-4 mr-2" />
-                        Send Toolkit
-                      </Button>
-                    )}
-
-                    {selectedEventRequest.status === 'completed' && (
-                      <Button
-                        onClick={() =>
-                          handleViewCollectionLog(selectedEventRequest)
-                        }
-                        className="bg-brand-primary hover:bg-brand-primary/90"
-                        data-testid="button-view-collections-dialog"
-                      >
-                        <TrendingUp className="w-4 h-4 mr-2" />
-                        View Collections
-                      </Button>
-                    )}
-
-                    {selectedEventRequest.status !== 'scheduled' && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setScheduleCallDate('');
-                          setScheduleCallTime('');
-                          setShowScheduleCallDialog(true);
-                        }}
-                        data-testid="button-schedule-call"
-                      >
-                        <Phone className="w-4 h-4 mr-2" />
-                        Schedule Call
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditing(!isEditing)}
-                      data-testid="button-edit-request"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      {isEditing ? 'Cancel Edit' : 'Edit'}
-                    </Button>
-
-                    {hasPermission(user, PERMISSIONS.DELETE_EVENT_REQUESTS) && (
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              'Are you sure you want to delete this event request?'
-                            )
-                          ) {
-                            deleteEventRequestMutation.mutate(
-                              selectedEventRequest.id
-                            );
-                          }
-                        }}
-                        data-testid="button-delete-request"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-                </div>
               </div>
             </DialogContent>
           </Dialog>
         )}
 
-        {/* Collection Log Modal */}
-        <EventCollectionLog
-          eventRequest={collectionLogEventRequest}
-          isVisible={showCollectionLog}
-          onClose={() => {
-            setShowCollectionLog(false);
-            setCollectionLogEventRequest(null);
-          }}
-        />
-
-        {/* Toolkit Sent Dialog */}
-        <ToolkitSentDialog
-          isOpen={showToolkitSentDialog}
-          onClose={() => {
-            setShowToolkitSentDialog(false);
-            setToolkitEventRequest(null);
-          }}
-          eventRequest={toolkitEventRequest}
-          onToolkitSent={handleToolkitSent}
-          isLoading={markToolkitSentMutation.isPending}
-        />
-
-        {/* Schedule Call Dialog */}
-        {showScheduleCallDialog && selectedEventRequest && (
-          <Dialog
-            open={showScheduleCallDialog}
-            onOpenChange={setShowScheduleCallDialog}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Schedule Call</DialogTitle>
-                <DialogDescription>
-                  Schedule a call with {selectedEventRequest.firstName}{' '}
-                  {selectedEventRequest.lastName} from{' '}
-                  {selectedEventRequest.organizationName}
-                </DialogDescription>
-              </DialogHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleScheduleCall();
-                }}
-              >
-                <div className="grid grid-cols-2 gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="schedule-date">Call Date</Label>
-                    <Input
-                      id="schedule-date"
-                      type="date"
-                      value={scheduleCallDate}
-                      onChange={(e) => setScheduleCallDate(e.target.value)}
-                      required
-                      className="mt-1"
-                      data-testid="input-scheduled-date"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="schedule-time">Call Time</Label>
-                    <Input
-                      id="schedule-time"
-                      type="time"
-                      value={scheduleCallTime}
-                      onChange={(e) => setScheduleCallTime(e.target.value)}
-                      required
-                      className="mt-1"
-                      data-testid="input-scheduled-time"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowScheduleCallDialog(false)}
-                    disabled={scheduleCallMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={scheduleCallMutation.isPending}
-                    data-testid="button-confirm-schedule-call"
-                  >
-                    {scheduleCallMutation.isPending
-                      ? 'Scheduling...'
-                      : 'Schedule Call'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Weekly Planning Modal */}
-        {showWeeklyPlanningModal && (
-          <Dialog
-            open={showWeeklyPlanningModal}
-            onOpenChange={setShowWeeklyPlanningModal}
-          >
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center space-x-2">
-                  <Calendar className="w-5 h-5 text-brand-primary" />
-                  <span>Weekly Planning & Sandwich Forecast</span>
-                </DialogTitle>
-                <DialogDescription>
-                  Plan upcoming events and view sandwich preparation forecasts
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <SandwichForecastWidget />
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Assignment Modal */}
-        {showAssignmentDialog && assignmentType && assignmentEventId && (
-          <Dialog
-            open={showAssignmentDialog}
-            onOpenChange={setShowAssignmentDialog}
-          >
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center space-x-2">
-                  <Users className="w-5 h-5" />
-                  <span>
-                    {updateEventRequestMutation.isPending
-                      ? `Assigning ${assignmentType}...`
-                      : `Assign ${assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}`}
-                  </span>
-                </DialogTitle>
-                <DialogDescription>
-                  {updateEventRequestMutation.isPending
-                    ? 'Please wait while we assign the person...'
-                    : `Select a ${assignmentType} for this event`}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="assignment-select">
-                    Choose {assignmentType}:
-                  </Label>
-                  <Select
-                    onValueChange={(value) => {
-                      // Find the person's name based on the selected value
-                      let personName = '';
-                      if (assignmentType === 'driver') {
-                        const driver = drivers.find(
-                          (d) => d.id.toString() === value
-                        );
-                        personName = driver ? driver.name : value; // Drivers use 'name' field
-                      } else if (assignmentType === 'speaker') {
-                        const user = users.find(
-                          (u) => u.id.toString() === value
-                        );
-                        personName = user
-                          ? `${user.firstName} ${user.lastName}`.trim()
-                          : value; // Users use firstName/lastName
-                      } else if (assignmentType === 'volunteer') {
-                        const volunteer = volunteers.find(
-                          (v) => v.id.toString() === value
-                        );
-                        personName = volunteer ? volunteer.name : value; // Volunteers use 'name' field
-                      }
-
-                      handleAssignment(value, personName);
-                    }}
-                    disabled={updateEventRequestMutation.isPending}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={`Select a ${assignmentType}...`}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assignmentType === 'driver' &&
-                        drivers
-                          .filter((driver) => driver && driver.name)
-                          .map((driver) => {
-                            return (
-                              <SelectItem
-                                key={driver.id}
-                                value={driver.id.toString()}
-                              >
-                                {driver.name}
-                              </SelectItem>
-                            );
-                          })}
-                      {assignmentType === 'speaker' &&
-                        users
-                          .filter(
-                            (user) => user && (user.firstName || user.lastName)
-                          )
-                          .map((user) => {
-                            const name =
-                              `${user.firstName || ''} ${user.lastName || ''}`.trim();
-                            const displayName = name || `User ${user.id}`;
-                            return (
-                              <SelectItem
-                                key={user.id}
-                                value={user.id.toString()}
-                              >
-                                {displayName}
-                              </SelectItem>
-                            );
-                          })}
-                      {assignmentType === 'volunteer' &&
-                        volunteers
-                          .filter((volunteer) => volunteer && volunteer.name)
-                          .map((volunteer) => {
-                            return (
-                              <SelectItem
-                                key={volunteer.id}
-                                value={volunteer.id.toString()}
-                              >
-                                {volunteer.name}
-                              </SelectItem>
-                            );
-                          })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAssignmentDialog(false);
-                    setAssignmentType(null);
-                    setAssignmentEventId(null);
-                  }}
-                  disabled={updateEventRequestMutation.isPending}
-                >
-                  Cancel
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
+        {/* Other modals and dialogs */}
       </div>
     </TooltipProvider>
   );
-}
+};
