@@ -3076,7 +3076,7 @@ export default function EventRequestsManagement() {
                         );
                         
                         // Process and clean the form data
-                        const updatedData = { ...rawData };
+                        const updatedData: any = { ...rawData };
                         
                         // Convert empty strings to null for integer fields
                         const integerFields = [
