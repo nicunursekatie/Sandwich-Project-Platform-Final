@@ -68,6 +68,7 @@ export default {
           'light-blue': '#47B3CB',
           'dark-gray': 'hsl(24 5% 38%)' /* #605251 */,
           'light-gray': 'hsl(0 0% 82%)' /* #D1D3D4 */,
+          navy: '#1A2332',
         },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',

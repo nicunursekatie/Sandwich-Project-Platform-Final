@@ -2219,7 +2219,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 1: Schedule & Location */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                        <h4 className="text-base font-semibold text-brand-navy flex items-center border-b border-gray-200 pb-2">
                                           <Calendar className="w-4 h-4 mr-2 text-brand-teal" />
                                           Schedule & Location
                                         </h4>
@@ -2326,8 +2326,8 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 2: Sandwich & Logistics */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
-                                          <span className="mr-2 text-brand-orange">🥪</span>
+                                        <h4 className="text-base font-semibold text-brand-navy flex items-center border-b border-gray-200 pb-2">
+                                          <span className="mr-2">🥪</span>
                                           Sandwich Details
                                         </h4>
                                         
@@ -2386,7 +2386,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 3: Staffing */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                        <h4 className="text-base font-semibold text-brand-navy flex items-center border-b border-gray-200 pb-2">
                                           <Users className="w-4 h-4 mr-2 text-brand-primary" />
                                           Staffing
                                         </h4>
@@ -2500,7 +2500,7 @@ export default function EventRequestsManagement() {
                                       <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
                                         {request.additionalRequirements && (
                                           <div>
-                                            <div className="text-base font-semibold mb-1 flex items-center" style={{color: '#1A2332'}}>
+                                            <div className="text-base font-semibold text-brand-navy mb-1 flex items-center">
                                               <AlertTriangle className="w-4 h-4 mr-1 text-brand-orange" />
                                               Additional Requirements
                                             </div>
@@ -2511,7 +2511,7 @@ export default function EventRequestsManagement() {
                                         )}
                                         
                                         <div>
-                                          <div className="text-base font-semibold mb-1 flex items-center justify-between" style={{color: '#1A2332'}}>
+                                          <div className="text-base font-semibold text-brand-navy mb-1 flex items-center justify-between">
                                             <span className="flex items-center">
                                               <FileText className="w-4 h-4 mr-1 text-brand-primary" />
                                               Planning Notes
