@@ -42,14 +42,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
-  // Setup temporary authentication (stable and crash-free)
-  const { setupTempAuth, isAuthenticated, initializeTempAuth } = await import(
-    './temp-auth'
-  );
-  setupTempAuth(app);
-
-  // Initialize with default admin user for persistent login
-  await initializeTempAuth();
+  // Import authentication middleware for legacy routes that still need it
+  const { isAuthenticated } = await import('./temp-auth');
 
   // Add activity logging middleware after authentication setup
   app.use(createActivityLogger({ storage }));
