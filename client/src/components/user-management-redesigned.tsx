@@ -102,6 +102,8 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string | null;
+  preferredEmail?: string | null;
   role: string;
   permissions: string[];
   isActive: boolean;
@@ -345,6 +347,8 @@ export default function UserManagementRedesigned() {
       email: string;
       firstName: string;
       lastName: string;
+      phoneNumber?: string;
+      preferredEmail?: string;
       role: string;
       isActive: boolean;
     }) => {
@@ -352,6 +356,8 @@ export default function UserManagementRedesigned() {
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
+        phoneNumber: data.phoneNumber,
+        preferredEmail: data.preferredEmail,
         role: data.role,
         isActive: data.isActive,
       });
@@ -399,6 +405,8 @@ export default function UserManagementRedesigned() {
       email: editUser.email,
       firstName: editUser.firstName,
       lastName: editUser.lastName,
+      phoneNumber: editUser.phoneNumber || undefined,
+      preferredEmail: editUser.preferredEmail || undefined,
       role: editUser.role,
       isActive: editUser.isActive,
     });
@@ -1425,6 +1433,32 @@ export default function UserManagementRedesigned() {
                       setEditUser({ ...editUser, lastName: e.target.value })
                     }
                     placeholder="Doe"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editPhoneNumber">Phone Number</Label>
+                  <Input
+                    id="editPhoneNumber"
+                    type="tel"
+                    value={editUser.phoneNumber || ''}
+                    onChange={(e) =>
+                      setEditUser({ ...editUser, phoneNumber: e.target.value })
+                    }
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editPreferredEmail">Preferred Email</Label>
+                  <Input
+                    id="editPreferredEmail"
+                    type="email"
+                    value={editUser.preferredEmail || ''}
+                    onChange={(e) =>
+                      setEditUser({ ...editUser, preferredEmail: e.target.value })
+                    }
+                    placeholder="preferred@example.com"
                   />
                 </div>
               </div>

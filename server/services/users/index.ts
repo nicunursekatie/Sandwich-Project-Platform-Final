@@ -43,6 +43,8 @@ export interface UserProfileData {
   email?: string;
   firstName?: string;
   lastName?: string;
+  phoneNumber?: string;
+  preferredEmail?: string;
   role?: string;
   isActive?: boolean;
 }
@@ -170,6 +172,10 @@ export class UserService implements IUserService {
         updateData.firstName = profileData.firstName;
       if (profileData.lastName !== undefined)
         updateData.lastName = profileData.lastName;
+      if (profileData.phoneNumber !== undefined)
+        updateData.phoneNumber = profileData.phoneNumber;
+      if (profileData.preferredEmail !== undefined)
+        updateData.preferredEmail = profileData.preferredEmail;
       if (profileData.role !== undefined) updateData.role = profileData.role;
       if (profileData.isActive !== undefined)
         updateData.isActive = profileData.isActive;

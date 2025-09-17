@@ -30,9 +30,11 @@ import {
   Clock,
   X,
   Shield,
+  Calendar,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EventRequest {
   id: number;
@@ -93,7 +95,9 @@ export function EventEmailComposer({
   const [content, setContent] = useState('');
   const [selectedAttachments, setSelectedAttachments] = useState<string[]>([]);
   const [isDraft, setIsDraft] = useState(false);
+  const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Fetch available documents
   const { data: documents = [] } = useQuery<Document[]>({
@@ -146,42 +150,56 @@ export function EventEmailComposer({
   useEffect(() => {
     if (isOpen && !content) {
       const eventDetails = formatEventDetails();
-      const template = `Hi ${eventRequest.firstName}!
+      
+      // Generate user signature dynamically
+      const userName = user?.firstName && user?.lastName 
+        ? `${user.firstName} ${user.lastName}`
+        : user?.email || 'The Sandwich Project Team';
+      
+      const userPhone = user?.phoneNumber || '';
+      const userEmail = user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
+      
+      // Build the scheduling section conditionally
+      const schedulingSection = includeSchedulingLink 
+        ? `Schedule a planning call to get your event on our calendar:
+🗓️ https://thesandwichproject.as.me/`
+        : '';
+      
+      const template = `Hi ${eventRequest.firstName},
 
-Thanks for reaching out and for your interest in making sandwiches for us! I've attached our complete toolkit to help you prepare for a successful sandwich-making event.
+Thanks for your interest in organizing a sandwich-making event! We're thrilled you want to help us feed our community—every sandwich makes a real difference in someone's day. Read through this email, then ${includeSchedulingLink ? 'schedule a call with us so we can' : 'we can'} get you on our event roster as soon as possible!
 
-Groups can hold their events any day of the week if they can make 200 or more sandwiches. We also use volunteer drivers to pick up deli sandwiches, so you don't have to transport them. Once you set a date for your event, we'd appreciate at least two weeks' notice to add you to our schedule.
+Here's how it works: Groups make 200+ sandwiches at their events—but you'd be surprised how quickly they come together when everyone's working as a team. Many of our groups make 500 or even 1,000 sandwiches in just a few hours. You can choose any day that works for your group.
 
-🔗 HELPFUL RESOURCES:
-
+Planning your budget:
 📊 Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
-Use this tool to calculate exactly how much food you'll need for your event!
+This tool lets you:
+• Enter your budget to see how many sandwiches you can make, OR
+• Enter your sandwich goal to see what it'll cost
+• Export a complete shopping list with quantities and supplies needed
 
-📋 Food Safety Guidelines & Sandwich Making Instructions (attached)
-- Deli Sandwich Making 101
-- PBJ Sandwich Making 101  
-- Food Safety Guidelines for Volunteers
+What you'll need for your event (the basics):
+• Food-safe gloves for all volunteers
+• Hair & beard nets for volunteers  
+• Indoor space for sandwich making
+• Refrigerator access (if making deli sandwiches)
 
-⚠️ IMPORTANT FOOD SAFETY REQUIREMENTS:
-• A refrigerator is necessary to make deli sandwiches so that meat, cheese, and sandwiches are always cold
-• Food-safe gloves must be worn at all times
-• Anyone with long hair must tie it back
-• Sandwiches must be made indoors
-• Do not use the heel of the bread loaf
+Next steps to book your event:
+• Review the attached food safety guidelines
+${schedulingSection ? '• ' + schedulingSection : ''}
 
-📅 NEXT STEP - Schedule Your Planning Call:
-Once you've reviewed everything, we'd love to schedule a brief planning call! Please use the link below to book a time within 2-3 business days:
+When choosing your event date, we prefer about 2 weeks' notice to schedule drivers, but we can usually accommodate tighter timelines.
 
-🗓️ Schedule a Call: https://thesandwichproject.as.me/
+Resources attached:
+• Sandwich-making instructions (PBJ and deli options)
+• Food safety guidelines
+• Sandwich labels (for day of event)
 
-We look forward to working with you to make a difference in our community!
+We really appreciate you taking the time to do this. Looking forward to working together!
 
-Best regards,
-Stephanie Luis
-The Sandwich Project
-📞 678.372.9024
-📧 info@thesandwichproject.org
-🌐 www.thesandwichproject.org`;
+Best,
+${userName}${userPhone ? '\n' + userPhone : ''}
+${userEmail}`;
 
       setContent(template);
       setSubject(
@@ -383,6 +401,74 @@ The Sandwich Project
               placeholder="Write your message here..."
               className="min-h-[300px] w-full resize-none"
             />
+          </div>
+          
+          {/* Scheduling Link Option */}
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <Checkbox
+              id="include-scheduling"
+              checked={includeSchedulingLink}
+              onCheckedChange={(checked) => {
+                setIncludeSchedulingLink(checked as boolean);
+                // Regenerate email content with updated scheduling link
+                const userName = user?.firstName && user?.lastName 
+                  ? `${user.firstName} ${user.lastName}`
+                  : user?.email || 'The Sandwich Project Team';
+                
+                const userPhone = user?.phoneNumber || '';
+                const userEmail = user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
+                
+                const schedulingSection = checked 
+                  ? `Schedule a planning call to get your event on our calendar:
+🗓️ https://thesandwichproject.as.me/`
+                  : '';
+                
+                const template = `Hi ${eventRequest.firstName},
+
+Thanks for your interest in organizing a sandwich-making event! We're thrilled you want to help us feed our community—every sandwich makes a real difference in someone's day. Read through this email, then ${checked ? 'schedule a call with us so we can' : 'we can'} get you on our event roster as soon as possible!
+
+Here's how it works: Groups make 200+ sandwiches at their events—but you'd be surprised how quickly they come together when everyone's working as a team. Many of our groups make 500 or even 1,000 sandwiches in just a few hours. You can choose any day that works for your group.
+
+Planning your budget:
+📊 Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+This tool lets you:
+• Enter your budget to see how many sandwiches you can make, OR
+• Enter your sandwich goal to see what it'll cost
+• Export a complete shopping list with quantities and supplies needed
+
+What you'll need for your event (the basics):
+• Food-safe gloves for all volunteers
+• Hair & beard nets for volunteers  
+• Indoor space for sandwich making
+• Refrigerator access (if making deli sandwiches)
+
+Next steps to book your event:
+• Review the attached food safety guidelines
+${schedulingSection ? '• ' + schedulingSection : ''}
+
+When choosing your event date, we prefer about 2 weeks' notice to schedule drivers, but we can usually accommodate tighter timelines.
+
+Resources attached:
+• Sandwich-making instructions (PBJ and deli options)
+• Food safety guidelines
+• Sandwich labels (for day of event)
+
+We really appreciate you taking the time to do this. Looking forward to working together!
+
+Best,
+${userName}${userPhone ? '\n' + userPhone : ''}
+${userEmail}`;
+
+                setContent(template);
+              }}
+            />
+            <Label 
+              htmlFor="include-scheduling" 
+              className="flex items-center gap-2 cursor-pointer text-sm"
+            >
+              <Calendar className="w-4 h-4 text-teal-600" />
+              Include scheduling link in the email
+            </Label>
           </div>
 
           {/* Attachments */}

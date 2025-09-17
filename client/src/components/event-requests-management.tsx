@@ -900,6 +900,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     speakersNeeded: 0,
     volunteersNeeded: false,
     tspContact: '',
+    schedulingNotes: '',
   });
 
   const [showContactInfo, setShowContactInfo] = useState(false);
@@ -929,6 +930,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         speakersNeeded: eventRequest.speakersNeeded || 0,
         volunteersNeeded: eventRequest.volunteersNeeded || false,
         tspContact: eventRequest.tspContact || '',
+        schedulingNotes: eventRequest.schedulingNotes || ''
       });
     }
   }, [isVisible, eventRequest]);
@@ -1248,6 +1250,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Scheduling Notes */}
+          <div>
+            <Label htmlFor="schedulingNotes">Notes (optional)</Label>
+            <Textarea
+              id="schedulingNotes"
+              value={formData.schedulingNotes}
+              onChange={(e) => setFormData(prev => ({ ...prev, schedulingNotes: e.target.value }))}
+              placeholder="Add any notes or special instructions for this scheduled event"
+              className="min-h-[100px]"
+            />
           </div>
 
           {/* Form Actions */}

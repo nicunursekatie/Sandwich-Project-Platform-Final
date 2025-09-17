@@ -37,6 +37,8 @@ export const users = pgTable('users', {
   lastName: varchar('last_name'),
   displayName: varchar('display_name'), // User-chosen display name for chat/activities
   profileImageUrl: varchar('profile_image_url'),
+  phoneNumber: varchar('phone_number'), // User's phone number for contact
+  preferredEmail: varchar('preferred_email'), // Preferred email for communications (defaults to login email)
   role: varchar('role').notNull().default('volunteer'), // 'admin', 'admin_coordinator', 'volunteer', 'viewer'
   permissions: jsonb('permissions').default('[]'), // Array of specific permissions
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
