@@ -2219,15 +2219,15 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 1: Schedule & Location */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold text-brand-teal flex items-center border-b border-brand-teal/20 pb-2">
-                                          <Calendar className="w-4 h-4 mr-2" />
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                          <Calendar className="w-4 h-4 mr-2 text-brand-teal" />
                                           Schedule & Location
                                         </h4>
                                         
                                         {/* Times in compact rows */}
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-600 text-sm">Start:</span>
+                                            <span className="text-gray-700 text-base font-medium">Start:</span>
                                             <div className="flex items-center space-x-1">
                                               <span className="font-semibold text-gray-900 text-base">
                                                 {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
@@ -2244,7 +2244,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-600 text-sm">End:</span>
+                                            <span className="text-gray-700 text-base font-medium">End:</span>
                                             <div className="flex items-center space-x-1">
                                               <span className="font-semibold text-gray-900 text-base">
                                                 {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
@@ -2261,7 +2261,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-600 text-sm">Pickup:</span>
+                                            <span className="text-gray-700 text-base font-medium">Pickup:</span>
                                             <div className="flex items-center space-x-1">
                                               <span className="font-semibold text-gray-900 text-base">
                                                 {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
@@ -2281,7 +2281,7 @@ export default function EventRequestsManagement() {
                                         {/* Address */}
                                         <div className="pt-2 border-t border-gray-100">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0">
-                                            <span className="text-gray-600 text-sm flex-shrink-0">Address:</span>
+                                            <span className="text-gray-700 text-base font-medium flex-shrink-0">Address:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'eventAddress' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -2326,28 +2326,28 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 2: Sandwich & Logistics */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold text-brand-orange flex items-center border-b border-brand-orange/20 pb-2">
-                                          <span className="mr-2">🥪</span>
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                          <span className="mr-2 text-brand-orange">🥪</span>
                                           Sandwich Details
                                         </h4>
                                         
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-600 text-sm">Types:</span>
-                                            <span className="font-semibold text-gray-900 text-sm text-right max-w-[150px] truncate">
+                                            <span className="text-gray-700 text-base font-medium">Types:</span>
+                                            <span className="font-semibold text-gray-900 text-base text-right max-w-[150px] truncate">
                                               {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                             </span>
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-gray-600 text-sm">Refrigeration:</span>
+                                            <span className="text-gray-700 text-base font-medium">Refrigeration:</span>
                                             <span className="font-semibold text-gray-900 text-base">
                                               {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
                                             </span>
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-gray-100">
-                                            <span className="text-gray-600 text-sm flex-shrink-0">Destination:</span>
+                                            <span className="text-gray-700 text-base font-medium flex-shrink-0">Destination:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -2386,14 +2386,14 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 3: Staffing */}
                                       <div className="space-y-3">
-                                        <h4 className="text-base font-semibold text-brand-primary flex items-center border-b border-brand-primary/20 pb-2">
-                                          <Users className="w-4 h-4 mr-2" />
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                          <Users className="w-4 h-4 mr-2 text-brand-primary" />
                                           Staffing
                                         </h4>
                                         
                                         <div className="space-y-2">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-600 text-sm flex-shrink-0">TSP Contact:</span>
+                                            <span className="text-gray-700 text-base font-medium flex-shrink-0">TSP Contact:</span>
                                             <div className="flex items-center space-x-1">
                                               {editingScheduledId === request.id && editingField === 'tspContact' ? (
                                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
@@ -2430,7 +2430,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-600 text-sm">Drivers:</span>
+                                            <span className="text-gray-700 text-base font-medium">Drivers:</span>
                                             <div className="flex items-center space-x-2">
                                               <span className="font-semibold text-gray-900 text-base">{request.driverCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
@@ -2443,7 +2443,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-600 text-sm">Speakers:</span>
+                                            <span className="text-gray-700 text-base font-medium">Speakers:</span>
                                             <div className="flex items-center space-x-2">
                                               <span className="font-semibold text-gray-900 text-base">{request.speakerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
@@ -2456,7 +2456,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-gray-600 text-sm">Volunteers:</span>
+                                            <span className="text-gray-700 text-base font-medium">Volunteers:</span>
                                             <div className="flex items-center space-x-2">
                                               <span className="font-semibold text-gray-900 text-base">{request.volunteerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
@@ -2500,8 +2500,8 @@ export default function EventRequestsManagement() {
                                       <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
                                         {request.additionalRequirements && (
                                           <div>
-                                            <div className="text-sm font-semibold text-brand-orange mb-1 flex items-center">
-                                              <AlertTriangle className="w-4 h-4 mr-1" />
+                                            <div className="text-base font-semibold mb-1 flex items-center" style={{color: '#1A2332'}}>
+                                              <AlertTriangle className="w-4 h-4 mr-1 text-brand-orange" />
                                               Additional Requirements
                                             </div>
                                             <p className="text-sm text-gray-700 bg-brand-orange/10 p-2 rounded border-l-4 border-brand-orange/30">
@@ -2511,9 +2511,9 @@ export default function EventRequestsManagement() {
                                         )}
                                         
                                         <div>
-                                          <div className="text-sm font-semibold text-brand-primary mb-1 flex items-center justify-between">
+                                          <div className="text-base font-semibold mb-1 flex items-center justify-between" style={{color: '#1A2332'}}>
                                             <span className="flex items-center">
-                                              <FileText className="w-4 h-4 mr-1" />
+                                              <FileText className="w-4 h-4 mr-1 text-brand-primary" />
                                               Planning Notes
                                             </span>
                                             {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
