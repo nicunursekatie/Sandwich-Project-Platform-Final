@@ -2032,26 +2032,16 @@ export default function EventRequestsManagement() {
                           <CardContent className="p-6">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 space-y-4">
-                                {/* Date - Prominent at top */}
-                                {request.desiredEventDate && (
-                                  <div className="flex items-center space-x-2 mb-4">
-                                    <Calendar className="w-6 h-6 text-brand-primary" />
-                                    <span
-                                      className={`text-xl font-bold text-brand-primary ${dateInfo.className}`}
-                                    >
-                                      {dateInfo.text}
-                                    </span>
+                                {/* Organization Name - Most Prominent */}
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center space-x-3 flex-1">
+                                    <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
+                                    <h2 className="text-2xl font-bold text-brand-primary leading-tight">
+                                      {request.organizationName}
+                                    </h2>
                                   </div>
-                                )}
-
-                                {/* Organization and Status */}
-                                <div className="flex items-center space-x-3">
-                                  <StatusIcon className="w-6 h-6 text-brand-primary" />
-                                  <h3 className="text-xl font-bold text-brand-primary">
-                                    {request.organizationName}
-                                  </h3>
                                   <Badge
-                                    className={`${statusColors[request.status]} text-sm font-semibold px-3 py-1`}
+                                    className={`${statusColors[request.status]} text-sm font-bold px-4 py-2 rounded-full uppercase tracking-wide flex-shrink-0 ml-3`}
                                   >
                                     {
                                       statusOptions.find(
@@ -2061,30 +2051,47 @@ export default function EventRequestsManagement() {
                                   </Badge>
                                 </div>
 
+                                {/* Event Date - Secondary Prominence */}
+                                {request.desiredEventDate && (
+                                  <div className="flex items-center space-x-3 mb-4 bg-gray-50 p-3 rounded-lg border-l-4 border-brand-primary">
+                                    <Calendar className="w-5 h-5 text-brand-primary" />
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                                        Event Date
+                                      </span>
+                                      <div
+                                        className={`text-lg font-semibold ${dateInfo.className}`}
+                                      >
+                                        {dateInfo.text}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Contact Information - Grouped for In Process, inline for others */}
                                 {request.status === 'in_process' ? (
-                                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 max-w-md">
-                                    <h4 className="text-sm font-semibold text-brand-teal mb-2 flex items-center">
-                                      <User className="w-4 h-4 mr-2 text-brand-teal" />
+                                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 max-w-md">
+                                    <h4 className="text-xs font-bold text-blue-900 mb-3 flex items-center uppercase tracking-wider">
+                                      <User className="w-4 h-4 mr-2 text-blue-600" />
                                       Contact Information
                                     </h4>
-                                    <div className="space-y-2 text-sm">
-                                      <div className="flex items-center space-x-2">
-                                        <User className="w-3 h-3 text-brand-teal" />
-                                        <span className="font-medium text-brand-primary">
+                                    <div className="space-y-3">
+                                      <div className="flex items-center space-x-3">
+                                        <User className="w-4 h-4 text-blue-600" />
+                                        <span className="font-bold text-blue-900 text-base">
                                           {request.firstName} {request.lastName}
                                         </span>
                                       </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Mail className="w-3 h-3 text-brand-teal" />
-                                        <span className="font-medium text-brand-primary text-xs">
+                                      <div className="flex items-center space-x-3">
+                                        <Mail className="w-4 h-4 text-blue-600" />
+                                        <span className="font-medium text-blue-700 text-sm">
                                           {request.email}
                                         </span>
                                       </div>
                                       {request.phone && (
-                                        <div className="flex items-center space-x-2">
-                                          <Phone className="w-3 h-3 text-brand-teal" />
-                                          <span className="font-medium text-brand-primary">
+                                        <div className="flex items-center space-x-3">
+                                          <Phone className="w-4 h-4 text-blue-600" />
+                                          <span className="font-medium text-blue-700 text-sm">
                                             {request.phone}
                                           </span>
                                         </div>
@@ -2092,30 +2099,46 @@ export default function EventRequestsManagement() {
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-base">
-                                    <div className="flex items-center space-x-3">
+                                  <div className="space-y-3">
+                                    {/* Contact Person - Prominent */}
+                                    <div className="flex items-center space-x-3 bg-white p-3 rounded-lg border border-gray-200">
                                       <User className="w-5 h-5 text-brand-teal" />
-                                      <span className="font-medium text-brand-primary">
-                                        {request.firstName} {request.lastName}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                      <Mail className="w-5 h-5 text-brand-teal" />
-                                      <span className="font-medium text-brand-primary">{request.email}</span>
-                                    </div>
-                                    {request.phone && (
-                                      <div className="flex items-center space-x-3">
-                                        <Phone className="w-5 h-5 text-brand-teal" />
-                                        <span className="font-medium text-brand-primary">{request.phone}</span>
+                                      <div>
+                                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                          Contact Person
+                                        </div>
+                                        <div className="font-bold text-brand-primary text-lg">
+                                          {request.firstName} {request.lastName}
+                                        </div>
                                       </div>
-                                    )}
+                                    </div>
+                                    
+                                    {/* Contact Details - Secondary */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      <div className="flex items-center space-x-3 text-sm">
+                                        <Mail className="w-4 h-4 text-gray-500" />
+                                        <span className="font-medium text-gray-700">{request.email}</span>
+                                      </div>
+                                      {request.phone && (
+                                        <div className="flex items-center space-x-3 text-sm">
+                                          <Phone className="w-4 h-4 text-gray-500" />
+                                          <span className="font-medium text-gray-700">{request.phone}</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Sandwich Count - Highlighted */}
                                     {request.estimatedSandwichCount && (
-                                      <div className="flex items-center space-x-3">
-                                        <span className="text-lg">🥪</span>
-                                        <span className="font-semibold text-brand-orange">
-                                          {request.status === 'completed' ? 'Est.' : '~'}{request.estimatedSandwichCount}{' '}
-                                          sandwiches
-                                        </span>
+                                      <div className="flex items-center space-x-3 bg-orange-50 p-3 rounded-lg border border-orange-200">
+                                        <span className="text-2xl">🥪</span>
+                                        <div>
+                                          <div className="text-xs font-medium text-orange-600 uppercase tracking-wide">
+                                            {request.status === 'completed' ? 'Estimated' : 'Requested'}
+                                          </div>
+                                          <div className="font-bold text-brand-orange text-lg">
+                                            {request.estimatedSandwichCount} sandwiches
+                                          </div>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
