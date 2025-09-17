@@ -2262,7 +2262,7 @@ export default function EventRequestsManagement() {
                                               )}
                                             </div>
                                             <div className="flex items-center space-x-3">
-                                              <span className="text-[#236383] text-lg font-bold">End:</span>
+                                              <span className="text-[#236383] text-base font-semibold">End:</span>
                                               <div className="flex items-center space-x-1">
                                                 <span className="font-bold text-[#1A2332] text-xl">
                                                   {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
@@ -2281,7 +2281,7 @@ export default function EventRequestsManagement() {
                                           
                                           {/* Pickup time on separate line below */}
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#236383] text-lg font-bold">Pickup:</span>
+                                            <span className="text-[#236383] text-base font-semibold">Pickup:</span>
                                             <div className="flex items-center space-x-1">
                                               <span className="font-bold text-[#1A2332] text-xl">
                                                 {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
@@ -2346,28 +2346,28 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 2: Sandwich & Logistics */}
                                       <div className="space-y-2 bg-[#fff8f0] p-3 rounded-lg border border-[#FBAD3F]/20">
-                                        <h4 className="text-lg font-bold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <span className="mr-2 text-xl">🥪</span>
                                           Sandwich Details
                                         </h4>
                                         
                                         <div className="space-y-2">
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#FBAD3F] text-lg font-bold">Types:</span>
+                                            <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
                                             <span className="font-bold text-[#1A2332] text-xl text-right max-w-[150px] truncate">
                                               {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                             </span>
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#47B3CB] text-lg font-bold">Refrigeration:</span>
+                                            <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
                                             <span className="font-bold text-[#1A2332] text-xl">
                                               {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
                                             </span>
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-gray-100">
-                                            <span className="text-[#FBAD3F] text-lg font-bold flex-shrink-0">Destination:</span>
+                                            <span className="text-[#FBAD3F] text-base font-semibold flex-shrink-0">Destination:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -2406,14 +2406,14 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 3: Staffing */}
                                       <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
-                                        <h4 className="text-lg font-bold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
+                                        <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <Users className="w-5 h-5 mr-2 text-brand-primary" />
                                           Staffing
                                         </h4>
                                         
                                         <div className="space-y-2">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-lg font-bold flex-shrink-0">TSP Contact:</span>
+                                            <span className="text-[#007E8C] text-base font-semibold flex-shrink-0">TSP Contact:</span>
                                             <div className="flex items-center space-x-1">
                                               {editingScheduledId === request.id && editingField === 'tspContact' ? (
                                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
@@ -2450,7 +2450,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-lg font-bold">Drivers:</span>
+                                            <span className="text-[#007E8C] text-base font-semibold">Drivers:</span>
                                             <div className="flex items-center space-x-2">
                                               <span className="font-semibold text-[#1A2332] text-lg">{request.driverCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
@@ -2463,7 +2463,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-lg font-bold">Speakers:</span>
+                                            <span className="text-[#007E8C] text-base font-semibold">Speakers:</span>
                                             <div className="flex items-center space-x-2">
                                               <span className="font-semibold text-[#1A2332] text-lg">{request.speakerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
@@ -2476,7 +2476,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-lg font-bold">Volunteers:</span>
+                                            <span className="text-[#007E8C] text-base font-semibold">Volunteers:</span>
                                             <div className="flex items-center space-x-2">
                                               <span className="font-semibold text-[#1A2332] text-lg">{request.volunteerCount || 0}</span>
                                               <Button size="sm" variant="outline" className="text-sm px-3 py-1" onClick={(e) => {
