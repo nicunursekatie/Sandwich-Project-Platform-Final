@@ -2217,7 +2217,7 @@ export default function EventRequestsManagement() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                       
                                       {/* Column 1: Schedule & Location */}
-                                      <div className="space-y-3">
+                                      <div className="space-y-3 bg-[#f0f8fa] p-4 rounded-lg border border-[#236383]/20">
                                         <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <Calendar className="w-4 h-4 mr-2 text-brand-teal" />
                                           Schedule & Location
@@ -2324,7 +2324,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                       
                                       {/* Column 2: Sandwich & Logistics */}
-                                      <div className="space-y-3">
+                                      <div className="space-y-3 bg-[#fff8f0] p-4 rounded-lg border border-[#FBAD3F]/20">
                                         <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <span className="mr-2">🥪</span>
                                           Sandwich Details
@@ -2346,7 +2346,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-gray-100">
-                                            <span className="text-gray-700 text-base font-medium flex-shrink-0">Destination:</span>
+                                            <span className="text-[#FBAD3F] text-base font-medium flex-shrink-0">Destination:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -2384,7 +2384,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                       
                                       {/* Column 3: Staffing */}
-                                      <div className="space-y-3">
+                                      <div className="space-y-3 bg-[#f0f6f8] p-4 rounded-lg border border-[#007E8C]/20">
                                         <h4 className="text-base font-semibold flex items-center border-b border-gray-200 pb-2" style={{color: '#1A2332'}}>
                                           <Users className="w-4 h-4 mr-2 text-brand-primary" />
                                           Staffing
