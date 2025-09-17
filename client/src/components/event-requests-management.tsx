@@ -2707,7 +2707,8 @@ export default function EventRequestsManagement() {
                                         setSelectedEventRequest(request);
                                         setShowToolkitDialog(true);
                                       }}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                      className="text-white"
+                                      style={{ backgroundColor: '#007E8C' }}
                                       data-testid={`button-send-toolkit-${request.id}`}
                                     >
                                       <Shield className="w-4 h-4 mr-2" />
@@ -2741,7 +2742,8 @@ export default function EventRequestsManagement() {
                                         setSelectedEventRequest(request);
                                         handleStatusChange(request.id, 'scheduled');
                                       }}
-                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      className="text-white"
+                                      style={{ backgroundColor: '#47B3CB' }}
                                       data-testid={`button-mark-scheduled-${request.id}`}
                                     >
                                       <Calendar className="w-4 h-4 mr-2" />
@@ -2813,7 +2815,8 @@ export default function EventRequestsManagement() {
                                         
                                         alert(message);
                                       }}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                      className="text-white"
+                                      style={{ backgroundColor: '#236383' }}
                                       data-testid={`button-contact-${request.id}`}
                                     >
                                       <Phone className="w-4 h-4 mr-2" />
@@ -2848,7 +2851,8 @@ export default function EventRequestsManagement() {
                                         // TODO: Implement 1-day follow-up functionality
                                         alert("1-day follow-up feature will be implemented");
                                       }}
-                                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                                      className="text-white"
+                                      style={{ backgroundColor: '#FBAD3F' }}
                                       data-testid={`button-followup-1day-${request.id}`}
                                     >
                                       <Clock className="w-4 h-4 mr-2" />
@@ -2863,7 +2867,8 @@ export default function EventRequestsManagement() {
                                         // TODO: Implement 1-month follow-up functionality
                                         alert("1-month follow-up feature will be implemented");
                                       }}
-                                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                                      className="text-white"
+                                      style={{ backgroundColor: '#1A2332' }}
                                       data-testid={`button-followup-1month-${request.id}`}
                                     >
                                       <Calendar className="w-4 h-4 mr-2" />
@@ -2897,7 +2902,8 @@ export default function EventRequestsManagement() {
                                         setSelectedEventRequest(request);
                                         handleStatusChange(request.id, 'new');
                                       }}
-                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      className="text-white"
+                                      style={{ backgroundColor: '#47B3CB' }}
                                       data-testid={`button-reschedule-${request.id}`}
                                     >
                                       <RotateCcw className="w-4 h-4 mr-2" />
@@ -2941,11 +2947,278 @@ export default function EventRequestsManagement() {
               <div className="space-y-6">
                 {!isEditing ? (
                   <>
-                    {/* Read-only view content here */}
+                    {/* Read-only view - comprehensive event details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-base font-medium text-gray-900">Contact Information</h3>
+                          <div className="mt-2 space-y-2">
+                            <p><span className="font-medium">Name:</span> {selectedEventRequest.firstName} {selectedEventRequest.lastName}</p>
+                            <p><span className="font-medium">Email:</span> {selectedEventRequest.email}</p>
+                            <p><span className="font-medium">Phone:</span> {selectedEventRequest.phone}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-base font-medium text-gray-900">Event Details</h3>
+                          <div className="mt-2 space-y-2">
+                            <p><span className="font-medium">Organization:</span> {selectedEventRequest.organizationName}</p>
+                            <p><span className="font-medium">Desired Date:</span> {selectedEventRequest.desiredEventDate}</p>
+                            <p><span className="font-medium">Status:</span> <Badge className={statusColors[selectedEventRequest.status]}>{selectedEventRequest.status}</Badge></p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-base font-medium text-gray-900">Event Logistics</h3>
+                          <div className="mt-2 space-y-2">
+                            <p><span className="font-medium">Start Time:</span> {selectedEventRequest.startTime || 'Not set'}</p>
+                            <p><span className="font-medium">End Time:</span> {selectedEventRequest.endTime || 'Not set'}</p>
+                            <p><span className="font-medium">Pickup Time:</span> {selectedEventRequest.pickupTime || 'Not set'}</p>
+                            <p><span className="font-medium">Address:</span> {selectedEventRequest.eventAddress || 'Not set'}</p>
+                            <p><span className="font-medium">Destination:</span> {selectedEventRequest.sandwichDestination || 'Not set'}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-base font-medium text-gray-900">Additional Details</h3>
+                          <div className="mt-2 space-y-2">
+                            <p><span className="font-medium">TSP Contact:</span> {selectedEventRequest.tspContact || 'Not assigned'}</p>
+                            <p><span className="font-medium">Sandwich Types:</span> {selectedEventRequest.sandwichTypes || 'Not specified'}</p>
+                            <p><span className="font-medium">Refrigeration:</span> {selectedEventRequest.refrigeration || 'Not specified'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {selectedEventRequest.planningNotes && (
+                      <div>
+                        <h3 className="text-base font-medium text-gray-900">Planning Notes</h3>
+                        <p className="mt-2 text-sm text-gray-700 bg-gray-50 p-3 rounded">{selectedEventRequest.planningNotes}</p>
+                      </div>
+                    )}
+                    {selectedEventRequest.message && (
+                      <div>
+                        <h3 className="text-base font-medium text-gray-900">Original Message</h3>
+                        <p className="mt-2 text-sm text-gray-700 bg-blue-50 p-3 rounded border-l-4 border-blue-400">{selectedEventRequest.message}</p>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
-                    {/* Edit mode content here */}
+                    {/* Edit mode - comprehensive form */}
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      // Handle form submission
+                      updateEventRequestMutation.mutate({
+                        id: selectedEventRequest.id,
+                        data: {
+                          firstName: (e.target as any).firstName.value,
+                          lastName: (e.target as any).lastName.value,
+                          email: (e.target as any).email.value,
+                          phone: (e.target as any).phone.value,
+                          organizationName: (e.target as any).organizationName.value,
+                          desiredEventDate: (e.target as any).desiredEventDate.value,
+                          startTime: (e.target as any).startTime.value,
+                          endTime: (e.target as any).endTime.value,
+                          pickupTime: (e.target as any).pickupTime.value,
+                          eventAddress: (e.target as any).eventAddress.value,
+                          sandwichDestination: (e.target as any).sandwichDestination.value,
+                          tspContact: (e.target as any).tspContact.value,
+                          sandwichTypes: (e.target as any).sandwichTypes.value,
+                          refrigeration: (e.target as any).refrigeration.value,
+                          planningNotes: (e.target as any).planningNotes.value,
+                          status: (e.target as any).status.value
+                        }
+                      });
+                      setIsEditing(false);
+                    }} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="text-base font-medium text-gray-900 mb-3">Contact Information</h3>
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="firstName">First Name</Label>
+                                <Input
+                                  id="firstName"
+                                  name="firstName"
+                                  defaultValue={selectedEventRequest.firstName}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="lastName">Last Name</Label>
+                                <Input
+                                  id="lastName"
+                                  name="lastName"
+                                  defaultValue={selectedEventRequest.lastName}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                  id="email"
+                                  name="email"
+                                  type="email"
+                                  defaultValue={selectedEventRequest.email}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="phone">Phone</Label>
+                                <Input
+                                  id="phone"
+                                  name="phone"
+                                  defaultValue={selectedEventRequest.phone}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-base font-medium text-gray-900 mb-3">Event Details</h3>
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="organizationName">Organization Name</Label>
+                                <Input
+                                  id="organizationName"
+                                  name="organizationName"
+                                  defaultValue={selectedEventRequest.organizationName}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="desiredEventDate">Desired Event Date</Label>
+                                <Input
+                                  id="desiredEventDate"
+                                  name="desiredEventDate"
+                                  type="date"
+                                  defaultValue={selectedEventRequest.desiredEventDate}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="status">Status</Label>
+                                <Select name="status" defaultValue={selectedEventRequest.status}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="new">New</SelectItem>
+                                    <SelectItem value="in_process">In Process</SelectItem>
+                                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="declined">Declined</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="text-base font-medium text-gray-900 mb-3">Event Logistics</h3>
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="startTime">Start Time</Label>
+                                <Input
+                                  id="startTime"
+                                  name="startTime"
+                                  type="time"
+                                  defaultValue={selectedEventRequest.startTime}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="endTime">End Time</Label>
+                                <Input
+                                  id="endTime"
+                                  name="endTime"
+                                  type="time"
+                                  defaultValue={selectedEventRequest.endTime}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="pickupTime">Pickup Time</Label>
+                                <Input
+                                  id="pickupTime"
+                                  name="pickupTime"
+                                  type="time"
+                                  defaultValue={selectedEventRequest.pickupTime}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="eventAddress">Event Address</Label>
+                                <Input
+                                  id="eventAddress"
+                                  name="eventAddress"
+                                  defaultValue={selectedEventRequest.eventAddress}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="sandwichDestination">Sandwich Destination</Label>
+                                <Input
+                                  id="sandwichDestination"
+                                  name="sandwichDestination"
+                                  defaultValue={selectedEventRequest.sandwichDestination}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-base font-medium text-gray-900 mb-3">Additional Details</h3>
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="tspContact">TSP Contact</Label>
+                                <Input
+                                  id="tspContact"
+                                  name="tspContact"
+                                  defaultValue={selectedEventRequest.tspContact}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="sandwichTypes">Sandwich Types</Label>
+                                <Input
+                                  id="sandwichTypes"
+                                  name="sandwichTypes"
+                                  defaultValue={selectedEventRequest.sandwichTypes}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="refrigeration">Refrigeration</Label>
+                                <Input
+                                  id="refrigeration"
+                                  name="refrigeration"
+                                  defaultValue={selectedEventRequest.refrigeration}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="planningNotes">Planning Notes</Label>
+                        <Textarea
+                          id="planningNotes"
+                          name="planningNotes"
+                          defaultValue={selectedEventRequest.planningNotes}
+                          rows={4}
+                          placeholder="Add planning notes..."
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-3 pt-4 border-t">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsEditing(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          className="text-white"
+                          style={{ backgroundColor: '#236383' }}
+                        >
+                          Save Changes
+                        </Button>
+                      </div>
+                    </form>
                   </>
                 )}
               </div>
