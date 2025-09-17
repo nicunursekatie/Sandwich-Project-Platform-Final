@@ -2202,633 +2202,676 @@ export default function EventRequestsManagement() {
 
                                 {/* Comprehensive Event Details for Scheduled Events */}
                                 {request.status === 'scheduled' && (
-                                  <div className="mt-4 space-y-4">
-                                    {/* Event Date & Location */}
-                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                      <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center">
-                                        <Calendar className="w-4 h-4 mr-2" />
-                                        Event Schedule & Location
-                                      </h4>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="flex items-start space-x-3">
-                                          <Calendar className="w-5 h-5 text-blue-600 mt-1" />
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                              Event Date
-                                            </div>
-                                            <div className="text-xl font-bold text-gray-900">
-                                              {request.desiredEventDate
-                                                ? formatEventDate(
-                                                    request.desiredEventDate
-                                                  ).text
-                                                : 'Not specified'}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-start space-x-3">
-                                          <Clock className="w-5 h-5 text-blue-600 mt-1" />
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                              Start Time
-                                            </div>
-                                            <div className="text-xl font-bold text-gray-900">
-                                              {request.eventStartTime
-                                                ? formatTime12Hour(
-                                                    request.eventStartTime
-                                                  )
-                                                : 'Not specified'}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-start space-x-3">
-                                          <Clock className="w-5 h-5 text-blue-600 mt-1" />
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                              End Time
-                                            </div>
-                                            <div className="text-xl font-bold text-gray-900">
-                                              {request.eventEndTime
-                                                ? formatTime12Hour(
-                                                    request.eventEndTime
-                                                  )
-                                                : 'Not specified'}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-start space-x-3">
-                                          <Truck className="w-5 h-5 text-blue-600 mt-1" />
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                              Pickup Time
-                                            </div>
-                                            <div className="text-xl font-bold text-gray-900">
-                                              {request.pickupTime
-                                                ? formatTime12Hour(
-                                                    request.pickupTime
-                                                  )
-                                                : 'Not specified'}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-start space-x-3">
-                                          <MapPin className="w-5 h-5 text-blue-600 mt-1" />
-                                          {editingScheduledId === request.id &&
-                                          editingField === 'eventAddress' ? (
-                                            <div className="flex items-center space-x-2 flex-1">
-                                              <Input
-                                                value={editingValue}
-                                                onChange={(e) =>
-                                                  setEditingValue(
-                                                    e.target.value
-                                                  )
-                                                }
-                                                className="text-sm"
-                                                placeholder="Enter event address"
-                                              />
-                                              <Button
-                                                size="sm"
-                                                onClick={saveEdit}
-                                                disabled={
-                                                  updateScheduledFieldMutation.isPending
-                                                }
-                                              >
-                                                <CheckCircle className="w-4 h-4" />
-                                              </Button>
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={cancelEdit}
-                                              >
-                                                <X className="w-4 h-4" />
-                                              </Button>
-                                            </div>
-                                          ) : (
-                                            <div className="flex items-start space-x-2 flex-1">
-                                              <div className="flex-1">
-                                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                                  Event Address
-                                                </div>
-                                                <div className="text-lg font-bold text-gray-900">
-                                                  {request.eventAddress ? (
-                                                    <a
-                                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                      className="text-blue-600 hover:text-blue-800 underline"
-                                                    >
-                                                      {request.eventAddress}
-                                                    </a>
-                                                  ) : (
-                                                    <span className="text-gray-500">
-                                                      Not specified
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              </div>
-                                              {hasPermission(
-                                                user,
-                                                PERMISSIONS.EVENT_REQUESTS_EDIT
-                                              ) && (
-                                                <Button
-                                                  size="sm"
-                                                  variant="ghost"
-                                                  onClick={() =>
-                                                    startEditing(
-                                                      request.id,
-                                                      'eventAddress',
-                                                      request.eventAddress || ''
-                                                    )
-                                                  }
-                                                  className="h-6 w-6 p-0 mt-1"
-                                                >
-                                                  <Edit className="w-3 h-3" />
-                                                </Button>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex items-start space-x-3">
-                                          <span className="text-blue-600 text-xl mt-1">
-                                            ❄️
-                                          </span>
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                              Refrigeration
-                                            </div>
-                                            <div className="text-xl font-bold text-gray-900">
-                                              {request.hasRefrigeration === true
-                                                ? 'Yes'
-                                                : request.hasRefrigeration ===
-                                                    false
-                                                  ? 'No'
-                                                  : 'Unknown'}
-                                            </div>
-                                          </div>
-                                        </div>
+                                  <div className="mt-6 space-y-6">
+                                    {/* Event Schedule & Location - Redesigned */}
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                                      <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
+                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                          <Calendar className="w-5 h-5 text-blue-600 mr-3" />
+                                          Event Schedule & Location
+                                        </h3>
                                       </div>
-                                    </div>
-
-                                    {/* Sandwich Details */}
-                                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                                      <h4 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
-                                        <span className="text-lg mr-2">🥪</span>
-                                        Sandwich Planning
-                                      </h4>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="flex items-start space-x-3">
-                                          <span className="text-green-600 text-xl mt-1">
-                                            📊
-                                          </span>
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                              Total Sandwiches
+                                      <div className="p-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                              <Calendar className="w-5 h-5 text-blue-600" />
                                             </div>
-                                            <div className="text-2xl font-bold text-gray-900">
-                                              {request.estimatedSandwichCount || (
-                                                <span className="text-gray-500 text-lg">
-                                                  Not specified
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-start space-x-3">
-                                          <span className="text-green-600 text-xl mt-1">
-                                            🏷️
-                                          </span>
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                              Types
-                                            </div>
-                                            <div className="text-lg font-bold text-gray-900">
-                                              {request.sandwichTypes ? (
-                                                getSandwichTypesSummary(request)
-                                                  .breakdown
-                                              ) : (
-                                                <span className="text-gray-500">
-                                                  Not specified
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-start space-x-3 md:col-span-2">
-                                          <span className="text-green-600 text-xl mt-1">
-                                            📍
-                                          </span>
-                                          {editingScheduledId === request.id &&
-                                          editingField ===
-                                            'sandwichDestination' ? (
-                                            <div className="flex items-center space-x-2 flex-1">
-                                              <Input
-                                                value={editingValue}
-                                                onChange={(e) =>
-                                                  setEditingValue(
-                                                    e.target.value
-                                                  )
-                                                }
-                                                className="text-sm"
-                                                placeholder="Enter sandwich destination"
-                                              />
-                                              <Button
-                                                size="sm"
-                                                onClick={saveEdit}
-                                                disabled={
-                                                  updateScheduledFieldMutation.isPending
-                                                }
-                                              >
-                                                <CheckCircle className="w-4 h-4" />
-                                              </Button>
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={cancelEdit}
-                                              >
-                                                <X className="w-4 h-4" />
-                                              </Button>
-                                            </div>
-                                          ) : (
-                                            <div className="flex items-start space-x-2 flex-1">
-                                              <div className="flex-1">
-                                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                                  Destination
-                                                </div>
-                                                <div className="text-lg font-bold text-gray-900">
-                                                  {resolveRecipientName(
-                                                    request.sandwichDestination
-                                                  ) || (
-                                                    <span className="text-gray-500">
-                                                      Not specified
-                                                    </span>
-                                                  )}
-                                                </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                                Event Date
                                               </div>
-                                              {hasPermission(
-                                                user,
-                                                PERMISSIONS.EVENT_REQUESTS_EDIT
-                                              ) && (
-                                                <Button
-                                                  size="sm"
-                                                  variant="ghost"
-                                                  onClick={() =>
-                                                    startEditing(
-                                                      request.id,
-                                                      'sandwichDestination',
-                                                      request.sandwichDestination ||
-                                                        ''
+                                              <div className="text-lg font-semibold text-gray-900">
+                                                {request.desiredEventDate
+                                                  ? formatEventDate(
+                                                      request.desiredEventDate
+                                                    ).text
+                                                  : <span className="text-gray-500">Not specified</span>}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                              <Clock className="w-5 h-5 text-blue-600" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                                Start Time
+                                              </div>
+                                              <div className="text-lg font-semibold text-gray-900">
+                                                {request.eventStartTime
+                                                  ? formatTime12Hour(
+                                                      request.eventStartTime
                                                     )
-                                                  }
-                                                  className="h-6 w-6 p-0 mt-1"
-                                                >
-                                                  <Edit className="w-3 h-3" />
-                                                </Button>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Staffing & Assignments */}
-                                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                                      <h4 className="text-sm font-semibold text-purple-900 mb-3 flex items-center">
-                                        <Users className="w-4 h-4 mr-2" />
-                                        Staffing & Assignments
-                                      </h4>
-                                      <div className="space-y-3">
-                                        {/* TSP Contact */}
-                                        <div className="flex items-start space-x-3 mb-4">
-                                          <UserCheck className="w-5 h-5 text-purple-600 mt-1" />
-                                          {editingScheduledId === request.id &&
-                                          editingField === 'tspContact' ? (
-                                            <div className="flex items-center space-x-2 flex-1">
-                                              <div className="flex-1">
-                                                <TaskAssigneeSelector
-                                                  value={{
-                                                    assigneeName: editingValue,
-                                                  }}
-                                                  onChange={(value) => {
-                                                    // Always save the human-readable name, not the user ID
-                                                    setEditingValue(
-                                                      value.assigneeName || ''
-                                                    );
-                                                  }}
-                                                  placeholder="Select TSP contact"
-                                                />
+                                                  : <span className="text-gray-500">Not specified</span>}
                                               </div>
-                                              <Button
-                                                size="sm"
-                                                onClick={saveEdit}
-                                                disabled={
-                                                  updateScheduledFieldMutation.isPending
-                                                }
-                                              >
-                                                <CheckCircle className="w-4 h-4" />
-                                              </Button>
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={cancelEdit}
-                                              >
-                                                <X className="w-4 h-4" />
-                                              </Button>
                                             </div>
-                                          ) : (
-                                            <div className="flex items-start space-x-2 flex-1">
-                                              <div className="flex-1">
-                                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                                  TSP Contact
-                                                </div>
-                                                <div className="text-xl font-bold text-gray-900">
-                                                  {resolveUserName(
-                                                    request.tspContact
-                                                  ) || (
-                                                    <span className="text-gray-500 text-lg">
-                                                      Not assigned
-                                                    </span>
-                                                  )}
-                                                </div>
+                                          </div>
+                                          
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                              <Clock className="w-5 h-5 text-blue-600" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                                End Time
                                               </div>
-                                              {hasPermission(
-                                                user,
-                                                PERMISSIONS.EVENT_REQUESTS_EDIT
-                                              ) && (
-                                                <Button
-                                                  size="sm"
-                                                  variant="ghost"
-                                                  onClick={() =>
-                                                    startEditing(
-                                                      request.id,
-                                                      'tspContact',
-                                                      resolveUserName(
-                                                        request.tspContact
+                                              <div className="text-lg font-semibold text-gray-900">
+                                                {request.eventEndTime
+                                                  ? formatTime12Hour(
+                                                      request.eventEndTime
+                                                    )
+                                                  : <span className="text-gray-500">Not specified</span>}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                              <Truck className="w-5 h-5 text-blue-600" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                                Pickup Time
+                                              </div>
+                                              <div className="text-lg font-semibold text-gray-900">
+                                                {request.pickupTime
+                                                  ? formatTime12Hour(
+                                                      request.pickupTime
+                                                    )
+                                                  : <span className="text-gray-500">Not specified</span>}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="md:col-span-2">
+                                            <div className="flex items-start space-x-4">
+                                              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <MapPin className="w-5 h-5 text-blue-600" />
+                                              </div>
+                                              {editingScheduledId === request.id &&
+                                              editingField === 'eventAddress' ? (
+                                                <div className="flex items-center space-x-3 flex-1">
+                                                  <Input
+                                                    value={editingValue}
+                                                    onChange={(e) =>
+                                                      setEditingValue(
+                                                        e.target.value
                                                       )
-                                                    )
-                                                  }
-                                                  className="h-6 w-6 p-0 mt-1"
-                                                >
-                                                  <Edit className="w-3 h-3" />
-                                                </Button>
+                                                    }
+                                                    className="text-sm"
+                                                    placeholder="Enter event address"
+                                                  />
+                                                  <Button
+                                                    size="sm"
+                                                    onClick={saveEdit}
+                                                    disabled={
+                                                      updateScheduledFieldMutation.isPending
+                                                    }
+                                                  >
+                                                    <CheckCircle className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={cancelEdit}
+                                                  >
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-start space-x-3 flex-1">
+                                                  <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium text-gray-600 mb-1">
+                                                      Event Address
+                                                    </div>
+                                                    <div className="text-base text-gray-900">
+                                                      {request.eventAddress ? (
+                                                        <a
+                                                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="text-blue-600 hover:text-blue-800 underline font-medium"
+                                                        >
+                                                          {request.eventAddress}
+                                                        </a>
+                                                      ) : (
+                                                        <span className="text-gray-500">
+                                                          Not specified
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                  {hasPermission(
+                                                    user,
+                                                    PERMISSIONS.EVENT_REQUESTS_EDIT
+                                                  ) && (
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      onClick={() =>
+                                                        startEditing(
+                                                          request.id,
+                                                          'eventAddress',
+                                                          request.eventAddress || ''
+                                                        )
+                                                      }
+                                                      className="h-8 w-8 p-0 flex-shrink-0"
+                                                    >
+                                                      <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                  )}
+                                                </div>
                                               )}
                                             </div>
-                                          )}
-                                        </div>
-
-                                        {/* Drivers */}
-                                        <div className="space-y-3 mb-4">
-                                          <div className="flex items-start space-x-3">
-                                            <Truck className="w-5 h-5 text-purple-600 mt-1" />
-                                            <div className="flex-1">
-                                              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                                Drivers Needed
+                                          </div>
+                                          
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                              <span className="text-blue-600 text-lg">❄️</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                                Refrigeration
                                               </div>
-                                              <div className="text-xl font-bold text-gray-900">
-                                                {request.driverCount || 0}
-                                                {request.vanNeeded && (
-                                                  <span className="ml-3 text-purple-600 text-base font-medium">
-                                                    (Van needed)
+                                              <div className="text-lg font-semibold text-gray-900">
+                                                {request.hasRefrigeration === true
+                                                  ? 'Yes'
+                                                  : request.hasRefrigeration === false
+                                                    ? 'No'
+                                                    : <span className="text-gray-500">Unknown</span>}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Sandwich Planning - Redesigned */}
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                                      <div className="bg-green-50 px-6 py-4 border-b border-green-100">
+                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                          <span className="text-xl mr-3">🥪</span>
+                                          Sandwich Planning
+                                        </h3>
+                                      </div>
+                                      <div className="p-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                              <span className="text-green-600 text-lg">📊</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                                Total Sandwiches
+                                              </div>
+                                              <div className="text-2xl font-bold text-gray-900">
+                                                {request.estimatedSandwichCount || (
+                                                  <span className="text-gray-500 text-lg">
+                                                    Not specified
                                                   </span>
                                                 )}
                                               </div>
                                             </div>
                                           </div>
-                                          {request.vanNeeded &&
-                                            request.vanDriverCount &&
-                                            request.vanDriverCount > 0 && (
-                                              <div className="ml-6">
-                                                <div className="text-sm font-semibold text-purple-600">
-                                                  Van Drivers
+                                          
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                              <span className="text-green-600 text-lg">🏷️</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm font-medium text-gray-600 mb-1">
+                                                Types
+                                              </div>
+                                              <div className="text-base text-gray-900 font-medium">
+                                                {request.sandwichTypes ? (
+                                                  getSandwichTypesSummary(request)
+                                                    .breakdown
+                                                ) : (
+                                                  <span className="text-gray-500">
+                                                    Not specified
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="md:col-span-2">
+                                            <div className="flex items-start space-x-4">
+                                              <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                                <span className="text-green-600 text-lg">📍</span>
+                                              </div>
+                                              {editingScheduledId === request.id &&
+                                              editingField === 'sandwichDestination' ? (
+                                                <div className="flex items-center space-x-3 flex-1">
+                                                  <Input
+                                                    value={editingValue}
+                                                    onChange={(e) =>
+                                                      setEditingValue(
+                                                        e.target.value
+                                                      )
+                                                    }
+                                                    className="text-sm"
+                                                    placeholder="Enter sandwich destination"
+                                                  />
+                                                  <Button
+                                                    size="sm"
+                                                    onClick={saveEdit}
+                                                    disabled={
+                                                      updateScheduledFieldMutation.isPending
+                                                    }
+                                                  >
+                                                    <CheckCircle className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={cancelEdit}
+                                                  >
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
                                                 </div>
-                                                <div className="text-purple-800 font-medium text-base">
-                                                  {request.vanDriverCount}
+                                              ) : (
+                                                <div className="flex items-start space-x-3 flex-1">
+                                                  <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium text-gray-600 mb-1">
+                                                      Destination
+                                                    </div>
+                                                    <div className="text-base text-gray-900 font-medium">
+                                                      {resolveRecipientName(
+                                                        request.sandwichDestination
+                                                      ) || (
+                                                        <span className="text-gray-500">
+                                                          Not specified
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                  {hasPermission(
+                                                    user,
+                                                    PERMISSIONS.EVENT_REQUESTS_EDIT
+                                                  ) && (
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      onClick={() =>
+                                                        startEditing(
+                                                          request.id,
+                                                          'sandwichDestination',
+                                                          request.sandwichDestination ||
+                                                            ''
+                                                        )
+                                                      }
+                                                      className="h-8 w-8 p-0 flex-shrink-0"
+                                                    >
+                                                      <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                  )}
                                                 </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Staffing & Assignments - Redesigned */}
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                                      <div className="bg-purple-50 px-6 py-4 border-b border-purple-100">
+                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                          <Users className="w-5 h-5 text-purple-600 mr-3" />
+                                          Staffing & Assignments
+                                        </h3>
+                                      </div>
+                                      <div className="p-6">
+                                        <div className="space-y-6">
+                                          {/* TSP Contact */}
+                                          <div className="flex items-start space-x-4">
+                                            <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                              <UserCheck className="w-5 h-5 text-purple-600" />
+                                            </div>
+                                            {editingScheduledId === request.id &&
+                                            editingField === 'tspContact' ? (
+                                              <div className="flex items-center space-x-3 flex-1">
+                                                <div className="flex-1">
+                                                  <TaskAssigneeSelector
+                                                    value={{
+                                                      assigneeName: editingValue,
+                                                    }}
+                                                    onChange={(value) => {
+                                                      // Always save the human-readable name, not the user ID
+                                                      setEditingValue(
+                                                        value.assigneeName || ''
+                                                      );
+                                                    }}
+                                                    placeholder="Select TSP contact"
+                                                  />
+                                                </div>
+                                                <Button
+                                                  size="sm"
+                                                  onClick={saveEdit}
+                                                  disabled={
+                                                    updateScheduledFieldMutation.isPending
+                                                  }
+                                                >
+                                                  <CheckCircle className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={cancelEdit}
+                                                >
+                                                  <X className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-start space-x-3 flex-1">
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="text-sm font-medium text-gray-600 mb-1">
+                                                    TSP Contact
+                                                  </div>
+                                                  <div className="text-lg font-semibold text-gray-900">
+                                                    {resolveUserName(
+                                                      request.tspContact
+                                                    ) || (
+                                                      <span className="text-gray-500">
+                                                        Not assigned
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                                {hasPermission(
+                                                  user,
+                                                  PERMISSIONS.EVENT_REQUESTS_EDIT
+                                                ) && (
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() =>
+                                                      startEditing(
+                                                        request.id,
+                                                        'tspContact',
+                                                        resolveUserName(
+                                                          request.tspContact
+                                                        )
+                                                      )
+                                                    }
+                                                    className="h-8 w-8 p-0 flex-shrink-0"
+                                                  >
+                                                    <Edit className="w-4 h-4" />
+                                                  </Button>
+                                                )}
                                               </div>
                                             )}
-                                          {request.driverAssignments &&
-                                          request.driverAssignments.length >
-                                            0 ? (
-                                            <div className="ml-6">
-                                              <span className="text-xs text-purple-600">
-                                                Assigned:
-                                              </span>
-                                              <div className="flex flex-wrap gap-1 mt-1">
-                                                {request.driverAssignments.map(
-                                                  (driver, index) => (
-                                                    <span
-                                                      key={index}
-                                                      className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded"
-                                                    >
-                                                      {driver}
-                                                    </span>
-                                                  )
-                                                )}
-                                              </div>
-                                            </div>
-                                          ) : (
-                                            <div className="ml-6">
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="text-xs"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  openAssignmentDialog(
-                                                    request.id,
-                                                    'driver'
-                                                  );
-                                                }}
-                                              >
-                                                Assign Driver
-                                              </Button>
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* Speakers */}
-                                        <div className="space-y-3">
-                                          <div className="flex items-start space-x-3">
-                                            <Megaphone className="w-5 h-5 text-purple-600 mt-1" />
-                                            <div className="flex-1">
-                                              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                                Speakers Needed
-                                              </div>
-                                              <div className="text-xl font-bold text-gray-900">
-                                                {request.speakerCount || 0}
-                                              </div>
-                                            </div>
                                           </div>
-                                          {request.speakerAssignments &&
-                                          request.speakerAssignments.length >
-                                            0 ? (
-                                            <div className="ml-6">
-                                              <span className="text-xs text-purple-600">
-                                                Assigned:
-                                              </span>
-                                              <div className="flex flex-wrap gap-1 mt-1">
-                                                {request.speakerAssignments.map(
-                                                  (speaker, index) => (
-                                                    <span
-                                                      key={index}
-                                                      className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded"
-                                                    >
-                                                      {speaker}
-                                                    </span>
-                                                  )
-                                                )}
-                                              </div>
-                                            </div>
-                                          ) : (
-                                            <div className="ml-6">
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="text-xs"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  openAssignmentDialog(
-                                                    request.id,
-                                                    'speaker'
-                                                  );
-                                                }}
-                                              >
-                                                Assign Speaker
-                                              </Button>
-                                            </div>
-                                          )}
-                                        </div>
 
-                                        {/* Volunteers */}
-                                        <div className="space-y-2">
-                                          <div className="flex items-center space-x-2">
-                                            <Users className="w-4 h-4 text-purple-600" />
-                                            <div>
-                                              <div className="text-base font-bold text-purple-800">
-                                                Volunteers Needed
+                                          {/* Drivers */}
+                                          <div className="space-y-4">
+                                            <div className="flex items-start space-x-4">
+                                              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                                <Truck className="w-5 h-5 text-purple-600" />
                                               </div>
-                                              <div className="text-purple-900 font-medium text-base">
-                                                {request.volunteerCount || 0}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          {request.volunteerAssignments &&
-                                          request.volunteerAssignments.length >
-                                            0 ? (
-                                            <div className="ml-6">
-                                              <span className="text-xs text-purple-600">
-                                                Assigned:
-                                              </span>
-                                              <div className="flex flex-wrap gap-1 mt-1">
-                                                {request.volunteerAssignments.map(
-                                                  (volunteer, index) => (
-                                                    <span
-                                                      key={index}
-                                                      className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded"
-                                                    >
-                                                      {volunteer}
+                                              <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-medium text-gray-600 mb-1">
+                                                  Drivers Needed
+                                                </div>
+                                                <div className="text-lg font-semibold text-gray-900">
+                                                  {request.driverCount || 0}
+                                                  {request.vanNeeded && (
+                                                    <span className="ml-2 text-purple-600 text-sm font-medium">
+                                                      (Van needed)
                                                     </span>
-                                                  )
-                                                )}
+                                                  )}
+                                                </div>
+                                                {request.vanNeeded &&
+                                                  request.vanDriverCount &&
+                                                  request.vanDriverCount > 0 && (
+                                                    <div className="mt-2">
+                                                      <div className="text-sm font-medium text-purple-600">
+                                                        Van Drivers: {request.vanDriverCount}
+                                                      </div>
+                                                    </div>
+                                                  )}
                                               </div>
                                             </div>
-                                          ) : (
-                                            <div className="ml-6">
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="text-xs"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  openAssignmentDialog(
-                                                    request.id,
-                                                    'volunteer'
-                                                  );
-                                                }}
-                                              >
-                                                Assign Volunteer
-                                              </Button>
+                                            {request.driverAssignments &&
+                                            request.driverAssignments.length > 0 ? (
+                                              <div className="ml-14">
+                                                <div className="text-sm font-medium text-gray-600 mb-2">
+                                                  Assigned:
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                  {request.driverAssignments.map(
+                                                    (driver, index) => (
+                                                      <span
+                                                        key={index}
+                                                        className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium"
+                                                      >
+                                                        {driver}
+                                                      </span>
+                                                    )
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="ml-14">
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  className="text-sm"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openAssignmentDialog(
+                                                      request.id,
+                                                      'driver'
+                                                    );
+                                                  }}
+                                                >
+                                                  Assign Driver
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Speakers */}
+                                          <div className="space-y-4">
+                                            <div className="flex items-start space-x-4">
+                                              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                                <Megaphone className="w-5 h-5 text-purple-600" />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-medium text-gray-600 mb-1">
+                                                  Speakers Needed
+                                                </div>
+                                                <div className="text-lg font-semibold text-gray-900">
+                                                  {request.speakerCount || 0}
+                                                </div>
+                                              </div>
                                             </div>
-                                          )}
+                                            {request.speakerAssignments &&
+                                            request.speakerAssignments.length > 0 ? (
+                                              <div className="ml-14">
+                                                <div className="text-sm font-medium text-gray-600 mb-2">
+                                                  Assigned:
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                  {request.speakerAssignments.map(
+                                                    (speaker, index) => (
+                                                      <span
+                                                        key={index}
+                                                        className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium"
+                                                      >
+                                                        {speaker}
+                                                      </span>
+                                                    )
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="ml-14">
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  className="text-sm"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openAssignmentDialog(
+                                                      request.id,
+                                                      'speaker'
+                                                    );
+                                                  }}
+                                                >
+                                                  Assign Speaker
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Volunteers */}
+                                          <div className="space-y-4">
+                                            <div className="flex items-start space-x-4">
+                                              <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                                <Users className="w-5 h-5 text-purple-600" />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-medium text-gray-600 mb-1">
+                                                  Volunteers Needed
+                                                </div>
+                                                <div className="text-lg font-semibold text-gray-900">
+                                                  {request.volunteerCount || 0}
+                                                </div>
+                                              </div>
+                                            </div>
+                                            {request.volunteerAssignments &&
+                                            request.volunteerAssignments.length > 0 ? (
+                                              <div className="ml-14">
+                                                <div className="text-sm font-medium text-gray-600 mb-2">
+                                                  Assigned:
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                  {request.volunteerAssignments.map(
+                                                    (volunteer, index) => (
+                                                      <span
+                                                        key={index}
+                                                        className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium"
+                                                      >
+                                                        {volunteer}
+                                                      </span>
+                                                    )
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="ml-14">
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  className="text-sm"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openAssignmentDialog(
+                                                      request.id,
+                                                      'volunteer'
+                                                    );
+                                                  }}
+                                                >
+                                                  Assign Volunteer
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
 
                                     {/* Additional Requirements */}
                                     {request.additionalRequirements && (
-                                      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                                        <h4 className="text-sm font-semibold text-yellow-900 mb-2 flex items-center">
-                                          <AlertTriangle className="w-4 h-4 mr-2" />
-                                          Additional Requirements
-                                        </h4>
-                                        <p className="text-sm text-yellow-800">
-                                          {request.additionalRequirements}
-                                        </p>
+                                      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                                        <div className="bg-amber-50 px-6 py-4 border-b border-amber-100">
+                                          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                            <AlertTriangle className="w-5 h-5 text-amber-600 mr-3" />
+                                            Additional Requirements
+                                          </h3>
+                                        </div>
+                                        <div className="p-6">
+                                          <p className="text-base text-gray-800">
+                                            {request.additionalRequirements}
+                                          </p>
+                                        </div>
                                       </div>
                                     )}
 
                                     {/* Planning Notes */}
-                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                      <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        Planning Notes
-                                        {hasPermission(
-                                          user,
-                                          PERMISSIONS.EVENT_REQUESTS_EDIT
-                                        ) && (
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                              startEditing(
-                                                request.id,
-                                                'planningNotes',
-                                                request.planningNotes || ''
-                                              )
-                                            }
-                                            className="h-6 w-6 p-0 ml-2"
-                                          >
-                                            <Edit className="w-3 h-3" />
-                                          </Button>
-                                        )}
-                                      </h4>
-                                      {editingScheduledId === request.id &&
-                                      editingField === 'planningNotes' ? (
-                                        <div className="space-y-2">
-                                          <Textarea
-                                            value={editingValue}
-                                            onChange={(e) =>
-                                              setEditingValue(e.target.value)
-                                            }
-                                            className="text-sm"
-                                            placeholder="Enter planning notes"
-                                            rows={3}
-                                          />
-                                          <div className="flex space-x-2">
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                                      <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                                        <div className="flex items-center justify-between">
+                                          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                            <FileText className="w-5 h-5 text-gray-600 mr-3" />
+                                            Planning Notes
+                                          </h3>
+                                          {hasPermission(
+                                            user,
+                                            PERMISSIONS.EVENT_REQUESTS_EDIT
+                                          ) && (
                                             <Button
                                               size="sm"
-                                              onClick={saveEdit}
-                                              disabled={
-                                                updateScheduledFieldMutation.isPending
+                                              variant="ghost"
+                                              onClick={() =>
+                                                startEditing(
+                                                  request.id,
+                                                  'planningNotes',
+                                                  request.planningNotes || ''
+                                                )
                                               }
+                                              className="h-8 w-8 p-0"
                                             >
-                                              <CheckCircle className="w-4 h-4 mr-1" />
-                                              Save
+                                              <Edit className="w-4 h-4" />
                                             </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={cancelEdit}
-                                            >
-                                              <X className="w-4 h-4 mr-1" />
-                                              Cancel
-                                            </Button>
-                                          </div>
+                                          )}
                                         </div>
-                                      ) : (
-                                        <p className="text-sm text-gray-700">
-                                          {request.planningNotes ||
-                                            'No planning notes'}
-                                        </p>
-                                      )}
+                                      </div>
+                                      <div className="p-6">
+                                        {editingScheduledId === request.id &&
+                                        editingField === 'planningNotes' ? (
+                                          <div className="space-y-4">
+                                            <Textarea
+                                              value={editingValue}
+                                              onChange={(e) =>
+                                                setEditingValue(e.target.value)
+                                              }
+                                              className="text-sm"
+                                              placeholder="Enter planning notes"
+                                              rows={3}
+                                            />
+                                            <div className="flex space-x-3">
+                                              <Button
+                                                size="sm"
+                                                onClick={saveEdit}
+                                                disabled={
+                                                  updateScheduledFieldMutation.isPending
+                                                }
+                                              >
+                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                Save
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={cancelEdit}
+                                              >
+                                                <X className="w-4 h-4 mr-2" />
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <p className="text-base text-gray-800">
+                                            {request.planningNotes ||
+                                              <span className="text-gray-500">No planning notes</span>}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
 
                                     {/* Edit Details Button */}
