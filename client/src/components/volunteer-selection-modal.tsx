@@ -93,9 +93,18 @@ export function VolunteerSelectionModal({
   });
 
   const getUserDisplayName = (user: User) => {
-    return user.firstName && user.lastName
-      ? `${user.firstName} ${user.lastName}`
-      : user.displayName || user.email || 'Unknown User';
+    // If we have both first and last names, use them
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    
+    // If we have a displayName, check if it looks like an email
+    if (user.displayName && !user.displayName.includes('@')) {
+      return user.displayName;
+    }
+    
+    // Default fallback for missing names or email-like displayNames
+    return 'Unknown User';
   };
 
   const toggleVolunteerSelection = (volunteerId: string) => {
@@ -227,11 +236,6 @@ export function VolunteerSelectionModal({
                                   <div className="font-medium">
                                     {getUserDisplayName(user)}
                                   </div>
-                                  {user.email && (
-                                    <div className="text-sm text-gray-500">
-                                      {user.email}
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                               {isSelected && (
@@ -273,11 +277,6 @@ export function VolunteerSelectionModal({
                                   <div className="font-medium">
                                     {driver.name}
                                   </div>
-                                  {driver.email && (
-                                    <div className="text-sm text-gray-500">
-                                      {driver.email}
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                               {isSelected && (

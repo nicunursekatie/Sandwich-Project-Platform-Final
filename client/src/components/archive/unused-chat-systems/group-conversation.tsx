@@ -104,7 +104,10 @@ export function GroupConversation({ groupId, groupName, groupDescription, onBack
         return `${userFound.firstName} ${userFound.lastName}`;
       }
       if (userFound.firstName) return userFound.firstName;
-      if (userFound.email) return userFound.email.split('@')[0];
+      // If we have a displayName, check if it looks like an email
+      if (userFound.displayName && !userFound.displayName.includes('@')) {
+        return userFound.displayName;
+      }
     }
     return 'Member';
   };

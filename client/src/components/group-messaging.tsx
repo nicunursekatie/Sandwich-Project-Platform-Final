@@ -15,12 +15,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useMessageReads } from "@/hooks/useMessageReads";
 import { MessageCircle, Plus, Users, Send, Crown, Trash2, UserPlus, Edit, MoreVertical, Archive, LogOut, VolumeX, Eye, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import type { MessageGroup, InsertMessageGroup, GroupMembership, Message, User } from "@shared/schema";
+import type { Message, User } from "@shared/schema";
 import { PERMISSIONS } from "@shared/auth-utils";
 
-interface GroupWithMembers extends MessageGroup {
+interface GroupWithMembers {
+  id: number;
+  name: string;
+  description: string;
   memberCount: number;
   userRole: string;
+  isActive: boolean;
+  createdAt: string | Date;
+  createdBy: string;
   members?: Array<{
     userId: string;
     role: string;
@@ -60,9 +66,16 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
   const getUserDisplayName = (userId: string) => {
     const userFound = (allUsers || []).find((u: any) => u.id === userId);
     if (userFound) {
-      if (userFound.displayName) return userFound.displayName;
+      // If we have both first and last names, use them
+      if (userFound.firstName && userFound.lastName) {
+        return `${userFound.firstName} ${userFound.lastName}`;
+      }
+      // If we have just first name, use it
       if (userFound.firstName) return userFound.firstName;
-      if (userFound.email) return userFound.email.split('@')[0];
+      // If we have a displayName, check if it looks like an email
+      if (userFound.displayName && !userFound.displayName.includes('@')) {
+        return userFound.displayName;
+      }
     }
     return 'Member';
   };
@@ -187,7 +200,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
 
   // Create new group mutation
   const createGroupMutation = useMutation({
-    mutationFn: async (data: InsertMessageGroup & { memberIds: string[] }) => {
+    mutationFn: async (data: { name: string; description: string; createdBy: string; memberIds: string[] }) => {
       const response = await fetch("/api/message-groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -843,7 +856,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-sm">{getUserDisplayName(message.userId)}</span>
                             <span className="text-xs text-gray-500">
-                              {new Date(message.createdAt).toLocaleTimeString()}
+                              {new Date(message.createdAt || new Date()).toLocaleTimeString()}
                             </span>
                             {canEditMessage(message) && (
                               <DropdownMenu>
@@ -911,7 +924,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
             </ScrollArea>
 
             {/* Message input */}
-            <div className="p-4 border-t bg-white"
+            <div className="p-4 border-t bg-white">
               <div className="flex gap-2">
                 <Input
                   value={newMessage}

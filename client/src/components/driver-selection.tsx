@@ -11,7 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import {
   User,
   Phone,
-  Mail,
   Truck,
   MapPin,
   Clock,
@@ -322,12 +321,6 @@ export function DriverSelection({
                           )}
                         </div>
 
-                        {driver.email && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Mail className="h-3 w-3" />
-                            {driver.email}
-                          </div>
-                        )}
 
                         {driver.phone && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">

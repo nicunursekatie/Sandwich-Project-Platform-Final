@@ -50,9 +50,16 @@ export default function CoreTeamChat() {
   const getUserDisplayName = (userId: string) => {
     const userFound = (allUsers as any[]).find((u: any) => u.id === userId);
     if (userFound) {
-      if (userFound.displayName) return userFound.displayName;
+      // If we have both first and last names, use them
+      if (userFound.firstName && userFound.lastName) {
+        return `${userFound.firstName} ${userFound.lastName}`;
+      }
+      // If we have just first name, use it
       if (userFound.firstName) return userFound.firstName;
-      if (userFound.email) return userFound.email.split('@')[0];
+      // If we have a displayName, check if it looks like an email
+      if (userFound.displayName && !userFound.displayName.includes('@')) {
+        return userFound.displayName;
+      }
     }
     return 'Team Member';
   };
@@ -313,7 +320,9 @@ export default function CoreTeamChat() {
   // Group messages by relative time periods using filtered displayedMessages
   const groupedMessages = displayedMessages.reduce(
     (groups: { [key: string]: ChatMessage[] }, message) => {
-      const timestamp = message.createdAt || new Date().toISOString();
+      const timestamp = message.createdAt 
+        ? (message.createdAt instanceof Date ? message.createdAt.toISOString() : message.createdAt)
+        : new Date().toISOString();
       const timeLabel = getRelativeTimeLabel(timestamp);
       if (!groups[timeLabel]) {
         groups[timeLabel] = [];

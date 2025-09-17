@@ -358,8 +358,7 @@ export default function EventVolunteerSignup({
                                     key={driver.id}
                                     value={driver.id.toString()}
                                   >
-                                    {driver.name}{' '}
-                                    {driver.email && `(${driver.email})`}
+                                    {driver.name}
                                   </SelectItem>
                                 ))}
                             </SelectContent>
@@ -539,8 +538,7 @@ export default function EventVolunteerSignup({
                                     key={driver.id}
                                     value={driver.id.toString()}
                                   >
-                                    {driver.name}{' '}
-                                    {driver.email && `(${driver.email})`}
+                                    {driver.name}
                                   </SelectItem>
                                 ))}
                             </SelectContent>
