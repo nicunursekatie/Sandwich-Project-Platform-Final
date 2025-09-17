@@ -2144,7 +2144,7 @@ export default function EventRequestsManagement() {
                                             {request.phone && (
                                               <div className="flex items-center space-x-1">
                                                 <Phone className="w-3 h-3 text-gray-500" />
-                                                <span className="font-medium text-gray-700 text-xs">
+                                                <span className="font-medium text-gray-700 text-sm">
                                                   {request.phone}
                                                 </span>
                                               </div>
@@ -2152,7 +2152,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           <div className="flex items-center space-x-2">
                                             <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                            <span className="font-medium text-gray-700 text-xs truncate">
+                                            <span className="font-medium text-gray-700 text-sm truncate">
                                               {request.email}
                                             </span>
                                           </div>
