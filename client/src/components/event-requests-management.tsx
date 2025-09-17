@@ -2003,14 +2003,6 @@ export default function EventRequestsManagement() {
                                           </span>
                                         </div>
                                       )}
-                                      {request.estimatedSandwichCount && (
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-sm">🥪</span>
-                                          <span className="font-semibold text-brand-orange text-sm">
-                                            ~{request.estimatedSandwichCount} sandwiches
-                                          </span>
-                                        </div>
-                                      )}
                                     </div>
                                   </div>
                                 ) : (
@@ -2088,7 +2080,7 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Calendar className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-sm font-semibold text-blue-700">Event Date</div>
+                                            <div className="text-base font-bold text-blue-800">Event Date</div>
                                             <div className="text-blue-900 font-medium text-base">
                                               {request.desiredEventDate ? formatEventDate(request.desiredEventDate).text : 'Not specified'}
                                             </div>
@@ -2097,7 +2089,7 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Clock className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-sm font-semibold text-blue-700">Start Time</div>
+                                            <div className="text-base font-bold text-blue-800">Start Time</div>
                                             <div className="text-blue-900 font-medium text-base">
                                               {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not specified'}
                                             </div>
@@ -2106,7 +2098,7 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Clock className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-sm font-semibold text-blue-700">End Time</div>
+                                            <div className="text-base font-bold text-blue-800">End Time</div>
                                             <div className="text-blue-900 font-medium text-base">
                                               {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not specified'}
                                             </div>
@@ -2115,7 +2107,7 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <Truck className="w-4 h-4 text-blue-600" />
                                           <div>
-                                            <div className="text-sm font-semibold text-blue-700">Pickup Time</div>
+                                            <div className="text-base font-bold text-blue-800">Pickup Time</div>
                                             <div className="text-blue-900 font-medium text-base">
                                               {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not specified'}
                                             </div>
@@ -2141,7 +2133,7 @@ export default function EventRequestsManagement() {
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-sm font-semibold text-blue-700">Event Address</div>
+                                                <div className="text-base font-bold text-blue-800">Event Address</div>
                                                 <div className="text-blue-900 font-medium text-base">
                                                   {request.eventAddress ? (
                                                     <a
@@ -2171,7 +2163,7 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <span className="text-blue-600">❄️</span>
                                           <div>
-                                            <div className="text-sm font-semibold text-blue-700">Refrigeration</div>
+                                            <div className="text-base font-bold text-blue-800">Refrigeration</div>
                                             <div className="text-blue-900 font-medium text-base">
                                               {request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown'}
                                             </div>
@@ -2190,7 +2182,7 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <span className="text-green-600">📊</span>
                                           <div>
-                                            <div className="text-sm font-semibold text-green-700">Total Sandwiches</div>
+                                            <div className="text-base font-bold text-green-800">Total Sandwiches</div>
                                             <div className="text-green-900 font-medium text-base">
                                               {request.estimatedSandwichCount || 'Not specified'}
                                             </div>
@@ -2199,7 +2191,7 @@ export default function EventRequestsManagement() {
                                         <div className="flex items-center space-x-2">
                                           <span className="text-green-600">🏷️</span>
                                           <div>
-                                            <div className="text-sm font-semibold text-green-700">Types</div>
+                                            <div className="text-base font-bold text-green-800">Types</div>
                                             <div className="text-green-900 font-medium text-base">
                                               {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                             </div>
@@ -2225,7 +2217,7 @@ export default function EventRequestsManagement() {
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-sm font-semibold text-green-700">Destination</div>
+                                                <div className="text-base font-bold text-green-800">Destination</div>
                                                 <div className="text-green-900 font-medium text-base">
                                                   {resolveRecipientName(request.sandwichDestination)}
                                                 </div>
@@ -2280,7 +2272,7 @@ export default function EventRequestsManagement() {
                                           ) : (
                                             <div className="flex items-center space-x-2 flex-1">
                                               <div className="flex-1">
-                                                <div className="text-sm font-semibold text-purple-700">TSP Contact</div>
+                                                <div className="text-base font-bold text-purple-800">TSP Contact</div>
                                                 <div className="text-purple-900 font-medium text-base">
                                                   {resolveUserName(request.tspContact)}
                                                 </div>
@@ -2304,7 +2296,7 @@ export default function EventRequestsManagement() {
                                           <div className="flex items-center space-x-2">
                                             <Truck className="w-4 h-4 text-purple-600" />
                                             <div>
-                                              <div className="text-sm font-semibold text-purple-700">Drivers Needed</div>
+                                              <div className="text-base font-bold text-purple-800">Drivers Needed</div>
                                               <div className="text-purple-900 font-medium text-base">
                                                 {request.driverCount || 0}
                                                 {request.vanNeeded && (
@@ -2351,7 +2343,7 @@ export default function EventRequestsManagement() {
                                           <div className="flex items-center space-x-2">
                                             <Megaphone className="w-4 h-4 text-purple-600" />
                                             <div>
-                                              <div className="text-sm font-semibold text-purple-700">Speakers Needed</div>
+                                              <div className="text-base font-bold text-purple-800">Speakers Needed</div>
                                               <div className="text-purple-900 font-medium text-base">
                                                 {request.speakerCount || 0}
                                               </div>
@@ -2370,7 +2362,12 @@ export default function EventRequestsManagement() {
                                             </div>
                                           ) : (
                                             <div className="ml-6">
-                                              <Button size="sm" variant="outline" className="text-xs">
+                                              <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="text-xs"
+                                                onClick={() => openAssignmentDialog(request.id, 'speaker')}
+                                              >
                                                 Assign Speaker
                                               </Button>
                                             </div>
@@ -2382,7 +2379,7 @@ export default function EventRequestsManagement() {
                                           <div className="flex items-center space-x-2">
                                             <Users className="w-4 h-4 text-purple-600" />
                                             <div>
-                                              <div className="text-sm font-semibold text-purple-700">Volunteers Needed</div>
+                                              <div className="text-base font-bold text-purple-800">Volunteers Needed</div>
                                               <div className="text-purple-900 font-medium text-base">
                                                 {request.volunteerCount || 0}
                                               </div>
@@ -2401,7 +2398,12 @@ export default function EventRequestsManagement() {
                                             </div>
                                           ) : (
                                             <div className="ml-6">
-                                              <Button size="sm" variant="outline" className="text-xs">
+                                              <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="text-xs"
+                                                onClick={() => openAssignmentDialog(request.id, 'volunteer')}
+                                              >
                                                 Assign Volunteer
                                               </Button>
                                             </div>
@@ -2671,8 +2673,11 @@ export default function EventRequestsManagement() {
               </DialogHeader>
 
               <div className="space-y-6">
-                {/* Contact Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Show details view when not editing */}
+                {!isEditing && (
+                  <>
+                    {/* Contact Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base flex items-center space-x-2">
@@ -2702,7 +2707,7 @@ export default function EventRequestsManagement() {
                       )}
                       {selectedEventRequest.department && (
                         <div>
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-gray-800">
                             Department
                           </Label>
                           <p className="text-sm">
@@ -2805,7 +2810,7 @@ export default function EventRequestsManagement() {
                             Sandwich Types
                           </Label>
                           <p className="text-sm">
-                            {getSandwichTypesSummary(selectedEventRequest).breakdown}
+~                            {getSandwichTypesSummary(selectedEventRequest).breakdown}
                           </p>
                         </div>
                       )}
@@ -2923,86 +2928,10 @@ export default function EventRequestsManagement() {
                     </CardContent>
                   </Card>
                 )}
+                  </>
+                )}
 
-                {/* Action Buttons */}
-                <div className="flex justify-between space-x-4">
-                  <div className="flex space-x-2">
-                    {selectedEventRequest.status === 'new' && (
-                      <Button
-                        onClick={() =>
-                          openToolkitSentDialog(selectedEventRequest)
-                        }
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                        data-testid="button-send-toolkit-dialog"
-                      >
-                        <Shield className="w-4 h-4 mr-2" />
-                        Send Toolkit
-                      </Button>
-                    )}
-
-                    {selectedEventRequest.status === 'completed' && (
-                      <Button
-                        onClick={() =>
-                          handleViewCollectionLog(selectedEventRequest)
-                        }
-                        className="bg-brand-primary hover:bg-brand-primary/90"
-                        data-testid="button-view-collections-dialog"
-                      >
-                        <TrendingUp className="w-4 h-4 mr-2" />
-                        View Collections
-                      </Button>
-                    )}
-
-                    {selectedEventRequest.status !== 'scheduled' && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setScheduleCallDate('');
-                          setScheduleCallTime('');
-                          setShowScheduleCallDialog(true);
-                        }}
-                        data-testid="button-schedule-call"
-                      >
-                        <Phone className="w-4 h-4 mr-2" />
-                        Schedule Call
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditing(!isEditing)}
-                      data-testid="button-edit-request"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      {isEditing ? 'Cancel Edit' : 'Edit'}
-                    </Button>
-
-                    {hasPermission(user, PERMISSIONS.DELETE_EVENT_REQUESTS) && (
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              'Are you sure you want to delete this event request?'
-                            )
-                          ) {
-                            deleteEventRequestMutation.mutate(
-                              selectedEventRequest.id
-                            );
-                          }
-                        }}
-                        data-testid="button-delete-request"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Edit Form */}
+                {/* Show edit form when editing */}
                 {isEditing && (
                   <div className="bg-gradient-to-br from-white to-[#47B3CB]/10 p-6 rounded-lg border-2 border-[#236383] shadow-lg">
                     <h3 className="text-lg font-bold text-[#236383] mb-6 flex items-center">
@@ -3016,13 +2945,22 @@ export default function EventRequestsManagement() {
                         const updatedData = Object.fromEntries(
                           formData.entries()
                         );
+                        
+                        // Process sandwich types from individual inputs
+                        const sandwichTypes = SANDWICH_TYPES.map(type => {
+                          const quantity = parseInt(formData.get(`sandwichType_${type.value}`) as string) || 0;
+                          return { type: type.value, quantity };
+                        }).filter(item => item.quantity > 0);
+                        
+                        updatedData.sandwichTypes = JSON.stringify(sandwichTypes);
+                        
                         updateEventRequestMutation.mutate({
                           id: selectedEventRequest.id,
                           data: updatedData,
                         });
                       }}
                       className="space-y-6"
-                  >
+                    >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="edit-status">Status</Label>
@@ -3431,6 +3369,84 @@ export default function EventRequestsManagement() {
                   </form>
                   </div>
                 )}
+
+                {/* Action Buttons */}
+                <div className="flex justify-between space-x-4">
+                  <div className="flex space-x-2">
+                    {selectedEventRequest.status === 'new' && (
+                      <Button
+                        onClick={() =>
+                          openToolkitSentDialog(selectedEventRequest)
+                        }
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        data-testid="button-send-toolkit-dialog"
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Send Toolkit
+                      </Button>
+                    )}
+
+                    {selectedEventRequest.status === 'completed' && (
+                      <Button
+                        onClick={() =>
+                          handleViewCollectionLog(selectedEventRequest)
+                        }
+                        className="bg-brand-primary hover:bg-brand-primary/90"
+                        data-testid="button-view-collections-dialog"
+                      >
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        View Collections
+                      </Button>
+                    )}
+
+                    {selectedEventRequest.status !== 'scheduled' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setScheduleCallDate('');
+                          setScheduleCallTime('');
+                          setShowScheduleCallDialog(true);
+                        }}
+                        data-testid="button-schedule-call"
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        Schedule Call
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(!isEditing)}
+                      data-testid="button-edit-request"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      {isEditing ? 'Cancel Edit' : 'Edit'}
+                    </Button>
+
+                    {hasPermission(user, PERMISSIONS.DELETE_EVENT_REQUESTS) && (
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (
+                            confirm(
+                              'Are you sure you want to delete this event request?'
+                            )
+                          ) {
+                            deleteEventRequestMutation.mutate(
+                              selectedEventRequest.id
+                            );
+                          }
+                        }}
+                        data-testid="button-delete-request"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
