@@ -2578,6 +2578,7 @@ export default function EventRequestsManagement() {
                                 )}
                               </div>
                             </div>
+                          </div>
                           </CardContent>
                         </Card>
                       );
