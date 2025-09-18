@@ -2224,7 +2224,8 @@ export default function EventRequestsManagement() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [showWeeklyPlanningModal, setShowWeeklyPlanningModal] = useState(false);
+  const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
+  const [showStaffingPlanningModal, setShowStaffingPlanningModal] = useState(false);
 
   // Event details dialog states
   const [selectedEventRequest, setSelectedEventRequest] =
@@ -2321,6 +2322,17 @@ export default function EventRequestsManagement() {
 
   const saveEdit = () => {
     if (editingScheduledId && editingField) {
+      // Show confirmation dialog for critical fields
+      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'eventAddress', 'hasRefrigeration', 'driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+      
+      if (criticalFields.includes(editingField)) {
+        const fieldName = editingField.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());
+        const confirmed = window.confirm(`Are you sure you want to update ${fieldName}?\n\nThis will change the event details and may affect planning.`);
+        if (!confirmed) {
+          cancelEdit();
+          return;
+        }
+      }
       // Special handling for sandwich types
       if (editingField === 'sandwichTypes') {
         const updateData: any = {};
@@ -3229,6 +3241,13 @@ export default function EventRequestsManagement() {
           <div className="flex items-center space-x-2">
             <Button
               onClick={() => {
+                // Close any open dialogs first
+                setShowScheduleCallDialog(false);
+                setShowOneDayFollowUpDialog(false);
+                setShowOneMonthFollowUpDialog(false);
+                setShowToolkitSentDialog(false);
+                setShowAssignmentDialog(false);
+                
                 // Set up for manual event request creation
                 setSelectedEventRequest(null);
                 setIsEditing(true);
@@ -3242,13 +3261,22 @@ export default function EventRequestsManagement() {
               Add Manual Event Request
             </Button>
             <Button
-              onClick={() => setShowWeeklyPlanningModal(true)}
+              onClick={() => setShowSandwichPlanningModal(true)}
               variant="outline"
               className="flex items-center space-x-2"
-              data-testid="button-weekly-planning"
+              data-testid="button-sandwich-planning"
             >
-              <Calendar className="w-4 h-4" />
-              <span>Weekly Planning</span>
+              <span className="text-lg mr-1">🥪</span>
+              <span>Sandwich Planning</span>
+            </Button>
+            <Button
+              onClick={() => setShowStaffingPlanningModal(true)}
+              variant="outline"
+              className="flex items-center space-x-2"
+              data-testid="button-staffing-planning"
+            >
+              <Users className="w-4 h-4" />
+              <span>Staffing Planning</span>
             </Button>
             <Badge
               variant="secondary"
@@ -5604,7 +5632,7 @@ export default function EventRequestsManagement() {
         <ToolkitSentDialog
           isOpen={showToolkitSentDialog}
           onClose={() => setShowToolkitSentDialog(false)}
-          eventRequest={selectedEventRequest}
+          eventRequest={toolkitEventRequest}
           onToolkitSent={(toolkitSentDate) => {
             // Update the event request status
             if (selectedEventRequest?.id) {
@@ -5623,100 +5651,89 @@ export default function EventRequestsManagement() {
           isLoading={updateEventRequestMutation.isPending}
         />
 
-        {/* Weekly Planning Modal */}
-        <Dialog open={showWeeklyPlanningModal} onOpenChange={setShowWeeklyPlanningModal}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+        {/* Sandwich Planning Modal */}
+        <Dialog open={showSandwichPlanningModal} onOpenChange={setShowSandwichPlanningModal}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
-                <Calendar className="w-8 h-8" />
-                Weekly Planning Dashboard
+                <span className="text-2xl">🥪</span>
+                Weekly Sandwich Planning
               </DialogTitle>
               <DialogDescription>
-                Plan sandwich production and staffing for upcoming weeks. View both sandwich forecasts and staffing needs in one place.
+                Plan sandwich production for upcoming weeks. Track distribution days and coordinate with individual makers and group events.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-6 mt-6">
-              {/* Planning Tabs */}
-              <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="overview">📊 Overview</TabsTrigger>
-                  <TabsTrigger value="sandwiches">🥪 Sandwich Planning</TabsTrigger>
-                  <TabsTrigger value="staffing">👥 Staffing Planning</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="overview" className="mt-6">
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Sandwich Overview */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-brand-primary flex items-center gap-2">
-                          <TrendingUp className="w-5 h-5" />
-                          Sandwich Production Overview
-                        </h3>
-                        <SandwichForecastWidget />
-                      </div>
-                      
-                      {/* Staffing Overview */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-brand-orange flex items-center gap-2">
-                          <Users className="w-5 h-5" />
-                          Staffing Requirements Overview
-                        </h3>
-                        <StaffingForecastWidget />
-                      </div>
-                    </div>
-                    
-                    {/* Quick Tips */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                        <HelpCircle className="w-4 h-4" />
-                        Planning Tips
-                      </h4>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Individual makers typically prep sandwiches on Wednesdays</li>
-                        <li>• Group distributions happen on Thursdays</li>
-                        <li>• Check staffing needs early - driver and speaker assignments are crucial</li>
-                        <li>• Van drivers are needed for large events or special delivery requirements</li>
-                      </ul>
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="sandwiches" className="mt-6">
-                  <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-4">
-                      <h3 className="text-xl font-bold text-brand-orange mb-2">🥪 Sandwich Production Planning</h3>
-                      <p className="text-orange-800">
-                        Plan sandwich making for upcoming weeks. Track distribution days and coordinate with individual makers and group events.
-                      </p>
-                    </div>
-                    <SandwichForecastWidget />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="staffing" className="mt-6">
-                  <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
-                      <h3 className="text-xl font-bold text-brand-primary mb-2">👥 Staffing & Volunteer Planning</h3>
-                      <p className="text-blue-800">
-                        Coordinate drivers, speakers, and volunteers for scheduled events. Ensure all positions are filled before event dates.
-                      </p>
-                    </div>
-                    <StaffingForecastWidget />
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <SandwichForecastWidget />
+              
+              {/* Planning Tips */}
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4" />
+                  Sandwich Planning Tips
+                </h4>
+                <ul className="text-sm text-orange-800 space-y-1">
+                  <li>• Individual makers typically prep sandwiches on Wednesdays</li>
+                  <li>• Group distributions happen on Thursdays</li>
+                  <li>• Check upcoming events for sandwich type requirements</li>
+                  <li>• Coordinate with hosts for special dietary needs</li>
+                </ul>
+              </div>
             </div>
             
             <div className="flex justify-end mt-6 pt-4 border-t">
               <Button
-                onClick={() => setShowWeeklyPlanningModal(false)}
+                onClick={() => setShowSandwichPlanningModal(false)}
                 className="text-white"
                 style={{ backgroundColor: '#236383' }}
-                data-testid="button-close-weekly-planning"
+                data-testid="button-close-sandwich-planning"
               >
-                Close Planning Dashboard
+                Close Sandwich Planning
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Staffing Planning Modal */}
+        <Dialog open={showStaffingPlanningModal} onOpenChange={setShowStaffingPlanningModal}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
+                <Users className="w-6 h-6" />
+                Weekly Staffing Planning
+              </DialogTitle>
+              <DialogDescription>
+                Coordinate drivers, speakers, and volunteers for scheduled events. Ensure all positions are filled before event dates.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6 mt-6">
+              <StaffingForecastWidget />
+              
+              {/* Staffing Tips */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4" />
+                  Staffing Planning Tips
+                </h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Check driver assignments early - transportation is critical</li>
+                  <li>• Speaker assignments should be confirmed 1 week before events</li>
+                  <li>• Van drivers are needed for large events or special delivery requirements</li>
+                  <li>• Volunteers help with event setup and sandwich distribution</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-6 pt-4 border-t">
+              <Button
+                onClick={() => setShowStaffingPlanningModal(false)}
+                className="text-white"
+                style={{ backgroundColor: '#236383' }}
+                data-testid="button-close-staffing-planning"
+              >
+                Close Staffing Planning
               </Button>
             </div>
           </DialogContent>
