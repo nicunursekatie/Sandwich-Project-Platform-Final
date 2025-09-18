@@ -152,7 +152,7 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
           <Button
             size="sm"
             variant="outline"
-            className="min-h-[44px] min-w-[44px] p-2 text-green-600 hover:bg-green-50"
+            className="min-h-[44px] min-w-[44px] p-2 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.08)]"
             onClick={onSave}
             data-testid="save-inline-edit"
           >
@@ -161,7 +161,7 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
           <Button
             size="sm"
             variant="outline"
-            className="min-h-[44px] min-w-[44px] p-2 text-red-600 hover:bg-red-50"
+            className="min-h-[44px] min-w-[44px] p-2 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent)/0.08)]"
             onClick={onCancel}
             data-testid="cancel-inline-edit"
           >
@@ -333,9 +333,9 @@ const statusColors = {
   scheduled:
     'bg-white border border-slate-200 shadow-sm',
   completed:
-    'bg-gradient-to-r from-green-50 to-emerald-100 text-green-900 border border-green-300',
+    'bg-gradient-to-r from-[hsl(var(--primary)/0.08)] to-[hsl(var(--primary)/0.12)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.3)]',
   declined:
-    'bg-gradient-to-r from-red-50 to-red-100 text-red-900 border-2 border-red-300 font-bold shadow-lg',
+    'bg-gradient-to-r from-[hsl(var(--accent)/0.1)] to-[hsl(var(--accent)/0.15)] text-[hsl(var(--accent))] border-2 border-[hsl(var(--accent)/0.4)] font-bold shadow-lg',
 };
 
 const SANDWICH_DESTINATIONS = [
@@ -494,7 +494,7 @@ const SandwichTypesSelector = ({
   };
 
   return (
-    <div className={`space-y-4 p-4 border rounded-lg bg-[#f0f6f8] ${className}`}>
+    <div className={`space-y-4 p-4 border rounded-lg bg-[#e6f2f5] ${className}`}>
       {/* Hidden input for form submission */}
       <input
         type="hidden"
@@ -668,7 +668,7 @@ const ToolkitSentDialog = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Shield className="w-5 h-5 text-green-600" />
+            <Shield className="w-5 h-5 text-[hsl(var(--primary))]" />
             <span>Mark Toolkit as Sent</span>
           </DialogTitle>
           <DialogDescription>
@@ -709,19 +709,19 @@ const ToolkitSentDialog = ({
 
             {/* Email Status Display */}
             {emailSent && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2 text-green-700">
+              <div className="p-4 bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg">
+                <div className="flex items-center space-x-2 text-[#236383]">
                   <CheckCircle className="w-5 h-5" />
                   <span className="font-medium">Email successfully sent!</span>
                 </div>
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-[#007E8C] mt-1">
                   The toolkit email has been sent to {eventRequest.email}
                 </p>
               </div>
             )}
 
             {/* Information */}
-            <div className="bg-[#f0f6f8] border border-[#007E8C]/30 rounded-lg p-4">
+            <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
               <h4 className="font-medium text-[#1A2332] mb-2">
                 What happens when you mark toolkit as sent:
               </h4>
@@ -805,7 +805,7 @@ const ToolkitSentDialog = ({
                   type="button"
                   onClick={handleSubmit}
                   disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)] text-white"
                   data-testid="button-confirm-toolkit-sent"
                 >
                   {isLoading ? 'Marking as Sent...' : 'Mark as Sent'}
@@ -1015,7 +1015,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </Button>
             
             {showContactInfo && (
-              <div className="p-4 border-t bg-[#f0f6f8] grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border-t bg-[#e6f2f5] grid grid-cols-1 md:grid-cols-2 gap-4">
                 {eventRequest ? (
                   // Existing event - show pre-filled data
                   <>
@@ -1235,7 +1235,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         </Button>
                       </div>
                     ))}
-                    <div className="text-sm text-[#236383] bg-[#f0f6f8] p-2 rounded">
+                    <div className="text-sm text-[#236383] bg-[#e6f2f5] p-2 rounded">
                       <strong>Total:</strong> {formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
                     </div>
                   </div>
@@ -1427,7 +1427,7 @@ const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Contact Information */}
-          <div className="bg-[#f0f6f8] border border-[#007E8C]/30 rounded-lg p-3">
+          <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-3">
             <h4 className="font-medium text-[#1A2332] mb-2">Contact Details</h4>
             <div className="space-y-1 text-sm">
               <div className="flex items-center space-x-2">
@@ -1571,7 +1571,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Event Information */}
-          <div className="bg-[#f0f6f8] border border-[#007E8C]/20 rounded-lg p-3">
+          <div className="bg-[#e6f2f5] border border-[#007E8C]/20 rounded-lg p-3">
             <h4 className="font-medium text-[#1A2332] mb-2">Event Details</h4>
             <div className="space-y-1 text-sm">
                               <div><strong>Event Date:</strong> {
@@ -1587,7 +1587,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
           </div>
 
           {/* Contact Information */}
-          <div className="bg-[#f0f6f8] border border-[#007E8C]/30 rounded-lg p-3">
+          <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-3">
             <h4 className="font-medium text-[#1A2332] mb-2">Contact Information</h4>
             <div className="space-y-1 text-sm">
               <div className="flex items-center space-x-2">
@@ -1664,7 +1664,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             <Button
               type="submit"
               disabled={!notes.trim() || isLoading}
-              className={`text-white ${isOneDay ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}`}
+              className={`text-white ${isOneDay ? 'bg-orange-600 hover:bg-orange-700' : 'bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)]'}`}
               data-testid={`button-confirm-followup-${followUpType}`}
             >
               {isLoading ? 'Saving...' : `Complete ${title}`}
@@ -1776,7 +1776,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
   );
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-[#236383] bg-opacity-50 z-50 flex items-center justify-center p-4"
       style={{
         left: window.innerWidth > 768 ? 240 : 0, // 240px nav bar width on desktop
         width: window.innerWidth > 768 ? `calc(100vw - 240px)` : '100vw',
@@ -2148,7 +2148,7 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
           {importResults && (
             <div className="space-y-4">
               {importResults.error ? (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="bg-[#fdf2f5] border border-[#A31C41]/30 rounded-lg p-4">
                   <div className="flex items-center space-x-2 text-red-700">
                     <XCircle className="w-5 h-5" />
                     <span className="font-medium">Import Failed</span>
@@ -2188,7 +2188,7 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
           )}
 
           {/* Additional Information */}
-          <div className="bg-[#f0f6f8] border border-[#007E8C]/30 rounded-lg p-4">
+          <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
             <h4 className="font-medium text-[#1A2332] mb-2">
               📋 Import Guidelines
             </h4>
@@ -3458,7 +3458,7 @@ export default function EventRequestsManagement() {
             <TabsTrigger value="declined">
               Declined ({statusCounts.declined})
             </TabsTrigger>
-            <TabsTrigger value="import" className="bg-[#f0f6f8] border-[#007E8C]/30">
+            <TabsTrigger value="import" className="bg-[#e6f2f5] border-[#007E8C]/30">
               Import
             </TabsTrigger>
           </TabsList>
@@ -3608,7 +3608,7 @@ export default function EventRequestsManagement() {
 
                                 {/* Event Date - Secondary Prominence */}
                                 {request.desiredEventDate && (
-                                  <div className="flex items-center space-x-3 mb-4 bg-[#f0f6f8] p-3 rounded-lg border-l-4 border-brand-primary">
+                                  <div className="flex items-center space-x-3 mb-4 bg-[#e6f2f5] p-3 rounded-lg border-l-4 border-brand-primary">
                                     <Calendar className="w-5 h-5 text-brand-primary" />
                                     <div>
                                       <span className="text-sm font-medium text-[#236383]">
@@ -3625,7 +3625,7 @@ export default function EventRequestsManagement() {
 
                                 {/* Contact Information - Grouped for In Process, inline for others */}
                                 {request.status === 'in_process' ? (
-                                  <div className="bg-[#f0f6f8] p-4 rounded-lg border border-[#007E8C]/30 max-w-md">
+                                  <div className="bg-[#e6f2f5] p-4 rounded-lg border border-[#007E8C]/30 max-w-md">
                                     <h4 className="text-xs font-bold text-[#1A2332] mb-3 flex items-center uppercase tracking-wider">
                                       <User className="w-4 h-4 mr-2 text-[#007E8C]" />
                                       Contact Information
@@ -3820,7 +3820,7 @@ export default function EventRequestsManagement() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                       
                                       {/* Column 1: Schedule & Location */}
-                                      <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
+                                      <div className="space-y-2 bg-[#e6f2f5] p-3 rounded-lg border border-[#007E8C]/20">
                                         <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Calendar className="w-4 h-4 mr-2" />
                                           Schedule & Location
@@ -3984,7 +3984,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                       
                                       {/* Column 2: Sandwich & Logistics */}
-                                      <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
+                                      <div className="space-y-2 bg-[#e6f2f5] p-3 rounded-lg border border-[#007E8C]/20">
                                         <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Package className="w-4 h-4 mr-2" />
                                           Sandwich Details
@@ -4144,7 +4144,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                       
                                       {/* Column 3: Staffing */}
-                                      <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
+                                      <div className="space-y-2 bg-[#e6f2f5] p-3 rounded-lg border border-[#007E8C]/20">
                                         <h4 className="text-sm font-semibold flex items-center border-b border-[#007E8C]/20 pb-2" style={{color: '#1A2332'}}>
                                           <Users className="w-5 h-5 mr-2 text-brand-primary" />
                                           Staffing
@@ -4489,7 +4489,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           {/* Volunteers Section */}
-                                          <div className="space-y-2 p-3 bg-[#f0f6f8] border border-[#007E8C]/30 rounded-lg">
+                                          <div className="space-y-2 p-3 bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg">
                                             <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
                                                 <Users className="w-4 h-4" />
@@ -4549,7 +4549,7 @@ export default function EventRequestsManagement() {
                                                 {canSelfSignup(request, 'volunteer') && (
                                                   <Button 
                                                     size="sm" 
-                                                    className="bg-[#f0f6f8]0 hover:bg-blue-600 text-white text-xs px-3 py-1"
+                                                    className="bg-[#e6f2f5]0 hover:bg-blue-600 text-white text-xs px-3 py-1"
                                                     onClick={(e) => {
                                                       e.stopPropagation();
                                                       handleSelfSignup(request.id, 'volunteer');
@@ -4666,7 +4666,7 @@ export default function EventRequestsManagement() {
                                 )}
 
                                 {request.message && (
-                                  <div className="mt-4 p-3 bg-[#f0f6f8] border-l-4 border-brand-primary rounded-r-lg">
+                                  <div className="mt-4 p-3 bg-[#e6f2f5] border-l-4 border-brand-primary rounded-r-lg">
                                     <p className="text-base text-brand-primary line-clamp-2 font-medium">
                                       {request.message}
                                     </p>
@@ -4733,6 +4733,7 @@ export default function EventRequestsManagement() {
                                     <Button
                                       size="sm"
                                       variant="outline"
+                                      className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedEventRequest(request);
@@ -4782,6 +4783,7 @@ export default function EventRequestsManagement() {
                                     <Button
                                       size="sm"
                                       variant="outline"
+                                      className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedEventRequest(request);
@@ -4868,6 +4870,7 @@ export default function EventRequestsManagement() {
                                     <Button
                                       size="sm"
                                       variant="outline"
+                                      className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedEventRequest(request);
@@ -4914,7 +4917,8 @@ export default function EventRequestsManagement() {
                                     
                                     <Button
                                       size="sm"
-                                      variant="destructive"
+                                      variant="outline"
+                                      className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
@@ -4935,6 +4939,7 @@ export default function EventRequestsManagement() {
                                     <Button
                                       size="sm"
                                       variant="outline"
+                                      className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedEventRequest(request);
@@ -5077,13 +5082,13 @@ export default function EventRequestsManagement() {
                     {selectedEventRequest.planningNotes && (
                       <div>
                         <h3 className="text-base font-medium text-[#1A2332]">Planning Notes</h3>
-                        <p className="mt-2 text-sm text-[#1A2332] bg-[#f0f6f8] p-3 rounded">{selectedEventRequest.planningNotes}</p>
+                        <p className="mt-2 text-sm text-[#1A2332] bg-[#e6f2f5] p-3 rounded">{selectedEventRequest.planningNotes}</p>
                       </div>
                     )}
                     {selectedEventRequest.message && (
                       <div>
                         <h3 className="text-base font-medium text-[#1A2332]">Original Message</h3>
-                        <p className="mt-2 text-sm text-[#1A2332] bg-[#f0f6f8] p-3 rounded border-l-4 border-blue-400">{selectedEventRequest.message}</p>
+                        <p className="mt-2 text-sm text-[#1A2332] bg-[#e6f2f5] p-3 rounded border-l-4 border-blue-400">{selectedEventRequest.message}</p>
                       </div>
                     )}
                   </>
@@ -5312,7 +5317,7 @@ export default function EventRequestsManagement() {
                               </div>
                               <div>
                                 <Label htmlFor="sandwichTypes">Sandwich Planning</Label>
-                                <div className="space-y-4 p-4 border rounded-lg bg-[#f0f6f8]">
+                                <div className="space-y-4 p-4 border rounded-lg bg-[#e6f2f5]">
                                   {/* Mode Selector */}
                                   <div className="flex gap-2">
                                     <Button
@@ -5589,7 +5594,7 @@ export default function EventRequestsManagement() {
                     {[...drivers, ...volunteers, ...hosts].map((person: any) => (
                       <div
                         key={person.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-[#f0f6f8]"
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-[#e6f2f5]"
                       >
                         <div className="flex-1">
                           <div className="font-medium text-[#1A2332]">
@@ -5909,7 +5914,7 @@ export default function EventRequestsManagement() {
               <StaffingForecastWidget />
               
               {/* Staffing Tips */}
-              <div className="bg-[#f0f6f8] border border-[#007E8C]/30 rounded-lg p-4">
+              <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
                 <h4 className="font-semibold text-[#1A2332] mb-2 flex items-center gap-2">
                   <HelpCircle className="w-4 h-4" />
                   Staffing Planning Tips
