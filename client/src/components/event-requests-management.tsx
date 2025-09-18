@@ -4107,18 +4107,18 @@ export default function EventRequestsManagement() {
                                             <span className="text-[#FBAD3F] text-base font-semibold flex-shrink-0">Destination:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
-                                                <div className="flex items-center space-x-2 w-full">
+                                                <div className="flex items-center space-x-1">
                                                   <Input
                                                     value={editingValue}
                                                     onChange={(e) => setEditingValue(e.target.value)}
-                                                    className="text-sm"
-                                                    placeholder="Enter destination"
+                                                    className="h-6 text-sm w-32"
+                                                    placeholder="Destination"
                                                   />
-                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-                                                    <CheckCircle className="w-4 h-4" />
+                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-6 w-6 p-0">
+                                                    <CheckCircle className="w-3 h-3" />
                                                   </Button>
-                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-                                                    <X className="w-4 h-4" />
+                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-6 w-6 p-0">
+                                                    <X className="w-3 h-3" />
                                                   </Button>
                                                 </div>
                                               ) : (
