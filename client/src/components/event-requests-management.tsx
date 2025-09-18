@@ -333,7 +333,7 @@ const statusColors = {
   scheduled:
     'bg-white border border-slate-200 shadow-sm',
   completed:
-    'bg-gradient-to-r from-[#f0f6f8] to-[#e6f2f5] text-[#1A2332] border border-[#007E8C]/20',
+    'bg-gradient-to-r from-green-50 to-emerald-100 text-green-900 border border-green-300',
   declined:
     'bg-gradient-to-r from-red-50 to-red-100 text-red-900 border-2 border-red-300 font-bold shadow-lg',
 };
@@ -4837,6 +4837,28 @@ export default function EventRequestsManagement() {
                                   </div>
                                 )}
 
+                                {/* Driver Information for Completed Events */}
+                                {request.status === 'completed' && request.assignedDriverIds && request.assignedDriverIds.length > 0 && (
+                                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                                      <span className="mr-2">🚗</span>
+                                      Drivers Who Served
+                                    </h4>
+                                    <div className="space-y-1">
+                                      {request.assignedDriverIds.map((driverId, index) => {
+                                        const driverDetails = request.driverDetails?.[driverId];
+                                        const driverName = driverDetails?.name || `Driver ${index + 1}`;
+                                        return (
+                                          <div key={driverId} className="flex items-center space-x-2">
+                                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            <span className="text-sm font-medium text-green-800">{driverName}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Action Buttons for Completed Status */}
                                 {request.status === 'completed' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                   <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
@@ -5447,6 +5469,28 @@ export default function EventRequestsManagement() {
                                   </div>
                                 </div>
                               </div>
+                              
+                              {/* Driver Assignment Section for Completed Events */}
+                              {selectedEventRequest?.status === 'completed' && (
+                                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                  <Label className="text-sm font-medium text-green-800">Actual Drivers Who Served</Label>
+                                  <div className="mt-2 space-y-2">
+                                    <Input
+                                      name="actualDrivers"
+                                      placeholder="Enter driver names (comma separated)"
+                                      defaultValue={(() => {
+                                        if (!selectedEventRequest?.assignedDriverIds) return '';
+                                        const driverNames = selectedEventRequest.assignedDriverIds.map(id => {
+                                          const details = selectedEventRequest.driverDetails?.[id];
+                                          return details?.name || id;
+                                        });
+                                        return driverNames.join(', ');
+                                      })()}
+                                    />
+                                    <p className="text-xs text-green-600">Example: John Smith, Jane Doe, Mike Johnson</p>
+                                  </div>
+                                </div>
+                              )}
                               <div>
                                 <Label htmlFor="speakersNeeded">Speakers Needed</Label>
                                 <Input
