@@ -5531,21 +5531,15 @@ export default function EventRequestsManagement() {
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <h4 className="font-semibold text-gray-900">
-                      {assignmentType === 'driver' ? 'Available Drivers' : 
-                       assignmentType === 'speaker' ? 'Available Hosts' : 
-                       'Available Volunteers'}
+                      Available People (All Drivers, Volunteers, Hosts)
                     </h4>
                     <Badge variant="outline" className="text-xs">
-                      {assignmentType === 'driver' ? drivers.length : 
-                       assignmentType === 'speaker' ? hosts.length : 
-                       volunteers.length} in database
+                      {drivers.length + volunteers.length + hosts.length} in database
                     </Badge>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto border rounded-lg p-3">
-                    {(assignmentType === 'driver' ? drivers : 
-                      assignmentType === 'speaker' ? hosts : 
-                      volunteers).map((person: any) => (
+                    {[...drivers, ...volunteers, ...hosts].map((person: any) => (
                       <div
                         key={person.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-[#f0f6f8]"
@@ -5569,7 +5563,6 @@ export default function EventRequestsManagement() {
                             const personName = `${person.firstName} ${person.lastName}`;
                             handleAssignment(person.id, personName);
                           }}
-                          className="bg-[#236383] hover:bg-[#007E8C] text-white"
                         >
                           <UserCheck className="w-4 h-4 mr-1" />
                           Assign
@@ -5577,11 +5570,9 @@ export default function EventRequestsManagement() {
                       </div>
                     ))}
                     
-                    {(assignmentType === 'driver' ? drivers.length : 
-                      assignmentType === 'speaker' ? hosts.length : 
-                      volunteers.length) === 0 && (
+                    {(drivers.length + volunteers.length + hosts.length) === 0 && (
                       <div className="col-span-2 text-center py-4 text-gray-500">
-                        No {assignmentType}s found in database
+                        No people found in database
                       </div>
                     )}
                   </div>
@@ -5656,7 +5647,7 @@ export default function EventRequestsManagement() {
                         vanCapable: false,
                       });
                     }}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Custom {assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1)}
@@ -5688,40 +5679,44 @@ export default function EventRequestsManagement() {
                           let personName = 'Unknown';
                           let personDetails = null;
                           
+                          // First check if there are stored details for this assignment type
                           if (assignmentType === 'driver') {
                             const driverDetails = eventRequest.driverDetails?.[personId];
                             if (driverDetails) {
                               personName = driverDetails.name;
                               personDetails = driverDetails;
-                            } else {
-                              // Try to find in drivers database
-                              const driver = drivers.find(d => d.id === personId);
-                              if (driver) {
-                                personName = `${driver.firstName} ${driver.lastName}`;
-                              }
                             }
                           } else if (assignmentType === 'speaker') {
                             const speakerDetails = eventRequest.speakerDetails?.[personId];
                             if (speakerDetails) {
                               personName = speakerDetails.name;
                               personDetails = speakerDetails;
-                            } else {
-                              // Try to find in hosts database
-                              const host = hosts.find(h => h.id === personId);
-                              if (host) {
-                                personName = `${host.firstName} ${host.lastName}`;
-                              }
                             }
                           } else if (assignmentType === 'volunteer') {
                             const volunteerDetails = eventRequest.volunteerDetails?.[personId];
                             if (volunteerDetails) {
                               personName = volunteerDetails.name;
                               personDetails = volunteerDetails;
+                            }
+                          }
+                          
+                          // If no stored details, search in ALL databases to find the person
+                          if (personName === 'Unknown') {
+                            // Try drivers database
+                            const driver = drivers.find(d => d.id === personId);
+                            if (driver) {
+                              personName = `${driver.firstName} ${driver.lastName}`;
                             } else {
-                              // Try to find in volunteers database
+                              // Try volunteers database
                               const volunteer = volunteers.find(v => v.id === personId);
                               if (volunteer) {
                                 personName = `${volunteer.firstName} ${volunteer.lastName}`;
+                              } else {
+                                // Try hosts database
+                                const host = hosts.find(h => h.id === personId);
+                                if (host) {
+                                  personName = `${host.firstName} ${host.lastName}`;
+                                }
                               }
                             }
                           }
