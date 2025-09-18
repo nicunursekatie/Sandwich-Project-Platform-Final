@@ -5548,20 +5548,17 @@ export default function EventRequestsManagement() {
                       volunteers).map((person: any) => (
                       <div
                         key={person.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-[#f0f6f8]"
                       >
                         <div className="flex-1">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-[#1A2332]">
                             {person.firstName} {person.lastName}
                           </div>
-                          {person.email && (
-                            <div className="text-sm text-gray-600">{person.email}</div>
-                          )}
                           {person.phone && (
-                            <div className="text-sm text-gray-600">{person.phone}</div>
+                            <div className="text-sm text-[#236383]">{person.phone}</div>
                           )}
                           {assignmentType === 'driver' && person.vanCapable && (
-                            <Badge className="text-xs bg-purple-100 text-purple-800 mt-1">
+                            <Badge className="text-xs bg-[#007E8C] text-white mt-1">
                               Van Capable
                             </Badge>
                           )}
@@ -5572,7 +5569,7 @@ export default function EventRequestsManagement() {
                             const personName = `${person.firstName} ${person.lastName}`;
                             handleAssignment(person.id, personName);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          className="bg-[#236383] hover:bg-[#007E8C] text-white"
                         >
                           <UserCheck className="w-4 h-4 mr-1" />
                           Assign
