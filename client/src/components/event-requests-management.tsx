@@ -2232,6 +2232,11 @@ export default function EventRequestsManagement() {
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Modal sandwich form states
+  const [modalSandwichMode, setModalSandwichMode] = useState<'total' | 'types'>('total');
+  const [modalTotalCount, setModalTotalCount] = useState(0);
+  const [modalSandwichTypes, setModalSandwichTypes] = useState<Array<{type: string, quantity: number}>>([]);
+
   // Event scheduling dialog state
   const [showSchedulingDialog, setShowSchedulingDialog] = useState(false);
   const [schedulingEventRequest, setSchedulingEventRequest] =
@@ -2388,6 +2393,55 @@ export default function EventRequestsManagement() {
   // Helper functions for inline sandwich editing
   const addInlineSandwichType = () => {
     setInlineSandwichTypes(prev => [...prev, { type: 'turkey', quantity: 0 }]);
+  };
+
+  // Helper functions for modal sandwich editing
+  const addModalSandwichType = () => {
+    setModalSandwichTypes(prev => [...prev, { type: 'deli_turkey', quantity: 0 }]);
+  };
+  
+  const updateModalSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setModalSandwichTypes(prev => prev.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    ));
+  };
+  
+  const removeModalSandwichType = (index: number) => {
+    setModalSandwichTypes(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  const resetModalSandwichData = () => {
+    setModalSandwichMode('total');
+    setModalTotalCount(0);
+    setModalSandwichTypes([]);
+  };
+  
+  const initializeModalSandwichState = (eventRequest: EventRequest | null) => {
+    if (!eventRequest) {
+      // New event - start with default state
+      resetModalSandwichData();
+      return;
+    }
+    
+    // Initialize based on existing event data
+    const existingSandwichTypes = eventRequest.sandwichTypes ? 
+      (typeof eventRequest.sandwichTypes === 'string' ? 
+        JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [];
+    
+    const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
+    const totalCount = eventRequest.estimatedSandwichCount || 0;
+    
+    if (hasTypesData) {
+      // Has specific types data - use types mode
+      setModalSandwichMode('types');
+      setModalSandwichTypes(existingSandwichTypes);
+      setModalTotalCount(existingSandwichTypes.reduce((sum, item) => sum + item.quantity, 0));
+    } else {
+      // Only has total count - use total mode
+      setModalSandwichMode('total');
+      setModalTotalCount(totalCount);
+      setModalSandwichTypes([]);
+    }
   };
 
   const updateInlineSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
@@ -3264,6 +3318,9 @@ export default function EventRequestsManagement() {
     setSelectedEventRequest(eventRequest);
     setShowEventDetails(true);
     setIsEditing(false);
+    
+    // Initialize modal sandwich state based on existing event data
+    initializeModalSandwichState(eventRequest);
   };
 
   const handleToolkitSent = (toolkitSentDate: string) => {
@@ -3334,6 +3391,9 @@ export default function EventRequestsManagement() {
                 setSelectedEventRequest(null);
                 setIsEditing(true);
                 setShowEventDetails(true);
+                
+                // Initialize modal sandwich state for new event
+                initializeModalSandwichState(null);
               }}
               className="text-white"
               style={{ backgroundColor: '#007E8C' }}
@@ -5099,11 +5159,13 @@ export default function EventRequestsManagement() {
                           eventAddress: (e.target as any).eventAddress.value,
                           sandwichDestination: (e.target as any).sandwichDestination.value,
                           tspContact: (e.target as any).tspContact.value === 'none' ? '' : (e.target as any).tspContact.value,
-                          sandwichTypes: JSON.stringify({
-                            deli: parseInt((e.target as any).deliCount.value) || 0,
-                            turkey: parseInt((e.target as any).turkeyCount.value) || 0,
-                            ham: parseInt((e.target as any).hamCount.value) || 0,
-                            pbj: parseInt((e.target as any).pbjCount.value) || 0
+                          // Handle sandwich data based on mode
+                          ...(modalSandwichMode === 'total' ? {
+                            estimatedSandwichCount: modalTotalCount,
+                            sandwichTypes: null, // Clear specific types when using total mode
+                          } : {
+                            sandwichTypes: JSON.stringify(modalSandwichTypes),
+                            estimatedSandwichCount: modalSandwichTypes.reduce((sum, item) => sum + item.quantity, 0),
                           }),
                           hasRefrigeration: (e.target as any).refrigeration.value === 'yes' ? true : 
                                            (e.target as any).refrigeration.value === 'no' ? false : null,
@@ -5300,34 +5362,130 @@ export default function EventRequestsManagement() {
                                 </Select>
                               </div>
                               <div>
-                                <Label htmlFor="sandwichTypes">Sandwich Types</Label>
-                                <div className="space-y-3">
-                                  <Select name="sandwichTypeMode" defaultValue="single">
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select sandwich distribution" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="single">All one type</SelectItem>
-                                      <SelectItem value="mixed">Split between types</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <div className="space-y-2">
-                                    <div className="flex items-center space-x-2">
-                                      <Label className="w-20">Deli:</Label>
-                                      <Input type="number" name="deliCount" placeholder="0" min="0" className="flex-1" />
+                                <Label htmlFor="sandwichTypes">Sandwich Planning</Label>
+                                <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                                  {/* Mode Selector */}
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={modalSandwichMode === 'total' ? 'default' : 'outline'}
+                                      onClick={() => setModalSandwichMode('total')}
+                                      className="text-xs"
+                                      data-testid="button-total-mode"
+                                    >
+                                      Total Count Only
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={modalSandwichMode === 'types' ? 'default' : 'outline'}
+                                      onClick={() => setModalSandwichMode('types')}
+                                      className="text-xs"
+                                      data-testid="button-types-mode"
+                                    >
+                                      Specify Types
+                                    </Button>
+                                  </div>
+
+                                  {/* Total Count Mode */}
+                                  {modalSandwichMode === 'total' && (
+                                    <div className="space-y-2">
+                                      <Label htmlFor="totalSandwichCount">Total Number of Sandwiches</Label>
+                                      <Input
+                                        id="totalSandwichCount"
+                                        type="number"
+                                        value={modalTotalCount}
+                                        onChange={(e) => setModalTotalCount(parseInt(e.target.value) || 0)}
+                                        placeholder="Enter total sandwich count"
+                                        min="0"
+                                        className="w-40"
+                                        data-testid="input-total-count"
+                                      />
+                                      <p className="text-sm text-gray-600">
+                                        Use this when you know the total count but types will be determined later.
+                                      </p>
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Label className="w-20">Turkey:</Label>
-                                      <Input type="number" name="turkeyCount" placeholder="0" min="0" className="flex-1" />
+                                  )}
+
+                                  {/* Specific Types Mode */}
+                                  {modalSandwichMode === 'types' && (
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center">
+                                        <Label>Sandwich Types & Quantities</Label>
+                                        <Button type="button" onClick={addModalSandwichType} size="sm" data-testid="button-add-type">
+                                          <Plus className="w-4 h-4 mr-2" />
+                                          Add Type
+                                        </Button>
+                                      </div>
+                                      
+                                      {modalSandwichTypes.length === 0 ? (
+                                        <div className="text-center py-4 text-gray-500 text-sm">
+                                          Click "Add Type" to specify individual sandwich types and quantities
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          {modalSandwichTypes.map((sandwichType, index) => (
+                                            <div key={index} className="flex items-center space-x-2" data-testid={`row-sandwich-type-${index}`}>
+                                              <Select 
+                                                value={sandwichType.type} 
+                                                onValueChange={(value) => updateModalSandwichType(index, 'type', value)}
+                                              >
+                                                <SelectTrigger className="w-40">
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {SANDWICH_TYPES.map((type) => (
+                                                    <SelectItem key={type.value} value={type.value}>
+                                                      {type.label}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                              <Input
+                                                type="number"
+                                                value={sandwichType.quantity}
+                                                onChange={(e) => updateModalSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                                                placeholder="Qty"
+                                                min="0"
+                                                className="w-20"
+                                              />
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => removeModalSandwichType(index)}
+                                                className="text-red-600 hover:text-red-700"
+                                                data-testid={`button-remove-type-${index}`}
+                                              >
+                                                <Trash2 className="w-4 h-4" />
+                                              </Button>
+                                            </div>
+                                          ))}
+                                          
+                                          {/* Total Summary */}
+                                          <div className="mt-3 p-2 bg-white rounded border-l-4 border-blue-200">
+                                            <span className="text-sm font-medium">
+                                              Total: {modalSandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Label className="w-20">Ham:</Label>
-                                      <Input type="number" name="hamCount" placeholder="0" min="0" className="flex-1" />
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Label className="w-20">PBJ:</Label>
-                                      <Input type="number" name="pbjCount" placeholder="0" min="0" className="flex-1" />
-                                    </div>
+                                  )}
+
+                                  {/* Summary */}
+                                  <div className="text-xs text-gray-600 bg-white p-2 rounded border-l-4 border-green-200">
+                                    <strong>Current Selection:</strong>{' '}
+                                    {modalSandwichMode === 'total'
+                                      ? `${modalTotalCount} sandwiches (types to be determined)`
+                                      : modalSandwichTypes.length > 0
+                                        ? modalSandwichTypes
+                                            .filter(item => item.quantity > 0)
+                                            .map(item => `${item.quantity} ${SANDWICH_TYPES.find(t => t.value === item.type)?.label || item.type}`)
+                                            .join(', ')
+                                        : 'No types specified'
+                                    }
                                   </div>
                                 </div>
                               </div>
