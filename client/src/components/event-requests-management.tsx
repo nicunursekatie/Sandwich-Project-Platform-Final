@@ -3693,7 +3693,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           <div className="flex items-center space-x-2">
                                             <span className="text-lg">🥪</span>
-                                            <span className="font-bold text-brand-orange text-lg">
+                                            <span className="font-bold text-brand-orange text-base">
                                               {request.estimatedSandwichCount} sandwiches
                                             </span>
                                           </div>
@@ -3830,7 +3830,7 @@ export default function EventRequestsManagement() {
                                           <div className="space-y-2">
                                             {/* Start time */}
                                             <div className="grid grid-cols-[auto,1fr] items-center gap-3">
-                                              <span className="text-sm font-medium text-muted-foreground min-w-16">Start:</span>
+                                              <span className="text-base font-medium text-muted-foreground min-w-16">Start:</span>
                                               {editingScheduledId === request.id && editingField === 'eventStartTime' ? (
                                                 <div className="flex items-center gap-2">
                                                   <Input
@@ -3865,7 +3865,7 @@ export default function EventRequestsManagement() {
 
                                             {/* End time */}
                                             <div className="grid grid-cols-[auto,1fr] items-center gap-3">
-                                              <span className="text-sm font-medium text-muted-foreground min-w-16">End:</span>
+                                              <span className="text-base font-medium text-muted-foreground min-w-16">End:</span>
                                               {editingScheduledId === request.id && editingField === 'eventEndTime' ? (
                                                 <div className="flex items-center gap-2">
                                                   <Input
@@ -3901,7 +3901,7 @@ export default function EventRequestsManagement() {
                                           
                                           {/* Pickup time with proper alignment */}
                                           <div className="grid grid-cols-[auto,1fr] items-center gap-3">
-                                            <span className="text-sm font-medium text-muted-foreground min-w-16">Pickup:</span>
+                                            <span className="text-base font-medium text-muted-foreground min-w-16">Pickup:</span>
                                             {editingScheduledId === request.id && editingField === 'pickupTime' ? (
                                               <div className="flex items-center gap-2">
                                                 <Input
@@ -3938,7 +3938,7 @@ export default function EventRequestsManagement() {
                                         {/* Address */}
                                         <div className="pt-2 border-t">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0">
-                                            <span className="text-sm font-medium text-muted-foreground flex-shrink-0">Address:</span>
+                                            <span className="text-base font-medium text-muted-foreground flex-shrink-0">Address:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'eventAddress' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -3991,7 +3991,7 @@ export default function EventRequestsManagement() {
                                         <div className="space-y-2">
                                           {/* Total Sandwiches Count */}
                                           <div className="flex justify-between items-center">
-                                            <span className="text-sm font-medium text-muted-foreground">Total:</span>
+                                            <span className="text-base font-medium text-muted-foreground">Total:</span>
                                             {editingScheduledId === request.id && editingField === 'estimatedSandwichCount' ? (
                                               <div className="flex items-center space-x-2">
                                                 <Input
@@ -4028,7 +4028,7 @@ export default function EventRequestsManagement() {
                                           {/* Sandwich Types */}
                                           <div className="flex flex-col space-y-2">
                                             <div className="flex justify-between items-center">
-                                              <span className="text-[#FBAD3F] text-sm font-semibold">Types:</span>
+                                              <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button size="sm" variant="ghost" onClick={(e) => {
                                                   e.stopPropagation();
@@ -4066,7 +4066,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#47B3CB] text-sm font-semibold">Refrigeration:</span>
+                                            <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
                                             {editingScheduledId === request.id && editingField === 'hasRefrigeration' ? (
                                               <div className="flex items-center space-x-2">
                                                 <Select value={editingValue} onValueChange={setEditingValue}>
@@ -4104,7 +4104,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-[#e6f2f5]">
-                                            <span className="text-[#FBAD3F] text-sm font-semibold flex-shrink-0">Destination:</span>
+                                            <span className="text-[#FBAD3F] text-base font-semibold flex-shrink-0">Destination:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
                                                 <div className="flex items-center space-x-1">
@@ -4150,7 +4150,7 @@ export default function EventRequestsManagement() {
                                         
                                         <div className="space-y-2">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-sm font-semibold flex-shrink-0">TSP Contact:</span>
+                                            <span className="text-[#007E8C] text-base font-semibold flex-shrink-0">TSP Contact:</span>
                                             <div className="flex items-center space-x-1">
                                               {editingScheduledId === request.id && editingField === 'tspContact' ? (
                                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
@@ -4191,7 +4191,7 @@ export default function EventRequestsManagement() {
                                             <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
                                                 <Truck className="w-4 h-4" />
-                                                <span className="text-sm font-medium text-teal-700">Drivers</span>
+                                                <span className="text-base font-medium text-teal-700">Drivers</span>
                                                 {editingScheduledId === request.id && editingField === 'driversNeeded' ? (
                                                   <div className="flex items-center space-x-2">
                                                     <Input
@@ -4225,13 +4225,13 @@ export default function EventRequestsManagement() {
                                                   const assignedCount = (request.assignedDriverIds || []).length;
                                                   const neededCount = request.driversNeeded || 0;
                                                   return (
-                                                    <div className="font-semibold text-lg">
+                                                    <div className="font-semibold text-base">
                                                       <span className={assignedCount >= neededCount ? "text-green-600" : "text-foreground"}>
                                                         {assignedCount}
                                                       </span>
                                                       <span className="text-muted-foreground mx-1">of</span>
                                                       <span>{neededCount}</span>
-                                                      <span className="text-muted-foreground text-sm ml-1">assigned</span>
+                                                      <span className="text-muted-foreground text-base ml-1">assigned</span>
                                                     </div>
                                                   );
                                                 })()}
@@ -4288,12 +4288,12 @@ export default function EventRequestsManagement() {
                                               
                                               return (
                                                 <div className="mt-2 space-y-1">
-                                                  <div className="text-xs font-medium text-teal-700 mb-1">Assigned Drivers:</div>
+                                                  <div className="text-base font-medium text-teal-700 mb-1">Assigned Drivers:</div>
                                                   {assignedDrivers.map((driverId, i) => {
                                                     const driverDetails = request.driverDetails?.[driverId];
                                                     const driverName = driverDetails?.name || resolveUserName(driverId);
                                                     return (
-                                                      <div key={`driver-${i}`} className="flex items-center justify-between bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm font-medium">
+                                                      <div key={`driver-${i}`} className="flex items-center justify-between bg-teal-100 text-teal-800 px-2 py-1 rounded text-base font-medium">
                                                         <span>🚗 {driverName}</span>
                                                         {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                           <Button
@@ -4361,7 +4361,7 @@ export default function EventRequestsManagement() {
                                             <div className="flex items-center justify-between">
                                               <div className="flex items-center space-x-2">
                                                 <Megaphone className="w-4 h-4" />
-                                                <span className="text-sm font-medium text-orange-700">Speakers</span>
+                                                <span className="text-base font-medium text-orange-700">Speakers</span>
                                                 {editingScheduledId === request.id && editingField === 'speakersNeeded' ? (
                                                   <div className="flex items-center space-x-2">
                                                     <Input
@@ -4491,7 +4491,7 @@ export default function EventRequestsManagement() {
                                             <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
                                                 <Users className="w-4 h-4" />
-                                                <span className="text-sm font-medium text-blue-700">Volunteers</span>
+                                                <span className="text-base font-medium text-blue-700">Volunteers</span>
                                                 {editingScheduledId === request.id && editingField === 'volunteersNeeded' ? (
                                                   <div className="flex items-center space-x-2">
                                                     <Select value={editingValue} onValueChange={setEditingValue}>
@@ -4527,9 +4527,9 @@ export default function EventRequestsManagement() {
                                                   (() => {
                                                     const assignedCount = (request.assignedVolunteerIds || []).length;
                                                     return (
-                                                      <div className="text-[#1A2332] font-bold text-lg">
+                                                      <div className="text-[#1A2332] font-bold text-base">
                                                         <span className="text-[#007E8C]">{assignedCount}</span>
-                                                        <span className="text-[#236383] text-sm ml-1">volunteers assigned</span>
+                                                        <span className="text-[#236383] text-base ml-1">volunteers assigned</span>
                                                       </div>
                                                     );
                                                   })()
