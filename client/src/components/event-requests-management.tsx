@@ -4020,114 +4020,21 @@ export default function EventRequestsManagement() {
                                             </div>
                                             
                                             {editingScheduledId === request.id && editingField === 'sandwichTypes' ? (
-                                              <div className="space-y-3 p-3 bg-white border rounded-lg">
-                                                {/* Mode Selector */}
-                                                <div className="flex gap-2">
-                                                  <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
-                                                    onClick={() => setInlineSandwichMode('total')}
-                                                    className="text-xs"
-                                                  >
-                                                    Total Only
-                                                  </Button>
-                                                  <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant={inlineSandwichMode === 'types' ? 'default' : 'outline'}
-                                                    onClick={() => setInlineSandwichMode('types')}
-                                                    className="text-xs"
-                                                  >
-                                                    Specify Types
-                                                  </Button>
-                                                </div>
-
-                                                {/* Total Count Mode */}
-                                                {inlineSandwichMode === 'total' && (
-                                                  <div>
-                                                    <Label htmlFor="inlineTotalCount" className="text-xs">Total Sandwiches</Label>
-                                                    <Input
-                                                      id="inlineTotalCount"
-                                                      type="number"
-                                                      value={inlineTotalCount}
-                                                      onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
-                                                      className="w-24 text-sm"
-                                                      min="0"
-                                                    />
-                                                  </div>
-                                                )}
-
-                                                {/* Types Mode */}
-                                                {inlineSandwichMode === 'types' && (
-                                                  <div className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                      <Label className="text-xs">Type Breakdown</Label>
-                                                      <Button type="button" onClick={addInlineSandwichType} size="sm" className="text-xs">
-                                                        <Plus className="w-3 h-3 mr-1" />
-                                                        Add
-                                                      </Button>
-                                                    </div>
-                                                    
-                                                    {inlineSandwichTypes.length === 0 ? (
-                                                      <div className="text-center py-2 text-gray-500 text-xs">
-                                                        Click "Add" to specify types
-                                                      </div>
-                                                    ) : (
-                                                      <div className="space-y-1">
-                                                        {inlineSandwichTypes.map((sandwich, index) => (
-                                                          <div key={index} className="flex items-center gap-2">
-                                                            <Select
-                                                              value={sandwich.type}
-                                                              onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
-                                                            >
-                                                              <SelectTrigger className="w-20 h-7 text-xs">
-                                                                <SelectValue />
-                                                              </SelectTrigger>
-                                                              <SelectContent>
-                                                                <SelectItem value="turkey">Turkey</SelectItem>
-                                                                <SelectItem value="ham">Ham</SelectItem>
-                                                                <SelectItem value="deli">Deli</SelectItem>
-                                                                <SelectItem value="pbj">PB&J</SelectItem>
-                                                              </SelectContent>
-                                                            </Select>
-                                                            <Input
-                                                              type="number"
-                                                              value={sandwich.quantity}
-                                                              onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
-                                                              className="w-16 h-7 text-xs"
-                                                              min="0"
-                                                            />
-                                                            <Button
-                                                              type="button"
-                                                              variant="outline"
-                                                              size="sm"
-                                                              onClick={() => removeInlineSandwichType(index)}
-                                                              className="h-7 w-7 p-0"
-                                                            >
-                                                              <Trash2 className="w-3 h-3" />
-                                                            </Button>
-                                                          </div>
-                                                        ))}
-                                                        <div className="text-xs text-gray-600 bg-blue-50 p-1 rounded">
-                                                          <strong>Total:</strong> {inlineSandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
-                                                        </div>
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                )}
-
-                                                {/* Action Buttons */}
-                                                <div className="flex justify-end space-x-2">
-                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="text-xs">
-                                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                                    Save
-                                                  </Button>
-                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="text-xs">
-                                                    <X className="w-3 h-3 mr-1" />
-                                                    Cancel
-                                                  </Button>
-                                                </div>
+                                              <div className="flex items-center space-x-2">
+                                                <Input
+                                                  type="number"
+                                                  value={inlineTotalCount}
+                                                  onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
+                                                  className="w-20 h-8 text-sm"
+                                                  min="0"
+                                                  placeholder="Total"
+                                                />
+                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-8 px-2">
+                                                  <CheckCircle className="w-4 h-4" />
+                                                </Button>
+                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-8 px-2">
+                                                  <X className="w-4 h-4" />
+                                                </Button>
                                               </div>
                                             ) : (
                                               <div className="text-right">
