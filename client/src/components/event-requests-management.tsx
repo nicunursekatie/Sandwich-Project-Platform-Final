@@ -4714,31 +4714,9 @@ export default function EventRequestsManagement() {
                                               </Button>
                                             )}
                                           </div>
-                                          {editingScheduledId === request.id && editingField === 'planningNotes' ? (
-                                            <div className="space-y-2">
-                                              <Textarea
-                                                value={editingValue}
-                                                onChange={(e) => setEditingValue(e.target.value)}
-                                                className="text-sm"
-                                                placeholder="Enter planning notes"
-                                                rows={2}
-                                              />
-                                              <div className="flex space-x-2">
-                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-                                                  <CheckCircle className="w-4 h-4 mr-1" />
-                                                  Save
-                                                </Button>
-                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-                                                  <X className="w-4 h-4 mr-1" />
-                                                  Cancel
-                                                </Button>
-                                              </div>
-                                            </div>
-                                          ) : (
-                                            <p className="text-sm text-gray-700 bg-brand-primary/5 p-2 rounded border-l-4 border-brand-primary/20">
-                                              {request.planningNotes || 'No planning notes'}
-                                            </p>
-                                          )}
+                                          <p className="text-sm text-gray-700 bg-brand-primary/5 p-2 rounded border-l-4 border-brand-primary/20">
+                                            {request.planningNotes || 'No planning notes'}
+                                          </p>
                                         </div>
                                       </div>
                                     )}
