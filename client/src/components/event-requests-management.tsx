@@ -905,7 +905,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         speakersNeeded: eventRequest.speakersNeeded || 0,
         volunteersNeeded: eventRequest.volunteersNeeded || false,
         tspContact: eventRequest.tspContact || '',
-        schedulingNotes: eventRequest.schedulingNotes || '',
+        schedulingNotes: (eventRequest as any).schedulingNotes || '',
         totalSandwichCount: totalCount,
       });
       
