@@ -3814,11 +3814,11 @@ export default function EventRequestsManagement() {
 
                                 {/* Comprehensive Event Details for Scheduled Events - Compact Grid */}
                                 {request.status === 'scheduled' && (
-                                  <div className="mt-3 bg-card border rounded-lg p-4">
+                                  <div className="mt-3 bg-white border rounded-lg p-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                       
                                       {/* Column 1: Schedule & Location */}
-                                      <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
+                                      <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
                                         <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Calendar className="w-4 h-4 mr-2" />
                                           Schedule & Location
@@ -3830,7 +3830,7 @@ export default function EventRequestsManagement() {
                                           <div className="space-y-2">
                                             {/* Start time */}
                                             <div className="grid grid-cols-[auto,1fr] items-center gap-3">
-                                              <span className="text-base font-medium text-muted-foreground min-w-16">Start:</span>
+                                              <span className="text-base font-medium text-[#236383] min-w-16">Start:</span>
                                               {editingScheduledId === request.id && editingField === 'eventStartTime' ? (
                                                 <div className="flex items-center gap-2">
                                                   <Input
@@ -3865,7 +3865,7 @@ export default function EventRequestsManagement() {
 
                                             {/* End time */}
                                             <div className="grid grid-cols-[auto,1fr] items-center gap-3">
-                                              <span className="text-base font-medium text-muted-foreground min-w-16">End:</span>
+                                              <span className="text-base font-medium text-[#236383] min-w-16">End:</span>
                                               {editingScheduledId === request.id && editingField === 'eventEndTime' ? (
                                                 <div className="flex items-center gap-2">
                                                   <Input
@@ -3901,7 +3901,7 @@ export default function EventRequestsManagement() {
                                           
                                           {/* Pickup time with proper alignment */}
                                           <div className="grid grid-cols-[auto,1fr] items-center gap-3">
-                                            <span className="text-base font-medium text-muted-foreground min-w-16">Pickup:</span>
+                                            <span className="text-base font-medium text-[#236383] min-w-16">Pickup:</span>
                                             {editingScheduledId === request.id && editingField === 'pickupTime' ? (
                                               <div className="flex items-center gap-2">
                                                 <Input
@@ -3938,7 +3938,7 @@ export default function EventRequestsManagement() {
                                         {/* Address */}
                                         <div className="pt-2 border-t">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0">
-                                            <span className="text-base font-medium text-muted-foreground flex-shrink-0">Address:</span>
+                                            <span className="text-base font-medium text-[#236383] flex-shrink-0">Address:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'eventAddress' ? (
                                                 <div className="flex items-center space-x-2 w-full">
@@ -3982,7 +3982,7 @@ export default function EventRequestsManagement() {
                                       </div>
                                       
                                       {/* Column 2: Sandwich & Logistics */}
-                                      <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
+                                      <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
                                         <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Package className="w-4 h-4 mr-2" />
                                           Sandwich Details
@@ -3991,7 +3991,7 @@ export default function EventRequestsManagement() {
                                         <div className="space-y-2">
                                           {/* Total Sandwiches Count */}
                                           <div className="flex justify-between items-center">
-                                            <span className="text-base font-medium text-muted-foreground">Total:</span>
+                                            <span className="text-base font-medium text-[#236383]">Total:</span>
                                             {editingScheduledId === request.id && editingField === 'estimatedSandwichCount' ? (
                                               <div className="flex items-center space-x-2">
                                                 <Input
@@ -4229,9 +4229,9 @@ export default function EventRequestsManagement() {
                                                       <span className={assignedCount >= neededCount ? "text-green-600" : "text-foreground"}>
                                                         {assignedCount}
                                                       </span>
-                                                      <span className="text-muted-foreground mx-1">of</span>
+                                                      <span className="text-[#236383] mx-1">of</span>
                                                       <span>{neededCount}</span>
-                                                      <span className="text-muted-foreground text-base ml-1">assigned</span>
+                                                      <span className="text-[#236383] text-base ml-1">assigned</span>
                                                     </div>
                                                   );
                                                 })()}
