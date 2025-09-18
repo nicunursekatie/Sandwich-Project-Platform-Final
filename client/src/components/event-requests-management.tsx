@@ -4187,11 +4187,11 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           {/* Drivers Section */}
-                                          <div className="space-y-2 p-3 bg-muted/30 border rounded-lg">
+                                          <div className="space-y-2 p-3 bg-teal-50 border border-teal-200 rounded-lg">
                                             <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
                                                 <Truck className="w-4 h-4" />
-                                                <span className="text-sm font-medium">Drivers</span>
+                                                <span className="text-sm font-medium text-teal-700">Drivers</span>
                                                 {editingScheduledId === request.id && editingField === 'driversNeeded' ? (
                                                   <div className="flex items-center space-x-2">
                                                     <Input
@@ -4288,12 +4288,12 @@ export default function EventRequestsManagement() {
                                               
                                               return (
                                                 <div className="mt-2 space-y-1">
-                                                  <div className="text-xs font-medium text-gray-600 mb-1">Assigned Drivers:</div>
+                                                  <div className="text-xs font-medium text-teal-700 mb-1">Assigned Drivers:</div>
                                                   {assignedDrivers.map((driverId, i) => {
                                                     const driverDetails = request.driverDetails?.[driverId];
                                                     const driverName = driverDetails?.name || resolveUserName(driverId);
                                                     return (
-                                                      <div key={`driver-${i}`} className="flex items-center justify-between bg-blue-50 text-blue-700 px-2 py-1 rounded text-sm font-medium">
+                                                      <div key={`driver-${i}`} className="flex items-center justify-between bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm font-medium">
                                                         <span>🚗 {driverName}</span>
                                                         {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                           <Button
@@ -4357,11 +4357,11 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           {/* Speakers Section */}
-                                          <div className="space-y-2 p-3 bg-muted/30 border rounded-lg">
+                                          <div className="space-y-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                                             <div className="flex items-center justify-between">
                                               <div className="flex items-center space-x-2">
                                                 <Megaphone className="w-4 h-4" />
-                                                <span className="text-sm font-medium">Speakers</span>
+                                                <span className="text-sm font-medium text-orange-700">Speakers</span>
                                                 {editingScheduledId === request.id && editingField === 'speakersNeeded' ? (
                                                   <div className="flex items-center space-x-2">
                                                     <Input
@@ -4458,12 +4458,12 @@ export default function EventRequestsManagement() {
                                               
                                               return (
                                                 <div className="mt-2 space-y-1">
-                                                  <div className="text-xs font-medium text-gray-600 mb-1">Assigned Speakers:</div>
+                                                  <div className="text-xs font-medium text-orange-700 mb-1">Assigned Speakers:</div>
                                                   {assignedSpeakers.map((speakerId, i) => {
                                                     const speakerDetails = request.speakerDetails?.[speakerId];
                                                     const speakerName = speakerDetails?.name || resolveUserName(speakerId);
                                                     return (
-                                                      <div key={`speaker-${i}`} className="flex items-center justify-between bg-orange-50 text-orange-700 px-2 py-1 rounded text-sm font-medium">
+                                                      <div key={`speaker-${i}`} className="flex items-center justify-between bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm font-medium">
                                                         <span>🎤 {speakerName}</span>
                                                         {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                           <Button
@@ -4487,11 +4487,11 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           {/* Volunteers Section */}
-                                          <div className="space-y-2 p-3 bg-muted/30 border rounded-lg">
+                                          <div className="space-y-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                             <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
                                                 <Users className="w-4 h-4" />
-                                                <span className="text-sm font-medium">Volunteers</span>
+                                                <span className="text-sm font-medium text-blue-700">Volunteers</span>
                                                 {editingScheduledId === request.id && editingField === 'volunteersNeeded' ? (
                                                   <div className="flex items-center space-x-2">
                                                     <Select value={editingValue} onValueChange={setEditingValue}>
@@ -4593,12 +4593,12 @@ export default function EventRequestsManagement() {
                                               
                                               return (
                                                 <div className="mt-2 space-y-1">
-                                                  <div className="text-xs font-medium text-gray-600 mb-1">Assigned Volunteers:</div>
+                                                  <div className="text-xs font-medium text-blue-700 mb-1">Assigned Volunteers:</div>
                                                   {assignedVolunteers.map((volunteerId, i) => {
                                                     const volunteerDetails = request.volunteerDetails?.[volunteerId];
                                                     const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
                                                     return (
-                                                      <div key={`volunteer-${i}`} className="flex items-center justify-between bg-green-50 text-green-700 px-2 py-1 rounded text-sm font-medium">
+                                                      <div key={`volunteer-${i}`} className="flex items-center justify-between bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
                                                         <span>👥 {volunteerName}</span>
                                                         {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                           <Button
