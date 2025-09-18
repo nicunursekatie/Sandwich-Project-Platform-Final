@@ -5081,7 +5081,7 @@ export default function EventRequestsManagement() {
                                 <Input
                                   id="phone"
                                   name="phone"
-                                  defaultValue={selectedEventRequest.phone || ''}
+                                  defaultValue={selectedEventRequest?.phone || ''}
                                 />
                               </div>
                             </div>
@@ -5105,10 +5105,10 @@ export default function EventRequestsManagement() {
                                     name="desiredEventDate"
                                     type="date"
                                     defaultValue={
-                                      selectedEventRequest.desiredEventDate ? 
+                                      selectedEventRequest?.desiredEventDate ? 
                                       (() => {
                                         // Handle Date object or string
-                                        const dateValue = selectedEventRequest.desiredEventDate;
+                                        const dateValue = selectedEventRequest?.desiredEventDate;
                                         if (dateValue instanceof Date) {
                                           return dateValue.toISOString().split('T')[0];
                                         }
