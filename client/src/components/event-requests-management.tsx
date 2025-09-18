@@ -2638,7 +2638,7 @@ export default function EventRequestsManagement() {
                                       <Edit className="w-4 h-4 mr-2" />
                                       Edit
                                     </Button>
-                              </div>
+                                  </div>
                                 )}
 
                                 {/* Action Buttons for In Process Status */}
@@ -2861,22 +2861,6 @@ export default function EventRequestsManagement() {
                                     </Button>
                                   </div>
                                 )}
-                              </div>
-                            </div>
-                          </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                </div>
-              </TabsContent>
-          )}
-
-          {/* Import tab */}
-          <TabsContent value="import" className="space-y-6">
-            <ImportEventsTab />
-          </TabsContent>
-        </Tabs>
 
         {/* Event Details Modal */}
         {showEventDetails && (
