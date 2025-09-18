@@ -3819,7 +3819,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 1: Schedule & Location */}
                                       <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
-                                        <h4 className="text-lg font-semibold tracking-tight flex items-center border-b pb-2">
+                                        <h4 className="text-sm font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Calendar className="w-4 h-4 mr-2" />
                                           Schedule & Location
                                         </h4>
@@ -3848,7 +3848,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-base font-medium">
+                                                  <span className="text-sm font-medium">
                                                     {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -3883,7 +3883,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-base font-medium">
+                                                  <span className="text-sm font-medium">
                                                     {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -3957,7 +3957,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <>
-                                                  <span className="font-semibold text-base sm:text-right sm:max-w-[200px] break-words">
+                                                  <span className="font-semibold text-sm sm:text-right sm:max-w-[200px] break-words">
                                                     {request.eventAddress ? (
                                                       <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
                                                          target="_blank" rel="noopener noreferrer"
@@ -3983,7 +3983,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 2: Sandwich & Logistics */}
                                       <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
-                                        <h4 className="text-lg font-semibold tracking-tight flex items-center border-b pb-2">
+                                        <h4 className="text-sm font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Package className="w-4 h-4 mr-2" />
                                           Sandwich Details
                                         </h4>
@@ -4010,7 +4010,7 @@ export default function EventRequestsManagement() {
                                               </div>
                                             ) : (
                                               <div className="flex items-center space-x-1">
-                                                <span className="font-semibold text-lg">
+                                                <span className="font-semibold text-sm">
                                                   {request.estimatedSandwichCount || 0} sandwiches
                                                 </span>
                                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -4028,7 +4028,7 @@ export default function EventRequestsManagement() {
                                           {/* Sandwich Types */}
                                           <div className="flex flex-col space-y-2">
                                             <div className="flex justify-between items-center">
-                                              <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
+                                              <span className="text-[#FBAD3F] text-sm font-semibold">Types:</span>
                                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                                 <Button size="sm" variant="ghost" onClick={(e) => {
                                                   e.stopPropagation();
@@ -4066,7 +4066,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex justify-between items-center">
-                                            <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
+                                            <span className="text-[#47B3CB] text-sm font-semibold">Refrigeration:</span>
                                             {editingScheduledId === request.id && editingField === 'hasRefrigeration' ? (
                                               <div className="flex items-center space-x-2">
                                                 <Select value={editingValue} onValueChange={setEditingValue}>
@@ -4104,7 +4104,7 @@ export default function EventRequestsManagement() {
                                           </div>
                                           
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0 pt-2 border-t border-[#e6f2f5]">
-                                            <span className="text-[#FBAD3F] text-base font-semibold flex-shrink-0">Destination:</span>
+                                            <span className="text-[#FBAD3F] text-sm font-semibold flex-shrink-0">Destination:</span>
                                             <div className="flex items-start space-x-1 sm:flex-1 sm:justify-end">
                                               {editingScheduledId === request.id && editingField === 'sandwichDestination' ? (
                                                 <div className="flex items-center space-x-1">
@@ -4143,14 +4143,14 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 3: Staffing */}
                                       <div className="space-y-2 bg-[#f0f6f8] p-3 rounded-lg border border-[#007E8C]/20">
-                                        <h4 className="text-base font-semibold flex items-center border-b border-[#007E8C]/20 pb-2" style={{color: '#1A2332'}}>
+                                        <h4 className="text-sm font-semibold flex items-center border-b border-[#007E8C]/20 pb-2" style={{color: '#1A2332'}}>
                                           <Users className="w-5 h-5 mr-2 text-brand-primary" />
                                           Staffing
                                         </h4>
                                         
                                         <div className="space-y-2">
                                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                                            <span className="text-[#007E8C] text-base font-semibold flex-shrink-0">TSP Contact:</span>
+                                            <span className="text-[#007E8C] text-sm font-semibold flex-shrink-0">TSP Contact:</span>
                                             <div className="flex items-center space-x-1">
                                               {editingScheduledId === request.id && editingField === 'tspContact' ? (
                                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
@@ -4170,7 +4170,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <>
-                                                  <span className="font-semibold text-[#1A2332] text-base break-words">
+                                                  <span className="font-semibold text-[#1A2332] text-sm break-words">
                                                     {resolveUserName(request.tspContact) || 'Not assigned'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
