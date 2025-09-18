@@ -2933,20 +2933,9 @@ export default function EventRequestsManagement() {
         refetchType: 'all'
       });
       
-      // Update the selectedEventRequest state with fresh data if this event is currently displayed
-      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          // Fetch the updated event data from the server
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          console.error('Failed to fetch updated event data:', error);
-          // If fetch fails, at least invalidate to ensure UI consistency
-          setSelectedEventRequest(null);
-          setShowEventDetails(false);
-        }
-      }
-      
+      // Close the dialog after successful update
+      setShowEventDetails(false);
+      setSelectedEventRequest(null);
       setIsEditing(false);
     },
     onError: (error: any) => {
