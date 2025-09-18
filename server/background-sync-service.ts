@@ -86,6 +86,9 @@ export class BackgroundSyncService {
         // Sync Event Requests from Google Sheets
         await this.syncEventRequests();
 
+        // Auto-transition scheduled events to completed if their date has passed
+        await this.autoTransitionPastEvents();
+
         const duration = Date.now() - startTime;
         syncLogger.info('Background sync completed successfully', {
           lockKey: SYNC_LOCK_KEY,
@@ -164,6 +167,65 @@ export class BackgroundSyncService {
       }
     } catch (error) {
       console.error('❌ Event requests sync error:', error);
+    }
+  }
+
+  /**
+   * Auto-transition scheduled events to completed if their date has passed
+   */
+  private async autoTransitionPastEvents() {
+    try {
+      syncLogger.info('Starting auto-transition of past events');
+      
+      // Get all scheduled event requests
+      const allEventRequests = await this.storage.getEventRequests();
+      const scheduledEvents = allEventRequests.filter(event => event.status === 'scheduled');
+      
+      if (scheduledEvents.length === 0) {
+        syncLogger.debug('No scheduled events found for auto-transition');
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // End of today for comparison
+      
+      let transitionedCount = 0;
+      
+      for (const event of scheduledEvents) {
+        if (event.desiredEventDate && new Date(event.desiredEventDate) < today) {
+          try {
+            await this.storage.updateEventRequest(event.id, {
+              status: 'completed',
+              updatedAt: new Date()
+            });
+            
+            transitionedCount++;
+            syncLogger.info('Auto-transitioned past event', {
+              eventId: event.id,
+              organizationName: event.organizationName,
+              desiredEventDate: event.desiredEventDate,
+              fromStatus: 'scheduled',
+              toStatus: 'completed'
+            });
+          } catch (updateError) {
+            syncLogger.error('Failed to auto-transition event', {
+              eventId: event.id,
+              error: updateError
+            });
+          }
+        }
+      }
+      
+      if (transitionedCount > 0) {
+        console.log(`🗓️ Auto-transitioned ${transitionedCount} past events from scheduled to completed`);
+        syncLogger.info('Auto-transition completed', { transitionedCount });
+      } else {
+        syncLogger.debug('No past events found to transition');
+      }
+      
+    } catch (error) {
+      syncLogger.error('Auto-transition of past events failed', { error });
+      console.error('❌ Auto-transition of past events failed:', error);
     }
   }
 
