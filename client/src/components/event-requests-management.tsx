@@ -4679,6 +4679,7 @@ export default function EventRequestsManagement() {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedEventRequest(request);
+                                        setToolkitEventRequest(request);
                                         setShowToolkitSentDialog(true);
                                       }}
                                       className="text-white"
