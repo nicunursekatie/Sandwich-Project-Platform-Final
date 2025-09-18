@@ -4280,6 +4280,40 @@ export default function EventRequestsManagement() {
                                               </Button>
                                               )}
                                             </div>
+                                            
+                                            {/* Show assigned drivers under this section */}
+                                            {(() => {
+                                              const assignedDrivers = request.assignedDriverIds || [];
+                                              if (assignedDrivers.length === 0) return null;
+                                              
+                                              return (
+                                                <div className="mt-2 space-y-1">
+                                                  <div className="text-xs font-medium text-gray-600 mb-1">Assigned Drivers:</div>
+                                                  {assignedDrivers.map((driverId, i) => {
+                                                    const driverDetails = request.driverDetails?.[driverId];
+                                                    const driverName = driverDetails?.name || resolveUserName(driverId);
+                                                    return (
+                                                      <div key={`driver-${i}`} className="flex items-center justify-between bg-blue-50 text-blue-700 px-2 py-1 rounded text-sm font-medium">
+                                                        <span>🚗 {driverName}</span>
+                                                        {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                          <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              handleRemoveAssignment(driverId, 'driver', request.id);
+                                                            }}
+                                                            className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
+                                                          >
+                                                            <X className="w-3 h-3" />
+                                                          </Button>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              );
+                                            })()}
                                           </div>
                                           
                                           {/* Van Driver */}
@@ -4416,6 +4450,40 @@ export default function EventRequestsManagement() {
                                               </Button>
                                               )}
                                             </div>
+                                            
+                                            {/* Show assigned speakers under this section */}
+                                            {(() => {
+                                              const assignedSpeakers = Object.keys(request.speakerDetails || {});
+                                              if (assignedSpeakers.length === 0) return null;
+                                              
+                                              return (
+                                                <div className="mt-2 space-y-1">
+                                                  <div className="text-xs font-medium text-gray-600 mb-1">Assigned Speakers:</div>
+                                                  {assignedSpeakers.map((speakerId, i) => {
+                                                    const speakerDetails = request.speakerDetails?.[speakerId];
+                                                    const speakerName = speakerDetails?.name || resolveUserName(speakerId);
+                                                    return (
+                                                      <div key={`speaker-${i}`} className="flex items-center justify-between bg-orange-50 text-orange-700 px-2 py-1 rounded text-sm font-medium">
+                                                        <span>🎤 {speakerName}</span>
+                                                        {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                          <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              handleRemoveAssignment(speakerId, 'speaker', request.id);
+                                                            }}
+                                                            className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
+                                                          >
+                                                            <X className="w-3 h-3" />
+                                                          </Button>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              );
+                                            })()}
                                           </div>
                                           
                                           {/* Volunteers Section */}
@@ -4517,97 +4585,42 @@ export default function EventRequestsManagement() {
                                                 )}
                                             </div>
                                             )}
+                                            
+                                            {/* Show assigned volunteers under this section */}
+                                            {(() => {
+                                              const assignedVolunteers = request.assignedVolunteerIds || [];
+                                              if (assignedVolunteers.length === 0) return null;
+                                              
+                                              return (
+                                                <div className="mt-2 space-y-1">
+                                                  <div className="text-xs font-medium text-gray-600 mb-1">Assigned Volunteers:</div>
+                                                  {assignedVolunteers.map((volunteerId, i) => {
+                                                    const volunteerDetails = request.volunteerDetails?.[volunteerId];
+                                                    const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
+                                                    return (
+                                                      <div key={`volunteer-${i}`} className="flex items-center justify-between bg-green-50 text-green-700 px-2 py-1 rounded text-sm font-medium">
+                                                        <span>👥 {volunteerName}</span>
+                                                        {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                                          <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              handleRemoveAssignment(volunteerId, 'volunteer', request.id);
+                                                            }}
+                                                            className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
+                                                          >
+                                                            <X className="w-3 h-3" />
+                                                          </Button>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              );
+                                            })()}
                                           </div>
                                         </div>
-                                        
-                                        {/* Show assigned people if any */}
-                                        {(() => {
-                                          const assignedDrivers = request.assignedDriverIds || [];
-                                          const assignedSpeakers = Object.keys(request.speakerDetails || {});
-                                          const assignedVolunteers = request.assignedVolunteerIds || [];
-                                          const hasAssignments = assignedDrivers.length > 0 || assignedSpeakers.length > 0 || assignedVolunteers.length > 0;
-                                          
-                                          if (!hasAssignments) return null;
-                                          
-                                          return (
-                                            <div className="pt-2 border-t border-gray-100">
-                                              <div className="text-xs text-gray-600 mb-1">Assigned:</div>
-                                              <div className="space-y-1 text-xs">
-                                                {/* Drivers */}
-                                                {assignedDrivers.map((driverId, i) => {
-                                                  const driverDetails = request.driverDetails?.[driverId];
-                                                  const driverName = driverDetails?.name || resolveUserName(driverId);
-                                                  return (
-                                                    <div key={`driver-${i}`} className="flex items-center justify-between bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
-                                                      <span>🚗 {driverName}</span>
-                                                      {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                        <Button
-                                                          size="sm"
-                                                          variant="ghost"
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveAssignment(driverId, 'driver', request.id);
-                                                          }}
-                                                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700"
-                                                        >
-                                                          <X className="w-3 h-3" />
-                                                        </Button>
-                                                      )}
-                                                    </div>
-                                                  );
-                                                })}
-                                                
-                                                {/* Speakers */}
-                                                {assignedSpeakers.map((speakerId, i) => {
-                                                  const speakerDetails = request.speakerDetails?.[speakerId];
-                                                  const speakerName = speakerDetails?.name || resolveUserName(speakerId);
-                                                  return (
-                                                    <div key={`speaker-${i}`} className="flex items-center justify-between bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
-                                                      <span>🎤 {speakerName}</span>
-                                                      {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                        <Button
-                                                          size="sm"
-                                                          variant="ghost"
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveAssignment(speakerId, 'speaker', request.id);
-                                                          }}
-                                                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700"
-                                                        >
-                                                          <X className="w-3 h-3" />
-                                                        </Button>
-                                                      )}
-                                                    </div>
-                                                  );
-                                                })}
-                                                
-                                                {/* Volunteers */}
-                                                {assignedVolunteers.map((volunteerId, i) => {
-                                                  const volunteerDetails = request.volunteerDetails?.[volunteerId];
-                                                  const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
-                                                  return (
-                                                    <div key={`volunteer-${i}`} className="flex items-center justify-between bg-brand-primary/10 text-brand-primary px-2 py-1 rounded text-xs font-medium">
-                                                      <span>👥 {volunteerName}</span>
-                                                      {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                        <Button
-                                                          size="sm"
-                                                          variant="ghost"
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveAssignment(volunteerId, 'volunteer', request.id);
-                                                          }}
-                                                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700"
-                                                        >
-                                                          <X className="w-3 h-3" />
-                                                        </Button>
-                                                      )}
-                                                    </div>
-                                                  );
-                                                })}
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
                                       </div>
                                     </div>
                                     
