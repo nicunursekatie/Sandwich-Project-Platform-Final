@@ -2862,13 +2862,21 @@ export default function EventRequestsManagement() {
     queryKey: ['/api/recipients'],
   });
 
-  // Helper function to resolve user ID to name
+  // Helper function to resolve user ID or email to name
   const resolveUserName = (userIdOrName: string | undefined): string => {
     if (!userIdOrName) return 'Not assigned';
 
     // If it looks like a user ID, try to resolve it
     if (userIdOrName.startsWith('user_') && userIdOrName.includes('_')) {
       const user = users.find((u) => u.id === userIdOrName);
+      if (user) {
+        return `${user.firstName} ${user.lastName}`.trim() || user.email;
+      }
+    }
+
+    // If it looks like an email address, try to find the user by email
+    if (userIdOrName.includes('@')) {
+      const user = users.find((u) => u.email === userIdOrName);
       if (user) {
         return `${user.firstName} ${user.lastName}`.trim() || user.email;
       }
@@ -4978,7 +4986,7 @@ export default function EventRequestsManagement() {
                         <div>
                           <h3 className="text-base font-medium text-gray-900">Additional Details</h3>
                           <div className="mt-2 space-y-2">
-                            <p><span className="font-medium">TSP Contact:</span> {selectedEventRequest.tspContact || 'Not assigned'}</p>
+                            <p><span className="font-medium">TSP Contact:</span> {resolveUserName(selectedEventRequest.tspContact) || 'Not assigned'}</p>
                             <p><span className="font-medium">Sandwich Types:</span> {
                               (() => {
                                 if (!selectedEventRequest.sandwichTypes) return 'Not specified';
