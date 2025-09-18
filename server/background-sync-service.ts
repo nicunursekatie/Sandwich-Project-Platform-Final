@@ -178,7 +178,7 @@ export class BackgroundSyncService {
       syncLogger.info('Starting auto-transition of past events');
       
       // Get all scheduled event requests
-      const allEventRequests = await this.storage.getEventRequests();
+      const allEventRequests = await this.storage.getAllEventRequests();
       const scheduledEvents = allEventRequests.filter(event => event.status === 'scheduled');
       
       if (scheduledEvents.length === 0) {

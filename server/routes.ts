@@ -114,6 +114,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { streamRoutes } = await import('./routes/stream');
   app.use('/api/stream', isAuthenticated, streamRoutes);
 
+  // Message notifications routes
+  const { registerMessageNotificationRoutes } = await import('./routes/message-notifications');
+  registerMessageNotificationRoutes(app);
+
+  // Announcements routes
+  const { registerAnnouncementRoutes } = await import('./routes/announcements');
+  registerAnnouncementRoutes(app);
+
   // User routes are now handled by the modular system in server/routes/index.ts
 
   // Register performance optimization routes
