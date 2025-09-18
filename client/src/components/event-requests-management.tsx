@@ -1048,7 +1048,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <Input 
                         id="newFirstName"
                         placeholder="Enter first name"
-                        required
                       />
                     </div>
                     <div>
@@ -1056,7 +1055,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <Input 
                         id="newLastName"
                         placeholder="Enter last name"
-                        required
                       />
                     </div>
                     <div>
@@ -1065,7 +1063,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         id="newEmail"
                         type="email"
                         placeholder="Enter email address"
-                        required
                       />
                     </div>
                     <div>
@@ -1080,7 +1077,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       <Input 
                         id="newOrganization"
                         placeholder="Enter organization name"
-                        required
                       />
                     </div>
                     <div>
@@ -5054,7 +5050,6 @@ export default function EventRequestsManagement() {
                                   id="firstName"
                                   name="firstName"
                                   defaultValue={selectedEventRequest?.firstName || ''}
-                                  required
                                 />
                               </div>
                               <div>
@@ -5063,7 +5058,6 @@ export default function EventRequestsManagement() {
                                   id="lastName"
                                   name="lastName"
                                   defaultValue={selectedEventRequest?.lastName || ''}
-                                  required
                                 />
                               </div>
                               <div>
@@ -5073,7 +5067,6 @@ export default function EventRequestsManagement() {
                                   name="email"
                                   type="email"
                                   defaultValue={selectedEventRequest?.email || ''}
-                                  required
                                 />
                               </div>
                               <div>
@@ -5095,7 +5088,6 @@ export default function EventRequestsManagement() {
                                   id="organizationName"
                                   name="organizationName"
                                   defaultValue={selectedEventRequest?.organizationName || ''}
-                                  required
                                 />
                               </div>
                               <div>
