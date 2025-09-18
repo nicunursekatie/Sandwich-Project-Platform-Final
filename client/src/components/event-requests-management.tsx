@@ -4873,6 +4873,21 @@ export default function EventRequestsManagement() {
                                       <Calendar className="w-4 h-4 mr-2" />
                                       1 Month Follow-up
                                     </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
+                                          deleteEventRequestMutation.mutate(request.id);
+                                        }
+                                      }}
+                                      data-testid={`button-delete-${request.id}`}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete
+                                    </Button>
                                   </div>
                                 )}
 
