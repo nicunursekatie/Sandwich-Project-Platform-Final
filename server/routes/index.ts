@@ -10,6 +10,7 @@ import tasksRouter from './tasks';
 import collectionsRouter from './collections';
 import meetingsRouter from './meetings';
 import messagingRouter from './messaging';
+import eventRequestsRouter from './event-requests';
 import importCollectionsRouter from './import-collections';
 import notificationsRouter from './notifications';
 import reportsRouter from './reports';
@@ -204,6 +205,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     versioningRouter
   );
   router.use('/api/versioning', createErrorHandler('versioning'));
+
+  // Event Requests routes
+  router.use(
+    '/api/event-requests',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventRequestsRouter
+  );
+  router.use('/api/event-requests', createErrorHandler('event-requests'));
 
   return router;
 }
