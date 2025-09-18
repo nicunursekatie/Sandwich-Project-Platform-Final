@@ -2867,7 +2867,7 @@ export default function EventRequestsManagement() {
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
       apiRequest('PATCH', `/api/event-requests/${id}`, data),
-    onSuccess: async () => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Event request updated',
         description: 'The event request has been successfully updated.',
@@ -2878,6 +2878,20 @@ export default function EventRequestsManagement() {
         queryKey: ['/api/event-requests'],
         refetchType: 'all'
       });
+      
+      // Update the selectedEventRequest state with fresh data if this event is currently displayed
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          // Fetch the updated event data from the server
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          console.error('Failed to fetch updated event data:', error);
+          // If fetch fails, at least invalidate to ensure UI consistency
+          setSelectedEventRequest(null);
+          setShowEventDetails(false);
+        }
+      }
       
       setIsEditing(false);
     },
@@ -2942,12 +2956,23 @@ export default function EventRequestsManagement() {
       apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, {
         toolkitSentDate,
       }),
-    onSuccess: () => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Toolkit marked as sent',
         description: 'Event status updated to "In Process".',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Update selectedEventRequest if this event is currently displayed
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          console.error('Failed to fetch updated event data after toolkit sent:', error);
+        }
+      }
+      
       setShowToolkitSentDialog(false);
       setToolkitEventRequest(null);
     },
@@ -2971,14 +2996,24 @@ export default function EventRequestsManagement() {
       apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, {
         scheduledCallDate,
       }),
-    onSuccess: () => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Call scheduled',
         description: 'Call has been scheduled successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Update selectedEventRequest if this event is currently displayed
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          console.error('Failed to fetch updated event data after call scheduled:', error);
+        }
+      }
+      
       setShowScheduleCallDialog(false);
-      setSelectedEventRequest(null);
       setScheduleCallDate('');
       setScheduleCallTime('');
     },
@@ -3002,12 +3037,23 @@ export default function EventRequestsManagement() {
       field: string;
       value: string;
     }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
-    onSuccess: () => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Field updated',
         description: 'Event field has been updated successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Update selectedEventRequest if this event is currently displayed
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          console.error('Failed to fetch updated event data after field update:', error);
+        }
+      }
+      
       setEditingScheduledId(null);
       setEditingField(null);
       setEditingValue('');
@@ -3029,14 +3075,24 @@ export default function EventRequestsManagement() {
         followUpOneDayDate: new Date().toISOString(),
         followUpNotes: notes,
       }),
-    onSuccess: () => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: '1-day follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Update selectedEventRequest if this event is currently displayed
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          console.error('Failed to fetch updated event data after 1-day follow-up:', error);
+        }
+      }
+      
       setShowOneDayFollowUpDialog(false);
-      setSelectedEventRequest(null);
       setFollowUpNotes('');
     },
     onError: () => {
@@ -3055,14 +3111,24 @@ export default function EventRequestsManagement() {
         followUpOneMonthDate: new Date().toISOString(),
         followUpNotes: notes,
       }),
-    onSuccess: () => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: '1-month follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Update selectedEventRequest if this event is currently displayed
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          console.error('Failed to fetch updated event data after 1-month follow-up:', error);
+        }
+      }
+      
       setShowOneMonthFollowUpDialog(false);
-      setSelectedEventRequest(null);
       setFollowUpNotes('');
     },
     onError: () => {
