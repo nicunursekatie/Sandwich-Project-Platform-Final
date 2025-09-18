@@ -2867,12 +2867,18 @@ export default function EventRequestsManagement() {
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
       apiRequest('PATCH', `/api/event-requests/${id}`, data),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: 'Event request updated',
         description: 'The event request has been successfully updated.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Force a complete cache invalidation and refetch
+      await queryClient.invalidateQueries({ 
+        queryKey: ['/api/event-requests'],
+        refetchType: 'all'
+      });
+      
       setIsEditing(false);
     },
     onError: (error: any) => {
@@ -2891,12 +2897,23 @@ export default function EventRequestsManagement() {
   const createEventRequestMutation = useMutation({
     mutationFn: (data: any) =>
       apiRequest('POST', '/api/event-requests', data),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: 'Event request created',
         description: 'The new event request has been successfully created.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Force a complete cache invalidation and refetch
+      await queryClient.invalidateQueries({ 
+        queryKey: ['/api/event-requests'],
+        refetchType: 'all'
+      });
+      
+      // Also explicitly refetch the query to ensure fresh data
+      await queryClient.refetchQueries({ 
+        queryKey: ['/api/event-requests']
+      });
+      
       setShowEventDetails(false);
       setSelectedEventRequest(null);
       setIsEditing(false);
