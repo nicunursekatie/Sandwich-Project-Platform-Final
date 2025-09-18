@@ -5593,9 +5593,6 @@ export default function EventRequestsManagement() {
                           <div className="font-medium text-[#1A2332]">
                             {person.firstName} {person.lastName}
                           </div>
-                          {person.phone && (
-                            <div className="text-sm text-[#236383]">{person.phone}</div>
-                          )}
                           {assignmentType === 'driver' && person.vanCapable && (
                             <Badge className="text-xs bg-[#007E8C] text-white mt-1">
                               Van Capable
@@ -5604,13 +5601,14 @@ export default function EventRequestsManagement() {
                         </div>
                         <Button
                           size="sm"
+                          variant="outline"
                           onClick={() => {
                             const personName = `${person.firstName} ${person.lastName}`;
                             handleAssignment(person.id, personName);
                           }}
+                          className="text-xs px-2 py-1"
                         >
-                          <UserCheck className="w-4 h-4 mr-1" />
-                          Assign
+                          Add
                         </Button>
                       </div>
                     ))}
