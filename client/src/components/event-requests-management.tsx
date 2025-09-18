@@ -2222,6 +2222,7 @@ export default function EventRequestsManagement() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'organization' | 'event_date'>(
     'newest'
   );
+  const [activeTab, setActiveTab] = useState('new');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
@@ -3291,6 +3292,13 @@ export default function EventRequestsManagement() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, sortBy]);
 
+  // Auto-sort by event date when scheduled tab is selected
+  useEffect(() => {
+    if (activeTab === 'scheduled' && sortBy !== 'event_date') {
+      setSortBy('event_date');
+    }
+  }, [activeTab, sortBy]);
+
   // Group requests by status for tab display
   const requestsByStatus = useMemo(() => {
     const groups = eventRequests.reduce((acc: any, request: EventRequest) => {
@@ -3428,7 +3436,7 @@ export default function EventRequestsManagement() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="new" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="new" className="relative">
               New ({statusCounts.new})
