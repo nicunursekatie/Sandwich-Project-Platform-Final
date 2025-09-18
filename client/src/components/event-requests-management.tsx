@@ -3809,69 +3809,72 @@ export default function EventRequestsManagement() {
                                         
                                         {/* Times in compact rows */}
                                         <div className="space-y-1">
-                                          {/* Start and End times on same line */}
-                                          <div className="flex justify-between items-center">
-                                            <div className="flex items-center space-x-3">
-                                              <span className="text-[#236383] text-base font-semibold">Start:</span>
+                                          {/* Start and End times with proper layout */}
+                                          <div className="space-y-2">
+                                            {/* Start time */}
+                                            <div className="grid grid-cols-[auto,1fr] items-center gap-3">
+                                              <span className="text-sm font-medium text-muted-foreground min-w-16">Start:</span>
                                               {editingScheduledId === request.id && editingField === 'eventStartTime' ? (
-                                                <div className="flex items-center space-x-2">
+                                                <div className="flex items-center gap-2">
                                                   <Input
                                                     type="time"
                                                     value={editingValue}
                                                     onChange={(e) => setEditingValue(e.target.value)}
-                                                    className="text-base w-32"
+                                                    className="w-28"
                                                   />
-                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                  <Button size="icon" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-7 w-7">
                                                     <CheckCircle className="w-4 h-4" />
                                                   </Button>
-                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                  <Button variant="outline" size="icon" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-7 w-7">
                                                     <X className="w-4 h-4" />
                                                   </Button>
                                                 </div>
                                               ) : (
-                                                <div className="flex items-center space-x-1">
-                                                  <span className="font-semibold text-[#1A2332] text-base">
+                                                <div className="flex items-center gap-1">
+                                                  <span className="text-base font-medium text-slate-900 dark:text-slate-100">
                                                     {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    <Button variant="ghost" size="icon" onClick={(e) => {
                                                       e.stopPropagation();
                                                       startEditing(request.id, 'eventStartTime', request.eventStartTime || '');
-                                                    }} className="h-4 w-4 p-0">
-                                                      <Edit className="w-3 h-3" />
+                                                    }} className="h-6 w-6 ml-1">
+                                                      <Edit className="w-4 h-4" />
                                                     </Button>
                                                   )}
                                                 </div>
                                               )}
                                             </div>
-                                            <div className="flex items-center space-x-3">
-                                              <span className="text-[#236383] text-base font-semibold">End:</span>
+
+                                            {/* End time */}
+                                            <div className="grid grid-cols-[auto,1fr] items-center gap-3">
+                                              <span className="text-sm font-medium text-muted-foreground min-w-16">End:</span>
                                               {editingScheduledId === request.id && editingField === 'eventEndTime' ? (
-                                                <div className="flex items-center space-x-2">
+                                                <div className="flex items-center gap-2">
                                                   <Input
                                                     type="time"
                                                     value={editingValue}
                                                     onChange={(e) => setEditingValue(e.target.value)}
-                                                    className="text-base w-32"
+                                                    className="w-28"
                                                   />
-                                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                  <Button size="icon" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-7 w-7">
                                                     <CheckCircle className="w-4 h-4" />
                                                   </Button>
-                                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                  <Button variant="outline" size="icon" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-7 w-7">
                                                     <X className="w-4 h-4" />
                                                   </Button>
                                                 </div>
                                               ) : (
-                                                <div className="flex items-center space-x-1">
-                                                  <span className="font-bold text-[#1A2332] text-base">
+                                                <div className="flex items-center gap-1">
+                                                  <span className="text-base font-medium text-slate-900 dark:text-slate-100">
                                                     {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                    <Button variant="ghost" size="icon" onClick={(e) => {
                                                       e.stopPropagation();
                                                       startEditing(request.id, 'eventEndTime', request.eventEndTime || '');
-                                                    }} className="h-4 w-4 p-0">
-                                                      <Edit className="w-3 h-3" />
+                                                    }} className="h-6 w-6 ml-1">
+                                                      <Edit className="w-4 h-4" />
                                                     </Button>
                                                   )}
                                                 </div>
@@ -3879,35 +3882,35 @@ export default function EventRequestsManagement() {
                                             </div>
                                           </div>
                                           
-                                          {/* Pickup time on separate line below */}
-                                          <div className="flex justify-between items-center">
-                                            <span className="text-[#236383] text-base font-semibold">Pickup:</span>
+                                          {/* Pickup time with proper alignment */}
+                                          <div className="grid grid-cols-[auto,1fr] items-center gap-3">
+                                            <span className="text-sm font-medium text-muted-foreground min-w-16">Pickup:</span>
                                             {editingScheduledId === request.id && editingField === 'pickupTime' ? (
-                                              <div className="flex items-center space-x-2">
+                                              <div className="flex items-center gap-2">
                                                 <Input
                                                   type="time"
                                                   value={editingValue}
                                                   onChange={(e) => setEditingValue(e.target.value)}
-                                                  className="text-base w-32"
+                                                  className="w-28"
                                                 />
-                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                                <Button size="icon" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-7 w-7">
                                                   <CheckCircle className="w-4 h-4" />
                                                 </Button>
-                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                                <Button variant="outline" size="icon" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-7 w-7">
                                                   <X className="w-4 h-4" />
                                                 </Button>
                                               </div>
                                             ) : (
-                                              <div className="flex items-center space-x-1">
-                                                <span className="font-bold text-[#1A2332] text-base">
+                                              <div className="flex items-center gap-1">
+                                                <span className="text-base font-medium text-slate-900 dark:text-slate-100">
                                                   {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
                                                 </span>
                                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                                  <Button variant="ghost" size="icon" onClick={(e) => {
                                                     e.stopPropagation();
                                                     startEditing(request.id, 'pickupTime', request.pickupTime || '');
-                                                  }} className="h-4 w-4 p-0">
-                                                    <Edit className="w-3 h-3" />
+                                                  }} className="h-6 w-6 ml-1">
+                                                    <Edit className="w-4 h-4" />
                                                   </Button>
                                                 )}
                                               </div>
