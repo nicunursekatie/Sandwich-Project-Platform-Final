@@ -5157,7 +5157,9 @@ export default function EventRequestsManagement() {
                           eventEndTime: (e.target as any).endTime.value,
                           pickupTime: (e.target as any).pickupTime.value,
                           eventAddress: (e.target as any).eventAddress.value,
-                          sandwichDestination: (e.target as any).sandwichDestination.value,
+                          ...(((e.target as any).sandwichDestination.value.trim() !== '') ? {
+                            sandwichDestination: (e.target as any).sandwichDestination.value
+                          } : {}),
                           tspContact: (e.target as any).tspContact.value === 'none' ? '' : (e.target as any).tspContact.value,
                           // Handle sandwich data based on mode
                           ...(modalSandwichMode === 'total' ? {
