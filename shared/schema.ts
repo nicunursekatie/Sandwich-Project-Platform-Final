@@ -1630,6 +1630,13 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     duplicateCheckDate: true,
   })
   .extend({
+    // Make core required fields optional for creation
+    firstName: z.string().optional(),
+    lastName: z.string().optional(), 
+    email: z.string().email().optional().or(z.literal('').transform(() => undefined)),
+    organizationName: z.string().optional(),
+    previouslyHosted: z.string().optional(),
+    status: z.string().optional(),
     // Allow desiredEventDate to be either a Date object or a string that can be converted to a Date
     desiredEventDate: z
       .union([
@@ -1669,6 +1676,35 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     followUpOneMonthCompleted: z.boolean().nullable().optional(),
     followUpOneMonthDate: z.date().nullable().optional(),
     followUpNotes: z.string().nullable().optional(),
+    // Fix type conversion issues for manual creation
+    sandwichTypes: z
+      .union([
+        z.array(
+          z.object({
+            type: z.string(),
+            quantity: z.number().min(0),
+          })
+        ),
+        z.string().transform((str) => {
+          if (!str || str.trim() === '') return null;
+          try {
+            return JSON.parse(str);
+          } catch {
+            return null;
+          }
+        }),
+        z.null(),
+      ])
+      .nullable()
+      .optional(),
+    speakersNeeded: z
+      .union([
+        z.boolean(),
+        z.number().transform((num) => num > 0),
+        z.string().transform((str) => str === 'true' || str === '1'),
+      ])
+      .nullable()
+      .optional(),
   });
 
 export const insertEventReminderSchema = createInsertSchema(eventReminders)
