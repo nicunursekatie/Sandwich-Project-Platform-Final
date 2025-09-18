@@ -25,6 +25,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
+import { SANDWICH_TYPES } from './constants';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -153,7 +154,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const addSandwichType = () => {
     setFormData(prev => ({
       ...prev,
-      sandwichTypes: [...prev.sandwichTypes, { type: 'turkey', quantity: 0 }]
+      sandwichTypes: [...prev.sandwichTypes, { type: 'deli_turkey', quantity: 0 }]
     }));
   };
 
@@ -396,10 +397,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="turkey">Turkey</SelectItem>
-                            <SelectItem value="ham">Ham</SelectItem>
-                            <SelectItem value="deli">Deli (Generic)</SelectItem>
-                            <SelectItem value="pbj">PB&J</SelectItem>
+                            {SANDWICH_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <Input
