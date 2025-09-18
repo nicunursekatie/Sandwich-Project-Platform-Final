@@ -3257,13 +3257,15 @@ export default function EventRequestsManagement() {
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
         case 'newest':
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
+          // Sort by desired event date (newest events first)
+          const newestDateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+          const newestDateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+          return newestDateB - newestDateA;
         case 'oldest':
-          return (
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
+          // Sort by desired event date (oldest events first)
+          const oldestDateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+          const oldestDateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+          return oldestDateA - oldestDateB;
         case 'organization':
           return a.organizationName.localeCompare(b.organizationName);
         case 'event_date':
