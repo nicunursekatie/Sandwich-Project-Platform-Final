@@ -3819,7 +3819,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 1: Schedule & Location */}
                                       <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
-                                        <h4 className="text-sm font-semibold tracking-tight flex items-center border-b pb-2">
+                                        <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Calendar className="w-4 h-4 mr-2" />
                                           Schedule & Location
                                         </h4>
@@ -3848,7 +3848,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-sm font-medium">
+                                                  <span className="text-base font-medium">
                                                     {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -3883,7 +3883,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-sm font-medium">
+                                                  <span className="text-base font-medium">
                                                     {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -3957,7 +3957,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <>
-                                                  <span className="font-semibold text-sm sm:text-right sm:max-w-[200px] break-words">
+                                                  <span className="font-semibold text-base sm:text-right sm:max-w-[200px] break-words">
                                                     {request.eventAddress ? (
                                                       <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
                                                          target="_blank" rel="noopener noreferrer"
@@ -3983,7 +3983,7 @@ export default function EventRequestsManagement() {
                                       
                                       {/* Column 2: Sandwich & Logistics */}
                                       <div className="space-y-2 bg-muted/50 p-3 rounded-lg border">
-                                        <h4 className="text-sm font-semibold tracking-tight flex items-center border-b pb-2">
+                                        <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
                                           <Package className="w-4 h-4 mr-2" />
                                           Sandwich Details
                                         </h4>
@@ -4010,7 +4010,7 @@ export default function EventRequestsManagement() {
                                               </div>
                                             ) : (
                                               <div className="flex items-center space-x-1">
-                                                <span className="font-semibold text-sm">
+                                                <span className="font-semibold text-base">
                                                   {request.estimatedSandwichCount || 0} sandwiches
                                                 </span>
                                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -4058,7 +4058,7 @@ export default function EventRequestsManagement() {
                                               </div>
                                             ) : (
                                               <div className="text-right">
-                                                <span className="font-bold text-[#1A2332] text-sm">
+                                                <span className="font-bold text-[#1A2332] text-base">
                                                   {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                                                 </span>
                                               </div>
@@ -4123,7 +4123,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <>
-                                                  <span className="font-medium text-sm sm:text-right sm:max-w-[150px] break-words">
+                                                  <span className="font-medium text-base sm:text-right sm:max-w-[150px] break-words">
                                                     {resolveRecipientName(request.sandwichDestination) || 'Not specified'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -4170,7 +4170,7 @@ export default function EventRequestsManagement() {
                                                 </div>
                                               ) : (
                                                 <>
-                                                  <span className="font-semibold text-[#1A2332] text-sm break-words">
+                                                  <span className="font-semibold text-[#1A2332] text-base break-words">
                                                     {resolveUserName(request.tspContact) || 'Not assigned'}
                                                   </span>
                                                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
