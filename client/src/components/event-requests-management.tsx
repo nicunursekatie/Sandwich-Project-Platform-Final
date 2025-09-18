@@ -825,7 +825,10 @@ const ToolkitSentDialog = ({
               </Button>
             </div>
             <EventEmailComposer
-              eventRequest={eventRequest}
+              eventRequest={{
+                ...eventRequest,
+                phone: eventRequest.phone || undefined,
+              }}
               onEmailSent={handleEmailSent}
               isOpen={showEmailComposer}
               onClose={() => setShowEmailComposer(false)}
