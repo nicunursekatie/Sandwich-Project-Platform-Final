@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 import { EventEmailComposer } from '@/components/event-email-composer';
+import RequestCard from '@/components/event-requests/RequestCard';
 import {
   Collapsible,
   CollapsibleContent,
@@ -108,6 +109,10 @@ import SandwichDestinationTracker from './event-requests/SandwichDestinationTrac
 import SandwichTypesSelector from './event-requests/SandwichTypesSelector';
 import ToolkitSentDialog from './event-requests/ToolkitSentDialog';
 import EventSchedulingForm from './event-requests/EventSchedulingForm';
+import FollowUpDialog from './event-requests/FollowUpDialog';
+import EventCollectionLog from './event-requests/EventCollectionLog';
+import ImportEventsTab from './event-requests/ImportEventsTab';
+import RequestFilters from './event-requests/RequestFilters';
 
 // Schedule Call Dialog Component
 interface ScheduleCallDialogProps {
@@ -261,704 +266,8 @@ const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
   );
 };
 
-// Follow-up Dialog Component
-interface FollowUpDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  eventRequest: EventRequest | null;
-  onFollowUpCompleted: (notes: string) => void;
-  isLoading: boolean;
-  followUpType: '1-day' | '1-month';
-  notes: string;
-  setNotes: (notes: string) => void;
-}
 
-const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
-  isOpen,
-  onClose,
-  eventRequest,
-  onFollowUpCompleted,
-  isLoading,
-  followUpType,
-  notes,
-  setNotes,
-}) => {
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onFollowUpCompleted(notes);
-  };
 
-  if (!eventRequest) return null;
-
-  const isOneDay = followUpType === '1-day';
-  const title = isOneDay ? '1-Day Follow-up' : '1-Month Follow-up';
-  const description = isOneDay 
-    ? 'Record follow-up communication one day after the event'
-    : 'Record follow-up communication one month after the event';
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-orange-600" />
-            <span>{title}</span>
-          </DialogTitle>
-          <DialogDescription>
-            {description} with{' '}
-            <strong>
-              {eventRequest.firstName} {eventRequest.lastName}
-            </strong>{' '}
-            at <strong>{eventRequest.organizationName}</strong>.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Event Information */}
-          <div className="bg-[#e6f2f5] border border-[#007E8C]/20 rounded-lg p-3">
-            <h4 className="font-medium text-[#1A2332] mb-2">Event Details</h4>
-            <div className="space-y-1 text-sm">
-                              <div><strong>Event Date:</strong> {
-                                eventRequest.desiredEventDate ? 
-                                  (eventRequest.desiredEventDate instanceof Date ? 
-                                    eventRequest.desiredEventDate.toLocaleDateString() : 
-                                    eventRequest.desiredEventDate.toString()) : 
-                                  'Not specified'
-                              }</div>
-              <div><strong>Address:</strong> {eventRequest.eventAddress || 'Not specified'}</div>
-              <div><strong>Estimated Sandwiches:</strong> {eventRequest.estimatedSandwichCount || 'Not specified'}</div>
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-3">
-            <h4 className="font-medium text-[#1A2332] mb-2">Contact Information</h4>
-            <div className="space-y-1 text-sm">
-              <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-[#007E8C]" />
-                <span>{eventRequest.email}</span>
-              </div>
-              {eventRequest.phone && (
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-[#007E8C]" />
-                  <span>{eventRequest.phone}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const phoneNumber = eventRequest.phone;
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                      
-                      if (isMobile) {
-                        window.location.href = `tel:${phoneNumber}`;
-                      } else {
-                        navigator.clipboard.writeText(phoneNumber || '');
-                      }
-                    }}
-                    className="ml-auto text-xs"
-                  >
-                    {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Call' : 'Copy'}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Follow-up Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="followup-notes">Follow-up Notes</Label>
-            <Textarea
-              id="followup-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={`Record notes from your ${followUpType} follow-up communication...`}
-              className="min-h-[120px]"
-              required
-            />
-          </div>
-
-          {/* Information */}
-          <div className={`${isOneDay ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'} border rounded-lg p-3`}>
-            <h4 className={`font-medium ${isOneDay ? 'text-orange-900' : 'text-green-900'} mb-2`}>
-              {title} Guidelines:
-            </h4>
-            <ul className={`text-sm ${isOneDay ? 'text-orange-800' : 'text-green-800'} space-y-1`}>
-              {isOneDay ? (
-                <>
-                  <li>• Ask how the event went and if there were any issues</li>
-                  <li>• Gather feedback on sandwich quality and quantity</li>
-                  <li>• Note any suggestions for future events</li>
-                </>
-              ) : (
-                <>
-                  <li>• Check if they're planning any future events</li>
-                  <li>• Ask about their overall experience with TSP</li>
-                  <li>• Gather feedback for program improvement</li>
-                </>
-              )}
-            </ul>
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={!notes.trim() || isLoading}
-              className={`text-white ${isOneDay ? 'bg-orange-600 hover:bg-orange-700' : 'bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)]'}`}
-              data-testid={`button-confirm-followup-${followUpType}`}
-            >
-              {isLoading ? 'Saving...' : `Complete ${title}`}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-// Event Collection Log Component
-interface EventCollectionLogProps {
-  eventRequest: EventRequest | null;
-  isVisible: boolean;
-  onClose: () => void;
-}
-
-const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
-  eventRequest,
-  isVisible,
-  onClose,
-}) => {
-  const [collections, setCollections] = useState<any[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    number | null
-  >(null);
-
-  // State for editing collection destinations
-  const [editingDestination, setEditingDestination] = useState<{
-    id: number;
-    value: string;
-  } | null>(null);
-
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Fetch collections for this event request
-  const { data: collectionsData, refetch: refetchCollections } = useQuery({
-    queryKey: ['/api/collections', { eventRequestId: eventRequest?.id }],
-    enabled: isVisible && !!eventRequest?.id,
-  });
-
-  useEffect(() => {
-    if (Array.isArray(collectionsData)) {
-      setCollections(collectionsData);
-    } else if (collectionsData && typeof collectionsData === 'object') {
-      setCollections([collectionsData]);
-    } else {
-      setCollections([]);
-    }
-  }, [collectionsData]);
-  const handleDestinationEdit = (
-    collectionId: number,
-    currentValue: string
-  ) => {
-    setEditingDestination({ id: collectionId, value: currentValue || '' });
-  };
-
-  const handleDestinationSave = async () => {
-    if (!editingDestination) return;
-
-    try {
-      await apiRequest('PATCH', `/api/collections/${editingDestination.id}`, {
-        sandwichDestination: editingDestination.value,
-      });
-
-      // Update local state
-      setCollections(
-        collections.map((collection) =>
-          collection.id === editingDestination.id
-            ? { ...collection, sandwichDestination: editingDestination.value }
-            : collection
-        )
-      );
-
-      setEditingDestination(null);
-      queryClient.invalidateQueries({
-        queryKey: ['/api/collections'],
-      });
-
-      toast({
-        title: 'Destination Updated',
-        description: 'Sandwich destination has been updated successfully.',
-      });
-    } catch (error) {
-      console.error('Error updating destination:', error);
-      toast({
-        title: 'Update Failed',
-        description: 'Failed to update sandwich destination.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDestinationCancel = () => {
-    setEditingDestination(null);
-  };
-
-  if (!isVisible || !eventRequest) return null;
-
-  const totals = collections.reduce(
-    (acc, collection) => {
-      acc.totalSandwiches += collection.sandwichCount || 0;
-      return acc;
-    },
-    { totalSandwiches: 0 }
-  );
-  return (
-    <div
-      className="fixed inset-0 bg-[#236383] bg-opacity-50 z-50 flex items-center justify-center p-4"
-      style={{
-        left: window.innerWidth > 768 ? 240 : 0, // 240px nav bar width on desktop
-        width: window.innerWidth > 768 ? `calc(100vw - 240px)` : '100vw',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-        <div className="p-6 border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">
-                Collection Log for {eventRequest.organizationName}
-              </h2>
-              <p className="text-[#236383]">
-                {eventRequest.firstName} {eventRequest.lastName}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              data-testid="button-close-collection-log"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl">🥪</span>
-                  <div>
-                    <p className="text-sm text-[#236383]">Total Sandwiches</p>
-                    <p className="text-2xl font-bold text-brand-primary">
-                      {totals.totalSandwiches.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl">📅</span>
-                  <div>
-                    <p className="text-sm text-[#236383]">Collection Days</p>
-                    <p className="text-2xl font-bold text-brand-teal">
-                      {collections.length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                  <div>
-                    <p className="text-sm text-[#236383]">Status</p>
-                    <p className="text-sm font-medium text-green-600">
-                      {collections.length > 0 ? 'Active' : 'No Collections'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Collections List */}
-          {collections.length > 0 ? (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold">Collection Records</h3>
-              {collections.map((collection) => (
-                <Card key={collection.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center space-x-3">
-                        <Calendar className="w-5 h-5 text-brand-primary" />
-                        <span className="font-medium">
-                          {new Date(
-                            collection.collectionDate
-                          ).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </span>
-                        <Badge
-                          variant="secondary"
-                          className="bg-brand-primary text-white"
-                        >
-                          {collection.sandwichCount || 0} sandwiches
-                        </Badge>
-                      </div>
-
-                      {/* Sandwich Types Breakdown */}
-                      {collection.sandwichTypes && (
-                        <div className="ml-8">
-                          <p className="text-sm text-[#236383]">
-                            Types:{' '}
-                            {getSandwichTypesSummary(collection).breakdown}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Destination with inline editing */}
-                      <div className="ml-8 flex items-center space-x-2">
-                        {editingDestination?.id === collection.id ? (
-                          <SandwichDestinationTracker
-                            value={editingDestination?.value || ''}
-                            onChange={(value) =>
-                              setEditingDestination((prev) =>
-                                prev ? { ...prev, value } : null
-                              )
-                            }
-                            onSave={handleDestinationSave}
-                            onCancel={handleDestinationCancel}
-                          />
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-[#236383]">
-                              <strong>Destination:</strong>{' '}
-                              {collection.sandwichDestination ||
-                                'Not specified'}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                handleDestinationEdit(
-                                  collection.id,
-                                  collection.sandwichDestination || ''
-                                )
-                              }
-                              className="text-brand-primary hover:bg-brand-primary hover:text-white"
-                              data-testid={`button-edit-destination-${collection.id}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      {collection.notes && (
-                        <div className="ml-8">
-                          <p className="text-sm text-[#236383]">
-                            <strong>Notes:</strong> {collection.notes}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-[#236383] mb-4">
-                No collections recorded for this event yet.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// 2023 Events Import Component
-interface ImportEventsTabProps {}
-
-const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [importResults, setImportResults] = useState<any>(null);
-  const [isFileValid, setIsFileValid] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Import 2023 events mutation
-  const import2023EventsMutation = useMutation({
-    mutationFn: () =>
-      apiRequest('POST', '/api/import-events/import-2023-events'),
-    onSuccess: (data: any) => {
-      setImportResults(data);
-      toast({
-        title: 'Import Complete',
-        description: `Successfully imported ${data.imported || 0} events from 2023 (skipped ${data.duplicates || 0} duplicates)`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-    },
-    onError: (error: any) => {
-      setImportResults({
-        error: error?.details || 'Failed to import 2023 events',
-      });
-      toast({
-        title: 'Import Failed',
-        description: error?.details || 'Failed to import 2023 events',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const isExcel =
-        file.name.toLowerCase().endsWith('.xlsx') ||
-        file.name.toLowerCase().endsWith('.xls') ||
-        file.type.includes('spreadsheet') ||
-        file.type.includes('excel');
-
-      if (isExcel) {
-        setSelectedFile(file);
-        setIsFileValid(true);
-        setImportResults(null);
-      } else {
-        setSelectedFile(null);
-        setIsFileValid(false);
-        toast({
-          title: 'Invalid File Type',
-          description: 'Please select a valid Excel file (.xlsx or .xls)',
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-
-  const handleImport = () => {
-    if (!selectedFile || !isFileValid) {
-      toast({
-        title: 'No File Selected',
-        description: 'Please select a valid Excel file to import',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    import2023EventsMutation.mutate();
-  };
-
-  const resetImport = () => {
-    setSelectedFile(null);
-    setIsFileValid(false);
-    setImportResults(null);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Import 2023 Events</h2>
-          <p className="text-[#236383]">
-            Import historical event data from 2023 Excel files
-          </p>
-        </div>
-        <Badge variant="secondary" className="flex items-center gap-2">
-          <Upload className="w-4 h-4" />
-          Data Import
-        </Badge>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarPlus className="w-5 h-5" />
-            2023 Events Import
-          </CardTitle>
-          <CardDescription>
-            Upload a 2023 Events Excel file to import historical event data.
-            This will add past events to the system for tracking and analysis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* File Upload Section */}
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-[#236383]/30 rounded-lg p-6 text-center">
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="excel-file-input"
-                data-testid="input-excel-file"
-              />
-              <label
-                htmlFor="excel-file-input"
-                className="cursor-pointer space-y-2"
-              >
-                <div className="mx-auto w-12 h-12 bg-[#e6f2f5] rounded-lg flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-[#236383]" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Select Excel File</p>
-                  <p className="text-sm text-[#236383]">
-                    Choose a 2023 Events .xlsx or .xls file to import
-                  </p>
-                </div>
-              </label>
-            </div>
-
-            {/* File Information */}
-            {selectedFile && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-800">
-                      File Selected: {selectedFile.name}
-                    </p>
-                    <p className="text-sm text-green-600">
-                      Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={resetImport}
-                    className="ml-auto"
-                    data-testid="button-reset-file"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Import Button */}
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-[#236383]">
-              <p>• Only Excel files (.xlsx, .xls) are supported</p>
-              <p>• Duplicate events will be automatically skipped</p>
-              <p>• Import process may take several minutes for large files</p>
-            </div>
-            <Button
-              onClick={handleImport}
-              disabled={
-                !selectedFile ||
-                !isFileValid ||
-                import2023EventsMutation.isPending
-              }
-              className="bg-brand-primary hover:bg-brand-primary/90"
-              data-testid="button-import-events"
-            >
-              {import2023EventsMutation.isPending ? (
-                <>
-                  <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import Events
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Import Results */}
-          {importResults && (
-            <div className="space-y-4">
-              {importResults.error ? (
-                <div className="bg-[#fdf2f5] border border-[#A31C41]/30 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-red-700">
-                    <XCircle className="w-5 h-5" />
-                    <span className="font-medium">Import Failed</span>
-                  </div>
-                  <p className="text-sm text-red-600 mt-1">
-                    {importResults.error}
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-green-700 mb-3">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="font-medium">Import Successful!</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-green-600">
-                        <strong>Events Imported:</strong>{' '}
-                        {importResults.imported || 0}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-green-600">
-                        <strong>Duplicates Skipped:</strong>{' '}
-                        {importResults.duplicates || 0}
-                      </p>
-                    </div>
-                  </div>
-                  {importResults.details && (
-                    <p className="text-sm text-green-600 mt-2">
-                      {importResults.details}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Additional Information */}
-          <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
-            <h4 className="font-medium text-[#1A2332] mb-2">
-              📋 Import Guidelines
-            </h4>
-            <ul className="text-sm text-[#236383] space-y-1">
-              <li>
-                • Ensure your Excel file contains 2023 event data in the
-                expected format
-              </li>
-              <li>
-                • The system will automatically detect and skip duplicate
-                entries
-              </li>
-              <li>
-                • Successfully imported events will appear in the Completed tab
-              </li>
-              <li>
-                • Import status and counts will be displayed above after
-                completion
-              </li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
 
 export default function EventRequestsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -1278,6 +587,160 @@ export default function EventRequestsManagement() {
         variant: 'destructive',
       });
     }
+  };
+
+  // Helper function to render events for a specific status
+  const renderEventsForStatus = (status: string) => {
+    return (requestsByStatus[status] || [])
+      .filter((request: EventRequest) => {
+        return (
+          searchQuery === '' ||
+          request.organizationName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          request.firstName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          request.lastName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          request.email
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          dateMatchesSearch(request.desiredEventDate, searchQuery)
+        );
+      })
+      .sort((a: EventRequest, b: EventRequest) => {
+        switch (sortBy) {
+          case 'newest':
+            return (
+              new Date(b.createdAt).getTime() -
+              new Date(a.createdAt).getTime()
+            );
+          case 'oldest':
+            return (
+              new Date(a.createdAt).getTime() -
+              new Date(b.createdAt).getTime()
+            );
+          case 'organization':
+            return a.organizationName.localeCompare(
+              b.organizationName
+            );
+          case 'event_date':
+            const dateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+            const dateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+            return dateA - dateB;
+          default:
+            return 0;
+        }
+      })
+      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+      .map((request: EventRequest) => {
+        const StatusIcon = statusIcons[request.status];
+        const dateInfo = formatEventDate(
+          request.desiredEventDate || ''
+        );
+
+        return (
+          <RequestCard
+            key={request.id}
+            request={request}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            editingField={editingField}
+            setEditingField={setEditingField}
+            editingValue={editingValue}
+            setEditingValue={setEditingValue}
+            editingScheduledId={editingScheduledId}
+            setEditingScheduledId={setEditingScheduledId}
+            inlineSandwichMode={inlineSandwichMode}
+            setInlineSandwichMode={setInlineSandwichMode}
+            inlineTotalCount={inlineTotalCount}
+            setInlineTotalCount={setInlineTotalCount}
+            inlineSandwichTypes={inlineSandwichTypes}
+            setInlineSandwichTypes={setInlineSandwichTypes}
+            onEdit={(request) => {
+              setSelectedEventRequest(request);
+              setIsEditing(true);
+              setShowEventDetails(true);
+            }}
+            onDelete={(id) => deleteEventRequestMutation.mutate(id)}
+            onSchedule={(request) => {
+              setSchedulingEventRequest(request);
+              setShowSchedulingDialog(true);
+            }}
+            onCall={(request) => {
+              const phoneNumber = request.phone;
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+              
+              if (isMobile) {
+                window.location.href = `tel:${phoneNumber}`;
+              } else {
+                navigator.clipboard.writeText(phoneNumber || '').then(() => {
+                  toast({
+                    title: 'Phone number copied!',
+                    description: `${phoneNumber} has been copied to your clipboard.`,
+                  });
+                }).catch(() => {
+                  toast({
+                    title: 'Failed to copy',
+                    description: 'Please copy manually: ' + phoneNumber,
+                    variant: 'destructive',
+                  });
+                });
+              }
+            }}
+            onToolkit={(request) => {
+              setSelectedEventRequest(request);
+              setToolkitEventRequest(request);
+              setShowToolkitSentDialog(true);
+            }}
+            onScheduleCall={(request) => {
+              setSelectedEventRequest(request);
+              setShowScheduleCallDialog(true);
+            }}
+            onFollowUp1Day={(request) => {
+              setSelectedEventRequest(request);
+              setShowOneDayFollowUpDialog(true);
+            }}
+            onFollowUp1Month={(request) => {
+              setSelectedEventRequest(request);
+              setShowOneMonthFollowUpDialog(true);
+            }}
+            onReschedule={(id) => handleStatusChange(id, 'new')}
+            onContact={(request) => {
+              const phone = request.phone;
+              const email = request.email;
+              const contactName = `${request.firstName} ${request.lastName}`;
+              
+              let message = `Contact ${contactName}:\n\n`;
+              if (phone) message += `📞 Call: ${phone}\n`;
+              if (email) message += `📧 Email: ${email}\n`;
+              
+              alert(message);
+            }}
+            onStatusChange={handleStatusChange}
+            startEditing={startEditing}
+            saveEdit={saveEdit}
+            cancelEdit={cancelEdit}
+            addInlineSandwichType={addInlineSandwichType}
+            updateInlineSandwichType={updateInlineSandwichType}
+            removeInlineSandwichType={removeInlineSandwichType}
+            openAssignmentDialog={(eventId, type) => {
+              setAssignmentEventId(eventId);
+              setAssignmentType(type);
+              setShowAssignmentDialog(true);
+            }}
+            handleRemoveAssignment={handleRemoveAssignment}
+            handleSelfSignup={handleSelfSignup}
+            canSelfSignup={canSelfSignup}
+            isUserSignedUp={isUserSignedUp}
+            resolveUserName={resolveUserName}
+            resolveRecipientName={resolveRecipientName}
+          />
+        );
+      });
   };
 
   // Helper function to handle assignment
@@ -2181,343 +1644,33 @@ export default function EventRequestsManagement() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="new" className="relative">
-              New ({statusCounts.new})
-              {statusCounts.new > 0 && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="in_process">
-              In Process ({statusCounts.in_process})
-            </TabsTrigger>
-            <TabsTrigger value="scheduled">
-              Scheduled ({statusCounts.scheduled})
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              Completed ({statusCounts.completed})
-            </TabsTrigger>
-            <TabsTrigger value="declined">
-              Declined ({statusCounts.declined})
-            </TabsTrigger>
-            <TabsTrigger value="import" className="bg-[#e6f2f5] border-[#007E8C]/30">
-              Import
-            </TabsTrigger>
-          </TabsList>
+        {/* Request Filters with Tabs */}
+        <RequestFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          sortBy={sortBy}
+          onSortByChange={setSortBy}
+          activeTab={activeTab}
+          onActiveTabChange={setActiveTab}
+          currentPage={currentPage}
+          onCurrentPageChange={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setItemsPerPage}
+          statusCounts={statusCounts}
+          totalItems={filteredAndSortedRequests.length}
+          totalPages={totalPages}
+          children={{
+            new: <div className="space-y-4">{renderEventsForStatus('new')}</div>,
+            in_process: <div className="space-y-4">{renderEventsForStatus('in_process')}</div>,
+            scheduled: <div className="space-y-4">{renderEventsForStatus('scheduled')}</div>,
+            completed: <div className="space-y-4">{renderEventsForStatus('completed')}</div>,
+            declined: <div className="space-y-4">{renderEventsForStatus('declined')}</div>,
+          }}
+        />
 
-          {/* Import Tab */}
-          <TabsContent value="import">
-            <ImportEventsTab />
-          </TabsContent>
-
-          {/* Status-based tabs (existing logic) */}
-          {['new', 'in_process', 'scheduled', 'completed', 'declined'].map(
-            (status) => (
-              <TabsContent key={status} value={status} className="space-y-4">
-                {/* Search and Filters for this specific status */}
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
-                    <Input
-                      placeholder="Search by organization, name, email, date, or location..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                      data-testid="input-search-requests"
-                    />
-                  </div>
-                  <Select
-                    value={sortBy}
-                    onValueChange={(value: any) => setSortBy(value)}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">Newest First</SelectItem>
-                      <SelectItem value="oldest">Oldest First</SelectItem>
-                      <SelectItem value="organization">
-                        Organization A-Z
-                      </SelectItem>
-                      {status === 'scheduled' && (
-                        <SelectItem value="event_date">
-                          Event Date
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Event Requests List for this specific status */}
-                <div className="space-y-4">
-                  {(requestsByStatus[status] || [])
-                    .filter((request: EventRequest) => {
-                      return (
-                        searchQuery === '' ||
-                        request.organizationName
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                        request.firstName
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                        request.lastName
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                        request.email
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                        (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                        dateMatchesSearch(request.desiredEventDate, searchQuery)
-                      );
-                    })
-                    .sort((a: EventRequest, b: EventRequest) => {
-                      switch (sortBy) {
-                        case 'newest':
-                          return (
-                            new Date(b.createdAt).getTime() -
-                            new Date(a.createdAt).getTime()
-                          );
-                        case 'oldest':
-                          return (
-                            new Date(a.createdAt).getTime() -
-                            new Date(b.createdAt).getTime()
-                          );
-                        case 'organization':
-                          return a.organizationName.localeCompare(
-                            b.organizationName
-                          );
-                        case 'event_date':
-                          // Sort by desired event date for scheduled events
-                          const dateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-                          const dateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
-                          return dateA - dateB; // Earliest dates first
-                        default:
-                          return 0;
-                      }
-                    })
-                    .map((request: EventRequest) => {
-                      const StatusIcon = statusIcons[request.status];
-                      const dateInfo = formatEventDate(
-                        request.desiredEventDate || ''
-                      );
-
-                      return (
-                        <Card
-                          key={request.id}
-                          className={`transition-all duration-200 hover:shadow-lg ${
-                            statusColors[request.status]
-                          }`}
-                          data-testid={`card-event-request-${request.id}`}
-                        >
-                          <CardContent className="p-0">
-                            {/* Brand accent for scheduled events */}
-                            {request.status === 'scheduled' && (
-                              <div className="h-1 bg-[#236383] rounded-t-md"></div>
-                            )}
-                            <div className="p-6">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1 space-y-4">
-                                {/* Organization Name - Most Prominent */}
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex-1">
-                                    <div className="flex items-center space-x-3">
-                                    <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
-                                    <h2 className="text-2xl font-bold text-brand-primary leading-tight">
-                                      {request.organizationName}
-                                    </h2>
-                                    </div>
-                                    {/* Request Submitted Date */}
-                                    <div className="flex items-center space-x-2 mt-1 ml-10">
-                                      <span className="text-sm text-[#007E8C]">
-                                        Submitted: {new Date(request.createdAt).toLocaleDateString()} at {new Date(request.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <Badge
-                                    className={`${
-                                      request.status === 'scheduled' 
-                                        ? 'bg-[#E7F1F5] text-[#236383] border border-[#B8D4DE] font-semibold' 
-                                        : statusColors[request.status]
-                                    } text-sm font-bold px-4 py-2 rounded-full uppercase tracking-wide flex-shrink-0 ml-3`}
-                                  >
-                                    {
-                                      statusOptions.find(
-                                        (s) => s.value === request.status
-                                      )?.label
-                                    }
-                                  </Badge>
-                                </div>
-
-                                {/* Event Date - Secondary Prominence */}
-                                {request.desiredEventDate && (
-                                  <div className="flex items-center space-x-3 mb-4 bg-[#e6f2f5] p-3 rounded-lg border-l-4 border-brand-primary">
-                                    <Calendar className="w-5 h-5 text-brand-primary" />
-                                    <div>
-                                      <span className="text-sm font-medium text-[#236383]">
-                                        Event Date
-                                      </span>
-                                      <div
-                                        className={`text-base font-semibold ${dateInfo.className}`}
-                                      >
-                                        {dateInfo.text}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Contact Information - Grouped for In Process, inline for others */}
-                                {request.status === 'in_process' ? (
-                                  <div className="bg-[#e6f2f5] p-4 rounded-lg border border-[#007E8C]/30 max-w-md">
-                                    <h4 className="text-xs font-bold text-[#1A2332] mb-3 flex items-center uppercase tracking-wider">
-                                      <User className="w-4 h-4 mr-2 text-[#007E8C]" />
-                                      Contact Information
-                                    </h4>
-                                    <div className="space-y-3">
-                                      <div className="flex items-center space-x-3">
-                                        <User className="w-4 h-4 text-[#007E8C]" />
-                                        <span className="font-bold text-[#1A2332] text-base md:text-lg">
-                                          {request.firstName} {request.lastName}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center space-x-3">
-                                        <Mail className="w-4 h-4 text-[#007E8C]" />
-                                        <span className="font-medium text-blue-700 text-sm">
-                                          {request.email}
-                                        </span>
-                                      </div>
-                                      {request.phone && (
-                                        <div className="flex items-center space-x-3">
-                                          <Phone className="w-4 h-4 text-[#007E8C]" />
-                                          <span className="font-medium text-blue-700 text-sm">
-                                            {request.phone}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  // Compact Basic Info Grid
-                                  <div className="bg-white rounded-lg border border-[#007E8C]/20 p-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      {/* Contact Info - Grouped */}
-                                      <div className="md:col-span-2 bg-brand-teal/5 border border-brand-teal/20 rounded-lg p-3">
-                                        <div className="text-sm font-semibold text-brand-teal mb-2">
-                                          Contact Information
-                                        </div>
-                                        <div className="space-y-2">
-                                          <div className="flex items-center space-x-3">
-                                            <User className="w-4 h-4 text-brand-teal flex-shrink-0" />
-                                            <span className="font-bold text-brand-primary text-base">
-                                              {request.firstName} {request.lastName}
-                                            </span>
-                                          </div>
-                                          <div className="flex items-center space-x-3">
-                                            <Mail className="w-4 h-4 text-[#007E8C] flex-shrink-0" />
-                                            <span className="font-medium text-[#1A2332] text-base truncate">
-                                              {request.email}
-                                            </span>
-                                          </div>
-                                          {request.phone && (
-                                            <div className="flex items-center space-x-3">
-                                              <Phone className="w-4 h-4 text-[#007E8C] flex-shrink-0" />
-                                              <span className="font-medium text-[#1A2332] text-base">
-                                                {request.phone}
-                                              </span>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      {/* Sandwich Count - Right side */}
-                                      {request.estimatedSandwichCount && (
-                                        <div className="space-y-2 md:col-start-3 flex flex-col items-end text-right">
-                                          <div className="text-sm font-semibold text-brand-orange mb-1">
-                                            {request.status === 'completed' ? 'Estimated' : 
-                                             request.status === 'scheduled' ? 'Planned' : 'Requested'}
-                                          </div>
-                                          <div className="flex items-center space-x-2">
-                                            <span className="text-lg">🥪</span>
-                                            <span className="font-bold text-brand-orange text-base">
-                                              {request.estimatedSandwichCount} sandwiches
-                                            </span>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Staffing Need Badges - For Scheduled/In Process Events */}
-                                {(request.status === 'scheduled' || request.status === 'in_process') && (
-                                  (() => {
-                                    const staffingBadges = [];
-                                    
-                                    // Check drivers needed
-                                    const driversNeeded = request.driversNeeded || 0;
-                                    const assignedDrivers = request.assignedDriverIds?.length || 0;
-                                    if (driversNeeded > assignedDrivers) {
-                                      const driversShort = driversNeeded - assignedDrivers;
-                                      staffingBadges.push({
-                                        key: 'drivers',
-                                        icon: '🚗',
-                                        text: `${driversShort} driver${driversShort > 1 ? 's' : ''} needed`,
-                                        className: 'bg-red-100 text-red-800 border border-red-300'
-                                      });
-                                    }
-
-                                    // Check speakers needed
-                                    const speakersNeeded = request.speakersNeeded || 0;
-                                    const assignedSpeakers = request.assignedSpeakerIds?.length || 0;
-                                    if (speakersNeeded > assignedSpeakers) {
-                                      const speakersShort = speakersNeeded - assignedSpeakers;
-                                      staffingBadges.push({
-                                        key: 'speakers',
-                                        icon: '🎤',
-                                        text: `${speakersShort} speaker${speakersShort > 1 ? 's' : ''} needed`,
-                                        className: 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                                      });
-                                    }
-
-                                    // Check volunteers needed
-                                    if (request.volunteersNeeded && (!request.assignedVolunteerIds || request.assignedVolunteerIds.length === 0)) {
-                                      staffingBadges.push({
-                                        key: 'volunteers',
-                                        icon: '👥',
-                                        text: 'Volunteers needed',
-                                        className: 'bg-blue-100 text-[#236383] border border-blue-300'
-                                      });
-                                    }
-
-                                    // Check van driver needed
-                                    if (request.vanDriverNeeded && !request.assignedVanDriverId) {
-                                      staffingBadges.push({
-                                        key: 'van',
-                                        icon: '🚐',
-                                        text: 'Van driver needed',
-                                        className: 'bg-purple-100 text-purple-800 border border-purple-300'
-                                      });
-                                    }
-
-                                    return staffingBadges.length > 0 ? (
-                                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                        <div className="text-sm font-semibold text-amber-800 mb-2 flex items-center">
-                                          <AlertTriangle className="w-4 h-4 mr-2" />
-                                          Staffing Needs
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                          {staffingBadges.map((badge) => (
-                                            <Badge
-                                              key={badge.key}
-                                              className={`${badge.className} text-xs font-medium px-2 py-1 flex items-center space-x-1`}
-                                              data-testid={`badge-${badge.key}-needed`}
-                                            >
-                                              <span>{badge.icon}</span>
-                                              <span>{badge.text}</span>
-                                            </Badge>
-                                          ))}
-                                        </div>
+        {/* Event Details Modal */}
                                       </div>
                                     ) : null;
                                   })()
