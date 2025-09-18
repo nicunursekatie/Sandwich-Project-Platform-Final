@@ -1671,10 +1671,6 @@ export default function EventRequestsManagement() {
         />
 
         {/* Event Details Modal */}
-                                      </div>
-                                    ) : null;
-                                  })()
-                                )}
 
                                 {/* Toolkit Status - Only for In Process */}
                                 {request.status === 'in_process' && (
@@ -2874,7 +2870,6 @@ export default function EventRequestsManagement() {
                     })}
                 </div>
               </TabsContent>
-            )
           )}
 
           {/* Import tab */}
