@@ -248,6 +248,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...(eventRequest && mode === 'schedule' ? { status: 'scheduled' } : {}),
       // For new events, default to 'new' status
       ...(!eventRequest ? { status: 'new' } : {}),
+      // For edit mode, include the status from form data
+      ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
       eventStartTime: formData.eventStartTime || null,
