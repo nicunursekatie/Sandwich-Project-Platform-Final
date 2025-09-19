@@ -32,6 +32,8 @@ import {
   Megaphone,
   HelpCircle,
   UserCheck,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -146,6 +148,9 @@ export default function RequestCard({
 }: RequestCardProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // State for managing original message collapsed/expanded state
+  const [isOriginalMessageExpanded, setIsOriginalMessageExpanded] = useState(false);
 
   // Fetch drivers data for van driver display
   const { data: drivers = [] } = useQuery<any[]>({
@@ -704,42 +709,45 @@ export default function RequestCard({
                           )}
                         </div>
                         
-                        {/* Scheduling Notes */}
-                        {(request.schedulingNotes || editingScheduledId === request.id && editingField === 'schedulingNotes') && (
+                        {/* Scheduling Notes Editor (editing mode only - display moved to prominent location above) */}
+                        {editingScheduledId === request.id && editingField === 'schedulingNotes' && (
                           <div className="flex justify-between items-start">
+                            <span className="text-[#236383] text-base font-semibold">Edit Notes:</span>
+                            <div className="flex items-start space-x-2 flex-1 ml-2">
+                              <Textarea
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                className="w-full min-h-[60px] text-sm"
+                                placeholder="Add scheduling notes or special instructions"
+                              />
+                              <div className="flex flex-col space-y-1">
+                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Add/Edit Notes Button (when not editing and notes are displayable above) */}
+                        {editingScheduledId !== request.id && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                          <div className="flex justify-between items-center">
                             <span className="text-[#236383] text-base font-semibold">Notes:</span>
-                            {editingScheduledId === request.id && editingField === 'schedulingNotes' ? (
-                              <div className="flex items-start space-x-2 flex-1 ml-2">
-                                <Textarea
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  className="w-full min-h-[60px] text-sm"
-                                  placeholder="Add scheduling notes or special instructions"
-                                />
-                                <div className="flex flex-col space-y-1">
-                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-                                    <CheckCircle className="w-4 h-4" />
-                                  </Button>
-                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-                                    <X className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-start space-x-1 flex-1 ml-2">
-                                <span className="font-medium text-[#236383] text-base text-right">
-                                  {request.schedulingNotes || 'No notes'}
-                                </span>
-                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                  <Button size="sm" variant="ghost" onClick={(e) => {
-                                    e.stopPropagation();
-                                    startEditing(request.id, 'schedulingNotes', request.schedulingNotes || '');
-                                  }} className="h-4 w-4 p-0 mt-0.5">
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            )}
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditing(request.id, 'schedulingNotes', request.schedulingNotes || '');
+                              }} 
+                              className="h-7 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {request.schedulingNotes ? 'Edit Notes' : 'Add Notes'}
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -1123,11 +1131,48 @@ export default function RequestCard({
                 </div>
               )}
 
-              {request.message && (
-                <div className="mt-4 p-3 bg-[#e6f2f5] border-l-4 border-brand-primary rounded-r-lg">
-                  <p className="text-base text-brand-primary line-clamp-2 font-medium">
-                    {request.message}
+              {/* Scheduling Notes - Display prominently when they exist */}
+              {request.schedulingNotes && (
+                <div className="mt-4 p-4 bg-[#FFF8DC] border-l-4 border-[#A31C41] rounded-r-lg">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-[#A31C41] rounded-full mr-2"></div>
+                      <span className="font-semibold text-[#A31C41] text-sm uppercase tracking-wide">Important Notes</span>
+                    </div>
+                  </div>
+                  <p className="text-base text-gray-900 font-medium">
+                    {request.schedulingNotes}
                   </p>
+                </div>
+              )}
+
+              {/* Original Message - Collapsible */}
+              {request.message && (
+                <div className="mt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOriginalMessageExpanded(!isOriginalMessageExpanded);
+                    }}
+                    className="flex items-center gap-2 text-[#236383] hover:text-[#1A2332] p-0 h-auto font-medium"
+                  >
+                    {isOriginalMessageExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                    {isOriginalMessageExpanded ? 'Hide' : 'Show'} Original Message
+                  </Button>
+                  
+                  {isOriginalMessageExpanded && (
+                    <div className="mt-2 p-3 bg-[#e6f2f5] border-l-4 border-brand-primary rounded-r-lg">
+                      <p className="text-base text-brand-primary font-medium">
+                        {request.message}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
