@@ -221,10 +221,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       deliveryDestination: formData.deliveryDestination || null,
       hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
                         formData.hasRefrigeration === 'false' ? false : null,
-      driversNeeded: formData.driversNeeded || 0,
+      driversNeeded: parseInt(formData.driversNeeded?.toString() || '0') || 0,
       vanDriverNeeded: formData.vanDriverNeeded || false,
-      speakersNeeded: formData.speakersNeeded || 0,
-      volunteersNeeded: formData.volunteersNeeded || 0,
+      speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
+      volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       tspContact: formData.tspContact || null,
       schedulingNotes: formData.schedulingNotes || null,
       // Contact information fields
