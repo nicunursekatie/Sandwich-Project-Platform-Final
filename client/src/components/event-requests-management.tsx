@@ -84,6 +84,7 @@ import {
   FileText,
   UserPlus,
   Package,
+  Car,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';

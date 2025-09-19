@@ -566,7 +566,7 @@ export default function RequestCard({
                             </div>
                           ) : (
                             <div className="text-right">
-                              <span className="font-bold text-[#1A2332] text-base">
+                              <span className="font-bold text-[#236383] text-base">
                                 {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                               </span>
                             </div>
@@ -1120,7 +1120,7 @@ export default function RequestCard({
                         
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Types:</span>
-                          <span className="font-bold text-[#1A2332] text-base text-right">
+                          <span className="font-bold text-[#236383] text-base text-right">
                             {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                           </span>
                         </div>
