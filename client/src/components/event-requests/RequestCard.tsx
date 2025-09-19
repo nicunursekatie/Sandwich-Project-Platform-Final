@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -702,6 +703,45 @@ export default function RequestCard({
                             </div>
                           )}
                         </div>
+                        
+                        {/* Scheduling Notes */}
+                        {(request.schedulingNotes || editingScheduledId === request.id && editingField === 'schedulingNotes') && (
+                          <div className="flex justify-between items-start">
+                            <span className="text-[#236383] text-base font-semibold">Notes:</span>
+                            {editingScheduledId === request.id && editingField === 'schedulingNotes' ? (
+                              <div className="flex items-start space-x-2 flex-1 ml-2">
+                                <Textarea
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  className="w-full min-h-[60px] text-sm"
+                                  placeholder="Add scheduling notes or special instructions"
+                                />
+                                <div className="flex flex-col space-y-1">
+                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                    <CheckCircle className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-start space-x-1 flex-1 ml-2">
+                                <span className="font-medium text-[#236383] text-base text-right">
+                                  {request.schedulingNotes || 'No notes'}
+                                </span>
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(request.id, 'schedulingNotes', request.schedulingNotes || '');
+                                  }} className="h-4 w-4 p-0 mt-0.5">
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     
