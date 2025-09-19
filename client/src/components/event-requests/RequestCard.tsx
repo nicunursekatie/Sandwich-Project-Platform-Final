@@ -153,7 +153,7 @@ export default function RequestCard({
   // Helper function to get driver name
   const getDriverName = (driverId: string | null) => {
     if (!driverId) return null;
-    const driver = drivers.find(d => d.id === driverId);
+    const driver = drivers.find(d => d.id.toString() === driverId.toString());
     return driver?.name || `Driver ${driverId}`;
   };
   
