@@ -252,9 +252,13 @@ export default function RequestCard({
 
                   <div className="flex items-center space-x-3">
                     <Mail className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
-                    <a href={`mailto:${request.email}`} className="text-base text-[#007E8C] hover:underline">
-                      {request.email}
-                    </a>
+                    {request.email ? (
+                      <a href={`mailto:${request.email}`} className="text-base text-[#007E8C] hover:underline">
+                        {request.email}
+                      </a>
+                    ) : (
+                      <span className="text-base text-gray-500">No email provided</span>
+                    )}
                   </div>
 
                   {request.phone && (

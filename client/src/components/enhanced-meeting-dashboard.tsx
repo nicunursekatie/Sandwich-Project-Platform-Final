@@ -491,6 +491,35 @@ export default function EnhancedMeetingDashboard() {
     },
   });
 
+  // Update project priority mutation
+  const updateProjectPriorityMutation = useMutation({
+    mutationFn: async ({
+      projectId,
+      priority,
+    }: {
+      projectId: number;
+      priority: string;
+    }) => {
+      return await apiRequest('PATCH', `/api/projects/${projectId}`, { priority });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      toast({
+        title: 'Priority Updated',
+        description: 'Project priority has been successfully updated.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Update Failed',
+        description:
+          error.message || 'Failed to update project priority.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Convert meeting notes to tasks mutation
   const createTasksFromNotesMutation = useMutation({
     mutationFn: async () => {
@@ -2965,14 +2994,61 @@ export default function EnhancedMeetingDashboard() {
                                       >
                                         {formatStatusText(project.status)}
                                       </Badge>
-                                      {project.priority && (
-                                        <Badge
-                                          variant="outline"
-                                          className="whitespace-nowrap"
+                                      {/* Inline Priority Editor */}
+                                      <div className="relative">
+                                        <Select
+                                          value={project.priority || 'medium'}
+                                          onValueChange={(newPriority) => {
+                                            updateProjectPriorityMutation.mutate({
+                                              projectId: project.id,
+                                              priority: newPriority,
+                                            });
+                                          }}
+                                          disabled={updateProjectPriorityMutation.isPending}
                                         >
-                                          {project.priority}
-                                        </Badge>
-                                      )}
+                                          <SelectTrigger 
+                                            className="h-7 w-auto min-w-[80px] px-3 text-xs border-gray-300 hover:border-gray-400 focus:border-primary whitespace-nowrap"
+                                            data-testid={`select-priority-${project.id}`}
+                                          >
+                                            <SelectValue>
+                                              <span className="flex items-center gap-1">
+                                                {project.priority === 'urgent' && '🔴'}
+                                                {project.priority === 'high' && '🟠'}
+                                                {project.priority === 'medium' && '🟡'}
+                                                {project.priority === 'low' && '🟢'}
+                                                {project.priority || 'medium'}
+                                              </span>
+                                            </SelectValue>
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="urgent" className="text-xs">
+                                              <span className="flex items-center gap-2">
+                                                🔴 urgent
+                                              </span>
+                                            </SelectItem>
+                                            <SelectItem value="high" className="text-xs">
+                                              <span className="flex items-center gap-2">
+                                                🟠 high
+                                              </span>
+                                            </SelectItem>
+                                            <SelectItem value="medium" className="text-xs">
+                                              <span className="flex items-center gap-2">
+                                                🟡 medium
+                                              </span>
+                                            </SelectItem>
+                                            <SelectItem value="low" className="text-xs">
+                                              <span className="flex items-center gap-2">
+                                                🟢 low
+                                              </span>
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                        {updateProjectPriorityMutation.isPending && (
+                                          <div className="absolute -top-1 -right-1">
+                                            <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent"></div>
+                                          </div>
+                                        )}
+                                      </div>
                                       {project.category &&
                                         project.category !==
                                           project.milestone && (
