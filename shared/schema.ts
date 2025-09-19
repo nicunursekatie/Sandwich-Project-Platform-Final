@@ -1404,6 +1404,7 @@ export const eventRequests = pgTable(
 
     // System tracking
     status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined'
+    statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
 
     // Follow-up tracking fields

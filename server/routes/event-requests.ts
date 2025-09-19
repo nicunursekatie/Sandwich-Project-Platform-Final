@@ -1069,6 +1069,12 @@ router.patch(
         }
       });
 
+      // Check if status is changing and set statusChangedAt accordingly
+      if (processedUpdates.status && processedUpdates.status !== originalEvent.status) {
+        processedUpdates.statusChangedAt = new Date();
+        console.log(`🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`);
+      }
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
@@ -1311,6 +1317,12 @@ router.put(
         console.log(
           '✅ Processed comprehensive scheduling data for scheduled status'
         );
+      }
+
+      // Check if status is changing and set statusChangedAt accordingly
+      if (processedUpdates.status && processedUpdates.status !== originalEvent.status) {
+        processedUpdates.statusChangedAt = new Date();
+        console.log(`🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`);
       }
 
       // Always update the updatedAt timestamp

@@ -205,13 +205,12 @@ export default function RequestCard({
   const shouldShowFollowUpBadge = () => {
     if (request.status !== 'in_process') return false;
     
-    // Check when the status was last updated to "in_process"
-    // For now, use a placeholder - this would need status change tracking
+    // Check when the status was last changed (now properly tracked with statusChangedAt)
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    // This is a simplified check - in practice you'd want to track when status changed to in_process
-    return request.updatedAt ? new Date(request.updatedAt) < oneWeekAgo : false;
+    // Use statusChangedAt for accurate tracking of when the event entered "in_process" status
+    return request.statusChangedAt ? new Date(request.statusChangedAt) < oneWeekAgo : false;
   };
 
   // Fetch drivers data for van driver display
