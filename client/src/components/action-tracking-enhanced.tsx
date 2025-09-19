@@ -101,15 +101,19 @@ const ActionTracking = () => {
     if (eventId) {
       // Find the event to determine which tab to navigate to
       const event = events.find((e) => e.id === eventId);
-      let tab = 'requests'; // default
+      let tab = 'new'; // default
 
       if (event) {
         if (event.status === 'completed') {
-          tab = 'past';
+          tab = 'completed';
         } else if (event.status === 'scheduled') {
           tab = 'scheduled';
+        } else if (event.status === 'in_process') {
+          tab = 'in_process';
+        } else if (event.status === 'declined') {
+          tab = 'declined';
         } else {
-          tab = 'requests'; // new, contact_completed, etc.
+          tab = 'new'; // new, contact_completed, etc.
         }
       }
 

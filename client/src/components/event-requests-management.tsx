@@ -1077,8 +1077,14 @@ export default function EventRequestsManagement({
     queryKey: ['/api/recipients'],
   });
 
-  // Handle initial event ID - auto-open event details if specified
+  // Handle initial tab and event ID - auto-open event details if specified
   useEffect(() => {
+    // Set initial tab if provided
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined'].includes(initialTab)) {
+      setActiveTab(initialTab);
+    }
+    
+    // Handle initial event ID
     if (initialEventId && eventRequests.length > 0) {
       const targetEvent = eventRequests.find(req => req.id === initialEventId);
       if (targetEvent) {
@@ -1086,20 +1092,26 @@ export default function EventRequestsManagement({
         setShowEventDetails(true);
         setIsEditing(false);
         
-        // Set the correct tab based on event status
-        if (targetEvent.status === 'completed') {
-          setActiveTab('past');
-        } else if (targetEvent.status === 'scheduled') {
-          setActiveTab('scheduled');
-        } else {
-          setActiveTab('requests');
+        // Set the correct tab based on event status (only if no explicit tab provided)
+        if (!initialTab) {
+          if (targetEvent.status === 'completed') {
+            setActiveTab('completed');
+          } else if (targetEvent.status === 'scheduled') {
+            setActiveTab('scheduled');
+          } else if (targetEvent.status === 'in_process') {
+            setActiveTab('in_process');
+          } else if (targetEvent.status === 'declined') {
+            setActiveTab('declined');
+          } else {
+            setActiveTab('new');
+          }
         }
         
         // Scroll to top to ensure event details are visible
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
-  }, [initialEventId, eventRequests]);
+  }, [initialTab, initialEventId, eventRequests]);
 
   // Helper function to resolve user ID or email to name
   const resolveUserName = (userIdOrName: string | undefined): string => {
