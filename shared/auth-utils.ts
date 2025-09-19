@@ -480,7 +480,7 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 // This function is kept for backwards compatibility only
 export function hasPermission(user: any, permission: string): boolean {
   // Simple permission check to avoid import issues in browser
-  if (!user) return false;
+  if (!user || !permission) return false;
   
   // Super admins have all permissions
   if (user.role === 'super_admin') return true;
