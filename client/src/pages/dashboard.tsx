@@ -122,9 +122,11 @@ export default function Dashboard({
   React.useEffect(() => {
     console.log('Current URL location:', location);
 
-    // Extract section from URL path
-    if (location.startsWith('/projects/')) {
-      const parts = location.split('/projects/');
+    // Extract section from URL path (strip query parameters)
+    const pathWithoutQuery = location.split('?')[0];
+    
+    if (pathWithoutQuery.startsWith('/projects/')) {
+      const parts = pathWithoutQuery.split('/projects/');
       const projectId = parts.length > 1 ? parts[1] : null;
       if (projectId) {
         const newSection = `project-${projectId}`;
@@ -132,12 +134,9 @@ export default function Dashboard({
         setActiveSection(newSection);
       }
     } else {
-      // Handle other sections if needed
-      const pathSection = location.substring(1) || 'dashboard';
-      if (
-        pathSection !== activeSection &&
-        pathSection !== location.substring(1)
-      ) {
+      // Handle other sections - strip query parameters and leading slash
+      const pathSection = pathWithoutQuery.substring(1) || 'dashboard';
+      if (pathSection !== activeSection) {
         console.log('Setting activeSection to:', pathSection);
         setActiveSection(pathSection);
       }
