@@ -250,9 +250,9 @@ export default function RequestCard({
                     <Building className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
                     <div>
                       <p className="text-base font-semibold text-[#1A2332]">
-                        {request.organizationName}
+                        {request.department || 'Not specified'}
                       </p>
-                      <p className="text-sm text-[#007E8C]">Organization</p>
+                      <p className="text-sm text-[#007E8C]">Department</p>
                     </div>
                   </div>
                 </div>
