@@ -1386,7 +1386,7 @@ export const eventRequests = pgTable(
     // Submitter information
     firstName: varchar('first_name').notNull(),
     lastName: varchar('last_name').notNull(),
-    email: varchar('email').notNull(),
+    email: varchar('email'), // Made optional - can be null
     phone: varchar('phone'),
 
     // Organization information
