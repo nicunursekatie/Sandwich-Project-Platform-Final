@@ -172,7 +172,7 @@ export default function RequestCard({
   return (
     <Card
       key={request.id}
-      className={`max-w-4xl transition-all duration-200 hover:shadow-lg ${statusColors[request.status]}`}
+      className={`transition-all duration-200 hover:shadow-lg ${statusColors[request.status]}`}
       data-testid={`card-event-request-${request.id}`}
     >
       <CardContent className="p-0">
