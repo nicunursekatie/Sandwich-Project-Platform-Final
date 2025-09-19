@@ -181,17 +181,37 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     },
   });
 
+  const createEventRequestMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/event-requests', data),
+    onSuccess: () => {
+      toast({
+        title: 'Event created successfully',
+        description: 'The new event request has been created.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      onSuccess();
+      onClose();
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to create event.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!eventRequest) return;
 
     // All fields are optional - no validation required
 
-    // Construct updateData explicitly without client-only fields
-    const updateData: any = {
-      // Only change status to 'scheduled' when in schedule mode
-      ...(mode === 'schedule' ? { status: 'scheduled' } : {}),
+    // Construct data explicitly without client-only fields
+    const eventData: any = {
+      // Only change status to 'scheduled' when in schedule mode (for updates)
+      ...(eventRequest && mode === 'schedule' ? { status: 'scheduled' } : {}),
+      // For new events, default to 'new' status
+      ...(!eventRequest ? { status: 'new' } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
       eventStartTime: formData.eventStartTime || null,
@@ -220,26 +240,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     // Handle sandwich data based on mode
     if (sandwichMode === 'total') {
-      updateData.estimatedSandwichCount = formData.totalSandwichCount;
-      updateData.sandwichTypes = null; // Clear specific types when using total mode
+      eventData.estimatedSandwichCount = formData.totalSandwichCount;
+      eventData.sandwichTypes = null; // Clear specific types when using total mode
     } else {
-      updateData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
-      updateData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+      eventData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
+      eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     }
 
     if (eventRequest) {
+      // Update existing event request
       updateEventRequestMutation.mutate({
         id: eventRequest.id,
-        data: updateData,
+        data: eventData,
       });
     } else {
-      // TODO: Handle create mode - for now just close the modal
-      toast({
-        title: 'Create mode not yet implemented',
-        description: 'Manual event creation will be implemented soon.',
-        variant: 'destructive',
-      });
-      onClose();
+      // Create new event request
+      createEventRequestMutation.mutate(eventData);
     }
   };
 
