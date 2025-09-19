@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { storage } from '../storage-wrapper';
 import { PERMISSIONS } from '../../shared/auth-utils';
+import { checkPermission, checkOwnershipPermission } from '../../shared/unified-auth-utils';
 
 // Single, authoritative requirePermission middleware
 // DENIES ACCESS BY DEFAULT - only grants access if explicitly authorized
@@ -42,22 +43,12 @@ export const requirePermission = (permission: string): RequestHandler => {
         }
       }
 
-      // STEP 3: Admin bypass for FEATURE permissions only (not user-private data)
-      if (currentUser.role === 'super_admin' || currentUser.role === 'admin') {
+      // STEP 3: Use unified permission checking
+      const permissionResult = checkPermission(currentUser, permission);
+      
+      if (permissionResult.granted) {
         console.log(
-          `✅ AUTH: Admin access granted for ${permission} to ${currentUser.email}`
-        );
-        return next();
-      }
-
-      // STEP 4: Check specific permission - DENY if not found
-      if (
-        currentUser.permissions &&
-        Array.isArray(currentUser.permissions) &&
-        currentUser.permissions.includes(permission)
-      ) {
-        console.log(
-          `✅ AUTH: Permission ${permission} granted to ${currentUser.email}`
+          `✅ AUTH: ${permissionResult.reason} for ${permission} to ${currentUser.email}`
         );
         return next();
       }
@@ -66,12 +57,15 @@ export const requirePermission = (permission: string): RequestHandler => {
       console.log(
         `❌ AUTH: Permission ${permission} DENIED for ${currentUser.email} (role: ${currentUser.role})`
       );
-      console.log(`   Available permissions:`, currentUser.permissions);
+      console.log(`   Reason: ${permissionResult.reason}`);
+      console.log(`   Available permissions:`, permissionResult.userPermissions);
+      
       return res.status(403).json({
         message: 'Insufficient permissions',
         required: permission,
-        userRole: currentUser.role,
-        userPermissions: currentUser.permissions || [],
+        reason: permissionResult.reason,
+        userRole: permissionResult.userRole,
+        userPermissions: permissionResult.userPermissions || [],
       });
     } catch (error) {
       console.error('❌ AUTH: Permission check failed:', error);
@@ -117,60 +111,36 @@ export const requireOwnershipPermission = (
         }
       }
 
-      // STEP 3: Admin bypass
-      if (currentUser.role === 'super_admin' || currentUser.role === 'admin') {
+      // STEP 3: Get resource owner ID for ownership check
+      const resourceUserId = await getResourceUserId(req);
+      
+      // STEP 4: Use unified ownership permission checking
+      const permissionResult = checkOwnershipPermission(
+        currentUser,
+        ownPermission,
+        allPermission,
+        resourceUserId || undefined
+      );
+      
+      if (permissionResult.granted) {
         console.log(
-          `✅ AUTH: Admin access granted for ${allPermission} to ${currentUser.email}`
+          `✅ AUTH: ${permissionResult.reason} for ${allPermission}/${ownPermission} to ${currentUser.email}`
         );
         return next();
-      }
-
-      // STEP 4: Check for "ALL" permission first (can edit any resource)
-      if (
-        currentUser.permissions &&
-        Array.isArray(currentUser.permissions) &&
-        currentUser.permissions.includes(allPermission)
-      ) {
-        console.log(
-          `✅ AUTH: ALL permission ${allPermission} granted to ${currentUser.email}`
-        );
-        return next();
-      }
-
-      // STEP 5: Check for "OWN" permission and verify ownership
-      if (
-        currentUser.permissions &&
-        Array.isArray(currentUser.permissions) &&
-        currentUser.permissions.includes(ownPermission)
-      ) {
-        const resourceUserId = await getResourceUserId(req);
-        if (resourceUserId === currentUser.id || resourceUserId === null) {
-          if (resourceUserId === null) {
-            console.log(
-              `✅ AUTH: OWN permission ${ownPermission} granted to ${currentUser.email} (ownerless resource)`
-            );
-          } else {
-            console.log(
-              `✅ AUTH: OWN permission ${ownPermission} granted to ${currentUser.email} (owns resource)`
-            );
-          }
-          return next();
-        } else {
-          console.log(
-            `❌ AUTH: OWN permission ${ownPermission} DENIED for ${currentUser.email} (not owner: ${resourceUserId} vs ${currentUser.id})`
-          );
-          return res
-            .status(403)
-            .json({ message: 'Can only edit own resources' });
-        }
       }
 
       // DEFAULT: DENY ACCESS
-      console.log(`❌ AUTH: No ownership permissions for ${currentUser.email}`);
+      console.log(
+        `❌ AUTH: Ownership permission DENIED for ${currentUser.email}`
+      );
+      console.log(`   Reason: ${permissionResult.reason}`);
+      
       return res.status(403).json({
         message: 'Insufficient permissions',
-        required: `${ownPermission} or ${allPermission}`,
-        userPermissions: currentUser.permissions || [],
+        required: `${allPermission} OR ${ownPermission}`,
+        reason: permissionResult.reason,
+        userRole: permissionResult.userRole,
+        userPermissions: permissionResult.userPermissions || [],
       });
     } catch (error) {
       console.error('❌ AUTH: Ownership check failed:', error);

@@ -416,88 +416,44 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
   return hasPermission(user, requiredPermission);
 }
 
-// Function to check if user has a specific permission
+// DEPRECATED: Use unified hasPermission from unified-auth-utils instead
+// This function is kept for backwards compatibility only
 export function hasPermission(user: any, permission: string): boolean {
-  if (
-    !user ||
-    user.permissions === null ||
-    user.permissions === undefined ||
-    !permission
-  )
-    return false;
-
-  // Super admins get all permissions automatically
-  if (user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN)
-    return true;
-
-  // Handle both array and number (bitmask) formats for permissions
-  let userPermissions: string[] = [];
-
-  if (Array.isArray(user.permissions)) {
-    userPermissions = user.permissions;
-  } else if (typeof user.permissions === 'number') {
-    // Convert permission bitmask to array using PERMISSION_LIST order
-    const PERMISSION_LIST = Object.values(PERMISSIONS);
-    userPermissions = PERMISSION_LIST.filter(
-      (_, index) => (user.permissions as number) & (1 << index)
-    );
-  } else {
-    return false;
-  }
-
-  // Check for exact match first
-  if (userPermissions.includes(permission)) return true;
-
-  // Check for case variations to handle mixed case permissions
-  const lowerPermission = permission.toLowerCase();
-  const upperPermission = permission.toUpperCase();
-
-  return (
-    userPermissions.includes(lowerPermission) ||
-    userPermissions.includes(upperPermission)
-  );
+  // Import here to avoid circular dependencies
+  const { hasPermission: unifiedHasPermission } = require('./unified-auth-utils');
+  return unifiedHasPermission(user, permission);
 }
 
 // Function to check if user can edit a specific collection entry
 export function canEditCollection(user: any, collection: any): boolean {
-  if (!user || !user.permissions) return false;
-
-  // Super admins and users with EDIT_ALL_COLLECTIONS can edit all collections
-  if (
-    user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_ALL)
-  )
-    return true;
-
-  // Users with CREATE_COLLECTIONS can edit collections they created
-  if (
-    user.permissions.includes(PERMISSIONS.COLLECTIONS_ADD) &&
-    (collection?.createdBy === user.id || collection?.created_by === user.id)
-  )
-    return true;
-
-  return false;
+  // Import here to avoid circular dependencies
+  const { checkOwnershipPermission } = require('./unified-auth-utils');
+  
+  const resourceOwnerId = collection?.createdBy || collection?.created_by;
+  const result = checkOwnershipPermission(
+    user,
+    PERMISSIONS.COLLECTIONS_EDIT_OWN,
+    PERMISSIONS.COLLECTIONS_EDIT_ALL,
+    resourceOwnerId
+  );
+  
+  return result.granted;
 }
 
 // Function to check if user can delete a specific collection entry
 export function canDeleteCollection(user: any, collection: any): boolean {
-  if (!user || !user.permissions) return false;
-
-  // Super admins and users with DELETE_ALL_COLLECTIONS can delete all collections
-  if (
-    user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_ALL)
-  )
-    return true;
-
-  // Users with CREATE_COLLECTIONS can delete collections they created
-  if (
-    user.permissions.includes(PERMISSIONS.COLLECTIONS_ADD) &&
-    (collection?.createdBy === user.id || collection?.created_by === user.id)
-  )
-    return true;
-
-  return false;
+  // Import here to avoid circular dependencies
+  const { checkOwnershipPermission } = require('./unified-auth-utils');
+  
+  const resourceOwnerId = collection?.createdBy || collection?.created_by;
+  const result = checkOwnershipPermission(
+    user,
+    PERMISSIONS.COLLECTIONS_DELETE_OWN,
+    PERMISSIONS.COLLECTIONS_DELETE_ALL,
+    resourceOwnerId
+  );
+  
+  return result.granted;
 }
 
 // Function to check if user can edit a specific project
