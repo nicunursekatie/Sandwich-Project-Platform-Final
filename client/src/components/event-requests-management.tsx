@@ -1381,88 +1381,33 @@ export default function EventRequestsManagement({
 
   // Check if user can sign up for a specific role
   const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
-    if (!user) {
-      console.log(`❌ canSelfSignup(${type}): No user`);
-      return false;
-    }
-
-    console.log(`🔍 canSelfSignup(${type}) for event ${eventRequest.id}:`, {
-      status: eventRequest.status,
-      driversNeeded: eventRequest.driversNeeded,
-      speakersNeeded: eventRequest.speakersNeeded,
-      volunteersNeeded: eventRequest.volunteersNeeded,
-      assignedDriverIds: eventRequest.assignedDriverIds,
-      assignedSpeakerIds: eventRequest.assignedSpeakerIds,
-      assignedVolunteerIds: eventRequest.assignedVolunteerIds,
-      userId: user.id
-    });
+    if (!user) return false;
 
     if (type === 'driver') {
       const currentDrivers = parsePostgresArray(eventRequest.assignedDriverIds);
       const driversNeeded = eventRequest.driversNeeded;
-      const notAlreadyAssigned = !currentDrivers.includes(user.id);
-      const hasCapacity = typeof driversNeeded !== 'number' || currentDrivers.length < driversNeeded;
-      const result = notAlreadyAssigned && hasCapacity;
-      
-      console.log(`🚗 Driver check:`, {
-        currentDrivers,
-        driversNeeded,
-        notAlreadyAssigned,
-        hasCapacity,
-        result
-      });
-      
-      return result;
+      // Allow signup if user not already assigned and either no limit set or under the limit
+      return !currentDrivers.includes(user.id) && (typeof driversNeeded !== 'number' || currentDrivers.length < driversNeeded);
     } else if (type === 'speaker') {
       const currentSpeakerDetails = eventRequest.speakerDetails || {};
       const speakersNeeded = eventRequest.speakersNeeded;
       const currentSpeakersCount = Object.keys(currentSpeakerDetails).length;
-      const notAlreadyAssigned = !currentSpeakerDetails[user.id];
-      const hasCapacity = typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded;
-      const result = notAlreadyAssigned && hasCapacity;
-      
-      console.log(`🎤 Speaker check:`, {
-        currentSpeakerDetails,
-        speakersNeeded,
-        currentSpeakersCount,
-        notAlreadyAssigned,
-        hasCapacity,
-        result
-      });
-      
-      return result;
+      // Allow signup if user not already assigned and either no limit set or under the limit
+      return !currentSpeakerDetails[user.id] && (typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded);
     } else if (type === 'volunteer') {
-      // Allow volunteer signup for scheduled events or events that need volunteers
-      const statusCheck = eventRequest.status === 'scheduled';
-      const volunteersNeededCheck = eventRequest.volunteersNeeded && eventRequest.volunteersNeeded > 0;
-      const canVolunteer = statusCheck || volunteersNeededCheck;
-      
-      console.log(`👥 Volunteer initial check:`, {
-        status: eventRequest.status,
-        statusCheck,
-        volunteersNeeded: eventRequest.volunteersNeeded,
-        volunteersNeededCheck,
-        canVolunteer
-      });
-      
-      if (canVolunteer) {
+      // ALWAYS allow volunteer signup for scheduled events, regardless of volunteersNeeded
+      if (eventRequest.status === 'scheduled') {
         const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
-        const notAlreadyAssigned = !currentVolunteers.includes(user.id);
-        const hasCapacity = typeof eventRequest.volunteersNeeded !== 'number' || currentVolunteers.length < eventRequest.volunteersNeeded;
-        const result = notAlreadyAssigned && hasCapacity;
-        
-        console.log(`👥 Volunteer detailed check:`, {
-          currentVolunteers,
-          volunteersNeeded: eventRequest.volunteersNeeded,
-          notAlreadyAssigned,
-          hasCapacity,
-          result
-        });
-        
-        return result;
+        return !currentVolunteers.includes(user.id);
       }
       
-      console.log(`❌ Volunteer check failed: canVolunteer = false`);
+      // For non-scheduled events, check volunteersNeeded
+      if (eventRequest.volunteersNeeded && eventRequest.volunteersNeeded > 0) {
+        const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
+        const hasCapacity = currentVolunteers.length < eventRequest.volunteersNeeded;
+        return !currentVolunteers.includes(user.id) && hasCapacity;
+      }
+      
       return false;
     }
 

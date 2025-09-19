@@ -1504,16 +1504,41 @@ router.get(
         hours = 24,
       } = req.query;
 
+      console.log('🔍 Audit logs request:', { limit, offset, eventId, action, userId, hours });
+
+      // Validate numeric parameters
+      const parsedHours = parseInt(hours as string);
+      const parsedLimit = parseInt(limit as string);
+      const parsedOffset = parseInt(offset as string);
+
+      if (isNaN(parsedHours) || parsedHours < 0) {
+        return res.status(400).json({ message: 'Invalid hours parameter' });
+      }
+      if (isNaN(parsedLimit) || parsedLimit < 0 || parsedLimit > 1000) {
+        return res.status(400).json({ message: 'Invalid limit parameter' });
+      }
+      if (isNaN(parsedOffset) || parsedOffset < 0) {
+        return res.status(400).json({ message: 'Invalid offset parameter' });
+      }
+
       // Calculate time filter for recent actions (default last 24 hours)
       const sinceTime = new Date();
-      sinceTime.setHours(sinceTime.getHours() - parseInt(hours as string));
+      sinceTime.setHours(sinceTime.getHours() - parsedHours);
+
+      console.log('🔍 Getting audit history with params:', {
+        tableName: 'event_requests',
+        eventId: eventId || undefined,
+        userId: userId || undefined,
+        limit: parsedLimit,
+        offset: parsedOffset
+      });
 
       const auditHistory = await AuditLogger.getAuditHistory(
         'event_requests',
-        eventId as string,
-        userId as string,
-        parseInt(limit as string),
-        parseInt(offset as string)
+        eventId ? String(eventId) : undefined,
+        userId ? String(userId) : undefined,
+        parsedLimit,
+        parsedOffset
       );
 
       // Filter for recent actions and enhance with readable context
