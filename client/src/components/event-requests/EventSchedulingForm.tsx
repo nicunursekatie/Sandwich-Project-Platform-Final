@@ -18,6 +18,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   ChevronDown,
   Plus,
   Trash2,
@@ -50,6 +60,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const dialogOpen = isVisible || isOpen || false;
   const onSuccess = onScheduled || onEventScheduled || (() => {});
   const [formData, setFormData] = useState({
+    eventDate: '',
     eventStartTime: '',
     eventEndTime: '',
     pickupTime: '',
@@ -66,8 +77,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
-
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showDateConfirmation, setShowDateConfirmation] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -76,6 +88,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     queryKey: ['/api/users'],
     staleTime: 10 * 60 * 1000,
   });
+
+  // Helper function to format date for input (YYYY-MM-DD format to avoid timezone issues)
+  const formatDateForInput = (date: any) => {
+    if (!date) return '';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      return dateObj.toISOString().split('T')[0];
+    } catch {
+      return '';
+    }
+  };
+
+  // Helper function to serialize date to ISO midnight string for backend
+  const serializeDateToISO = (dateString: string) => {
+    if (!dateString) return null;
+    return `${dateString}T00:00:00.000Z`;
+  };
 
   // Initialize form with existing data when dialog opens
   useEffect(() => {
@@ -89,6 +118,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const totalCount = eventRequest.estimatedSandwichCount || 0;
       
       setFormData({
+        eventDate: formatDateForInput(eventRequest.desiredEventDate),
         eventStartTime: eventRequest.eventStartTime || '',
         eventEndTime: eventRequest.eventEndTime || '',
         pickupTime: eventRequest.pickupTime || '',
@@ -107,7 +137,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Set mode based on existing data
       setSandwichMode(hasTypesData ? 'types' : 'total');
     }
-  }, [isVisible, eventRequest]);
+  }, [isVisible, isOpen, eventRequest, mode]);
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
@@ -139,22 +169,34 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     // All fields are optional - no validation required
 
-    // Prepare update data
-    const updateData = {
+    // Construct updateData explicitly without client-only fields
+    const updateData: any = {
       // Only change status to 'scheduled' when in schedule mode
       ...(mode === 'schedule' ? { status: 'scheduled' } : {}),
-      ...formData,
-      // Handle sandwich data based on mode
-      ...(sandwichMode === 'total' ? {
-        estimatedSandwichCount: formData.totalSandwichCount,
-        sandwichTypes: null, // Clear specific types when using total mode
-      } : {
-        sandwichTypes: JSON.stringify(formData.sandwichTypes),
-        estimatedSandwichCount: formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0),
-      }),
+      // Serialize date properly to avoid timezone issues
+      desiredEventDate: serializeDateToISO(formData.eventDate),
+      eventStartTime: formData.eventStartTime || null,
+      eventEndTime: formData.eventEndTime || null,
+      pickupTime: formData.pickupTime || null,
+      eventAddress: formData.eventAddress || null,
       hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
                         formData.hasRefrigeration === 'false' ? false : null,
+      driversNeeded: formData.driversNeeded || 0,
+      vanDriverNeeded: formData.vanDriverNeeded || false,
+      speakersNeeded: formData.speakersNeeded || 0,
+      volunteersNeeded: formData.volunteersNeeded || false,
+      tspContact: formData.tspContact || null,
+      schedulingNotes: formData.schedulingNotes || null,
     };
+
+    // Handle sandwich data based on mode
+    if (sandwichMode === 'total') {
+      updateData.estimatedSandwichCount = formData.totalSandwichCount;
+      updateData.sandwichTypes = null; // Clear specific types when using total mode
+    } else {
+      updateData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
+      updateData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+    }
 
     updateEventRequestMutation.mutate({
       id: eventRequest.id,
@@ -183,6 +225,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...prev,
       sandwichTypes: prev.sandwichTypes.filter((_, i) => i !== index)
     }));
+  };
+
+  // Handle date change confirmation
+  const handleDateChangeConfirmation = () => {
+    setFormData(prev => ({ ...prev, eventDate: pendingDateChange }));
+    setShowDateConfirmation(false);
+    setPendingDateChange('');
+  };
+
+  const handleDateChangeCancellation = () => {
+    setShowDateConfirmation(false);
+    setPendingDateChange('');
   };
 
   if (!eventRequest) return null;
@@ -303,33 +357,57 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Event Schedule */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="eventStartTime">Start Time</Label>
-              <Input
-                id="eventStartTime"
-                type="time"
-                value={formData.eventStartTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, eventStartTime: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="eventEndTime">End Time</Label>
-              <Input
-                id="eventEndTime"
-                type="time"
-                value={formData.eventEndTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, eventEndTime: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="pickupTime">Pickup Time</Label>
-              <Input
-                id="pickupTime"
-                type="time"
-                value={formData.pickupTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, pickupTime: e.target.value }))}
-              />
+          <div className="space-y-4">
+            <Label className="text-lg font-semibold">Event Schedule</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="eventDate">Event Date</Label>
+                <Input
+                  id="eventDate"
+                  type="date"
+                  value={formData.eventDate}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    // Check if event is scheduled and date is changing
+                    if (eventRequest?.status === 'scheduled' && 
+                        formatDateForInput(eventRequest.desiredEventDate) !== newDate &&
+                        formatDateForInput(eventRequest.desiredEventDate) !== '') {
+                      setPendingDateChange(newDate);
+                      setShowDateConfirmation(true);
+                    } else {
+                      setFormData(prev => ({ ...prev, eventDate: newDate }));
+                    }
+                  }}
+                  data-testid="input-event-date"
+                />
+              </div>
+              <div>
+                <Label htmlFor="eventStartTime">Start Time</Label>
+                <Input
+                  id="eventStartTime"
+                  type="time"
+                  value={formData.eventStartTime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, eventStartTime: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="eventEndTime">End Time</Label>
+                <Input
+                  id="eventEndTime"
+                  type="time"
+                  value={formData.eventEndTime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, eventEndTime: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="pickupTime">Pickup Time</Label>
+                <Input
+                  id="pickupTime"
+                  type="time"
+                  value={formData.pickupTime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, pickupTime: e.target.value }))}
+                />
+              </div>
             </div>
           </div>
 
@@ -561,12 +639,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               className="text-white"
               style={{ backgroundColor: '#236383' }}
               disabled={updateEventRequestMutation.isPending}
+              data-testid="button-submit"
             >
-              {updateEventRequestMutation.isPending ? 'Scheduling...' : 'Schedule Event'}
+              {updateEventRequestMutation.isPending 
+                ? (mode === 'edit' ? 'Saving...' : 'Scheduling...') 
+                : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
             </Button>
           </div>
         </form>
       </DialogContent>
+
+      {/* Date Change Confirmation Dialog */}
+      <AlertDialog open={showDateConfirmation} onOpenChange={setShowDateConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Date Change</AlertDialogTitle>
+            <AlertDialogDescription>
+              This event is already scheduled. Changing the date may affect logistics, notifications, and volunteer assignments. 
+              Are you sure you want to change the event date?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDateChangeCancellation}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDateChangeConfirmation}
+              className="bg-[#236383] hover:bg-[#1a4e68]"
+            >
+              Yes, Change Date
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
