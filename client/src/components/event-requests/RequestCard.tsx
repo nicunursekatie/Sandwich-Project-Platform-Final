@@ -252,6 +252,10 @@ export default function RequestCard({
                       <p className="text-base font-semibold text-[#1A2332]">
                         {request.department || 'Not specified'}
                       </p>
+                      {/* DEBUG: Show what's actually in these fields */}
+                      <div className="text-xs text-red-500 mt-1 border border-red-200 p-1 rounded">
+                        DEBUG - Dept: "{request.department}" | Msg: "{request.message?.substring(0, 50)}..."
+                      </div>
                       <p className="text-sm text-[#007E8C]">Department</p>
                     </div>
                   </div>
