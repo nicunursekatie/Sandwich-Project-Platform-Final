@@ -1141,7 +1141,7 @@ export default function RequestCard({
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Total:</span>
                           <span className="font-bold text-[#236383] text-base">
-                            {request.actualSandwichCount || request.sandwichCount || 0} sandwiches
+                            {request.actualSandwichCount || request.estimatedSandwichCount || request.sandwichCount || 0} sandwiches
                           </span>
                         </div>
                         
