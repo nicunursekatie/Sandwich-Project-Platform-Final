@@ -299,9 +299,47 @@ export default function StaffingForecastWidget() {
               <div className="space-y-3">
                 <h4 className="font-semibold text-brand-primary">Events Requiring Staffing:</h4>
                 {currentWeek.events.map((event) => {
-                  const driversNeeded = Math.max(0, (event.driversNeeded || 0) - (event.assignedDriverIds?.length || 0));
-                  const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - (event.assignedSpeakerIds?.length || 0));
-                  const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - (event.assignedVolunteerIds?.length || 0));
+                  // Helper function to safely get array length for PostgreSQL arrays
+                  const getAssignmentCount = (assignments: any) => {
+                    if (!assignments) return 0;
+                    
+                    // If it's already a JavaScript array
+                    if (Array.isArray(assignments)) {
+                      return assignments.length;
+                    }
+                    
+                    // If it's a string (PostgreSQL array format like "{item1,item2}" or '{"item1","item2"}')
+                    if (typeof assignments === 'string') {
+                      // Empty PostgreSQL array
+                      if (assignments === '{}' || assignments === '') return 0;
+                      
+                      // Remove curly braces and handle quoted strings
+                      let cleaned = assignments.replace(/^{|}$/g, '');
+                      
+                      if (!cleaned) return 0;
+                      
+                      // Handle quoted elements like "Andy Hiles","Barbara Bancroft"
+                      if (cleaned.includes('"')) {
+                        // Split by comma but handle quoted strings properly
+                        const matches = cleaned.match(/"[^"]*"|[^",]+/g);
+                        return matches ? matches.filter(item => item.trim()).length : 0;
+                      } else {
+                        // Simple comma-separated values
+                        return cleaned.split(',').filter(item => item.trim()).length;
+                      }
+                    }
+                    
+                    // Fallback: if it's an object, check if it has length property
+                    if (typeof assignments === 'object' && assignments.length !== undefined) {
+                      return assignments.length;
+                    }
+                    
+                    return 0;
+                  };
+
+                  const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
+                  const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
+                  const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
                   const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
                   const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
 
