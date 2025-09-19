@@ -893,7 +893,7 @@ export default function RequestCard({
                             <div className="space-y-1">
                               {request.assignedSpeakerIds.map((speakerId) => {
                                 const speakerDetails = request.speakerDetails?.[speakerId];
-                                const speakerName = speakerDetails?.name || (users.find(u => u.id === speakerId)?.name || 'Unknown Speaker');
+                                const speakerName = speakerDetails?.name || resolveUserName(speakerId);
                                 return (
                                   <div key={speakerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium text-[#236383]">{speakerName}</span>
@@ -1007,7 +1007,7 @@ export default function RequestCard({
                             <div className="space-y-1">
                               {request.assignedVolunteerIds.map((volunteerId) => {
                                 const volunteerDetails = request.volunteerDetails?.[volunteerId];
-                                const volunteerName = volunteerDetails?.name || (users.find(u => u.id === volunteerId)?.name || 'Unknown Volunteer');
+                                const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
                                 return (
                                   <div key={volunteerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium text-[#236383]">{volunteerName}</span>
