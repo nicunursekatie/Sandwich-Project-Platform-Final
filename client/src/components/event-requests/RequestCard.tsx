@@ -295,11 +295,6 @@ export default function RequestCard({
                         {dateInfo.text}
                       </p>
                       <p className="text-sm text-[#007E8C]">{request.status === 'completed' ? 'Event Date' : 'Requested Event Date'}</p>
-                      {dateInfo.isWedOrThu && request.status !== 'completed' && (
-                        <p className="text-xs text-[#FBAD3F] font-medium">
-                          ⭐ {dateInfo.dayName} - Great day for events!
-                        </p>
-                      )}
                     </div>
                   </div>
 
