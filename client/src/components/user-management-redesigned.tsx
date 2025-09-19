@@ -87,7 +87,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import EnhancedPermissionsDialog from '@/components/enhanced-permissions-dialog';
+import ModernPermissionsEditor from '@/components/modern-permissions-editor';
 import AnnouncementManager from '@/components/announcement-manager';
 import AuthDebug from '@/components/auth-debug';
 import ShoutoutSystem from '@/components/shoutout-system';
@@ -1526,8 +1526,8 @@ export default function UserManagementRedesigned() {
         </DialogContent>
       </Dialog>
 
-      {/* Enhanced Permissions Dialog */}
-      <EnhancedPermissionsDialog
+      {/* Modern Permissions Editor */}
+      <ModernPermissionsEditor
         user={selectedUser}
         open={!!selectedUser}
         onOpenChange={(open) => {
