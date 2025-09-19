@@ -82,6 +82,21 @@ export function checkPermission(user: User | null | undefined, permission: strin
     };
   }
 
+  // Step 3.5: Admin backward compatibility for new navigation and event permissions
+  if (user.role === 'admin') {
+    if (permission.startsWith('NAV_') || 
+        permission === 'ADMIN_PANEL_ACCESS' ||
+        permission.startsWith('EVENT_REQUESTS_') ||
+        permission.startsWith('DOCUMENTS_')) {
+      return {
+        granted: true,
+        reason: 'Admin role automatic access (backward compatibility)',
+        userRole: user.role,
+        userPermissions: userPermissions
+      };
+    }
+  }
+
   // Step 4: Check for exact permission match
   if (userPermissions.includes(permission)) {
     return {

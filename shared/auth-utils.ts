@@ -480,7 +480,23 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 // This function is kept for backwards compatibility only
 export function hasPermission(user: any, permission: string): boolean {
   // Simple permission check to avoid import issues in browser
-  if (!user || !user.permissions) return false;
+  if (!user) return false;
+  
+  // Super admins have all permissions
+  if (user.role === 'super_admin') return true;
+  
+  // Admins get automatic access to navigation and core functionality (backward compatibility)
+  if (user.role === 'admin') {
+    if (permission.startsWith('NAV_') || 
+        permission === 'ADMIN_PANEL_ACCESS' ||
+        permission.startsWith('EVENT_REQUESTS_') ||
+        permission.startsWith('DOCUMENTS_')) {
+      return true;
+    }
+  }
+  
+  // If no permissions array, return false (except for admin/super_admin above)
+  if (!user.permissions) return false;
   
   if (Array.isArray(user.permissions)) {
     return user.permissions.includes(permission);
