@@ -34,6 +34,7 @@ import {
   UserCheck,
   ChevronDown,
   ChevronUp,
+  Clock,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -303,6 +304,24 @@ export default function RequestCard({
                         {dateInfo.text}
                       </p>
                       <p className="text-sm text-[#007E8C]">{request.status === 'completed' ? 'Event Date' : 'Requested Event Date'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <Clock className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
+                    <div>
+                      <p className="text-base font-semibold text-[#1A2332]">
+                        {request.createdAt ? new Date(request.createdAt).toLocaleString('en-US', {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        }) : 'Unknown'}
+                      </p>
+                      <p className="text-sm text-[#007E8C]">Request Submitted</p>
                     </div>
                   </div>
 
