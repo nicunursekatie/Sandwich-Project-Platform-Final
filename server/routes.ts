@@ -31,10 +31,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resave: false, // Only save session when modified - prevents unnecessary DB writes
       saveUninitialized: false,
       cookie: {
-        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        secure: false, // Replit deployment isn't true HTTPS production - set to false
         httpOnly: true, // Prevent XSS attacks by blocking client-side access
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for mobile compatibility in production
+        sameSite: 'lax', // Use 'lax' for Replit compatibility - 'none' requires HTTPS
         domain: undefined, // Let Express auto-detect domain for Replit
       },
       name: 'tsp.session', // Custom session name
