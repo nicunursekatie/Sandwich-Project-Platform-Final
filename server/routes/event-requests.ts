@@ -2512,4 +2512,105 @@ router.patch(
   }
 );
 
+// Update TSP contact assignment for event requests
+router.patch(
+  '/:id/tsp-contact',
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { tspContact } = req.body;
+
+      if (!id || isNaN(id)) {
+        return res.status(400).json({ error: 'Valid event ID required' });
+      }
+
+      // Check permissions - only admin@sandwich.project and katielong2316@gmail.com
+      const userEmail = req.user?.email;
+      const allowedEmails = ['admin@sandwich.project', 'katielong2316@gmail.com'];
+      
+      if (!userEmail || !allowedEmails.includes(userEmail)) {
+        return res.status(403).json({ 
+          error: 'Insufficient permissions. Only Christine and Katie can assign TSP contacts.' 
+        });
+      }
+
+      // Create validation schema for the payload
+      const tspContactSchema = z.object({
+        tspContact: z.string().optional().nullable(),
+      });
+
+      const validatedData = tspContactSchema.parse(req.body);
+
+      // Get original data for audit logging
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ error: 'Event request not found' });
+      }
+
+      // Prepare updates object
+      const updates: any = {
+        tspContact: validatedData.tspContact || null,
+        updatedAt: new Date(),
+      };
+
+      // If assigning a TSP contact (not removing), set the assignment date
+      if (validatedData.tspContact) {
+        updates.tspContactAssignedDate = new Date();
+      } else {
+        // If removing TSP contact, clear the assignment date
+        updates.tspContactAssignedDate = null;
+      }
+
+      const updatedEventRequest = await storage.updateEventRequest(id, updates);
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ error: 'Event request not found' });
+      }
+
+      // Enhanced audit logging for this operation
+      await logEventRequestAudit(
+        'UPDATE_TSP_CONTACT',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: validatedData.tspContact ? 'TSP Contact Assigned' : 'TSP Contact Removed',
+          tspContact: validatedData.tspContact,
+          assignedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          previousTspContact: originalEvent.tspContact,
+        }
+      );
+
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_EDIT',
+        `${validatedData.tspContact ? 'Assigned' : 'Removed'} TSP contact for event: ${id}`,
+        {
+          eventId: id,
+          tspContact: validatedData.tspContact,
+          assignedBy: req.user?.email,
+          organizationName: originalEvent.organizationName,
+        }
+      );
+
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error('Error updating TSP contact:', error);
+      
+      // Handle validation errors specifically
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: error.errors 
+        });
+      }
+      
+      res.status(500).json({ error: 'Failed to update TSP contact' });
+    }
+  }
+);
+
 export default router;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,6 +38,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import {
   SANDWICH_TYPES,
@@ -148,9 +149,70 @@ export default function RequestCard({
 }: RequestCardProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   // State for managing original message collapsed/expanded state
   const [isOriginalMessageExpanded, setIsOriginalMessageExpanded] = useState(false);
+  
+  // State for TSP contact editing
+  const [isEditingTspContact, setIsEditingTspContact] = useState(false);
+  const [selectedTspContact, setSelectedTspContact] = useState(request.tspContact || '');
+  
+  // Check if user can edit TSP contacts
+  const canEditTspContacts = user?.email === 'admin@sandwich.project' || user?.email === 'katielong2316@gmail.com';
+
+  // TSP Contact Update Mutation
+  const updateTspContactMutation = useMutation({
+    mutationFn: async (tspContact: string | null) => {
+      return await apiRequest(`/api/event-requests/${request.id}/tsp-contact`, {
+        method: 'PATCH',
+        body: { tspContact },
+      });
+    },
+    onSuccess: () => {
+      setIsEditingTspContact(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      toast({
+        title: 'Success',
+        description: selectedTspContact 
+          ? 'TSP contact assigned successfully' 
+          : 'TSP contact removed successfully',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to update TSP contact:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update TSP contact. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Function to handle TSP contact update
+  const handleTspContactUpdate = () => {
+    const contactToSave = selectedTspContact || null;
+    updateTspContactMutation.mutate(contactToSave);
+  };
+
+  // Function to cancel TSP contact editing
+  const handleCancelTspContactEdit = () => {
+    setIsEditingTspContact(false);
+    setSelectedTspContact(request.tspContact || '');
+  };
+
+  // Calculate if follow-up is needed (events in "in_process" status for >1 week)
+  const shouldShowFollowUpBadge = () => {
+    if (request.status !== 'in_process') return false;
+    
+    // Check when the status was last updated to "in_process"
+    // For now, use a placeholder - this would need status change tracking
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    // This is a simplified check - in practice you'd want to track when status changed to in_process
+    return request.updatedAt ? new Date(request.updatedAt) < oneWeekAgo : false;
+  };
 
   // Fetch drivers data for van driver display
   const { data: drivers = [] } = useQuery<any[]>({
@@ -342,15 +404,156 @@ export default function RequestCard({
                 </div>
               </div>
 
-              {/* TSP Contact Information */}
-              {(request.tspContactAssigned || request.tspContact || request.additionalContact1 || request.additionalContact2 || request.customTspContact) && (
+              {/* TSP Contact Gold Status Box */}
+              {request.tspContact && request.tspContactAssignedDate && (
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mt-4">
+                  <h4 className="text-sm font-semibold text-yellow-800 mb-3 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-yellow-600" />
+                    TSP Contact Assignment
+                  </h4>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-5 h-5 text-yellow-600" />
+                      <span className="text-yellow-800 font-medium">
+                        TSP Contact Assigned: {resolveUserName(request.tspContact)}
+                      </span>
+                      <span className="text-sm text-yellow-600">
+                        on {new Date(request.tspContactAssignedDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {canEditTspContacts && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsEditingTspContact(true)}
+                        className="text-yellow-700 hover:text-yellow-800 hover:bg-yellow-100"
+                        data-testid={`button-edit-tsp-contact-${request.id}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TSP Contact Assignment Interface */}
+              {!request.tspContact && canEditTspContacts && (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-gray-600" />
+                    TSP Contact Assignment
+                  </h4>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingTspContact(true)}
+                      className="text-gray-700 border-gray-300 hover:bg-gray-100"
+                      data-testid={`button-assign-tsp-contact-${request.id}`}
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Assign TSP Contact
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* TSP Contact Editing Dialog/Interface */}
+              {isEditingTspContact && canEditTspContacts && (
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
                   <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
                     <UserCheck className="w-4 h-4 mr-2 text-blue-600" />
-                    TSP Contact Information
+                    {request.tspContact ? 'Edit TSP Contact Assignment' : 'Assign TSP Contact'}
                   </h4>
                   <div className="space-y-3">
-                    {/* Primary TSP Contact Assigned */}
+                    <div className="flex items-center space-x-3">
+                      <Select 
+                        value={selectedTspContact} 
+                        onValueChange={setSelectedTspContact}
+                        data-testid={`select-tsp-contact-${request.id}`}
+                      >
+                        <SelectTrigger className="w-64">
+                          <SelectValue placeholder="Select TSP Contact..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No TSP Contact</SelectItem>
+                          {users
+                            .filter(user => user.isActive)
+                            .map(user => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.firstName && user.lastName 
+                                  ? `${user.firstName} ${user.lastName}` 
+                                  : user.displayName || user.email || 'Unknown User'}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        onClick={handleTspContactUpdate}
+                        disabled={updateTspContactMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        data-testid={`button-save-tsp-contact-${request.id}`}
+                      >
+                        {updateTspContactMutation.isPending ? (
+                          <>
+                            <Clock className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelTspContactEdit}
+                        disabled={updateTspContactMutation.isPending}
+                        data-testid={`button-cancel-tsp-contact-${request.id}`}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                    </div>
+                    {request.tspContact && (
+                      <div className="text-sm text-blue-600">
+                        Current assignment: {resolveUserName(request.tspContact)}
+                        {request.tspContactAssignedDate && (
+                          <span className="ml-2">
+                            (assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()})
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Follow-up Badge for Events Needing Follow-up */}
+              {shouldShowFollowUpBadge() && (
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-orange-600" />
+                    <span className="text-sm font-medium text-orange-800">Follow-up needed?</span>
+                    <Badge variant="outline" className="text-orange-700 border-orange-300">
+                      In Process {'>'}1 week
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              {/* Legacy TSP Contact Information (for existing additional contacts) */}
+              {(request.tspContactAssigned || request.additionalContact1 || request.additionalContact2 || request.customTspContact) && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-blue-600" />
+                    Additional TSP Contacts
+                  </h4>
+                  <div className="space-y-3">
+                    {/* Legacy TSP Contact Assigned */}
                     {request.tspContactAssigned && (
                       <div className="flex items-center space-x-3">
                         <UserCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -358,20 +561,7 @@ export default function RequestCard({
                           <p className="text-base font-medium text-[#1A2332]">
                             {resolveUserName(request.tspContactAssigned)}
                           </p>
-                          <p className="text-sm text-blue-600">Assigned TSP Team Member</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Primary TSP Contact */}
-                    {request.tspContact && request.tspContact !== request.tspContactAssigned && (
-                      <div className="flex items-center space-x-3">
-                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                        <div>
-                          <p className="text-base font-medium text-[#1A2332]">
-                            {resolveUserName(request.tspContact)}
-                          </p>
-                          <p className="text-sm text-blue-600">Primary TSP Contact</p>
+                          <p className="text-sm text-blue-600">Legacy Assigned TSP Team Member</p>
                         </div>
                       </div>
                     )}

@@ -1426,6 +1426,7 @@ export const eventRequests = pgTable(
     // Advanced event planning fields (for scheduled/in_planning status)
     tspContactAssigned: varchar('tsp_contact_assigned'), // TSP team member assigned to this event
     tspContact: varchar('tsp_contact'), // Primary TSP contact for the event
+    tspContactAssignedDate: timestamp('tsp_contact_assigned_date'), // When TSP contact was assigned
     additionalTspContacts: text('additional_tsp_contacts'), // Additional TSP contacts (legacy field)
     additionalContact1: varchar('additional_contact_1'), // Third TSP contact (user ID)
     additionalContact2: varchar('additional_contact_2'), // Fourth TSP contact (user ID)
