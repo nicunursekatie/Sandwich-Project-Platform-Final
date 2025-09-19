@@ -2017,7 +2017,7 @@ export default function EventRequestsManagement({
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
+      <div className="max-w-7xl mx-auto px-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
