@@ -339,11 +339,11 @@ export default function SandwichForecastWidget() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {(event.driversNeeded && event.driversNeeded > 0) && (
-                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{event.driversNeeded > 1 ? 's' : ''}</Badge>
+                      {(event.driversNeeded && Number(event.driversNeeded) > 0) && (
+                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{Number(event.driversNeeded) > 1 ? 's' : ''}</Badge>
                       )}
-                      {(event.speakersNeeded && event.speakersNeeded > 0) && (
-                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{event.speakersNeeded > 1 ? 's' : ''}</Badge>
+                      {(event.speakersNeeded && Number(event.speakersNeeded) > 0) && (
+                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{Number(event.speakersNeeded) > 1 ? 's' : ''}</Badge>
                       )}
                       <div className="font-semibold text-brand-primary">
                         {(event.estimatedSandwichCount || 0).toLocaleString()}
@@ -388,11 +388,11 @@ export default function SandwichForecastWidget() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {(event.driversNeeded && event.driversNeeded > 0) && (
-                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{event.driversNeeded > 1 ? 's' : ''}</Badge>
+                      {(event.driversNeeded && Number(event.driversNeeded) > 0) && (
+                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{Number(event.driversNeeded) > 1 ? 's' : ''}</Badge>
                       )}
-                      {(event.speakersNeeded && event.speakersNeeded > 0) && (
-                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{event.speakersNeeded > 1 ? 's' : ''}</Badge>
+                      {(event.speakersNeeded && Number(event.speakersNeeded) > 0) && (
+                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{Number(event.speakersNeeded) > 1 ? 's' : ''}</Badge>
                       )}
                       <div className="font-semibold text-brand-primary">
                         {(event.estimatedSandwichCount || 0).toLocaleString()}
