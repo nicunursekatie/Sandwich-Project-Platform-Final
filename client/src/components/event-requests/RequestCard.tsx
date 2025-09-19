@@ -779,7 +779,7 @@ export default function RequestCard({
                             ) : (
                               <div className="flex items-center space-x-1">
                                 <span className="font-semibold text-base text-[#236383]">
-                                  {Math.max(0, (request.driversNeeded || 0) - (request.assignedDriverIds?.length || 0))} needed
+                                  {(request.assignedDriverIds?.length || 0)} / {(request.driversNeeded || 0)} assigned
                                 </span>
                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
@@ -916,7 +916,7 @@ export default function RequestCard({
                             ) : (
                               <div className="flex items-center space-x-1">
                                 <span className="font-semibold text-base">
-                                  {Math.max(0, (request.speakersNeeded || 0) - Object.keys(request.speakerDetails || {}).length)} needed
+                                  {Object.keys(request.speakerDetails || {}).length} / {(request.speakersNeeded || 0)} assigned
                                 </span>
                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
@@ -1030,7 +1030,7 @@ export default function RequestCard({
                             ) : (
                               <div className="flex items-center space-x-1">
                                 <span className="font-semibold text-base">
-                                  {Math.max(0, (request.volunteersNeeded || 0) - (request.assignedVolunteerIds?.length || 0))} needed
+                                  {(request.assignedVolunteerIds?.length || 0)} / {(request.volunteersNeeded || 0)} assigned
                                 </span>
                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
