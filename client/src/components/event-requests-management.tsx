@@ -1341,12 +1341,50 @@ export default function EventRequestsManagement({
     }
   };
 
+  // Helper function to safely parse PostgreSQL arrays into JavaScript arrays
+  const parsePostgresArray = (assignments: any): string[] => {
+    if (!assignments) return [];
+    
+    // If it's already a JavaScript array
+    if (Array.isArray(assignments)) {
+      return assignments;
+    }
+    
+    // If it's a string (PostgreSQL array format like "{item1,item2}" or '{"item1","item2"}')
+    if (typeof assignments === 'string') {
+      // Empty PostgreSQL array
+      if (assignments === '{}' || assignments === '') return [];
+      
+      // Remove curly braces and handle quoted strings
+      let cleaned = assignments.replace(/^{|}$/g, '');
+      
+      if (!cleaned) return [];
+      
+      // Handle quoted elements like "Andy Hiles","Barbara Bancroft"
+      if (cleaned.includes('"')) {
+        // Split by comma but handle quoted strings properly
+        const matches = cleaned.match(/"[^"]*"|[^",]+/g);
+        return matches ? matches.map(item => item.replace(/"/g, '').trim()).filter(item => item) : [];
+      } else {
+        // Simple comma-separated values
+        return cleaned.split(',').map(item => item.trim()).filter(item => item);
+      }
+    }
+    
+    // Fallback: if it's an object, check if it has length property
+    if (typeof assignments === 'object' && assignments.length !== undefined) {
+      return Array.from(assignments);
+    }
+    
+    return [];
+  };
+
   // Check if user can sign up for a specific role
   const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
     if (!user) return false;
 
     if (type === 'driver') {
-      const currentDrivers = eventRequest.assignedDriverIds || [];
+      const currentDrivers = parsePostgresArray(eventRequest.assignedDriverIds);
       const driversNeeded = eventRequest.driversNeeded;
       // Allow signup if user not already assigned and either no limit set or under the limit
       return !currentDrivers.includes(user.id) && (typeof driversNeeded !== 'number' || currentDrivers.length < driversNeeded);
@@ -1359,7 +1397,7 @@ export default function EventRequestsManagement({
     } else if (type === 'volunteer') {
       // Allow volunteer signup for scheduled events or events that need volunteers
       if (eventRequest.status === 'scheduled' || (eventRequest.volunteersNeeded && eventRequest.volunteersNeeded > 0)) {
-        const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+        const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
         // Check if user is not already assigned and there's still capacity
         const notAlreadyAssigned = !currentVolunteers.includes(user.id);
         const hasCapacity = typeof eventRequest.volunteersNeeded !== 'number' || currentVolunteers.length < eventRequest.volunteersNeeded;
@@ -1376,13 +1414,13 @@ export default function EventRequestsManagement({
     if (!user) return false;
 
     if (type === 'driver') {
-      const currentDrivers = eventRequest.assignedDriverIds || [];
+      const currentDrivers = parsePostgresArray(eventRequest.assignedDriverIds);
       return currentDrivers.includes(user.id);
     } else if (type === 'speaker') {
       const currentSpeakerDetails = eventRequest.speakerDetails || {};
       return !!currentSpeakerDetails[user.id];
     } else if (type === 'volunteer') {
-      const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+      const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
       return currentVolunteers.includes(user.id);
     }
 
