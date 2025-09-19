@@ -404,11 +404,16 @@ export default function StaffingForecastWidget() {
                             {event.organizationName}
                           </div>
                           <div className="text-sm text-gray-600">
-                            {new Date(event.desiredEventDate!).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
+                            {(() => {
+                              const date = new Date(event.desiredEventDate!);
+                              // Add timezone offset to ensure local date interpretation
+                              const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+                              return localDate.toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                              });
+                            })()}
                           </div>
                         </div>
                         <Badge 

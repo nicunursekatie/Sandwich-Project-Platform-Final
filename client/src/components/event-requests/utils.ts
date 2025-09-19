@@ -142,8 +142,10 @@ export const formatEventDate = (dateString: string) => {
     if (isNaN(date.getTime())) return { text: 'Invalid date', className: '' };
 
     const dayOfWeek = date.getDay();
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateFormatted = date.toLocaleDateString('en-US', {
+    // Add timezone offset to ensure local date interpretation 
+    const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    const dayName = localDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateFormatted = localDate.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
