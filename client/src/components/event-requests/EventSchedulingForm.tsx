@@ -78,6 +78,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     tspContact: '',
     schedulingNotes: '',
     totalSandwichCount: 0,
+    status: 'new',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
@@ -153,6 +154,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         department: eventRequest?.department || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+        // Status
+        status: eventRequest?.status || 'new',
       });
       
       // Set mode based on existing data
@@ -692,6 +695,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+              <SelectTrigger data-testid="select-status">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new">New Request</SelectItem>
+                <SelectItem value="in_process">In Process</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="declined">Declined</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* TSP Contact Assignment */}
