@@ -2119,6 +2119,69 @@ router.patch('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
   }
 });
 
+// Mark toolkit as sent for an event request
+router.patch('/:id/toolkit-sent', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { toolkitSentDate } = req.body;
+
+    console.log('=== MARK TOOLKIT AS SENT ===');
+    console.log('Event ID:', id);
+    console.log('Toolkit Sent Date:', toolkitSentDate);
+
+    // Get original data for audit logging
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Parse the toolkit sent date
+    const sentDate = toolkitSentDate ? new Date(toolkitSentDate) : new Date();
+
+    const updates = {
+      toolkitSent: true,
+      toolkitSentDate: sentDate,
+      toolkitStatus: 'sent',
+      status: 'in_process', // Move to in_process when toolkit is sent
+      updatedAt: new Date(),
+    };
+
+    const updatedEventRequest = await storage.updateEventRequest(id, updates);
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Update Google Sheets with the new status
+    try {
+      const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
+      if (googleSheetsService) {
+        const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+        await googleSheetsService.updateEventRequestStatus(
+          updatedEventRequest.organizationName,
+          contactName,
+          'in_process'
+        );
+      }
+    } catch (error) {
+      console.warn('Failed to update Google Sheets status:', error);
+    }
+
+    console.log('Successfully marked toolkit as sent for:', id);
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_TOOLKIT_SENT',
+      `Marked toolkit as sent for event request: ${id}`
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error('Error marking toolkit as sent:', error);
+    res.status(500).json({ message: 'Failed to mark toolkit as sent' });
+  }
+});
+
 // Remove volunteer from event
 router.delete('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
   try {
