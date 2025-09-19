@@ -69,6 +69,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     hasRefrigeration: '',
     driversNeeded: 0,
     vanDriverNeeded: false,
+    assignedVanDriverId: '',
     speakersNeeded: 0,
     volunteersNeeded: false,
     tspContact: '',
@@ -86,6 +87,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // Fetch users for TSP contact selection
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ['/api/users'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Fetch van-approved drivers
+  const { data: vanDrivers = [] } = useQuery<any[]>({
+    queryKey: ['/api/drivers'],
+    select: (drivers) => drivers.filter(driver => driver.vanApproved),
     staleTime: 10 * 60 * 1000,
   });
 
@@ -140,7 +148,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         organizationName: eventRequest?.organizationName || '',
         department: eventRequest?.department || '',
         // Van driver assignment
-        assignedVanDriver: (eventRequest as any)?.assignedVanDriver || '',
+        assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
       });
       
       // Set mode based on existing data
@@ -204,7 +212,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       organizationName: formData.organizationName || null,
       department: formData.department || null,
       // Van driver assignment
-      assignedVanDriver: formData.assignedVanDriver || null,
+      assignedVanDriverId: formData.assignedVanDriverId || null,
     };
 
     // Handle sandwich data based on mode
@@ -579,8 +587,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
                     <Select 
-                      value={formData.assignedVanDriver || ''} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriver: value }))}
+                      value={formData.assignedVanDriverId || ''} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriverId: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a van-approved driver..." />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -142,6 +143,19 @@ export default function RequestCard({
 }: RequestCardProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch drivers data for van driver display
+  const { data: drivers = [] } = useQuery<any[]>({
+    queryKey: ['/api/drivers'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Helper function to get driver name
+  const getDriverName = (driverId: string | null) => {
+    if (!driverId) return null;
+    const driver = drivers.find(d => d.id === driverId);
+    return driver?.name || `Driver ${driverId}`;
+  };
   
   const StatusIcon = statusIcons[request.status];
   const dateInfo = formatEventDate(request.desiredEventDate || '');
@@ -740,9 +754,15 @@ export default function RequestCard({
                                 <Truck className="w-4 h-4 mr-1" />
                                 Van Driver:
                               </span>
-                              <span className="font-semibold text-base text-orange-600">
-                                Needed
-                              </span>
+                              {request.assignedVanDriverId ? (
+                                <span className="font-semibold text-base text-green-600">
+                                  {getDriverName(request.assignedVanDriverId)}
+                                </span>
+                              ) : (
+                                <span className="font-semibold text-base text-orange-600">
+                                  Van Driver Needed
+                                </span>
+                              )}
                             </div>
                           </div>
                         )}
