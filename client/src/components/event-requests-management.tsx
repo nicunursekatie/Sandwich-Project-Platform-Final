@@ -1934,13 +1934,13 @@ export default function EventRequestsManagement({
     setStatusFilter(activeTab);
   }, [activeTab]);
 
-  // Auto-sort by event date when scheduled tab is selected
-  // Auto-sort by newest when completed tab is selected
+  // Auto-sort by soonest date first for scheduled and in-process events
+  // Auto-sort by most recent for completed tab  
   useEffect(() => {
-    if (activeTab === 'scheduled' && sortBy !== 'event_date') {
-      setSortBy('event_date');
-    } else if (activeTab === 'completed' && sortBy !== 'newest') {
-      setSortBy('newest');
+    if ((activeTab === 'scheduled' || activeTab === 'in_process') && sortBy !== 'event_date_asc') {
+      setSortBy('event_date_asc');
+    } else if (activeTab === 'completed' && sortBy !== 'event_date_desc') {
+      setSortBy('event_date_desc');
     }
   }, [activeTab, sortBy]);
 
