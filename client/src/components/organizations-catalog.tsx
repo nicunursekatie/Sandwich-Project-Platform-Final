@@ -188,29 +188,41 @@ export default function GroupCatalog({
   const rawGroups = groupsResponse?.groups || [];
 
   // Convert to flat structure and separate active vs historical organizations
-  const allOrganizations: OrganizationContact[] = rawGroups.flatMap(
-    (org: any) =>
-      (org.departments || org.contacts || []).map((contact: any) => ({
-        organizationName: org.name,
-        contactName: contact.contactName || contact.name,
-        email: contact.email,
-        department: contact.department,
-        latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
-        latestActivityDate:
-          contact.latestActivityDate ||
-          contact.latestRequestDate ||
-          org.lastRequestDate,
-        totalRequests: contact.totalRequests || 1,
-        status: contact.status || 'new',
-        hasHostedEvent: contact.hasHostedEvent || org.hasHostedEvent,
-        eventDate: contact.eventDate || null,
-        totalSandwiches: contact.totalSandwiches || 0,
-        actualSandwichTotal: contact.actualSandwichTotal || 0,
-        actualEventCount: contact.actualEventCount || 0,
-        eventFrequency: contact.eventFrequency || null,
-        latestCollectionDate: contact.latestCollectionDate || null,
-      }))
-  );
+  // Combine departments and contacts but deduplicate by unique key
+  const allContactsAndDepartments = rawGroups.flatMap((org: any) => {
+    const contacts = org.departments || org.contacts || [];
+    return contacts.map((contact: any) => ({
+      organizationName: org.name,
+      contactName: contact.contactName || contact.name,
+      email: contact.email,
+      department: contact.department,
+      latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
+      latestActivityDate:
+        contact.latestActivityDate ||
+        contact.latestRequestDate ||
+        org.lastRequestDate,
+      totalRequests: contact.totalRequests || 1,
+      status: contact.status || 'new',
+      hasHostedEvent: contact.hasHostedEvent || org.hasHostedEvent,
+      eventDate: contact.eventDate || null,
+      totalSandwiches: contact.totalSandwiches || 0,
+      actualSandwichTotal: contact.actualSandwichTotal || 0,
+      actualEventCount: contact.actualEventCount || 0,
+      eventFrequency: contact.eventFrequency || null,
+      latestCollectionDate: contact.latestCollectionDate || null,
+    }));
+  });
+
+  // Deduplicate by creating unique key from organization + contact + email
+  const uniqueOrganizationsMap = new Map<string, OrganizationContact>();
+  allContactsAndDepartments.forEach((org) => {
+    const uniqueKey = `${org.organizationName}|${org.contactName}|${org.email || 'no-email'}`;
+    if (!uniqueOrganizationsMap.has(uniqueKey)) {
+      uniqueOrganizationsMap.set(uniqueKey, org);
+    }
+  });
+
+  const allOrganizations: OrganizationContact[] = Array.from(uniqueOrganizationsMap.values());
 
   // Separate active organizations (with event requests) from historical ones (sandwich collections only)
   const activeOrganizations = allOrganizations.filter(
