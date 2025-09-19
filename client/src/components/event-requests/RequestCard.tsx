@@ -150,6 +150,12 @@ export default function RequestCard({
     staleTime: 10 * 60 * 1000,
   });
 
+  // Fetch users data for speaker/volunteer name display
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ['/api/users'],
+    staleTime: 10 * 60 * 1000,
+  });
+
   // Helper function to get driver name
   const getDriverName = (driverId: string | null) => {
     if (!driverId) return null;
@@ -727,7 +733,7 @@ export default function RequestCard({
                             <div className="space-y-1">
                               {request.assignedDriverIds.map((driverId) => {
                                 const driverDetails = request.driverDetails?.[driverId];
-                                const driverName = driverDetails?.name || resolveUserName(driverId);
+                                const driverName = driverDetails?.name || getDriverName(driverId);
                                 return (
                                   <div key={driverId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium">{driverName}</span>
@@ -849,7 +855,7 @@ export default function RequestCard({
                             <div className="space-y-1">
                               {request.assignedSpeakerIds.map((speakerId) => {
                                 const speakerDetails = request.speakerDetails?.[speakerId];
-                                const speakerName = speakerDetails?.name || resolveUserName(speakerId);
+                                const speakerName = speakerDetails?.name || (users.find(u => u.id === speakerId)?.name || `Speaker ${speakerId}`);
                                 return (
                                   <div key={speakerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium">{speakerName}</span>
@@ -950,7 +956,7 @@ export default function RequestCard({
                             <div className="space-y-1">
                               {request.assignedVolunteerIds.map((volunteerId) => {
                                 const volunteerDetails = request.volunteerDetails?.[volunteerId];
-                                const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
+                                const volunteerName = volunteerDetails?.name || (users.find(u => u.id === volunteerId)?.name || `Volunteer ${volunteerId}`);
                                 return (
                                   <div key={volunteerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium">{volunteerName}</span>
