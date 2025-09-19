@@ -181,6 +181,43 @@ export default function RequestCard({
                       {request.organizationName}
                     </h2>
                   </div>
+                  
+                  {/* Staffing Need Badges */}
+                  {(request.status === 'new' || request.status === 'in_process' || request.status === 'scheduled') && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {/* Drivers Needed Badge */}
+                      {((request.driversNeeded || 0) > (request.assignedDriverIds?.length || 0)) && (
+                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-drivers-needed">
+                          <Truck className="w-3 h-3" />
+                          Drivers Needed ({(request.driversNeeded || 0) - (request.assignedDriverIds?.length || 0)})
+                        </Badge>
+                      )}
+                      
+                      {/* Speakers Needed Badge */}
+                      {((request.speakersNeeded || 0) > (Object.keys(request.speakerDetails || {}).length)) && (
+                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-speakers-needed">
+                          <Megaphone className="w-3 h-3" />
+                          Speakers Needed ({(request.speakersNeeded || 0) - Object.keys(request.speakerDetails || {}).length})
+                        </Badge>
+                      )}
+                      
+                      {/* Volunteers Needed Badge */}
+                      {(request.volunteersNeeded && (request.assignedVolunteerIds?.length || 0) < 1) && (
+                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-volunteers-needed">
+                          <Users className="w-3 h-3" />
+                          Volunteers Needed
+                        </Badge>
+                      )}
+                      
+                      {/* Van Driver Needed Badge */}
+                      {(request.vanDriverNeeded && !request.assignedVanDriverId) && (
+                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-van-driver-needed">
+                          <Truck className="w-3 h-3" />
+                          Van Driver Needed
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
