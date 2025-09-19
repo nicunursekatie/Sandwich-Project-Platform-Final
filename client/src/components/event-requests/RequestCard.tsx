@@ -795,21 +795,23 @@ export default function RequestCard({
                           )}
                           
                           {/* Driver Assignment Actions */}
-                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
+                          {(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS)) && (
                             <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openAssignmentDialog(request.id, 'driver');
-                                }}
-                                className="h-7 text-xs"
-                              >
-                                <UserPlus className="w-3 h-3 mr-1" />
-                                Assign
-                              </Button>
-                              {canSelfSignup(request, 'driver') && (
+                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openAssignmentDialog(request.id, 'driver');
+                                  }}
+                                  className="h-7 text-xs"
+                                >
+                                  <UserPlus className="w-3 h-3 mr-1" />
+                                  Assign
+                                </Button>
+                              )}
+                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP) && canSelfSignup(request, 'driver') && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -930,7 +932,7 @@ export default function RequestCard({
                           )}
                           
                           {/* Speaker Assignment Actions */}
-                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
+                          {(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS)) && (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
@@ -1044,7 +1046,7 @@ export default function RequestCard({
                           )}
                           
                           {/* Volunteer Assignment Actions */}
-                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
+                          {(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS)) && (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
@@ -1090,21 +1092,23 @@ export default function RequestCard({
               )}
 
               {/* Action Buttons for New Status */}
-              {request.status === 'new' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+              {request.status === 'new' && (hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_ALL_DETAILS)) && (
                 <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToolkit(request);
-                    }}
-                    className="text-white"
-                    style={{ backgroundColor: '#007E8C' }}
-                    data-testid={`button-send-toolkit-${request.id}`}
-                  >
-                    <Shield className="w-4 h-4 mr-2" />
-                    Send Toolkit
-                  </Button>
+                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) && (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToolkit(request);
+                      }}
+                      className="text-white"
+                      style={{ backgroundColor: '#007E8C' }}
+                      data-testid={`button-send-toolkit-${request.id}`}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Send Toolkit
+                    </Button>
+                  )}
                   
                   {request.phone && (
                     <Button
@@ -1155,21 +1159,23 @@ export default function RequestCard({
               )}
 
               {/* Action Buttons for In Process Status */}
-              {request.status === 'in_process' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+              {request.status === 'in_process' && (hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_ALL_DETAILS)) && (
                 <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSchedule(request);
-                    }}
-                    className="text-white"
-                    style={{ backgroundColor: '#47B3CB' }}
-                    data-testid={`button-mark-scheduled-${request.id}`}
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Mark Scheduled
-                  </Button>
+                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) && (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSchedule(request);
+                      }}
+                      className="text-white"
+                      style={{ backgroundColor: '#47B3CB' }}
+                      data-testid={`button-mark-scheduled-${request.id}`}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Mark Scheduled
+                    </Button>
+                  )}
                   
                   <Button
                     size="sm"
@@ -1366,7 +1372,7 @@ export default function RequestCard({
               )}
 
               {/* Action Buttons for Completed Status */}
-              {request.status === 'completed' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+              {request.status === 'completed' && (hasPermission(user, PERMISSIONS.EVENT_REQUESTS_FOLLOW_UP) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_ALL_DETAILS) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_DELETE)) && (
                 <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
                   <Button
                     size="sm"
@@ -1382,34 +1388,38 @@ export default function RequestCard({
                     Edit
                   </Button>
                   
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onFollowUp1Day(request);
-                    }}
-                    className="text-white"
-                    style={{ backgroundColor: '#FBAD3F' }}
-                    data-testid={`button-followup-1day-${request.id}`}
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    1 Day Follow-up
-                  </Button>
-                  
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onFollowUp1Month(request);
-                    }}
-                    className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
-                    data-testid={`button-followup-1month-${request.id}`}
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    1 Month Follow-up
-                  </Button>
+                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_FOLLOW_UP) && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFollowUp1Day(request);
+                        }}
+                        className="text-white"
+                        style={{ backgroundColor: '#FBAD3F' }}
+                        data-testid={`button-followup-1day-${request.id}`}
+                      >
+                        <Clock className="w-4 h-4 mr-2" />
+                        1 Day Follow-up
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFollowUp1Month(request);
+                        }}
+                        className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
+                        data-testid={`button-followup-1month-${request.id}`}
+                      >
+                        <Calendar className="w-4 h-4 mr-2" />
+                        1 Month Follow-up
+                      </Button>
+                    </>
+                  )}
                   
                   <Button
                     size="sm"

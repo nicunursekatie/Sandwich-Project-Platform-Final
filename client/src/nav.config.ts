@@ -47,6 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'My Actions',
     icon: ListTodo,
     href: 'my-actions',
+    permission: PERMISSIONS.NAV_MY_ACTIONS,
     group: 'dashboard',
   },
 
@@ -56,6 +57,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Collections Log',
     customIcon: sandwich_logo,
     href: 'collections',
+    permission: PERMISSIONS.NAV_COLLECTIONS_LOG,
     group: 'collections',
   },
 
@@ -67,6 +69,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Team Chat',
     icon: Hash,
     href: 'chat',
+    permission: PERMISSIONS.NAV_TEAM_CHAT,
     group: 'communication',
   },
   {
@@ -74,6 +77,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Inbox',
     icon: Inbox,
     href: 'gmail-inbox',
+    permission: PERMISSIONS.NAV_INBOX,
     group: 'communication',
   },
   {
@@ -81,7 +85,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Suggestions',
     icon: Lightbulb,
     href: 'suggestions',
-    permission: PERMISSIONS.SUGGESTIONS_VIEW,
+    permission: PERMISSIONS.NAV_SUGGESTIONS,
     group: 'communication',
   },
 
@@ -91,7 +95,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Hosts',
     icon: Building2,
     href: 'hosts',
-    permission: PERMISSIONS.HOSTS_VIEW,
+    permission: PERMISSIONS.NAV_HOSTS,
     group: 'operations',
   },
   {
@@ -99,7 +103,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Drivers',
     icon: Car,
     href: 'drivers',
-    permission: PERMISSIONS.DRIVERS_VIEW,
+    permission: PERMISSIONS.NAV_DRIVERS,
     group: 'operations',
   },
   {
@@ -107,7 +111,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Volunteers',
     icon: Users,
     href: 'volunteers',
-    permission: PERMISSIONS.USERS_VIEW,
+    permission: PERMISSIONS.NAV_VOLUNTEERS,
     group: 'operations',
   },
   {
@@ -115,7 +119,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Recipients',
     icon: Users,
     href: 'recipients',
-    permission: PERMISSIONS.RECIPIENTS_VIEW,
+    permission: PERMISSIONS.NAV_RECIPIENTS,
     group: 'operations',
   },
   {
@@ -123,7 +127,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Groups Catalog',
     icon: Building,
     href: 'groups-catalog',
-    permission: PERMISSIONS.ORGANIZATIONS_VIEW,
+    permission: PERMISSIONS.NAV_GROUPS_CATALOG,
     group: 'operations',
   },
   {
@@ -131,7 +135,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Distribution Tracking',
     icon: Truck,
     href: 'donation-tracking',
-    permission: PERMISSIONS.DISTRIBUTIONS_VIEW,
+    permission: PERMISSIONS.NAV_DISTRIBUTION_TRACKING,
     group: 'operations',
   },
   {
@@ -139,6 +143,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Inventory Calculator',
     icon: Calculator,
     href: 'inventory-calculator',
+    permission: PERMISSIONS.NAV_INVENTORY_CALCULATOR,
     group: 'operations',
   },
   {
@@ -146,7 +151,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Work Log',
     icon: ClipboardList,
     href: 'work-log',
-    permission: PERMISSIONS.WORK_LOGS_VIEW,
+    permission: PERMISSIONS.NAV_WORK_LOG,
     group: 'operations',
   },
 
@@ -204,7 +209,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Weekly Monitoring',
     icon: Clock,
     href: 'weekly-monitoring',
-    permission: PERMISSIONS.ANALYTICS_VIEW,
+    permission: PERMISSIONS.NAV_WEEKLY_MONITORING,
     group: 'planning',
   },
 
@@ -228,7 +233,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Toolkit',
     icon: FolderOpen,
     href: 'toolkit',
-    permission: PERMISSIONS.TOOLKIT_ACCESS,
+    permission: PERMISSIONS.NAV_TOOLKIT,
     group: 'documentation',
   },
   {
@@ -236,7 +241,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Document Management',
     icon: FileText,
     href: 'document-management',
-    permission: PERMISSIONS.DOCUMENTS_VIEW,
+    permission: PERMISSIONS.NAV_DOCUMENT_MANAGEMENT,
     group: 'documentation',
   },
 
@@ -246,7 +251,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Admin Panel',
     icon: Settings,
     href: 'admin',
-    permission: PERMISSIONS.ADMIN_ACCESS,
+    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
   },
   {
@@ -254,7 +259,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'User Management',
     icon: UserCog,
     href: 'user-management',
-    permission: PERMISSIONS.USERS_EDIT,
+    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
   },
 ];

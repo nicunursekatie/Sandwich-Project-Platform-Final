@@ -80,6 +80,14 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_INLINE_EDIT_SANDWICHES: 'EVENT_REQUESTS_INLINE_EDIT_SANDWICHES', // Edit sandwich count/types inline
   EVENT_REQUESTS_INLINE_EDIT_STAFFING: 'EVENT_REQUESTS_INLINE_EDIT_STAFFING', // Edit drivers/speakers/volunteers needed inline
   EVENT_REQUESTS_INLINE_EDIT_LOGISTICS: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS', // Edit refrigeration and other logistics inline
+  
+  // EVENT_REQUESTS - Self-signup and assignment permissions
+  EVENT_REQUESTS_SELF_SIGNUP: 'EVENT_REQUESTS_SELF_SIGNUP', // Sign up self for driver/speaker/volunteer roles
+  EVENT_REQUESTS_ASSIGN_OTHERS: 'EVENT_REQUESTS_ASSIGN_OTHERS', // Assign others to driver/speaker/volunteer roles
+  EVENT_REQUESTS_VIEW_ONLY: 'EVENT_REQUESTS_VIEW_ONLY', // View events with no edit/assignment capabilities
+  EVENT_REQUESTS_EDIT_ALL_DETAILS: 'EVENT_REQUESTS_EDIT_ALL_DETAILS', // Edit all event details (comprehensive editing)
+  EVENT_REQUESTS_SEND_TOOLKIT: 'EVENT_REQUESTS_SEND_TOOLKIT', // Send toolkit and mark events as scheduled
+  EVENT_REQUESTS_FOLLOW_UP: 'EVENT_REQUESTS_FOLLOW_UP', // Use follow-up buttons (1 day, 1 month)
 
   // MESSAGES - Messaging system
   MESSAGES_VIEW: 'MESSAGES_VIEW',
@@ -137,6 +145,8 @@ export const PERMISSIONS = {
   DOCUMENTS_VIEW: 'DOCUMENTS_VIEW',
   DOCUMENTS_MANAGE: 'DOCUMENTS_MANAGE',
   DOCUMENTS_CONFIDENTIAL: 'DOCUMENTS_CONFIDENTIAL', // Access to confidential documents
+  DOCUMENTS_UPLOAD: 'DOCUMENTS_UPLOAD', // Upload documents (can delete own uploads)
+  DOCUMENTS_DELETE_ALL: 'DOCUMENTS_DELETE_ALL', // Delete any uploaded document
 
   // DATA - Data import/export
   DATA_EXPORT: 'DATA_EXPORT',
@@ -147,6 +157,36 @@ export const PERMISSIONS = {
 
   // TOOLKIT - General toolkit access
   TOOLKIT_ACCESS: 'TOOLKIT_ACCESS',
+
+  // NAVIGATION - Individual tab access permissions
+  NAV_MY_ACTIONS: 'NAV_MY_ACTIONS', // Access to My Actions tab
+  NAV_DASHBOARD: 'NAV_DASHBOARD', // Access to Dashboard tab
+  NAV_COLLECTIONS_LOG: 'NAV_COLLECTIONS_LOG', // Access to Collections Log tab
+  NAV_TEAM_CHAT: 'NAV_TEAM_CHAT', // Access to Team Chat tab
+  NAV_INBOX: 'NAV_INBOX', // Access to Inbox tab
+  NAV_SUGGESTIONS: 'NAV_SUGGESTIONS', // Access to Suggestions tab
+  NAV_HOSTS: 'NAV_HOSTS', // Access to Hosts tab
+  NAV_DRIVERS: 'NAV_DRIVERS', // Access to Drivers tab
+  NAV_VOLUNTEERS: 'NAV_VOLUNTEERS', // Access to Volunteers tab
+  NAV_RECIPIENTS: 'NAV_RECIPIENTS', // Access to Recipients tab
+  NAV_GROUPS_CATALOG: 'NAV_GROUPS_CATALOG', // Access to Groups Catalog tab
+  NAV_DISTRIBUTION_TRACKING: 'NAV_DISTRIBUTION_TRACKING', // Access to Distribution Tracking tab
+  NAV_INVENTORY_CALCULATOR: 'NAV_INVENTORY_CALCULATOR', // Access to Inventory Calculator tab
+  NAV_WORK_LOG: 'NAV_WORK_LOG', // Access to Work Log tab
+  NAV_EVENTS_GOOGLE_SHEET: 'NAV_EVENTS_GOOGLE_SHEET', // Access to Events Google Sheet tab
+  NAV_PROJECTS: 'NAV_PROJECTS', // Access to Projects tab
+  NAV_MEETINGS: 'NAV_MEETINGS', // Access to Meetings tab
+  NAV_EVENT_PLANNING: 'NAV_EVENT_PLANNING', // Access to Event Planning tab
+  NAV_EVENT_REMINDERS: 'NAV_EVENT_REMINDERS', // Access to Event Reminders tab
+  NAV_ANALYTICS: 'NAV_ANALYTICS', // Access to Analytics tab
+  NAV_WEEKLY_MONITORING: 'NAV_WEEKLY_MONITORING', // Access to Weekly Monitoring tab
+  NAV_IMPORTANT_DOCUMENTS: 'NAV_IMPORTANT_DOCUMENTS', // Access to Important Documents tab
+  NAV_IMPORTANT_LINKS: 'NAV_IMPORTANT_LINKS', // Access to Important Links tab
+  NAV_TOOLKIT: 'NAV_TOOLKIT', // Access to Toolkit tab
+  NAV_DOCUMENT_MANAGEMENT: 'NAV_DOCUMENT_MANAGEMENT', // Access to Document Management tab
+
+  // ADMIN - Administrative access
+  ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management
 
 } as const;
 
