@@ -655,7 +655,7 @@ export default function ModernPermissionsEditor({
   const filteredCategories = useMemo(() => {
     if (!searchQuery) return PERMISSION_CATEGORIES;
     
-    const filtered: typeof PERMISSION_CATEGORIES = {};
+    const filtered: Partial<typeof PERMISSION_CATEGORIES> = {};
     
     Object.entries(PERMISSION_CATEGORIES).forEach(([categoryName, category]) => {
       const matchingPermissions = category.permissions.filter(perm =>
@@ -665,7 +665,7 @@ export default function ModernPermissionsEditor({
       );
       
       if (matchingPermissions.length > 0) {
-        filtered[categoryName] = {
+        filtered[categoryName as keyof typeof PERMISSION_CATEGORIES] = {
           ...category,
           permissions: matchingPermissions
         };
@@ -684,7 +684,7 @@ export default function ModernPermissionsEditor({
   };
 
   const handleRoleTemplateApply = (templateRole: string) => {
-    const template = ROLE_TEMPLATES[templateRole];
+    const template = ROLE_TEMPLATES[templateRole as keyof typeof ROLE_TEMPLATES];
     if (template) {
       setSelectedRole(templateRole);
       setSelectedPermissions(template.permissions);
@@ -737,7 +737,7 @@ export default function ModernPermissionsEditor({
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Quick Role Assignment</h3>
                 <Badge variant="outline">
-                  Current: {ROLE_TEMPLATES[selectedRole]?.name || selectedRole}
+                  Current: {ROLE_TEMPLATES[selectedRole as keyof typeof ROLE_TEMPLATES]?.name || selectedRole}
                 </Badge>
               </div>
               
