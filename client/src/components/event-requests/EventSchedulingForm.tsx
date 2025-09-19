@@ -215,7 +215,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       organizationName: formData.organizationName || null,
       department: formData.department || null,
       // Van driver assignment
-      assignedVanDriverId: formData.assignedVanDriverId || null,
+      assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
     };
 
     // Handle sandwich data based on mode
@@ -608,7 +608,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         <SelectValue placeholder="Choose a van-approved driver..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No driver assigned yet</SelectItem>
+                        <SelectItem value="none">No driver assigned yet</SelectItem>
                         {vanDrivers.map((driver) => (
                           <SelectItem key={driver.id} value={driver.id.toString()}>
                             {driver.name}
