@@ -298,7 +298,7 @@ export default function RequestCard({
                     
                     {/* Column 1: Schedule & Location */}
                     <div className="space-y-2 bg-[#e6f2f5] p-3 rounded-lg border border-[#007E8C]/20">
-                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                      <h4 className="text-base font-semibold text-[#236383] tracking-tight flex items-center border-b pb-2">
                         <Calendar className="w-4 h-4 mr-2" />
                         Schedule & Location
                       </h4>
@@ -462,7 +462,7 @@ export default function RequestCard({
                     
                     {/* Column 2: Sandwich & Logistics */}
                     <div className="space-y-2 bg-[#e6f2f5] p-3 rounded-lg border border-[#007E8C]/20">
-                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                      <h4 className="text-base font-semibold text-[#236383] tracking-tight flex items-center border-b pb-2">
                         <Package className="w-4 h-4 mr-2" />
                         Sandwich Details
                       </h4>
@@ -574,6 +574,13 @@ export default function RequestCard({
                         </div>
                         
                         <div className="flex justify-between items-center">
+                          <span className="text-[#236383] text-base font-semibold">Destination:</span>
+                          <span className="font-bold text-[#236383] text-base text-right">
+                            {request.deliveryDestination || 'Not specified'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
                           <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
                           {editingScheduledId === request.id && editingField === 'hasRefrigeration' ? (
                             <div className="flex items-center space-x-2">
@@ -618,7 +625,7 @@ export default function RequestCard({
                     
                     {/* Column 3: Staffing & Assignments */}
                     <div className="space-y-2 bg-[#e6f2f5] p-3 rounded-lg border border-[#007E8C]/20">
-                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                      <h4 className="text-base font-semibold text-[#236383] tracking-tight flex items-center border-b pb-2">
                         <Users className="w-4 h-4 mr-2" />
                         Staffing
                       </h4>
@@ -1090,7 +1097,7 @@ export default function RequestCard({
                     
                     {/* Column 1: Location & Address */}
                     <div className="space-y-2 bg-[#f0f4f8] p-3 rounded-lg border border-[#236383]/20">
-                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                      <h4 className="text-base font-semibold text-[#236383] tracking-tight flex items-center border-b pb-2">
                         <MapPin className="w-4 h-4 mr-2" />
                         Event Location
                       </h4>
@@ -1105,7 +1112,7 @@ export default function RequestCard({
                     
                     {/* Column 2: Sandwich Details */}
                     <div className="space-y-2 bg-[#f0f4f8] p-3 rounded-lg border border-[#236383]/20">
-                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                      <h4 className="text-base font-semibold text-[#236383] tracking-tight flex items-center border-b pb-2">
                         <Package className="w-4 h-4 mr-2" />
                         Sandwich Details
                       </h4>
@@ -1113,7 +1120,7 @@ export default function RequestCard({
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Total:</span>
-                          <span className="font-bold text-[#1A2332] text-base">
+                          <span className="font-bold text-[#236383] text-base">
                             {request.actualSandwichCount || request.sandwichCount || 0} sandwiches
                           </span>
                         </div>
@@ -1124,12 +1131,19 @@ export default function RequestCard({
                             {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                           </span>
                         </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#236383] text-base font-semibold">Destination:</span>
+                          <span className="font-bold text-[#236383] text-base text-right">
+                            {request.deliveryDestination || 'Not specified'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
                     {/* Column 3: Event Impact */}
                     <div className="space-y-2 bg-[#f0f4f8] p-3 rounded-lg border border-[#236383]/20">
-                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                      <h4 className="text-base font-semibold text-[#236383] tracking-tight flex items-center border-b pb-2">
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Event Impact
                       </h4>
@@ -1137,14 +1151,14 @@ export default function RequestCard({
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Distribution:</span>
-                          <span className="font-bold text-[#1A2332] text-base text-right">
+                          <span className="font-bold text-[#236383] text-base text-right">
                             {request.distributionNotes || 'Delivered successfully'}
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Department:</span>
-                          <span className="font-bold text-[#1A2332] text-base text-right">
+                          <span className="font-bold text-[#236383] text-base text-right">
                             {request.department || 'Not specified'}
                           </span>
                         </div>
