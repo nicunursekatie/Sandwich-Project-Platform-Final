@@ -550,6 +550,8 @@ export default function EventRequestsManagement({
     null
   );
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [isEditingAssignment, setIsEditingAssignment] = useState(false);
+  const [editingAssignmentPersonId, setEditingAssignmentPersonId] = useState<string | null>(null);
   const [customPersonData, setCustomPersonData] = useState({
     firstName: '',
     lastName: '',
@@ -725,6 +727,23 @@ export default function EventRequestsManagement({
   ) => {
     setAssignmentEventId(eventId);
     setAssignmentType(type);
+    setIsEditingAssignment(false);
+    setEditingAssignmentPersonId(null);
+    setSelectedAssignees([]);
+    setShowAssignmentDialog(true);
+  };
+
+  // Helper function to open assignment dialog in edit mode
+  const openEditAssignmentDialog = (
+    eventId: number,
+    type: 'driver' | 'speaker' | 'volunteer',
+    personId: string
+  ) => {
+    setAssignmentEventId(eventId);
+    setAssignmentType(type);
+    setIsEditingAssignment(true);
+    setEditingAssignmentPersonId(personId);
+    setSelectedAssignees([personId]);
     setShowAssignmentDialog(true);
   };
 
@@ -929,11 +948,8 @@ export default function EventRequestsManagement({
             addInlineSandwichType={addInlineSandwichType}
             updateInlineSandwichType={updateInlineSandwichType}
             removeInlineSandwichType={removeInlineSandwichType}
-            openAssignmentDialog={(eventId, type) => {
-              setAssignmentEventId(eventId);
-              setAssignmentType(type);
-              setShowAssignmentDialog(true);
-            }}
+            openAssignmentDialog={openAssignmentDialog}
+            openEditAssignmentDialog={openEditAssignmentDialog}
             handleRemoveAssignment={handleRemoveAssignment}
             handleSelfSignup={handleSelfSignup}
             canSelfSignup={canSelfSignup}
@@ -958,59 +974,127 @@ export default function EventRequestsManagement({
       let updateData: any = {};
 
       if (assignmentType === 'driver') {
-        // Add to assignedDriverIds array
+        // Handle driver assignment (add or edit)
         const currentDrivers = eventRequest.assignedDriverIds || [];
-        const newDrivers = [...currentDrivers, personId];
-        updateData.assignedDriverIds = newDrivers;
-
-        // Update driver details
         const currentDriverDetails = eventRequest.driverDetails || {};
-        updateData.driverDetails = {
-          ...currentDriverDetails,
-          [personId]: {
-            name: personName,
-            assignedAt: new Date().toISOString(),
-            assignedBy: user?.id,
-          },
-        };
+        
+        if (isEditingAssignment && editingAssignmentPersonId) {
+          // Editing: Replace the existing assignment
+          const newDrivers = currentDrivers.map(id => id === editingAssignmentPersonId ? personId : id);
+          updateData.assignedDriverIds = newDrivers;
+          
+          // Remove old driver details and add new ones
+          const newDriverDetails = { ...currentDriverDetails };
+          delete newDriverDetails[editingAssignmentPersonId];
+          updateData.driverDetails = {
+            ...newDriverDetails,
+            [personId]: {
+              name: personName,
+              assignedAt: new Date().toISOString(),
+              assignedBy: user?.id,
+            },
+          };
+        } else {
+          // Adding: Add to existing assignments
+          const newDrivers = [...currentDrivers, personId];
+          updateData.assignedDriverIds = newDrivers;
+          
+          updateData.driverDetails = {
+            ...currentDriverDetails,
+            [personId]: {
+              name: personName,
+              assignedAt: new Date().toISOString(),
+              assignedBy: user?.id,
+            },
+          };
+        }
       } else if (assignmentType === 'speaker') {
-        // Update speaker details
+        // Handle speaker assignment (add or edit)
         const currentSpeakerDetails = eventRequest.speakerDetails || {};
-        updateData.speakerDetails = {
-          ...currentSpeakerDetails,
-          [personId]: {
-            name: personName,
-            assignedAt: new Date().toISOString(),
-            assignedBy: user?.id,
-          },
-        };
-
-        // Update speaker assignments array for consistency
         const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
-        if (!currentSpeakerAssignments.includes(personName)) {
-          updateData.speakerAssignments = [...currentSpeakerAssignments, personName];
+        
+        if (isEditingAssignment && editingAssignmentPersonId) {
+          // Editing: Replace the existing assignment
+          const newSpeakerDetails = { ...currentSpeakerDetails };
+          const oldSpeakerName = newSpeakerDetails[editingAssignmentPersonId]?.name;
+          delete newSpeakerDetails[editingAssignmentPersonId];
+          
+          updateData.speakerDetails = {
+            ...newSpeakerDetails,
+            [personId]: {
+              name: personName,
+              assignedAt: new Date().toISOString(),
+              assignedBy: user?.id,
+            },
+          };
+          
+          // Update speaker assignments array - replace old name with new
+          const newSpeakerAssignments = oldSpeakerName
+            ? currentSpeakerAssignments.map(name => name === oldSpeakerName ? personName : name)
+            : [...currentSpeakerAssignments, personName];
+          updateData.speakerAssignments = newSpeakerAssignments;
+        } else {
+          // Adding: Add to existing assignments
+          updateData.speakerDetails = {
+            ...currentSpeakerDetails,
+            [personId]: {
+              name: personName,
+              assignedAt: new Date().toISOString(),
+              assignedBy: user?.id,
+            },
+          };
+          
+          if (!currentSpeakerAssignments.includes(personName)) {
+            updateData.speakerAssignments = [...currentSpeakerAssignments, personName];
+          }
         }
       } else if (assignmentType === 'volunteer') {
-        // Add to assignedVolunteerIds array
+        // Handle volunteer assignment (add or edit)
         const currentVolunteers = eventRequest.assignedVolunteerIds || [];
-        const newVolunteers = [...currentVolunteers, personId];
-        updateData.assignedVolunteerIds = newVolunteers;
-
-        // Update volunteer details for consistency
         const currentVolunteerDetails = eventRequest.volunteerDetails || {};
-        updateData.volunteerDetails = {
-          ...currentVolunteerDetails,
-          [personId]: {
-            name: personName,
-            assignedAt: new Date().toISOString(),
-            assignedBy: user?.id,
-          },
-        };
-
-        // Update volunteer assignments array for consistency
         const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
-        if (!currentVolunteerAssignments.includes(personName)) {
-          updateData.volunteerAssignments = [...currentVolunteerAssignments, personName];
+        
+        if (isEditingAssignment && editingAssignmentPersonId) {
+          // Editing: Replace the existing assignment
+          const newVolunteers = currentVolunteers.map(id => id === editingAssignmentPersonId ? personId : id);
+          updateData.assignedVolunteerIds = newVolunteers;
+          
+          // Remove old volunteer details and add new ones
+          const newVolunteerDetails = { ...currentVolunteerDetails };
+          const oldVolunteerName = newVolunteerDetails[editingAssignmentPersonId]?.name;
+          delete newVolunteerDetails[editingAssignmentPersonId];
+          
+          updateData.volunteerDetails = {
+            ...newVolunteerDetails,
+            [personId]: {
+              name: personName,
+              assignedAt: new Date().toISOString(),
+              assignedBy: user?.id,
+            },
+          };
+          
+          // Update volunteer assignments array - replace old name with new
+          const newVolunteerAssignments = oldVolunteerName
+            ? currentVolunteerAssignments.map(name => name === oldVolunteerName ? personName : name)
+            : [...currentVolunteerAssignments, personName];
+          updateData.volunteerAssignments = newVolunteerAssignments;
+        } else {
+          // Adding: Add to existing assignments
+          const newVolunteers = [...currentVolunteers, personId];
+          updateData.assignedVolunteerIds = newVolunteers;
+          
+          updateData.volunteerDetails = {
+            ...currentVolunteerDetails,
+            [personId]: {
+              name: personName,
+              assignedAt: new Date().toISOString(),
+              assignedBy: user?.id,
+            },
+          };
+          
+          if (!currentVolunteerAssignments.includes(personName)) {
+            updateData.volunteerAssignments = [...currentVolunteerAssignments, personName];
+          }
         }
       }
 
@@ -1035,6 +1119,8 @@ export default function EventRequestsManagement({
       setShowAssignmentDialog(false);
       setAssignmentType(null);
       setAssignmentEventId(null);
+      setIsEditingAssignment(false);
+      setEditingAssignmentPersonId(null);
     }
   };
 

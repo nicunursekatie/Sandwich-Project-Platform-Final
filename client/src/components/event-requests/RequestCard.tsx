@@ -90,6 +90,7 @@ interface RequestCardProps {
   
   // Assignment functions
   openAssignmentDialog: (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => void;
+  openEditAssignmentDialog: (eventId: number, type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
   handleRemoveAssignment: (personId: string, type: 'driver' | 'speaker' | 'volunteer', eventId: number) => Promise<void>;
   handleSelfSignup: (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => Promise<void>;
   canSelfSignup: (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
@@ -134,6 +135,7 @@ export default function RequestCard({
   updateInlineSandwichType,
   removeInlineSandwichType,
   openAssignmentDialog,
+  openEditAssignmentDialog,
   handleRemoveAssignment,
   handleSelfSignup,
   canSelfSignup,
@@ -731,19 +733,32 @@ export default function RequestCard({
                                 const driverName = driverDetails?.name || getDriverName(driverId);
                                 return (
                                   <div key={driverId} className="flex items-center justify-between bg-white p-2 rounded border">
-                                    <span className="text-sm font-medium">{driverName}</span>
+                                    <span className="text-sm font-medium text-[#236383]">{driverName}</span>
                                     {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRemoveAssignment(driverId, 'driver', request.id);
-                                        }}
-                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
+                                      <div className="flex items-center space-x-1">
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditAssignmentDialog(request.id, 'driver', driverId);
+                                          }}
+                                          className="h-6 w-6 p-0 text-[#236383] hover:text-[#1A2332]"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveAssignment(driverId, 'driver', request.id);
+                                          }}
+                                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
                                 );
@@ -855,17 +870,30 @@ export default function RequestCard({
                                   <div key={speakerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium text-[#236383]">{speakerName}</span>
                                     {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRemoveAssignment(speakerId, 'speaker', request.id);
-                                        }}
-                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
+                                      <div className="flex items-center space-x-1">
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditAssignmentDialog(request.id, 'speaker', speakerId);
+                                          }}
+                                          className="h-6 w-6 p-0 text-[#236383] hover:text-[#1A2332]"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveAssignment(speakerId, 'speaker', request.id);
+                                          }}
+                                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
                                 );
@@ -956,17 +984,30 @@ export default function RequestCard({
                                   <div key={volunteerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium text-[#236383]">{volunteerName}</span>
                                     {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRemoveAssignment(volunteerId, 'volunteer', request.id);
-                                        }}
-                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
+                                      <div className="flex items-center space-x-1">
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditAssignmentDialog(request.id, 'volunteer', volunteerId);
+                                          }}
+                                          className="h-6 w-6 p-0 text-[#236383] hover:text-[#1A2332]"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveAssignment(volunteerId, 'volunteer', request.id);
+                                          }}
+                                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
                                 );
