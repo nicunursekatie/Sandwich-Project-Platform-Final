@@ -519,21 +519,50 @@ export default function RequestCard({
                           </div>
                           
                           {editingScheduledId === request.id && editingField === 'sandwichTypes' ? (
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="number"
-                                value={inlineTotalCount}
-                                onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
-                                className="w-20 h-8 text-sm"
-                                min="0"
-                                placeholder="Total"
-                              />
-                              <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-8 px-2">
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-8 px-2">
-                                <X className="w-4 h-4" />
-                              </Button>
+                            <div className="space-y-3 bg-white p-3 rounded border">
+                              <div className="text-sm font-medium text-gray-700 mb-2">Edit Sandwich Types:</div>
+                              {SANDWICH_TYPES.slice(0, 4).map((type) => { // Exclude 'unknown' from editing
+                                const currentQuantity = inlineSandwichTypes.find(t => t.type === type.value)?.quantity || 0;
+                                return (
+                                  <div key={type.value} className="flex items-center justify-between">
+                                    <span className="text-sm font-medium min-w-0 flex-1">{type.label}:</span>
+                                    <div className="flex items-center space-x-2">
+                                      <Input
+                                        type="number"
+                                        value={currentQuantity}
+                                        onChange={(e) => {
+                                          const quantity = parseInt(e.target.value) || 0;
+                                          updateInlineSandwichType(
+                                            inlineSandwichTypes.findIndex(t => t.type === type.value),
+                                            'quantity',
+                                            quantity
+                                          );
+                                          // If quantity is 0, remove the type; if > 0, add/update it
+                                          const existingIndex = inlineSandwichTypes.findIndex(t => t.type === type.value);
+                                          if (quantity === 0 && existingIndex >= 0) {
+                                            removeInlineSandwichType(existingIndex);
+                                          } else if (quantity > 0 && existingIndex < 0) {
+                                            setInlineSandwichTypes([...inlineSandwichTypes, { type: type.value, quantity }]);
+                                          }
+                                        }}
+                                        className="w-16 h-7 text-sm"
+                                        min="0"
+                                        placeholder="0"
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div className="flex items-center space-x-2 pt-2 border-t">
+                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }} className="h-8 px-3">
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Save
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} className="h-8 px-3">
+                                  <X className="w-4 h-4 mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <div className="text-right">
