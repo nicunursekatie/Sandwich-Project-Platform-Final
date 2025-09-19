@@ -65,6 +65,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventEndTime: '',
     pickupTime: '',
     eventAddress: '',
+    deliveryDestination: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
     hasRefrigeration: '',
     driversNeeded: 0,
@@ -131,6 +132,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
         eventAddress: eventRequest?.eventAddress || '',
+        deliveryDestination: eventRequest?.deliveryDestination || '',
         sandwichTypes: existingSandwichTypes,
         hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
         driversNeeded: eventRequest?.driversNeeded || 0,
@@ -196,6 +198,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
       eventAddress: formData.eventAddress || null,
+      deliveryDestination: formData.deliveryDestination || null,
       hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: formData.driversNeeded || 0,
@@ -432,6 +435,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               value={formData.eventAddress}
               onChange={(e) => setFormData(prev => ({ ...prev, eventAddress: e.target.value }))}
               placeholder="Enter the event location address"
+            />
+          </div>
+
+          {/* Delivery Destination */}
+          <div>
+            <Label htmlFor="deliveryDestination">Delivery Destination</Label>
+            <Input
+              id="deliveryDestination"
+              value={formData.deliveryDestination}
+              onChange={(e) => setFormData(prev => ({ ...prev, deliveryDestination: e.target.value }))}
+              placeholder="Where should the sandwiches be delivered? (organization, address, etc.)"
             />
           </div>
 

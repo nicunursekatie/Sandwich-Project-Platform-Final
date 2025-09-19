@@ -629,9 +629,37 @@ export default function RequestCard({
                         
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Destination:</span>
-                          <span className="font-bold text-[#236383] text-base text-right">
-                            {request.deliveryDestination || 'Not specified'}
-                          </span>
+                          {editingScheduledId === request.id && editingField === 'deliveryDestination' ? (
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="text"
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                className="w-40 h-7 text-sm"
+                                placeholder="Enter destination"
+                              />
+                              <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-1">
+                              <span className="font-bold text-[#236383] text-base text-right">
+                                {request.deliveryDestination || 'Not specified'}
+                              </span>
+                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditing(request.id, 'deliveryDestination', request.deliveryDestination || '');
+                                }} className="h-4 w-4 p-0">
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex justify-between items-center">
