@@ -237,8 +237,8 @@ export default function RequestCard({
                       <p className={`text-base font-semibold ${dateInfo.className}`}>
                         {dateInfo.text}
                       </p>
-                      <p className="text-sm text-[#007E8C]">Requested Event Date</p>
-                      {dateInfo.isWedOrThu && (
+                      <p className="text-sm text-[#007E8C]">{request.status === 'completed' ? 'Event Date' : 'Requested Event Date'}</p>
+                      {dateInfo.isWedOrThu && request.status !== 'completed' && (
                         <p className="text-xs text-[#FBAD3F] font-medium">
                           ⭐ {dateInfo.dayName} - Great day for events!
                         </p>
@@ -1068,6 +1068,77 @@ export default function RequestCard({
                 </div>
               )}
 
+              {/* Comprehensive Event Details for Completed Events */}
+              {request.status === 'completed' && (
+                <div className="mt-3 bg-white border rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    
+                    {/* Column 1: Location & Address */}
+                    <div className="space-y-2 bg-[#f0f4f8] p-3 rounded-lg border border-[#236383]/20">
+                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Event Location
+                      </h4>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#236383] text-base font-semibold">Address:</span>
+                        <span className="font-bold text-base text-right">
+                          {request.address || 'Not specified'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Column 2: Sandwich Details */}
+                    <div className="space-y-2 bg-[#f0f4f8] p-3 rounded-lg border border-[#236383]/20">
+                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                        <Package className="w-4 h-4 mr-2" />
+                        Sandwich Details
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#236383] text-base font-semibold">Total:</span>
+                          <span className="font-bold text-[#1A2332] text-base">
+                            {request.actualSandwichCount || request.sandwichCount || 0} sandwiches
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#236383] text-base font-semibold">Types:</span>
+                          <span className="font-bold text-[#1A2332] text-base text-right">
+                            {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Column 3: Event Impact */}
+                    <div className="space-y-2 bg-[#f0f4f8] p-3 rounded-lg border border-[#236383]/20">
+                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Event Impact
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#236383] text-base font-semibold">Distribution:</span>
+                          <span className="font-bold text-[#1A2332] text-base text-right">
+                            {request.distributionNotes || 'Delivered successfully'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#236383] text-base font-semibold">Department:</span>
+                          <span className="font-bold text-[#1A2332] text-base text-right">
+                            {request.department || 'Not specified'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Driver Information for Completed Events */}
               {request.status === 'completed' && request.assignedDriverIds && request.assignedDriverIds.length > 0 && (
                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -1129,8 +1200,7 @@ export default function RequestCard({
                       e.stopPropagation();
                       onFollowUp1Month(request);
                     }}
-                    className="text-white"
-                    style={{ backgroundColor: '#1A2332' }}
+                    className="border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white"
                     data-testid={`button-followup-1month-${request.id}`}
                   >
                     <Calendar className="w-4 h-4 mr-2" />
