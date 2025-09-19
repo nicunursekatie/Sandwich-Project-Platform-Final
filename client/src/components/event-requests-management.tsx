@@ -113,6 +113,7 @@ import FollowUpDialog from './event-requests/FollowUpDialog';
 import EventCollectionLog from './event-requests/EventCollectionLog';
 import ImportEventsTab from './event-requests/ImportEventsTab';
 import RequestFilters from './event-requests/RequestFilters';
+import ContactOrganizerDialog from './ContactOrganizerDialog';
 
 // Schedule Call Dialog Component
 interface ScheduleCallDialogProps {
@@ -326,6 +327,10 @@ export default function EventRequestsManagement({
   const [showOneDayFollowUpDialog, setShowOneDayFollowUpDialog] = useState(false);
   const [showOneMonthFollowUpDialog, setShowOneMonthFollowUpDialog] = useState(false);
   const [followUpNotes, setFollowUpNotes] = useState('');
+
+  // Contact organizer dialog states
+  const [showContactOrganizerDialog, setShowContactOrganizerDialog] = useState(false);
+  const [contactEventRequest, setContactEventRequest] = useState<EventRequest | null>(null);
 
   // 1. Add state for inline editing of completed event fields:
   const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
@@ -716,15 +721,8 @@ export default function EventRequestsManagement({
             }}
             onReschedule={(id) => handleStatusChange(id, 'new')}
             onContact={(request) => {
-              const phone = request.phone;
-              const email = request.email;
-              const contactName = `${request.firstName} ${request.lastName}`;
-              
-              let message = `Contact ${contactName}:\n\n`;
-              if (phone) message += `📞 Call: ${phone}\n`;
-              if (email) message += `📧 Email: ${email}\n`;
-              
-              alert(message);
+              setContactEventRequest(request);
+              setShowContactOrganizerDialog(true);
             }}
             onStatusChange={handleStatusChange}
             startEditing={startEditing}
@@ -2010,6 +2008,16 @@ export default function EventRequestsManagement({
           followUpType="1-month"
           notes={followUpNotes}
           setNotes={setFollowUpNotes}
+        />
+
+        {/* Contact Organizer Dialog */}
+        <ContactOrganizerDialog
+          isOpen={showContactOrganizerDialog}
+          onClose={() => {
+            setShowContactOrganizerDialog(false);
+            setContactEventRequest(null);
+          }}
+          eventRequest={contactEventRequest}
         />
 
       </div>
