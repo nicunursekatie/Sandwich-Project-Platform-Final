@@ -208,10 +208,10 @@ export default function RequestCard({
                       )}
                       
                       {/* Volunteers Needed Badge */}
-                      {(request.volunteersNeeded && (request.assignedVolunteerIds?.length || 0) < 1) && (
+                      {((request.volunteersNeeded || 0) > (request.assignedVolunteerIds?.length || 0)) && (
                         <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-volunteers-needed">
                           <Users className="w-3 h-3" />
-                          Volunteers Needed
+                          Volunteers Needed ({(request.volunteersNeeded || 0) - (request.assignedVolunteerIds?.length || 0)})
                         </Badge>
                       )}
                       

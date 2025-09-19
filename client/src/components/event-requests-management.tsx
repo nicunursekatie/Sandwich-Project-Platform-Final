@@ -1182,7 +1182,7 @@ export default function EventRequestsManagement({
         }
       } else if (type === 'volunteer') {
         // Check if volunteers are needed
-        if (!eventRequest.volunteersNeeded) {
+        if (!eventRequest.volunteersNeeded || eventRequest.volunteersNeeded <= 0) {
           toast({
             title: 'Volunteers not needed',
             description: 'This event does not require volunteers',
@@ -1191,8 +1191,18 @@ export default function EventRequestsManagement({
           return;
         }
 
-        // Check if user is already assigned
+        // Check capacity if volunteer limit is set
         const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+        if (typeof eventRequest.volunteersNeeded === 'number' && currentVolunteers.length >= eventRequest.volunteersNeeded) {
+          toast({
+            title: 'No volunteer spots available',
+            description: 'All volunteer spots are filled for this event',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Check if user is already assigned
         if (currentVolunteers.includes(user.id)) {
           toast({
             title: 'Already signed up',
@@ -1261,10 +1271,13 @@ export default function EventRequestsManagement({
       // Allow signup if user not already assigned and either no limit set or under the limit
       return !currentSpeakerDetails[user.id] && (typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded);
     } else if (type === 'volunteer') {
-      // Always allow volunteer signup for scheduled events or events that need volunteers
-      if (eventRequest.status === 'scheduled' || eventRequest.volunteersNeeded) {
+      // Allow volunteer signup for scheduled events or events that need volunteers
+      if (eventRequest.status === 'scheduled' || (eventRequest.volunteersNeeded && eventRequest.volunteersNeeded > 0)) {
         const currentVolunteers = eventRequest.assignedVolunteerIds || [];
-        return !currentVolunteers.includes(user.id);
+        // Check if user is not already assigned and there's still capacity
+        const notAlreadyAssigned = !currentVolunteers.includes(user.id);
+        const hasCapacity = typeof eventRequest.volunteersNeeded !== 'number' || currentVolunteers.length < eventRequest.volunteersNeeded;
+        return notAlreadyAssigned && hasCapacity;
       }
       return false;
     }

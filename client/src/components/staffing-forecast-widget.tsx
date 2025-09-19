@@ -96,7 +96,7 @@ export default function StaffingForecastWidget() {
       const needsStaffing = 
         (request.driversNeeded && request.driversNeeded > 0) ||
         (request.speakersNeeded && request.speakersNeeded > 0) ||
-        request.volunteersNeeded ||
+        (request.volunteersNeeded && request.volunteersNeeded > 0) ||
         request.vanDriverNeeded;
 
       if (!needsStaffing) return false;
@@ -166,7 +166,7 @@ export default function StaffingForecastWidget() {
         // Calculate staffing needs
         const driversNeeded = request.driversNeeded || 0;
         const speakersNeeded = request.speakersNeeded || 0;
-        const volunteersNeeded = request.volunteersNeeded ? 1 : 0;
+        const volunteersNeeded = request.volunteersNeeded || 0;
         const vanDriversNeeded = request.vanDriverNeeded ? 1 : 0;
 
         const driversAssigned = request.assignedDriverIds?.length || 0;
@@ -393,7 +393,7 @@ export default function StaffingForecastWidget() {
                   const eventUnfulfilled = 
                     Math.max(0, (event.driversNeeded || 0) - (event.assignedDriverIds?.length || 0)) +
                     Math.max(0, (event.speakersNeeded || 0) - (event.assignedSpeakerIds?.length || 0)) +
-                    Math.max(0, (event.volunteersNeeded ? 1 : 0) - (event.assignedVolunteerIds?.length || 0)) +
+                    Math.max(0, (event.volunteersNeeded || 0) - (event.assignedVolunteerIds?.length || 0)) +
                     Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
 
                   return (

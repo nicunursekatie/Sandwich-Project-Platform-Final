@@ -1445,7 +1445,7 @@ export const eventRequests = pgTable(
     // Driver, speaker, and volunteer requirements
     driversNeeded: integer('drivers_needed').default(0), // How many drivers this event needs
     speakersNeeded: integer('speakers_needed').default(0), // How many speakers this event needs
-    volunteersNeeded: boolean('volunteers_needed').default(false), // Whether volunteers are needed for this event
+    volunteersNeeded: integer('volunteers_needed').default(0), // How many volunteers this event needs
     volunteerNotes: text('volunteer_notes'), // General notes about volunteer requirements
 
     // Driver, speaker, and volunteer assignments
@@ -1656,18 +1656,8 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     eventAddress: z.string().nullable().optional(),
     deliveryDestination: z.string().nullable().optional(),
     estimatedSandwichCount: z.number().nullable().optional(),
-    sandwichTypes: z
-      .array(
-        z.object({
-          type: z.string(),
-          quantity: z.number().min(0),
-        })
-      )
-      .nullable()
-      .optional(),
     driversArranged: z.boolean().nullable().optional(),
     driverDetails: z.any().nullable().optional(), // JSONB field
-    speakersNeeded: z.boolean().nullable().optional(),
     speakerDetails: z.string().nullable().optional(),
     // Follow-up tracking fields
     scheduledCallDate: z.date().nullable().optional(),

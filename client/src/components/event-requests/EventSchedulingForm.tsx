@@ -71,7 +71,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     vanDriverNeeded: false,
     assignedVanDriverId: '',
     speakersNeeded: 0,
-    volunteersNeeded: false,
+    volunteersNeeded: 0,
     tspContact: '',
     schedulingNotes: '',
     totalSandwichCount: 0,
@@ -136,7 +136,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         driversNeeded: eventRequest?.driversNeeded || 0,
         vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
         speakersNeeded: eventRequest?.speakersNeeded || 0,
-        volunteersNeeded: eventRequest?.volunteersNeeded || false,
+        volunteersNeeded: eventRequest?.volunteersNeeded || 0,
         tspContact: eventRequest?.tspContact || '',
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         totalSandwichCount: totalCount,
@@ -201,7 +201,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       driversNeeded: formData.driversNeeded || 0,
       vanDriverNeeded: formData.vanDriverNeeded || false,
       speakersNeeded: formData.speakersNeeded || 0,
-      volunteersNeeded: formData.volunteersNeeded || false,
+      volunteersNeeded: formData.volunteersNeeded || 0,
       tspContact: formData.tspContact || null,
       schedulingNotes: formData.schedulingNotes || null,
       // Contact information fields
@@ -624,14 +624,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     min="0"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                <div>
+                  <Label htmlFor="volunteersNeeded">How many volunteers needed?</Label>
+                  <Input
                     id="volunteersNeeded"
-                    checked={formData.volunteersNeeded}
-                    onChange={(e) => setFormData(prev => ({ ...prev, volunteersNeeded: e.target.checked }))}
+                    type="number"
+                    value={formData.volunteersNeeded}
+                    onChange={(e) => setFormData(prev => ({ ...prev, volunteersNeeded: parseInt(e.target.value) || 0 }))}
+                    min="0"
                   />
-                  <Label htmlFor="volunteersNeeded">Volunteers needed?</Label>
                 </div>
               </div>
             </div>
