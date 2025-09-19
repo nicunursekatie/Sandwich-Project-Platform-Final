@@ -162,7 +162,7 @@ export default function RequestCard({
   const getDriverName = (driverId: string | null) => {
     if (!driverId) return null;
     const driver = drivers.find(d => d.id.toString() === driverId.toString());
-    return driver?.name || `Driver ${driverId}`;
+    return driver?.name || driverId;
   };
   
   const StatusIcon = statusIcons[request.status];
