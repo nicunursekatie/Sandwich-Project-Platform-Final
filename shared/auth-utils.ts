@@ -490,7 +490,11 @@ export function hasPermission(user: any, permission: string): boolean {
     if (permission.startsWith('NAV_') || 
         permission === 'ADMIN_PANEL_ACCESS' ||
         permission.startsWith('EVENT_REQUESTS_') ||
-        permission.startsWith('DOCUMENTS_')) {
+        permission.startsWith('DOCUMENTS_') ||
+        permission.startsWith('VOLUNTEERS_') ||
+        permission.startsWith('DRIVERS_') ||
+        permission.startsWith('HOSTS_') ||
+        permission.startsWith('RECIPIENTS_')) {
       return true;
     }
   }
