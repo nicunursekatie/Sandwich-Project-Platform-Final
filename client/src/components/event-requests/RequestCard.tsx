@@ -187,44 +187,44 @@ export default function RequestCard({
                       {request.organizationName}
                     </h2>
                   </div>
-                  
-                  {/* Staffing Need Badges */}
-                  {(request.status === 'new' || request.status === 'in_process' || request.status === 'scheduled') && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {/* Drivers Needed Badge */}
-                      {((request.driversNeeded || 0) > (request.assignedDriverIds?.length || 0)) && (
-                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-drivers-needed">
-                          <Truck className="w-3 h-3" />
-                          Drivers Needed ({(request.driversNeeded || 0) - (request.assignedDriverIds?.length || 0)})
-                        </Badge>
-                      )}
-                      
-                      {/* Speakers Needed Badge */}
-                      {((request.speakersNeeded || 0) > (Object.keys(request.speakerDetails || {}).length)) && (
-                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-speakers-needed">
-                          <Megaphone className="w-3 h-3" />
-                          Speakers Needed ({(request.speakersNeeded || 0) - Object.keys(request.speakerDetails || {}).length})
-                        </Badge>
-                      )}
-                      
-                      {/* Volunteers Needed Badge */}
-                      {((request.volunteersNeeded || 0) > (request.assignedVolunteerIds?.length || 0)) && (
-                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-volunteers-needed">
-                          <Users className="w-3 h-3" />
-                          Volunteers Needed ({(request.volunteersNeeded || 0) - (request.assignedVolunteerIds?.length || 0)})
-                        </Badge>
-                      )}
-                      
-                      {/* Van Driver Needed Badge */}
-                      {(request.vanDriverNeeded && !request.assignedVanDriverId) && (
-                        <Badge variant="destructive" className="flex items-center gap-1" data-testid="badge-van-driver-needed">
-                          <Truck className="w-3 h-3" />
-                          Van Driver Needed
-                        </Badge>
-                      )}
-                    </div>
-                  )}
                 </div>
+                
+                {/* Staffing Need Badges - Moved to right side */}
+                {(request.status === 'new' || request.status === 'in_process' || request.status === 'scheduled') && (
+                  <div className="flex flex-wrap gap-2 ml-4">
+                    {/* Drivers Needed Badge */}
+                    {((request.driversNeeded || 0) > (request.assignedDriverIds?.length || 0)) && (
+                      <Badge className="flex items-center gap-1 bg-[#A31C41] hover:bg-[#A31C41]/90 text-white border-[#A31C41]" data-testid="badge-drivers-needed">
+                        <Truck className="w-3 h-3" />
+                        Drivers Needed ({(request.driversNeeded || 0) - (request.assignedDriverIds?.length || 0)})
+                      </Badge>
+                    )}
+                    
+                    {/* Speakers Needed Badge */}
+                    {((request.speakersNeeded || 0) > (Object.keys(request.speakerDetails || {}).length)) && (
+                      <Badge className="flex items-center gap-1 bg-[#A31C41] hover:bg-[#A31C41]/90 text-white border-[#A31C41]" data-testid="badge-speakers-needed">
+                        <Megaphone className="w-3 h-3" />
+                        Speakers Needed ({(request.speakersNeeded || 0) - Object.keys(request.speakerDetails || {}).length})
+                      </Badge>
+                    )}
+                    
+                    {/* Volunteers Needed Badge */}
+                    {((request.volunteersNeeded || 0) > (request.assignedVolunteerIds?.length || 0)) && (
+                      <Badge className="flex items-center gap-1 bg-[#A31C41] hover:bg-[#A31C41]/90 text-white border-[#A31C41]" data-testid="badge-volunteers-needed">
+                        <Users className="w-3 h-3" />
+                        Volunteers Needed ({(request.volunteersNeeded || 0) - (request.assignedVolunteerIds?.length || 0)})
+                      </Badge>
+                    )}
+                    
+                    {/* Van Driver Needed Badge */}
+                    {(request.vanDriverNeeded && !request.assignedVanDriverId) && (
+                      <Badge className="flex items-center gap-1 bg-[#A31C41] hover:bg-[#A31C41]/90 text-white border-[#A31C41]" data-testid="badge-van-driver-needed">
+                        <Truck className="w-3 h-3" />
+                        Van Driver Needed
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Contact Information */}
