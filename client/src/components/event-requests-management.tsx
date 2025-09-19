@@ -1713,11 +1713,11 @@ export default function EventRequestsManagement({
         />
 
         {/* Event Details Edit Modal - Comprehensive Form */}
-        {showEventDetails && selectedEventRequest && (
+        {showEventDetails && (selectedEventRequest || isEditing) && (
           <EventSchedulingForm
             eventRequest={selectedEventRequest}
             isOpen={showEventDetails}
-            mode="edit"
+            mode={selectedEventRequest ? "edit" : "create"}
             onClose={() => {
               setShowEventDetails(false);
               setSelectedEventRequest(null);

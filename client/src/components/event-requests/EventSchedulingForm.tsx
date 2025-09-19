@@ -108,29 +108,29 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // Initialize form with existing data when dialog opens
   useEffect(() => {
-    if (dialogOpen && eventRequest) {
-      const existingSandwichTypes = eventRequest.sandwichTypes ? 
-        (typeof eventRequest.sandwichTypes === 'string' ? 
-          JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [];
+    if (dialogOpen) {
+      const existingSandwichTypes = eventRequest?.sandwichTypes ? 
+        (typeof eventRequest?.sandwichTypes === 'string' ? 
+          JSON.parse(eventRequest.sandwichTypes) : eventRequest?.sandwichTypes) : [];
       
       // Determine mode based on existing data
       const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
-      const totalCount = eventRequest.estimatedSandwichCount || 0;
+      const totalCount = eventRequest?.estimatedSandwichCount || 0;
       
       setFormData({
-        eventDate: formatDateForInput(eventRequest.desiredEventDate),
-        eventStartTime: eventRequest.eventStartTime || '',
-        eventEndTime: eventRequest.eventEndTime || '',
-        pickupTime: eventRequest.pickupTime || '',
-        eventAddress: eventRequest.eventAddress || '',
+        eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+        eventStartTime: eventRequest?.eventStartTime || '',
+        eventEndTime: eventRequest?.eventEndTime || '',
+        pickupTime: eventRequest?.pickupTime || '',
+        eventAddress: eventRequest?.eventAddress || '',
         sandwichTypes: existingSandwichTypes,
-        hasRefrigeration: eventRequest.hasRefrigeration?.toString() || '',
-        driversNeeded: eventRequest.driversNeeded || 0,
-        vanDriverNeeded: eventRequest.vanDriverNeeded || false,
-        speakersNeeded: eventRequest.speakersNeeded || 0,
-        volunteersNeeded: eventRequest.volunteersNeeded || false,
-        tspContact: eventRequest.tspContact || '',
-        schedulingNotes: (eventRequest as any).schedulingNotes || '',
+        hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
+        driversNeeded: eventRequest?.driversNeeded || 0,
+        vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
+        speakersNeeded: eventRequest?.speakersNeeded || 0,
+        volunteersNeeded: eventRequest?.volunteersNeeded || false,
+        tspContact: eventRequest?.tspContact || '',
+        schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         totalSandwichCount: totalCount,
       });
       
@@ -198,10 +198,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       updateData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     }
 
-    updateEventRequestMutation.mutate({
-      id: eventRequest.id,
-      data: updateData,
-    });
+    if (eventRequest) {
+      updateEventRequestMutation.mutate({
+        id: eventRequest.id,
+        data: updateData,
+      });
+    } else {
+      // TODO: Handle create mode - for now just close the modal
+      toast({
+        title: 'Create mode not yet implemented',
+        description: 'Manual event creation will be implemented soon.',
+        variant: 'destructive',
+      });
+      onClose();
+    }
   };
 
   const addSandwichType = () => {
@@ -239,14 +249,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     setPendingDateChange('');
   };
 
-  if (!eventRequest) return null;
+  // For create mode, we can work with null eventRequest
+  const isCreateMode = mode === 'create' || !eventRequest;
 
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#236383]">
-            {mode === 'edit' ? 'Edit Event Details:' : 'Schedule Event:'} {eventRequest.organizationName}
+            {isCreateMode ? 'Create New Event' : `${mode === 'edit' ? 'Edit Event Details:' : 'Schedule Event:'} ${eventRequest?.organizationName}`}
           </DialogTitle>
         </DialogHeader>
 
