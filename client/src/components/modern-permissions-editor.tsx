@@ -602,6 +602,285 @@ const PERMISSION_CATEGORIES = {
         description: 'Upload and manage documents',
         level: 'admin'
       },
+      { 
+        key: 'DOCUMENTS_UPLOAD', 
+        name: 'Upload Documents', 
+        description: 'Upload documents (can delete own)',
+        level: 'create'
+      },
+      { 
+        key: 'DOCUMENTS_DELETE_ALL', 
+        name: 'Delete Any Document', 
+        description: 'Delete any uploaded document',
+        level: 'admin'
+      },
+    ]
+  },
+
+  'Event Request Management': {
+    icon: Calendar,
+    description: 'Granular control over event request functionality',
+    permissions: [
+      { 
+        key: 'EVENT_REQUESTS_VIEW', 
+        name: 'View Event Requests', 
+        description: 'View event request submissions',
+        level: 'view'
+      },
+      { 
+        key: 'EVENT_REQUESTS_ADD', 
+        name: 'Submit Event Requests', 
+        description: 'Submit new event requests',
+        level: 'create'
+      },
+      { 
+        key: 'EVENT_REQUESTS_EDIT', 
+        name: 'Edit Event Requests', 
+        description: 'Edit event request details',
+        level: 'edit'
+      },
+      { 
+        key: 'EVENT_REQUESTS_DELETE', 
+        name: 'Delete Event Requests', 
+        description: 'Delete event requests',
+        level: 'admin'
+      },
+      { 
+        key: 'EVENT_REQUESTS_SELF_SIGNUP', 
+        name: 'Self-Signup for Roles', 
+        description: 'Sign up self for driver/speaker/volunteer roles',
+        level: 'action'
+      },
+      { 
+        key: 'EVENT_REQUESTS_ASSIGN_OTHERS', 
+        name: 'Assign Others to Roles', 
+        description: 'Assign others to driver/speaker/volunteer roles',
+        level: 'edit'
+      },
+      { 
+        key: 'EVENT_REQUESTS_VIEW_ONLY', 
+        name: 'View-Only Access', 
+        description: 'View events with no edit/assignment capabilities',
+        level: 'view'
+      },
+      { 
+        key: 'EVENT_REQUESTS_EDIT_ALL_DETAILS', 
+        name: 'Edit All Event Details', 
+        description: 'Edit all event details (comprehensive)',
+        level: 'edit'
+      },
+      { 
+        key: 'EVENT_REQUESTS_SEND_TOOLKIT', 
+        name: 'Send Toolkit & Mark Scheduled', 
+        description: 'Send toolkit and mark events as scheduled',
+        level: 'action'
+      },
+      { 
+        key: 'EVENT_REQUESTS_FOLLOW_UP', 
+        name: 'Use Follow-Up Buttons', 
+        description: 'Use follow-up buttons (1 day, 1 month)',
+        level: 'action'
+      },
+      { 
+        key: 'EVENT_REQUESTS_INLINE_EDIT_TIMES', 
+        name: 'Inline Edit Times', 
+        description: 'Edit event/pickup times directly on cards',
+        level: 'edit'
+      },
+      { 
+        key: 'EVENT_REQUESTS_INLINE_EDIT_ADDRESS', 
+        name: 'Inline Edit Address', 
+        description: 'Edit event address directly on cards',
+        level: 'edit'
+      },
+      { 
+        key: 'EVENT_REQUESTS_INLINE_EDIT_SANDWICHES', 
+        name: 'Inline Edit Sandwich Details', 
+        description: 'Edit sandwich count/types directly on cards',
+        level: 'edit'
+      },
+      { 
+        key: 'EVENT_REQUESTS_INLINE_EDIT_STAFFING', 
+        name: 'Inline Edit Staffing', 
+        description: 'Edit staffing needs directly on cards',
+        level: 'edit'
+      },
+      { 
+        key: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS', 
+        name: 'Inline Edit Logistics', 
+        description: 'Edit refrigeration/logistics on cards',
+        level: 'edit'
+      },
+    ]
+  },
+
+  'Navigation Control': {
+    icon: MapPin,
+    description: 'Control which tabs appear in user navigation',
+    permissions: [
+      { 
+        key: 'NAV_MY_ACTIONS', 
+        name: 'My Actions Tab', 
+        description: 'Show My Actions tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_DASHBOARD', 
+        name: 'Dashboard Tab', 
+        description: 'Show Dashboard tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_COLLECTIONS_LOG', 
+        name: 'Collections Log Tab', 
+        description: 'Show Collections Log tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_TEAM_CHAT', 
+        name: 'Team Chat Tab', 
+        description: 'Show Team Chat tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_INBOX', 
+        name: 'Inbox Tab', 
+        description: 'Show Inbox tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_SUGGESTIONS', 
+        name: 'Suggestions Tab', 
+        description: 'Show Suggestions tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_HOSTS', 
+        name: 'Hosts Tab', 
+        description: 'Show Hosts tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_DRIVERS', 
+        name: 'Drivers Tab', 
+        description: 'Show Drivers tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_VOLUNTEERS', 
+        name: 'Volunteers Tab', 
+        description: 'Show Volunteers tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_RECIPIENTS', 
+        name: 'Recipients Tab', 
+        description: 'Show Recipients tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_GROUPS_CATALOG', 
+        name: 'Groups Catalog Tab', 
+        description: 'Show Groups Catalog tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_DISTRIBUTION_TRACKING', 
+        name: 'Distribution Tracking Tab', 
+        description: 'Show Distribution Tracking tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_INVENTORY_CALCULATOR', 
+        name: 'Inventory Calculator Tab', 
+        description: 'Show Inventory Calculator tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_WORK_LOG', 
+        name: 'Work Log Tab', 
+        description: 'Show Work Log tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_EVENTS_GOOGLE_SHEET', 
+        name: 'Events Google Sheet Tab', 
+        description: 'Show Events Google Sheet tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_PROJECTS', 
+        name: 'Projects Tab', 
+        description: 'Show Projects tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_MEETINGS', 
+        name: 'Meetings Tab', 
+        description: 'Show Meetings tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_EVENT_PLANNING', 
+        name: 'Event Planning Tab', 
+        description: 'Show Event Planning tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_EVENT_REMINDERS', 
+        name: 'Event Reminders Tab', 
+        description: 'Show Event Reminders tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_ANALYTICS', 
+        name: 'Analytics Tab', 
+        description: 'Show Analytics tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_WEEKLY_MONITORING', 
+        name: 'Weekly Monitoring Tab', 
+        description: 'Show Weekly Monitoring tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_IMPORTANT_DOCUMENTS', 
+        name: 'Important Documents Tab', 
+        description: 'Show Important Documents tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_IMPORTANT_LINKS', 
+        name: 'Important Links Tab', 
+        description: 'Show Important Links tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_TOOLKIT', 
+        name: 'Toolkit Tab', 
+        description: 'Show Toolkit tab in navigation',
+        level: 'access'
+      },
+      { 
+        key: 'NAV_DOCUMENT_MANAGEMENT', 
+        name: 'Document Management Tab', 
+        description: 'Show Document Management tab in navigation',
+        level: 'access'
+      },
+    ]
+  },
+
+  'Administrative Access': {
+    icon: Shield,
+    description: 'Administrative functions and panels',
+    permissions: [
+      { 
+        key: 'ADMIN_PANEL_ACCESS', 
+        name: 'Admin Panel Access', 
+        description: 'Access to admin panel/user management',
+        level: 'admin'
+      },
     ]
   },
 };
