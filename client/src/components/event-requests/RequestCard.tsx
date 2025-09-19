@@ -739,7 +739,7 @@ export default function RequestCard({
                             ) : (
                               <div className="flex items-center space-x-1">
                                 <span className="font-semibold text-base text-[#236383]">
-                                  {request.driversNeeded || 0} needed
+                                  {Math.max(0, (request.driversNeeded || 0) - (request.assignedDriverIds?.length || 0))} needed
                                 </span>
                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
@@ -876,7 +876,7 @@ export default function RequestCard({
                             ) : (
                               <div className="flex items-center space-x-1">
                                 <span className="font-semibold text-base">
-                                  {request.speakersNeeded || 0} needed
+                                  {Math.max(0, (request.speakersNeeded || 0) - Object.keys(request.speakerDetails || {}).length)} needed
                                 </span>
                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
@@ -990,7 +990,7 @@ export default function RequestCard({
                             ) : (
                               <div className="flex items-center space-x-1">
                                 <span className="font-semibold text-base">
-                                  {request.volunteersNeeded || 0} needed
+                                  {Math.max(0, (request.volunteersNeeded || 0) - (request.assignedVolunteerIds?.length || 0))} needed
                                 </span>
                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
