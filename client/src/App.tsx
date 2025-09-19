@@ -185,6 +185,9 @@ function Router() {
       <Route path="/suggestions">
         {() => <Dashboard initialSection="suggestions" />}
       </Route>
+      <Route path="/collections">
+        {() => <Dashboard initialSection="collections" />}
+      </Route>
       <Route path="/google-sheets">
         {() => <Dashboard initialSection="google-sheets" />}
       </Route>

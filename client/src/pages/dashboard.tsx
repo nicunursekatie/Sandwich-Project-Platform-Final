@@ -120,7 +120,7 @@ export default function Dashboard({
 
   // Listen to URL changes to update activeSection
   React.useEffect(() => {
-    console.log('Current URL location:', location);
+    console.log('🔍 Navigation: URL location changed to:', location);
 
     // Extract section from URL path
     if (location.startsWith('/projects/')) {
@@ -128,21 +128,20 @@ export default function Dashboard({
       const projectId = parts.length > 1 ? parts[1] : null;
       if (projectId) {
         const newSection = `project-${projectId}`;
-        console.log('Setting activeSection to project ID:', newSection);
+        console.log('🎯 Navigation: Setting activeSection to project ID:', newSection);
         setActiveSection(newSection);
       }
     } else {
       // Handle other sections if needed
       const pathSection = location.substring(1) || 'dashboard';
-      if (
-        pathSection !== activeSection &&
-        pathSection !== location.substring(1)
-      ) {
-        console.log('Setting activeSection to:', pathSection);
+      if (pathSection !== activeSection) {
+        console.log('🎯 Navigation: Setting activeSection from', activeSection, 'to:', pathSection);
         setActiveSection(pathSection);
+      } else {
+        console.log('✅ Navigation: Section already matches:', pathSection);
       }
     }
-  }, [location]);
+  }, [location, activeSection]);
 
   // Debug logging
   React.useEffect(() => {
