@@ -272,97 +272,6 @@ export default function StaffingForecastWidget() {
 
           {currentWeek ? (
             <div className="space-y-4">
-              {/* Staffing Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {/* Drivers */}
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <Truck className="w-5 h-5 text-red-600" />
-                    <Badge 
-                      variant={currentWeek.unfulfilled.drivers > 0 ? "destructive" : "secondary"}
-                      className="text-xs"
-                    >
-                      {currentWeek.unfulfilled.drivers > 0 ? 'NEEDED' : 'FILLED'}
-                    </Badge>
-                  </div>
-                  <div className="text-lg font-bold text-red-800">
-                    {currentWeek.driversAssigned}/{currentWeek.totalDriversNeeded}
-                  </div>
-                  <div className="text-xs text-red-600">Drivers</div>
-                  {currentWeek.unfulfilled.drivers > 0 && (
-                    <div className="text-xs font-medium text-red-700 mt-1">
-                      {currentWeek.unfulfilled.drivers} still needed
-                    </div>
-                  )}
-                </div>
-
-                {/* Speakers */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <Megaphone className="w-5 h-5 text-yellow-600" />
-                    <Badge 
-                      variant={currentWeek.unfulfilled.speakers > 0 ? "destructive" : "secondary"}
-                      className="text-xs"
-                    >
-                      {currentWeek.unfulfilled.speakers > 0 ? 'NEEDED' : 'FILLED'}
-                    </Badge>
-                  </div>
-                  <div className="text-lg font-bold text-yellow-800">
-                    {currentWeek.speakersAssigned}/{currentWeek.totalSpeakersNeeded}
-                  </div>
-                  <div className="text-xs text-yellow-600">Speakers</div>
-                  {currentWeek.unfulfilled.speakers > 0 && (
-                    <div className="text-xs font-medium text-yellow-700 mt-1">
-                      {currentWeek.unfulfilled.speakers} still needed
-                    </div>
-                  )}
-                </div>
-
-                {/* Volunteers */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <UserCheck className="w-5 h-5 text-blue-600" />
-                    <Badge 
-                      variant={currentWeek.unfulfilled.volunteers > 0 ? "destructive" : "secondary"}
-                      className="text-xs"
-                    >
-                      {currentWeek.unfulfilled.volunteers > 0 ? 'NEEDED' : 'FILLED'}
-                    </Badge>
-                  </div>
-                  <div className="text-lg font-bold text-blue-800">
-                    {currentWeek.volunteersAssigned}/{currentWeek.totalVolunteersNeeded}
-                  </div>
-                  <div className="text-xs text-blue-600">Volunteers</div>
-                  {currentWeek.unfulfilled.volunteers > 0 && (
-                    <div className="text-xs font-medium text-blue-700 mt-1">
-                      {currentWeek.unfulfilled.volunteers} still needed
-                    </div>
-                  )}
-                </div>
-
-                {/* Van Drivers */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <Users className="w-5 h-5 text-purple-600" />
-                    <Badge 
-                      variant={currentWeek.unfulfilled.vanDrivers > 0 ? "destructive" : "secondary"}
-                      className="text-xs"
-                    >
-                      {currentWeek.unfulfilled.vanDrivers > 0 ? 'NEEDED' : 'FILLED'}
-                    </Badge>
-                  </div>
-                  <div className="text-lg font-bold text-purple-800">
-                    {currentWeek.vanDriversAssigned}/{currentWeek.totalVanDriversNeeded}
-                  </div>
-                  <div className="text-xs text-purple-600">Van Drivers</div>
-                  {currentWeek.unfulfilled.vanDrivers > 0 && (
-                    <div className="text-xs font-medium text-purple-700 mt-1">
-                      {currentWeek.unfulfilled.vanDrivers} still needed
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Overall Status */}
               <div className={`rounded-lg p-4 border-2 ${
                 getTotalUnfulfilled(currentWeek) === 0 
@@ -390,17 +299,17 @@ export default function StaffingForecastWidget() {
               <div className="space-y-3">
                 <h4 className="font-semibold text-brand-primary">Events Requiring Staffing:</h4>
                 {currentWeek.events.map((event) => {
-                  const eventUnfulfilled = 
-                    Math.max(0, (event.driversNeeded || 0) - (event.assignedDriverIds?.length || 0)) +
-                    Math.max(0, (event.speakersNeeded || 0) - (event.assignedSpeakerIds?.length || 0)) +
-                    Math.max(0, (event.volunteersNeeded || 0) - (event.assignedVolunteerIds?.length || 0)) +
-                    Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
+                  const driversNeeded = Math.max(0, (event.driversNeeded || 0) - (event.assignedDriverIds?.length || 0));
+                  const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - (event.assignedSpeakerIds?.length || 0));
+                  const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - (event.assignedVolunteerIds?.length || 0));
+                  const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - (event.assignedVanDriverId ? 1 : 0));
+                  const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
 
                   return (
-                    <div key={event.id} className="bg-white border rounded-lg p-3">
-                      <div className="flex items-center justify-between">
+                    <div key={event.id} className="bg-white border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <div className="font-medium text-brand-primary">
+                          <div className="font-medium text-brand-primary text-lg">
                             {event.organizationName}
                           </div>
                           <div className="text-sm text-gray-600">
@@ -417,13 +326,43 @@ export default function StaffingForecastWidget() {
                           </div>
                         </div>
                         <Badge 
-                          variant={eventUnfulfilled === 0 ? "secondary" : "destructive"}
+                          variant={totalUnfulfilled === 0 ? "secondary" : "destructive"}
                           className="ml-2"
                           data-testid={`badge-event-${event.id}-staffing`}
                         >
-                          {eventUnfulfilled === 0 ? 'Fully Staffed' : `${eventUnfulfilled} needed`}
+                          {totalUnfulfilled === 0 ? 'Fully Staffed' : `${totalUnfulfilled} needed`}
                         </Badge>
                       </div>
+                      
+                      {/* Show specific unfilled roles */}
+                      {totalUnfulfilled > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {driversNeeded > 0 && (
+                            <Badge variant="outline" className="border-red-300 text-red-700 bg-red-50">
+                              <Truck className="w-3 h-3 mr-1" />
+                              {driversNeeded} Driver{driversNeeded > 1 ? 's' : ''} needed
+                            </Badge>
+                          )}
+                          {speakersNeeded > 0 && (
+                            <Badge variant="outline" className="border-yellow-300 text-yellow-700 bg-yellow-50">
+                              <Megaphone className="w-3 h-3 mr-1" />
+                              {speakersNeeded} Speaker{speakersNeeded > 1 ? 's' : ''} needed
+                            </Badge>
+                          )}
+                          {volunteersNeeded > 0 && (
+                            <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">
+                              <UserCheck className="w-3 h-3 mr-1" />
+                              {volunteersNeeded} Volunteer{volunteersNeeded > 1 ? 's' : ''} needed
+                            </Badge>
+                          )}
+                          {vanDriverNeeded > 0 && (
+                            <Badge variant="outline" className="border-purple-300 text-purple-700 bg-purple-50">
+                              <Users className="w-3 h-3 mr-1" />
+                              Van Driver needed
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
