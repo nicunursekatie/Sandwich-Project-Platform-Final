@@ -4,6 +4,15 @@
 This full-stack application for The Sandwich Project, a nonprofit, manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support the organization's growth and impact in addressing food insecurity. Its business vision is to become a vital tool for food security initiatives, with market potential in supporting volunteer-driven community projects. The ambition is to scale operations and improve outreach, ultimately contributing to a significant reduction in food waste and hunger.
 
 ## Recent Changes
+**September 19, 2025 - Major System Overhaul & Unified Permissions Architecture:**
+- **Permissions System Modernization**: Migrated 172 legacy permission references across 24 files to standardized RESOURCE_ACTION format
+- **Unified Permission Checking**: Created `shared/unified-auth-utils.ts` (233 lines) as single source of truth for frontend/backend permission logic
+- **Modern Permissions Editor**: New `client/src/components/modern-permissions-editor.tsx` (898 lines) with role templates, categorized permissions, and visual UI
+- **Enhanced Security**: Eliminated frontend/backend permission mismatches, added strict validation and audit trails
+- **TypeScript Integration**: Full type safety with comprehensive test suite in `test/unified-permissions.test.js` (244 lines)
+- **Architectural Cleanup**: Removed duplicate components, standardized permission categories into 10 logical groups
+- **Future-Ready**: Included permissions for planned features (USERS_ADD/DELETE, EVENT_REQUESTS_SYNC, etc.)
+
 **September 17, 2025 - Send Toolkit Customization & Event Scheduling Enhancement:**
 - Made Send Toolkit emails fully customizable with logged-in user's information (name, phone, email)
 - Added phoneNumber and preferredEmail fields to user profile management
@@ -73,9 +82,10 @@ The application features a consistent brand identity using The Sandwich Project'
 Typography uses Roboto font family. UI elements prioritize clarity, responsiveness, and visual hierarchy with card-based dashboards and clear sectioning.
 
 ### Technical Implementations
+- **Unified Permissions System (September 2025)**: Complete modernization with `shared/unified-auth-utils.ts` as single source of truth, `client/src/components/modern-permissions-editor.tsx` with visual role templates and categorized permissions, standardized RESOURCE_ACTION format across 24+ files, and comprehensive test suite in `test/unified-permissions.test.js`. Eliminates frontend/backend permission mismatches with strict validation and TypeScript integration.
 - **Structured Logging (September 2025)**: Implemented winston-based logging system replacing scattered console.log statements. Features service-specific loggers, structured metadata, log levels (error/warn/info/http/debug), helper functions for common patterns, console output for development, and file rotation for production.
 - **Data Management**: Comprehensive management of Sandwich Collections, Hosts, Recipients, Projects, Users (with role-based access), and Audit Logs. Includes Zod validation and timezone-safe date handling.
-- **Authentication & Authorization**: Granular permissions system with custom role management, 30-day session management, detailed audit logging, and SendGrid-powered password reset.
+- **Authentication & Authorization**: Modern unified permissions system with `shared/unified-auth-utils.ts` providing consistent frontend/backend permission logic. Features standardized RESOURCE_ACTION format, role templates (Volunteer, Host, Core Team, Admin), modern permissions editor with 10 categorized permission groups, strict validation, audit trails, and comprehensive TypeScript integration. Includes 30-day session management and SendGrid-powered password reset.
 - **Search & Filtering**: Comprehensive search and filter functionality across management interfaces with real-time filtering and dynamic search bars.
 - **Host Contact Directory**: Integrated view toggle within host management for individual contact person cards with search capabilities.
 - **Performance**: Optimized with query optimization, LRU caching, pagination, memoization, database connection pooling, and Express gzip/brotli compression.
