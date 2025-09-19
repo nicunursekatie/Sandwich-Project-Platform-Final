@@ -1438,6 +1438,7 @@ export const eventRequests = pgTable(
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
     additionalRequirements: text('additional_requirements'), // Special requirements or notes
     planningNotes: text('planning_notes'), // General planning notes
+    schedulingNotes: text('scheduling_notes'), // Scheduling notes and instructions
 
     // Additional event details
     sandwichTypes: jsonb('sandwich_types'), // Array of {type: string, quantity: number} objects
@@ -1653,6 +1654,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     additionalContact1: z.string().nullable().optional(),
     additionalContact2: z.string().nullable().optional(),
     planningNotes: z.string().nullable().optional(),
+    schedulingNotes: z.string().nullable().optional(),
     eventAddress: z.string().nullable().optional(),
     deliveryDestination: z.string().nullable().optional(),
     estimatedSandwichCount: z.number().nullable().optional(),
