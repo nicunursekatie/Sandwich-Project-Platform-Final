@@ -18,6 +18,7 @@ import searchRouter from './search';
 import storageRouter from './storage';
 import versioningRouter from './versioning';
 import coreRouter from './core';
+import meRouter from './me';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
 
@@ -225,6 +226,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventRequestsRouter
   );
   router.use('/api/event-requests', createErrorHandler('event-requests'));
+
+  // Me routes - user-specific endpoints
+  router.use(
+    '/api/me',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    meRouter
+  );
+  router.use('/api/me', createErrorHandler('me'));
 
   return router;
 }
