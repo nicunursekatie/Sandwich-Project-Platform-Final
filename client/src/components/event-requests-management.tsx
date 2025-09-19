@@ -269,13 +269,19 @@ const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
 
 
 
-export default function EventRequestsManagement() {
+export default function EventRequestsManagement({
+  initialTab,
+  initialEventId,
+}: {
+  initialTab?: string | null;
+  initialEventId?: number;
+} = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'organization' | 'event_date'>(
     'newest'
   );
-  const [activeTab, setActiveTab] = useState('new');
+  const [activeTab, setActiveTab] = useState(initialTab || 'new');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
@@ -1070,6 +1076,30 @@ export default function EventRequestsManagement() {
   const { data: recipients = [] } = useQuery<any[]>({
     queryKey: ['/api/recipients'],
   });
+
+  // Handle initial event ID - auto-open event details if specified
+  useEffect(() => {
+    if (initialEventId && eventRequests.length > 0) {
+      const targetEvent = eventRequests.find(req => req.id === initialEventId);
+      if (targetEvent) {
+        setSelectedEventRequest(targetEvent);
+        setShowEventDetails(true);
+        setIsEditing(false);
+        
+        // Set the correct tab based on event status
+        if (targetEvent.status === 'completed') {
+          setActiveTab('past');
+        } else if (targetEvent.status === 'scheduled') {
+          setActiveTab('scheduled');
+        } else {
+          setActiveTab('requests');
+        }
+        
+        // Scroll to top to ensure event details are visible
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }, [initialEventId, eventRequests]);
 
   // Helper function to resolve user ID or email to name
   const resolveUserName = (userIdOrName: string | undefined): string => {

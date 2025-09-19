@@ -59,7 +59,7 @@ import PerformanceDashboard from '@/pages/performance-dashboard';
 
 import UserManagementRedesigned from '@/components/user-management-redesigned';
 import UserProfile from '@/components/user-profile';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
@@ -106,6 +106,17 @@ export default function Dashboard({
   const [location] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+
+  // Parse URL query parameters
+  const urlParams = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return {
+      tab: searchParams.get('tab'),
+      eventId: searchParams.get('eventId'),
+      view: searchParams.get('view'),
+      id: searchParams.get('id'),
+    };
+  }, [location]);
 
   // Listen to URL changes to update activeSection
   React.useEffect(() => {
@@ -289,7 +300,10 @@ export default function Dashboard({
       case 'volunteers':
         return <VolunteerManagement />;
       case 'event-requests':
-        return <EventRequestsManagement />;
+        return <EventRequestsManagement 
+          initialTab={urlParams.tab} 
+          initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined} 
+        />;
       case 'event-reminders':
         return <EventRemindersManagement />;
       case 'groups-catalog':
