@@ -132,6 +132,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         tspContact: eventRequest?.tspContact || '',
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         totalSandwichCount: totalCount,
+        // Contact information fields
+        firstName: eventRequest?.firstName || '',
+        lastName: eventRequest?.lastName || '',
+        email: eventRequest?.email || '',
+        phone: eventRequest?.phone || '',
+        organizationName: eventRequest?.organizationName || '',
+        department: eventRequest?.department || '',
       });
       
       // Set mode based on existing data
@@ -187,6 +194,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       volunteersNeeded: formData.volunteersNeeded || false,
       tspContact: formData.tspContact || null,
       schedulingNotes: formData.schedulingNotes || null,
+      // Contact information fields
+      firstName: formData.firstName || null,
+      lastName: formData.lastName || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      organizationName: formData.organizationName || null,
+      department: formData.department || null,
     };
 
     // Handle sandwich data based on mode
@@ -271,98 +285,71 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               onClick={() => setShowContactInfo(!showContactInfo)}
             >
               <span className="font-semibold">
-                {eventRequest ? 'Contact Information (Pre-filled)' : 'Contact Information (Enter details)'}
+                Contact Information (Editable)
               </span>
               <ChevronDown className={`w-4 h-4 transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
             </Button>
             
             {showContactInfo && (
               <div className="p-4 border-t bg-[#e6f2f5] grid grid-cols-1 md:grid-cols-2 gap-4">
-                {eventRequest ? (
-                  // Existing event - show pre-filled data
-                  <>
-                    <div>
-                      <Label>Contact Name</Label>
-                      <Input value={`${eventRequest.firstName} ${eventRequest.lastName}`} disabled />
-                    </div>
-                    <div>
-                      <Label>Email</Label>
-                      <Input value={eventRequest.email} disabled />
-                    </div>
-                    <div>
-                      <Label>Phone</Label>
-                      <Input value={eventRequest.phone || 'Not provided'} disabled />
-                    </div>
-                    <div>
-                      <Label>Organization</Label>
-                      <Input value={eventRequest.organizationName} disabled />
-                    </div>
-                    <div>
-                      <Label>Department</Label>
-                      <Input value={eventRequest.department || 'Not provided'} disabled />
-                    </div>
-                    <div>
-                      <Label>Desired Date</Label>
-                      <Input 
-                        value={eventRequest.desiredEventDate 
-                          ? (typeof eventRequest.desiredEventDate === 'string' 
-                              ? eventRequest.desiredEventDate 
-                              : eventRequest.desiredEventDate.toLocaleDateString())
-                          : 'Not provided'
-                        } 
-                        disabled 
-                      />
-                    </div>
-                  </>
-                ) : (
-                  // New event - show editable contact fields
-                  <>
-                    <div>
-                      <Label htmlFor="newFirstName">First Name *</Label>
-                      <Input 
-                        id="newFirstName"
-                        placeholder="Enter first name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="newLastName">Last Name *</Label>
-                      <Input 
-                        id="newLastName"
-                        placeholder="Enter last name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="newEmail">Email *</Label>
-                      <Input 
-                        id="newEmail"
-                        type="email"
-                        placeholder="Enter email address"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="newPhone">Phone</Label>
-                      <Input 
-                        id="newPhone"
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="newOrganization">Organization *</Label>
-                      <Input 
-                        id="newOrganization"
-                        placeholder="Enter organization name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="newDesiredDate">Desired Event Date</Label>
-                      <Input 
-                        id="newDesiredDate"
-                        type="date"
-                        placeholder="Select desired date"
-                      />
-                    </div>
-                  </>
-                )}
+                {/* All contact fields are now editable */}
+                <>
+                  <div>
+                    <Label htmlFor="contactFirstName">First Name</Label>
+                    <Input 
+                      id="contactFirstName"
+                      value={formData.firstName || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      placeholder="Enter first name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactLastName">Last Name</Label>
+                    <Input 
+                      id="contactLastName"
+                      value={formData.lastName || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      placeholder="Enter last name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactEmail">Email</Label>
+                    <Input 
+                      id="contactEmail"
+                      type="email"
+                      value={formData.email || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactPhone">Phone</Label>
+                    <Input 
+                      id="contactPhone"
+                      value={formData.phone || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactOrganization">Organization</Label>
+                    <Input 
+                      id="contactOrganization"
+                      value={formData.organizationName || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, organizationName: e.target.value }))}
+                      placeholder="Enter organization name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contactDepartment">Department</Label>
+                    <Input 
+                      id="contactDepartment"
+                      value={formData.department || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                      placeholder="Enter department"
+                    />
+                  </div>
+                </>
               </div>
             )}
           </div>
