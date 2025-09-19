@@ -45,6 +45,7 @@ interface EventSchedulingFormProps {
   onClose: () => void;
   onScheduled?: () => void;
   onEventScheduled?: () => void;
+  onDelete?: (eventRequestId: number) => void;
   mode?: 'schedule' | 'edit';
 }
 
@@ -55,6 +56,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   onClose,
   onScheduled,
   onEventScheduled,
+  onDelete,
   mode = 'schedule',
 }) => {
   const dialogOpen = isVisible || isOpen || false;
@@ -196,6 +198,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toast({
         title: 'Error',
         description: 'Failed to create event.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteEventRequestMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/event-requests/${id}`),
+    onSuccess: () => {
+      toast({
+        title: 'Event deleted successfully',
+        description: 'The event request has been deleted.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      onSuccess();
+      onClose();
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete event.',
         variant: 'destructive',
       });
     },
@@ -700,21 +722,48 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="text-white"
-              style={{ backgroundColor: '#236383' }}
-              disabled={updateEventRequestMutation.isPending}
-              data-testid="button-submit"
-            >
-              {updateEventRequestMutation.isPending 
-                ? (mode === 'edit' ? 'Saving...' : 'Scheduling...') 
-                : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
-            </Button>
+          <div className="flex justify-between pt-4 border-t">
+            <div>
+              {/* Delete button - only show for existing events */}
+              {eventRequest && onDelete && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                  onClick={() => {
+                    if (eventRequest && confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
+                      if (onDelete) {
+                        onDelete(eventRequest.id);
+                      } else {
+                        deleteEventRequestMutation.mutate(eventRequest.id);
+                      }
+                    }
+                  }}
+                  disabled={deleteEventRequestMutation.isPending}
+                  data-testid="button-delete-event"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {deleteEventRequestMutation.isPending ? 'Deleting...' : 'Delete Event'}
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex space-x-3">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="text-white"
+                style={{ backgroundColor: '#236383' }}
+                disabled={updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+                data-testid="button-submit"
+              >
+                {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
+                  ? (mode === 'edit' ? 'Saving...' : 'Scheduling...') 
+                  : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

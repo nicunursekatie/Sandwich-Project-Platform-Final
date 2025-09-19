@@ -1135,6 +1135,22 @@ export default function RequestCard({
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
+                        onDelete(request.id);
+                      }
+                    }}
+                    data-testid={`button-delete-${request.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
                 </div>
               )}
 
@@ -1181,6 +1197,22 @@ export default function RequestCard({
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
+                        onDelete(request.id);
+                      }
+                    }}
+                    data-testid={`button-delete-${request.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
                 </div>
               )}
 
@@ -1213,6 +1245,22 @@ export default function RequestCard({
                   >
                     <Phone className="w-4 h-4 mr-2" />
                     Contact Organizer
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
+                        onDelete(request.id);
+                      }
+                    }}
+                    data-testid={`button-delete-${request.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
                   </Button>
                 </div>
               )}
@@ -1410,6 +1458,22 @@ export default function RequestCard({
                   >
                     <RotateCcw className="w-4 h-4 mr-2" />
                     Reschedule
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to delete this event request? This action cannot be undone.')) {
+                        onDelete(request.id);
+                      }
+                    }}
+                    data-testid={`button-delete-${request.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
                   </Button>
                 </div>
               )}
