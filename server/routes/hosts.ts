@@ -20,12 +20,12 @@ const isAuthenticated = (req: any, res: any, next: any) => {
 // Permission check functions
 function canManageHosts(req: any) {
   const user = req.user;
-  return hasPermission(user, PERMISSIONS.MANAGE_HOSTS);
+  return hasPermission(user, PERMISSIONS.HOSTS_EDIT);
 }
 
 function canViewHosts(req: any) {
   const user = req.user;
-  return hasPermission(user, PERMISSIONS.ACCESS_HOSTS);
+  return hasPermission(user, PERMISSIONS.HOSTS_VIEW);
 }
 
 // Host management routes

@@ -325,11 +325,11 @@ export default function ProjectsClean() {
   };
 
   const canEditProject = (user: any, project: Project) => {
-    return hasPermission(user, PERMISSIONS.EDIT_ALL_PROJECTS);
+    return hasPermission(user, PERMISSIONS.PROJECTS_EDIT_ALL);
   };
 
   const canDeleteProject = (user: any, project: Project) => {
-    return hasPermission(user, PERMISSIONS.DELETE_ALL_PROJECTS);
+    return hasPermission(user, PERMISSIONS.PROJECTS_DELETE_ALL);
   };
 
   const renderProjectCard = (project: Project) => (
@@ -627,7 +627,7 @@ export default function ProjectsClean() {
               </p>
             </div>
           </div>
-          {hasPermission(user, PERMISSIONS.CREATE_PROJECTS) && (
+          {hasPermission(user, PERMISSIONS.PROJECTS_ADD) && (
             <Button
               onClick={() => setShowCreateDialog(true)}
               className="bg-brand-orange hover:bg-brand-orange-dark text-white font-roboto font-medium shadow-sm"

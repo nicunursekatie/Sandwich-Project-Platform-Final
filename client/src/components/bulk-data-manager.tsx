@@ -62,7 +62,7 @@ export default function BulkDataManager({
 
   // Permission checks
   const canImport = hasPermission(user, PERMISSIONS.IMPORT_DATA);
-  const canExport = hasPermission(user, PERMISSIONS.EXPORT_DATA);
+  const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
 
   // Fetch collection statistics
   const { data: stats, isLoading: statsLoading } = useQuery({

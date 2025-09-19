@@ -56,8 +56,8 @@ import type { Driver, Host } from "@shared/schema";
 export default function DriversManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.EDIT_ALL_COLLECTIONS);
-  const canExport = hasPermission(user, PERMISSIONS.EXPORT_DATA);
+  const canEdit = hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL);
+  const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
   const queryClient = useQueryClient();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

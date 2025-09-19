@@ -86,59 +86,59 @@ const PERMISSION_GROUPS = [
     type: 'content',
     permissions: [
       {
-        key: PERMISSIONS.ACCESS_COLLECTIONS,
+        key: PERMISSIONS.COLLECTIONS_VIEW,
         label: 'View Collections',
         icon: Eye,
         description: 'View all collection records',
       },
       {
-        key: PERMISSIONS.CREATE_COLLECTIONS,
+        key: PERMISSIONS.COLLECTIONS_ADD,
         label: 'Create Collections',
         icon: Database,
         description:
           'Create collections + automatically edit/delete own collections',
       },
       {
-        key: PERMISSIONS.EDIT_ALL_COLLECTIONS,
+        key: PERMISSIONS.COLLECTIONS_EDIT_ALL,
         label: 'Edit All Collections',
         icon: Shield,
         description: 'Edit any collection record (admin level)',
       },
       {
-        key: PERMISSIONS.DELETE_ALL_COLLECTIONS,
+        key: PERMISSIONS.COLLECTIONS_DELETE_ALL,
         label: 'Delete All Collections',
         icon: Shield,
         description: 'Delete any collection record (admin level)',
       },
 
       {
-        key: PERMISSIONS.ACCESS_PROJECTS,
+        key: PERMISSIONS.PROJECTS_VIEW,
         label: 'View Projects',
         icon: Eye,
         description: 'View project information',
       },
       {
-        key: PERMISSIONS.CREATE_PROJECTS,
+        key: PERMISSIONS.PROJECTS_ADD,
         label: 'Create Projects',
         icon: FolderOpen,
         description:
           'Create projects + automatically edit/delete own projects + edit assigned projects',
       },
       {
-        key: PERMISSIONS.EDIT_ALL_PROJECTS,
+        key: PERMISSIONS.PROJECTS_EDIT_ALL,
         label: 'Edit All Projects',
         icon: Shield,
         description: 'Edit any project (admin level)',
       },
       {
-        key: PERMISSIONS.DELETE_ALL_PROJECTS,
+        key: PERMISSIONS.PROJECTS_DELETE_ALL,
         label: 'Delete All Projects',
         icon: Shield,
         description: 'Delete any project (admin level)',
       },
 
       {
-        key: PERMISSIONS.ACCESS_SUGGESTIONS,
+        key: PERMISSIONS.SUGGESTIONS_VIEW,
         label: 'View Suggestions',
         icon: Eye,
         description: 'View suggestion portal',
@@ -151,7 +151,7 @@ const PERMISSION_GROUPS = [
           'Create suggestions + automatically edit/delete own suggestions',
       },
       {
-        key: PERMISSIONS.MANAGE_SUGGESTIONS,
+        key: PERMISSIONS.SUGGESTIONS_MANAGE,
         label: 'Manage All Suggestions',
         icon: Shield,
         description: 'Review and respond to all suggestions (admin level)',
@@ -170,32 +170,32 @@ const PERMISSION_GROUPS = [
       },
 
       {
-        key: PERMISSIONS.ACCESS_WORK_LOGS,
+        key: PERMISSIONS.WORK_LOGS_VIEW,
         label: 'View Work Logs',
         icon: Eye,
         description: 'Access work logs section',
       },
       {
-        key: PERMISSIONS.CREATE_WORK_LOGS,
+        key: PERMISSIONS.WORK_LOGS_ADD,
         label: 'Create Work Logs',
         icon: Edit,
         description:
           'Create work logs + automatically edit/delete own work logs',
       },
       {
-        key: PERMISSIONS.VIEW_ALL_WORK_LOGS,
+        key: PERMISSIONS.WORK_LOGS_VIEW,
         label: 'View All Work Logs',
         icon: Eye,
         description: "View everyone's work logs (admin/supervisor)",
       },
       {
-        key: PERMISSIONS.EDIT_ALL_WORK_LOGS,
+        key: PERMISSIONS.WORK_LOGS_EDIT_ALL,
         label: 'Edit All Work Logs',
         icon: Shield,
         description: 'Edit any work log entry (admin level)',
       },
       {
-        key: PERMISSIONS.DELETE_ALL_WORK_LOGS,
+        key: PERMISSIONS.WORK_LOGS_DELETE_ALL,
         label: 'Delete All Work Logs',
         icon: Shield,
         description: 'Delete any work log entry (admin level)',
@@ -217,13 +217,13 @@ const PERMISSION_GROUPS = [
       // Note: Full contact details would need a new permission
 
       {
-        key: PERMISSIONS.ACCESS_HOSTS,
+        key: PERMISSIONS.HOSTS_VIEW,
         label: 'View Hosts',
         icon: Eye,
         description: 'View host locations',
       },
       {
-        key: PERMISSIONS.MANAGE_HOSTS,
+        key: PERMISSIONS.HOSTS_EDIT,
         label: 'Add/Edit Hosts',
         icon: Building,
         description: 'Add and edit host locations',
@@ -231,26 +231,26 @@ const PERMISSION_GROUPS = [
       // Note: "Manage All Hosts" would be separate from basic edit
 
       {
-        key: PERMISSIONS.ACCESS_DRIVERS,
+        key: PERMISSIONS.DRIVERS_VIEW,
         label: 'View Drivers',
         icon: Eye,
         description: 'View driver information',
       },
       {
-        key: PERMISSIONS.MANAGE_DRIVERS,
+        key: PERMISSIONS.DRIVERS_EDIT,
         label: 'Add/Edit Drivers',
         icon: Truck,
         description: 'Add and edit driver records',
       },
 
       {
-        key: PERMISSIONS.ACCESS_RECIPIENTS,
+        key: PERMISSIONS.RECIPIENTS_VIEW,
         label: 'View Recipients',
         icon: Eye,
         description: 'View recipient organizations',
       },
       {
-        key: PERMISSIONS.MANAGE_RECIPIENTS,
+        key: PERMISSIONS.RECIPIENTS_EDIT,
         label: 'Add/Edit Recipients',
         icon: UserCheck,
         description: 'Add and edit recipient organizations',
@@ -358,13 +358,13 @@ const PERMISSION_GROUPS = [
         description: 'Can receive kudos messages from other users',
       },
       {
-        key: PERMISSIONS.VIEW_KUDOS,
+        key: PERMISSIONS.KUDOS_VIEW,
         label: 'View Kudos',
         icon: Trophy,
         description: 'Can view kudos messages in the inbox',
       },
       {
-        key: PERMISSIONS.MANAGE_ALL_KUDOS,
+        key: PERMISSIONS.KUDOS_MANAGE,
         label: 'Manage All Kudos',
         icon: Shield,
         description: 'Admin ability to manage all kudos (view, delete)',
@@ -378,31 +378,31 @@ const PERMISSION_GROUPS = [
     type: 'navigation',
     permissions: [
       {
-        key: PERMISSIONS.ACCESS_CHAT,
+        key: PERMISSIONS.CHAT_GENERAL,
         label: 'Chat Tab',
         icon: MessageCircle,
         description: 'Show Chat tab in navigation',
       },
       {
-        key: PERMISSIONS.ACCESS_MESSAGES,
+        key: PERMISSIONS.MESSAGES_VIEW,
         label: 'Messages Tab',
         icon: Mail,
         description: 'Show Messages tab in navigation',
       },
       {
-        key: PERMISSIONS.ACCESS_TOOLKIT,
+        key: PERMISSIONS.TOOLKIT_ACCESS,
         label: 'Toolkit Tab',
         icon: Wrench,
         description: 'Show Toolkit/Documents tab',
       },
       {
-        key: PERMISSIONS.ACCESS_MEETINGS,
+        key: PERMISSIONS.MEETINGS_VIEW,
         label: 'Meetings Section',
         icon: Calendar,
         description: 'Show Meetings in Operations',
       },
       {
-        key: PERMISSIONS.ACCESS_ANALYTICS,
+        key: PERMISSIONS.ANALYTICS_VIEW,
         label: 'Analytics Section',
         icon: TrendingUp,
         description: 'Show Analytics in Operations',
@@ -420,7 +420,7 @@ const PERMISSION_GROUPS = [
         description: 'Access to sandwich totals data sheet',
       },
       {
-        key: PERMISSIONS.ACCESS_WORK_LOGS,
+        key: PERMISSIONS.WORK_LOGS_VIEW,
         label: 'Work Logs Section',
         icon: Calendar,
         description: 'Show Work Logs in navigation',
@@ -440,19 +440,19 @@ const PERMISSION_GROUPS = [
         description: 'Access to admin interface',
       },
       {
-        key: PERMISSIONS.MANAGE_USERS,
+        key: PERMISSIONS.USERS_EDIT,
         label: 'User Management',
         icon: Users,
         description: 'Manage users and permissions',
       },
       {
-        key: PERMISSIONS.MANAGE_ANNOUNCEMENTS,
+        key: PERMISSIONS.ANNOUNCEMENTS_MANAGE,
         label: 'System Announcements',
         icon: FileText,
         description: 'Create/edit system announcements',
       },
       {
-        key: PERMISSIONS.MANAGE_MEETINGS,
+        key: PERMISSIONS.MEETINGS_MANAGE,
         label: 'Meeting Management',
         icon: Calendar,
         description: 'Schedule and manage meetings',
@@ -466,7 +466,7 @@ const PERMISSION_GROUPS = [
     type: 'operations',
     permissions: [
       {
-        key: PERMISSIONS.EXPORT_DATA,
+        key: PERMISSIONS.DATA_EXPORT,
         label: 'Export Data',
         icon: FileText,
         description: 'Download data as files',
@@ -647,12 +647,12 @@ export function SimplePermissionsDialog({
                     // Common viewer permissions - view-only access
                     const viewerPermissions = [
                       PERMISSIONS.HOSTS_VIEW,
-                      PERMISSIONS.ACCESS_COLLECTIONS,
-                      PERMISSIONS.ACCESS_HOSTS,
-                      PERMISSIONS.ACCESS_RECIPIENTS,
-                      PERMISSIONS.ACCESS_DRIVERS,
-                      PERMISSIONS.ACCESS_PROJECTS,
-                      PERMISSIONS.ACCESS_TOOLKIT,
+                      PERMISSIONS.COLLECTIONS_VIEW,
+                      PERMISSIONS.HOSTS_VIEW,
+                      PERMISSIONS.RECIPIENTS_VIEW,
+                      PERMISSIONS.DRIVERS_VIEW,
+                      PERMISSIONS.PROJECTS_VIEW,
+                      PERMISSIONS.TOOLKIT_ACCESS,
                       PERMISSIONS.COLLECTIONS_VIEW,
                       PERMISSIONS.GENERAL_CHAT,
                     ];

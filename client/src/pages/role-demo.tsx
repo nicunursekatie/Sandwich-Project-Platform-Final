@@ -123,11 +123,11 @@ const roleColors = {
 };
 
 const permissionCategories = {
-  'Core Access': [PERMISSIONS.VIEW_PHONE_DIRECTORY],
+  'Core Access': [PERMISSIONS.CONTACTS_VIEW],
   'Data Management': [
-    PERMISSIONS.EDIT_ALL_COLLECTIONS,
-    PERMISSIONS.DELETE_ALL_COLLECTIONS,
-    PERMISSIONS.MANAGE_USERS,
+    PERMISSIONS.COLLECTIONS_EDIT_ALL,
+    PERMISSIONS.COLLECTIONS_DELETE_ALL,
+    PERMISSIONS.USERS_EDIT,
   ],
   Communication: [
     PERMISSIONS.GENERAL_CHAT,
@@ -137,26 +137,26 @@ const permissionCategories = {
     PERMISSIONS.RECIPIENT_CHAT,
   ],
   'Data Viewing': [
-    PERMISSIONS.VIEW_COLLECTIONS,
-    PERMISSIONS.VIEW_REPORTS,
-    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.COLLECTIONS_VIEW,
+    PERMISSIONS.ANALYTICS_VIEW,
+    PERMISSIONS.PROJECTS_VIEW,
   ],
   Tools: [PERMISSIONS.TOOLKIT_ACCESS],
 };
 
 const permissionIcons = {
-  [PERMISSIONS.VIEW_PHONE_DIRECTORY]: Phone,
+  [PERMISSIONS.CONTACTS_VIEW]: Phone,
   [PERMISSIONS.EDIT_COLLECTIONS]: Edit,
   [PERMISSIONS.DELETE_COLLECTIONS]: Trash2,
-  [PERMISSIONS.MANAGE_USERS]: Users,
+  [PERMISSIONS.USERS_EDIT]: Users,
   [PERMISSIONS.GENERAL_CHAT]: MessageCircle,
   [PERMISSIONS.COMMITTEE_CHAT]: MessageCircle,
   [PERMISSIONS.HOST_CHAT]: MessageCircle,
   [PERMISSIONS.DRIVER_CHAT]: MessageCircle,
   [PERMISSIONS.RECIPIENT_CHAT]: MessageCircle,
-  [PERMISSIONS.VIEW_COLLECTIONS]: FileText,
-  [PERMISSIONS.VIEW_REPORTS]: BarChart3,
-  [PERMISSIONS.VIEW_PROJECTS]: FileText,
+  [PERMISSIONS.COLLECTIONS_VIEW]: FileText,
+  [PERMISSIONS.ANALYTICS_VIEW]: BarChart3,
+  [PERMISSIONS.PROJECTS_VIEW]: FileText,
   [PERMISSIONS.TOOLKIT_ACCESS]: Heart,
 };
 
@@ -197,7 +197,7 @@ function RoleView({ user }: { user: any }) {
             {/* Phone Directory */}
             <div
               className={`p-4 rounded-lg border ${
-                hasPermission(user, PERMISSIONS.VIEW_PHONE_DIRECTORY)
+                hasPermission(user, PERMISSIONS.CONTACTS_VIEW)
                   ? 'bg-green-50 border-green-200'
                   : 'bg-gray-50 border-gray-200 opacity-50'
               }`}
@@ -205,7 +205,7 @@ function RoleView({ user }: { user: any }) {
               <Phone className="w-6 h-6 mb-2" />
               <div className="font-medium">Phone Directory</div>
               <div className="text-sm text-gray-600">
-                {hasPermission(user, PERMISSIONS.VIEW_PHONE_DIRECTORY)
+                {hasPermission(user, PERMISSIONS.CONTACTS_VIEW)
                   ? 'Full Access'
                   : 'No Access'}
               </div>
@@ -231,7 +231,7 @@ function RoleView({ user }: { user: any }) {
             {/* Reports */}
             <div
               className={`p-4 rounded-lg border ${
-                hasPermission(user, PERMISSIONS.VIEW_REPORTS)
+                hasPermission(user, PERMISSIONS.ANALYTICS_VIEW)
                   ? 'bg-green-50 border-green-200'
                   : 'bg-gray-50 border-gray-200 opacity-50'
               }`}
@@ -239,7 +239,7 @@ function RoleView({ user }: { user: any }) {
               <BarChart3 className="w-6 h-6 mb-2" />
               <div className="font-medium">Reports</div>
               <div className="text-sm text-gray-600">
-                {hasPermission(user, PERMISSIONS.VIEW_REPORTS)
+                {hasPermission(user, PERMISSIONS.ANALYTICS_VIEW)
                   ? 'Can View'
                   : 'No Access'}
               </div>
@@ -248,7 +248,7 @@ function RoleView({ user }: { user: any }) {
             {/* Collections */}
             <div
               className={`p-4 rounded-lg border ${
-                hasPermission(user, PERMISSIONS.VIEW_COLLECTIONS)
+                hasPermission(user, PERMISSIONS.COLLECTIONS_VIEW)
                   ? 'bg-green-50 border-green-200'
                   : 'bg-gray-50 border-gray-200 opacity-50'
               }`}
@@ -256,7 +256,7 @@ function RoleView({ user }: { user: any }) {
               <FileText className="w-6 h-6 mb-2" />
               <div className="font-medium">Collections</div>
               <div className="text-sm text-gray-600">
-                {hasPermission(user, PERMISSIONS.VIEW_COLLECTIONS)
+                {hasPermission(user, PERMISSIONS.COLLECTIONS_VIEW)
                   ? 'Can View'
                   : 'No Access'}
               </div>
@@ -265,7 +265,7 @@ function RoleView({ user }: { user: any }) {
             {/* User Management */}
             <div
               className={`p-4 rounded-lg border ${
-                hasPermission(user, PERMISSIONS.MANAGE_USERS)
+                hasPermission(user, PERMISSIONS.USERS_EDIT)
                   ? 'bg-green-50 border-green-200'
                   : 'bg-gray-50 border-gray-200 opacity-50'
               }`}
@@ -273,7 +273,7 @@ function RoleView({ user }: { user: any }) {
               <Users className="w-6 h-6 mb-2" />
               <div className="font-medium">User Management</div>
               <div className="text-sm text-gray-600">
-                {hasPermission(user, PERMISSIONS.MANAGE_USERS)
+                {hasPermission(user, PERMISSIONS.USERS_EDIT)
                   ? 'Full Access'
                   : 'No Access'}
               </div>
@@ -500,7 +500,7 @@ export default function RoleDemo() {
                         </div>
                       </td>
                       <td className="text-center p-2">
-                        {hasPermission(user, PERMISSIONS.VIEW_PHONE_DIRECTORY)
+                        {hasPermission(user, PERMISSIONS.CONTACTS_VIEW)
                           ? '✅'
                           : '❌'}
                       </td>
@@ -521,7 +521,7 @@ export default function RoleDemo() {
                           : '❌'}
                       </td>
                       <td className="text-center p-2">
-                        {hasPermission(user, PERMISSIONS.MANAGE_USERS)
+                        {hasPermission(user, PERMISSIONS.USERS_EDIT)
                           ? '✅'
                           : '❌'}
                       </td>

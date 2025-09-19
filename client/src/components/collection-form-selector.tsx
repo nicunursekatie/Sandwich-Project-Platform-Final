@@ -25,9 +25,9 @@ export default function CollectionFormSelector({
 
   // Check if user has walkthrough permission
   const canUseWalkthrough =
-    user && hasPermission(user, PERMISSIONS.USE_COLLECTION_WALKTHROUGH);
+    user && hasPermission(user, PERMISSIONS.COLLECTIONS_WALKTHROUGH);
   const canCreateCollections =
-    user && hasPermission(user, PERMISSIONS.CREATE_COLLECTIONS);
+    user && hasPermission(user, PERMISSIONS.COLLECTIONS_ADD);
 
   // If user can't create collections at all, show error
   if (!canCreateCollections) {

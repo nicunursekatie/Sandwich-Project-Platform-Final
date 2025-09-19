@@ -199,7 +199,7 @@ export default function UserManagementRedesigned() {
   const [editUser, setEditUser] = useState<User | null>(null);
 
   // Check permissions
-  if (!hasPermission(currentUser, PERMISSIONS.MANAGE_USERS)) {
+  if (!hasPermission(currentUser, PERMISSIONS.USERS_EDIT)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Card className="w-full max-w-md text-center">
@@ -221,7 +221,7 @@ export default function UserManagementRedesigned() {
   // Fetch users
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['/api/users'],
-    enabled: hasPermission(currentUser, PERMISSIONS.MANAGE_USERS),
+    enabled: hasPermission(currentUser, PERMISSIONS.USERS_EDIT),
   });
 
   // User management mutations

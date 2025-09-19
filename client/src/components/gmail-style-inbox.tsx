@@ -927,7 +927,7 @@ export default function GmailStyleInbox() {
 
           {/* Kudos Section - Only show in inbox when user has permission */}
           {activeFolder === 'inbox' &&
-            hasPermission(user, PERMISSIONS.VIEW_KUDOS) && (
+            hasPermission(user, PERMISSIONS.KUDOS_VIEW) && (
               <>
                 {/* Unread Kudos Section - Improved Responsiveness */}
                 {kudos && kudos.filter((k: any) => !k.isRead).length > 0 && (

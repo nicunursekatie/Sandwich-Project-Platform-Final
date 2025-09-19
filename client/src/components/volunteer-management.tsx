@@ -75,10 +75,10 @@ export default function VolunteerManagement() {
   const [hostNotes, setHostNotes] = useState('');
 
   // Check permissions
-  const canManage = hasPermission(user, PERMISSIONS.MANAGE_VOLUNTEERS);
-  const canAdd = hasPermission(user, PERMISSIONS.ADD_VOLUNTEERS);
-  const canEdit = hasPermission(user, PERMISSIONS.EDIT_VOLUNTEERS);
-  const canView = hasPermission(user, PERMISSIONS.VIEW_VOLUNTEERS);
+  const canManage = hasPermission(user, PERMISSIONS.VOLUNTEERS_EDIT);
+  const canAdd = hasPermission(user, PERMISSIONS.VOLUNTEERS_ADD);
+  const canEdit = hasPermission(user, PERMISSIONS.VOLUNTEERS_EDIT);
+  const canView = hasPermission(user, PERMISSIONS.VOLUNTEERS_VIEW);
 
   if (!canView) {
     return (

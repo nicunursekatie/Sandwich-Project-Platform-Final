@@ -50,7 +50,7 @@ import type { Recipient } from '@shared/schema';
 export default function RecipientsManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.MANAGE_RECIPIENTS);
+  const canEdit = hasPermission(user, PERMISSIONS.RECIPIENTS_EDIT);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(

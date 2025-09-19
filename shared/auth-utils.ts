@@ -141,78 +141,6 @@ export const PERMISSIONS = {
   // TOOLKIT - General toolkit access
   TOOLKIT_ACCESS: 'TOOLKIT_ACCESS',
 
-  // Legacy support for backwards compatibility
-  ACCESS_HOSTS: 'HOSTS_VIEW', // Legacy
-  ACCESS_RECIPIENTS: 'RECIPIENTS_VIEW', // Legacy
-  ACCESS_DRIVERS: 'DRIVERS_VIEW', // Legacy
-  ACCESS_COLLECTIONS: 'COLLECTIONS_VIEW', // Legacy
-  ACCESS_CHAT: 'CHAT_GENERAL', // Legacy
-  ACCESS_MESSAGES: 'MESSAGES_VIEW', // Legacy
-  ACCESS_PROJECTS: 'PROJECTS_VIEW', // Legacy
-  ACCESS_ANALYTICS: 'ANALYTICS_VIEW', // Legacy
-  ACCESS_MEETINGS: 'MEETINGS_VIEW', // Legacy
-  ACCESS_SUGGESTIONS: 'SUGGESTIONS_VIEW', // Legacy
-  ACCESS_WORK_LOGS: 'WORK_LOGS_VIEW', // Legacy
-  ACCESS_TOOLKIT: 'TOOLKIT_ACCESS', // Legacy
-  MANAGE_USERS: 'USERS_EDIT', // Legacy
-  MANAGE_HOSTS: 'HOSTS_EDIT', // Legacy
-  MANAGE_RECIPIENTS: 'RECIPIENTS_EDIT', // Legacy
-  MANAGE_DRIVERS: 'DRIVERS_EDIT', // Legacy
-  MANAGE_COLLECTIONS: 'COLLECTIONS_EDIT', // Legacy
-  CREATE_COLLECTIONS: 'COLLECTIONS_ADD', // Legacy
-  EDIT_ALL_COLLECTIONS: 'COLLECTIONS_EDIT_ALL', // Legacy
-  DELETE_ALL_COLLECTIONS: 'COLLECTIONS_DELETE_ALL', // Legacy
-  USE_COLLECTION_WALKTHROUGH: 'COLLECTIONS_WALKTHROUGH', // Legacy
-  CREATE_PROJECTS: 'PROJECTS_ADD', // Legacy
-  EDIT_ALL_PROJECTS: 'PROJECTS_EDIT_ALL', // Legacy
-  DELETE_ALL_PROJECTS: 'PROJECTS_DELETE_ALL', // Legacy
-  CREATE_SUGGESTIONS: 'SUGGESTIONS_ADD', // Legacy
-  EDIT_ALL_SUGGESTIONS: 'SUGGESTIONS_EDIT_ALL', // Legacy
-  DELETE_ALL_SUGGESTIONS: 'SUGGESTIONS_DELETE_ALL', // Legacy
-  CREATE_WORK_LOGS: 'WORK_LOGS_ADD', // Legacy
-  VIEW_ALL_WORK_LOGS: 'WORK_LOGS_VIEW_ALL', // Legacy
-  EDIT_ALL_WORK_LOGS: 'WORK_LOGS_EDIT_ALL', // Legacy
-  DELETE_ALL_WORK_LOGS: 'WORK_LOGS_DELETE_ALL', // Legacy
-  SEND_MESSAGES: 'MESSAGES_SEND', // Legacy
-  MODERATE_MESSAGES: 'MESSAGES_MODERATE', // Legacy
-  DIRECT_MESSAGES: 'CHAT_DIRECT', // Legacy
-  GROUP_MESSAGES: 'CHAT_GROUP', // Legacy
-  GENERAL_CHAT: 'CHAT_GENERAL', // Legacy
-  COMMITTEE_CHAT: 'CHAT_GRANTS_COMMITTEE', // Legacy - defaults to grants committee
-  HOST_CHAT: 'CHAT_HOST', // Legacy
-  DRIVER_CHAT: 'CHAT_DRIVER', // Legacy
-  RECIPIENT_CHAT: 'CHAT_RECIPIENT', // Legacy
-  CORE_TEAM_CHAT: 'CHAT_CORE_TEAM', // Legacy
-  SEND_KUDOS: 'KUDOS_SEND', // Legacy
-  RECEIVE_KUDOS: 'KUDOS_RECEIVE', // Legacy
-  VIEW_KUDOS: 'KUDOS_VIEW', // Legacy
-  MANAGE_ALL_KUDOS: 'KUDOS_MANAGE', // Legacy
-  EXPORT_DATA: 'DATA_EXPORT', // Legacy
-  IMPORT_DATA: 'DATA_IMPORT', // Legacy
-  EDIT_DATA: 'DATA_EXPORT', // Legacy (data editing is export functionality)
-  VIEW_ORGANIZATIONS_CATALOG: 'ORGANIZATIONS_VIEW', // Legacy
-  VIEW_EVENT_REQUESTS: 'EVENT_REQUESTS_VIEW', // Legacy
-  ADD_EVENT_REQUESTS: 'EVENT_REQUESTS_ADD', // Legacy
-  EDIT_EVENT_REQUESTS: 'EVENT_REQUESTS_EDIT', // Legacy
-  DELETE_EVENT_REQUESTS: 'EVENT_REQUESTS_DELETE', // Legacy
-  MANAGE_EVENT_REQUESTS: 'EVENT_REQUESTS_EDIT', // Legacy
-  ASSIGN_EVENT_REQUESTS: 'EVENT_REQUESTS_EDIT', // Legacy
-  VIEW_DONATION_TRACKING: 'DISTRIBUTIONS_VIEW', // Legacy
-  ADD_DONATION_TRACKING: 'DISTRIBUTIONS_ADD', // Legacy
-  EDIT_DONATION_TRACKING: 'DISTRIBUTIONS_EDIT', // Legacy
-  DELETE_DONATION_TRACKING: 'DISTRIBUTIONS_DELETE', // Legacy
-  MANAGE_DONATION_TRACKING: 'DISTRIBUTIONS_EDIT', // Legacy
-  VIEW_DOCUMENTS: 'DOCUMENTS_VIEW', // Legacy
-  MANAGE_DOCUMENTS: 'DOCUMENTS_MANAGE', // Legacy
-  ACCESS_DOCUMENTS: 'DOCUMENTS_VIEW', // Legacy
-  MANAGE_MEETINGS: 'MEETINGS_MANAGE', // Legacy
-  MANAGE_SUGGESTIONS: 'SUGGESTIONS_MANAGE', // Legacy
-
-  // Missing legacy mappings that navigation uses
-  VIEW_VOLUNTEERS: 'USERS_VIEW', // Legacy
-  VIEW_WEEKLY_MONITORING: 'ANALYTICS_VIEW', // Legacy
-  ACCESS_WEEKLY_MONITORING: 'ANALYTICS_VIEW', // Legacy
-  VIEW_GOVERNANCE: 'DOCUMENTS_VIEW', // Legacy
 } as const;
 
 // Note: This application uses individual permission assignment, not role-based defaults
@@ -396,20 +324,20 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case USER_ROLES.DEMO_USER:
       return [
         // Can view all main sections but cannot edit/delete/manage anything
-        PERMISSIONS.ACCESS_HOSTS,
-        PERMISSIONS.ACCESS_RECIPIENTS,
-        PERMISSIONS.ACCESS_DRIVERS,
+        PERMISSIONS.HOSTS_VIEW,
+        PERMISSIONS.RECIPIENTS_VIEW,
+        PERMISSIONS.DRIVERS_VIEW,
         PERMISSIONS.USERS_VIEW,
         PERMISSIONS.DISTRIBUTIONS_VIEW,
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_MEETINGS,
-        PERMISSIONS.ACCESS_ANALYTICS,
-        PERMISSIONS.ACCESS_PROJECTS,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
-        PERMISSIONS.ACCESS_WORK_LOGS,
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.MEETINGS_VIEW,
+        PERMISSIONS.ANALYTICS_VIEW,
+        PERMISSIONS.PROJECTS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
+        PERMISSIONS.WORK_LOGS_VIEW,
         PERMISSIONS.ANALYTICS_VIEW,
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.ADMIN_ACCESS,
@@ -425,32 +353,32 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
         // Can receive kudos but cannot send
         PERMISSIONS.RECEIVE_KUDOS,
-        PERMISSIONS.VIEW_KUDOS,
+        PERMISSIONS.KUDOS_VIEW,
 
         // Export data for reporting
-        PERMISSIONS.EXPORT_DATA,
+        PERMISSIONS.DATA_EXPORT,
       ];
 
     case USER_ROLES.VIEWER:
       return [
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_PROJECTS,
-        PERMISSIONS.ACCESS_SUGGESTIONS,
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.PROJECTS_VIEW,
+        PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
-        PERMISSIONS.VIEW_KUDOS, // Viewers can only view kudos, not send or receive
+        PERMISSIONS.KUDOS_VIEW, // Viewers can only view kudos, not send or receive
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
       ];
 
     case USER_ROLES.WORK_LOGGER:
       return [
-        PERMISSIONS.ACCESS_COLLECTIONS,
-        PERMISSIONS.ACCESS_CHAT,
-        PERMISSIONS.ACCESS_MESSAGES,
-        PERMISSIONS.ACCESS_TOOLKIT,
-        PERMISSIONS.ACCESS_PROJECTS,
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.MESSAGES_VIEW,
+        PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.GENERAL_CHAT,
         'log_work',
       ];
@@ -537,13 +465,13 @@ export function canEditCollection(user: any, collection: any): boolean {
   // Super admins and users with EDIT_ALL_COLLECTIONS can edit all collections
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.EDIT_ALL_COLLECTIONS)
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_ALL)
   )
     return true;
 
   // Users with CREATE_COLLECTIONS can edit collections they created
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_COLLECTIONS) &&
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_ADD) &&
     (collection?.createdBy === user.id || collection?.created_by === user.id)
   )
     return true;
@@ -558,13 +486,13 @@ export function canDeleteCollection(user: any, collection: any): boolean {
   // Super admins and users with DELETE_ALL_COLLECTIONS can delete all collections
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.DELETE_ALL_COLLECTIONS)
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_ALL)
   )
     return true;
 
   // Users with CREATE_COLLECTIONS can delete collections they created
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_COLLECTIONS) &&
+    user.permissions.includes(PERMISSIONS.COLLECTIONS_ADD) &&
     (collection?.createdBy === user.id || collection?.created_by === user.id)
   )
     return true;
@@ -579,20 +507,20 @@ export function canEditProject(user: any, project: any): boolean {
   // Super admins and users with EDIT_ALL_PROJECTS or MANAGE_ALL_PROJECTS can edit all projects
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.EDIT_ALL_PROJECTS) ||
+    user.permissions.includes(PERMISSIONS.PROJECTS_EDIT_ALL) ||
     user.permissions.includes('MANAGE_ALL_PROJECTS')
   )
     return true;
 
   // Users with CREATE_PROJECTS can edit projects they created
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_PROJECTS) &&
+    user.permissions.includes(PERMISSIONS.PROJECTS_ADD) &&
     (project?.createdBy === user.id || project?.created_by === user.id)
   )
     return true;
 
   // Users with CREATE_PROJECTS can edit projects they're assigned to
-  if (user.permissions.includes(PERMISSIONS.CREATE_PROJECTS)) {
+  if (user.permissions.includes(PERMISSIONS.PROJECTS_ADD)) {
     // Check multi-assignee IDs
     if (project?.assigneeIds && Array.isArray(project.assigneeIds)) {
       if (project.assigneeIds.includes(user.id)) return true;
@@ -625,13 +553,13 @@ export function canDeleteProject(user: any, project: any): boolean {
   // Super admins and users with DELETE_ALL_PROJECTS can delete all projects
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.DELETE_ALL_PROJECTS)
+    user.permissions.includes(PERMISSIONS.PROJECTS_DELETE_ALL)
   )
     return true;
 
   // Users with CREATE_PROJECTS can only delete projects they created (not assigned ones)
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_PROJECTS) &&
+    user.permissions.includes(PERMISSIONS.PROJECTS_ADD) &&
     (project?.createdBy === user.id || project?.created_by === user.id)
   )
     return true;
@@ -692,13 +620,13 @@ export function canEditWorkLog(user: any, workLog: any): boolean {
   // Super admins and users with EDIT_ALL_WORK_LOGS can edit all work logs
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.EDIT_ALL_WORK_LOGS)
+    user.permissions.includes(PERMISSIONS.WORK_LOGS_EDIT_ALL)
   )
     return true;
 
   // Users with CREATE_WORK_LOGS can edit work logs they created
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_WORK_LOGS) &&
+    user.permissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
     (workLog?.createdBy === user.id ||
       workLog?.created_by === user.id ||
       workLog?.userId === user.id)
@@ -715,13 +643,13 @@ export function canDeleteWorkLog(user: any, workLog: any): boolean {
   // Super admins and users with DELETE_ALL_WORK_LOGS can delete all work logs
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.DELETE_ALL_WORK_LOGS)
+    user.permissions.includes(PERMISSIONS.WORK_LOGS_DELETE_ALL)
   )
     return true;
 
   // Users with CREATE_WORK_LOGS can delete work logs they created
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_WORK_LOGS) &&
+    user.permissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
     (workLog?.createdBy === user.id ||
       workLog?.created_by === user.id ||
       workLog?.userId === user.id)

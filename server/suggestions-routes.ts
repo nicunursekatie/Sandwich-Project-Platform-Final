@@ -200,7 +200,7 @@ router.delete(
 // Upvote suggestion
 router.post(
   '/:id/upvote',
-  requirePermission(PERMISSIONS.ACCESS_SUGGESTIONS),
+  requirePermission(PERMISSIONS.SUGGESTIONS_VIEW),
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -219,7 +219,7 @@ router.post(
 // Get responses for a suggestion
 router.get(
   '/:id/responses',
-  requirePermission(PERMISSIONS.ACCESS_SUGGESTIONS),
+  requirePermission(PERMISSIONS.SUGGESTIONS_VIEW),
   async (req, res) => {
     try {
       const suggestionId = parseInt(req.params.id);
@@ -253,7 +253,7 @@ router.post(
           : null,
         isAdminResponse:
           (req as any).user?.permissions?.includes(
-            PERMISSIONS.MANAGE_SUGGESTIONS
+            PERMISSIONS.SUGGESTIONS_MANAGE
           ) || false,
       };
 

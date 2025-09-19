@@ -131,7 +131,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Distribution Tracking',
     icon: Truck,
     href: 'donation-tracking',
-    permission: PERMISSIONS.VIEW_DONATION_TRACKING,
+    permission: PERMISSIONS.DISTRIBUTIONS_VIEW,
     group: 'operations',
   },
   {
@@ -204,7 +204,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Weekly Monitoring',
     icon: Clock,
     href: 'weekly-monitoring',
-    permission: PERMISSIONS.ACCESS_WEEKLY_MONITORING,
+    permission: PERMISSIONS.ANALYTICS_VIEW,
     group: 'planning',
   },
 
@@ -228,7 +228,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Toolkit',
     icon: FolderOpen,
     href: 'toolkit',
-    permission: PERMISSIONS.ACCESS_TOOLKIT,
+    permission: PERMISSIONS.TOOLKIT_ACCESS,
     group: 'documentation',
   },
   {

@@ -41,7 +41,7 @@ import {
 function canLogWork(req: any) {
   // Check for CREATE_WORK_LOGS permission or admin roles for backwards compatibility
   return (
-    hasPermission(req.user, PERMISSIONS.CREATE_WORK_LOGS) ||
+    hasPermission(req.user, PERMISSIONS.WORK_LOGS_ADD) ||
     req.user?.role === 'admin' ||
     req.user?.role === 'super_admin'
   );

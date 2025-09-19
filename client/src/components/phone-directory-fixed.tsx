@@ -223,17 +223,17 @@ function PhoneDirectoryFixed() {
   const { toast } = useToast();
 
   // Permissions
-  const canViewHosts = hasPermission(user, PERMISSIONS.ACCESS_HOSTS);
-  const canViewRecipients = hasPermission(user, PERMISSIONS.ACCESS_RECIPIENTS);
-  const canViewDrivers = hasPermission(user, PERMISSIONS.ACCESS_DRIVERS);
+  const canViewHosts = hasPermission(user, PERMISSIONS.HOSTS_VIEW);
+  const canViewRecipients = hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW);
+  const canViewDrivers = hasPermission(user, PERMISSIONS.DRIVERS_VIEW);
   const canViewVolunteers = hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS);
   const canEditContacts =
     hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ||
-    hasPermission(user, PERMISSIONS.MANAGE_USERS) ||
+    hasPermission(user, PERMISSIONS.USERS_EDIT) ||
     hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY) ||
-    hasPermission(user, PERMISSIONS.EDIT_ALL_COLLECTIONS) ||
+    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL) ||
     hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ||
-    hasPermission(user, PERMISSIONS.VIEW_HOSTS);
+    hasPermission(user, PERMISSIONS.HOSTS_VIEW);
 
   // Tabs
   const [activeTab, setActiveTab] = useState<string>('hosts');

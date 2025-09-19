@@ -925,7 +925,7 @@ export function setupTempAuth(app: Express) {
 
         // Update password
         await storage.updateUser(targetUser.id, {
-          metadata: { ...targetUser.metadata, password: newPassword },
+          metadata: { ...(targetUser.metadata as any), password: newPassword },
           updatedAt: new Date(),
         });
 
@@ -982,7 +982,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         };
 
         // Force session save to ensure persistence
-        req.session.save((err) => {
+        req.session.save((err: unknown) => {
           if (err) console.error('Session save error:', err);
         });
       }
@@ -1002,13 +1002,14 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       console.log(
         `✅ Authentication successful for ${freshUser.email} (${freshUser.role})`
       );
+      const permCount = Array.isArray(freshUser.permissions) ? freshUser.permissions.length : 0;
       console.log(
-        `✅ req.user set with ${freshUser.permissions?.length || 0} permissions`
+        `✅ req.user set with ${permCount} permissions`
       );
     } else {
       console.log(`❌ User not found or inactive: ${req.session.user.email}`);
       // User not found in database or inactive, clear invalid session
-      req.session.destroy((err) => {
+      req.session.destroy((err: unknown) => {
         if (err) console.error('Session destroy error:', err);
       });
       return res.status(401).json({ message: 'Unauthorized' });
@@ -1061,10 +1062,17 @@ export async function initializeTempAuth() {
       );
     }
   } catch (error) {
-    console.log(
-      '❌ Could not create default admin user (using fallback):',
-      error.message
-    );
+    if (error instanceof Error) {
+      console.log(
+        '❌ Could not create default admin user (using fallback):',
+        error.message
+      );
+    } else {
+      console.log(
+        '❌ Could not create default admin user (using fallback):',
+        error
+      );
+    }
   }
 
   // Setup default committees and committee member user

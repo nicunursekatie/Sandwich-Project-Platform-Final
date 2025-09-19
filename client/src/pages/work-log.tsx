@@ -12,14 +12,14 @@ export default function WorkLogPage() {
   const { user } = useAuth();
 
   // Simplified permissions: CREATE_WORK_LOGS automatically includes edit/delete own permissions
-  const canCreateLogs = hasPermission(user, PERMISSIONS.CREATE_WORK_LOGS);
-  const canEditOwnLogs = hasPermission(user, PERMISSIONS.CREATE_WORK_LOGS); // Automatically included
-  const canDeleteOwnLogs = hasPermission(user, PERMISSIONS.CREATE_WORK_LOGS); // Automatically included
-  const canViewAllLogs = hasPermission(user, PERMISSIONS.VIEW_ALL_WORK_LOGS);
-  const canEditAllLogs = hasPermission(user, PERMISSIONS.EDIT_ALL_WORK_LOGS);
+  const canCreateLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD);
+  const canEditOwnLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD); // Automatically included
+  const canDeleteOwnLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD); // Automatically included
+  const canViewAllLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_VIEW);
+  const canEditAllLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_EDIT_ALL);
   const canDeleteAllLogs = hasPermission(
     user,
-    PERMISSIONS.DELETE_ALL_WORK_LOGS
+    PERMISSIONS.WORK_LOGS_DELETE_ALL
   );
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState(0);

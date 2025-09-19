@@ -1612,7 +1612,7 @@ router.get('/organizations/all', async (req, res) => {
 router.post('/organizations', async (req, res) => {
   try {
     const user = req.user;
-    if (!user || !hasPermission(user, PERMISSIONS.MANAGE_EVENT_REQUESTS)) {
+    if (!user || !hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT)) {
       return res.status(403).json({ message: 'Insufficient permissions' });
     }
 
@@ -1622,7 +1622,7 @@ router.post('/organizations', async (req, res) => {
     await logActivity(
       req,
       res,
-      PERMISSIONS.MANAGE_EVENT_REQUESTS,
+      PERMISSIONS.EVENT_REQUESTS_EDIT,
       `Created organization: ${newOrganization.name}`
     );
     res.status(201).json(newOrganization);
@@ -1685,7 +1685,7 @@ router.post(
       await logActivity(
         req,
         res,
-        PERMISSIONS.MANAGE_EVENT_REQUESTS,
+        PERMISSIONS.EVENT_REQUESTS_EDIT,
         `Smart-synced ${
           result.synced || 0
         } event requests to Google Sheets (preserving manual columns N+)`
@@ -1726,7 +1726,7 @@ router.post(
       await logActivity(
         req,
         res,
-        PERMISSIONS.MANAGE_EVENT_REQUESTS,
+        PERMISSIONS.EVENT_REQUESTS_EDIT,
         `Synced from Google Sheets: ${
           result.created || 0
         } created, ${result.updated || 0} updated`
@@ -1800,9 +1800,9 @@ router.get('/orgs-catalog-test', async (req, res) => {
       sessionUser: req.session?.user?.email || 'none',
       userPermissionsCount: user?.permissions?.length || 0,
       hasViewOrgsPermission: user
-        ? hasPermission(user, PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG)
+        ? hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW)
         : false,
-      permissionConstant: PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
+      permissionConstant: PERMISSIONS.ORGANIZATIONS_VIEW,
     });
 
     // TEMP: Completely bypass auth for testing
@@ -1854,7 +1854,7 @@ router.get('/orgs-catalog-test', async (req, res) => {
     logActivity(
       req,
       res,
-      PERMISSIONS.VIEW_ORGANIZATIONS_CATALOG,
+      PERMISSIONS.ORGANIZATIONS_VIEW,
       `Retrieved organizations catalog: ${organizations.length} organizations`
     );
     res.json(organizations);

@@ -641,7 +641,7 @@ export default function WishlistPage() {
         {user &&
           hasPermission(
             (user as any)?.permissions || 0,
-            PERMISSIONS.MANAGE_WISHLIST
+            PERMISSIONS.WISHLIST_MANAGE
           ) && (
             <Card>
               <CardHeader>

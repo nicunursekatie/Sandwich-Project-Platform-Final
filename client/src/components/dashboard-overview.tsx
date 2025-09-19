@@ -242,8 +242,8 @@ export default function DashboardOverview({
         </div>
 
         {/* Collection Call-to-Action */}
-        {(hasPermission(user, PERMISSIONS.CREATE_COLLECTIONS) ||
-          hasPermission(user, PERMISSIONS.MANAGE_COLLECTIONS)) && (
+        {(hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
+          hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT)) && (
           <div className="bg-white rounded-xl mx-4 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="text-center">
               <div className="mb-4 sm:mb-6">

@@ -38,7 +38,7 @@ export default function ChatMessageComponent({
   const [editContent, setEditContent] = useState(message.content);
 
   const isOwnMessage = user?.id === message.userId;
-  const isAdmin = hasPermission(user, PERMISSIONS.MANAGE_USERS);
+  const isAdmin = hasPermission(user, PERMISSIONS.USERS_EDIT);
   const canEdit = isOwnMessage;
   const canDelete = isOwnMessage || isAdmin;
 

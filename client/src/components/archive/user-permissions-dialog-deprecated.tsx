@@ -81,28 +81,28 @@ const PERMISSION_CATEGORIES = [
       "Authority to edit/delete other users' content (you automatically own your own content)",
     permissions: [
       {
-        key: PERMISSIONS.EDIT_ALL_COLLECTIONS,
+        key: PERMISSIONS.COLLECTIONS_EDIT_ALL,
         label: 'Edit All Collections',
         description: 'Edit any collection entry regardless of who created it',
       },
       {
-        key: PERMISSIONS.DELETE_ALL_COLLECTIONS,
+        key: PERMISSIONS.COLLECTIONS_DELETE_ALL,
         label: 'Delete All Collections',
         description: 'Delete any collection entry regardless of who created it',
       },
       {
-        key: PERMISSIONS.CREATE_PROJECTS,
+        key: PERMISSIONS.PROJECTS_ADD,
         label: 'Create Projects',
         description:
           'Create new projects + edit/delete own projects + edit projects where assigned',
       },
       {
-        key: PERMISSIONS.EDIT_ALL_PROJECTS,
+        key: PERMISSIONS.PROJECTS_EDIT_ALL,
         label: 'Edit All Projects',
         description: 'Edit any project regardless of ownership',
       },
       {
-        key: PERMISSIONS.DELETE_ALL_PROJECTS,
+        key: PERMISSIONS.PROJECTS_DELETE_ALL,
         label: 'Delete All Projects',
         description: 'Delete any project regardless of ownership',
       },
@@ -116,17 +116,17 @@ const PERMISSION_CATEGORIES = [
       'Authority to manage organizational data (hosts, recipients, drivers)',
     permissions: [
       {
-        key: PERMISSIONS.MANAGE_RECIPIENTS,
+        key: PERMISSIONS.RECIPIENTS_EDIT,
         label: 'Manage Recipients',
         description: 'Edit recipient information',
       },
       {
-        key: PERMISSIONS.MANAGE_HOSTS,
+        key: PERMISSIONS.HOSTS_EDIT,
         label: 'Manage Hosts',
         description: 'Edit host information',
       },
       {
-        key: PERMISSIONS.MANAGE_DRIVERS,
+        key: PERMISSIONS.DRIVERS_EDIT,
         label: 'Manage Drivers',
         description: 'Edit driver information',
       },
@@ -139,12 +139,12 @@ const PERMISSION_CATEGORIES = [
     description: 'Access to view different sections and data',
     permissions: [
       {
-        key: PERMISSIONS.VIEW_COLLECTIONS,
+        key: PERMISSIONS.COLLECTIONS_VIEW,
         label: 'View Collections',
         description: 'Access collection logs',
       },
       {
-        key: PERMISSIONS.VIEW_PROJECTS,
+        key: PERMISSIONS.PROJECTS_VIEW,
         label: 'View Projects',
         description: 'Access project information',
       },
@@ -154,7 +154,7 @@ const PERMISSION_CATEGORIES = [
         description: 'Access analytics dashboards',
       },
       {
-        key: PERMISSIONS.VIEW_REPORTS,
+        key: PERMISSIONS.ANALYTICS_VIEW,
         label: 'View Reports',
         description: 'Access and generate reports',
       },
@@ -230,12 +230,12 @@ const PERMISSION_CATEGORIES = [
         description: 'Receive recognition kudos from other users',
       },
       {
-        key: PERMISSIONS.VIEW_KUDOS,
+        key: PERMISSIONS.KUDOS_VIEW,
         label: 'View Kudos',
         description: 'View kudos messages in inbox',
       },
       {
-        key: PERMISSIONS.MANAGE_ALL_KUDOS,
+        key: PERMISSIONS.KUDOS_MANAGE,
         label: 'Manage All Kudos',
         description: 'Administrative control over all kudos (view, delete)',
       },
@@ -248,17 +248,17 @@ const PERMISSION_CATEGORIES = [
     description: 'System management and advanced administrative functions',
     permissions: [
       {
-        key: PERMISSIONS.MANAGE_USERS,
+        key: PERMISSIONS.USERS_EDIT,
         label: 'Full User Management',
         description: 'Complete control over user accounts',
       },
       {
-        key: PERMISSIONS.MANAGE_ANNOUNCEMENTS,
+        key: PERMISSIONS.ANNOUNCEMENTS_MANAGE,
         label: 'Manage Announcements',
         description: 'Create and edit system announcements',
       },
       {
-        key: PERMISSIONS.MANAGE_SUGGESTIONS,
+        key: PERMISSIONS.SUGGESTIONS_MANAGE,
         label: 'Manage All Suggestions',
         description: 'Review and update suggestion workflow',
       },

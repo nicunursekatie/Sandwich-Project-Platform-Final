@@ -103,23 +103,23 @@ export default function SandwichCollectionLog() {
 
   // Check user permissions for creating collections (automatically grants edit/delete of own)
   const canCreateCollections =
-    hasPermission(user, PERMISSIONS.CREATE_COLLECTIONS) ||
-    hasPermission(user, PERMISSIONS.MANAGE_COLLECTIONS);
+    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
+    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT);
   const canEditAllCollections = hasPermission(
     user,
-    PERMISSIONS.EDIT_ALL_COLLECTIONS
+    PERMISSIONS.COLLECTIONS_EDIT_ALL
   );
   const canDeleteAllCollections = hasPermission(
     user,
-    PERMISSIONS.DELETE_ALL_COLLECTIONS
+    PERMISSIONS.COLLECTIONS_DELETE_ALL
   );
   // Simplified approach: CREATE_COLLECTIONS automatically includes edit/delete own permissions
   const canEditData =
-    hasPermission(user, PERMISSIONS.CREATE_COLLECTIONS) ||
-    hasPermission(user, PERMISSIONS.EDIT_ALL_COLLECTIONS);
+    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
+    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL);
   const canDeleteData =
-    hasPermission(user, PERMISSIONS.CREATE_COLLECTIONS) ||
-    hasPermission(user, PERMISSIONS.DELETE_ALL_COLLECTIONS);
+    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
+    hasPermission(user, PERMISSIONS.COLLECTIONS_DELETE_ALL);
   const [editingCollection, setEditingCollection] =
     useState<SandwichCollection | null>(null);
   const [showDuplicateAnalysis, setShowDuplicateAnalysis] = useState(false);
