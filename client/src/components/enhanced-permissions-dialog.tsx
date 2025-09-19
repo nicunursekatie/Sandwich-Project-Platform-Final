@@ -259,6 +259,31 @@ const RESOURCE_PERMISSIONS = [
         label: 'Mark primary contact completed',
         key: 'EVENT_REQUESTS_COMPLETE_CONTACT',
       },
+      {
+        action: 'INLINE_EDIT_TIMES',
+        label: 'Inline edit event/pickup times',
+        key: 'EVENT_REQUESTS_INLINE_EDIT_TIMES',
+      },
+      {
+        action: 'INLINE_EDIT_ADDRESS',
+        label: 'Inline edit event address',
+        key: 'EVENT_REQUESTS_INLINE_EDIT_ADDRESS',
+      },
+      {
+        action: 'INLINE_EDIT_SANDWICHES',
+        label: 'Inline edit sandwich details',
+        key: 'EVENT_REQUESTS_INLINE_EDIT_SANDWICHES',
+      },
+      {
+        action: 'INLINE_EDIT_STAFFING',
+        label: 'Inline edit staffing needs',
+        key: 'EVENT_REQUESTS_INLINE_EDIT_STAFFING',
+      },
+      {
+        action: 'INLINE_EDIT_LOGISTICS',
+        label: 'Inline edit logistics (refrigeration)',
+        key: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS',
+      },
     ],
   },
   {

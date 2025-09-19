@@ -384,7 +384,7 @@ export default function RequestCard({
                                 <span className="text-base font-medium">
                                   {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
                                 </span>
-                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_TIMES) && (
                                   <Button variant="ghost" size="icon" onClick={(e) => {
                                     e.stopPropagation();
                                     startEditing(request.id, 'eventStartTime', request.eventStartTime || '');
@@ -419,7 +419,7 @@ export default function RequestCard({
                                 <span className="text-base font-medium">
                                   {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                                 </span>
-                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_TIMES) && (
                                   <Button variant="ghost" size="icon" onClick={(e) => {
                                     e.stopPropagation();
                                     startEditing(request.id, 'eventEndTime', request.eventEndTime || '');
@@ -455,7 +455,7 @@ export default function RequestCard({
                               <span className="text-base font-medium">
                                 {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
                               </span>
-                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_TIMES) && (
                                 <Button variant="ghost" size="icon" onClick={(e) => {
                                   e.stopPropagation();
                                   startEditing(request.id, 'pickupTime', request.pickupTime || '');
@@ -499,7 +499,7 @@ export default function RequestCard({
                                     </a>
                                   ) : <span className="text-[#007E8C]">Not specified</span>}
                                 </span>
-                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_ADDRESS) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
                                     e.stopPropagation();
                                     startEditing(request.id, 'eventAddress', request.eventAddress || '');
@@ -546,7 +546,7 @@ export default function RequestCard({
                               <span className="font-semibold text-base text-[#236383]">
                                 {request.estimatedSandwichCount || 0} sandwiches
                               </span>
-                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_SANDWICHES) && (
                                 <Button size="sm" variant="ghost" onClick={(e) => {
                                   e.stopPropagation();
                                   startEditing(request.id, 'estimatedSandwichCount', request.estimatedSandwichCount?.toString() || '0');
@@ -615,14 +615,14 @@ export default function RequestCard({
                               <span className="font-bold text-[#236383] text-base">
                                 {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                               </span>
-                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                <Button size="sm" variant="ghost" onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
-                                }} className="h-4 w-4 p-0">
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                              )}
+                            {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_SANDWICHES) && (
+                              <Button size="sm" variant="ghost" onClick={(e) => {
+                                e.stopPropagation();
+                                startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
+                              }} className="h-4 w-4 p-0">
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                            )}
                             </div>
                           )}
                         </div>
@@ -689,7 +689,7 @@ export default function RequestCard({
                                 {request.hasRefrigeration === true ? 'Yes' : 
                                  request.hasRefrigeration === false ? 'No' : 'Unknown'}
                               </span>
-                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_LOGISTICS) && (
                                 <Button size="sm" variant="ghost" onClick={(e) => {
                                   e.stopPropagation();
                                   const currentValue = request.hasRefrigeration === true ? 'true' : 
@@ -741,7 +741,7 @@ export default function RequestCard({
                                 <span className="font-semibold text-base text-[#236383]">
                                   {request.driversNeeded || 0} needed
                                 </span>
-                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
                                     e.stopPropagation();
                                     startEditing(request.id, 'driversNeeded', request.driversNeeded?.toString() || '0');
@@ -762,7 +762,7 @@ export default function RequestCard({
                                 return (
                                   <div key={driverId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium text-[#236383]">{driverName}</span>
-                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                       <div className="flex items-center space-x-1">
                                         <Button
                                           size="sm"
@@ -795,7 +795,7 @@ export default function RequestCard({
                           )}
                           
                           {/* Driver Assignment Actions */}
-                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
@@ -876,7 +876,7 @@ export default function RequestCard({
                                 <span className="font-semibold text-base">
                                   {request.speakersNeeded || 0} needed
                                 </span>
-                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
                                     e.stopPropagation();
                                     startEditing(request.id, 'speakersNeeded', request.speakersNeeded?.toString() || '0');
@@ -897,7 +897,7 @@ export default function RequestCard({
                                 return (
                                   <div key={speakerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium text-[#236383]">{speakerName}</span>
-                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                       <div className="flex items-center space-x-1">
                                         <Button
                                           size="sm"
@@ -930,7 +930,7 @@ export default function RequestCard({
                           )}
                           
                           {/* Speaker Assignment Actions */}
-                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
@@ -990,7 +990,7 @@ export default function RequestCard({
                                 <span className="font-semibold text-base">
                                   {request.volunteersNeeded || 0} needed
                                 </span>
-                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                   <Button size="sm" variant="ghost" onClick={(e) => {
                                     e.stopPropagation();
                                     startEditing(request.id, 'volunteersNeeded', request.volunteersNeeded?.toString() || '0');
@@ -1011,7 +1011,7 @@ export default function RequestCard({
                                 return (
                                   <div key={volunteerId} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <span className="text-sm font-medium text-[#236383]">{volunteerName}</span>
-                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                                       <div className="flex items-center space-x-1">
                                         <Button
                                           size="sm"
@@ -1044,7 +1044,7 @@ export default function RequestCard({
                           )}
                           
                           {/* Volunteer Assignment Actions */}
-                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"

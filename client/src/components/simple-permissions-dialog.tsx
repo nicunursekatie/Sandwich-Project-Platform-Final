@@ -144,7 +144,7 @@ const PERMISSION_GROUPS = [
         description: 'View suggestion portal',
       },
       {
-        key: PERMISSIONS.CREATE_SUGGESTIONS,
+        key: PERMISSIONS.SUGGESTIONS_ADD,
         label: 'Create Suggestions',
         icon: Lightbulb,
         description:
@@ -157,13 +157,13 @@ const PERMISSION_GROUPS = [
         description: 'Review and respond to all suggestions (admin level)',
       },
       {
-        key: PERMISSIONS.EDIT_ALL_SUGGESTIONS,
+        key: PERMISSIONS.SUGGESTIONS_EDIT_ALL,
         label: 'Edit All Suggestions',
         icon: Shield,
         description: 'Edit any suggestion (admin level)',
       },
       {
-        key: PERMISSIONS.DELETE_ALL_SUGGESTIONS,
+        key: PERMISSIONS.SUGGESTIONS_DELETE_ALL,
         label: 'Delete All Suggestions',
         icon: Shield,
         description: 'Delete any suggestion (admin level)',
@@ -199,6 +199,62 @@ const PERMISSION_GROUPS = [
         label: 'Delete All Work Logs',
         icon: Shield,
         description: 'Delete any work log entry (admin level)',
+      },
+
+      // Event Requests
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_VIEW,
+        label: 'View Event Requests',
+        icon: Eye,
+        description: 'View event request submissions',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_ADD,
+        label: 'Submit Event Requests',
+        icon: Calendar,
+        description: 'Submit new event requests',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_EDIT,
+        label: 'Edit Event Requests',
+        icon: Edit,
+        description: 'Edit event request details',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_DELETE,
+        label: 'Delete Event Requests',
+        icon: Shield,
+        description: 'Delete event requests (admin level)',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_TIMES,
+        label: 'Inline Edit Event Times',
+        icon: Clock,
+        description: 'Edit event/pickup times directly on cards',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_ADDRESS,
+        label: 'Inline Edit Event Address',
+        icon: MapPin,
+        description: 'Edit event address directly on cards',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_SANDWICHES,
+        label: 'Inline Edit Sandwich Details',
+        icon: Package,
+        description: 'Edit sandwich count/types directly on cards',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING,
+        label: 'Inline Edit Staffing Needs',
+        icon: Users,
+        description: 'Edit driver/speaker/volunteer needs on cards',
+      },
+      {
+        key: PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_LOGISTICS,
+        label: 'Inline Edit Logistics',
+        icon: Settings,
+        description: 'Edit refrigeration and logistics on cards',
       },
     ],
   },

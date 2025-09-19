@@ -73,6 +73,13 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_DELETE_CARD: 'EVENT_REQUESTS_DELETE_CARD', // Delete via card delete buttons
   EVENT_REQUESTS_SYNC: 'EVENT_REQUESTS_SYNC', // Google Sheets sync
   EVENT_REQUESTS_COMPLETE_CONTACT: 'EVENT_REQUESTS_COMPLETE_CONTACT', // Mark primary contact as completed
+  
+  // EVENT_REQUESTS - Inline editing permissions for specific fields
+  EVENT_REQUESTS_INLINE_EDIT_TIMES: 'EVENT_REQUESTS_INLINE_EDIT_TIMES', // Edit event/pickup times inline
+  EVENT_REQUESTS_INLINE_EDIT_ADDRESS: 'EVENT_REQUESTS_INLINE_EDIT_ADDRESS', // Edit event address inline
+  EVENT_REQUESTS_INLINE_EDIT_SANDWICHES: 'EVENT_REQUESTS_INLINE_EDIT_SANDWICHES', // Edit sandwich count/types inline
+  EVENT_REQUESTS_INLINE_EDIT_STAFFING: 'EVENT_REQUESTS_INLINE_EDIT_STAFFING', // Edit drivers/speakers/volunteers needed inline
+  EVENT_REQUESTS_INLINE_EDIT_LOGISTICS: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS', // Edit refrigeration and other logistics inline
 
   // MESSAGES - Messaging system
   MESSAGES_VIEW: 'MESSAGES_VIEW',
@@ -346,15 +353,15 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.TOOLKIT_ACCESS,
 
         // Chat permissions (read-only)
-        PERMISSIONS.GENERAL_CHAT,
-        PERMISSIONS.COMMITTEE_CHAT,
-        PERMISSIONS.HOST_CHAT,
-        PERMISSIONS.DRIVER_CHAT,
-        PERMISSIONS.RECIPIENT_CHAT,
-        PERMISSIONS.CORE_TEAM_CHAT,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_GRANTS_COMMITTEE,
+        PERMISSIONS.CHAT_HOST,
+        PERMISSIONS.CHAT_DRIVER,
+        PERMISSIONS.CHAT_RECIPIENT,
+        PERMISSIONS.CHAT_CORE_TEAM,
 
         // Can receive kudos but cannot send
-        PERMISSIONS.RECEIVE_KUDOS,
+        PERMISSIONS.KUDOS_RECEIVE,
         PERMISSIONS.KUDOS_VIEW,
 
         // Export data for reporting
@@ -368,7 +375,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.COLLECTIONS_VIEW,
-        PERMISSIONS.CREATE_SUGGESTIONS, // Can create suggestions (automatically can edit/delete own)
+        PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.KUDOS_VIEW, // Viewers can only view kudos, not send or receive
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
@@ -381,7 +388,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.PROJECTS_VIEW,
-        PERMISSIONS.GENERAL_CHAT,
+        PERMISSIONS.CHAT_GENERAL,
         'log_work',
       ];
 
@@ -392,18 +399,18 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
 // Chat room to permission mapping
 export const CHAT_PERMISSIONS = {
-  general: PERMISSIONS.GENERAL_CHAT,
-  committee: PERMISSIONS.COMMITTEE_CHAT,
-  host: PERMISSIONS.HOST_CHAT, // Fixed: singular to match frontend
-  hosts: PERMISSIONS.HOST_CHAT, // Keep plural for backwards compatibility
-  driver: PERMISSIONS.DRIVER_CHAT, // Fixed: singular to match frontend
-  drivers: PERMISSIONS.DRIVER_CHAT, // Keep plural for backwards compatibility
-  recipient: PERMISSIONS.RECIPIENT_CHAT,
-  recipients: PERMISSIONS.RECIPIENT_CHAT,
-  core_team: PERMISSIONS.CORE_TEAM_CHAT,
-  'core-team': PERMISSIONS.CORE_TEAM_CHAT, // Also support kebab-case from frontend
-  direct: PERMISSIONS.DIRECT_MESSAGES,
-  groups: PERMISSIONS.GROUP_MESSAGES,
+  general: PERMISSIONS.CHAT_GENERAL,
+  committee: PERMISSIONS.CHAT_GRANTS_COMMITTEE,
+  host: PERMISSIONS.CHAT_HOST, // Fixed: singular to match frontend
+  hosts: PERMISSIONS.CHAT_HOST, // Keep plural for backwards compatibility
+  driver: PERMISSIONS.CHAT_DRIVER, // Fixed: singular to match frontend
+  drivers: PERMISSIONS.CHAT_DRIVER, // Keep plural for backwards compatibility
+  recipient: PERMISSIONS.CHAT_RECIPIENT,
+  recipients: PERMISSIONS.CHAT_RECIPIENT,
+  core_team: PERMISSIONS.CHAT_CORE_TEAM,
+  'core-team': PERMISSIONS.CHAT_CORE_TEAM, // Also support kebab-case from frontend
+  direct: PERMISSIONS.CHAT_DIRECT,
+  groups: PERMISSIONS.CHAT_GROUP,
 } as const;
 
 // Function to check if user has access to a specific chat room
@@ -560,13 +567,13 @@ export function canEditSuggestion(user: any, suggestion: any): boolean {
   // Super admins and users with EDIT_ALL_SUGGESTIONS can edit all suggestions
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.EDIT_ALL_SUGGESTIONS)
+    user.permissions.includes(PERMISSIONS.SUGGESTIONS_EDIT_ALL)
   )
     return true;
 
   // Users with CREATE_SUGGESTIONS can edit suggestions they created
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_SUGGESTIONS) &&
+    user.permissions.includes(PERMISSIONS.SUGGESTIONS_ADD) &&
     (suggestion?.createdBy === user.id ||
       suggestion?.created_by === user.id ||
       suggestion?.submittedBy === user.id)
@@ -583,13 +590,13 @@ export function canDeleteSuggestion(user: any, suggestion: any): boolean {
   // Super admins and users with DELETE_ALL_SUGGESTIONS can delete all suggestions
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.DELETE_ALL_SUGGESTIONS)
+    user.permissions.includes(PERMISSIONS.SUGGESTIONS_DELETE_ALL)
   )
     return true;
 
   // Users with CREATE_SUGGESTIONS can delete suggestions they created
   if (
-    user.permissions.includes(PERMISSIONS.CREATE_SUGGESTIONS) &&
+    user.permissions.includes(PERMISSIONS.SUGGESTIONS_ADD) &&
     (suggestion?.createdBy === user.id ||
       suggestion?.created_by === user.id ||
       suggestion?.submittedBy === user.id)
