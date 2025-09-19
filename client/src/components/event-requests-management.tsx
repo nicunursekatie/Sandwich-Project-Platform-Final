@@ -1782,17 +1782,37 @@ export default function EventRequestsManagement({
         )}
 
         {/* Assignment Dialog */}
-        {showAssignmentDialog && assignmentEventId && assignmentType && (
-          <TaskAssigneeSelector
-            value={{ assigneeName: '' }}
-            onChange={(value) => {
-              if (value.assigneeName) {
-                handleAssignment(value.assigneeName, value.assigneeName);
-              }
-            }}
-            placeholder={`Select ${assignmentType}`}
-          />
-        )}
+        <Dialog open={showAssignmentDialog} onOpenChange={setShowAssignmentDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-[#1A2332]">
+                Assign {assignmentType ? assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1) : ''}
+              </DialogTitle>
+              <DialogDescription>
+                Select a person to assign as {assignmentType} for this event.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4">
+              <TaskAssigneeSelector
+                value={{ assigneeName: '' }}
+                onChange={(value) => {
+                  if (value.assigneeName) {
+                    handleAssignment(value.assigneeName, value.assigneeName);
+                  }
+                }}
+                placeholder={`Select ${assignmentType}`}
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAssignmentDialog(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Import Events Tab */}
         <ImportEventsTab />

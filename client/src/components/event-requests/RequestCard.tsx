@@ -520,7 +520,7 @@ export default function RequestCard({
                           
                           {editingScheduledId === request.id && editingField === 'sandwichTypes' ? (
                             <div className="space-y-3 bg-white p-3 rounded border">
-                              <div className="text-sm font-medium text-gray-700 mb-2">Edit Sandwich Types:</div>
+                              <div className="text-sm font-medium text-[#1A2332] mb-2">Edit Sandwich Types:</div>
                               {SANDWICH_TYPES.slice(0, 4).map((type) => { // Exclude 'unknown' from editing
                                 const currentQuantity = inlineSandwichTypes.find(t => t.type === type.value)?.quantity || 0;
                                 return (
