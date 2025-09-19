@@ -367,15 +367,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   type="date"
                   value={formData.eventDate}
                   onChange={(e) => {
+                    // Always update the display value immediately (no confirmation on keystroke)
+                    setFormData(prev => ({ ...prev, eventDate: e.target.value }));
+                  }}
+                  onBlur={(e) => {
                     const newDate = e.target.value;
-                    // Check if event is scheduled and date is changing
+                    // Only check for confirmation when user finishes editing (onBlur)
                     if (eventRequest?.status === 'scheduled' && 
                         formatDateForInput(eventRequest.desiredEventDate) !== newDate &&
-                        formatDateForInput(eventRequest.desiredEventDate) !== '') {
+                        formatDateForInput(eventRequest.desiredEventDate) !== '' &&
+                        newDate !== formatDateForInput(eventRequest.desiredEventDate)) {
                       setPendingDateChange(newDate);
                       setShowDateConfirmation(true);
-                    } else {
-                      setFormData(prev => ({ ...prev, eventDate: newDate }));
                     }
                   }}
                   data-testid="input-event-date"
