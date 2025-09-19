@@ -139,6 +139,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         phone: eventRequest?.phone || '',
         organizationName: eventRequest?.organizationName || '',
         department: eventRequest?.department || '',
+        // Van driver assignment
+        assignedVanDriver: (eventRequest as any)?.assignedVanDriver || '',
       });
       
       // Set mode based on existing data
@@ -201,6 +203,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       phone: formData.phone || null,
       organizationName: formData.organizationName || null,
       department: formData.department || null,
+      // Van driver assignment
+      assignedVanDriver: formData.assignedVanDriver || null,
     };
 
     // Handle sandwich data based on mode
@@ -569,6 +573,32 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   />
                   <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
                 </div>
+                
+                {/* Van Driver Selection - Only show when van driver is needed */}
+                {formData.vanDriverNeeded && (
+                  <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
+                    <Select 
+                      value={formData.assignedVanDriver || ''} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriver: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a van-approved driver..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No driver assigned yet</SelectItem>
+                        {vanDrivers.map((driver) => (
+                          <SelectItem key={driver.id} value={driver.id.toString()}>
+                            {driver.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-orange-600 mt-1">
+                      If no driver is selected, the event card will show "Van Driver Needed"
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

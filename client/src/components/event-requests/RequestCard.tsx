@@ -725,6 +725,21 @@ export default function RequestCard({
                           )}
                         </div>
                         
+                        {/* Van Driver Section */}
+                        {request.vanDriverNeeded && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-base font-medium text-[#236383] flex items-center">
+                                <Truck className="w-4 h-4 mr-1" />
+                                Van Driver:
+                              </span>
+                              <span className="font-semibold text-base text-orange-600">
+                                Needed
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Speakers Section */}
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">

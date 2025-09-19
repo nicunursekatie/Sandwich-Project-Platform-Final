@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -1258,9 +1259,12 @@ export default function EventRequestsManagement({
       // Allow signup if user not already assigned and either no limit set or under the limit
       return !currentSpeakerDetails[user.id] && (typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded);
     } else if (type === 'volunteer') {
-      if (!eventRequest.volunteersNeeded) return false;
-      const currentVolunteers = eventRequest.assignedVolunteerIds || [];
-      return !currentVolunteers.includes(user.id);
+      // Always allow volunteer signup for scheduled events or events that need volunteers
+      if (eventRequest.status === 'scheduled' || eventRequest.volunteersNeeded) {
+        const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+        return !currentVolunteers.includes(user.id);
+      }
+      return false;
     }
 
     return false;
