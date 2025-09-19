@@ -55,6 +55,7 @@ import {
   Mail,
   Phone,
   AlertTriangle,
+  Check,
   CheckCircle,
   Clock,
   XCircle,
