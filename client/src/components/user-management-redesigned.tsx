@@ -88,6 +88,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import ModernPermissionsEditor from '@/components/modern-permissions-editor';
+import BulkPermissionsManager from '@/components/bulk-permissions-manager';
 import AnnouncementManager from '@/components/announcement-manager';
 import AuthDebug from '@/components/auth-debug';
 import ShoutoutSystem from '@/components/shoutout-system';
@@ -168,6 +169,7 @@ export default function UserManagementRedesigned() {
   const [activeTab, setActiveTab] = useState<
     | 'overview'
     | 'users'
+    | 'permissions'
     | 'user-activity'
     | 'activity'
     | 'announcements'
@@ -645,7 +647,7 @@ export default function UserManagementRedesigned() {
         onValueChange={(value) => setActiveTab(value as any)}
         className="space-y-6"
       >
-        <TabsList className="grid grid-cols-8 w-full max-w-5xl">
+        <TabsList className="grid grid-cols-9 w-full max-w-6xl">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -653,6 +655,10 @@ export default function UserManagementRedesigned() {
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Users</span>
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Permissions</span>
           </TabsTrigger>
           <TabsTrigger
             value="user-activity"
@@ -852,6 +858,11 @@ export default function UserManagementRedesigned() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Permissions Tab */}
+        <TabsContent value="permissions" className="space-y-6">
+          <BulkPermissionsManager />
         </TabsContent>
 
         {/* Users Tab */}

@@ -549,6 +549,25 @@ const PERMISSION_CATEGORIES = {
     ]
   },
 
+  'Meeting Management': {
+    icon: Calendar,
+    description: 'Meeting scheduling and management',
+    permissions: [
+      { 
+        key: 'MEETINGS_VIEW', 
+        name: 'View Meetings', 
+        description: 'Access to meeting information and minutes',
+        level: 'view'
+      },
+      { 
+        key: 'MEETINGS_MANAGE', 
+        name: 'Manage Meetings', 
+        description: 'Schedule meetings and manage agendas',
+        level: 'admin'
+      },
+    ]
+  },
+
   'Resources': {
     icon: FileText,
     description: 'Access to tools and documentation',
@@ -566,10 +585,10 @@ const PERMISSION_CATEGORIES = {
         level: 'view'
       },
       { 
-        key: 'MEETINGS_VIEW', 
-        name: 'View Meetings', 
-        description: 'Access to meeting information and minutes',
-        level: 'view'
+        key: 'DOCUMENTS_MANAGE', 
+        name: 'Manage Documents', 
+        description: 'Upload and manage documents',
+        level: 'admin'
       },
     ]
   },
