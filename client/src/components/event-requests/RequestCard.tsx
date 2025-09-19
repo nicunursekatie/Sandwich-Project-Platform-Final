@@ -503,7 +503,7 @@ export default function RequestCard({
                             </div>
                           ) : (
                             <div className="flex items-center space-x-1">
-                              <span className="font-semibold text-base">
+                              <span className="font-semibold text-base text-[#236383]">
                                 {request.estimatedSandwichCount || 0} sandwiches
                               </span>
                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -617,7 +617,7 @@ export default function RequestCard({
                             </div>
                           ) : (
                             <div className="flex items-center space-x-1">
-                              <span className="font-bold text-base">
+                              <span className="font-bold text-base text-[#236383]">
                                 {request.hasRefrigeration === true ? 'Yes' : 
                                  request.hasRefrigeration === false ? 'No' : 'Unknown'}
                               </span>
@@ -670,7 +670,7 @@ export default function RequestCard({
                               </div>
                             ) : (
                               <div className="flex items-center space-x-1">
-                                <span className="font-semibold text-base">
+                                <span className="font-semibold text-base text-[#236383]">
                                   {request.driversNeeded || 0} needed
                                 </span>
                                 {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
@@ -1124,7 +1124,7 @@ export default function RequestCard({
                       
                       <div className="flex justify-between items-center">
                         <span className="text-[#236383] text-base font-semibold">Address:</span>
-                        <span className="font-bold text-base text-right">
+                        <span className="font-bold text-base text-right text-[#236383]">
                           {request.address || 'Not specified'}
                         </span>
                       </div>
