@@ -19,6 +19,7 @@ import storageRouter from './storage';
 import versioningRouter from './versioning';
 import coreRouter from './core';
 import createAgendaItemsRouter from '../routes/agenda-items';
+import { createActivityLogRoutes } from './activity-log';
 
 // Import centralized middleware
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
@@ -205,6 +206,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     versioningRouter
   );
   router.use('/api/versioning', createErrorHandler('versioning'));
+
+  // Activity log router
+  const activityLogRouter = createActivityLogRoutes(deps.storage);
+  router.use(
+    '/api/activity-log',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    activityLogRouter
+  );
+  router.use('/api/activity-log', createErrorHandler('activity-log'));
 
   // Event Requests routes
   router.use(
