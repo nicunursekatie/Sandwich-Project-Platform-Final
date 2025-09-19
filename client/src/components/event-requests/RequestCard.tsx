@@ -850,10 +850,10 @@ export default function RequestCard({
                             <div className="space-y-1">
                               {request.assignedSpeakerIds.map((speakerId) => {
                                 const speakerDetails = request.speakerDetails?.[speakerId];
-                                const speakerName = speakerDetails?.name || (users.find(u => u.id === speakerId)?.name || `Speaker ${speakerId}`);
+                                const speakerName = speakerDetails?.name || (users.find(u => u.id === speakerId)?.name || 'Unknown Speaker');
                                 return (
                                   <div key={speakerId} className="flex items-center justify-between bg-white p-2 rounded border">
-                                    <span className="text-sm font-medium">{speakerName}</span>
+                                    <span className="text-sm font-medium text-[#236383]">{speakerName}</span>
                                     {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                       <Button
                                         size="sm"
@@ -951,10 +951,10 @@ export default function RequestCard({
                             <div className="space-y-1">
                               {request.assignedVolunteerIds.map((volunteerId) => {
                                 const volunteerDetails = request.volunteerDetails?.[volunteerId];
-                                const volunteerName = volunteerDetails?.name || (users.find(u => u.id === volunteerId)?.name || `Volunteer ${volunteerId}`);
+                                const volunteerName = volunteerDetails?.name || (users.find(u => u.id === volunteerId)?.name || 'Unknown Volunteer');
                                 return (
                                   <div key={volunteerId} className="flex items-center justify-between bg-white p-2 rounded border">
-                                    <span className="text-sm font-medium">{volunteerName}</span>
+                                    <span className="text-sm font-medium text-[#236383]">{volunteerName}</span>
                                     {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                                       <Button
                                         size="sm"
