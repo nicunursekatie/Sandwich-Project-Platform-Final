@@ -1929,6 +1929,11 @@ export default function EventRequestsManagement({
     setCurrentPage(1);
   }, [searchQuery, statusFilter, sortBy]);
 
+  // Synchronize statusFilter with activeTab to ensure proper filtering
+  useEffect(() => {
+    setStatusFilter(activeTab);
+  }, [activeTab]);
+
   // Auto-sort by event date when scheduled tab is selected
   // Auto-sort by newest when completed tab is selected
   useEffect(() => {
