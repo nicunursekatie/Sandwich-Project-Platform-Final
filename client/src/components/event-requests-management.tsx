@@ -111,7 +111,6 @@ import ToolkitSentDialog from './event-requests/ToolkitSentDialog';
 import EventSchedulingForm from './event-requests/EventSchedulingForm';
 import FollowUpDialog from './event-requests/FollowUpDialog';
 import EventCollectionLog from './event-requests/EventCollectionLog';
-import ImportEventsTab from './event-requests/ImportEventsTab';
 import RequestFilters from './event-requests/RequestFilters';
 import ContactOrganizerDialog from './ContactOrganizerDialog';
 
@@ -1814,8 +1813,6 @@ export default function EventRequestsManagement({
           </DialogContent>
         </Dialog>
 
-        {/* Import Events Tab */}
-        <ImportEventsTab />
 
         {/* Sandwich Planning Modal */}
         <Dialog open={showSandwichPlanningModal} onOpenChange={setShowSandwichPlanningModal}>

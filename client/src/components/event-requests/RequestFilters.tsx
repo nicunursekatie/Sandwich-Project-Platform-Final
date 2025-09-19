@@ -14,7 +14,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import ImportEventsTab from './ImportEventsTab';
 
 interface RequestFiltersProps {
   // Search and filter states
@@ -80,7 +79,7 @@ export default function RequestFilters({
     <div className="space-y-6">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="new" className="relative">
             New ({statusCounts.new})
             {statusCounts.new > 0 && (
@@ -99,15 +98,7 @@ export default function RequestFilters({
           <TabsTrigger value="declined">
             Declined ({statusCounts.declined})
           </TabsTrigger>
-          <TabsTrigger value="import" className="bg-[#e6f2f5] border-[#007E8C]/30">
-            Import
-          </TabsTrigger>
         </TabsList>
-
-        {/* Import Tab */}
-        <TabsContent value="import">
-          <ImportEventsTab />
-        </TabsContent>
 
         {/* Status-based tabs */}
         {['new', 'in_process', 'scheduled', 'completed', 'declined'].map(
