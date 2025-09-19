@@ -586,6 +586,319 @@ export default function RequestCard({
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Column 3: Staffing & Assignments */}
+                    <div className="space-y-2 bg-[#e6f2f5] p-3 rounded-lg border border-[#007E8C]/20">
+                      <h4 className="text-base font-semibold tracking-tight flex items-center border-b pb-2">
+                        <Users className="w-4 h-4 mr-2" />
+                        Staffing
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        {/* Drivers Section */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-base font-medium text-[#236383] flex items-center">
+                              <Truck className="w-4 h-4 mr-1" />
+                              Drivers:
+                            </span>
+                            {editingScheduledId === request.id && editingField === 'driversNeeded' ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  type="number"
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  className="w-16 h-7 text-sm"
+                                  min="0"
+                                />
+                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1">
+                                <span className="font-semibold text-base">
+                                  {request.driversNeeded || 0} needed
+                                </span>
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(request.id, 'driversNeeded', request.driversNeeded?.toString() || '0');
+                                  }} className="h-4 w-4 p-0">
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Driver Assignments */}
+                          {request.assignedDriverIds && request.assignedDriverIds.length > 0 && (
+                            <div className="space-y-1">
+                              {request.assignedDriverIds.map((driverId) => {
+                                const driverDetails = request.driverDetails?.[driverId];
+                                const driverName = driverDetails?.name || resolveUserName(driverId);
+                                return (
+                                  <div key={driverId} className="flex items-center justify-between bg-white p-2 rounded border">
+                                    <span className="text-sm font-medium">{driverName}</span>
+                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveAssignment(driverId, 'driver', request.id);
+                                        }}
+                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Driver Assignment Actions */}
+                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAssignmentDialog(request.id, 'driver');
+                                }}
+                                className="h-7 text-xs"
+                              >
+                                <UserPlus className="w-3 h-3 mr-1" />
+                                Assign
+                              </Button>
+                              {canSelfSignup(request, 'driver') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelfSignup(request.id, 'driver');
+                                  }}
+                                  className="h-7 text-xs"
+                                >
+                                  <UserCheck className="w-3 h-3 mr-1" />
+                                  {isUserSignedUp(request, 'driver') ? 'Remove Me' : 'Sign Me Up'}
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Speakers Section */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-base font-medium text-[#236383] flex items-center">
+                              <Megaphone className="w-4 h-4 mr-1" />
+                              Speakers:
+                            </span>
+                            {editingScheduledId === request.id && editingField === 'speakersNeeded' ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  type="number"
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  className="w-16 h-7 text-sm"
+                                  min="0"
+                                />
+                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1">
+                                <span className="font-semibold text-base">
+                                  {request.speakersNeeded || 0} needed
+                                </span>
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(request.id, 'speakersNeeded', request.speakersNeeded?.toString() || '0');
+                                  }} className="h-4 w-4 p-0">
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Speaker Assignments */}
+                          {request.assignedSpeakerIds && request.assignedSpeakerIds.length > 0 && (
+                            <div className="space-y-1">
+                              {request.assignedSpeakerIds.map((speakerId) => {
+                                const speakerDetails = request.speakerDetails?.[speakerId];
+                                const speakerName = speakerDetails?.name || resolveUserName(speakerId);
+                                return (
+                                  <div key={speakerId} className="flex items-center justify-between bg-white p-2 rounded border">
+                                    <span className="text-sm font-medium">{speakerName}</span>
+                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveAssignment(speakerId, 'speaker', request.id);
+                                        }}
+                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Speaker Assignment Actions */}
+                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAssignmentDialog(request.id, 'speaker');
+                                }}
+                                className="h-7 text-xs"
+                              >
+                                <UserPlus className="w-3 h-3 mr-1" />
+                                Assign
+                              </Button>
+                              {canSelfSignup(request, 'speaker') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelfSignup(request.id, 'speaker');
+                                  }}
+                                  className="h-7 text-xs"
+                                >
+                                  <UserCheck className="w-3 h-3 mr-1" />
+                                  {isUserSignedUp(request, 'speaker') ? 'Remove Me' : 'Sign Me Up'}
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Volunteers Section */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-base font-medium text-[#236383] flex items-center">
+                              <Users className="w-4 h-4 mr-1" />
+                              Volunteers:
+                            </span>
+                            {editingScheduledId === request.id && editingField === 'volunteersNeeded' ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  type="number"
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  className="w-16 h-7 text-sm"
+                                  min="0"
+                                />
+                                <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1">
+                                <span className="font-semibold text-base">
+                                  {request.volunteersNeeded || 0} needed
+                                </span>
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(request.id, 'volunteersNeeded', request.volunteersNeeded?.toString() || '0');
+                                  }} className="h-4 w-4 p-0">
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Volunteer Assignments */}
+                          {request.assignedVolunteerIds && request.assignedVolunteerIds.length > 0 && (
+                            <div className="space-y-1">
+                              {request.assignedVolunteerIds.map((volunteerId) => {
+                                const volunteerDetails = request.volunteerDetails?.[volunteerId];
+                                const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
+                                return (
+                                  <div key={volunteerId} className="flex items-center justify-between bg-white p-2 rounded border">
+                                    <span className="text-sm font-medium">{volunteerName}</span>
+                                    {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveAssignment(volunteerId, 'volunteer', request.id);
+                                        }}
+                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Volunteer Assignment Actions */}
+                          {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAssignmentDialog(request.id, 'volunteer');
+                                }}
+                                className="h-7 text-xs"
+                              >
+                                <UserPlus className="w-3 h-3 mr-1" />
+                                Assign
+                              </Button>
+                              {canSelfSignup(request, 'volunteer') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelfSignup(request.id, 'volunteer');
+                                  }}
+                                  className="h-7 text-xs"
+                                >
+                                  <UserCheck className="w-3 h-3 mr-1" />
+                                  {isUserSignedUp(request, 'volunteer') ? 'Remove Me' : 'Sign Me Up'}
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
