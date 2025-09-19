@@ -245,8 +245,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.COLLECTIONS_ADD,
         PERMISSIONS.COLLECTIONS_WALKTHROUGH,
 
-        // Project permissions
+        // Project permissions (includes meeting-project integration)
         PERMISSIONS.PROJECTS_ADD,
+        PERMISSIONS.PROJECTS_EDIT_ALL, // Required for "Send to Agenda" and meeting notes
+        PERMISSIONS.MEETINGS_MANAGE, // Required for full meeting management
 
         // Communication
         PERMISSIONS.MESSAGES_VIEW,

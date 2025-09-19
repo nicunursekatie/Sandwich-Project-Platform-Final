@@ -551,7 +551,7 @@ const PERMISSION_CATEGORIES = {
 
   'Meeting Management': {
     icon: Calendar,
-    description: 'Meeting scheduling and management',
+    description: 'Meeting scheduling and agenda management with project integration',
     permissions: [
       { 
         key: 'MEETINGS_VIEW', 
@@ -563,6 +563,18 @@ const PERMISSION_CATEGORIES = {
         key: 'MEETINGS_MANAGE', 
         name: 'Manage Meetings', 
         description: 'Schedule meetings and manage agendas',
+        level: 'admin'
+      },
+      { 
+        key: 'PROJECTS_VIEW', 
+        name: 'View Projects (for Agenda)', 
+        description: 'View projects to add to meeting agendas',
+        level: 'view'
+      },
+      { 
+        key: 'PROJECTS_EDIT_ALL', 
+        name: 'Edit Projects (for Agenda)', 
+        description: 'Required to send projects to agenda and update meeting notes',
         level: 'admin'
       },
     ]
@@ -619,7 +631,7 @@ const ROLE_TEMPLATES = {
   },
   [USER_ROLES.CORE_TEAM]: {
     name: 'Core Team Member',
-    description: 'Enhanced permissions for core team',
+    description: 'Enhanced permissions for core team (includes meeting-project integration)',
     permissions: getDefaultPermissionsForRole(USER_ROLES.CORE_TEAM)
   },
   [USER_ROLES.COMMITTEE_MEMBER]: {
