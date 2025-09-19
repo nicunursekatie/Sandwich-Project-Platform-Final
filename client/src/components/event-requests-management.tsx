@@ -476,8 +476,8 @@ export default function EventRequestsManagement({
 } = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'organization' | 'event_date'>(
-    'newest'
+  const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc'>(
+    'event_date_desc'
   );
   const [activeTab, setActiveTab] = useState(initialTab || 'new');
   const [currentPage, setCurrentPage] = useState(1);
@@ -841,24 +841,22 @@ export default function EventRequestsManagement({
       })
       .sort((a: EventRequest, b: EventRequest) => {
         switch (sortBy) {
-          case 'newest':
-            return (
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime()
-            );
-          case 'oldest':
-            return (
-              new Date(a.createdAt).getTime() -
-              new Date(b.createdAt).getTime()
-            );
-          case 'organization':
-            return a.organizationName.localeCompare(
-              b.organizationName
-            );
-          case 'event_date':
-            const dateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-            const dateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
-            return dateA - dateB;
+          case 'event_date_desc':
+            // Most recent event dates first
+            const dateDescA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+            const dateDescB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+            return dateDescB - dateDescA;
+          case 'event_date_asc':
+            // Oldest event dates first
+            const dateAscA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+            const dateAscB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+            return dateAscA - dateAscB;
+          case 'organization_asc':
+            // Organization A-Z
+            return a.organizationName.localeCompare(b.organizationName);
+          case 'organization_desc':
+            // Organization Z-A
+            return b.organizationName.localeCompare(a.organizationName);
           default:
             return 0;
         }
@@ -1894,23 +1892,22 @@ export default function EventRequestsManagement({
     // Sort the filtered results
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
-        case 'newest':
-          // Sort by desired event date (newest events first)
+        case 'event_date_desc':
+          // Sort by desired event date (most recent events first)
           const newestDateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
           const newestDateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
           return newestDateB - newestDateA;
-        case 'oldest':
+        case 'event_date_asc':
           // Sort by desired event date (oldest events first)
           const oldestDateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
           const oldestDateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
           return oldestDateA - oldestDateB;
-        case 'organization':
+        case 'organization_asc':
+          // Organization A-Z
           return a.organizationName.localeCompare(b.organizationName);
-        case 'event_date':
-          // Sort by desired event date for scheduled events
-          const dateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-          const dateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
-          return dateA - dateB; // Earliest dates first
+        case 'organization_desc':
+          // Organization Z-A
+          return b.organizationName.localeCompare(a.organizationName);
         default:
           return 0;
       }
