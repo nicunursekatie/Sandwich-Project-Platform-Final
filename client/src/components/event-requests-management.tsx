@@ -1542,9 +1542,12 @@ export default function EventRequestsManagement({
   }, [searchQuery, statusFilter, sortBy]);
 
   // Auto-sort by event date when scheduled tab is selected
+  // Auto-sort by newest when completed tab is selected
   useEffect(() => {
     if (activeTab === 'scheduled' && sortBy !== 'event_date') {
       setSortBy('event_date');
+    } else if (activeTab === 'completed' && sortBy !== 'newest') {
+      setSortBy('newest');
     }
   }, [activeTab, sortBy]);
 
