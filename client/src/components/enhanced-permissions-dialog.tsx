@@ -558,7 +558,7 @@ const RESOURCE_PERMISSIONS = [
       { action: 'EVENTS_GOOGLE_SHEET', label: 'Events Google Sheet tab', key: 'NAV_EVENTS_GOOGLE_SHEET' },
       { action: 'PROJECTS', label: 'Projects tab', key: 'NAV_PROJECTS' },
       { action: 'MEETINGS', label: 'Meetings tab', key: 'NAV_MEETINGS' },
-      { action: 'EVENT_PLANNING', label: 'Event Planning tab', key: 'NAV_EVENT_PLANNING' },
+      { action: 'EVENT_PLANNING', label: 'Event Requests tab', key: 'NAV_EVENT_PLANNING' },
       { action: 'EVENT_REMINDERS', label: 'Event Reminders tab', key: 'NAV_EVENT_REMINDERS' },
       { action: 'ANALYTICS', label: 'Analytics tab', key: 'NAV_ANALYTICS' },
       { action: 'WEEKLY_MONITORING', label: 'Weekly Monitoring tab', key: 'NAV_WEEKLY_MONITORING' },

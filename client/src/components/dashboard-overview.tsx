@@ -527,11 +527,11 @@ export default function DashboardOverview({
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-base font-semibold text-brand-primary mb-1">
-                Event Planning
+                Event Requests
               </h3>
               <p className="text-sm text-gray-600 mb-3">Manage events</p>
               <div className="text-brand-primary font-medium text-sm flex items-center">
-                Open Event Planning →
+                Open Event Requests →
               </div>
             </div>
 

@@ -822,8 +822,8 @@ const PERMISSION_CATEGORIES = {
       },
       { 
         key: 'NAV_EVENT_PLANNING', 
-        name: 'Event Planning Tab', 
-        description: 'Show Event Planning tab in navigation',
+        name: 'Event Requests Tab', 
+        description: 'Show Event Requests tab in navigation',
         level: 'access'
       },
       { 

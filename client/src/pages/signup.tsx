@@ -93,7 +93,7 @@ const interestOptions = [
   'Food Collection',
   'Food Distribution',
   'Transportation/Driving',
-  'Event Planning',
+  'Event Requests',
   'Administrative Support',
   'Marketing/Outreach',
   'Technology Support',

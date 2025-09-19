@@ -696,9 +696,9 @@ const PERMISSION_GROUPS = [
       },
       {
         key: PERMISSIONS.NAV_EVENT_PLANNING,
-        label: 'Event Planning Tab',
+        label: 'Event Requests Tab',
         icon: Calendar,
-        description: 'Show Event Planning tab in navigation',
+        description: 'Show Event Requests tab in navigation',
       },
       {
         key: PERMISSIONS.NAV_EVENT_REMINDERS,

@@ -72,7 +72,7 @@ interface EmailTemplate {
 const SUBJECT_SUGGESTIONS = [
   'Re: {organizationName} Event',
   'The Sandwich Project - Event Resources',
-  'Event Planning - {organizationName}',
+  'Event Requests - {organizationName}',
   'Follow-up: {organizationName}',
   'custom', // Custom subject
 ];

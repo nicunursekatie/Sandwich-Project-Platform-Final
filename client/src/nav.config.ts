@@ -157,12 +157,22 @@ export const NAV_ITEMS: NavItem[] = [
 
   // PLANNING & COORDINATION
   {
+    id: 'event-requests',
+    label: 'Event Requests',
+    icon: Calendar,
+    href: 'event-requests',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    group: 'planning',
+  },
+  {
     id: 'events',
     label: 'Events Google Sheet',
-    icon: Calendar,
+    icon: Sheet,
     href: 'events',
     permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
     group: 'planning',
+    parentId: 'event-requests',
+    isSubItem: true,
   },
   {
     id: 'projects',
@@ -178,14 +188,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ClipboardList,
     href: 'meetings',
     permission: PERMISSIONS.MEETINGS_VIEW,
-    group: 'planning',
-  },
-  {
-    id: 'event-requests',
-    label: 'Event Planning',
-    icon: Calendar,
-    href: 'event-requests',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
     group: 'planning',
   },
   {

@@ -148,12 +148,18 @@ export default function SimpleNav({
               w-full ${
                 isCollapsed
                   ? 'justify-center px-2'
-                  : 'justify-start px-2 sm:px-3'
-              } text-left h-11 touch-manipulation relative text-base font-medium
+                  : item.isSubItem 
+                    ? 'justify-start pl-8 pr-2 sm:pr-3' 
+                    : 'justify-start px-2 sm:px-3'
+              } text-left h-11 touch-manipulation relative ${
+                item.isSubItem ? 'text-sm font-normal' : 'text-base font-medium'
+              }
               ${
                 active
                   ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
-                  : 'hover:bg-slate-100 text-slate-700'
+                  : item.isSubItem
+                    ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md'
+                    : 'hover:bg-slate-100 text-slate-700'
               }
             `}
               onClick={(e) => {

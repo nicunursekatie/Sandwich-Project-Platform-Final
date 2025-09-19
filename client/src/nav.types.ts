@@ -10,6 +10,8 @@ export interface NavItem {
   group?: string;
   requiredRoles?: string[];
   featureFlag?: string;
+  parentId?: string; // ID of parent nav item for nested structure
+  isSubItem?: boolean; // Flag to indicate this is a sub-item
 }
 
 export interface NavigationGroup {

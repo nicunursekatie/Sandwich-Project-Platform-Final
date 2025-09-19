@@ -1678,7 +1678,7 @@ export default function GmailStyleInbox() {
                 id="subject"
                 value={composeSubject}
                 onChange={(e) => setComposeSubject(e.target.value)}
-                placeholder="Budget Review, Website Updates, Event Planning..."
+                placeholder="Budget Review, Website Updates, Event Requests..."
                 className="rounded-lg border border-gray-300 bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-200 h-11 font-['Roboto'] placeholder:text-gray-500 transition-colors text-gray-900"
                 style={{ color: '#1f2937' }}
               />
