@@ -522,14 +522,6 @@ export default function RequestCard({
                         <div className="flex flex-col space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-[#FBAD3F] text-base font-semibold">Types:</span>
-                            {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                              <Button size="sm" variant="ghost" onClick={(e) => {
-                                e.stopPropagation();
-                                startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
-                              }} className="h-4 w-4 p-0">
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                            )}
                           </div>
                           
                           {editingScheduledId === request.id && editingField === 'sandwichTypes' ? (
@@ -579,10 +571,18 @@ export default function RequestCard({
                               </div>
                             </div>
                           ) : (
-                            <div className="text-right">
+                            <div className="flex items-center justify-end space-x-1">
                               <span className="font-bold text-[#236383] text-base">
                                 {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
                               </span>
+                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditing(request.id, 'sandwichTypes', JSON.stringify(request.sandwichTypes) || '');
+                                }} className="h-4 w-4 p-0">
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                              )}
                             </div>
                           )}
                         </div>
