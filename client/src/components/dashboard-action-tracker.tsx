@@ -96,10 +96,28 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   };
 
   const handleNavigation = (linkPath: string) => {
-    // Extract section from linkPath
-    const urlParams = new URLSearchParams(linkPath.split('?')[1] || '');
-    const section = urlParams.get('section') || 'dashboard';
-    onNavigate(section);
+    // Honor full linkPath for deep-linking to detail views
+    // Extract the path and query parameters
+    if (linkPath.startsWith('/dashboard?')) {
+      // Remove the '/dashboard?' prefix and pass the full query string to maintain all parameters
+      const queryString = linkPath.substring('/dashboard?'.length);
+      const urlParams = new URLSearchParams(queryString);
+      
+      // If we have specific item parameters (id, eventId, etc.), navigate with full context
+      if (urlParams.get('id') || urlParams.get('eventId') || urlParams.get('view') || urlParams.get('tab')) {
+        // Pass the full query string to enable deep-linking
+        onNavigate(queryString);
+      } else {
+        // Fallback to just section if no specific parameters
+        const section = urlParams.get('section') || 'dashboard';
+        onNavigate(section);
+      }
+    } else {
+      // For non-dashboard paths, extract section as before
+      const urlParams = new URLSearchParams(linkPath.split('?')[1] || '');
+      const section = urlParams.get('section') || 'dashboard';
+      onNavigate(section);
+    }
   };
 
   // Loading skeleton component

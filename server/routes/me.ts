@@ -2,8 +2,6 @@ import { Router, type Request, type Response } from 'express';
 import { logger } from '../middleware/logger';
 import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
-import { projectTasks } from '@shared/schema';
-import { eq, or, sql } from 'drizzle-orm';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -99,17 +97,8 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
         dueDate: project.dueDate,
       }));
 
-    // Fetch assigned tasks (pending/in_progress only) - use direct DB query since no storage method exists
-    const { db } = storage as any;
-    const allTasks = await db
-      .select()
-      .from(projectTasks)
-      .where(
-        or(
-          eq(projectTasks.assigneeId, userId),
-          sql`${userId} = ANY(${projectTasks.assigneeIds})`
-        )
-      );
+    // Fetch assigned tasks using storage interface
+    const allTasks = await storage.getAssignedTasks(userId);
     const assignedTasks = allTasks
       .filter((task: any) => {
         return ['pending', 'in_progress'].includes(task.status);
@@ -147,7 +136,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
 
         // Method 2b: Additional TSP contacts
         if (event.additionalTspContacts && currentUser) {
-          const additionalContacts = event.additionalTspContacts.toLowerCase();
+          const additionalContacts = (typeof event.additionalTspContacts === 'string' ? event.additionalTspContacts : JSON.stringify(event.additionalTspContacts || '')).toLowerCase();
           const userEmail = currentUser.email.toLowerCase();
           const userName = currentUser.displayName?.toLowerCase() || '';
           const userFirstName = currentUser.firstName?.toLowerCase() || '';
@@ -260,7 +249,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
         event.assignedTo === userId ||
         event.tspContact === userId ||
         event.tspContactAssigned === userId ||
-        (event.additionalTspContacts && currentUser && event.additionalTspContacts.toLowerCase().includes(currentUser.email.toLowerCase())) ||
+        (event.additionalTspContacts && currentUser && (typeof event.additionalTspContacts === 'string' ? event.additionalTspContacts : JSON.stringify(event.additionalTspContacts || '')).toLowerCase().includes(currentUser.email.toLowerCase())) ||
         (event.driverDetails && currentUser && JSON.stringify(event.driverDetails).toLowerCase().includes(currentUser.email.toLowerCase())) ||
         (event.speakerDetails && currentUser && JSON.stringify(event.speakerDetails).toLowerCase().includes(currentUser.email.toLowerCase()))
       );

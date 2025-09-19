@@ -135,6 +135,7 @@ export interface IStorage {
   getProjectTasks(projectId: number): Promise<ProjectTask[]>;
   getTaskById(id: number): Promise<ProjectTask | undefined>;
   getProjectTask(taskId: number): Promise<ProjectTask | undefined>;
+  getAssignedTasks(userId: string): Promise<ProjectTask[]>;
   createProjectTask(task: InsertProjectTask): Promise<ProjectTask>;
   updateProjectTask(
     id: number,
@@ -987,6 +988,21 @@ export class MemStorage implements IStorage {
 
   async getProjectTask(taskId: number): Promise<ProjectTask | undefined> {
     return this.projectTasks.get(taskId);
+  }
+
+  async getAssignedTasks(userId: string): Promise<ProjectTask[]> {
+    return Array.from(this.projectTasks.values())
+      .filter((task) => {
+        // Check if user is assigned via assigneeId or assigneeIds array
+        return (
+          (task.assigneeId && task.assigneeId === userId) ||
+          (task.assigneeIds && Array.isArray(task.assigneeIds) && task.assigneeIds.includes(userId))
+        );
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
   }
 
   async updateTaskStatus(id: number, status: string): Promise<boolean> {

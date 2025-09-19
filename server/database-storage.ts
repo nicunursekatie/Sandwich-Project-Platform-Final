@@ -487,6 +487,19 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getAssignedTasks(userId: string): Promise<ProjectTask[]> {
+    return await db
+      .select()
+      .from(projectTasks)
+      .where(
+        or(
+          eq(projectTasks.assigneeId, userId),
+          sql`${userId} = ANY(${projectTasks.assigneeIds})`
+        )
+      )
+      .orderBy(desc(projectTasks.createdAt));
+  }
+
   async updateTaskStatus(id: number, status: string): Promise<boolean> {
     const result = await db
       .update(projectTasks)
