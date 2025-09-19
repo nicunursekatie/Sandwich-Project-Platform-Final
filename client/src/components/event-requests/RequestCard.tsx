@@ -338,6 +338,82 @@ export default function RequestCard({
                 </div>
               </div>
 
+              {/* TSP Contact Information */}
+              {(request.tspContactAssigned || request.tspContact || request.additionalContact1 || request.additionalContact2 || request.customTspContact) && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-blue-600" />
+                    TSP Contact Information
+                  </h4>
+                  <div className="space-y-3">
+                    {/* Primary TSP Contact Assigned */}
+                    {request.tspContactAssigned && (
+                      <div className="flex items-center space-x-3">
+                        <UserCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-base font-medium text-[#1A2332]">
+                            {resolveUserName(request.tspContactAssigned)}
+                          </p>
+                          <p className="text-sm text-blue-600">Assigned TSP Team Member</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Primary TSP Contact */}
+                    {request.tspContact && request.tspContact !== request.tspContactAssigned && (
+                      <div className="flex items-center space-x-3">
+                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-base font-medium text-[#1A2332]">
+                            {resolveUserName(request.tspContact)}
+                          </p>
+                          <p className="text-sm text-blue-600">Primary TSP Contact</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Additional Contact 1 */}
+                    {request.additionalContact1 && (
+                      <div className="flex items-center space-x-3">
+                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-base font-medium text-[#1A2332]">
+                            {resolveUserName(request.additionalContact1)}
+                          </p>
+                          <p className="text-sm text-blue-600">Additional TSP Contact</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Additional Contact 2 */}
+                    {request.additionalContact2 && (
+                      <div className="flex items-center space-x-3">
+                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-base font-medium text-[#1A2332]">
+                            {resolveUserName(request.additionalContact2)}
+                          </p>
+                          <p className="text-sm text-blue-600">Additional TSP Contact</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Custom TSP Contact */}
+                    {request.customTspContact && (
+                      <div className="flex items-center space-x-3">
+                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-base font-medium text-[#1A2332]">
+                            {request.customTspContact}
+                          </p>
+                          <p className="text-sm text-blue-600">Custom TSP Contact</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Toolkit Status - Only for In Process */}
               {request.status === 'in_process' && (
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
