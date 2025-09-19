@@ -30,17 +30,25 @@ import { SANDWICH_TYPES } from './constants';
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
   eventRequest: EventRequest | null;
-  isVisible: boolean;
+  isVisible?: boolean;
+  isOpen?: boolean;
   onClose: () => void;
-  onScheduled: () => void;
+  onScheduled?: () => void;
+  onEventScheduled?: () => void;
+  mode?: 'schedule' | 'edit';
 }
 
 const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   eventRequest,
   isVisible,
+  isOpen,
   onClose,
   onScheduled,
+  onEventScheduled,
+  mode = 'schedule',
 }) => {
+  const dialogOpen = isVisible || isOpen || false;
+  const onSuccess = onScheduled || onEventScheduled || (() => {});
   const [formData, setFormData] = useState({
     eventStartTime: '',
     eventEndTime: '',
@@ -71,7 +79,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // Initialize form with existing data when dialog opens
   useEffect(() => {
-    if (isVisible && eventRequest) {
+    if (dialogOpen && eventRequest) {
       const existingSandwichTypes = eventRequest.sandwichTypes ? 
         (typeof eventRequest.sandwichTypes === 'string' ? 
           JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [];
@@ -105,18 +113,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
       apiRequest('PATCH', `/api/event-requests/${id}`, data),
     onSuccess: () => {
+      const isEditMode = mode === 'edit';
       toast({
-        title: 'Event scheduled successfully',
-        description: 'The event has been moved to scheduled status with all details.',
+        title: isEditMode ? 'Event updated successfully' : 'Event scheduled successfully',
+        description: isEditMode ? 'The event details have been updated.' : 'The event has been moved to scheduled status with all details.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      onScheduled();
+      onSuccess();
       onClose();
     },
     onError: () => {
+      const isEditMode = mode === 'edit';
       toast({
         title: 'Error',
-        description: 'Failed to schedule event.',
+        description: isEditMode ? 'Failed to update event.' : 'Failed to schedule event.',
         variant: 'destructive',
       });
     },
@@ -131,7 +141,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     // Prepare update data
     const updateData = {
-      status: 'scheduled',
+      // Only change status to 'scheduled' when in schedule mode
+      ...(mode === 'schedule' ? { status: 'scheduled' } : {}),
       ...formData,
       // Handle sandwich data based on mode
       ...(sandwichMode === 'total' ? {
@@ -177,11 +188,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   if (!eventRequest) return null;
 
   return (
-    <Dialog open={isVisible} onOpenChange={onClose}>
+    <Dialog open={dialogOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#236383]">
-            Schedule Event: {eventRequest.organizationName}
+            {mode === 'edit' ? 'Edit Event Details:' : 'Schedule Event:'} {eventRequest.organizationName}
           </DialogTitle>
         </DialogHeader>
 
@@ -227,7 +238,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     </div>
                     <div>
                       <Label>Desired Date</Label>
-                      <Input value={eventRequest.desiredEventDate || 'Not provided'} disabled />
+                      <Input 
+                        value={eventRequest.desiredEventDate 
+                          ? (typeof eventRequest.desiredEventDate === 'string' 
+                              ? eventRequest.desiredEventDate 
+                              : eventRequest.desiredEventDate.toLocaleDateString())
+                          : 'Not provided'
+                        } 
+                        disabled 
+                      />
                     </div>
                   </>
                 ) : (

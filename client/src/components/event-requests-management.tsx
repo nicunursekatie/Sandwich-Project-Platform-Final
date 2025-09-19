@@ -1710,100 +1710,23 @@ export default function EventRequestsManagement({
           }}
         />
 
-        {/* Event Details Modal */}
+        {/* Event Details Edit Modal - Comprehensive Form */}
         {showEventDetails && selectedEventRequest && (
-          <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold text-[#1A2332] flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#007E8C]" />
-                  Event Details - {selectedEventRequest.organizationName}
-                </DialogTitle>
-                <DialogDescription>
-                  {isEditing ? 'Edit event request details' : 'View event request details'}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Organization</Label>
-                    <p className="font-medium">{selectedEventRequest.organizationName}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Contact Person</Label>
-                    <p className="font-medium">{selectedEventRequest.firstName} {selectedEventRequest.lastName}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <p className="font-medium">{selectedEventRequest.email}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <p className="font-medium">{selectedEventRequest.phone || 'Not provided'}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Event Date</Label>
-                    <p className="font-medium">
-                      {selectedEventRequest.desiredEventDate ? 
-                        formatEventDate(selectedEventRequest.desiredEventDate.toString()).displayText : 
-                        'Not specified'
-                      }
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Badge className={statusColors[selectedEventRequest.status]}>
-                      {selectedEventRequest.status.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
-                
-                {selectedEventRequest.message && (
-                  <div className="space-y-2">
-                    <Label>Message</Label>
-                    <p className="text-sm bg-gray-50 p-3 rounded-lg">{selectedEventRequest.message}</p>
-                  </div>
-                )}
-                
-                {selectedEventRequest.eventAddress && (
-                  <div className="space-y-2">
-                    <Label>Event Address</Label>
-                    <p className="font-medium">{selectedEventRequest.eventAddress}</p>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Estimated Sandwiches</Label>
-                    <p className="font-medium">{selectedEventRequest.estimatedSandwichCount || 0}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Drivers Needed</Label>
-                    <p className="font-medium">{selectedEventRequest.driversNeeded || 0}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Volunteers Needed</Label>
-                    <p className="font-medium">{selectedEventRequest.volunteersNeeded || 0}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <DialogFooter className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowEventDetails(false)}>
-                  Close
-                </Button>
-                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                  <Button 
-                    onClick={() => setIsEditing(!isEditing)}
-                    variant={isEditing ? "secondary" : "default"}
-                  >
-                    {isEditing ? 'Cancel Edit' : 'Edit'}
-                  </Button>
-                )}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <EventSchedulingForm
+            eventRequest={selectedEventRequest}
+            isOpen={showEventDetails}
+            mode="edit"
+            onClose={() => {
+              setShowEventDetails(false);
+              setSelectedEventRequest(null);
+              setIsEditing(false);
+            }}
+            onEventScheduled={() => {
+              setShowEventDetails(false);
+              setSelectedEventRequest(null);
+              setIsEditing(false);
+            }}
+          />
         )}
 
         {/* Event Scheduling Dialog */}
