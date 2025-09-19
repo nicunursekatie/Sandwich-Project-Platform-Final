@@ -724,7 +724,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Toolkit Status Section */}
           <div className="space-y-4">
             <Label className="text-lg font-semibold">Toolkit Status</Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="toolkitStatus">Toolkit Status</Label>
                 <Select value={formData.toolkitStatus} onValueChange={(value) => setFormData(prev => ({ ...prev, toolkitStatus: value }))}>
@@ -739,16 +739,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="toolkitSent"
-                  checked={formData.toolkitSent}
-                  onChange={(e) => setFormData(prev => ({ ...prev, toolkitSent: e.target.checked }))}
-                  data-testid="checkbox-toolkit-sent"
-                />
-                <Label htmlFor="toolkitSent">Toolkit Sent</Label>
-              </div>
               <div>
                 <Label htmlFor="toolkitSentDate">Toolkit Sent Date</Label>
                 <Input
@@ -756,7 +746,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   type="date"
                   value={formData.toolkitSentDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, toolkitSentDate: e.target.value }))}
-                  disabled={!formData.toolkitSent}
+                  disabled={formData.toolkitStatus === 'not_sent' || formData.toolkitStatus === 'not_needed'}
                   data-testid="input-toolkit-sent-date"
                 />
               </div>
