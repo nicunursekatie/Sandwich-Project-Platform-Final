@@ -171,13 +171,15 @@ export default function RequestCard({
     return driver?.name || driverId;
   };
   
-  const StatusIcon = statusIcons[request.status];
-  const dateInfo = formatEventDate(request.desiredEventDate || '');
+  const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
+  const dateInfo = formatEventDate(request.desiredEventDate ? 
+    (typeof request.desiredEventDate === 'string' ? request.desiredEventDate : request.desiredEventDate.toISOString()) 
+    : '');
 
   return (
     <Card
       key={request.id}
-      className={`transition-all duration-200 hover:shadow-lg ${statusColors[request.status]}`}
+      className={`transition-all duration-200 hover:shadow-lg ${statusColors[request.status as keyof typeof statusColors] || statusColors.new}`}
       data-testid={`card-event-request-${request.id}`}
     >
       <CardContent className="p-0">
@@ -823,7 +825,7 @@ export default function RequestCard({
                           {request.assignedDriverIds && request.assignedDriverIds.length > 0 && (
                             <div className="space-y-1">
                               {request.assignedDriverIds.map((driverId) => {
-                                const driverDetails = request.driverDetails?.[driverId];
+                                const driverDetails = (request as any).driverDetails?.[driverId];
                                 const driverName = driverDetails?.name || getDriverName(driverId);
                                 return (
                                   <div key={driverId} className="flex items-center justify-between bg-white p-2 rounded border">
@@ -960,7 +962,7 @@ export default function RequestCard({
                           {request.assignedSpeakerIds && request.assignedSpeakerIds.length > 0 && (
                             <div className="space-y-1">
                               {request.assignedSpeakerIds.map((speakerId) => {
-                                const speakerDetails = request.speakerDetails?.[speakerId];
+                                const speakerDetails = (request as any).speakerDetails?.[speakerId];
                                 const speakerName = speakerDetails?.name || resolveUserName(speakerId);
                                 return (
                                   <div key={speakerId} className="flex items-center justify-between bg-white p-2 rounded border">
@@ -1074,7 +1076,7 @@ export default function RequestCard({
                           {request.assignedVolunteerIds && request.assignedVolunteerIds.length > 0 && (
                             <div className="space-y-1">
                               {request.assignedVolunteerIds.map((volunteerId) => {
-                                const volunteerDetails = request.volunteerDetails?.[volunteerId];
+                                const volunteerDetails = (request as any).volunteerDetails?.[volunteerId];
                                 const volunteerName = volunteerDetails?.name || resolveUserName(volunteerId);
                                 return (
                                   <div key={volunteerId} className="flex items-center justify-between bg-white p-2 rounded border">
@@ -1389,7 +1391,7 @@ export default function RequestCard({
                       <div className="flex justify-between items-center">
                         <span className="text-[#236383] text-base font-semibold">Address:</span>
                         <span className="font-bold text-base text-right text-[#236383]">
-                          {request.address || 'Not specified'}
+                          {(request as any).address || request.eventAddress || 'Not specified'}
                         </span>
                       </div>
                     </div>
@@ -1405,7 +1407,7 @@ export default function RequestCard({
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Total:</span>
                           <span className="font-bold text-[#236383] text-base">
-                            {request.actualSandwichCount || request.estimatedSandwichCount || request.sandwichCount || 0} sandwiches
+                            {request.actualSandwichCount || request.estimatedSandwichCount || (request as any).sandwichCount || 0} sandwiches
                           </span>
                         </div>
                         
@@ -1461,7 +1463,7 @@ export default function RequestCard({
                   </h4>
                   <div className="space-y-1">
                     {request.assignedDriverIds.map((driverId, index) => {
-                      const driverDetails = request.driverDetails?.[driverId];
+                      const driverDetails = (request as any).driverDetails?.[driverId];
                       const driverName = driverDetails?.name || `Driver ${index + 1}`;
                       return (
                         <div key={driverId} className="flex items-center space-x-2">
