@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDistanceToNow } from 'date-fns';
 import {
   Calendar,
   Clock,
@@ -122,12 +123,19 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         <div className="space-y-3 mb-4">
           <div className="bg-blue-50 rounded-lg p-3">
             <p className="text-sm text-gray-500 mb-1">Submitted</p>
-            <p className="font-medium flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {request.createdAt
-                ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
-                : 'Unknown'}
-            </p>
+            <div className="space-y-1">
+              <p className="font-medium flex items-center gap-1 text-lg">
+                <Clock className="w-4 h-4" />
+                {request.createdAt
+                  ? formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })
+                  : 'Unknown'}
+              </p>
+              <p className="text-sm text-gray-600">
+                {request.createdAt
+                  ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
+                  : 'Unknown date'}
+              </p>
+            </div>
           </div>
 
           {/* Submission Message */}
