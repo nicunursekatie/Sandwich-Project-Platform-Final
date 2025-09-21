@@ -62,6 +62,11 @@ export const useEventMutations = () => {
       setShowEventDetails(false);
       setSelectedEventRequest(null);
       setIsEditing(false);
+      
+      // Clear inline editing state as well
+      setEditingScheduledId(null);
+      setEditingField(null);
+      setEditingValue('');
     },
     onError: (error: any) => {
       console.error('Update event request error:', error);
