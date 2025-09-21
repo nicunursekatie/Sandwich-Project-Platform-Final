@@ -10,14 +10,11 @@ import {
   Mail,
   Edit,
   Trash2,
-  CheckCircle,
-  X,
   Users,
   MapPin,
 } from 'lucide-react';
 import { CardHeader } from './shared/CardHeader';
 import { CardContactInfo } from './shared/CardContactInfo';
-import { formatTime12Hour } from '@/components/event-requests/utils';
 import { statusColors } from '@/components/event-requests/constants';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
@@ -30,8 +27,6 @@ interface NewRequestCardProps {
   onContact: () => void;
   onToolkit: () => void;
   onScheduleCall: () => void;
-  onApprove: () => void;
-  onDecline: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -44,8 +39,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onContact,
   onToolkit,
   onScheduleCall,
-  onApprove,
-  onDecline,
   canEdit = true,
   canDelete = true,
 }) => {
@@ -56,22 +49,23 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
         {/* Event Details */}
         <div className="space-y-3 mb-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Preferred Time</p>
-              <p className="font-medium">
-                {request.preferredStartTime && formatTime12Hour(request.preferredStartTime)}
-                {request.preferredEndTime && ` - ${formatTime12Hour(request.preferredEndTime)}`}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Estimated Attendance</p>
-              <p className="font-medium flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                {request.estimatedAttendance || 'Not specified'}
-              </p>
-            </div>
+          <div className="bg-blue-50 rounded-lg p-3">
+            <p className="text-sm text-gray-500 mb-1">Submitted</p>
+            <p className="font-medium flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {request.createdAt
+                ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
+                : 'Unknown'}
+            </p>
           </div>
+
+          {/* Submission Message */}
+          {request.message && (
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-sm text-gray-500 mb-1">Message from submission:</p>
+              <p className="text-sm text-gray-600">{request.message}</p>
+            </div>
+          )}
 
           {/* Sandwich Info */}
           {(request.estimatedSandwichCount || request.sandwichTypes) && (
@@ -96,12 +90,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             </div>
           )}
 
-          {/* Notes */}
-          {request.notes && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-600">{request.notes}</p>
-            </div>
-          )}
         </div>
 
         {/* Contact Info */}
@@ -132,26 +120,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           </Button>
 
           <div className="flex-1" />
-
-          {/* Quick Actions */}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onApprove}
-            className="text-[#236383] hover:text-[#007E8C]"
-          >
-            <CheckCircle className="w-4 h-4 mr-1" />
-            Approve
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onDecline}
-            className="text-red-600 hover:text-red-700"
-          >
-            <X className="w-4 h-4 mr-1" />
-            Decline
-          </Button>
 
           {/* Edit/Delete */}
           {canEdit && (
