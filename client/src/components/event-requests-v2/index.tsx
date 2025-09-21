@@ -1,7 +1,10 @@
 import React from 'react';
 import { EventRequestProvider, useEventRequestContext } from './context/EventRequestContext';
 import { NewRequestsTab } from './tabs/NewRequestsTab';
-import { TabPlaceholder } from './tabs/TabPlaceholder';
+import { InProcessTab } from './tabs/InProcessTab';
+import { ScheduledTab } from './tabs/ScheduledTab';
+import { CompletedTab } from './tabs/CompletedTab';
+import { DeclinedTab } from './tabs/DeclinedTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Package } from 'lucide-react';
@@ -14,6 +17,7 @@ import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
 import FollowUpDialog from '@/components/event-requests/FollowUpDialog';
+import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDialog';
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
@@ -196,10 +200,10 @@ const EventRequestsManagementContent: React.FC = () => {
           totalPages={totalPages}
           children={{
             new: <NewRequestsTab />,
-            in_process: <TabPlaceholder status="in_process" />,
-            scheduled: <TabPlaceholder status="scheduled" />,
-            completed: <TabPlaceholder status="completed" />,
-            declined: <TabPlaceholder status="declined" />,
+            in_process: <InProcessTab />,
+            scheduled: <ScheduledTab />,
+            completed: <CompletedTab />,
+            declined: <DeclinedTab />,
           }}
         />
 
@@ -272,34 +276,17 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Schedule Call Dialog */}
-        {showScheduleCallDialog && selectedEventRequest && (
-          <Dialog open={showScheduleCallDialog} onOpenChange={setShowScheduleCallDialog}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Schedule Follow-up Call</DialogTitle>
-                <DialogDescription>
-                  Schedule a call with {selectedEventRequest.firstName} {selectedEventRequest.lastName}
-                </DialogDescription>
-              </DialogHeader>
-              {/* Simplified for now - would need full implementation */}
-              <div className="space-y-4">
-                <input
-                  type="date"
-                  value={scheduleCallDate}
-                  onChange={(e) => setScheduleCallDate(e.target.value)}
-                  className="w-full p-2 border rounded"
-                />
-                <input
-                  type="time"
-                  value={scheduleCallTime}
-                  onChange={(e) => setScheduleCallTime(e.target.value)}
-                  className="w-full p-2 border rounded"
-                />
-                <Button onClick={handleScheduleCall}>Schedule Call</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+        <ScheduleCallDialog
+          isOpen={showScheduleCallDialog}
+          onClose={() => setShowScheduleCallDialog(false)}
+          eventRequest={selectedEventRequest}
+          onCallScheduled={handleScheduleCall}
+          isLoading={scheduleCallMutation.isPending}
+          scheduleCallDate={scheduleCallDate}
+          setScheduleCallDate={setScheduleCallDate}
+          scheduleCallTime={scheduleCallTime}
+          setScheduleCallTime={setScheduleCallTime}
+        />
 
         {/* 1-Day Follow-up Dialog */}
         <FollowUpDialog
