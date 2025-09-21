@@ -81,6 +81,10 @@ export const NewRequestsTab: React.FC = () => {
             setTspContactEventRequest(request);
             setShowTspContactAssignmentDialog(true);
           }}
+          onEditTspContact={() => {
+            setTspContactEventRequest(request);
+            setShowTspContactAssignmentDialog(true);
+          }}
           onApprove={() => handleStatusChange(request.id, 'in_process')}
           onDecline={() => handleStatusChange(request.id, 'declined')}
         />

@@ -20,6 +20,9 @@ import { CardContactInfo } from './shared/CardContactInfo';
 import { statusColors } from '@/components/event-requests/constants';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
+import { useAuth } from '@/hooks/useAuth';
+import { hasPermission } from '@shared/unified-auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -30,6 +33,7 @@ interface NewRequestCardProps {
   onToolkit: () => void;
   onScheduleCall: () => void;
   onAssignTspContact: () => void;
+  onEditTspContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -52,9 +56,12 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onToolkit,
   onScheduleCall,
   onAssignTspContact,
+  onEditTspContact,
   canEdit = true,
   canDelete = true,
 }) => {
+  const { user } = useAuth();
+  
   // Fetch users data for TSP contact name lookup
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
@@ -70,6 +77,9 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
            user.email || 
            'Unknown User';
   };
+  
+  // Check if user can edit TSP contact assignments
+  const canEditTspContact = hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
   return (
     <Card className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] ${statusColors.new}`}>
       <CardContent className="p-6">
@@ -79,12 +89,25 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {(request.tspContact || request.customTspContact) && (
           <div className="mb-4">
             <div className="bg-[#FBAD3F]/40 rounded-lg p-3 border border-[#FBAD3F] shadow-sm" style={{backgroundColor: 'rgba(251, 173, 63, 0.25)', backdropFilter: 'blur(1px)'}}>
-              <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-[#E5901A]" />
-                <span className="font-semibold text-[#D68319]">TSP Contact Assigned:</span>
-                <span className="font-medium text-[#C7761A]">
-                  {request.tspContact ? getUserDisplayName(request.tspContact) : request.customTspContact}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-[#E5901A]" />
+                  <span className="font-semibold text-[#D68319]">TSP Contact Assigned:</span>
+                  <span className="font-medium text-[#C7761A]">
+                    {request.tspContact ? getUserDisplayName(request.tspContact) : request.customTspContact}
+                  </span>
+                </div>
+                {canEditTspContact && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onEditTspContact}
+                    className="h-6 px-2 text-[#D68319] hover:bg-[#FBAD3F]/20"
+                    data-testid="button-edit-tsp-contact"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                )}
               </div>
               {request.tspContactAssignedDate && (
                 <p className="text-sm text-[#D68319]/90 mt-1">
