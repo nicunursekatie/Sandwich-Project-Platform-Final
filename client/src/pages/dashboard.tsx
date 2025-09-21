@@ -306,14 +306,8 @@ export default function Dashboard({
       case 'volunteers':
         return <VolunteerManagement />;
       case 'event-requests':
-        // Check for v2 test parameter
-        if (urlParams.version === '2' || urlParams.v2 === 'true') {
-          return <EventRequestsManagementV2
-            initialTab={urlParams.tab}
-            initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
-          />;
-        }
-        return <EventRequestsManagement
+        // Use v2 as the default now
+        return <EventRequestsManagementV2
           initialTab={urlParams.tab}
           initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
         />;
