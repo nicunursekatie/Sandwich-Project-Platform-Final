@@ -154,9 +154,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
     return (
       <div className="group">
-        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-base text-gray-600 font-medium">{label}</p>
         <div className="flex items-center gap-2">
-          <p className="font-medium">{value || 'Not set'}</p>
+          <p className="text-lg font-semibold">{value || 'Not set'}</p>
           {canEdit && (
             <Button
               size="sm"
@@ -183,9 +183,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       return (
         <div className="group bg-amber-50 rounded-lg p-3">
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-amber-600" />
-            <span className="font-medium">Sandwiches:</span>
-            <span>{sandwichInfo}</span>
+            <Package className="w-5 h-5 text-amber-600" />
+            <span className="text-lg font-semibold">Sandwiches:</span>
+            <span className="text-lg font-medium">{sandwichInfo}</span>
             {canEdit && (
               <Button
                 size="sm"
@@ -206,7 +206,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     return (
       <div className="bg-amber-50 rounded-lg p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-medium">Edit Sandwiches</span>
+          <span className="text-lg font-semibold">Edit Sandwiches</span>
           <div className="flex gap-2">
             <Button size="sm" onClick={saveEdit}>
               <Save className="w-3 h-3 mr-1" /> Save
@@ -381,22 +381,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             onClick={() => onStatusChange('completed')}
             className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
           >
-            <CheckCircle className="w-4 h-4 mr-1" />
-            Mark Complete
+            <CheckCircle className="w-5 h-5 mr-1" />
+            <span className="text-base font-medium">Mark Complete</span>
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={onContact}
           >
-            Contact Organizer
+            <span className="text-base font-medium">Contact Organizer</span>
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={onReschedule}
           >
-            Reschedule
+            <span className="text-base font-medium">Reschedule</span>
           </Button>
 
           <div className="flex-1" />
@@ -404,7 +404,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           {canEdit && (
             <>
               <Button size="sm" variant="ghost" onClick={onEdit}>
-                <Edit2 className="w-4 h-4" />
+                <Edit2 className="w-5 h-5" />
               </Button>
               <Button
                 size="sm"
@@ -412,7 +412,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 onClick={onDelete}
                 className="text-red-600 hover:text-red-700"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-5 h-5" />
               </Button>
             </>
           )}
