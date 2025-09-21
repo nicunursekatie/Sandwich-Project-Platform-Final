@@ -18,7 +18,26 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStal
     ? request.scheduledEventDate
     : request.desiredEventDate;
 
-  const dateInfo = formatEventDate(displayDate || '');
+  // Format the date for display
+  const dateInfo = displayDate ? formatEventDate(displayDate) : null;
+
+  // Calculate if date is past
+  const isPast = displayDate ? new Date(displayDate) < new Date() : false;
+
+  // Calculate relative time
+  const getRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays === -1) return 'Yesterday';
+    if (diffDays > 0 && diffDays <= 7) return `In ${diffDays} days`;
+    if (diffDays < 0 && diffDays >= -7) return `${Math.abs(diffDays)} days ago`;
+    return '';
+  };
 
   // Determine the date label based on status
   let dateLabel = 'Requested Date';
@@ -71,11 +90,11 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStal
               <Calendar className="w-3 h-3" />
               <span>
                 {dateLabel}: {' '}
-                <strong className={`${dateInfo.isPast ? 'text-red-600' : ''}`}>
-                  {dateInfo.display}
+                <strong className={displayDate && isPast ? 'text-red-600' : displayDate ? '' : 'text-gray-500'}>
+                  {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                 </strong>
-                {dateInfo.relativeTime && (
-                  <span className="text-[#236383] ml-1">({dateInfo.relativeTime})</span>
+                {displayDate && getRelativeTime(displayDate) && (
+                  <span className="text-[#236383] ml-1">({getRelativeTime(displayDate)})</span>
                 )}
                 {hasRescheduled && (
                   <span className="text-amber-600 ml-2 text-xs">(rescheduled)</span>
