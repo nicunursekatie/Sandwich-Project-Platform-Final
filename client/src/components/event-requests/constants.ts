@@ -62,5 +62,5 @@ export const statusOptions = [
   { value: 'in_process', label: 'In Process' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'completed', label: 'Completed' },
-  { value: 'declined', label: '🚫 EVENT POSTPONED' },
+  { value: 'declined', label: 'Declined/Postponed' },
 ];
