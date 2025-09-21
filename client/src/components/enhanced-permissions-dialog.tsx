@@ -786,6 +786,31 @@ export default function EnhancedPermissionsDialog({
 
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="space-y-4 p-1">
+            {/* Master toggle controls */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg sticky top-0 z-10 border">
+              <span className="text-sm font-medium">Quick Actions:</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const allPermissions = RESOURCE_PERMISSIONS.flatMap(r =>
+                      r.actions.map(a => a.key)
+                    );
+                    setSelectedPermissions(allPermissions);
+                  }}
+                >
+                  Select All Permissions
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedPermissions([])}
+                >
+                  Clear All Permissions
+                </Button>
+              </div>
+            </div>
             {RESOURCE_PERMISSIONS.map((resource) => {
               const Icon = resource.icon;
               const resourceState = getResourceState(resource);
@@ -809,31 +834,25 @@ export default function EnhancedPermissionsDialog({
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`resource-${resource.resource}`}
-                          checked={resourceState === 'all'}
-                          ref={
-                            resourceState === 'partial'
-                              ? (el) => {
-                                  if (el) el.indeterminate = true;
-                                }
-                              : undefined
-                          }
-                          onCheckedChange={(checked) =>
-                            handleResourceToggle(resource, checked as boolean)
-                          }
-                        />
-                        <label
-                          htmlFor={`resource-${resource.resource}`}
-                          className="text-sm font-medium cursor-pointer"
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={resourceState === 'all' ? 'secondary' : resourceState === 'partial' ? 'outline' : 'ghost'}
+                          onClick={() => handleResourceToggle(resource, resourceState !== 'all')}
+                          className={`h-8 px-3 font-medium ${
+                            resourceState === 'all'
+                              ? 'bg-green-100 hover:bg-green-200 text-green-800'
+                              : resourceState === 'partial'
+                              ? 'bg-amber-50 hover:bg-amber-100 text-amber-700'
+                              : 'hover:bg-gray-100'
+                          }`}
                         >
                           {resourceState === 'all'
-                            ? 'All'
+                            ? '✓ All Selected'
                             : resourceState === 'partial'
-                              ? 'Some'
-                              : 'None'}
-                        </label>
+                            ? `${selectedPermissions.filter(p => resource.actions.some(a => a.key === p)).length}/${resource.actions.length} Selected`
+                            : 'Select All'}
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
