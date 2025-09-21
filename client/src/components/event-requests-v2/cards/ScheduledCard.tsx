@@ -153,21 +153,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     }
 
     return (
-      <div className="flex items-center justify-between group">
-        <div>
-          <p className="text-sm text-gray-500">{label}</p>
+      <div className="group">
+        <p className="text-sm text-gray-500">{label}</p>
+        <div className="flex items-center gap-2">
           <p className="font-medium">{value || 'Not set'}</p>
+          {canEdit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => startEditing(field, value?.toString() || '')}
+              className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+              title={`Edit ${label}`}
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+          )}
         </div>
-        {canEdit && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => startEditing(field, value?.toString() || '')}
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Edit2 className="w-3 h-3" />
-          </Button>
-        )}
       </div>
     );
   };
@@ -180,22 +181,23 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       );
 
       return (
-        <div className="flex items-center justify-between group bg-amber-50 rounded-lg p-3">
+        <div className="group bg-amber-50 rounded-lg p-3">
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-amber-600" />
             <span className="font-medium">Sandwiches:</span>
             <span>{sandwichInfo}</span>
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => startEditing('sandwichTypes', '')}
+                className="h-6 px-2 ml-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                title="Edit sandwich types"
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
+            )}
           </div>
-          {canEdit && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => startEditing('sandwichTypes', '')}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Edit2 className="w-3 h-3" />
-            </Button>
-          )}
         </div>
       );
     }
