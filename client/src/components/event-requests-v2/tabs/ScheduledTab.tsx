@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduledCard } from '../cards/ScheduledCard';
+import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
+import type { EventRequest } from '@shared/schema';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
+
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation, rescheduleEventMutation } = useEventMutations();
   const {
     handleStatusChange,
     openAssignmentDialog,
@@ -176,14 +181,26 @@ export const ScheduledTab: React.FC = () => {
     }
   };
 
+  const handleReschedule = (request: EventRequest) => {
+    setRescheduleRequest(request);
+    setShowRescheduleDialog(true);
+  };
+
+  const performReschedule = async (eventId: number, newDate: Date) => {
+    await rescheduleEventMutation.mutateAsync({ id: eventId, newDate });
+    setShowRescheduleDialog(false);
+    setRescheduleRequest(null);
+  };
+
   return (
-    <div className="space-y-4">
-      {scheduledRequests.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          No scheduled events
-        </div>
-      ) : (
-        scheduledRequests.map((request) => (
+    <>
+      <div className="space-y-4">
+        {scheduledRequests.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No scheduled events
+          </div>
+        ) : (
+          scheduledRequests.map((request) => (
           <ScheduledCard
             key={request.id}
             request={request}
@@ -208,6 +225,7 @@ export const ScheduledTab: React.FC = () => {
               setSelectedEventRequest(request);
               setShowOneDayFollowUpDialog(true);
             }}
+            onReschedule={() => handleReschedule(request)}
             startEditing={(field, value) => startEditing(request.id, field, value)}
             saveEdit={saveEdit}
             cancelEdit={cancelEdit}
@@ -228,5 +246,16 @@ export const ScheduledTab: React.FC = () => {
         ))
       )}
     </div>
+
+    <RescheduleDialog
+      isOpen={showRescheduleDialog}
+      onClose={() => {
+        setShowRescheduleDialog(false);
+        setRescheduleRequest(null);
+      }}
+      request={rescheduleRequest}
+      onReschedule={performReschedule}
+    />
+  </>
   );
 };

@@ -299,6 +299,27 @@ export const useEventMutations = () => {
     },
   });
 
+  const rescheduleEventMutation = useMutation({
+    mutationFn: ({ id, newDate }: { id: number; newDate: Date }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}`, {
+        scheduledEventDate: newDate.toISOString(),
+      }),
+    onSuccess: async () => {
+      toast({
+        title: 'Event rescheduled',
+        description: 'The event date has been updated successfully.',
+      });
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to reschedule event.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     deleteEventRequestMutation,
     updateEventRequestMutation,
@@ -308,5 +329,6 @@ export const useEventMutations = () => {
     updateScheduledFieldMutation,
     oneDayFollowUpMutation,
     oneMonthFollowUpMutation,
+    rescheduleEventMutation,
   };
 };

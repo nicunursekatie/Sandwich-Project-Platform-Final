@@ -41,6 +41,7 @@ interface ScheduledCardProps {
   onContact: () => void;
   onStatusChange: (status: string) => void;
   onFollowUp: () => void;
+  onReschedule: () => void;
 
   // Inline editing actions
   startEditing: (field: string, value: string) => void;
@@ -78,6 +79,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   onContact,
   onStatusChange,
   onFollowUp,
+  onReschedule,
   startEditing,
   saveEdit,
   cancelEdit,
@@ -390,7 +392,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onStatusChange('new')}
+            onClick={onReschedule}
           >
             Reschedule
           </Button>

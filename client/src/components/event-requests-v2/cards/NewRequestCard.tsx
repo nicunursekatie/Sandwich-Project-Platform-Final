@@ -18,7 +18,7 @@ import {
 import { CardHeader } from './shared/CardHeader';
 import { CardContactInfo } from './shared/CardContactInfo';
 import { formatTime12Hour } from '@/components/event-requests/utils';
-import { getSandwichTypesSummary } from '@/components/event-requests/utils';
+import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 
 interface NewRequestCardProps {
@@ -79,9 +79,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <Package className="w-4 h-4 text-amber-600" />
                 <span className="font-medium">Sandwiches:</span>
                 <span>
-                  {request.sandwichTypes
-                    ? getSandwichTypesSummary(request.sandwichTypes)
-                    : `${request.estimatedSandwichCount} total`}
+                  {formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount)}
                 </span>
               </div>
             </div>

@@ -386,9 +386,19 @@ export const useEventAssignments = () => {
 
   // Handle status change
   const handleStatusChange = (id: number, status: string) => {
+    const data: any = { status };
+
+    // When marking as scheduled, set scheduledEventDate to desiredEventDate if not already set
+    if (status === 'scheduled') {
+      const request = eventRequests.find(r => r.id === id);
+      if (request && !request.scheduledEventDate && request.desiredEventDate) {
+        data.scheduledEventDate = request.desiredEventDate;
+      }
+    }
+
     updateEventRequestMutation.mutate({
       id,
-      data: { status }
+      data
     });
   };
 

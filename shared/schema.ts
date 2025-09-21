@@ -1394,7 +1394,8 @@ export const eventRequests = pgTable(
     department: varchar('department'),
 
     // Event details
-    desiredEventDate: timestamp('desired_event_date'),
+    desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
+    scheduledEventDate: timestamp('scheduled_event_date'), // Actual scheduled date (may differ from requested)
     message: text('message'), // Other relevant info about the group
 
     // Previous hosting experience

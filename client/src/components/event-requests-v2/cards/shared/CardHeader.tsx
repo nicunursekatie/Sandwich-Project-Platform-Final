@@ -12,7 +12,25 @@ interface CardHeaderProps {
 
 export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStale }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
-  const dateInfo = formatEventDate(request.desiredEventDate || '');
+
+  // Use scheduledEventDate for scheduled/completed events, otherwise use desiredEventDate
+  const displayDate = (request.status === 'scheduled' || request.status === 'completed') && request.scheduledEventDate
+    ? request.scheduledEventDate
+    : request.desiredEventDate;
+
+  const dateInfo = formatEventDate(displayDate || '');
+
+  // Determine the date label based on status
+  let dateLabel = 'Requested Date';
+  if (request.status === 'scheduled') {
+    dateLabel = 'Scheduled Date';
+  } else if (request.status === 'completed') {
+    dateLabel = 'Event Date';
+  }
+
+  // Show if scheduled date differs from requested date
+  const hasRescheduled = request.scheduledEventDate && request.desiredEventDate &&
+    new Date(request.scheduledEventDate).toDateString() !== new Date(request.desiredEventDate).toDateString();
 
   return (
     <div className="flex items-start justify-between mb-4">
@@ -52,12 +70,15 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStal
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               <span>
-                {request.status === 'completed' ? 'Event Date' : 'Requested Event Date'}: {' '}
+                {dateLabel}: {' '}
                 <strong className={`${dateInfo.isPast ? 'text-red-600' : ''}`}>
                   {dateInfo.display}
                 </strong>
                 {dateInfo.relativeTime && (
                   <span className="text-[#236383] ml-1">({dateInfo.relativeTime})</span>
+                )}
+                {hasRescheduled && (
+                  <span className="text-amber-600 ml-2 text-xs">(rescheduled)</span>
                 )}
               </span>
             </div>
