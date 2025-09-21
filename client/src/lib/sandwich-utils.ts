@@ -91,14 +91,27 @@ export function formatSandwichTypesDisplay(
   const parsed = parseSandwichTypes(sandwichTypes);
 
   if (parsed && parsed.length > 0) {
-    const total = parsed.reduce((sum, item) => sum + item.quantity, 0);
+    // Filter out "unknown" types completely
+    const validTypes = parsed.filter(item => 
+      item.quantity > 0 && 
+      item.type.toLowerCase() !== 'unknown'
+    );
 
-    if (parsed.length === 1) {
-      return `${parsed[0].quantity} ${parsed[0].type}`;
+    // If no valid types after filtering, don't show anything
+    if (validTypes.length === 0) {
+      if (fallbackCount) {
+        return `${fallbackCount} total`;
+      }
+      return 'Not specified';
     }
 
-    const breakdown = parsed
-      .filter(item => item.quantity > 0)
+    const total = validTypes.reduce((sum, item) => sum + item.quantity, 0);
+
+    if (validTypes.length === 1) {
+      return `${validTypes[0].quantity} ${validTypes[0].type}`;
+    }
+
+    const breakdown = validTypes
       .map(item => `${item.quantity} ${item.type}`)
       .join(', ');
 
