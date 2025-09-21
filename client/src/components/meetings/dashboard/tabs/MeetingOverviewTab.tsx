@@ -21,43 +21,9 @@ import {
 } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
 
-interface Meeting {
-  id: number;
-  title: string;
-  date: string;
-  time: string;
-  type: string;
-  status: string;
-  location?: string;
-  description?: string;
-  finalAgenda?: string;
-}
-
-interface CompiledAgenda {
-  id: number;
-  meetingId: number;
-  date: string;
-  status: string;
-  totalEstimatedTime?: string;
-  sections?: Array<{
-    id: number;
-    title: string;
-    items: any[];
-  }>;
-}
-
-interface Project {
-  id: number;
-  title: string;
-  status: string;
-  priority?: string;
-  description?: string;
-  reviewInNextMeeting: boolean;
-  meetingDiscussionPoints?: string;
-  meetingDecisionItems?: string;
-  supportPeople?: string;
-  assigneeName?: string;
-}
+// Import types from hooks instead of re-declaring them
+import type { Meeting, CompiledAgenda } from '../hooks/useMeetings';
+import type { Project } from '../hooks/useProjects';
 
 interface MeetingOverviewTabProps {
   // State

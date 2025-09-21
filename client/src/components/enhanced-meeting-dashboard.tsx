@@ -47,8 +47,8 @@ import { NewMeetingDialog } from './meetings/dashboard/dialogs/NewMeetingDialog'
 import { EditMeetingDialog } from './meetings/dashboard/dialogs/EditMeetingDialog';
 import { AddProjectDialog } from './meetings/dashboard/dialogs/AddProjectDialog';
 import { MeetingDetailsDialog } from './meetings/dashboard/dialogs/MeetingDetailsDialog';
-import MeetingOverviewTab from './meetings/dashboard/tabs/MeetingOverviewTab';
-import AgendaPlanningTab from './meetings/dashboard/tabs/AgendaPlanningTab';
+import { MeetingOverviewTab } from './meetings/dashboard/tabs/MeetingOverviewTab';
+import { AgendaPlanningTab } from './meetings/dashboard/tabs/AgendaPlanningTab';
 import { getCategoryIcon } from './meetings/dashboard/utils/categories';
 import { formatStatusText, getStatusBadgeProps } from './meetings/dashboard/utils/status';
 import { formatMeetingDate, formatMeetingTime, isPastMeeting, getCurrentDateRange, formatSectionName } from './meetings/dashboard/utils/date';

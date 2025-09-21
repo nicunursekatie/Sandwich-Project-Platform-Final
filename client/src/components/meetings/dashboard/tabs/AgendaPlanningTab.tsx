@@ -46,36 +46,28 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import type { UseMutationResult } from '@tanstack/react-query';
+import type { UseMutationResult, QueryClient } from '@tanstack/react-query';
+import type { ToastActionElement } from '@/components/ui/toast';
 
-interface Project {
-  id: number;
-  title: string;
-  status: string;
-  priority?: string;
-  description?: string;
-  reviewInNextMeeting: boolean;
-  meetingDiscussionPoints?: string;
-  meetingDecisionItems?: string;
-  supportPeople?: string;
-  assigneeName?: string;
-  lastDiscussedDate?: string;
-}
+// Import types from hooks instead of re-declaring them
+import type { Meeting } from '../hooks/useMeetings';
+import type { Project, NewProjectData } from '../hooks/useProjects';
+import type { AgendaItem } from '../hooks/useAgenda';
 
-interface AgendaItem {
-  id: number;
-  title: string;
+// Toast function type based on the useToast hook
+type ToastFunction = (props: {
+  title?: string;
   description?: string;
-  section: string;
-  submittedAt: string;
-}
+  variant?: 'default' | 'destructive';
+  action?: ToastActionElement;
+}) => void;
 
 interface AgendaPlanningTabProps {
   // State
-  selectedMeeting: any;
-  meetings: any[];
+  selectedMeeting: Meeting | null;
+  meetings: Meeting[];
   projectAgendaStatus: Record<number, 'none' | 'agenda' | 'tabled'>;
-  setProjectAgendaStatus: (status: any) => void;
+  setProjectAgendaStatus: (status: Record<number, 'none' | 'agenda' | 'tabled'>) => void;
   minimizedProjects: Set<number>;
   setMinimizedProjects: (projects: Set<number>) => void;
   localProjectText: Record<number, { discussionPoints?: string; decisionItems?: string }>;
@@ -83,8 +75,8 @@ interface AgendaPlanningTabProps {
   setShowResetConfirmDialog: (show: boolean) => void;
   showAddProjectDialog: boolean;
   setShowAddProjectDialog: (show: boolean) => void;
-  newProjectData: any;
-  setNewProjectData: (data: any) => void;
+  newProjectData: NewProjectData;
+  setNewProjectData: (data: NewProjectData) => void;
   offAgendaTitle: string;
   setOffAgendaTitle: (title: string) => void;
   offAgendaSection: string;
@@ -109,7 +101,7 @@ interface AgendaPlanningTabProps {
   newTaskDescription: string;
   setNewTaskDescription: (description: string) => void;
   uploadedFiles: Record<number, { url: string; name: string }[]>;
-  setUploadedFiles: (files: any) => void;
+  setUploadedFiles: (files: Record<number, { url: string; name: string }[]>) => void;
   
   // Data
   allProjects: Project[];
@@ -130,19 +122,19 @@ interface AgendaPlanningTabProps {
   handleAddOffAgendaItem: () => void;
   handleCreateProject: () => void;
   
-  // Mutations
-  updateProjectDiscussionMutation: UseMutationResult<any, Error, any, unknown>;
-  updateProjectPriorityMutation: UseMutationResult<any, Error, any, unknown>;
-  createTasksFromNotesMutation: UseMutationResult<any, Error, any, unknown>;
-  resetAgendaPlanningMutation: UseMutationResult<any, Error, any, unknown>;
-  createOffAgendaItemMutation: UseMutationResult<any, Error, any, unknown>;
-  deleteAgendaItemMutation: UseMutationResult<any, Error, any, unknown>;
-  createProjectMutation: UseMutationResult<any, Error, any, unknown>;
+  // Mutations - properly typed based on the hooks
+  updateProjectDiscussionMutation: UseMutationResult<unknown, Error, { projectId: number; updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string; reviewInNextMeeting?: boolean; priority?: string; supportPeople?: string; assigneeName?: string } }, unknown>;
+  updateProjectPriorityMutation: UseMutationResult<unknown, Error, { projectId: number; priority: string }, unknown>;
+  createTasksFromNotesMutation: UseMutationResult<unknown, Error, void, unknown>;
+  resetAgendaPlanningMutation: UseMutationResult<{ notesProcessed: number; notesCleared: number }, Error, void, unknown>;
+  createOffAgendaItemMutation: UseMutationResult<unknown, Error, { title: string; section: string; meetingId: number }, unknown>;
+  deleteAgendaItemMutation: UseMutationResult<unknown, Error, number, unknown>;
+  createProjectMutation: UseMutationResult<unknown, Error, NewProjectData, unknown>;
   
   // Additional dependencies
-  queryClient: any;
-  apiRequest: (method: string, url: string, body?: any) => Promise<any>;
-  toast: (props: any) => void;
+  queryClient: QueryClient;
+  apiRequest: <T = unknown>(method: string, url: string, body?: unknown) => Promise<T>;
+  toast: ToastFunction;
 }
 
 export function AgendaPlanningTab({
