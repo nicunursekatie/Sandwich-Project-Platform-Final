@@ -13,10 +13,8 @@ interface CardHeaderProps {
 export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStale }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
 
-  // Use scheduledEventDate for scheduled/completed events, otherwise use desiredEventDate
-  const displayDate = (request.status === 'scheduled' || request.status === 'completed') && request.scheduledEventDate
-    ? request.scheduledEventDate
-    : request.desiredEventDate;
+  // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
+  const displayDate = request.scheduledEventDate || request.desiredEventDate;
 
   // Format the date for display
   const dateInfo = displayDate ? formatEventDate(displayDate) : null;
@@ -39,17 +37,15 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStal
     return '';
   };
 
-  // Determine the date label based on status
+  // Determine the date label based on what date we're showing
   let dateLabel = 'Requested Date';
-  if (request.status === 'scheduled') {
-    dateLabel = 'Scheduled Date';
-  } else if (request.status === 'completed') {
-    dateLabel = 'Event Date';
+  if (request.scheduledEventDate) {
+    if (request.status === 'completed') {
+      dateLabel = 'Event Date';
+    } else {
+      dateLabel = 'Scheduled Date';
+    }
   }
-
-  // Show if scheduled date differs from requested date
-  const hasRescheduled = request.scheduledEventDate && request.desiredEventDate &&
-    new Date(request.scheduledEventDate).toDateString() !== new Date(request.desiredEventDate).toDateString();
 
   return (
     <div className="flex items-start justify-between mb-4">
@@ -100,9 +96,6 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStal
                 </strong>
                 {displayDate && getRelativeTime(displayDate) && (
                   <span className="text-[#236383] ml-1">({getRelativeTime(displayDate)})</span>
-                )}
-                {hasRescheduled && (
-                  <span className="text-amber-600 ml-2 text-xs">(rescheduled)</span>
                 )}
               </span>
             </div>
