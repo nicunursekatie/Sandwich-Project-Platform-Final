@@ -293,7 +293,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Event Details - Editable */}
         <div className="space-y-3 mb-4">
           {/* Event Dates */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+            <div className="grid grid-cols-2 gap-4">
             {renderEditableField(
               'desiredEventDate',
               request.desiredEventDate ? new Date(request.desiredEventDate).toLocaleDateString('en-US', {
@@ -316,52 +317,64 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               'Scheduled Date',
               'date'
             )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Event Times */}
+          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+            <div className="grid grid-cols-2 gap-4">
+              {renderEditableField(
+                'eventStartTime',
+                request.eventStartTime && formatTime12Hour(request.eventStartTime),
+                'Start Time',
+                'time'
+              )}
+              {renderEditableField(
+                'eventEndTime',
+                request.eventEndTime && formatTime12Hour(request.eventEndTime),
+                'End Time',
+                'time'
+              )}
+            </div>
+          </div>
+
+          {/* Pickup & Logistics */}
+          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+            <div className="grid grid-cols-2 gap-4">
+              {renderEditableField(
+                'pickupTime',
+                request.pickupTime && formatTime12Hour(request.pickupTime),
+                'Pickup Time',
+                'time'
+              )}
+              {renderEditableField(
+                'hasRefrigeration',
+                request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown',
+                'Refrigeration Available',
+                'select',
+                [
+                  { value: 'true', label: 'Yes' },
+                  { value: 'false', label: 'No' },
+                  { value: 'unknown', label: 'Unknown' },
+                ]
+              )}
+            </div>
+          </div>
+
+          {/* Event Location */}
+          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
             {renderEditableField(
-              'eventStartTime',
-              request.eventStartTime && formatTime12Hour(request.eventStartTime),
-              'Start Time',
-              'time'
-            )}
-            {renderEditableField(
-              'eventEndTime',
-              request.eventEndTime && formatTime12Hour(request.eventEndTime),
-              'End Time',
-              'time'
+              'eventAddress',
+              request.eventAddress,
+              'Event Location',
+              'text'
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {renderEditableField(
-              'pickupTime',
-              request.pickupTime && formatTime12Hour(request.pickupTime),
-              'Pickup Time',
-              'time'
-            )}
-            {renderEditableField(
-              'hasRefrigeration',
-              request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown',
-              'Refrigeration Available',
-              'select',
-              [
-                { value: 'true', label: 'Yes' },
-                { value: 'false', label: 'No' },
-                { value: 'unknown', label: 'Unknown' },
-              ]
-            )}
+          {/* Sandwich Details */}
+          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+            {renderSandwichEdit()}
           </div>
-
-          {renderEditableField(
-            'eventAddress',
-            request.eventAddress,
-            'Event Location',
-            'text'
-          )}
-
-          {/* Sandwich Editing */}
-          {renderSandwichEdit()}
         </div>
 
         {/* Assignments */}
