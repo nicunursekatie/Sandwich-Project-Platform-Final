@@ -7,7 +7,7 @@ import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -21,13 +21,12 @@ import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDial
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
-import { HelpCircle } from 'lucide-react';
 
 // Import mutations hook
 import { useEventMutations } from './hooks/useEventMutations';
 import { useToast } from '@/hooks/use-toast';
 
-// Import the TSP Contact Assignment Dialog and Assignment Dialog
+// Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
 
@@ -119,11 +118,6 @@ const EventRequestsManagementContent: React.FC = () => {
 
   const { toast } = useToast();
 
-  // Initialize modal sandwich state when opening details
-  const initializeModalSandwichState = (eventRequest: any) => {
-    // This would be handled in the EventSchedulingForm component
-  };
-
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
 
@@ -163,11 +157,9 @@ const EventRequestsManagementContent: React.FC = () => {
                 setShowOneDayFollowUpDialog(false);
                 setShowOneMonthFollowUpDialog(false);
                 setShowToolkitSentDialog(false);
-
                 setSelectedEventRequest(null);
                 setIsEditing(true);
                 setShowEventDetails(true);
-                initializeModalSandwichState(null);
               }}
               className="text-white"
               style={{ backgroundColor: '#007E8C' }}
