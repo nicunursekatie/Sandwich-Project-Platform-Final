@@ -130,17 +130,15 @@ export function validateSandwichTypes(sandwichTypes: any): boolean {
   }
 }
 
-// Run the migration if this file is executed directly
-if (require.main === module) {
-  standardizeSandwichTypes()
-    .then(() => {
-      console.log('Migration completed successfully');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('Migration failed:', error);
-      process.exit(1);
-    });
-}
+// Run the migration
+standardizeSandwichTypes()
+  .then(() => {
+    console.log('✅ Migration completed successfully');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Migration failed:', error);
+    process.exit(1);
+  });
 
 export default standardizeSandwichTypes;
