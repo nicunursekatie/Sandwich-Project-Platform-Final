@@ -299,7 +299,17 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] border border-[#236383]/30">
       <CardContent className="p-6">
-        <CardHeader request={request} />
+        <CardHeader 
+          request={request} 
+          canEdit={canEdit}
+          isEditingThisCard={isEditingThisCard}
+          editingField={editingField || ''}
+          editingValue={editingValue}
+          startEditing={startEditing}
+          saveEdit={saveEdit}
+          cancelEdit={cancelEdit}
+          setEditingValue={setEditingValue}
+        />
 
         {/* Event Details - Editable */}
         <div className="space-y-3 mb-4">
