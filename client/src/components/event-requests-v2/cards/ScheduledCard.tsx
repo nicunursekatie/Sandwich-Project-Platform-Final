@@ -286,7 +286,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-green-500">
+    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] border border-[#236383]/30">
       <CardContent className="p-6">
         <CardHeader request={request} />
 
@@ -379,7 +379,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             size="sm"
             variant="default"
             onClick={() => onStatusChange('completed')}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
           >
             <CheckCircle className="w-4 h-4 mr-1" />
             Mark Complete

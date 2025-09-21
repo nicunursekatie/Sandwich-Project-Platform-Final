@@ -116,7 +116,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="default"
             onClick={onToolkit}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
           >
             <Package className="w-4 h-4 mr-1" />
             Send Toolkit
@@ -137,7 +137,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="ghost"
             onClick={onApprove}
-            className="text-green-600 hover:text-green-700"
+            className="text-[#236383] hover:text-[#007E8C]"
           >
             <CheckCircle className="w-4 h-4 mr-1" />
             Approve

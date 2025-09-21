@@ -107,7 +107,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
             size="sm"
             variant="default"
             onClick={onReactivate}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
           >
             <RefreshCw className="w-4 h-4 mr-1" />
             Reactivate Request

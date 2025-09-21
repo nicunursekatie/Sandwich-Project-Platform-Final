@@ -135,7 +135,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             size="sm"
             variant="default"
             onClick={onSchedule}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
           >
             <Calendar className="w-4 h-4 mr-1" />
             Mark Scheduled
