@@ -29,6 +29,9 @@ import { useEventMutations } from './hooks/useEventMutations';
 // Import the TSP Contact Assignment Dialog
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
 
+// Import the Assignment Dialog
+import { AssignmentDialog } from './dialogs/AssignmentDialog';
+
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
   const {
@@ -65,6 +68,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowContactOrganizerDialog,
     showCollectionLog,
     setShowCollectionLog,
+    showAssignmentDialog,
+    setShowAssignmentDialog,
     showTspContactAssignmentDialog,
     setShowTspContactAssignmentDialog,
     showSandwichPlanningModal,
@@ -87,6 +92,18 @@ const EventRequestsManagementContent: React.FC = () => {
     setContactEventRequest,
     tspContactEventRequest,
     setTspContactEventRequest,
+
+    // Assignment dialog states
+    assignmentType,
+    setAssignmentType,
+    assignmentEventId,
+    setAssignmentEventId,
+    selectedAssignees,
+    setSelectedAssignees,
+    isEditingAssignment,
+    setIsEditingAssignment,
+    editingAssignmentPersonId,
+    setEditingAssignmentPersonId,
 
     // Other states
     scheduleCallDate,
@@ -354,6 +371,24 @@ const EventRequestsManagementContent: React.FC = () => {
           eventRequestTitle={tspContactEventRequest?.organizationName}
           currentTspContact={tspContactEventRequest?.tspContact}
           currentCustomTspContact={tspContactEventRequest?.customTspContact}
+        />
+
+        {/* Assignment Dialog for Drivers, Speakers, and Volunteers */}
+        <AssignmentDialog
+          isOpen={showAssignmentDialog}
+          onClose={() => {
+            setShowAssignmentDialog(false);
+            setAssignmentType(null);
+            setAssignmentEventId(null);
+            setSelectedAssignees([]);
+            setIsEditingAssignment(false);
+            setEditingAssignmentPersonId(null);
+          }}
+          assignmentType={assignmentType}
+          eventId={assignmentEventId}
+          eventTitle={eventRequests.find(req => req.id === assignmentEventId)?.organizationName}
+          selectedAssignees={selectedAssignees}
+          onSelectionChange={setSelectedAssignees}
         />
 
         {/* Sandwich Planning Modal */}
