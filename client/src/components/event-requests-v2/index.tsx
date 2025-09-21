@@ -26,6 +26,7 @@ import { HelpCircle } from 'lucide-react';
 // Import mutations hook
 import { useEventMutations } from './hooks/useEventMutations';
 import { useToast } from '@/hooks/use-toast';
+import { queryClient } from '@/lib/queryClient';
 
 // Import the TSP Contact Assignment Dialog
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -434,7 +435,8 @@ const EventRequestsManagementContent: React.FC = () => {
                 description: `Successfully assigned ${assignees.length} ${assignmentType}${assignees.length !== 1 ? 's' : ''} to the event.`,
               });
 
-              // TODO: Refresh the event requests data to show updated assignments
+              // Refresh the event requests data to show updated assignments
+              await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
               
             } catch (error) {
               console.error('Error assigning speakers:', error);
