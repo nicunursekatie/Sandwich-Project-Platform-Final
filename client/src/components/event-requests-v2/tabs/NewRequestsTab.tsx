@@ -61,10 +61,6 @@ export const NewRequestsTab: React.FC = () => {
             setShowEventDetails(true);
           }}
           onDelete={() => deleteEventRequestMutation.mutate(request.id)}
-          onSchedule={() => {
-            setSchedulingEventRequest(request);
-            setShowSchedulingDialog(true);
-          }}
           onCall={() => handleCall(request)}
           onContact={() => {
             setContactEventRequest(request);

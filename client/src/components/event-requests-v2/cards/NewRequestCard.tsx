@@ -25,7 +25,6 @@ interface NewRequestCardProps {
   request: EventRequest;
   onEdit: () => void;
   onDelete: () => void;
-  onSchedule: () => void;
   onCall: () => void;
   onContact: () => void;
   onToolkit: () => void;
@@ -40,7 +39,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   request,
   onEdit,
   onDelete,
-  onSchedule,
   onCall,
   onContact,
   onToolkit,
@@ -119,16 +117,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           <Button
             size="sm"
             variant="default"
-            onClick={onSchedule}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Calendar className="w-4 h-4 mr-1" />
-            Schedule Event
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
             onClick={onToolkit}
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
             <Package className="w-4 h-4 mr-1" />
             Send Toolkit
