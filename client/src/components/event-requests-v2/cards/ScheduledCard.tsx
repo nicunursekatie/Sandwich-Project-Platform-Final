@@ -296,12 +296,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="grid grid-cols-2 gap-4">
             {renderEditableField(
               'desiredEventDate',
-              request.desiredEventDate && new Date(request.desiredEventDate).toLocaleDateString('en-US', {
+              request.desiredEventDate ? new Date(request.desiredEventDate).toLocaleDateString('en-US', {
                 weekday: 'short',
                 year: 'numeric', 
                 month: 'short',
                 day: 'numeric'
-              }),
+              }) : 'Not specified',
               'Requested Date',
               'date'
             )}
