@@ -303,32 +303,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Event Details - Editable */}
         <div className="space-y-3 mb-4">
-          {/* Event Dates */}
+          {/* Event Location */}
           <div className="bg-white/50 rounded-lg p-3 border border-white/60">
-            <div className="grid grid-cols-2 gap-4">
             {renderEditableField(
-              'desiredEventDate',
-              request.desiredEventDate ? new Date(request.desiredEventDate).toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric', 
-                month: 'short',
-                day: 'numeric'
-              }) : 'Not specified',
-              'Requested Date',
-              'date'
+              'eventAddress',
+              request.eventAddress,
+              'Event Location',
+              'text'
             )}
-            {renderEditableField(
-              'scheduledEventDate',
-              request.scheduledEventDate && new Date(request.scheduledEventDate).toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric', 
-                month: 'short',
-                day: 'numeric'
-              }),
-              'Scheduled Date',
-              'date'
-            )}
-            </div>
           </div>
 
           {/* Event Times */}
@@ -370,16 +352,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 ]
               )}
             </div>
-          </div>
-
-          {/* Event Location */}
-          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
-            {renderEditableField(
-              'eventAddress',
-              request.eventAddress,
-              'Event Location',
-              'text'
-            )}
           </div>
 
           {/* Sandwich Details */}
