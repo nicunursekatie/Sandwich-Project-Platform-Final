@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,15 @@ interface NewRequestCardProps {
   canDelete?: boolean;
 }
 
+interface User {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  email: string;
+  role?: string;
+}
+
 export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   request,
   onEdit,
@@ -45,6 +55,21 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   canEdit = true,
   canDelete = true,
 }) => {
+  // Fetch users data for TSP contact name lookup
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['/api/users'],
+    enabled: !!(request.tspContact), // Only fetch if there's a TSP contact assigned
+  });
+
+  // Helper function to get user display name from user ID
+  const getUserDisplayName = (userId: string): string => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return userId;
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+           user.displayName || 
+           user.email || 
+           'Unknown User';
+  };
   return (
     <Card className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] ${statusColors.new}`}>
       <CardContent className="p-6">
@@ -53,16 +78,16 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* TSP Contact Assignment Status */}
         {(request.tspContact || request.customTspContact) && (
           <div className="mb-4">
-            <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg p-3 border-2 border-yellow-500">
+            <div className="bg-gradient-to-r from-[#FBAD3F]/20 to-[#FBAD3F]/10 rounded-lg p-3 border border-[#FBAD3F]/30">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-yellow-800" />
-                <span className="font-semibold text-yellow-800">TSP Contact Assigned:</span>
-                <span className="font-medium text-yellow-900">
-                  {request.tspContact || request.customTspContact}
+                <UserPlus className="w-4 h-4 text-[#8B5A00]" />
+                <span className="font-semibold text-[#8B5A00]">TSP Contact Assigned:</span>
+                <span className="font-medium text-[#6B4300]">
+                  {request.tspContact ? getUserDisplayName(request.tspContact) : request.customTspContact}
                 </span>
               </div>
               {request.tspContactAssignedDate && (
-                <p className="text-sm text-yellow-700 mt-1">
+                <p className="text-sm text-[#8B5A00]/80 mt-1">
                   Assigned on {new Date(request.tspContactAssignedDate).toLocaleDateString()}
                 </p>
               )}
