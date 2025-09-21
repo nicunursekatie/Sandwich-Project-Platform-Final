@@ -21,6 +21,7 @@ import { CardHeader } from './shared/CardHeader';
 import { CardAssignments } from './shared/CardAssignments';
 import { formatTime12Hour, formatTimeForInput } from '@/components/event-requests/utils';
 import { SANDWICH_TYPES } from '@/components/event-requests/constants';
+import { parseSandwichTypes, formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 
 interface ScheduledCardProps {
@@ -171,21 +172,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   const renderSandwichEdit = () => {
     if (!(isEditingThisCard && editingField === 'sandwichTypes')) {
-      let sandwichInfo = `${request.estimatedSandwichCount || 0} total`;
-
-      if (request.sandwichTypes) {
-        try {
-          const types = typeof request.sandwichTypes === 'string'
-            ? JSON.parse(request.sandwichTypes)
-            : request.sandwichTypes;
-
-          if (Array.isArray(types) && types.length > 0) {
-            sandwichInfo = types.map((s: any) => `${s.quantity} ${s.type}`).join(', ');
-          }
-        } catch (e) {
-          console.error('Error parsing sandwich types:', e);
-        }
-      }
+      const sandwichInfo = formatSandwichTypesDisplay(
+        request.sandwichTypes,
+        request.estimatedSandwichCount
+      );
 
       return (
         <div className="flex items-center justify-between group bg-amber-50 rounded-lg p-3">

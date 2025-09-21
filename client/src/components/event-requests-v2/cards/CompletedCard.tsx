@@ -17,7 +17,7 @@ import {
 import { CardHeader } from './shared/CardHeader';
 import { CardAssignments } from './shared/CardAssignments';
 import { formatTime12Hour } from '@/components/event-requests/utils';
-import { getSandwichTypesSummary } from '@/components/event-requests/utils';
+import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 
 interface CompletedCardProps {
@@ -78,9 +78,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   <span>
                     {request.actualSandwichCount
                       ? `${request.actualSandwichCount} delivered`
-                      : request.sandwichTypes
-                      ? getSandwichTypesSummary(request).breakdown
-                      : `${request.estimatedSandwichCount} estimated`}
+                      : formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount)}
                   </span>
                 </div>
               </div>

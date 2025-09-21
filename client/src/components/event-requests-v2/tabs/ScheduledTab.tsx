@@ -5,6 +5,7 @@ import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduledCard } from '../cards/ScheduledCard';
+import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
@@ -63,11 +64,8 @@ export const ScheduledTab: React.FC = () => {
     if (field === 'sandwichTypes') {
       const eventRequest = eventRequests.find(req => req.id === id);
       if (eventRequest) {
-        const existingSandwichTypes = eventRequest.sandwichTypes ?
-          (typeof eventRequest.sandwichTypes === 'string' ?
-            JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [];
-
-        const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
+        const existingSandwichTypes = parseSandwichTypes(eventRequest.sandwichTypes) || [];
+        const hasTypesData = existingSandwichTypes.length > 0;
         const totalCount = eventRequest.estimatedSandwichCount || 0;
 
         setInlineSandwichMode(hasTypesData ? 'types' : 'total');
@@ -99,7 +97,7 @@ export const ScheduledTab: React.FC = () => {
           updateData.estimatedSandwichCount = inlineTotalCount;
           updateData.sandwichTypes = null;
         } else {
-          updateData.sandwichTypes = JSON.stringify(inlineSandwichTypes);
+          updateData.sandwichTypes = stringifySandwichTypes(inlineSandwichTypes);
           updateData.estimatedSandwichCount = inlineSandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
         }
 
