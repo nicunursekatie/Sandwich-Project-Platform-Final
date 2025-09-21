@@ -4,6 +4,18 @@
 This full-stack application for The Sandwich Project, a nonprofit, manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support the organization's growth and impact in addressing food insecurity. Its business vision is to become a vital tool for food security initiatives, with market potential in supporting volunteer-driven community projects. The ambition is to scale operations and improve outreach, ultimately contributing to a significant reduction in food waste and hunger.
 
 ## Recent Changes
+**September 21, 2025 - Enhanced Meeting Dashboard Refactoring:**
+- **Major Refactoring**: Transformed 4,076-line enhanced-meeting-dashboard.tsx into modular architecture
+- **File Size Reduction**: Main component reduced by 53% to ~1,900 lines through systematic extraction
+- **Component Structure**: Created organized folder hierarchy at client/src/components/meetings/dashboard/
+  - 4 Dialog components: NewMeetingDialog, EditMeetingDialog, AddProjectDialog, MeetingDetailsDialog
+  - 2 Tab components: MeetingOverviewTab, AgendaPlanningTab  
+  - 1 Section component: ProjectTasksView
+  - 4 Shared hooks: useMeetings, useProjects, useAgenda, useFiles
+  - 3 Utility modules: status.ts, categories.ts, date.ts
+- **Type Safety**: Fixed import/export mismatches, removed type duplication, eliminated weak `any` typing
+- **Benefits**: Improved maintainability, reusability, and code organization following React best practices
+
 **September 19, 2025 - Major System Overhaul & Unified Permissions Architecture:**
 - **Permissions System Modernization**: Migrated 172 legacy permission references across 24 files to standardized RESOURCE_ACTION format
 - **Unified Permission Checking**: Created `shared/unified-auth-utils.ts` (233 lines) as single source of truth for frontend/backend permission logic
