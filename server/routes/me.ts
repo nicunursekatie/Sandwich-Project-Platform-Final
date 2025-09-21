@@ -150,8 +150,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
 
     // Fetch assigned events (using same logic as existing /assigned endpoint)
     const allEventRequests = await storage.getAllEventRequests();
-    const users = await storage.getAllUsers();
-    const currentUser = users.find((u: any) => u.id === userId);
+    // Note: currentUser already defined above
 
     const assignedEvents = allEventRequests
       .filter((event: any) => {
