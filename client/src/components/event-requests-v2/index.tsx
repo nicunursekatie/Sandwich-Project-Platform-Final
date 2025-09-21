@@ -27,7 +27,7 @@ import { HelpCircle } from 'lucide-react';
 import { useEventMutations } from './hooks/useEventMutations';
 import { useToast } from '@/hooks/use-toast';
 
-// Import the TSP Contact Assignment Dialog
+// Import the TSP Contact Assignment Dialog and Assignment Dialog
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
 
