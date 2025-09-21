@@ -323,6 +323,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             )}
           </div>
 
+          {/* Destination */}
+          {request.deliveryDestination && (
+            <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+              {renderEditableField(
+                'deliveryDestination',
+                request.deliveryDestination,
+                'Delivery Destination',
+                'text'
+              )}
+            </div>
+          )}
+
           {/* Times & Logistics - Compact */}
           <div className="bg-white/50 rounded-lg p-2 border border-white/60">
             <div className="grid grid-cols-4 gap-3 text-sm">

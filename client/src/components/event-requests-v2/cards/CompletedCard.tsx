@@ -13,6 +13,7 @@ import {
   FileText,
   MessageCircle,
   RefreshCw,
+  MapPin,
 } from 'lucide-react';
 import { CardHeader } from './shared/CardHeader';
 import { CardAssignments } from './shared/CardAssignments';
@@ -68,6 +69,17 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </p>
               </div>
             </div>
+
+            {/* Delivery Destination */}
+            {request.deliveryDestination && (
+              <div className="bg-blue-50 rounded-lg p-3 mt-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium">Delivery Destination:</span>
+                  <span>{request.deliveryDestination}</span>
+                </div>
+              </div>
+            )}
 
             {/* Sandwich Info */}
             {(request.actualSandwichCount || request.estimatedSandwichCount || request.sandwichTypes) && (
