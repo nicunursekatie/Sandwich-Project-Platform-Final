@@ -117,6 +117,59 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
     );
   };
 
+  // Custom render for van driver (single assignment)
+  const renderVanDriverAssignment = () => {
+    if (!request.vanDriverNeeded && !request.assignedVanDriverId) {
+      return null; // Don't show section if not needed and no one assigned
+    }
+
+    const assignedVanDriverName = request.assignedVanDriverId 
+      ? resolveUserName(request.assignedVanDriverId)
+      : null;
+
+    return (
+      <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-3">
+          <Car className="w-5 h-5 text-[#A31C41]" />
+          <span className="font-semibold text-base text-[#A31C41]">Van Driver</span>
+        </div>
+
+        {/* Assigned van driver */}
+        <div className="space-y-2 mb-3 min-h-[60px]">
+          {assignedVanDriverName ? (
+            <div className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
+              <span className="text-sm font-medium">{assignedVanDriverName}</span>
+              {canEdit && onRemoveAssignment && (
+                <button
+                  onClick={() => onRemoveAssignment('driver', request.assignedVanDriverId!)}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-[#A31C41]/60 italic">No van driver assigned</div>
+          )}
+        </div>
+
+        {/* Assign button - only show if no one assigned yet */}
+        {canEdit && !assignedVanDriverName && onAssign && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onAssign('driver')}
+            className="w-full text-sm border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Assign Van Driver
+          </Button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="pt-4">
       {/* Assignments Section */}
@@ -151,6 +204,16 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
           request.volunteerDetails
         )}
       </div>
+
+      {/* Van Driver Section - separate row if needed */}
+      {(request.vanDriverNeeded || request.assignedVanDriverId) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="md:col-span-1">
+            {renderVanDriverAssignment()}
+          </div>
+          <div className="md:col-span-2"></div> {/* Empty space to maintain layout */}
+        </div>
+      )}
     </div>
   );
 };
