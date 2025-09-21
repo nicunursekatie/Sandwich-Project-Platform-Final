@@ -27,7 +27,8 @@ import { ProjectTasksView } from '../sections/ProjectTasksView';
 import { AddProjectDialog } from '../dialogs/AddProjectDialog';
 import { getCategoryIcon } from '../utils/categories';
 import { formatStatusText, getStatusBadgeProps } from '../utils/status';
-import { formatDateForDisplay, formatSectionName } from '../utils/date';
+import { formatDateForDisplay } from '@/lib/date-utils';
+import { formatSectionName } from '../utils/date';
 import {
   Plus,
   ExternalLink,
