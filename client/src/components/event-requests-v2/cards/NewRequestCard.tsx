@@ -18,6 +18,7 @@ import {
 import { CardHeader } from './shared/CardHeader';
 import { CardContactInfo } from './shared/CardContactInfo';
 import { formatTime12Hour } from '@/components/event-requests/utils';
+import { statusColors } from '@/components/event-requests/constants';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 
@@ -49,7 +50,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   canDelete = true,
 }) => {
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] border border-[#236383]/30">
+    <Card className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] ${statusColors.new}`}>
       <CardContent className="p-6">
         <CardHeader request={request} />
 
