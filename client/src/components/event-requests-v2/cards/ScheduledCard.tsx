@@ -292,8 +292,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Event Details - Editable */}
         <div className="space-y-3 mb-4">
-          {/* Requested Date */}
-          <div className={`grid gap-4 ${request.scheduledEventDate ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {/* Event Dates */}
+          <div className="grid grid-cols-2 gap-4">
             {renderEditableField(
               'desiredEventDate',
               request.desiredEventDate && new Date(request.desiredEventDate).toLocaleDateString('en-US', {
@@ -305,9 +305,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               'Requested Date',
               'date'
             )}
-            {request.scheduledEventDate && renderEditableField(
+            {renderEditableField(
               'scheduledEventDate',
-              new Date(request.scheduledEventDate).toLocaleDateString('en-US', {
+              request.scheduledEventDate && new Date(request.scheduledEventDate).toLocaleDateString('en-US', {
                 weekday: 'short',
                 year: 'numeric', 
                 month: 'short',
