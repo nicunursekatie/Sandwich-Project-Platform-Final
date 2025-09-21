@@ -8,7 +8,7 @@ import type { EventRequest } from '@shared/schema';
 export const useEventAssignments = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { users, recipients } = useEventQueries();
+  const { users, recipients, drivers } = useEventQueries();
   const { updateEventRequestMutation } = useEventMutations();
   const {
     eventRequests,
@@ -53,6 +53,7 @@ export const useEventAssignments = () => {
   const resolveUserName = (userIdOrName: string | undefined): string => {
     if (!userIdOrName) return 'Not assigned';
 
+    // Handle user IDs (format: user_xxxx_xxxxx)
     if (userIdOrName.startsWith('user_') && userIdOrName.includes('_')) {
       const user = users.find((u) => u.id === userIdOrName);
       if (user) {
@@ -60,10 +61,19 @@ export const useEventAssignments = () => {
       }
     }
 
+    // Handle email addresses
     if (userIdOrName.includes('@')) {
       const user = users.find((u) => u.email === userIdOrName);
       if (user) {
         return `${user.firstName} ${user.lastName}`.trim() || user.email;
+      }
+    }
+
+    // Handle driver IDs (numeric, like "443")
+    if (/^\d+$/.test(userIdOrName)) {
+      const driver = drivers.find((d) => d.id.toString() === userIdOrName);
+      if (driver) {
+        return driver.name;
       }
     }
 
