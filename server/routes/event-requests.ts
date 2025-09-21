@@ -14,42 +14,6 @@ import { AuditLogger } from '../audit-logger';
 
 const router = Router();
 
-// Temporary debug route to check what data is being returned
-router.get('/debug', isAuthenticated, async (req, res) => {
-  try {
-    const allEventRequests = await storage.getAllEventRequests();
-    const techPromiseRequest = allEventRequests.find(r => 
-      r.organizationName === 'Tech Promise Student Ambassadors'
-    );
-    
-    if (techPromiseRequest) {
-      console.log('🔍 DEBUG: Tech Promise request data:', {
-        id: techPromiseRequest.id,
-        organizationName: techPromiseRequest.organizationName,
-        desiredEventDate: techPromiseRequest.desiredEventDate,
-        scheduledEventDate: techPromiseRequest.scheduledEventDate,
-        allFields: Object.keys(techPromiseRequest)
-      });
-      
-      res.json({
-        message: 'Debug data logged to console',
-        requestData: {
-          id: techPromiseRequest.id,
-          organizationName: techPromiseRequest.organizationName,
-          desiredEventDate: techPromiseRequest.desiredEventDate,
-          scheduledEventDate: techPromiseRequest.scheduledEventDate,
-          allFieldsCount: Object.keys(techPromiseRequest).length
-        }
-      });
-    } else {
-      res.json({ message: 'Tech Promise request not found' });
-    }
-  } catch (error) {
-    console.error('Debug route error:', error);
-    res.status(500).json({ error: 'Debug failed' });
-  }
-});
-
 // Get available drivers for event assignments
 router.get('/drivers/available', isAuthenticated, async (req, res) => {
   try {

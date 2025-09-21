@@ -362,28 +362,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* Sandwich Editing */}
           {renderSandwichEdit()}
-
-          {/* Staffing Needs - Editable */}
-          <div className="grid grid-cols-3 gap-4">
-            {renderEditableField(
-              'driversNeeded',
-              request.driversNeeded,
-              'Drivers Needed',
-              'number'
-            )}
-            {renderEditableField(
-              'speakersNeeded',
-              request.speakersNeeded,
-              'Speakers Needed',
-              'number'
-            )}
-            {renderEditableField(
-              'volunteersNeeded',
-              request.volunteersNeeded,
-              'Volunteers Needed',
-              'number'
-            )}
-          </div>
         </div>
 
         {/* Assignments */}
@@ -398,6 +376,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           onRemoveAssignment={(type, personId) => handleRemoveAssignment(type, personId)}
           onSelfSignup={(type) => handleSelfSignup(type)}
         />
+
+        {/* Staffing Needs - Editable (smaller text, less prominent) */}
+        <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t border-gray-200">
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Drivers Needed:</span> {request.driversNeeded || 0}
+          </div>
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Speakers Needed:</span> {request.speakersNeeded || 0}
+          </div>
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Volunteers Needed:</span> {request.volunteersNeeded || 0}
+          </div>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
