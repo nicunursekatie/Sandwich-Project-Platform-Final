@@ -137,7 +137,7 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
           <Megaphone className="w-5 h-5 text-[#236383]" />,
           'Speakers',
           request.speakersNeeded,
-          [],
+          request.assignedSpeakerIds,
           request.speakerDetails
         )}
 
