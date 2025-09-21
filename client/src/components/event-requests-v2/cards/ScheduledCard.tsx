@@ -14,7 +14,6 @@ import {
   Trash2,
   Calendar,
   Users,
-  CheckCircle,
   AlertCircle,
 } from 'lucide-react';
 import { CardHeader } from './shared/CardHeader';
@@ -398,15 +397,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-          <Button
-            size="sm"
-            variant="default"
-            onClick={() => onStatusChange('completed')}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
-          >
-            <CheckCircle className="w-5 h-5 mr-1" />
-            <span className="text-base font-medium">Mark Complete</span>
-          </Button>
           <Button
             size="sm"
             variant="outline"
