@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Building, Calendar, AlertTriangle, Edit2, Save, X } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
-import { statusColors, statusIcons } from '@/components/event-requests/constants';
+import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import type { EventRequest } from '@shared/schema';
 
 interface CardHeaderProps {
@@ -33,6 +33,12 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
   setEditingValue
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
+  
+  // Get the proper status label from constants instead of just replacing underscores
+  const getStatusLabel = (status: string) => {
+    const statusOption = statusOptions.find(option => option.value === status);
+    return statusOption ? statusOption.label : status.replace('_', ' ');
+  };
 
   // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
   const displayDate = request.scheduledEventDate || request.desiredEventDate;
@@ -98,7 +104,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
             </h3>
             <Badge className={statusColors[request.status as keyof typeof statusColors] || statusColors.new}>
               <StatusIcon className="w-3 h-3 mr-1" />
-              {request.status.replace('_', ' ')}
+              {getStatusLabel(request.status)}
             </Badge>
             {isInProcessStale && (
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
