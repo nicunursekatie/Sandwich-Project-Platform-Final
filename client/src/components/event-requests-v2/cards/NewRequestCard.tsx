@@ -78,16 +78,16 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* TSP Contact Assignment Status */}
         {(request.tspContact || request.customTspContact) && (
           <div className="mb-4">
-            <div className="bg-gradient-to-r from-[#FBAD3F]/20 to-[#FBAD3F]/10 rounded-lg p-3 border border-[#FBAD3F]/30">
+            <div className="bg-gradient-to-r from-[#FBAD3F]/15 to-[#FBAD3F]/5 rounded-lg p-3 border border-[#FBAD3F]/40">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-[#8B5A00]" />
-                <span className="font-semibold text-[#8B5A00]">TSP Contact Assigned:</span>
-                <span className="font-medium text-[#6B4300]">
+                <UserPlus className="w-4 h-4 text-[#E5901A]" />
+                <span className="font-semibold text-[#D68319]">TSP Contact Assigned:</span>
+                <span className="font-medium text-[#C7761A]">
                   {request.tspContact ? getUserDisplayName(request.tspContact) : request.customTspContact}
                 </span>
               </div>
               {request.tspContactAssignedDate && (
-                <p className="text-sm text-[#8B5A00]/80 mt-1">
+                <p className="text-sm text-[#D68319]/90 mt-1">
                   Assigned on {new Date(request.tspContactAssignedDate).toLocaleDateString()}
                 </p>
               )}
