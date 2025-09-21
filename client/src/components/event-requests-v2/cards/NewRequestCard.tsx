@@ -124,16 +124,16 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           <div className="bg-blue-50 rounded-lg p-3">
             <p className="text-sm text-gray-500 mb-1">Submitted</p>
             <div className="space-y-1">
-              <p className="font-medium flex items-center gap-1 text-lg">
+              <p className="font-medium flex items-center gap-2 text-lg">
                 <Clock className="w-4 h-4" />
-                {request.createdAt
-                  ? formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })
-                  : 'Unknown'}
-              </p>
-              <p className="text-sm text-gray-600">
                 {request.createdAt
                   ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
                   : 'Unknown date'}
+                {request.createdAt && (
+                  <Badge variant="secondary" className="text-xs ml-1">
+                    {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                  </Badge>
+                )}
               </p>
             </div>
           </div>
