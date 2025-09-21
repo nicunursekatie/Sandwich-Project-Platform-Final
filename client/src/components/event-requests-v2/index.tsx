@@ -26,6 +26,9 @@ import { HelpCircle } from 'lucide-react';
 // Import mutations hook
 import { useEventMutations } from './hooks/useEventMutations';
 
+// Import the TSP Contact Assignment Dialog
+import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
+
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
   const {
@@ -62,6 +65,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowContactOrganizerDialog,
     showCollectionLog,
     setShowCollectionLog,
+    showTspContactAssignmentDialog,
+    setShowTspContactAssignmentDialog,
     showSandwichPlanningModal,
     setShowSandwichPlanningModal,
     showStaffingPlanningModal,
@@ -80,6 +85,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setCollectionLogEventRequest,
     contactEventRequest,
     setContactEventRequest,
+    tspContactEventRequest,
+    setTspContactEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -334,6 +341,19 @@ const EventRequestsManagementContent: React.FC = () => {
             setContactEventRequest(null);
           }}
           eventRequest={contactEventRequest}
+        />
+
+        {/* TSP Contact Assignment Dialog */}
+        <TspContactAssignmentDialog
+          isOpen={showTspContactAssignmentDialog}
+          onClose={() => {
+            setShowTspContactAssignmentDialog(false);
+            setTspContactEventRequest(null);
+          }}
+          eventRequestId={tspContactEventRequest?.id || 0}
+          eventRequestTitle={tspContactEventRequest?.organizationName}
+          currentTspContact={tspContactEventRequest?.tspContact}
+          currentCustomTspContact={tspContactEventRequest?.customTspContact}
         />
 
         {/* Sandwich Planning Modal */}

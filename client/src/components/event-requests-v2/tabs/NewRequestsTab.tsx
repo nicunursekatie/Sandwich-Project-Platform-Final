@@ -23,6 +23,8 @@ export const NewRequestsTab: React.FC = () => {
     setShowToolkitSentDialog,
     setShowContactOrganizerDialog,
     setContactEventRequest,
+    setShowTspContactAssignmentDialog,
+    setTspContactEventRequest,
   } = useEventRequestContext();
 
   const newRequests = filterRequestsByStatus('new');
@@ -74,6 +76,10 @@ export const NewRequestsTab: React.FC = () => {
           onScheduleCall={() => {
             setSelectedEventRequest(request);
             setShowScheduleCallDialog(true);
+          }}
+          onAssignTspContact={() => {
+            setTspContactEventRequest(request);
+            setShowTspContactAssignmentDialog(true);
           }}
           onApprove={() => handleStatusChange(request.id, 'in_process')}
           onDecline={() => handleStatusChange(request.id, 'declined')}
