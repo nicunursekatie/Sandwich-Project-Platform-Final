@@ -21,8 +21,8 @@ interface RequestFiltersProps {
   onSearchChange: (query: string) => void;
   statusFilter: string;
   onStatusFilterChange: (filter: string) => void;
-  sortBy: 'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc';
-  onSortByChange: (sort: 'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc') => void;
+  sortBy: 'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc';
+  onSortByChange: (sort: 'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc') => void;
   
   // Tab state
   activeTab: string;
@@ -124,6 +124,8 @@ export default function RequestFilters({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="created_date_desc">Submission Date (Most Recent First)</SelectItem>
+                    <SelectItem value="created_date_asc">Submission Date (Oldest First)</SelectItem>
                     <SelectItem value="event_date_desc">Event Date (Most Recent First)</SelectItem>
                     <SelectItem value="event_date_asc">Event Date (Oldest First)</SelectItem>
                     <SelectItem value="organization_asc">Organization A-Z</SelectItem>

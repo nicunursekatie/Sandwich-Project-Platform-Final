@@ -476,7 +476,7 @@ export default function EventRequestsManagement({
 } = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc'>(
+  const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc'>(
     'event_date_desc'
   );
   const [activeTab, setActiveTab] = useState(initialTab || 'new');
@@ -1908,6 +1908,16 @@ export default function EventRequestsManagement({
         case 'organization_desc':
           // Organization Z-A
           return b.organizationName.localeCompare(a.organizationName);
+        case 'created_date_desc':
+          // Sort by submission date (most recent submissions first)
+          const createdDateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const createdDateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return createdDateB - createdDateA;
+        case 'created_date_asc':
+          // Sort by submission date (oldest submissions first)
+          const oldCreatedDateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const oldCreatedDateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return oldCreatedDateA - oldCreatedDateB;
         default:
           return 0;
       }
@@ -1934,10 +1944,14 @@ export default function EventRequestsManagement({
     setStatusFilter(activeTab);
   }, [activeTab]);
 
-  // Auto-sort by soonest date first for scheduled and in-process events
-  // Auto-sort by most recent for completed tab  
+  // Auto-sort by appropriate default for each tab
+  // New requests: most recent submissions first
+  // Scheduled/In-process: soonest event dates first  
+  // Completed: most recent event dates first
   useEffect(() => {
-    if ((activeTab === 'scheduled' || activeTab === 'in_process') && sortBy !== 'event_date_asc') {
+    if (activeTab === 'new' && sortBy !== 'created_date_desc') {
+      setSortBy('created_date_desc');
+    } else if ((activeTab === 'scheduled' || activeTab === 'in_process') && sortBy !== 'event_date_asc') {
       setSortBy('event_date_asc');
     } else if (activeTab === 'completed' && sortBy !== 'event_date_desc') {
       setSortBy('event_date_desc');
