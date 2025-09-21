@@ -141,8 +141,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           {/* Submission Message */}
           {request.message && (
             <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-500 mb-1">Message from submission:</p>
-              <p className="text-sm text-gray-600">{request.message}</p>
+              <p className="text-gray-500 mb-1 text-[17px]">Message from submission:</p>
+              <p className="text-gray-600 text-[16px]">{request.message}</p>
             </div>
           )}
 
