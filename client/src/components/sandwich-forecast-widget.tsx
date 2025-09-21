@@ -177,9 +177,35 @@ export default function SandwichForecastWidget() {
   // Only show one week at a time
   const currentWeek = weeklySandwichForecast[currentWeekIndex] || null;
 
-  // Calculate driver/speaker needs for the current week
-  const driverCount = currentWeek?.events?.reduce((count, e) => count + (e.driversNeeded || 0), 0) || 0;
-  const speakerCount = currentWeek?.events?.reduce((count, e) => count + (e.speakersNeeded || 0), 0) || 0;
+  // Calculate unfulfilled driver/speaker needs for the current week
+  const getAssignmentCount = (assignments: any) => {
+    if (!assignments) return 0;
+    if (Array.isArray(assignments)) return assignments.length;
+    if (typeof assignments === 'string') {
+      if (assignments === '{}' || assignments === '') return 0;
+      let cleaned = assignments.replace(/^{|}$/g, '');
+      if (!cleaned) return 0;
+      if (cleaned.includes('"')) {
+        const matches = cleaned.match(/"[^"]*"|[^",]+/g);
+        return matches ? matches.filter(item => item.trim()).length : 0;
+      } else {
+        return cleaned.split(',').filter(item => item.trim()).length;
+      }
+    }
+    return 0;
+  };
+
+  const unfulfilledDrivers = currentWeek?.events?.reduce((count, e) => {
+    const needed = e.driversNeeded || 0;
+    const assigned = getAssignmentCount(e.assignedDriverIds);
+    return count + Math.max(0, needed - assigned);
+  }, 0) || 0;
+
+  const unfulfilledSpeakers = currentWeek?.events?.reduce((count, e) => {
+    const needed = e.speakersNeeded || 0;
+    const assigned = getAssignmentCount(e.assignedSpeakerIds);
+    return count + Math.max(0, needed - assigned);
+  }, 0) || 0;
 
   // New logic for distribution events (Tue/Wed/Thu) and other events
   const isDistributionEvent = (date: Date) => {
@@ -298,15 +324,21 @@ export default function SandwichForecastWidget() {
             </TooltipProvider>
           </div>
         </div>
-        {/* Needs summary row */}
-        <div className="flex gap-4 items-center mb-2">
-          <span style={{ color: '#007E8C', fontWeight: 600 }}>
-            🚗 Drivers Needed: {driverCount}
-          </span>
-          <span style={{ color: '#FBAD3F', fontWeight: 600 }}>
-            🎤 Speakers Needed: {speakerCount}
-          </span>
-        </div>
+        {/* Unfulfilled needs summary row - only show if there are unfulfilled positions */}
+        {(unfulfilledDrivers > 0 || unfulfilledSpeakers > 0) && (
+          <div className="flex gap-4 items-center mb-2">
+            {unfulfilledDrivers > 0 && (
+              <span style={{ color: '#007E8C', fontWeight: 600 }}>
+                🚗 {unfulfilledDrivers} Driver{unfulfilledDrivers > 1 ? 's' : ''} Still Needed
+              </span>
+            )}
+            {unfulfilledSpeakers > 0 && (
+              <span style={{ color: '#FBAD3F', fontWeight: 600 }}>
+                🎤 {unfulfilledSpeakers} Speaker{unfulfilledSpeakers > 1 ? 's' : ''} Still Needed
+              </span>
+            )}
+          </div>
+        )}
         {/* Distribution Events Section */}
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
@@ -339,12 +371,20 @@ export default function SandwichForecastWidget() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {(event.driversNeeded && Number(event.driversNeeded) > 0) && (
-                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{Number(event.driversNeeded) > 1 ? 's' : ''}</Badge>
-                      )}
-                      {(event.speakersNeeded && Number(event.speakersNeeded) > 0) && (
-                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{Number(event.speakersNeeded) > 1 ? 's' : ''}</Badge>
-                      )}
+                      {(() => {
+                        const driversUnfulfilled = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
+                        const speakersUnfulfilled = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
+                        return (
+                          <>
+                            {driversUnfulfilled > 0 && (
+                              <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {driversUnfulfilled} Driver{driversUnfulfilled > 1 ? 's' : ''} Needed</Badge>
+                            )}
+                            {speakersUnfulfilled > 0 && (
+                              <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {speakersUnfulfilled} Speaker{speakersUnfulfilled > 1 ? 's' : ''} Needed</Badge>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div className="font-semibold text-brand-primary">
                         {(event.estimatedSandwichCount || 0).toLocaleString()}
                       </div>
@@ -388,12 +428,20 @@ export default function SandwichForecastWidget() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {(event.driversNeeded && Number(event.driversNeeded) > 0) && (
-                        <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {event.driversNeeded} Driver{Number(event.driversNeeded) > 1 ? 's' : ''}</Badge>
-                      )}
-                      {(event.speakersNeeded && Number(event.speakersNeeded) > 0) && (
-                        <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {event.speakersNeeded} Speaker{Number(event.speakersNeeded) > 1 ? 's' : ''}</Badge>
-                      )}
+                      {(() => {
+                        const driversUnfulfilled = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
+                        const speakersUnfulfilled = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
+                        return (
+                          <>
+                            {driversUnfulfilled > 0 && (
+                              <Badge style={{ background: '#007E8C', color: 'white' }}>🚗 {driversUnfulfilled} Driver{driversUnfulfilled > 1 ? 's' : ''} Needed</Badge>
+                            )}
+                            {speakersUnfulfilled > 0 && (
+                              <Badge style={{ background: '#FBAD3F', color: 'white' }}>🎤 {speakersUnfulfilled} Speaker{speakersUnfulfilled > 1 ? 's' : ''} Needed</Badge>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div className="font-semibold text-brand-primary">
                         {(event.estimatedSandwichCount || 0).toLocaleString()}
                       </div>
