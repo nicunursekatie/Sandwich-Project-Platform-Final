@@ -156,7 +156,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       <div className="group">
         <p className="text-base text-gray-600 font-medium">{label}</p>
         <div className="flex items-center gap-2">
-          <p className="text-lg font-semibold">{value || 'Not set'}</p>
+          {field === 'eventAddress' && value ? (
+            <a 
+              href={`https://maps.google.com/maps?q=${encodeURIComponent(value)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lg font-semibold text-[#236383] hover:text-[#FBAD3F] hover:underline transition-colors"
+            >
+              {value}
+            </a>
+          ) : (
+            <p className="text-lg font-semibold">{value || 'Not set'}</p>
+          )}
           {canEdit && (
             <Button
               size="sm"

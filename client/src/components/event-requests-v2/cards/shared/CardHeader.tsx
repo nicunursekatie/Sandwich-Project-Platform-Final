@@ -80,10 +80,15 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ request, isInProcessStal
                 {request.organizationType}
               </span>
               {request.eventAddress && (
-                <span className="flex items-center gap-1">
+                <a 
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[#236383] hover:text-[#FBAD3F] hover:underline transition-colors"
+                >
                   <MapPin className="w-3 h-3" />
                   {request.eventAddress}
-                </span>
+                </a>
               )}
             </div>
             <div className="flex items-center gap-1">
