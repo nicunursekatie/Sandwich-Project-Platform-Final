@@ -43,7 +43,7 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
     return [];
   };
 
-  const renderAssignmentSection = (
+  const renderAssignmentColumn = (
     type: 'driver' | 'speaker' | 'volunteer',
     icon: React.ReactNode,
     title: string,
@@ -60,92 +60,97 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
     const isSignedUp = isUserSignedUp && isUserSignedUp(request, type);
 
     return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {icon}
-            <span className="font-medium text-sm">
-              {title}
-              {typeof needed === 'number' && ` (${assigned.length}/${needed})`}
-            </span>
-          </div>
-          {canEdit && hasCapacity && onAssign && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onAssign(type)}
-              className="h-7 text-xs"
-            >
-              <UserPlus className="w-3 h-3 mr-1" />
-              Assign
-            </Button>
-          )}
-          {!canEdit && canSignup && onSelfSignup && (
-            <Button
-              size="sm"
-              variant={isSignedUp ? "secondary" : "outline"}
-              onClick={() => onSelfSignup(type)}
-              className="h-7 text-xs"
-            >
-              {isSignedUp ? 'Signed up' : 'Sign up'}
-            </Button>
-          )}
+      <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
+        {/* Header with icon and title */}
+        <div className="flex items-center gap-2 mb-3">
+          {icon}
+          <span className="font-semibold text-base text-[#236383]">{title}</span>
         </div>
-        {assigned.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {assigned.map((personId: string) => {
+
+        {/* Assigned people */}
+        <div className="space-y-2 mb-3 min-h-[60px]">
+          {assigned.length > 0 ? (
+            assigned.map((personId: string) => {
               const name = details?.[personId]?.name || resolveUserName(personId);
               return (
-                <Badge key={personId} variant="secondary" className="text-xs">
-                  {name}
+                <div key={personId} className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
+                  <span className="text-sm font-medium">{name}</span>
                   {canEdit && onRemoveAssignment && (
                     <button
                       onClick={() => onRemoveAssignment(type, personId)}
-                      className="ml-1 hover:bg-gray-300 rounded-full"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
                     >
                       <X className="w-3 h-3" />
                     </button>
                   )}
-                </Badge>
+                </div>
               );
-            })}
-          </div>
+            })
+          ) : (
+            <div className="text-sm text-[#236383]/60 italic">No one assigned</div>
+          )}
+        </div>
+
+        {/* Assign button */}
+        {canEdit && hasCapacity && onAssign && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onAssign(type)}
+            className="w-full text-sm border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Assign {title.slice(0, -1)}
+          </Button>
+        )}
+        {!canEdit && canSignup && onSelfSignup && (
+          <Button
+            size="sm"
+            variant={isSignedUp ? "secondary" : "outline"}
+            onClick={() => onSelfSignup(type)}
+            className="w-full text-sm"
+          >
+            {isSignedUp ? 'Signed up' : 'Sign up'}
+          </Button>
         )}
       </div>
     );
   };
 
   return (
-    <div className="space-y-3 pt-3 border-t">
-      {(request.driversNeeded || (request.assignedDriverIds && parsePostgresArray(request.assignedDriverIds).length > 0)) &&
-        renderAssignmentSection(
+    <div className="pt-4">
+      {/* Assignments Section */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Drivers Column */}
+        {renderAssignmentColumn(
           'driver',
-          <Car className="w-4 h-4 text-blue-600" />,
+          <Car className="w-5 h-5 text-[#236383]" />,
           'Drivers',
           request.driversNeeded,
           request.assignedDriverIds,
           request.driverDetails
         )}
 
-      {(request.speakersNeeded || Object.keys(request.speakerDetails || {}).length > 0) &&
-        renderAssignmentSection(
+        {/* Speakers Column */}
+        {renderAssignmentColumn(
           'speaker',
-          <Megaphone className="w-4 h-4 text-purple-600" />,
+          <Megaphone className="w-5 h-5 text-[#236383]" />,
           'Speakers',
           request.speakersNeeded,
           [],
           request.speakerDetails
         )}
 
-      {(request.volunteersNeeded || (request.assignedVolunteerIds && parsePostgresArray(request.assignedVolunteerIds).length > 0)) &&
-        renderAssignmentSection(
+        {/* Volunteers Column */}
+        {renderAssignmentColumn(
           'volunteer',
-          <Users className="w-4 h-4 text-green-600" />,
+          <Users className="w-5 h-5 text-[#236383]" />,
           'Volunteers',
           request.volunteersNeeded,
           request.assignedVolunteerIds,
           request.volunteerDetails
         )}
+      </div>
     </div>
   );
 };
