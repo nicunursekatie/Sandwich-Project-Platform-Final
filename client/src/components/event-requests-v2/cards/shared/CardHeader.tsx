@@ -108,12 +108,6 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
             )}
           </div>
           <div className="text-sm text-[#236383] mt-1 space-y-1">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1">
-                <Building className="w-3 h-3" />
-                {request.organizationType}
-              </span>
-            </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
