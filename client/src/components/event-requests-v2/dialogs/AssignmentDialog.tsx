@@ -19,6 +19,7 @@ import {
   Check,
   X,
   UserPlus,
+  Users,
 } from 'lucide-react';
 
 interface ComprehensivePersonSelectorProps {
@@ -33,6 +34,8 @@ function ComprehensivePersonSelector({
   assignmentType
 }: ComprehensivePersonSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [customEntryText, setCustomEntryText] = useState('');
+  const [showCustomEntry, setShowCustomEntry] = useState(false);
 
   // Fetch all the different types of people
   const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
@@ -43,11 +46,15 @@ function ComprehensivePersonSelector({
     queryKey: ['/api/drivers'],
   });
 
+  const { data: volunteers = [], isLoading: volunteersLoading } = useQuery<any[]>({
+    queryKey: ['/api/volunteers'],
+  });
+
   const { data: hostsWithContacts = [], isLoading: hostsLoading } = useQuery<any[]>({
     queryKey: ['/api/hosts-with-contacts'],
   });
 
-  const isLoading = usersLoading || driversLoading || hostsLoading;
+  const isLoading = usersLoading || driversLoading || volunteersLoading || hostsLoading;
 
   // Extract all host contacts
   const hostContacts = hostsWithContacts.flatMap(host =>
@@ -76,6 +83,14 @@ function ComprehensivePersonSelector({
       type: 'driver',
       section: 'Drivers'
     })),
+    ...volunteers.map((volunteer: any) => ({
+      id: `volunteer-${volunteer.id}`,
+      displayName: `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim() || volunteer.name || 'Unknown Volunteer',
+      email: volunteer.email,
+      phone: volunteer.phone,
+      type: 'volunteer',
+      section: 'Volunteers'
+    })),
     ...hostContacts.map((contact: any) => ({
       id: `host-contact-${contact.id}`,
       displayName: contact.displayName,
@@ -94,8 +109,13 @@ function ComprehensivePersonSelector({
            (person.hostName && person.hostName.toLowerCase().includes(searchLower));
   });
 
-  // Group people by section
-  const groupedPeople = allPeople.reduce((acc, person) => {
+  // Sort all people alphabetically by displayName
+  const sortedPeople = allPeople.sort((a, b) =>
+    a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' })
+  );
+
+  // Group people by section and sort within each section
+  const groupedPeople = sortedPeople.reduce((acc, person) => {
     if (!acc[person.section]) acc[person.section] = [];
     acc[person.section].push(person);
     return acc;
@@ -113,17 +133,91 @@ function ComprehensivePersonSelector({
     onSelectionChange(selectedPeople.filter(id => id !== personId));
   };
 
+  const handleAddCustomEntry = () => {
+    if (customEntryText.trim()) {
+      // Create a custom ID that won't conflict with existing IDs
+      const customId = `custom-${Date.now()}-${customEntryText.replace(/\s+/g, '-')}`;
+      onSelectionChange([...selectedPeople, customId]);
+      setCustomEntryText('');
+      setShowCustomEntry(false);
+    }
+  };
+
+  // Helper to get display name for custom entries
+  const getPersonDisplayName = (personId: string) => {
+    if (personId.startsWith('custom-')) {
+      // Extract the custom name from the ID
+      const parts = personId.split('-');
+      return parts.slice(2).join(' ').replace(/-/g, ' ');
+    }
+    const person = allPeople.find(p => p.id === personId);
+    return person?.displayName || personId;
+  };
+
   return (
     <div className="flex-1 flex flex-col space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-        <Input
-          placeholder="Search by name, email, phone, or organization..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Custom Entry Controls */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search by name, email, phone, or organization..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Custom Entry Section */}
+        <div className="space-y-2">
+          {!showCustomEntry ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCustomEntry(true)}
+              className="w-full"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add Custom Entry (Person Not in List)
+            </Button>
+          ) : (
+            <div className="flex gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <Input
+                placeholder="Enter name for custom assignment..."
+                value={customEntryText}
+                onChange={(e) => setCustomEntryText(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCustomEntry();
+                  }
+                }}
+                className="flex-1"
+                autoFocus
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleAddCustomEntry}
+                disabled={!customEntryText.trim()}
+              >
+                Add
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setShowCustomEntry(false);
+                  setCustomEntryText('');
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Selected People */}
@@ -134,14 +228,15 @@ function ComprehensivePersonSelector({
           </h3>
           <div className="flex flex-wrap gap-2">
             {selectedPeople.map((personId) => {
-              const person = allPeople.find(p => p.id === personId);
+              const isCustom = personId.startsWith('custom-');
               return (
                 <Badge
                   key={personId}
                   variant="secondary"
-                  className="bg-green-50 text-green-700 border-green-200"
+                  className={isCustom ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}
                 >
-                  {person?.displayName || personId}
+                  {getPersonDisplayName(personId)}
+                  {isCustom && <span className="ml-1 text-xs">(custom)</span>}
                   <button
                     onClick={() => removeSelectedPerson(personId)}
                     className="ml-2 hover:bg-green-200 rounded-full w-4 h-4 flex items-center justify-center"
@@ -181,6 +276,7 @@ function ComprehensivePersonSelector({
                           <div className="flex items-center space-x-3">
                             {person.type === 'user' && <User className="w-4 h-4 text-gray-400" />}
                             {person.type === 'driver' && <Car className="w-4 h-4 text-gray-400" />}
+                            {person.type === 'volunteer' && <Users className="w-4 h-4 text-gray-400" />}
                             {person.type === 'host-contact' && <Building className="w-4 h-4 text-gray-400" />}
                             <div>
                               <div className="font-medium">{person.displayName}</div>
