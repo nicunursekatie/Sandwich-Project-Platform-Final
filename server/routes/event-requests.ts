@@ -1051,6 +1051,7 @@ router.patch(
         'callScheduledAt',
         'callCompletedAt',
         'scheduledCallDate',
+        'tspContactAssignedDate',
       ];
       timestampFields.forEach((field) => {
         if (
