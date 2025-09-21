@@ -56,14 +56,6 @@ function ComprehensivePersonSelector({
 
   const isLoading = usersLoading || driversLoading || volunteersLoading || hostsLoading;
 
-  console.log('Dialog data loading state:', {
-    users: users.length,
-    drivers: drivers.length,
-    volunteers: volunteers.length,
-    hosts: hostsWithContacts.length,
-    selectedPeople
-  });
-
   // Extract all host contacts
   const hostContacts = hostsWithContacts.flatMap(host =>
     (host.contacts || []).map((contact: any) => ({
@@ -130,8 +122,6 @@ function ComprehensivePersonSelector({
   }, {} as Record<string, any[]>);
 
   const togglePersonSelection = (personId: string) => {
-    console.log('Toggle selection for:', personId);
-    console.log('Current selected:', selectedPeople);
     if (selectedPeople.includes(personId)) {
       onSelectionChange(selectedPeople.filter(id => id !== personId));
     } else {

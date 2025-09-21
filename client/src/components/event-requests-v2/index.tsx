@@ -390,7 +390,7 @@ const EventRequestsManagementContent: React.FC = () => {
               // Update the event with the new assignments
               const fieldMap = {
                 'driver': 'assignedDriverIds',
-                'speaker': 'speakerDetails',
+                'speaker': 'assignedSpeakerIds',
                 'volunteer': 'assignedVolunteerIds'
               };
 
