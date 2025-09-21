@@ -25,6 +25,7 @@ import { HelpCircle } from 'lucide-react';
 
 // Import mutations hook
 import { useEventMutations } from './hooks/useEventMutations';
+import { useToast } from '@/hooks/use-toast';
 
 // Import the TSP Contact Assignment Dialog
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -120,6 +121,8 @@ const EventRequestsManagementContent: React.FC = () => {
     oneDayFollowUpMutation,
     oneMonthFollowUpMutation,
   } = useEventMutations();
+
+  const { toast } = useToast();
 
   // Initialize modal sandwich state when opening details
   const initializeModalSandwichState = (eventRequest: any) => {
@@ -387,22 +390,60 @@ const EventRequestsManagementContent: React.FC = () => {
           assignmentType={assignmentType}
           selectedAssignees={selectedAssignees}
           setSelectedAssignees={setSelectedAssignees}
-          onAssign={(assignees) => {
-            // Handle the assignment - for now, just close the dialog
-            // TODO: Implement actual assignment API call
-            console.log(`Assigning ${assignees.length} ${assignmentType}s to event ${assignmentEventId}:`, assignees);
-            setShowAssignmentDialog(false);
-            setAssignmentType(null);
-            setAssignmentEventId(null);
-            setSelectedAssignees([]);
-            setIsEditingAssignment(false);
-            setEditingAssignmentPersonId(null);
+          onAssign={async (assignees) => {
+            if (!assignmentEventId || !assignmentType) return;
             
-            // Show success message
-            toast({
-              title: "Assignment Successful",
-              description: `Successfully assigned ${assignees.length} ${assignmentType}${assignees.length !== 1 ? 's' : ''} to the event.`,
-            });
+            try {
+              // Map assignment type to the correct field
+              const fieldMap = {
+                speaker: 'assignedSpeakerIds',
+                driver: 'assignedDriverIds', 
+                volunteer: 'assignedVolunteerIds'
+              };
+              
+              const updateData = {
+                [fieldMap[assignmentType]]: assignees
+              };
+
+              console.log(`Assigning ${assignees.length} ${assignmentType}s to event ${assignmentEventId}:`, assignees);
+              
+              // Make API call to update the event request
+              const response = await fetch(`/api/event-requests/${assignmentEventId}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData),
+              });
+
+              if (!response.ok) {
+                throw new Error(`Failed to assign ${assignmentType}s`);
+              }
+
+              // Close dialog and reset state
+              setShowAssignmentDialog(false);
+              setAssignmentType(null);
+              setAssignmentEventId(null);
+              setSelectedAssignees([]);
+              setIsEditingAssignment(false);
+              setEditingAssignmentPersonId(null);
+              
+              // Show success message
+              toast({
+                title: "Assignment Successful", 
+                description: `Successfully assigned ${assignees.length} ${assignmentType}${assignees.length !== 1 ? 's' : ''} to the event.`,
+              });
+
+              // TODO: Refresh the event requests data to show updated assignments
+              
+            } catch (error) {
+              console.error('Error assigning speakers:', error);
+              toast({
+                title: "Assignment Failed",
+                description: `Failed to assign ${assignmentType}s. Please try again.`,
+                variant: "destructive",
+              });
+            }
           }}
         />
 
