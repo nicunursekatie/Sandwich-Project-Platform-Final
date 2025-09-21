@@ -721,6 +721,8 @@ export default function EnhancedMeetingDashboard() {
         <AgendaPlanningTab
           selectedMeeting={selectedMeeting}
           meetings={safeMeetings}
+          selectedProjectIds={selectedProjectIds}
+          setSelectedProjectIds={setSelectedProjectIds}
           projectAgendaStatus={projectAgendaStatus}
           setProjectAgendaStatus={setProjectAgendaStatus}
           minimizedProjects={minimizedProjects}

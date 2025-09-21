@@ -67,6 +67,8 @@ interface AgendaPlanningTabProps {
   // State
   selectedMeeting: Meeting | null;
   meetings: Meeting[];
+  selectedProjectIds: number[];
+  setSelectedProjectIds: (ids: number[]) => void;
   projectAgendaStatus: Record<number, 'none' | 'agenda' | 'tabled'>;
   setProjectAgendaStatus: (status: Record<number, 'none' | 'agenda' | 'tabled'>) => void;
   minimizedProjects: Set<number>;
@@ -141,6 +143,8 @@ interface AgendaPlanningTabProps {
 export function AgendaPlanningTab({
   selectedMeeting,
   meetings,
+  selectedProjectIds,
+  setSelectedProjectIds,
   projectAgendaStatus,
   setProjectAgendaStatus,
   minimizedProjects,
