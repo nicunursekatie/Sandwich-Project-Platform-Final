@@ -49,8 +49,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   return (
     <Card className={`transition-all duration-200 hover:shadow-lg border-l-4 ${
       isStale 
-        ? 'border-l-amber-500 bg-gradient-to-br from-[#fef7e6] to-[#feebc8] border border-amber-500/30' 
-        : 'border-l-yellow-500 bg-gradient-to-br from-[#fefce8] to-[#fef3c7] border border-yellow-500/30'
+        ? 'border-l-[#FBAD3F] bg-gradient-to-br from-[#fef4e6] to-[#fed7aa] border border-[#FBAD3F]/30' 
+        : 'border-l-[#FBAD3F] bg-gradient-to-br from-[#fef7ed] to-[#fed7aa] border border-[#FBAD3F]/30'
     }`}>
       <CardContent className="p-6">
         <CardHeader request={request} isInProcessStale={isStale} />
