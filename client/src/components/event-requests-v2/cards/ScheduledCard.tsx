@@ -171,9 +171,21 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   const renderSandwichEdit = () => {
     if (!(isEditingThisCard && editingField === 'sandwichTypes')) {
-      const sandwichInfo = request.sandwichTypes
-        ? `${JSON.parse(request.sandwichTypes as any).map((s: any) => `${s.quantity} ${s.type}`).join(', ')}`
-        : `${request.estimatedSandwichCount} total`;
+      let sandwichInfo = `${request.estimatedSandwichCount || 0} total`;
+
+      if (request.sandwichTypes) {
+        try {
+          const types = typeof request.sandwichTypes === 'string'
+            ? JSON.parse(request.sandwichTypes)
+            : request.sandwichTypes;
+
+          if (Array.isArray(types) && types.length > 0) {
+            sandwichInfo = types.map((s: any) => `${s.quantity} ${s.type}`).join(', ');
+          }
+        } catch (e) {
+          console.error('Error parsing sandwich types:', e);
+        }
+      }
 
       return (
         <div className="flex items-center justify-between group bg-amber-50 rounded-lg p-3">

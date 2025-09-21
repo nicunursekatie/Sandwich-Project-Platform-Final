@@ -29,7 +29,6 @@ interface InProcessCardProps {
   onContact: () => void;
   onScheduleCall: () => void;
   onResendToolkit?: () => void;
-  onReschedule: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -44,7 +43,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onContact,
   onScheduleCall,
   onResendToolkit,
-  onReschedule,
   canEdit = true,
   canDelete = true,
 }) => {
@@ -142,7 +140,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <Calendar className="w-4 h-4 mr-1" />
-            Convert to Scheduled
+            Mark Scheduled
           </Button>
           {!request.scheduledCallDate && (
             <Button
@@ -164,13 +162,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               Resend Toolkit
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onReschedule}
-          >
-            Back to New
-          </Button>
 
           <div className="flex-1" />
 

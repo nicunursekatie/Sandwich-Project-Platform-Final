@@ -93,7 +93,6 @@ export const InProcessTab: React.FC = () => {
               setToolkitEventRequest(request);
               setShowToolkitSentDialog(true);
             }}
-            onReschedule={() => handleStatusChange(request.id, 'new')}
           />
         ))
       )}

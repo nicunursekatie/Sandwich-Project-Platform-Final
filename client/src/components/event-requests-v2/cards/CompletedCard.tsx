@@ -79,7 +79,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                     {request.actualSandwichCount
                       ? `${request.actualSandwichCount} delivered`
                       : request.sandwichTypes
-                      ? getSandwichTypesSummary(request.sandwichTypes)
+                      ? getSandwichTypesSummary(request).breakdown
                       : `${request.estimatedSandwichCount} estimated`}
                   </span>
                 </div>
