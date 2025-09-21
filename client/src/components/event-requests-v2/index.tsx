@@ -1,5 +1,8 @@
 import React from 'react';
-import { EventRequestProvider, useEventRequestContext } from './context/EventRequestContext';
+import {
+  EventRequestProvider,
+  useEventRequestContext,
+} from './context/EventRequestContext';
 import { NewRequestsTab } from './tabs/NewRequestsTab';
 import { InProcessTab } from './tabs/InProcessTab';
 import { ScheduledTab } from './tabs/ScheduledTab';
@@ -7,8 +10,14 @@ import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Plus, Users, Package, HelpCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Import existing components that we'll reuse
@@ -21,17 +30,13 @@ import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDial
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
-import { HelpCircle } from 'lucide-react';
 
 // Import mutations hook
 import { useEventMutations } from './hooks/useEventMutations';
 import { useToast } from '@/hooks/use-toast';
-import { queryClient } from '@/lib/queryClient';
 
-// Import the TSP Contact Assignment Dialog
+// Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
-
-// Import the Assignment Dialog
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
 
 // Main component that uses the context
@@ -70,14 +75,22 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowContactOrganizerDialog,
     showCollectionLog,
     setShowCollectionLog,
-    showAssignmentDialog,
-    setShowAssignmentDialog,
     showTspContactAssignmentDialog,
     setShowTspContactAssignmentDialog,
+    showAssignmentDialog,
+    setShowAssignmentDialog,
     showSandwichPlanningModal,
     setShowSandwichPlanningModal,
     showStaffingPlanningModal,
     setShowStaffingPlanningModal,
+
+    // Assignment dialog state
+    assignmentType,
+    setAssignmentType,
+    assignmentEventId,
+    setAssignmentEventId,
+    selectedAssignees,
+    setSelectedAssignees,
 
     // Selected events
     selectedEventRequest,
@@ -95,18 +108,6 @@ const EventRequestsManagementContent: React.FC = () => {
     tspContactEventRequest,
     setTspContactEventRequest,
 
-    // Assignment dialog states
-    assignmentType,
-    setAssignmentType,
-    assignmentEventId,
-    setAssignmentEventId,
-    selectedAssignees,
-    setSelectedAssignees,
-    isEditingAssignment,
-    setIsEditingAssignment,
-    editingAssignmentPersonId,
-    setEditingAssignmentPersonId,
-
     // Other states
     scheduleCallDate,
     setScheduleCallDate,
@@ -121,14 +122,10 @@ const EventRequestsManagementContent: React.FC = () => {
     scheduleCallMutation,
     oneDayFollowUpMutation,
     oneMonthFollowUpMutation,
+    updateEventRequestMutation,
   } = useEventMutations();
 
   const { toast } = useToast();
-
-  // Initialize modal sandwich state when opening details
-  const initializeModalSandwichState = (eventRequest: any) => {
-    // This would be handled in the EventSchedulingForm component
-  };
 
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
@@ -169,11 +166,9 @@ const EventRequestsManagementContent: React.FC = () => {
                 setShowOneDayFollowUpDialog(false);
                 setShowOneMonthFollowUpDialog(false);
                 setShowToolkitSentDialog(false);
-
                 setSelectedEventRequest(null);
                 setIsEditing(true);
                 setShowEventDetails(true);
-                initializeModalSandwichState(null);
               }}
               className="text-white"
               style={{ backgroundColor: '#007E8C' }}
@@ -240,7 +235,7 @@ const EventRequestsManagementContent: React.FC = () => {
           <EventSchedulingForm
             eventRequest={selectedEventRequest}
             isOpen={showEventDetails}
-            mode={selectedEventRequest ? "edit" : "create"}
+            mode={selectedEventRequest ? 'edit' : 'create'}
             onClose={() => {
               setShowEventDetails(false);
               setSelectedEventRequest(null);
@@ -377,7 +372,7 @@ const EventRequestsManagementContent: React.FC = () => {
           currentCustomTspContact={tspContactEventRequest?.customTspContact}
         />
 
-        {/* Assignment Dialog for Drivers, Speakers, and Volunteers */}
+        {/* General Assignment Dialog for Drivers/Speakers/Volunteers */}
         <AssignmentDialog
           isOpen={showAssignmentDialog}
           onClose={() => {
@@ -385,72 +380,52 @@ const EventRequestsManagementContent: React.FC = () => {
             setAssignmentType(null);
             setAssignmentEventId(null);
             setSelectedAssignees([]);
-            setIsEditingAssignment(false);
-            setEditingAssignmentPersonId(null);
           }}
           assignmentType={assignmentType}
           selectedAssignees={selectedAssignees}
           setSelectedAssignees={setSelectedAssignees}
-          onAssign={async (assignees) => {
+          onAssign={async (assignees: string[]) => {
             if (!assignmentEventId || !assignmentType) return;
-            
+
             try {
-              // Map assignment type to the correct field
+              // Update the event with the new assignments
               const fieldMap = {
+                driver: 'assignedDriverIds',
                 speaker: 'assignedSpeakerIds',
-                driver: 'assignedDriverIds', 
-                volunteer: 'assignedVolunteerIds'
-              };
-              
-              const updateData = {
-                [fieldMap[assignmentType]]: assignees
+                volunteer: 'assignedVolunteerIds',
               };
 
-              console.log(`Assigning ${assignees.length} ${assignmentType}s to event ${assignmentEventId}:`, assignees);
-              
-              // Make API call to update the event request
-              const response = await fetch(`/api/event-requests/${assignmentEventId}`, {
-                method: 'PATCH',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updateData),
+              const field = fieldMap[assignmentType];
+              await updateEventRequestMutation.mutateAsync({
+                id: assignmentEventId,
+                data: { [field]: assignees },
               });
 
-              if (!response.ok) {
-                throw new Error(`Failed to assign ${assignmentType}s`);
-              }
-
-              // Close dialog and reset state
+              // Close the dialog
               setShowAssignmentDialog(false);
               setAssignmentType(null);
               setAssignmentEventId(null);
               setSelectedAssignees([]);
-              setIsEditingAssignment(false);
-              setEditingAssignmentPersonId(null);
-              
-              // Show success message
-              toast({
-                title: "Assignment Successful", 
-                description: `Successfully assigned ${assignees.length} ${assignmentType}${assignees.length !== 1 ? 's' : ''} to the event.`,
-              });
 
-              // Refresh the event requests data to show updated assignments
-              await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-              
-            } catch (error) {
-              console.error('Error assigning speakers:', error);
               toast({
-                title: "Assignment Failed",
-                description: `Failed to assign ${assignmentType}s. Please try again.`,
-                variant: "destructive",
+                title: 'Success',
+                description: `${assignmentType}s assigned successfully`,
+              });
+            } catch (error) {
+              toast({
+                title: 'Error',
+                description: `Failed to assign ${assignmentType}s`,
+                variant: 'destructive',
               });
             }
           }}
         />
 
         {/* Sandwich Planning Modal */}
-        <Dialog open={showSandwichPlanningModal} onOpenChange={setShowSandwichPlanningModal}>
+        <Dialog
+          open={showSandwichPlanningModal}
+          onOpenChange={setShowSandwichPlanningModal}
+        >
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
@@ -458,7 +433,8 @@ const EventRequestsManagementContent: React.FC = () => {
                 Weekly Sandwich Planning
               </DialogTitle>
               <DialogDescription>
-                Plan sandwich production based on scheduled events. Monitor trends and adjust quantities based on demand patterns.
+                Plan sandwich production based on scheduled events. Monitor
+                trends and adjust quantities based on demand patterns.
               </DialogDescription>
             </DialogHeader>
 
@@ -471,10 +447,20 @@ const EventRequestsManagementContent: React.FC = () => {
                   Sandwich Planning Tips
                 </h4>
                 <ul className="text-sm text-[#236383] space-y-1">
-                  <li>• Plan sandwich types based on dietary restrictions and preferences</li>
-                  <li>• Factor in 10-15% extra sandwiches for unexpected attendees</li>
-                  <li>• Coordinate with kitchen volunteers for preparation schedules</li>
-                  <li>• Check delivery addresses for any special requirements</li>
+                  <li>
+                    • Plan sandwich types based on dietary restrictions and
+                    preferences
+                  </li>
+                  <li>
+                    • Factor in 10-15% extra sandwiches for unexpected attendees
+                  </li>
+                  <li>
+                    • Coordinate with kitchen volunteers for preparation
+                    schedules
+                  </li>
+                  <li>
+                    • Check delivery addresses for any special requirements
+                  </li>
                 </ul>
               </div>
             </div>
@@ -492,7 +478,10 @@ const EventRequestsManagementContent: React.FC = () => {
         </Dialog>
 
         {/* Staffing Planning Modal */}
-        <Dialog open={showStaffingPlanningModal} onOpenChange={setShowStaffingPlanningModal}>
+        <Dialog
+          open={showStaffingPlanningModal}
+          onOpenChange={setShowStaffingPlanningModal}
+        >
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
@@ -500,7 +489,8 @@ const EventRequestsManagementContent: React.FC = () => {
                 Weekly Staffing Planning
               </DialogTitle>
               <DialogDescription>
-                Coordinate drivers, speakers, and volunteers for scheduled events. Ensure all positions are filled before event dates.
+                Coordinate drivers, speakers, and volunteers for scheduled
+                events. Ensure all positions are filled before event dates.
               </DialogDescription>
             </DialogHeader>
 
@@ -513,10 +503,21 @@ const EventRequestsManagementContent: React.FC = () => {
                   Staffing Planning Tips
                 </h4>
                 <ul className="text-sm text-[#236383] space-y-1">
-                  <li>• Check driver assignments early - transportation is critical</li>
-                  <li>• Speaker assignments should be confirmed 1 week before events</li>
-                  <li>• Van drivers are needed for large events or special delivery requirements</li>
-                  <li>• Volunteers help with event setup and sandwich distribution</li>
+                  <li>
+                    • Check driver assignments early - transportation is
+                    critical
+                  </li>
+                  <li>
+                    • Speaker assignments should be confirmed 1 week before
+                    events
+                  </li>
+                  <li>
+                    • Van drivers are needed for large events or special
+                    delivery requirements
+                  </li>
+                  <li>
+                    • Volunteers help with event setup and sandwich distribution
+                  </li>
                 </ul>
               </div>
             </div>
@@ -546,7 +547,10 @@ export default function EventRequestsManagementV2({
   initialEventId?: number;
 } = {}) {
   return (
-    <EventRequestProvider initialTab={initialTab} initialEventId={initialEventId}>
+    <EventRequestProvider
+      initialTab={initialTab}
+      initialEventId={initialEventId}
+    >
       <EventRequestsManagementContent />
     </EventRequestProvider>
   );

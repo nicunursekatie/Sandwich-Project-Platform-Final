@@ -47,7 +47,7 @@ export const useEventMutations = () => {
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}`, data),
+      apiRequest('PUT', `/api/event-requests/${id}`, data),
     onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Event request updated',

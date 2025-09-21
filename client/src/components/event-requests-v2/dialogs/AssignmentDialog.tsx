@@ -251,9 +251,9 @@ function ComprehensivePersonSelector({
       )}
 
       {/* Available People by Category */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-96">
-          <div className="space-y-6">
+          <div className="space-y-6 pr-4">
             {Object.entries(groupedPeople).map(([section, people]) => (
               <div key={section}>
                 <h3 className="text-sm font-medium text-gray-700 mb-3">
@@ -263,9 +263,10 @@ function ComprehensivePersonSelector({
                   {people.map((person) => {
                     const isSelected = selectedPeople.includes(person.id);
                     return (
-                      <div
+                      <button
                         key={person.id}
-                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        type="button"
+                        className={`w-full text-left p-3 rounded-lg border cursor-pointer transition-colors ${
                           isSelected
                             ? 'bg-green-50 border-green-200 text-green-700'
                             : 'bg-white border-gray-200 hover:bg-gray-50'
@@ -295,7 +296,7 @@ function ComprehensivePersonSelector({
                             <Check className="w-4 h-4 text-green-600" />
                           )}
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -306,7 +307,7 @@ function ComprehensivePersonSelector({
       </div>
 
       {isLoading && (
-        <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+        <div className="absolute inset-0 bg-white/80 flex items-center justify-center pointer-events-none">
           <div className="text-sm text-gray-500">Loading people...</div>
         </div>
       )}
