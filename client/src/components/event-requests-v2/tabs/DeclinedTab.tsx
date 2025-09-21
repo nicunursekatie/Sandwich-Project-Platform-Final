@@ -4,17 +4,13 @@ import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
-import RequestCard from '@/components/event-requests/RequestCard';
+import { DeclinedCard } from '../cards/DeclinedCard';
 
 export const DeclinedTab: React.FC = () => {
   const { toast } = useToast();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation } = useEventMutations();
-  const {
-    handleStatusChange,
-    resolveUserName,
-    resolveRecipientName,
-  } = useEventAssignments();
+  const { handleStatusChange } = useEventAssignments();
 
   const {
     setSelectedEventRequest,
@@ -22,37 +18,9 @@ export const DeclinedTab: React.FC = () => {
     setShowEventDetails,
     setShowContactOrganizerDialog,
     setContactEventRequest,
-
-    // Not used for declined but needed for RequestCard
-    editingScheduledId,
-    setEditingScheduledId,
-    editingField,
-    setEditingField,
-    editingValue,
-    setEditingValue,
-    inlineSandwichMode,
-    setInlineSandwichMode,
-    inlineTotalCount,
-    setInlineTotalCount,
-    inlineSandwichTypes,
-    setInlineSandwichTypes,
   } = useEventRequestContext();
 
   const declinedRequests = filterRequestsByStatus('declined');
-
-  // No features available for declined/postponed events except viewing and reactivating
-  const startEditing = () => {};
-  const saveEdit = () => {};
-  const cancelEdit = () => {};
-  const addInlineSandwichType = () => {};
-  const updateInlineSandwichType = () => {};
-  const removeInlineSandwichType = () => {};
-  const openAssignmentDialog = () => {};
-  const openEditAssignmentDialog = () => {};
-  const handleRemoveAssignment = () => {};
-  const handleSelfSignup = () => {};
-  const canSelfSignup = () => false;
-  const isUserSignedUp = () => false;
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -84,69 +52,33 @@ export const DeclinedTab: React.FC = () => {
         </div>
       ) : (
         declinedRequests.map((request) => (
-          <RequestCard
+          <DeclinedCard
             key={request.id}
             request={request}
-            isEditing={false}
-            setIsEditing={setIsEditing}
-            editingField={editingField}
-            setEditingField={setEditingField}
-            editingValue={editingValue}
-            setEditingValue={setEditingValue}
-            editingScheduledId={editingScheduledId}
-            setEditingScheduledId={setEditingScheduledId}
-            inlineSandwichMode={inlineSandwichMode}
-            setInlineSandwichMode={setInlineSandwichMode}
-            inlineTotalCount={inlineTotalCount}
-            setInlineTotalCount={setInlineTotalCount}
-            inlineSandwichTypes={inlineSandwichTypes}
-            setInlineSandwichTypes={setInlineSandwichTypes}
-            onEdit={(request) => {
-              // View only for declined events
+            onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
               setShowEventDetails(true);
             }}
-            onDelete={(id) => {
+            onDelete={() => {
               if (window.confirm('Are you sure you want to permanently delete this declined event?')) {
-                deleteEventRequestMutation.mutate(id);
+                deleteEventRequestMutation.mutate(request.id);
               }
             }}
-            onSchedule={() => {}}
-            onCall={handleCall}
-            onToolkit={() => {}}
-            onScheduleCall={() => {}}
-            onFollowUp1Day={() => {}}
-            onFollowUp1Month={() => {}}
-            onReschedule={(id) => {
-              // Reactivate declined event
+            onContact={() => {
+              setContactEventRequest(request);
+              setShowContactOrganizerDialog(true);
+            }}
+            onCall={() => handleCall(request)}
+            onReactivate={() => {
               if (window.confirm('Do you want to reactivate this event request?')) {
-                handleStatusChange(id, 'new');
+                handleStatusChange(request.id, 'new');
                 toast({
                   title: 'Event reactivated',
                   description: 'The event request has been moved back to New Requests.',
                 });
               }
             }}
-            onContact={(request) => {
-              setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
-            }}
-            onStatusChange={handleStatusChange}
-            startEditing={startEditing}
-            saveEdit={saveEdit}
-            cancelEdit={cancelEdit}
-            addInlineSandwichType={addInlineSandwichType}
-            updateInlineSandwichType={updateInlineSandwichType}
-            removeInlineSandwichType={removeInlineSandwichType}
-            openAssignmentDialog={openAssignmentDialog}
-            openEditAssignmentDialog={openEditAssignmentDialog}
-            handleRemoveAssignment={handleRemoveAssignment}
-            handleSelfSignup={handleSelfSignup}
-            canSelfSignup={canSelfSignup}
-            isUserSignedUp={isUserSignedUp}
-            resolveUserName={resolveUserName}
-            resolveRecipientName={resolveRecipientName}
           />
         ))
       )}

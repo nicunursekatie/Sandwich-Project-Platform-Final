@@ -4,7 +4,7 @@ import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
-import RequestCard from '@/components/event-requests/RequestCard';
+import { ScheduledCard } from '../cards/ScheduledCard';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
@@ -186,62 +186,46 @@ export const ScheduledTab: React.FC = () => {
         </div>
       ) : (
         scheduledRequests.map((request) => (
-          <RequestCard
+          <ScheduledCard
             key={request.id}
             request={request}
-            isEditing={false}
-            setIsEditing={setIsEditing}
             editingField={editingField}
-            setEditingField={setEditingField}
             editingValue={editingValue}
-            setEditingValue={setEditingValue}
-            editingScheduledId={editingScheduledId}
-            setEditingScheduledId={setEditingScheduledId}
+            isEditingThisCard={editingScheduledId === request.id}
             inlineSandwichMode={inlineSandwichMode}
-            setInlineSandwichMode={setInlineSandwichMode}
             inlineTotalCount={inlineTotalCount}
-            setInlineTotalCount={setInlineTotalCount}
             inlineSandwichTypes={inlineSandwichTypes}
-            setInlineSandwichTypes={setInlineSandwichTypes}
-            onEdit={(request) => {
+            onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
               setShowEventDetails(true);
             }}
-            onDelete={(id) => deleteEventRequestMutation.mutate(id)}
-            onSchedule={() => {}}  // Already scheduled
-            onCall={handleCall}
-            onToolkit={() => {}}  // Not needed for scheduled
-            onScheduleCall={() => {}}  // Not needed for scheduled
-            onFollowUp1Day={(request) => {
-              // Available after event completes
-              setSelectedEventRequest(request);
-              setShowOneDayFollowUpDialog(true);
-            }}
-            onFollowUp1Month={(request) => {
-              setSelectedEventRequest(request);
-              setShowOneMonthFollowUpDialog(true);
-            }}
-            onReschedule={(id) => handleStatusChange(id, 'new')}
-            onContact={(request) => {
+            onDelete={() => deleteEventRequestMutation.mutate(request.id)}
+            onContact={() => {
               setContactEventRequest(request);
               setShowContactOrganizerDialog(true);
             }}
-            onStatusChange={handleStatusChange}
-            startEditing={startEditing}
+            onStatusChange={(status) => handleStatusChange(request.id, status)}
+            onFollowUp={() => {
+              setSelectedEventRequest(request);
+              setShowOneDayFollowUpDialog(true);
+            }}
+            startEditing={(field, value) => startEditing(request.id, field, value)}
             saveEdit={saveEdit}
             cancelEdit={cancelEdit}
+            setEditingValue={setEditingValue}
+            setInlineSandwichMode={setInlineSandwichMode}
+            setInlineTotalCount={setInlineTotalCount}
             addInlineSandwichType={addInlineSandwichType}
             updateInlineSandwichType={updateInlineSandwichType}
             removeInlineSandwichType={removeInlineSandwichType}
-            openAssignmentDialog={openAssignmentDialog}
-            openEditAssignmentDialog={openEditAssignmentDialog}
-            handleRemoveAssignment={handleRemoveAssignment}
-            handleSelfSignup={handleSelfSignup}
+            resolveUserName={resolveUserName}
+            openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+            openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
+            handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
+            handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
             canSelfSignup={canSelfSignup}
             isUserSignedUp={isUserSignedUp}
-            resolveUserName={resolveUserName}
-            resolveRecipientName={resolveRecipientName}
           />
         ))
       )}

@@ -3,25 +3,14 @@ import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
-import { useEventQueries } from '../hooks/useEventQueries';
 import { useToast } from '@/hooks/use-toast';
-import RequestCard from '@/components/event-requests/RequestCard';
+import { NewRequestCard } from '../cards/NewRequestCard';
 
 export const NewRequestsTab: React.FC = () => {
   const { toast } = useToast();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation, updateEventRequestMutation } = useEventMutations();
-  const {
-    handleStatusChange,
-    openAssignmentDialog,
-    openEditAssignmentDialog,
-    handleRemoveAssignment,
-    handleSelfSignup,
-    canSelfSignup,
-    isUserSignedUp,
-    resolveUserName,
-    resolveRecipientName,
-  } = useEventAssignments();
+  const { handleStatusChange } = useEventAssignments();
 
   const {
     setSelectedEventRequest,
@@ -34,31 +23,9 @@ export const NewRequestsTab: React.FC = () => {
     setShowToolkitSentDialog,
     setShowContactOrganizerDialog,
     setContactEventRequest,
-
-    // Inline editing states - not used for 'new' status but needed for RequestCard
-    editingScheduledId,
-    setEditingScheduledId,
-    editingField,
-    setEditingField,
-    editingValue,
-    setEditingValue,
-    inlineSandwichMode,
-    setInlineSandwichMode,
-    inlineTotalCount,
-    setInlineTotalCount,
-    inlineSandwichTypes,
-    setInlineSandwichTypes,
   } = useEventRequestContext();
 
   const newRequests = filterRequestsByStatus('new');
-
-  // These functions are needed for RequestCard but aren't used for 'new' status
-  const startEditing = () => {};
-  const saveEdit = () => {};
-  const cancelEdit = () => {};
-  const addInlineSandwichType = () => {};
-  const updateInlineSandwichType = () => {};
-  const removeInlineSandwichType = () => {};
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -85,65 +52,35 @@ export const NewRequestsTab: React.FC = () => {
   return (
     <div className="space-y-4">
       {newRequests.map((request) => (
-        <RequestCard
+        <NewRequestCard
           key={request.id}
           request={request}
-          isEditing={false}
-          setIsEditing={setIsEditing}
-          editingField={editingField}
-          setEditingField={setEditingField}
-          editingValue={editingValue}
-          setEditingValue={setEditingValue}
-          editingScheduledId={editingScheduledId}
-          setEditingScheduledId={setEditingScheduledId}
-          inlineSandwichMode={inlineSandwichMode}
-          setInlineSandwichMode={setInlineSandwichMode}
-          inlineTotalCount={inlineTotalCount}
-          setInlineTotalCount={setInlineTotalCount}
-          inlineSandwichTypes={inlineSandwichTypes}
-          setInlineSandwichTypes={setInlineSandwichTypes}
-          onEdit={(request) => {
+          onEdit={() => {
             setSelectedEventRequest(request);
             setIsEditing(true);
             setShowEventDetails(true);
           }}
-          onDelete={(id) => deleteEventRequestMutation.mutate(id)}
-          onSchedule={(request) => {
+          onDelete={() => deleteEventRequestMutation.mutate(request.id)}
+          onSchedule={() => {
             setSchedulingEventRequest(request);
             setShowSchedulingDialog(true);
           }}
-          onCall={handleCall}
-          onToolkit={(request) => {
+          onCall={() => handleCall(request)}
+          onContact={() => {
+            setContactEventRequest(request);
+            setShowContactOrganizerDialog(true);
+          }}
+          onToolkit={() => {
             setSelectedEventRequest(request);
             setToolkitEventRequest(request);
             setShowToolkitSentDialog(true);
           }}
-          onScheduleCall={(request) => {
+          onScheduleCall={() => {
             setSelectedEventRequest(request);
             setShowScheduleCallDialog(true);
           }}
-          onFollowUp1Day={() => {}}
-          onFollowUp1Month={() => {}}
-          onReschedule={() => {}}
-          onContact={(request) => {
-            setContactEventRequest(request);
-            setShowContactOrganizerDialog(true);
-          }}
-          onStatusChange={handleStatusChange}
-          startEditing={startEditing}
-          saveEdit={saveEdit}
-          cancelEdit={cancelEdit}
-          addInlineSandwichType={addInlineSandwichType}
-          updateInlineSandwichType={updateInlineSandwichType}
-          removeInlineSandwichType={removeInlineSandwichType}
-          openAssignmentDialog={openAssignmentDialog}
-          openEditAssignmentDialog={openEditAssignmentDialog}
-          handleRemoveAssignment={handleRemoveAssignment}
-          handleSelfSignup={handleSelfSignup}
-          canSelfSignup={canSelfSignup}
-          isUserSignedUp={isUserSignedUp}
-          resolveUserName={resolveUserName}
-          resolveRecipientName={resolveRecipientName}
+          onApprove={() => handleStatusChange(request.id, 'in_process')}
+          onDecline={() => handleStatusChange(request.id, 'declined')}
         />
       ))}
       {newRequests.length === 0 && (

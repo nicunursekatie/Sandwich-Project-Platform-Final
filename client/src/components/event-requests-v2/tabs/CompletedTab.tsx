@@ -4,23 +4,13 @@ import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
-import RequestCard from '@/components/event-requests/RequestCard';
+import { CompletedCard } from '../cards/CompletedCard';
 
 export const CompletedTab: React.FC = () => {
   const { toast } = useToast();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation } = useEventMutations();
-  const {
-    handleStatusChange,
-    openAssignmentDialog,
-    openEditAssignmentDialog,
-    handleRemoveAssignment,
-    handleSelfSignup,
-    canSelfSignup,
-    isUserSignedUp,
-    resolveUserName,
-    resolveRecipientName,
-  } = useEventAssignments();
+  const { handleStatusChange, resolveUserName } = useEventAssignments();
 
   const {
     setSelectedEventRequest,
@@ -32,58 +22,9 @@ export const CompletedTab: React.FC = () => {
     setContactEventRequest,
     setShowOneDayFollowUpDialog,
     setShowOneMonthFollowUpDialog,
-
-    // Not used for completed but needed for RequestCard
-    editingScheduledId,
-    setEditingScheduledId,
-    editingField,
-    setEditingField,
-    editingValue,
-    setEditingValue,
-    inlineSandwichMode,
-    setInlineSandwichMode,
-    inlineTotalCount,
-    setInlineTotalCount,
-    inlineSandwichTypes,
-    setInlineSandwichTypes,
   } = useEventRequestContext();
 
   const completedRequests = filterRequestsByStatus('completed');
-
-  // No inline editing for completed events
-  const startEditing = () => {};
-  const saveEdit = () => {};
-  const cancelEdit = () => {};
-  const addInlineSandwichType = () => {};
-  const updateInlineSandwichType = () => {};
-  const removeInlineSandwichType = () => {};
-
-  const handleCall = (request: any) => {
-    const phoneNumber = request.phone;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      window.location.href = `tel:${phoneNumber}`;
-    } else {
-      navigator.clipboard.writeText(phoneNumber || '').then(() => {
-        toast({
-          title: 'Phone number copied!',
-          description: `${phoneNumber} has been copied to your clipboard.`,
-        });
-      }).catch(() => {
-        toast({
-          title: 'Failed to copy',
-          description: 'Please copy manually: ' + phoneNumber,
-          variant: 'destructive',
-        });
-      });
-    }
-  };
-
-  const handleViewCollectionLog = (request: any) => {
-    setCollectionLogEventRequest(request);
-    setShowCollectionLog(true);
-  };
 
   return (
     <div className="space-y-4">
@@ -93,74 +34,41 @@ export const CompletedTab: React.FC = () => {
         </div>
       ) : (
         completedRequests.map((request) => (
-          <RequestCard
+          <CompletedCard
             key={request.id}
             request={request}
-            isEditing={false}
-            setIsEditing={setIsEditing}
-            editingField={editingField}
-            setEditingField={setEditingField}
-            editingValue={editingValue}
-            setEditingValue={setEditingValue}
-            editingScheduledId={editingScheduledId}
-            setEditingScheduledId={setEditingScheduledId}
-            inlineSandwichMode={inlineSandwichMode}
-            setInlineSandwichMode={setInlineSandwichMode}
-            inlineTotalCount={inlineTotalCount}
-            setInlineTotalCount={setInlineTotalCount}
-            inlineSandwichTypes={inlineSandwichTypes}
-            setInlineSandwichTypes={setInlineSandwichTypes}
-            onEdit={(request) => {
-              // View only for completed events
+            onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
               setShowEventDetails(true);
             }}
-            onDelete={(id) => {
-              // Confirm before deleting completed events
+            onDelete={() => {
               if (window.confirm('Are you sure you want to delete this completed event? This action cannot be undone.')) {
-                deleteEventRequestMutation.mutate(id);
+                deleteEventRequestMutation.mutate(request.id);
               }
             }}
-            onSchedule={() => {}}  // Not applicable for completed
-            onCall={handleCall}
-            onToolkit={() => {}}  // Not applicable for completed
-            onScheduleCall={() => {}}  // Not applicable for completed
-            onFollowUp1Day={(request) => {
-              // Important for completed events - 1-day follow-up
-              setSelectedEventRequest(request);
-              setShowOneDayFollowUpDialog(true);
-            }}
-            onFollowUp1Month={(request) => {
-              // Important for completed events - 1-month follow-up
-              setSelectedEventRequest(request);
-              setShowOneMonthFollowUpDialog(true);
-            }}
-            onReschedule={(id) => {
-              // Allow rescheduling if they want to run the event again
-              if (window.confirm('Do you want to create a new event request based on this completed event?')) {
-                handleStatusChange(id, 'new');
-              }
-            }}
-            onContact={(request) => {
+            onContact={() => {
               setContactEventRequest(request);
               setShowContactOrganizerDialog(true);
             }}
-            onStatusChange={handleStatusChange}
-            startEditing={startEditing}
-            saveEdit={saveEdit}
-            cancelEdit={cancelEdit}
-            addInlineSandwichType={addInlineSandwichType}
-            updateInlineSandwichType={updateInlineSandwichType}
-            removeInlineSandwichType={removeInlineSandwichType}
-            openAssignmentDialog={openAssignmentDialog}
-            openEditAssignmentDialog={openEditAssignmentDialog}
-            handleRemoveAssignment={handleRemoveAssignment}
-            handleSelfSignup={handleSelfSignup}
-            canSelfSignup={canSelfSignup}
-            isUserSignedUp={isUserSignedUp}
+            onFollowUp1Day={() => {
+              setSelectedEventRequest(request);
+              setShowOneDayFollowUpDialog(true);
+            }}
+            onFollowUp1Month={() => {
+              setSelectedEventRequest(request);
+              setShowOneMonthFollowUpDialog(true);
+            }}
+            onViewCollectionLog={() => {
+              setCollectionLogEventRequest(request);
+              setShowCollectionLog(true);
+            }}
+            onReschedule={() => {
+              if (window.confirm('Do you want to create a new event request based on this completed event?')) {
+                handleStatusChange(request.id, 'new');
+              }
+            }}
             resolveUserName={resolveUserName}
-            resolveRecipientName={resolveRecipientName}
           />
         ))
       )}
