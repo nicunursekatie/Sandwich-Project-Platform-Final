@@ -75,6 +75,9 @@ export const useEventAssignments = () => {
       if (driver) {
         return driver.name;
       }
+      // If driver not found in the loaded list, return a descriptive placeholder
+      // This handles cases where the drivers array might not be fully loaded
+      return `Driver #${userIdOrName}`;
     }
 
     return userIdOrName;

@@ -124,7 +124,7 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
     }
 
     const assignedVanDriverName = request.assignedVanDriverId 
-      ? resolveUserName(request.assignedVanDriverId)
+      ? (request.customVanDriverName || resolveUserName(request.assignedVanDriverId))
       : null;
 
     return (
