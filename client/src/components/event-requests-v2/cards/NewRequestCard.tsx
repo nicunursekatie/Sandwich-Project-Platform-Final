@@ -130,7 +130,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
                   : 'Unknown date'}
                 {request.createdAt && (
-                  <Badge variant="secondary" className="text-xs ml-1">
+                  <Badge className="text-xs ml-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200">
                     {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
                   </Badge>
                 )}
@@ -163,7 +163,11 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           {request.hasHostedBefore !== null && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500">Previously hosted:</span>
-              <Badge variant={request.hasHostedBefore ? "success" : "secondary"}>
+              <Badge className={
+                request.hasHostedBefore 
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200"
+                  : "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-0 shadow-lg hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200"
+              }>
                 {request.hasHostedBefore ? 'Yes' : 'No - First Time'}
               </Badge>
             </div>
