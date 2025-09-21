@@ -72,14 +72,44 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
 
     // Fetch assigned projects (excluding completed, order by priority)
     const allProjects = await storage.getAllProjects();
+    const allUsers = await storage.getAllUsers();
+    
+    // Find current user details
+    const currentUser = allUsers.find((u: any) => u.id === userId);
+    const userFullName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : '';
+    const userDisplayName = currentUser?.displayName || '';
+    
+    logger.info(`Looking for projects assigned to user: ${userId}, name: "${userFullName}", display: "${userDisplayName}"`);
+    logger.info(`Total projects to check: ${allProjects.length}`);
+    
     const assignedProjects = allProjects
       .filter((project: any) => {
-        // Check if user is assigned via assigneeId or assigneeIds array
-        return (
+        // Check if user is assigned via ID fields (new way)
+        const idAssigned = (
           (project.assigneeId && project.assigneeId === userId) ||
           (project.assigneeIds && Array.isArray(project.assigneeIds) && project.assigneeIds.includes(userId)) ||
           (project.supportPeopleIds && Array.isArray(project.supportPeopleIds) && project.supportPeopleIds.includes(userId))
         );
+        
+        // Check if user is assigned via name fields (current way)
+        const nameAssigned = currentUser && (
+          (project.assigneeName && (project.assigneeName.includes(userFullName) || project.assigneeName.includes(userDisplayName))) ||
+          (project.assigneeNames && (project.assigneeNames.includes(userFullName) || project.assigneeNames.includes(userDisplayName))) ||
+          (project.supportPeople && (project.supportPeople.includes(userFullName) || project.supportPeople.includes(userDisplayName)))
+        );
+        
+        // Debug logging for each project
+        if (project.assigneeName || project.assigneeNames || project.supportPeople) {
+          logger.info(`Project ${project.id}: assigneeName="${project.assigneeName}", assigneeNames="${project.assigneeNames}", supportPeople="${project.supportPeople}"`);
+          logger.info(`  nameAssigned: ${nameAssigned}, idAssigned: ${idAssigned}`);
+        }
+        
+        const isAssigned = idAssigned || nameAssigned;
+        if (isAssigned) {
+          logger.info(`Found assigned project: ${project.id} - ${project.title}`);
+        }
+        
+        return isAssigned;
       })
       .filter((project: any) => project.status !== 'completed')
       .sort((a: any, b: any) => {
