@@ -88,7 +88,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* TSP Contact Assignment Status */}
         {(request.tspContact || request.customTspContact) && (
           <div className="mb-4">
-            <div className="bg-[#FBAD3F]/40 rounded-lg p-3 border border-[#FBAD3F] shadow-sm" style={{backgroundColor: 'rgba(251, 173, 63, 0.25)', backdropFilter: 'blur(1px)'}}>
+            <div className="rounded-lg p-3 border border-[#FBAD3F] shadow-sm" style={{backgroundColor: '#FFF4E6', borderColor: '#FBAD3F'}}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <UserPlus className="w-4 h-4 text-[#E5901A]" />
