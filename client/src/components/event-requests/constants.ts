@@ -16,15 +16,15 @@ export const SANDWICH_TYPES = [
 ] as const;
 
 export const statusColors = {
-  new: 'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-primary border border-teal-200',
+  new: 'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
   in_process:
-    'bg-gradient-to-r from-teal-50 to-cyan-100 text-brand-teal border border-teal-200',
+    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
   scheduled:
-    'bg-white border border-slate-200 shadow-sm',
+    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
   completed:
-    'bg-gradient-to-r from-[hsl(var(--primary)/0.08)] to-[hsl(var(--primary)/0.12)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.3)]',
+    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
   declined:
-    'bg-gradient-to-r from-[hsl(var(--accent)/0.1)] to-[hsl(var(--accent)/0.15)] text-[hsl(var(--accent))] border-2 border-[hsl(var(--accent)/0.4)] font-bold shadow-lg',
+    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border-2 border-[#236383]/50 font-bold shadow-lg',
 };
 
 export const SANDWICH_DESTINATIONS = [

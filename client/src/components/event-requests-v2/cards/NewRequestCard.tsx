@@ -49,7 +49,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   canDelete = true,
 }) => {
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-blue-500">
+    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] border border-[#236383]/30">
       <CardContent className="p-6">
         <CardHeader request={request} />
 
