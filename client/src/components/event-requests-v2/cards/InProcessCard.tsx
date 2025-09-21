@@ -12,6 +12,7 @@ import {
   Trash2,
   AlertTriangle,
   CheckCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { CardHeader } from './shared/CardHeader';
 import { CardContactInfo } from './shared/CardContactInfo';
@@ -116,10 +117,31 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             </div>
           )}
 
-          {/* Notes */}
-          {request.notes && (
+          {/* Notes Section */}
+          {(request.message || request.notes) && (
             <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-600">{request.notes}</p>
+              <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Notes
+              </h4>
+              <div className="space-y-3">
+                {request.message && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Initial Request Message:</p>
+                    <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded border-l-3 border-blue-200">
+                      {request.message}
+                    </p>
+                  </div>
+                )}
+                {request.notes && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Additional Notes:</p>
+                    <p className="text-sm text-gray-700 bg-white p-2 rounded border">
+                      {request.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
