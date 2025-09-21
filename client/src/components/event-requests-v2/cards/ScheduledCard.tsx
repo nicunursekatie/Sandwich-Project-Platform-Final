@@ -323,9 +323,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             )}
           </div>
 
-          {/* Event Times */}
-          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
-            <div className="grid grid-cols-2 gap-4">
+          {/* Times & Logistics - Compact */}
+          <div className="bg-white/50 rounded-lg p-2 border border-white/60">
+            <div className="grid grid-cols-4 gap-3 text-sm">
               {renderEditableField(
                 'eventStartTime',
                 request.eventStartTime && formatTime12Hour(request.eventStartTime),
@@ -338,12 +338,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 'End Time',
                 'time'
               )}
-            </div>
-          </div>
-
-          {/* Pickup & Logistics */}
-          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
-            <div className="grid grid-cols-2 gap-4">
               {renderEditableField(
                 'pickupTime',
                 request.pickupTime && formatTime12Hour(request.pickupTime),
@@ -353,7 +347,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {renderEditableField(
                 'hasRefrigeration',
                 request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown',
-                'Refrigeration Available',
+                'Refrigeration',
                 'select',
                 [
                   { value: 'true', label: 'Yes' },
@@ -380,16 +374,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="space-y-3">
               {request.message && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Initial Request Message:</p>
-                  <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded border-l-3 border-blue-200">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Initial Request Message:</p>
+                  <p className="text-base text-gray-800 bg-blue-50 p-3 rounded border-l-4 border-blue-300 leading-relaxed">
                     {request.message}
                   </p>
                 </div>
               )}
               {request.notes && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Additional Notes:</p>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Additional Notes:</p>
+                  <p className="text-base text-gray-800 bg-gray-50 p-3 rounded border-l-4 border-gray-300 leading-relaxed">
                     {request.notes}
                   </p>
                 </div>
