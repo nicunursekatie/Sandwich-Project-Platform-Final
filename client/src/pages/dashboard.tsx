@@ -87,6 +87,7 @@ import DonationTracking from '@/components/donation-tracking';
 import WeeklyMonitoringDashboard from '@/components/weekly-monitoring-dashboard';
 import WishlistPage from '@/pages/wishlist';
 import EventRequestsManagement from '@/components/event-requests-management';
+import EventRequestsManagementV2 from '@/components/event-requests-v2';
 import EventRemindersManagement from '@/components/event-reminders-management';
 import GroupCatalog from '@/components/organizations-catalog';
 import ActionTracking from '@/components/action-tracking-enhanced';
@@ -305,9 +306,16 @@ export default function Dashboard({
       case 'volunteers':
         return <VolunteerManagement />;
       case 'event-requests':
-        return <EventRequestsManagement 
-          initialTab={urlParams.tab} 
-          initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined} 
+        // Check for v2 test parameter
+        if (urlParams.version === '2' || urlParams.v2 === 'true') {
+          return <EventRequestsManagementV2
+            initialTab={urlParams.tab}
+            initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
+          />;
+        }
+        return <EventRequestsManagement
+          initialTab={urlParams.tab}
+          initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
         />;
       case 'event-reminders':
         return <EventRemindersManagement />;
