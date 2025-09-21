@@ -126,8 +126,8 @@ export default function RequestFilters({
                   <SelectContent>
                     <SelectItem value="created_date_desc">Submission Date (Most Recent First)</SelectItem>
                     <SelectItem value="created_date_asc">Submission Date (Oldest First)</SelectItem>
-                    <SelectItem value="event_date_desc">Event Date (Most Recent First)</SelectItem>
-                    <SelectItem value="event_date_asc">Event Date (Oldest First)</SelectItem>
+                    <SelectItem value="event_date_asc">Event Date (Soonest First)</SelectItem>
+                    <SelectItem value="event_date_desc">Event Date (Latest First)</SelectItem>
                     <SelectItem value="organization_asc">Organization A-Z</SelectItem>
                     <SelectItem value="organization_desc">Organization Z-A</SelectItem>
                   </SelectContent>
