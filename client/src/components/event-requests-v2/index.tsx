@@ -25,9 +25,11 @@ import { HelpCircle } from 'lucide-react';
 
 // Import mutations hook
 import { useEventMutations } from './hooks/useEventMutations';
+import { useToast } from '@/hooks/use-toast';
 
 // Import the TSP Contact Assignment Dialog
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
+import { AssignmentDialog } from './dialogs/AssignmentDialog';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -67,10 +69,20 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowCollectionLog,
     showTspContactAssignmentDialog,
     setShowTspContactAssignmentDialog,
+    showAssignmentDialog,
+    setShowAssignmentDialog,
     showSandwichPlanningModal,
     setShowSandwichPlanningModal,
     showStaffingPlanningModal,
     setShowStaffingPlanningModal,
+
+    // Assignment dialog state
+    assignmentType,
+    setAssignmentType,
+    assignmentEventId,
+    setAssignmentEventId,
+    selectedAssignees,
+    setSelectedAssignees,
 
     // Selected events
     selectedEventRequest,
@@ -102,7 +114,10 @@ const EventRequestsManagementContent: React.FC = () => {
     scheduleCallMutation,
     oneDayFollowUpMutation,
     oneMonthFollowUpMutation,
+    updateEventRequestMutation,
   } = useEventMutations();
+
+  const { toast } = useToast();
 
   // Initialize modal sandwich state when opening details
   const initializeModalSandwichState = (eventRequest: any) => {
@@ -354,6 +369,55 @@ const EventRequestsManagementContent: React.FC = () => {
           eventRequestTitle={tspContactEventRequest?.organizationName}
           currentTspContact={tspContactEventRequest?.tspContact}
           currentCustomTspContact={tspContactEventRequest?.customTspContact}
+        />
+
+        {/* General Assignment Dialog for Drivers/Speakers/Volunteers */}
+        <AssignmentDialog
+          isOpen={showAssignmentDialog}
+          onClose={() => {
+            setShowAssignmentDialog(false);
+            setAssignmentType(null);
+            setAssignmentEventId(null);
+            setSelectedAssignees([]);
+          }}
+          assignmentType={assignmentType}
+          selectedAssignees={selectedAssignees}
+          setSelectedAssignees={setSelectedAssignees}
+          onAssign={async (assignees: string[]) => {
+            if (!assignmentEventId || !assignmentType) return;
+
+            try {
+              // Update the event with the new assignments
+              const fieldMap = {
+                'driver': 'assignedDriverIds',
+                'speaker': 'speakerDetails',
+                'volunteer': 'assignedVolunteerIds'
+              };
+
+              const field = fieldMap[assignmentType];
+              await updateEventRequestMutation.mutateAsync({
+                id: assignmentEventId,
+                data: { [field]: assignees }
+              });
+
+              // Close the dialog
+              setShowAssignmentDialog(false);
+              setAssignmentType(null);
+              setAssignmentEventId(null);
+              setSelectedAssignees([]);
+
+              toast({
+                title: 'Success',
+                description: `${assignmentType}s assigned successfully`,
+              });
+            } catch (error) {
+              toast({
+                title: 'Error',
+                description: `Failed to assign ${assignmentType}s`,
+                variant: 'destructive',
+              });
+            }
+          }}
         />
 
         {/* Sandwich Planning Modal */}
