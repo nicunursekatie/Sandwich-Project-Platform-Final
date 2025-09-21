@@ -42,6 +42,9 @@ import { NewMeetingDialog } from './meetings/dashboard/dialogs/NewMeetingDialog'
 import { EditMeetingDialog } from './meetings/dashboard/dialogs/EditMeetingDialog';
 import { AddProjectDialog } from './meetings/dashboard/dialogs/AddProjectDialog';
 import { MeetingDetailsDialog } from './meetings/dashboard/dialogs/MeetingDetailsDialog';
+import { getCategoryIcon } from './meetings/dashboard/utils/categories';
+import { formatStatusText, getStatusBadgeProps } from './meetings/dashboard/utils/status';
+import { formatMeetingDate, formatMeetingTime, isPastMeeting, getCurrentDateRange, formatSectionName } from './meetings/dashboard/utils/date';
 import {
   CalendarDays,
   Clock,
@@ -128,33 +131,6 @@ interface Project {
   supportPeople?: string;
   assigneeName?: string;
 }
-
-
-
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case 'technology':
-      return '💻';
-    case 'events':
-      return '📅';
-    case 'grants':
-      return '💰';
-    case 'outreach':
-      return '🤝';
-    case 'marketing':
-      return '📢';
-    case 'operations':
-      return '⚙️';
-    case 'community':
-      return '👥';
-    case 'fundraising':
-      return '💵';
-    case 'event':
-      return '🎉';
-    default:
-      return '📁';
-  }
-};
 
 
 export default function EnhancedMeetingDashboard() {
@@ -1123,93 +1099,7 @@ export default function EnhancedMeetingDashboard() {
       }).length,
   };
 
-  // Helper function to format dates in a user-friendly way - TIMEZONE SAFE
-  const formatMeetingDate = (dateString: string) => {
-    // Use timezone-safe parsing by adding noon time
-    const date = new Date(dateString + 'T12:00:00');
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // Create local date comparisons to avoid timezone issues
-    const meetingDateOnly = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    );
-    const todayOnly = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const tomorrowOnly = new Date(
-      tomorrow.getFullYear(),
-      tomorrow.getMonth(),
-      tomorrow.getDate()
-    );
-
-    if (meetingDateOnly.getTime() === todayOnly.getTime()) {
-      return 'Today';
-    } else if (meetingDateOnly.getTime() === tomorrowOnly.getTime()) {
-      return 'Tomorrow';
-    } else {
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year:
-          date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
-      });
-    }
-  };
-
-  // Helper function to format time in a user-friendly way - using utility
-  const formatMeetingTime = (timeString: string) => {
-    return formatTimeForDisplay(timeString);
-  };
-
-  // Helper function to determine if meeting is in the past - using utility
-  const isPastMeeting = (dateString: string, timeString: string) => {
-    return isDateInPast(dateString, timeString);
-  };
-
-  // Helper function to format section names for display
-  const formatSectionName = (section: string | null | undefined) => {
-    if (!section) return 'General';
-    
-    const sectionMap: Record<string, string> = {
-      'urgent_items': 'Urgent Items',
-      'old_business': 'Old Business', 
-      'new_business': 'New Business',
-      'housekeeping': 'Housekeeping',
-      'general': 'General'
-    };
-    
-    return sectionMap[section] || section;
-  };
-
-  // Helper function to get current date range for breadcrumbs
-  const getCurrentDateRange = () => {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday
-
-    return {
-      week: `${startOfWeek.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })} - ${endOfWeek.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })}`,
-      month: now.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      }),
-    };
-  };
+  // Date utility functions are now imported from utils/date.ts
 
   const dateRange = getCurrentDateRange();
 

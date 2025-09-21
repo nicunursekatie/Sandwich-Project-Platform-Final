@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Check } from 'lucide-react';
+import { formatStatusText, getStatusBadgeProps } from '../utils/status';
 
 interface ProjectTask {
   id: number;
@@ -21,45 +22,7 @@ interface ProjectTasksViewProps {
   projectId: number;
 }
 
-// Helper function to format status text
-const formatStatusText = (status: string) => {
-  return status
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
-
-// Helper function to get status badge color and style
-const getStatusBadgeProps = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return {
-        variant: 'default' as const,
-        className: 'bg-teal-100 text-teal-800 border-teal-200',
-      };
-    case 'in_progress':
-      return {
-        variant: 'secondary' as const,
-        className: 'text-black border-2',
-        style: { backgroundColor: '#FBAD3F', borderColor: '#FBAD3F' },
-      };
-    case 'pending':
-      return {
-        variant: 'secondary' as const,
-        className: 'bg-gray-100 text-gray-800 border-gray-200',
-      };
-    case 'on_hold':
-      return {
-        variant: 'outline' as const,
-        className: 'bg-red-50 text-red-700 border-red-200',
-      };
-    default:
-      return {
-        variant: 'secondary' as const,
-        className: 'bg-gray-100 text-gray-800 border-gray-200',
-      };
-  }
-};
+// Status utility functions are now imported from utils/status.ts
 
 export function ProjectTasksView({ projectId }: ProjectTasksViewProps) {
   const { toast } = useToast();
