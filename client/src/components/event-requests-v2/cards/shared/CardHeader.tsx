@@ -138,7 +138,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
                 <div className="flex items-center gap-2 group">
                   <span data-testid="text-date-label">
                     {dateLabel}: {' '}
-                    <strong className={displayDate && isPast ? 'text-red-600' : displayDate ? '' : 'text-gray-500'} data-testid="text-date-value">
+                    <strong className="text-[16px]" data-testid="text-date-value">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </strong>
                     {displayDate && getRelativeTime(displayDate) && (

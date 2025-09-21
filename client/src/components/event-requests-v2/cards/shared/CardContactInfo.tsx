@@ -20,18 +20,18 @@ export const CardContactInfo: React.FC<CardContactInfoProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium">
+            <span className="font-medium text-[16px]">
               {request.firstName} {request.lastName}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Mail className="w-4 h-4 text-gray-400" />
-            <span>{request.email}</span>
+            <span className="text-[16px]">{request.email}</span>
           </div>
           {request.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Phone className="w-4 h-4 text-gray-400" />
-              <span>{request.phone}</span>
+              <span className="text-[16px]">{request.phone}</span>
             </div>
           )}
         </div>
