@@ -171,8 +171,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'events',
     permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
     group: 'planning',
-    parentId: 'event-requests',
-    isSubItem: true,
   },
   {
     id: 'projects',
