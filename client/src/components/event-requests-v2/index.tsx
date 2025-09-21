@@ -385,10 +385,25 @@ const EventRequestsManagementContent: React.FC = () => {
             setEditingAssignmentPersonId(null);
           }}
           assignmentType={assignmentType}
-          eventId={assignmentEventId}
-          eventTitle={eventRequests.find(req => req.id === assignmentEventId)?.organizationName}
           selectedAssignees={selectedAssignees}
-          onSelectionChange={setSelectedAssignees}
+          setSelectedAssignees={setSelectedAssignees}
+          onAssign={(assignees) => {
+            // Handle the assignment - for now, just close the dialog
+            // TODO: Implement actual assignment API call
+            console.log(`Assigning ${assignees.length} ${assignmentType}s to event ${assignmentEventId}:`, assignees);
+            setShowAssignmentDialog(false);
+            setAssignmentType(null);
+            setAssignmentEventId(null);
+            setSelectedAssignees([]);
+            setIsEditingAssignment(false);
+            setEditingAssignmentPersonId(null);
+            
+            // Show success message
+            toast({
+              title: "Assignment Successful",
+              description: `Successfully assigned ${assignees.length} ${assignmentType}${assignees.length !== 1 ? 's' : ''} to the event.`,
+            });
+          }}
         />
 
         {/* Sandwich Planning Modal */}
