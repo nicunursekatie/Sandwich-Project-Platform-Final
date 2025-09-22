@@ -193,7 +193,7 @@ export default function SandwichCollectionForm({
   const calculateTotal = () => {
     const individual = parseInt(individualCount) || 0;
     const groupTotal = groups.reduce(
-      (sum, group) => sum + (parseInt(group.count) || 0),
+      (sum, group) => sum + (parseInt(group.count.toString()) || 0),
       0
     );
     return individual + groupTotal;
