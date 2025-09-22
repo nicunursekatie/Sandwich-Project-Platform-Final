@@ -94,9 +94,6 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
   return (
     <div className="flex items-start justify-between mb-4">
       <div className="flex items-start space-x-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#007E8C] to-[#40C1AC] flex items-center justify-center text-white font-bold">
-          {request.organizationName?.charAt(0) || '?'}
-        </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-lg text-[#1A2332]">
