@@ -213,14 +213,9 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         {/* Projects Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="projects-card">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <span className="text-base">Projects</span>
-              </div>
-              <Badge variant="secondary" data-testid="projects-count">
-                {isLoading ? <Skeleton className="h-4 w-6" /> : dashboardData?.counts.projects || 0}
-              </Badge>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <span className="text-base">Projects</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -256,14 +251,9 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         {/* Events Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="events-card">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-purple-600" />
-                <span className="text-base">Events</span>
-              </div>
-              <Badge variant="secondary" data-testid="events-count">
-                {isLoading ? <Skeleton className="h-4 w-6" /> : dashboardData?.counts.events || 0}
-              </Badge>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-purple-600" />
+              <span className="text-base">Events</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -299,14 +289,9 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         {/* Tasks Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="tasks-card">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="text-base">Tasks</span>
-              </div>
-              <Badge variant="secondary" data-testid="tasks-count">
-                {isLoading ? <Skeleton className="h-4 w-6" /> : dashboardData?.counts.tasks || 0}
-              </Badge>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span className="text-base">Tasks</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -342,14 +327,9 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         {/* Messages Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="messages-card">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-orange-600" />
-                <span className="text-base">Messages</span>
-              </div>
-              <Badge variant="secondary" data-testid="messages-count">
-                {isLoading ? <Skeleton className="h-4 w-6" /> : dashboardData?.counts.messages || 0}
-              </Badge>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-orange-600" />
+              <span className="text-base">Messages</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
