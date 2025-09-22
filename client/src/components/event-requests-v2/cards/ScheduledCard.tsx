@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,16 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
   const [selectedOption, setSelectedOption] = React.useState(currentValue ? 'custom' : '');
   const [customValue, setCustomValue] = React.useState(currentValue);
 
+  // Fetch recipients from the API
+  const { data: recipients = [], isLoading } = useQuery({
+    queryKey: ['recipients'],
+    queryFn: async () => {
+      const response = await fetch('/api/recipients');
+      if (!response.ok) throw new Error('Failed to fetch recipients');
+      return response.json();
+    },
+  });
+
   const handleSave = () => {
     if (selectedOption === 'custom') {
       setEditingValue(customValue);
@@ -63,10 +74,15 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
         onChange={(e) => setSelectedOption(e.target.value)}
         className="h-8 px-2 border border-gray-300 rounded text-sm w-full"
         autoFocus
+        disabled={isLoading}
       >
         <option value="">Select recipient organization...</option>
+        {recipients.map((recipient: any) => (
+          <option key={recipient.id} value={recipient.name}>
+            {recipient.name}
+          </option>
+        ))}
         <option value="custom">Custom destination...</option>
-        {/* TODO: Add actual recipient organizations from API */}
       </select>
       {selectedOption === 'custom' && (
         <Input

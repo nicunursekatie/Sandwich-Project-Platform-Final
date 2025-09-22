@@ -379,7 +379,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               Submitted
             </p>
             <div className="space-y-1">
-              <p className="font-medium flex items-center gap-2 text-[16px]">
+              <div className="font-medium flex items-center gap-2 text-[16px]">
                 <Clock className="w-4 h-4" />
                 {request.createdAt
                   ? new Date(request.createdAt).toLocaleDateString() +
@@ -393,7 +393,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     })}
                   </Badge>
                 )}
-              </p>
+              </div>
             </div>
           </div>
 
