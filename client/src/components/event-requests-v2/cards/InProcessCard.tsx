@@ -358,10 +358,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 Preferred Time
               </p>
               <p className="font-medium">
-                {request.preferredStartTime &&
-                  formatTime12Hour(request.preferredStartTime)}
-                {request.preferredEndTime &&
-                  ` - ${formatTime12Hour(request.preferredEndTime)}`}
+                {request.eventStartTime &&
+                  formatTime12Hour(request.eventStartTime)}
+                {request.eventEndTime &&
+                  ` - ${formatTime12Hour(request.eventEndTime)}`}
               </p>
             </div>
           </div>
@@ -375,7 +375,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 <span>
                   {formatSandwichTypesDisplay(
                     request.sandwichTypes,
-                    request.estimatedSandwichCount
+                    request.estimatedSandwichCount ?? undefined
                   )}
                 </span>
               </div>
@@ -383,7 +383,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           )}
 
           {/* Notes Section */}
-          {(request.message || request.notes) && (
+          {(request.message || request.planningNotes) && (
             <div className="bg-gray-50 rounded-lg p-3">
               <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -400,13 +400,13 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     </p>
                   </div>
                 )}
-                {request.notes && (
+                {request.planningNotes && (
                   <div>
                     <p className="text-xs text-gray-500 mb-1">
-                      Additional Notes:
+                      Planning Notes:
                     </p>
                     <p className="text-sm text-gray-700 bg-white p-2 rounded border">
-                      {request.notes}
+                      {request.planningNotes}
                     </p>
                   </div>
                 )}
