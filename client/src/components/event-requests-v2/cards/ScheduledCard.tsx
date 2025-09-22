@@ -21,6 +21,7 @@ import {
   Car,
   Megaphone,
   UserPlus,
+  UserX,
 } from 'lucide-react';
 import { formatTime12Hour, formatTimeForInput, formatEventDate } from '@/components/event-requests/utils';
 import { SANDWICH_TYPES, statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
@@ -98,6 +99,28 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   resolveUserName
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
+
+  // Calculate staffing gaps
+  const parsePostgresArray = (arr: any): string[] => {
+    if (!arr) return [];
+    if (Array.isArray(arr)) return arr;
+    if (typeof arr === 'string') {
+      if (arr === '{}' || arr === '') return [];
+      let cleaned = arr.replace(/^{|}$/g, '');
+      if (!cleaned) return [];
+      if (cleaned.includes('"')) {
+        const matches = cleaned.match(/"[^"]*"|[^",]+/g);
+        return matches ? matches.map(item => item.replace(/"/g, '').trim()).filter(item => item) : [];
+      }
+      return cleaned.split(',').map(item => item.trim()).filter(item => item);
+    }
+    return [];
+  };
+
+  const driverGap = (request.driversNeeded || 0) - parsePostgresArray(request.assignedDriverIds).length;
+  const speakerGap = (request.speakersNeeded || 0) - Object.keys(request.assignedSpeakerDetails || {}).length;
+  const volunteerGap = (request.volunteersNeeded || 0) - parsePostgresArray(request.assignedVolunteerIds).length;
+  const hasStaffingGaps = driverGap > 0 || speakerGap > 0 || volunteerGap > 0;
   
   // Get the proper status label from constants instead of just replacing underscores
   const getStatusLabel = (status: string) => {
@@ -172,6 +195,25 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 Needs follow-up
+              </Badge>
+            )}
+            {/* Staffing need badges */}
+            {driverGap > 0 && (
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+                <Car className="w-3 h-3 mr-1" />
+                Need {driverGap} driver{driverGap > 1 ? 's' : ''}
+              </Badge>
+            )}
+            {speakerGap > 0 && (
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+                <Megaphone className="w-3 h-3 mr-1" />
+                Need {speakerGap} speaker{speakerGap > 1 ? 's' : ''}
+              </Badge>
+            )}
+            {volunteerGap > 0 && (
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+                <Users className="w-3 h-3 mr-1" />
+                Need {volunteerGap} volunteer{volunteerGap > 1 ? 's' : ''}
               </Badge>
             )}
           </div>
@@ -311,10 +353,24 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
 
     return (
       <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
-        {/* Header with icon and title */}
-        <div className="flex items-center gap-2 mb-3">
-          {icon}
-          <span className="font-semibold text-base text-[#236383]">{title}</span>
+        {/* Header with icon, title and count */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="font-semibold text-base text-[#236383]">{title}</span>
+          </div>
+          {typeof needed === 'number' && (
+            <div className="flex items-center gap-1">
+              <span className={`text-sm font-medium ${
+                assigned.length >= needed ? 'text-green-600' : 'text-orange-600'
+              }`}>
+                {assigned.length}/{needed}
+              </span>
+              {assigned.length < needed && (
+                <UserX className="w-4 h-4 text-orange-600" />
+              )}
+            </div>
+          )}
         </div>
         {/* Assigned people */}
         <div className="space-y-2 mb-3 min-h-[60px]">
@@ -500,6 +556,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   isUserSignedUp,
   canEdit = true,
 }) => {
+  // Helper function for parsing postgres arrays
+  const parsePostgresArray = (arr: any): string[] => {
+    if (!arr) return [];
+    if (Array.isArray(arr)) return arr;
+    if (typeof arr === 'string') {
+      if (arr === '{}' || arr === '') return [];
+      let cleaned = arr.replace(/^{|}$/g, '');
+      if (!cleaned) return [];
+      if (cleaned.includes('"')) {
+        const matches = cleaned.match(/"[^"]*"|[^",]+/g);
+        return matches ? matches.map(item => item.replace(/"/g, '').trim()).filter(item => item) : [];
+      }
+      return cleaned.split(',').map(item => item.trim()).filter(item => item);
+    }
+    return [];
+  };
   const renderEditableField = (
     field: string,
     value: any,
@@ -908,16 +980,83 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           onSelfSignup={(type) => handleSelfSignup(type)}
         />
 
-        {/* Staffing Needs - Editable (smaller text, less prominent) */}
-        <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t border-gray-200">
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">Drivers Needed:</span> {request.driversNeeded || 0}
-          </div>
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">Speakers Needed:</span> {request.speakersNeeded || 0}
-          </div>
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">Volunteers Needed:</span> {request.volunteersNeeded || 0}
+        {/* Staffing Summary - Visual representation */}
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="grid grid-cols-3 gap-3">
+            {/* Drivers */}
+            <div className={`rounded-lg p-2 ${
+              parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
+                ? 'bg-green-50 border border-green-300'
+                : 'bg-orange-50 border border-orange-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Car className={`w-4 h-4 ${
+                    parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
+                      ? 'text-green-600'
+                      : 'text-orange-600'
+                  }`} />
+                  <span className="text-sm font-medium">Drivers</span>
+                </div>
+                <span className={`text-sm font-bold ${
+                  parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
+                    ? 'text-green-600'
+                    : 'text-orange-600'
+                }`}>
+                  {parsePostgresArray(request.assignedDriverIds).length}/{request.driversNeeded || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Speakers */}
+            <div className={`rounded-lg p-2 ${
+              Object.keys(request.assignedSpeakerDetails || {}).length >= (request.speakersNeeded || 0)
+                ? 'bg-green-50 border border-green-300'
+                : 'bg-orange-50 border border-orange-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Megaphone className={`w-4 h-4 ${
+                    Object.keys(request.assignedSpeakerDetails || {}).length >= (request.speakersNeeded || 0)
+                      ? 'text-green-600'
+                      : 'text-orange-600'
+                  }`} />
+                  <span className="text-sm font-medium">Speakers</span>
+                </div>
+                <span className={`text-sm font-bold ${
+                  Object.keys(request.assignedSpeakerDetails || {}).length >= (request.speakersNeeded || 0)
+                    ? 'text-green-600'
+                    : 'text-orange-600'
+                }`}>
+                  {Object.keys(request.assignedSpeakerDetails || {}).length}/{request.speakersNeeded || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Volunteers */}
+            <div className={`rounded-lg p-2 ${
+              parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
+                ? 'bg-green-50 border border-green-300'
+                : 'bg-orange-50 border border-orange-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Users className={`w-4 h-4 ${
+                    parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
+                      ? 'text-green-600'
+                      : 'text-orange-600'
+                  }`} />
+                  <span className="text-sm font-medium">Volunteers</span>
+                </div>
+                <span className={`text-sm font-bold ${
+                  parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
+                    ? 'text-green-600'
+                    : 'text-orange-600'
+                }`}>
+                  {parsePostgresArray(request.assignedVolunteerIds).length}/{request.volunteersNeeded || 0}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
