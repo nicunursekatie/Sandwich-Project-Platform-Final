@@ -31,9 +31,11 @@ import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 
-// Import mutations hook
+// Import hooks
 import { useEventMutations } from './hooks/useEventMutations';
+import { useEventQueries } from './hooks/useEventQueries';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -125,6 +127,8 @@ const EventRequestsManagementContent: React.FC = () => {
     updateEventRequestMutation,
   } = useEventMutations();
 
+  const { users, drivers } = useEventQueries();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const handleScheduleCall = () => {
@@ -235,7 +239,7 @@ const EventRequestsManagementContent: React.FC = () => {
           <EventSchedulingForm
             eventRequest={selectedEventRequest}
             isOpen={showEventDetails}
-            mode={selectedEventRequest ? 'edit' : 'create'}
+            mode={selectedEventRequest ? 'edit' : 'schedule'}
             onClose={() => {
               setShowEventDetails(false);
               setSelectedEventRequest(null);
@@ -266,10 +270,11 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Collection Log Dialog */}
+        {/* Collection Log Dialog */}
         {showCollectionLog && collectionLogEventRequest && (
           <EventCollectionLog
             eventRequest={collectionLogEventRequest}
-            isOpen={showCollectionLog}
+            isVisible={showCollectionLog}
             onClose={() => {
               setShowCollectionLog(false);
               setCollectionLogEventRequest(null);
@@ -368,8 +373,8 @@ const EventRequestsManagementContent: React.FC = () => {
           }}
           eventRequestId={tspContactEventRequest?.id || 0}
           eventRequestTitle={tspContactEventRequest?.organizationName}
-          currentTspContact={tspContactEventRequest?.tspContact}
-          currentCustomTspContact={tspContactEventRequest?.customTspContact}
+          currentTspContact={tspContactEventRequest?.tspContact || undefined}
+          currentCustomTspContact={tspContactEventRequest?.customTspContact || undefined}
         />
 
         {/* General Assignment Dialog for Drivers/Speakers/Volunteers */}
@@ -387,19 +392,94 @@ const EventRequestsManagementContent: React.FC = () => {
           onAssign={async (assignees: string[]) => {
             if (!assignmentEventId || !assignmentType) return;
 
-            try {
-              // Update the event with the new assignments
-              const fieldMap = {
-                driver: 'assignedDriverIds',
-                speaker: 'assignedSpeakerIds',
-                volunteer: 'assignedVolunteerIds',
-              };
+            console.log('=== ASSIGNMENT SUBMIT ===');
+            console.log('Event ID:', assignmentEventId);
+            console.log('Assignment Type:', assignmentType);
+            console.log('Selected Assignees:', assignees);
 
-              const field = fieldMap[assignmentType];
-              await updateEventRequestMutation.mutateAsync({
+            try {
+              // Get the current event to preserve existing assignments
+              const currentEvent = eventRequests.find(e => e.id === assignmentEventId);
+              if (!currentEvent) {
+                throw new Error('Event not found');
+              }
+
+              // Build the update data based on assignment type
+              let updateData: any = {};
+
+              if (assignmentType === 'driver') {
+                // Update driver IDs
+                updateData.assignedDriverIds = assignees;
+
+                // Build driver details object
+                const driverDetails: any = {};
+                assignees.forEach(driverId => {
+                  const driver = drivers.find((d: any) => d.id.toString() === driverId);
+                  const foundUser = users.find((u: any) => u.id === driverId);
+
+                  driverDetails[driverId] = {
+                    name: driver?.name || (foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : driverId),
+                    assignedAt: new Date().toISOString(),
+                    assignedBy: user?.id || 'system'
+                  };
+                });
+                updateData.driverDetails = driverDetails;
+
+              } else if (assignmentType === 'speaker') {
+                // Update speaker IDs (if we're tracking them)
+                updateData.assignedSpeakerIds = assignees;
+
+                // Build speaker details object
+                const speakerDetails: any = {};
+                const speakerAssignments: string[] = [];
+
+                assignees.forEach(speakerId => {
+                  const foundUser = users.find((u: any) => u.id === speakerId);
+                  const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : speakerId;
+
+                  speakerDetails[speakerId] = {
+                    name: name,
+                    assignedAt: new Date().toISOString(),
+                    assignedBy: user?.id || 'system'
+                  };
+                  speakerAssignments.push(name);
+                });
+
+                updateData.speakerDetails = speakerDetails;
+                updateData.speakerAssignments = speakerAssignments;
+
+              } else if (assignmentType === 'volunteer') {
+                // Update volunteer IDs
+                updateData.assignedVolunteerIds = assignees;
+
+                // Build volunteer details object
+                const volunteerDetails: any = {};
+                const volunteerAssignments: string[] = [];
+
+                assignees.forEach(volunteerId => {
+                  const foundUser = users.find((u: any) => u.id === volunteerId);
+                  const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : volunteerId;
+
+                  volunteerDetails[volunteerId] = {
+                    name: name,
+                    assignedAt: new Date().toISOString(),
+                    assignedBy: user?.id || 'system'
+                  };
+                  volunteerAssignments.push(name);
+                });
+
+                updateData.volunteerDetails = volunteerDetails;
+                updateData.volunteerAssignments = volunteerAssignments;
+              }
+
+              console.log('Update data:', updateData);
+
+              const result = await updateEventRequestMutation.mutateAsync({
                 id: assignmentEventId,
-                data: { [field]: assignees },
+                data: updateData,
               });
+
+              console.log('Update result:', result);
 
               // Close the dialog
               setShowAssignmentDialog(false);
@@ -412,6 +492,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 description: `${assignmentType}s assigned successfully`,
               });
             } catch (error) {
+              console.error('Assignment error:', error);
               toast({
                 title: 'Error',
                 description: `Failed to assign ${assignmentType}s`,
