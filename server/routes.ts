@@ -122,6 +122,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerAnnouncementRoutes } = await import('./routes/announcements');
   registerAnnouncementRoutes(app);
 
+  // SMS routes
+  const { smsAnnouncementRoutes } = await import('./routes/sms-announcement');
+  app.use('/api', smsAnnouncementRoutes);
+
+  const { smsUserRoutes } = await import('./routes/sms-users');
+  app.use('/api', smsUserRoutes);
+
+  const { smsTestingRoutes } = await import('./routes/sms-testing');
+  app.use('/api', smsTestingRoutes);
+
   // User routes are now handled by the modular system in server/routes/index.ts
 
   // Register performance optimization routes
