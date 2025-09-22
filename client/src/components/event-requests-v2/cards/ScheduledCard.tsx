@@ -622,38 +622,65 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           </div>
 
-            {/* Event Location & Recipients */}
+            {/* Event Location */}
+            {request.eventAddress && (
+              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-4 h-4 text-[#47B3CB]" />
+                  <span className="font-semibold text-gray-800">Event Location</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-medium text-gray-600">Address:</span>
+                  <span className="text-base">{request.eventAddress}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Delivery Logistics */}
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#47B3CB]" />
-                  <span className="font-semibold text-gray-800">Event Location & Recipients</span>
+                  <Package className="w-4 h-4 text-[#47B3CB]" />
+                  <span className="font-semibold text-gray-800">Delivery Logistics</span>
                 </div>
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => startEditing('deliveryDestination', request.deliveryDestination || '')}
-                    className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
-                  >
-                    <Edit2 className="w-3 h-3 mr-1" />
-                    Edit Recipients
-                  </Button>
-                )}
               </div>
               <div className="space-y-2">
-                {request.eventAddress && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium text-gray-600">Event Address:</span>
-                    <span className="text-base">{request.eventAddress}</span>
-                  </div>
-                )}
-                {request.overnightHoldingLocation && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
-                    <span className="text-base">{request.overnightHoldingLocation}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
+                  {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-8 w-48"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={saveEdit}>
+                        <Save className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-base">
+                        {request.overnightHoldingLocation || 'Not specified'}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base font-medium text-gray-600">Recipients:</span>
                   {isEditingThisCard && editingField === 'deliveryDestination' ? (
@@ -664,9 +691,21 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       setEditingValue={setEditingValue}
                     />
                   ) : (
-                    <span className="text-base">
-                      {request.deliveryDestination || 'Not specified'}
-                    </span>
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-base">
+                        {request.deliveryDestination || 'Not specified'}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('deliveryDestination', request.deliveryDestination || '')}
+                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
