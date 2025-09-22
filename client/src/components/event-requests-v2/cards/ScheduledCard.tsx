@@ -645,7 +645,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </Button>
             </div>
           )}
-        </div>        </div>
+        </div>
 
         {/* Main Content */}
         <div className="space-y-4">
@@ -1201,6 +1201,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <Button size="sm" onClick={onFollowUp}>
             Follow Up
           </Button>
+        </div>
         </div>
       </CardContent>
     </Card>

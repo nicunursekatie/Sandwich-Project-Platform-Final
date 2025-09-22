@@ -39,6 +39,11 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  hasPermission,
+  PERMISSIONS,
+} from '@shared/auth-utils';
 
 interface AuditLogEntry {
   id: number;
@@ -66,12 +71,33 @@ export function EventRequestAuditLog({
   showFilters = true,
   compact = false,
 }: EventRequestAuditLogProps) {
+  const { user: currentUser } = useAuth();
   const [timeFilter, setTimeFilter] = useState('24');
   const [actionFilter, setActionFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { trackView, trackClick, trackFilter, trackSearch } =
     useActivityTracker();
+
+  // Check permissions
+  if (!hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <Shield className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-xl">Access Restricted</CardTitle>
+            <CardDescription>
+              You don't have permission to view event request audit logs. Contact an
+              administrator if you need access.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   // Track component view on mount
   useEffect(() => {
@@ -98,6 +124,7 @@ export function EventRequestAuditLog({
       userFilter,
       eventId,
     ],
+    enabled: hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW),
     queryFn: async () => {
       const params = new URLSearchParams({
         hours: timeFilter,
