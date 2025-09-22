@@ -289,7 +289,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             {project.dueDate && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                <span className="text-[15px]">
+                <span className={`text-[15px] ${isOverdue ? 'text-[#236383]' : ''}`}>
                   {formatDate(project.dueDate)}
                 </span>
               </div>
@@ -326,7 +326,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               <div className="bg-[#236383] text-white px-3 py-2 rounded-md">
                 <div className="flex items-center gap-1 mb-1">
                   <Users className="w-3 h-3" />
-                  <span className="font-medium text-[14px]">Support Team:</span>
+                  <span className="text-[14px] font-bold">Support Team:</span>
                 </div>
                 <div className="text-[14px]">{supportPeople.join(', ')}</div>
               </div>
