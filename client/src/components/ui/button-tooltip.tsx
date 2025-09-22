@@ -8,7 +8,9 @@ import {
 } from '@/components/ui/tooltip';
 
 interface ButtonTooltipProps {
-  explanation: string;
+  explanation?: string; // preferred prop
+  text?: string;        // alias for backward compatibility
+  tooltip?: string;     // alias for backward compatibility
   children?: ReactNode;
   showIcon?: boolean;
   size?: 'sm' | 'md' | 'lg';
@@ -16,6 +18,8 @@ interface ButtonTooltipProps {
 
 export function ButtonTooltip({
   explanation,
+  text,
+  tooltip,
   children,
   showIcon = true,
   size = 'sm',
@@ -42,7 +46,7 @@ export function ButtonTooltip({
             </div>
           </TooltipTrigger>
           <TooltipContent className="max-w-sm p-3 text-sm bg-gray-900 text-white border-gray-700">
-            <p>{explanation}</p>
+            <p>{explanation ?? text ?? tooltip ?? ''}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -59,7 +63,7 @@ export function ButtonTooltip({
           />
         </TooltipTrigger>
         <TooltipContent className="max-w-sm p-3 text-sm bg-gray-900 text-white border-gray-700">
-          <p>{explanation}</p>
+          <p>{explanation ?? text ?? tooltip ?? ''}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

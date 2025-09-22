@@ -29,6 +29,7 @@ import { getCategoryIcon } from '../utils/categories';
 import { formatStatusText, getStatusBadgeProps } from '../utils/status';
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { formatSectionName } from '../utils/date';
+import { useNotes, type CreateNoteData } from '../hooks/useNotes';
 import {
   Plus,
   ExternalLink,
@@ -203,6 +204,85 @@ export function AgendaPlanningTab({
   apiRequest,
   toast,
 }: AgendaPlanningTabProps) {
+  // Add notes functionality
+  const { createNoteMutation } = useNotes();
+
+  // Function to create individual note items from agenda planning text boxes
+  // This should only be called at the end of the meeting to finalize notes
+  const handleFinalizeMeetingNotes = async () => {
+    if (!selectedMeeting) {
+      toast({
+        title: 'No Meeting Selected',
+        description: 'Please select a meeting before finalizing notes.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let notesCreated = 0;
+    const errors: string[] = [];
+
+    // Process each project that has text content
+    for (const project of allProjects) {
+      const discussionPoints = getTextValue(project.id, 'discussionPoints', '');
+      const decisionItems = getTextValue(project.id, 'decisionItems', '');
+
+      // Create note for discussion points if there's content
+      if (discussionPoints && discussionPoints.trim()) {
+        try {
+          await createNoteMutation.mutateAsync({
+            projectId: project.id,
+            meetingId: selectedMeeting.id,
+            type: 'discussion',
+            content: discussionPoints.trim(),
+            status: 'active',
+          });
+          notesCreated++;
+        } catch (error) {
+          errors.push(`Failed to save discussion points for ${project.title}`);
+        }
+      }
+
+      // Create note for decision items if there's content
+      if (decisionItems && decisionItems.trim()) {
+        try {
+          await createNoteMutation.mutateAsync({
+            projectId: project.id,
+            meetingId: selectedMeeting.id,
+            type: 'meeting',
+            content: decisionItems.trim(),
+            status: 'active',
+          });
+          notesCreated++;
+        } catch (error) {
+          errors.push(`Failed to save decision items for ${project.title}`);
+        }
+      }
+    }
+
+    // Show success/error message
+    if (notesCreated > 0) {
+      toast({
+        title: 'Meeting Notes Finalized',
+        description: `Created ${notesCreated} individual note item(s) from this meeting's discussion. These are now available in the Notes tab.`,
+      });
+    } else {
+      toast({
+        title: 'No Notes to Finalize',
+        description: 'No text content found in discussion points or decision items.',
+        variant: 'destructive',
+      });
+    }
+
+    if (errors.length > 0) {
+      toast({
+        title: 'Some Notes Failed to Save',
+        description: errors.join(', '),
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Actions */}
@@ -470,14 +550,16 @@ export function AgendaPlanningTab({
                           {sectionHeader}
                           <Card
                             data-testid={`card-project-${project.id}`}
-                            className={`border-2 transition-all mb-2 ${
+                            className={`border-2 transition-all mb-2 shadow-sm hover:shadow-md ${
                               agendaStatus === 'agenda'
-                                ? 'border-green-300 bg-green-50'
+                                ? 'border-[#007E8C] bg-gradient-to-r from-[#47B3CB]/10 to-[#007E8C]/10'
                                 : agendaStatus === 'tabled'
-                                  ? 'border-orange-300 bg-orange-50'
-                                  : index % 2 === 0
-                                    ? 'border-gray-200 bg-white'
-                                    : 'border-gray-200 bg-gray-50'
+                                  ? 'border-[#FBAD3F] bg-gradient-to-r from-[#FBAD3F]/10 to-[#FBAD3F]/20'
+                                  : needsDiscussion
+                                    ? 'border-[#236383] bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10'
+                                    : index % 2 === 0
+                                      ? 'border-[#D1D3D4] bg-gradient-to-r from-[#D1D3D4]/20 to-[#646464]/10'
+                                      : 'border-[#A31C41] bg-gradient-to-r from-[#A31C41]/10 to-[#A31C41]/20'
                             }`}
                           >
                             <CardContent className="p-4">
@@ -488,12 +570,14 @@ export function AgendaPlanningTab({
                                       {project.title}
                                     </h3>
                                     <Badge
-                                      className={`text-xs font-medium ${
+                                      className={`text-xs font-medium shadow-sm ${
                                         agendaStatus === 'agenda'
-                                          ? 'bg-green-100 text-green-800 border-green-200'
+                                          ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-300 shadow-green-200'
                                           : agendaStatus === 'tabled'
-                                            ? 'bg-orange-100 text-orange-800 border-orange-200'
-                                            : 'bg-gray-100 text-gray-600 border-gray-200'
+                                            ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border-orange-300 shadow-orange-200'
+                                            : needsDiscussion
+                                              ? 'bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-800 border-teal-300 shadow-teal-200'
+                                              : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border-gray-300 shadow-gray-200'
                                       }`}
                                     >
                                       {agendaStatus === 'agenda'
@@ -559,16 +643,16 @@ export function AgendaPlanningTab({
                         {sectionHeader}
                         <Card
                           data-testid={`card-project-expanded-${project.id}`}
-                          className={`border-2 transition-all ${
+                          className={`border-2 transition-all shadow-lg hover:shadow-xl ${
                             agendaStatus === 'agenda'
-                              ? 'border-green-300 bg-green-50'
+                              ? 'border-green-400 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 shadow-green-200'
                               : agendaStatus === 'tabled'
-                                ? 'border-orange-300 bg-orange-50'
+                                ? 'border-orange-400 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 shadow-orange-200'
                                 : needsDiscussion
-                                  ? 'border-teal-200 bg-teal-50'
+                                  ? 'border-teal-400 bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-100 shadow-teal-200'
                                   : index % 2 === 0
-                                    ? 'border-gray-200 bg-white'
-                                    : 'border-gray-200 bg-gray-50'
+                                    ? 'border-blue-300 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 shadow-blue-200'
+                                    : 'border-purple-300 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 shadow-purple-200'
                           }`}
                         >
                           <CardHeader className="pb-4">
@@ -581,7 +665,7 @@ export function AgendaPlanningTab({
                                   {needsDiscussion && (
                                     <Badge
                                       variant="outline"
-                                      className="bg-teal-100 text-teal-800 border-teal-300"
+                                      className="bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-800 border-teal-400 shadow-teal-200 shadow-sm"
                                     >
                                       📝 Has Notes
                                     </Badge>
@@ -768,7 +852,7 @@ export function AgendaPlanningTab({
                             </div>
 
                             {/* Agenda Actions */}
-                            <div className="flex justify-between items-center pt-4">
+                            <div className="pt-4 space-y-4">
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
@@ -782,8 +866,8 @@ export function AgendaPlanningTab({
                                   data-testid={`button-send-to-agenda-${project.id}`}
                                   className={
                                     agendaStatus === 'agenda'
-                                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                                      : 'border-green-300 text-green-700 hover:bg-green-50'
+                                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-green-300 shadow-md'
+                                      : 'border-green-400 text-green-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 shadow-green-200 shadow-sm'
                                   }
                                 >
                                   {agendaStatus === 'agenda' ? (
@@ -811,8 +895,8 @@ export function AgendaPlanningTab({
                                   data-testid={`button-table-project-${project.id}`}
                                   className={
                                     agendaStatus === 'tabled'
-                                      ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                                      : 'border-orange-300 text-orange-700 hover:bg-orange-50'
+                                      ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-orange-300 shadow-md'
+                                      : 'border-orange-400 text-orange-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 shadow-orange-200 shadow-sm'
                                   }
                                 >
                                   {agendaStatus === 'tabled' ? (
@@ -1090,12 +1174,12 @@ export function AgendaPlanningTab({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => createTasksFromNotesMutation.mutate()}
-              disabled={createTasksFromNotesMutation.isPending}
+              onClick={handleSaveNotesFromAgenda}
+              disabled={createNoteMutation.isPending}
               data-testid="button-floating-create-tasks"
               className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition-all disabled:opacity-50"
             >
-              {createTasksFromNotesMutation.isPending ? (
+              {createNoteMutation.isPending ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                   Saving Notes...

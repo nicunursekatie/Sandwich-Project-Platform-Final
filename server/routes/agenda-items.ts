@@ -17,7 +17,7 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
       
       // Filter by meetingId if provided
       const filteredItems = meetingId 
-        ? items.filter(item => item.meetingId === parseInt(meetingId as string))
+        ? items.filter((item: { meetingId: number }) => item.meetingId === parseInt(meetingId as string))
         : items;
       
       console.log('✅ Agenda Items API - Returning', filteredItems.length, 'items', 

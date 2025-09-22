@@ -315,18 +315,18 @@ export function NotesTab({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'discussion':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-gradient-to-r from-[#47B3CB]/20 to-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shadow-[#007E8C]/10';
       case 'meeting':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-gradient-to-r from-[#A31C41]/20 to-[#A31C41]/30 text-[#A31C41] border-[#A31C41]/40 shadow-[#A31C41]/10';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gradient-to-r from-[#D1D3D4]/20 to-[#646464]/10 text-[#646464] border-[#D1D3D4]/30 shadow-[#D1D3D4]/10';
     }
   };
 
   const getStatusColor = (status: string) => {
     return status === 'active' 
-      ? 'bg-green-100 text-green-800 border-green-200'
-      : 'bg-gray-100 text-gray-800 border-gray-200';
+      ? 'bg-gradient-to-r from-[#007E8C]/20 to-[#47B3CB]/20 text-[#007E8C] border-[#007E8C]/30 shadow-[#007E8C]/10'
+      : 'bg-gradient-to-r from-[#D1D3D4]/20 to-[#646464]/10 text-[#646464] border-[#D1D3D4]/30 shadow-[#D1D3D4]/10';
   };
 
   const truncateText = (text: string, maxLength: number = 200) => {
@@ -429,8 +429,8 @@ export function NotesTab({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="discussion">Discussion</SelectItem>
-              <SelectItem value="meeting">Meeting</SelectItem>
+              <SelectItem value="discussion">Discussion Points</SelectItem>
+              <SelectItem value="meeting">Decision Items</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -563,12 +563,12 @@ export function NotesTab({
                             {note.type === 'discussion' ? (
                               <>
                                 <MessageSquare className="w-3 h-3 mr-1" />
-                                Discussion
+                                Discussion Points
                               </>
                             ) : (
                               <>
-                                <Calendar className="w-3 h-3 mr-1" />
-                                Meeting
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Decision Items
                               </>
                             )}
                           </Badge>
@@ -743,8 +743,8 @@ export function NotesTab({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="discussion">Discussion</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="discussion">Discussion Points</SelectItem>
+                  <SelectItem value="meeting">Decision Items</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -804,8 +804,8 @@ export function NotesTab({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="discussion">Discussion</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="discussion">Discussion Points</SelectItem>
+                  <SelectItem value="meeting">Decision Items</SelectItem>
                 </SelectContent>
               </Select>
             </div>

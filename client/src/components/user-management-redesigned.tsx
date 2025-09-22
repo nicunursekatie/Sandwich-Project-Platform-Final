@@ -319,7 +319,7 @@ export default function UserManagementRedesigned() {
         description: 'New user has been successfully added.',
       });
       setShowAddUserDialog(false);
-      setNewUser({ email: '', firstName: '', lastName: '', role: 'volunteer' });
+      setNewUser({ email: '', firstName: '', lastName: '', role: 'volunteer', password: '' });
     },
     onError: (error: any) => {
       toast({
@@ -630,7 +630,7 @@ export default function UserManagementRedesigned() {
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <ButtonTooltip text="Open form to add a new user to the platform">
+          <ButtonTooltip explanation="Open form to add a new user to the platform">
             <Button
               className="bg-brand-primary hover:bg-brand-primary-dark"
               onClick={() => setShowAddUserDialog(true)}
