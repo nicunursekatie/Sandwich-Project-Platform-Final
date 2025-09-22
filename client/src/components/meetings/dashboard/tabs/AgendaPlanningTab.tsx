@@ -1174,20 +1174,21 @@ export function AgendaPlanningTab({
             <Button
               size="sm"
               variant="outline"
-              onClick={handleSaveNotesFromAgenda}
+              onClick={handleFinalizeMeetingNotes}
               disabled={createNoteMutation.isPending}
               data-testid="button-floating-create-tasks"
               className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition-all disabled:opacity-50"
+              title="Finalize meeting notes - creates individual note items from discussion points and decision items"
             >
               {createNoteMutation.isPending ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                  Saving Notes...
+                  Finalizing Notes...
                 </div>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Save Notes
+                  Finalize Meeting Notes
                 </>
               )}
             </Button>
