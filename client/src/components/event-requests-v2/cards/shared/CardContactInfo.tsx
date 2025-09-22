@@ -41,7 +41,7 @@ export const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onCall}
-              className="text-xs"
+              className="text-[15px]"
             >
               <Phone className="w-3 h-3 mr-1" />
               Call
@@ -52,7 +52,7 @@ export const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onContact}
-              className="text-xs"
+              className="text-[15px]"
             >
               <Mail className="w-3 h-3 mr-1" />
               Email
