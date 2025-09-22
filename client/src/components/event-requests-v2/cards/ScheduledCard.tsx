@@ -31,6 +31,95 @@ import { SANDWICH_TYPES, statusColors, statusIcons, statusOptions } from '@/comp
 import { parseSandwichTypes, formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 
+interface TimeDialogContentProps {
+  request: EventRequest;
+  startEditing: (field: string, value: string) => void;
+  saveEdit: () => void;
+  cancelEdit: () => void;
+}
+
+const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
+  request,
+  startEditing,
+  saveEdit,
+  cancelEdit
+}) => {
+  const [tempStartTime, setTempStartTime] = React.useState(request.eventStartTime || '');
+  const [tempEndTime, setTempEndTime] = React.useState(request.eventEndTime || '');
+  const [tempPickupTime, setTempPickupTime] = React.useState(request.pickupTime || '');
+
+  const handleSave = () => {
+    if (tempStartTime && !request.eventStartTime) {
+      startEditing('eventStartTime', tempStartTime);
+    }
+    if (tempEndTime && !request.eventEndTime) {
+      startEditing('eventEndTime', tempEndTime);
+    }
+    if (tempPickupTime && !request.pickupTime) {
+      startEditing('pickupTime', tempPickupTime);
+    }
+    saveEdit();
+  };
+
+  const hasChanges = () => {
+    return (tempStartTime && !request.eventStartTime) ||
+           (tempEndTime && !request.eventEndTime) ||
+           (tempPickupTime && !request.pickupTime);
+  };
+
+  return (
+    <div className="space-y-4">
+      {!request.eventStartTime && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Event Start Time</label>
+          <Input
+            type="time"
+            value={tempStartTime}
+            onChange={(e) => setTempStartTime(e.target.value)}
+            className="w-full"
+            placeholder="Select start time"
+          />
+        </div>
+      )}
+      {!request.eventEndTime && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Event End Time</label>
+          <Input
+            type="time"
+            value={tempEndTime}
+            onChange={(e) => setTempEndTime(e.target.value)}
+            className="w-full"
+            placeholder="Select end time"
+          />
+        </div>
+      )}
+      {!request.pickupTime && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Pickup Time</label>
+          <Input
+            type="time"
+            value={tempPickupTime}
+            onChange={(e) => setTempPickupTime(e.target.value)}
+            className="w-full"
+            placeholder="Select pickup time"
+          />
+        </div>
+      )}
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="outline" onClick={cancelEdit}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSave}
+          disabled={!hasChanges()}
+        >
+          Save Times
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 interface ScheduledCardProps {
   request: EventRequest;
 
@@ -375,7 +464,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {getStatusLabel(request.status)}
               </Badge>
               {staffingComplete ? (
-                <Badge className="bg-[#236383] text-white px-2 py-1 text-xs shadow-sm">
+                <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
                   <Check className="w-3 h-3 mr-1" />
                   Fully Staffed
                 </Badge>
@@ -457,7 +546,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#236383]" />
+                  <MapPin className="w-4 h-4 text-[#47B3CB]" />
                   <span className="font-semibold text-gray-800">Delivery Information</span>
                 </div>
                 {canEdit && (
@@ -465,7 +554,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={() => startEditing('deliveryDestination', request.deliveryDestination || '')}
-                    className="h-6 px-2 text-sm text-[#236383] hover:bg-[#236383]/10"
+                    className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
                   >
                     <Edit2 className="w-3 h-3 mr-1" />
                     Edit
@@ -552,58 +641,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <DialogHeader>
                             <DialogTitle>Add Event Times</DialogTitle>
                           </DialogHeader>
-                          <div className="space-y-4">
-                            {!request.eventStartTime && (
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">Event Start Time</label>
-                                <Input
-                                  type="time"
-                                  value={request.eventStartTime || ''}
-                                  onChange={(e) => {
-                                    if (e.target.value) {
-                                      startEditing('eventStartTime', e.target.value);
-                                    }
-                                  }}
-                                  className="w-full"
-                                />
-                              </div>
-                            )}
-                            {!request.eventEndTime && (
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">Event End Time</label>
-                                <Input
-                                  type="time"
-                                  value={request.eventEndTime || ''}
-                                  onChange={(e) => {
-                                    if (e.target.value) {
-                                      startEditing('eventEndTime', e.target.value);
-                                    }
-                                  }}
-                                  className="w-full"
-                                />
-                              </div>
-                            )}
-                            {!request.pickupTime && (
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">Pickup Time</label>
-                                <Input
-                                  type="time"
-                                  value={request.pickupTime || ''}
-                                  onChange={(e) => {
-                                    if (e.target.value) {
-                                      startEditing('pickupTime', e.target.value);
-                                    }
-                                  }}
-                                  className="w-full"
-                                />
-                              </div>
-                            )}
-                            <div className="flex justify-end gap-2 pt-4">
-                              <Button variant="outline" onClick={() => {}}>
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
+                          <TimeDialogContent 
+                            request={request}
+                            startEditing={startEditing}
+                            saveEdit={saveEdit}
+                            cancelEdit={cancelEdit}
+                          />
                         </DialogContent>
                       </Dialog>
                     )}
@@ -644,7 +687,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <span className="font-semibold text-gray-800">Team Assignments</span>
               <span className={`text-base font-bold px-2 py-1 rounded-full ${
                 staffingComplete 
-                  ? 'bg-[#236383]/20 text-[#236383]' 
+                  ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
                   : 'bg-[#A31C41]/20 text-[#A31C41]'
               }`}>
                 {totalAssigned}/{totalNeeded} assigned
@@ -656,16 +699,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {driverNeeded > 0 && (
                 <div className={`rounded-lg p-3 border ${
                   driverAssigned >= driverNeeded 
-                    ? 'bg-green-50 border-green-200' 
+                    ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' 
                     : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Car className="w-4 h-4 text-[#236383]" />
-                      <span className="font-medium text-[#236383]">Drivers</span>
+                      <Car className="w-4 h-4 text-[#47B3CB]" />
+                      <span className="font-medium text-[#47B3CB]">Drivers</span>
                       <span className={`text-sm px-2 py-1 rounded-full font-bold ${
                         driverAssigned >= driverNeeded 
-                          ? 'bg-[#236383]/20 text-[#236383]' 
+                          ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
                           : 'bg-[#A31C41]/20 text-[#A31C41]'
                       }`}>
                         {driverAssigned}/{driverNeeded}
@@ -676,7 +719,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         size="sm" 
                         variant="outline" 
                         onClick={() => openAssignmentDialog('driver')}
-                        className="h-8 text-sm border-[#236383]/40 text-[#236383] hover:bg-[#236383] hover:text-white"
+                        className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
                       >
                         <UserPlus className="w-3 h-3 mr-1" />
                         {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
@@ -723,16 +766,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {speakerNeeded > 0 && (
                 <div className={`rounded-lg p-3 border ${
                   speakerAssigned >= speakerNeeded 
-                    ? 'bg-green-50 border-green-200' 
+                    ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' 
                     : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Megaphone className="w-4 h-4 text-[#236383]" />
-                      <span className="font-medium text-[#236383]">Speakers</span>
+                      <Megaphone className="w-4 h-4 text-[#47B3CB]" />
+                      <span className="font-medium text-[#47B3CB]">Speakers</span>
                       <span className={`text-sm px-2 py-1 rounded-full font-bold ${
                         speakerAssigned >= speakerNeeded 
-                          ? 'bg-[#236383]/20 text-[#236383]' 
+                          ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
                           : 'bg-[#A31C41]/20 text-[#A31C41]'
                       }`}>
                         {speakerAssigned}/{speakerNeeded}
@@ -743,7 +786,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         size="sm" 
                         variant="outline" 
                         onClick={() => openAssignmentDialog('speaker')}
-                        className="h-8 text-sm border-[#236383]/40 text-[#236383] hover:bg-[#236383] hover:text-white"
+                        className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
                       >
                         <UserPlus className="w-3 h-3 mr-1" />
                         {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
@@ -782,16 +825,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {volunteerNeeded > 0 && (
                 <div className={`rounded-lg p-3 border ${
                   volunteerAssigned >= volunteerNeeded 
-                    ? 'bg-green-50 border-green-200' 
+                    ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' 
                     : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[#236383]" />
-                      <span className="font-medium text-[#236383]">Volunteers</span>
+                      <Users className="w-4 h-4 text-[#47B3CB]" />
+                      <span className="font-medium text-[#47B3CB]">Volunteers</span>
                       <span className={`text-sm px-2 py-1 rounded-full font-bold ${
                         volunteerAssigned >= volunteerNeeded 
-                          ? 'bg-[#236383]/20 text-[#236383]' 
+                          ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
                           : 'bg-[#A31C41]/20 text-[#A31C41]'
                       }`}>
                         {volunteerAssigned}/{volunteerNeeded}
@@ -802,7 +845,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         size="sm" 
                         variant="outline" 
                         onClick={() => openAssignmentDialog('volunteer')}
-                        className="h-8 text-sm border-[#236383]/40 text-[#236383] hover:bg-[#236383] hover:text-white"
+                        className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
                       >
                         <UserPlus className="w-3 h-3 mr-1" />
                         {volunteerAssigned < volunteerNeeded ? 'Assign' : 'Add'}
@@ -893,15 +936,50 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Planning Notes */}
-        {request.planningNotes && (
-          <div className="bg-green-50 rounded-lg p-3 mb-4 border border-green-200">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-4 h-4 text-green-600" />
-              <span className="font-medium text-green-800">Planning Notes</span>
+        <div className="bg-[#47B3CB]/10 rounded-lg p-3 mb-4 border border-[#47B3CB]/30">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#47B3CB]" />
+              <span className="font-medium text-[#47B3CB]">Planning Notes</span>
             </div>
-            <p className="text-base text-green-700">{request.planningNotes}</p>
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => startEditing('planningNotes', request.planningNotes || '')}
+                className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
+              >
+                <Edit2 className="w-3 h-3 mr-1" />
+                {request.planningNotes ? 'Edit' : 'Add'}
+              </Button>
+            )}
           </div>
-        )}
+          {isEditingThisCard && editingField === 'planningNotes' ? (
+            <div className="space-y-2">
+              <textarea
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded text-sm min-h-[80px]"
+                placeholder="Add planning notes..."
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={saveEdit}>
+                  <Save className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                  <X className="w-3 h-3 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-base text-[#47B3CB]">
+              {request.planningNotes || 'No planning notes yet. Click "Add" to add notes.'}
+            </p>
+          )}
+        </div>
 
 
         {/* Action Buttons */}
