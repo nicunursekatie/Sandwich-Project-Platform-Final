@@ -10,7 +10,7 @@ export const DeclinedTab: React.FC = () => {
   const { toast } = useToast();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation } = useEventMutations();
-  const { handleStatusChange } = useEventAssignments();
+  const { handleStatusChange, resolveUserName } = useEventAssignments();
 
   const {
     setSelectedEventRequest,
@@ -55,6 +55,7 @@ export const DeclinedTab: React.FC = () => {
           <DeclinedCard
             key={request.id}
             request={request}
+            resolveUserName={resolveUserName}
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);

@@ -29,6 +29,7 @@ interface DeclinedCardProps {
   onCall: () => void;
   onReactivate: () => void;
   canDelete?: boolean;
+  resolveUserName?: (id: string) => string;
 }
 
 // CardHeader component - copied from shared
@@ -43,10 +44,11 @@ interface CardHeaderProps {
   saveEdit?: () => void;
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
+  resolveUserName?: (id: string) => string;
 }
 
-const CardHeader: React.FC<CardHeaderProps> = ({ 
-  request, 
+const CardHeader: React.FC<CardHeaderProps> = ({
+  request,
   isInProcessStale,
   canEdit = false,
   isEditingThisCard = false,
@@ -55,7 +57,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   startEditing,
   saveEdit,
   cancelEdit,
-  setEditingValue
+  setEditingValue,
+  resolveUserName
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -151,7 +154,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <div className="text-sm text-[#D68319] mb-2">
                 <span className="font-medium">TSP Contact: </span>
                 <span className="font-normal">
-                  {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
+                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                 </span>
                 {request.tspContactAssignedDate && (
                   <span className="ml-2 text-xs text-gray-500">
@@ -221,13 +224,14 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   onCall,
   onReactivate,
   canDelete = true,
+  resolveUserName,
 }) => {
   const dateInfo = formatEventDate(request.desiredEventDate || '');
 
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-gray-400 bg-gradient-to-br from-gray-100 via-gray-50 to-red-50/20 border border-gray-300/30 opacity-90">
       <CardContent className="p-6">
-        <CardHeader request={request} />
+        <CardHeader request={request} resolveUserName={resolveUserName} />
 
         {/* Decline Info */}
         <div className="space-y-3 mb-4">
