@@ -264,9 +264,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(SANDWICH_TYPES).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
+                    {SANDWICH_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
