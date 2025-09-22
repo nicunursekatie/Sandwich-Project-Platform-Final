@@ -198,8 +198,8 @@ function ComprehensivePersonSelector({ selectedPeople, onSelectionChange, assign
     return (
       (typeof person.displayName === 'string' && person.displayName.toLowerCase().includes(searchLower)) ||
       (typeof person.email === 'string' && person.email.toLowerCase().includes(searchLower)) ||
-      (person.type === 'driver' && person.phone && typeof person.phone === 'string' && person.phone.toLowerCase().includes(searchLower)) ||
-      (person.type === 'host-contact' && person.hostName && typeof person.hostName === 'string' && person.hostName.toLowerCase().includes(searchLower))
+      (person.type === 'driver' && typeof (person as any).phone === 'string' && (person as any).phone.toLowerCase().includes(searchLower)) ||
+      (person.type === 'host-contact' && typeof (person as any).hostName === 'string' && (person as any).hostName.toLowerCase().includes(searchLower))
     );
   });
   // Group people by section
@@ -762,22 +762,22 @@ export default function EventRequestsManagement({
         updateData.assignedDriverIds = currentDrivers.filter(id => id !== personId);
 
         // Remove from driver details
-        const currentDriverDetails = eventRequest.driverDetails || {};
+        const currentDriverDetails: Record<string, any> = eventRequest.driverDetails || {};
         const newDriverDetails = { ...currentDriverDetails };
         delete newDriverDetails[personId];
         updateData.driverDetails = newDriverDetails;
       } else if (type === 'speaker') {
         // Remove from speaker details
-        const currentSpeakerDetails = eventRequest.speakerDetails || {};
+        const currentSpeakerDetails: Record<string, any> = eventRequest.speakerDetails || {};
         const newSpeakerDetails = { ...currentSpeakerDetails };
         delete newSpeakerDetails[personId];
         updateData.speakerDetails = newSpeakerDetails;
 
         // Remove from speaker assignments array
-        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
-        const speakerName = currentSpeakerDetails[personId]?.name;
+        const currentSpeakerAssignments: string[] = (eventRequest as any).speakerAssignments || [];
+        const speakerName: string | undefined = currentSpeakerDetails[personId]?.name;
         if (speakerName) {
-          updateData.speakerAssignments = currentSpeakerAssignments.filter(name => name !== speakerName);
+          updateData.speakerAssignments = currentSpeakerAssignments.filter((name: string) => name !== speakerName);
         }
       } else if (type === 'volunteer') {
         // Remove from assignedVolunteerIds array
@@ -785,16 +785,16 @@ export default function EventRequestsManagement({
         updateData.assignedVolunteerIds = currentVolunteers.filter(id => id !== personId);
 
         // Remove from volunteer details
-        const currentVolunteerDetails = eventRequest.volunteerDetails || {};
+        const currentVolunteerDetails: Record<string, any> = (eventRequest as any).volunteerDetails || {};
         const newVolunteerDetails = { ...currentVolunteerDetails };
         delete newVolunteerDetails[personId];
         updateData.volunteerDetails = newVolunteerDetails;
 
         // Remove from volunteer assignments array
-        const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
-        const volunteerName = currentVolunteerDetails[personId]?.name;
+        const currentVolunteerAssignments: string[] = (eventRequest as any).volunteerAssignments || [];
+        const volunteerName: string | undefined = currentVolunteerDetails[personId]?.name;
         if (volunteerName) {
-          updateData.volunteerAssignments = currentVolunteerAssignments.filter(name => name !== volunteerName);
+          updateData.volunteerAssignments = currentVolunteerAssignments.filter((name: string) => name !== volunteerName);
         }
       }
 
@@ -833,9 +833,8 @@ export default function EventRequestsManagement({
           request.lastName
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          request.email
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
+          (request.email &&
+            request.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
           dateMatchesSearch(request.desiredEventDate, searchQuery)
         );
@@ -864,9 +863,9 @@ export default function EventRequestsManagement({
       })
       .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
       .map((request: EventRequest) => {
-        const StatusIcon = statusIcons[request.status];
+        const StatusIcon = statusIcons[request.status as keyof typeof statusIcons];
         const dateInfo = formatEventDate(
-          request.desiredEventDate || ''
+          typeof request.desiredEventDate === 'string' ? request.desiredEventDate : ''
         );
 
         return (
@@ -983,8 +982,8 @@ export default function EventRequestsManagement({
           updateData.assignedDriverIds = newDrivers;
           
           // Remove old driver details and add new ones
-          const newDriverDetails = { ...currentDriverDetails };
-          delete newDriverDetails[editingAssignmentPersonId];
+          const newDriverDetails: Record<string, any> = { ...currentDriverDetails };
+          delete newDriverDetails[editingAssignmentPersonId as string];
           updateData.driverDetails = {
             ...newDriverDetails,
             [personId]: {
@@ -1010,13 +1009,14 @@ export default function EventRequestsManagement({
       } else if (assignmentType === 'speaker') {
         // Handle speaker assignment (add or edit)
         const currentSpeakerDetails = eventRequest.speakerDetails || {};
-        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
+        // @ts-expect-error speakerAssignments may not exist on EventRequest type
+        const currentSpeakerAssignments = (eventRequest as any).speakerAssignments || [];
         
         if (isEditingAssignment && editingAssignmentPersonId) {
           // Editing: Replace the existing assignment
-          const newSpeakerDetails = { ...currentSpeakerDetails };
-          const oldSpeakerName = newSpeakerDetails[editingAssignmentPersonId]?.name;
-          delete newSpeakerDetails[editingAssignmentPersonId];
+          const newSpeakerDetails: Record<string, any> = { ...currentSpeakerDetails };
+          const oldSpeakerName = newSpeakerDetails[editingAssignmentPersonId as string]?.name;
+          delete newSpeakerDetails[editingAssignmentPersonId as string];
           
           updateData.speakerDetails = {
             ...newSpeakerDetails,
@@ -1421,7 +1421,7 @@ export default function EventRequestsManagement({
       const currentDrivers = parsePostgresArray(eventRequest.assignedDriverIds);
       return currentDrivers.includes(user.id);
     } else if (type === 'speaker') {
-      const currentSpeakerDetails = eventRequest.speakerDetails || {};
+      const currentSpeakerDetails: Record<string, any> = eventRequest.speakerDetails || {};
       return !!currentSpeakerDetails[user.id];
     } else if (type === 'volunteer') {
       const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);

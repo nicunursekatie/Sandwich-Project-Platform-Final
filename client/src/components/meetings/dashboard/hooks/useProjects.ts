@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -54,6 +55,26 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
   const projectsForReviewQuery = useQuery<Project[]>({
     queryKey: ['/api/projects/for-review'],
   });
+
+  // Filter out completed and archived projects
+  const activeProjects = React.useMemo(() => {
+    const allProjects = projectsQuery.data || [];
+    return allProjects.filter(project => 
+      project.status !== 'completed' && 
+      project.status !== 'archived' &&
+      project.status !== 'done'
+    );
+  }, [projectsQuery.data]);
+
+  // Filter projects for review (also exclude completed/archived)
+  const activeProjectsForReview = React.useMemo(() => {
+    const reviewProjects = projectsForReviewQuery.data || [];
+    return reviewProjects.filter(project => 
+      project.status !== 'completed' && 
+      project.status !== 'archived' &&
+      project.status !== 'done'
+    );
+  }, [projectsForReviewQuery.data]);
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -198,7 +219,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
   // Convert meeting notes to meeting notes mutation
   const createTasksFromNotesMutation = useMutation({
     mutationFn: async () => {
-      const allProjects = projectsQuery.data || [];
+      const allProjects = activeProjects;
       const projectsWithNotes = allProjects.filter(
         (project: Project) =>
           (project.meetingDiscussionPoints?.trim() ||
@@ -289,7 +310,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
   // Comprehensive reset for next week's agenda planning
   const resetAgendaPlanningMutation = useMutation({
     mutationFn: async () => {
-      const allProjects = projectsQuery.data || [];
+      const allProjects = activeProjects;
       
       // Step 1: Create tasks from any remaining notes
       const projectsWithNotes = allProjects.filter(
@@ -402,8 +423,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
   const generateAgendaPDF = async (
     projectAgendaStatus: Record<number, 'none' | 'agenda' | 'tabled'>
   ) => {
-    const allProjects = projectsQuery.data || [];
-    const activeProjects = allProjects.filter((p: Project) => p.status !== 'completed');
+    const allProjects = activeProjects;
     const agendaProjects = activeProjects.filter(
       (p: Project) => projectAgendaStatus[p.id] === 'agenda'
     );
@@ -511,10 +531,10 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
 
   return {
     // Queries
-    projects: projectsQuery.data || [],
+    projects: activeProjects,
     projectsLoading: projectsQuery.isLoading,
     projectsError: projectsQuery.error,
-    projectsForReview: projectsForReviewQuery.data || [],
+    projectsForReview: activeProjectsForReview,
     projectsForReviewLoading: projectsForReviewQuery.isLoading,
     
     // Mutations

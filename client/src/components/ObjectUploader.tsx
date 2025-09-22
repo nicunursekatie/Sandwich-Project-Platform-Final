@@ -133,20 +133,12 @@ export function ObjectUploader({
         id="file-upload-input"
         accept="*/*"
       />
-      <Button
+      <div
         onClick={() => document.getElementById('file-upload-input')?.click()}
-        disabled={isUploading}
-        className={buttonClassName}
-        size="sm"
-        variant="outline"
+        className="cursor-pointer"
       >
-        {isUploading ? (
-          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-        ) : (
-          <Upload className="w-3 h-3 mr-1" />
-        )}
-        {isUploading ? 'Uploading...' : children}
-      </Button>
+        {children}
+      </div>
     </div>
   );
 }
