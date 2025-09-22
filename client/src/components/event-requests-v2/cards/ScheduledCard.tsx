@@ -188,7 +188,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             <h3 className="font-semibold text-lg text-[#646464]">
               {request.organizationName}
             </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-[#236383] text-white border border-[#236383] text-[16px]">
+            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-blue-600 text-white border border-blue-600 text-base">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
@@ -200,19 +200,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
             {/* Staffing need badges */}
             {driverGap > 0 && (
-              <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-semibold">
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 font-semibold">
                 <Car className="w-3 h-3 mr-1" />
                 Need {driverGap} driver{driverGap > 1 ? 's' : ''}
               </Badge>
             )}
             {speakerGap > 0 && (
-              <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-semibold">
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 font-semibold">
                 <Megaphone className="w-3 h-3 mr-1" />
                 Need {speakerGap} speaker{speakerGap > 1 ? 's' : ''}
               </Badge>
             )}
             {volunteerGap > 0 && (
-              <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-semibold">
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 font-semibold">
                 <Users className="w-3 h-3 mr-1" />
                 Need {volunteerGap} volunteer{volunteerGap > 1 ? 's' : ''}
               </Badge>
@@ -344,12 +344,12 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     return (
       <div className={`rounded-lg p-4 border min-h-[140px] transition-all ${
         isUnderStaffed 
-          ? 'bg-[#FBAD3F]/5 border-[#FBAD3F]/30 shadow-sm' 
+          ? 'bg-orange-50 border-orange-200 shadow-sm' 
           : isFullyStaffed && !isOverStaffed
-            ? 'bg-[#236383]/5 border-[#236383]/30 shadow-sm'
+            ? 'bg-green-50 border-green-200 shadow-sm'
             : isOverStaffed
-              ? 'bg-[#47B3CB]/5 border-[#47B3CB]/30 shadow-sm'
-              : 'bg-white/60 border-[#D1D3D4]/50'
+              ? 'bg-blue-50 border-blue-200 shadow-sm'
+              : 'bg-white border-gray-200'
       }`}>
         {/* Enhanced Header with clear status */}
         <div className="flex items-center justify-between mb-3">
@@ -362,12 +362,12 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               {/* Status indicator */}
               <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                 isUnderStaffed 
-                  ? 'bg-[#FBAD3F]/20 text-[#FBAD3F] border border-[#FBAD3F]/40' 
+                  ? 'bg-orange-100 text-orange-700 border border-orange-200' 
                   : isFullyStaffed && !isOverStaffed
-                    ? 'bg-[#236383]/20 text-[#236383] border border-[#236383]/40'
+                    ? 'bg-green-100 text-green-700 border border-green-200'
                     : isOverStaffed
-                      ? 'bg-[#47B3CB]/20 text-[#47B3CB] border border-[#47B3CB]/40'
-                      : 'bg-[#D1D3D4]/30 text-[#646464]'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-600'
               }`}>
                 {isUnderStaffed && <AlertTriangle className="w-3 h-3" />}
                 {isFullyStaffed && !isOverStaffed && <Check className="w-3 h-3" />}
@@ -474,8 +474,8 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               onClick={() => onAssign(type)}
               className={`w-full text-sm transition-all ${
                 isUnderStaffed 
-                  ? 'border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white bg-[#FBAD3F]/10 font-semibold' 
-                  : 'border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white'
+                  ? 'border-orange-400 text-orange-700 hover:bg-orange-500 hover:text-white bg-orange-50 font-semibold' 
+                  : 'border-blue-400 text-blue-700 hover:bg-blue-500 hover:text-white'
               }`}
             >
               <UserPlus className="w-4 h-4 mr-2" />
@@ -886,7 +886,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] bg-gradient-to-br from-[#236383]/5 via-[#236383]/10 to-white border border-[#236383]/20">
+    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#FBAD3F] bg-gradient-to-br from-[#FBAD3F]/20 via-[#FBAD3F]/10 to-white border border-[#FBAD3F]/30 shadow-lg">
       <CardContent className="p-6">
         <CardHeader
           request={request}
