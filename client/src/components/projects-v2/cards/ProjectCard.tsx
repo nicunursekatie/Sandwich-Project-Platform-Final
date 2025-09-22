@@ -283,13 +283,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-1">
               {getCategoryIcon(project.category || 'technology')}
-              <span className="capitalize">{project.category || 'technology'}</span>
+              <span className="capitalize text-[15px]">{project.category || 'technology'}</span>
             </div>
 
             {project.dueDate && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
+                <span className="text-[15px]">
                   {formatDate(project.dueDate)}
                 </span>
               </div>
