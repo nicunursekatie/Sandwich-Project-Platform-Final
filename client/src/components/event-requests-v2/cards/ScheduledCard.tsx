@@ -882,11 +882,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             )}
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Additional Notes:</p>
               {renderEditableField(
                 'notes',
                 request.notes,
-                '',
+                'Additional Notes',
                 'text'
               )}
             </div>
