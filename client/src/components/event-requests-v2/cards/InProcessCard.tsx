@@ -164,16 +164,15 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             <Calendar className="w-4 h-4 mr-1" />
             Mark Scheduled
           </Button>
-          {!request.scheduledCallDate && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onScheduleCall}
-            >
-              <Phone className="w-4 h-4 mr-1" />
-              Schedule Follow-up Call
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onScheduleCall}
+            className="text-[16px]"
+          >
+            <Phone className="w-4 h-4 mr-1" />
+            {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
+          </Button>
           {onResendToolkit && (
             <Button
               size="sm"
