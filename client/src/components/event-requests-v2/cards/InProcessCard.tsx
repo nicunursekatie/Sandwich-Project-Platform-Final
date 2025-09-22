@@ -50,6 +50,7 @@ interface InProcessCardProps {
 // CardHeader component - copied from shared
 interface CardHeaderProps {
   request: EventRequest;
+  resolveUserName?: (id: string) => string;
   isInProcessStale?: boolean;
   canEdit?: boolean;
   isEditingThisCard?: boolean;
@@ -63,6 +64,7 @@ interface CardHeaderProps {
 
 const CardHeader: React.FC<CardHeaderProps> = ({
   request,
+  resolveUserName,
   isInProcessStale,
   canEdit = false,
   isEditingThisCard = false,
@@ -173,7 +175,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <div className="text-sm text-[#D68319] mb-2">
                 <span className="font-medium">TSP Contact: </span>
                 <span className="font-normal">
-                  {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
+                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                 </span>
                 {request.tspContactAssignedDate && (
                   <span className="ml-2 text-xs text-gray-500">
@@ -339,7 +341,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
       }`}
     >
       <CardContent className="p-6">
-        <CardHeader request={request} isInProcessStale={isStale} />
+        <CardHeader request={request} resolveUserName={resolveUserName} isInProcessStale={isStale} />
 
         {/* Event Details */}
         <div className="space-y-3 mb-4">
