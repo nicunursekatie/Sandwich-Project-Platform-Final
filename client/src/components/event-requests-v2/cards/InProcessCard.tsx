@@ -34,6 +34,7 @@ import type { EventRequest } from '@shared/schema';
 
 interface InProcessCardProps {
   request: EventRequest;
+  resolveUserName?: (id: string) => string;
   isStale?: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -317,6 +318,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
 
 export const InProcessCard: React.FC<InProcessCardProps> = ({
   request,
+  resolveUserName,
   isStale = false,
   onEdit,
   onDelete,
@@ -445,6 +447,30 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           onCall={onCall}
           onContact={onContact}
         />
+
+        {/* TSP Contact Section - Prominent display */}
+        {(request.tspContact || request.customTspContact) && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#D68319]/10 border-2 border-[#FBAD3F]/30 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="bg-[#FBAD3F] p-2 rounded-full">
+                <Building className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-bold text-[#D68319] mb-1">
+                  TSP Contact
+                </div>
+                <div className="text-xl font-semibold text-[#236383]">
+                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
+                </div>
+                {request.tspContactAssignedDate && (
+                  <div className="text-sm text-gray-600 mt-1">
+                    Assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
