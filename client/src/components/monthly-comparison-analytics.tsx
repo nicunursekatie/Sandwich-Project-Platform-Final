@@ -83,7 +83,7 @@ export default function MonthlyComparisonAnalytics() {
   }>({
     queryKey: ['/api/sandwich-collections/all'],
     queryFn: async () => {
-      const response = await fetch('/api/sandwich-collections?limit=5000');
+      const response = await fetch('/api/sandwich-collections?page=1&limit=5000');
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },
@@ -176,27 +176,32 @@ export default function MonthlyComparisonAnalytics() {
     const august2025 = monthlyAnalytics['2025-08'];
     if (!august2025) return null;
 
-    // Find top performing months for comparison
-    const allMonths = Object.values(monthlyAnalytics)
-      .filter((m) => m.year >= 2024) // Focus on recent data
-      .sort((a, b) => b.totalSandwiches - a.totalSandwiches);
-
-    const topMonths = allMonths.slice(0, 5);
-    const avgTopMonth =
-      topMonths.reduce((sum, m) => sum + m.totalSandwiches, 0) /
-      topMonths.length;
-
-    // Compare August 2024 vs 2025
+    // Use previous year's August and recent 6-month average for comparison
     const august2024 = monthlyAnalytics['2024-08'];
+    
+    // Calculate average of last 6 months before August 2025 for reasonable comparison
+    const recentMonths = Object.entries(monthlyAnalytics)
+      .filter(([key, m]) => {
+        const [year, month] = key.split('-').map(Number);
+        const monthDate = new Date(year, month - 1);
+        const august2025Date = new Date(2025, 7); // August 2025
+        const sixMonthsBefore = new Date(2025, 1); // February 2025
+        return monthDate >= sixMonthsBefore && monthDate < august2025Date;
+      })
+      .map(([_, m]) => m);
+
+    const avgRecentMonth = recentMonths.length > 0 
+      ? recentMonths.reduce((sum, m) => sum + m.totalSandwiches, 0) / recentMonths.length
+      : august2024?.totalSandwiches || 0;
 
     return {
       august2025,
       august2024,
-      topMonths,
-      avgTopMonth,
-      shortfall: avgTopMonth - august2025.totalSandwiches,
+      recentMonths,
+      avgRecentMonth,
+      shortfall: avgRecentMonth - august2025.totalSandwiches,
       shortfallPercent:
-        ((avgTopMonth - august2025.totalSandwiches) / avgTopMonth) * 100,
+        ((avgRecentMonth - august2025.totalSandwiches) / avgRecentMonth) * 100,
       yearOverYearChange: august2024
         ? august2025.totalSandwiches - august2024.totalSandwiches
         : null,
@@ -373,16 +378,16 @@ export default function MonthlyComparisonAnalytics() {
             </div>
             <p className="text-sm text-[#646464]">August 2025 Total</p>
             <div className="text-sm text-red-600 mt-1">
-              -{augustAnalysis.shortfallPercent?.toFixed(1)}% vs avg top month
+              -{augustAnalysis.shortfallPercent?.toFixed(1)}% vs recent average
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
             <div className="text-2xl font-bold text-brand-primary">
-              {Math.round(augustAnalysis.avgTopMonth).toLocaleString()}
+              {Math.round(augustAnalysis.avgRecentMonth).toLocaleString()}
             </div>
-            <p className="text-sm text-[#646464]">Avg Top 5 Months</p>
-            <div className="text-sm text-green-600 mt-1">Benchmark target</div>
+            <p className="text-sm text-[#646464]">Recent 6-Month Average</p>
+            <div className="text-sm text-green-600 mt-1">Realistic benchmark</div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
@@ -843,7 +848,7 @@ export default function MonthlyComparisonAnalytics() {
                     August 2025 collected{' '}
                     {augustAnalysis.shortfall?.toLocaleString()} fewer
                     sandwiches ({augustAnalysis.shortfallPercent?.toFixed(1)}%
-                    below) compared to top performing months.
+                    below) compared to recent 6-month average.
                   </p>
                 </div>
 
