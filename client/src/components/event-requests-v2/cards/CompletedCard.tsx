@@ -148,6 +148,16 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
           </div>
           <div className="text-sm text-[#236383] mt-1 space-y-1">
+            {/* Contact Information */}
+            <div className="text-sm text-gray-700 mb-2">
+              <strong>{request.firstName} {request.lastName}</strong>
+              {request.email && (
+                <span className="ml-2">• {request.email}</span>
+              )}
+              {request.phone && (
+                <span className="ml-2">• {request.phone}</span>
+              )}
+            </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
