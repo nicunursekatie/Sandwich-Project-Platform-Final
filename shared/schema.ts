@@ -1724,7 +1724,9 @@ export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   updatedAt: true,
 });
 
-export type EventRequest = typeof eventRequests.$inferSelect;
+export type EventRequest = typeof eventRequests.$inferSelect & {
+  hasHostedBefore?: boolean;
+};
 export type InsertEventRequest = z.infer<typeof insertEventRequestSchema>;
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;

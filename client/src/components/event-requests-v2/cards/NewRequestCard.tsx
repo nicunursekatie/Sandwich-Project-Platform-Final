@@ -142,29 +142,29 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           {request.message && (
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-gray-500 mb-1 text-[17px] font-bold">Message from submission:</p>
-              <p className="text-gray-600 text-[16px]">{request.message}</p>
+              <p className="text-gray-600 text-[16px]">{String(request.message)}</p>
             </div>
           )}
 
           {/* Sandwich Info */}
-          {(request.estimatedSandwichCount || request.sandwichTypes) && (
+          {(request.estimatedSandwichCount !== undefined && request.estimatedSandwichCount !== null) || request.sandwichTypes ? (
             <div className="bg-amber-50 rounded-lg p-3">
               <div className="flex items-center gap-2 text-sm">
                 <Package className="w-4 h-4 text-amber-600" />
                 <span className="font-medium">Sandwiches:</span>
                 <span>
-                  {formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount)}
+                  {formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined)}
                 </span>
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Previous Host Status */}
-          {request.hasHostedBefore !== null && (
+          {typeof request.hasHostedBefore !== 'undefined' && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500 font-bold text-[16px]">Previously hosted:</span>
               <Badge className={
-                request.hasHostedBefore 
+                request.hasHostedBefore
                   ? "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]"
                   : "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]"
               }>
