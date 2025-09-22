@@ -622,6 +622,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           </div>
 
+          {/* Quick Actions */}
+          {canEdit && (
+            <div className="flex gap-1">
+              <Button size="sm" variant="ghost" onClick={onEdit}>
+                <Edit2 className="w-4 h-4" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onDelete} className="text-red-600 hover:text-red-700">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* Main Content */}
         <div className="space-y-4">
             {/* Event Location */}
@@ -856,17 +869,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         )}
 
-          {/* Quick Actions */}
-          {canEdit && (
-            <div className="flex gap-1 ml-4">
-              <Button size="sm" variant="ghost" onClick={onEdit}>
-                <Edit2 className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onDelete} className="text-red-600 hover:text-red-700">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-                  </div>
-                )}
 
         {/* Team Assignments */}
         {totalNeeded > 0 && (
