@@ -280,7 +280,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-base text-[#236383]">Tasks</span>
+              <span className="text-[18px] text-[#236383]">Tasks</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
