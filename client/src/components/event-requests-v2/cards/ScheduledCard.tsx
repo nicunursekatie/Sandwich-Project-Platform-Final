@@ -154,14 +154,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
     return (
       <div className="group">
-        <p className="text-base text-gray-600 font-medium">{label}</p>
+        <p className="text-base text-gray-600 font-bold">{label}</p>
         <div className="flex items-center gap-2">
           {field === 'eventAddress' && value ? (
             <a 
               href={`https://maps.google.com/maps?q=${encodeURIComponent(value)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-lg font-semibold text-[#236383] hover:text-[#FBAD3F] hover:underline transition-colors"
+              className="text-lg text-[#236383] hover:text-[#FBAD3F] hover:underline transition-colors font-normal"
             >
               {value}
             </a>
