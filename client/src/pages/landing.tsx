@@ -42,7 +42,7 @@ export default function Landing() {
   const { data: collectionsResponse } = useQuery({
     queryKey: ['/api/sandwich-collections'],
     queryFn: async () => {
-      const response = await fetch('/api/sandwich-collections?limit=1000');
+      const response = await fetch('/api/sandwich-collections?page=1&limit=1000');
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },

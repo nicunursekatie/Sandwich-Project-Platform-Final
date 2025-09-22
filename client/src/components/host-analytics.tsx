@@ -61,7 +61,7 @@ export default function HostAnalytics({
   const { data: collectionsResponse, isLoading } = useQuery({
     queryKey: ['/api/sandwich-collections', 'analytics'],
     queryFn: async () => {
-      const response = await fetch('/api/sandwich-collections?limit=10000');
+      const response = await fetch('/api/sandwich-collections?page=1&limit=10000');
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },

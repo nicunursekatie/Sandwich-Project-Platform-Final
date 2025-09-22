@@ -53,7 +53,13 @@ export default function ImpactDashboard() {
   // Fetch sandwich collections data
   const { data: collectionsData } = useQuery({
     queryKey: ['/api/sandwich-collections'],
-    queryFn: () => apiRequest('/api/sandwich-collections?page=1&limit=5000'),
+    queryFn: async () => {
+      const response = await fetch('/api/sandwich-collections?page=1&limit=5000', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch collections');
+      return response.json();
+    },
   });
 
   const collections = collectionsData?.collections || [];
