@@ -77,9 +77,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       case 'available':
         return 'text-gray-500 bg-gray-50 border-gray-200';
       case 'in_progress':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+        return 'text-[#236383] bg-[#e6f2f5] border-[#236383]/30';
       case 'completed':
-        return 'text-green-600 bg-green-50 border-green-200';
+        return 'text-[#A31C41] bg-[#fdf2f8] border-[#A31C41]/30';
       case 'archived':
         return 'text-gray-400 bg-gray-50 border-gray-200';
       default:
@@ -178,8 +178,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   return (
     <Card className={`group hover:shadow-lg transition-all duration-200 ${
-      project.googleSheetRowId ? 'border-l-4 border-l-blue-500' :
-      'border-l-4 border-l-green-500'
+      project.googleSheetRowId ? 'border-l-4 border-l-[#236383]' :
+      'border-l-4 border-l-[#FBAD3F]'
     }`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -200,7 +200,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
               {/* Meeting Project Badge */}
               {project.googleSheetRowId && (
-                <Badge className="bg-blue-100 text-blue-700">
+                <Badge className="bg-[#e6f2f5] text-[#236383]">
                   📊 Meeting
                 </Badge>
               )}

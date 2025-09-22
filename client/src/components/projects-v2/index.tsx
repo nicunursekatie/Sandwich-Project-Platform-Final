@@ -108,7 +108,7 @@ const ProjectsManagementContent: React.FC = () => {
             className={`transition-all ${
               projectTypeFilter === 'meeting'
                 ? 'bg-brand-primary text-white hover:bg-brand-primary'
-                : 'text-brand-primary hover:text-blue-700 hover:bg-blue-50'
+                : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             📊 Meeting Projects ({projectStats.meeting})
@@ -119,8 +119,8 @@ const ProjectsManagementContent: React.FC = () => {
             onClick={() => setProjectTypeFilter('internal')}
             className={`transition-all ${
               projectTypeFilter === 'internal'
-                ? 'bg-green-500 text-white hover:bg-green-600'
-                : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                ? 'bg-[#A31C41] text-white hover:bg-[#A31C41]/90'
+                : 'text-[#A31C41] hover:text-[#A31C41]/80 hover:bg-[#A31C41]/10'
             }`}
           >
             🏢 Internal Projects ({projectStats.internal})
@@ -149,8 +149,8 @@ const ProjectsManagementContent: React.FC = () => {
             onClick={() => setActiveTab('in_progress')}
             className={`font-roboto font-medium transition-all ${
               activeTab === 'in_progress'
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                ? 'bg-[#FBAD3F] text-white hover:bg-[#FBAD3F]/90'
+                : 'text-[#FBAD3F] hover:text-[#FBAD3F]/80 hover:bg-[#FBAD3F]/10'
             }`}
           >
             <Play className="w-4 h-4 mr-2" />
@@ -162,8 +162,8 @@ const ProjectsManagementContent: React.FC = () => {
             onClick={() => setActiveTab('completed')}
             className={`font-roboto font-medium transition-all ${
               activeTab === 'completed'
-                ? 'bg-green-500 text-white hover:bg-green-600'
-                : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                ? 'bg-[#A31C41] text-white hover:bg-[#A31C41]/90'
+                : 'text-[#A31C41] hover:text-[#A31C41]/80 hover:bg-[#A31C41]/10'
             }`}
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
