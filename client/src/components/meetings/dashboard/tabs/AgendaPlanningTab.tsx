@@ -919,11 +919,9 @@ export function AgendaPlanningTab({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => {
-                                      setProjectAgendaStatus((prev) => {
-                                        const newStatus = { ...prev };
-                                        delete newStatus[project.id];
-                                        return newStatus;
-                                      });
+                                      const newStatus = { ...projectAgendaStatus };
+                                      delete newStatus[project.id];
+                                      setProjectAgendaStatus(newStatus);
                                     }}
                                     data-testid={`button-remove-from-agenda-${project.id}`}
                                     className="text-gray-600 hover:text-gray-800"
