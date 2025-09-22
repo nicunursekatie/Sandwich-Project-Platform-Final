@@ -19,9 +19,16 @@ import {
   X,
   User,
 } from 'lucide-react';
-import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
+import {
+  formatTime12Hour,
+  formatEventDate,
+} from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
-import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
+import {
+  statusColors,
+  statusIcons,
+  statusOptions,
+} from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 
@@ -53,8 +60,8 @@ interface CardHeaderProps {
   setEditingValue?: (value: string) => void;
 }
 
-const CardHeader: React.FC<CardHeaderProps> = ({ 
-  request, 
+const CardHeader: React.FC<CardHeaderProps> = ({
+  request,
   isInProcessStale,
   canEdit = false,
   isEditingThisCard = false,
@@ -63,13 +70,16 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   startEditing,
   saveEdit,
   cancelEdit,
-  setEditingValue
+  setEditingValue,
 }) => {
-  const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
-  
+  const StatusIcon =
+    statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
+
   // Get the proper status label from constants instead of just replacing underscores
   const getStatusLabel = (status: string) => {
-    const statusOption = statusOptions.find(option => option.value === status);
+    const statusOption = statusOptions.find(
+      (option) => option.value === status
+    );
     return statusOption ? statusOption.label : status.replace('_', ' ');
   };
 
@@ -137,7 +147,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               {getStatusLabel(request.status)}
             </Badge>
             {isInProcessStale && (
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+              <Badge
+                variant="outline"
+                className="bg-amber-50 text-amber-700 border-amber-300"
+              >
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 Needs follow-up
               </Badge>
@@ -157,29 +170,48 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     autoFocus
                     data-testid="input-date"
                   />
-                  <Button size="sm" onClick={saveEdit} data-testid="button-save-date">
+                  <Button
+                    size="sm"
+                    onClick={saveEdit}
+                    data-testid="button-save-date"
+                  >
                     <Save className="w-3 h-3" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-date">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={cancelEdit}
+                    data-testid="button-cancel-date"
+                  >
                     <X className="w-3 h-3" />
                   </Button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
                   <span data-testid="text-date-label" className="text-[16px]">
-                    {dateLabel}: {' '}
-                    <strong className="text-[16px]" data-testid="text-date-value">
+                    {dateLabel}:{' '}
+                    <strong
+                      className="text-[16px]"
+                      data-testid="text-date-value"
+                    >
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </strong>
                     {displayDate && getRelativeTime(displayDate.toString()) && (
-                      <span className="text-[#236383] ml-1">({getRelativeTime(displayDate.toString())})</span>
+                      <span className="text-[#236383] ml-1">
+                        ({getRelativeTime(displayDate.toString())})
+                      </span>
                     )}
                   </span>
                   {canEdit && startEditing && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                      onClick={() =>
+                        startEditing(
+                          dateFieldToEdit,
+                          formatDateForInput(displayDate?.toString() || '')
+                        )
+                      }
                       className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                       title={`Edit ${dateLabel}`}
                       data-testid="button-edit-date"
@@ -207,7 +239,7 @@ interface CardContactInfoProps {
 const CardContactInfo: React.FC<CardContactInfoProps> = ({
   request,
   onCall,
-  onContact
+  onContact,
 }) => {
   return (
     <div className="bg-gray-50 rounded-lg p-3 space-y-2">
@@ -273,11 +305,13 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   canDelete = true,
 }) => {
   return (
-    <Card className={`transition-all duration-200 hover:shadow-lg border-l-4 ${
-      isStale 
-        ? 'border-l-[#FBAD3F] bg-gradient-to-br from-[#fef4e6] to-[#fed7aa] border border-[#FBAD3F]/30' 
-        : 'border-l-[#FBAD3F] bg-gradient-to-br from-[#fef7ed] to-[#fed7aa] border border-[#FBAD3F]/30'
-    }`}>
+    <Card
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#FBAD3F] ${
+        isStale
+          ? 'bg-[#47B3CB]/40 hover:bg-[#47B3CB]/60 border border-[#47B3CB]/50'
+          : 'bg-[#47B3CB]/20 hover:bg-[#47B3CB]/40 border border-[#47B3CB]/30'
+      }`}
+    >
       <CardContent className="p-6">
         <CardHeader request={request} isInProcessStale={isStale} />
 
@@ -293,7 +327,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   {new Date(request.toolkitSentDate).toLocaleDateString()}
                 </span>
                 {isStale && (
-                  <Badge variant="outline" className="ml-2 bg-amber-50 text-amber-700 border-amber-300">
+                  <Badge
+                    variant="outline"
+                    className="ml-2 bg-amber-50 text-amber-700 border-amber-300"
+                  >
                     <AlertTriangle className="w-3 h-3 mr-1" />
                     Over 1 week ago
                   </Badge>
@@ -319,13 +356,17 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             <div>
               <p className="text-sm text-gray-500">Preferred Time</p>
               <p className="font-medium">
-                {request.preferredStartTime && formatTime12Hour(request.preferredStartTime)}
-                {request.preferredEndTime && ` - ${formatTime12Hour(request.preferredEndTime)}`}
+                {request.preferredStartTime &&
+                  formatTime12Hour(request.preferredStartTime)}
+                {request.preferredEndTime &&
+                  ` - ${formatTime12Hour(request.preferredEndTime)}`}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Estimated Attendance</p>
-              <p className="font-medium">{request.estimatedAttendance || 'Not specified'}</p>
+              <p className="font-medium">
+                {request.estimatedAttendance || 'Not specified'}
+              </p>
             </div>
           </div>
 
@@ -336,7 +377,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 <Package className="w-4 h-4 text-amber-600" />
                 <span className="font-medium">Sandwiches:</span>
                 <span>
-                  {formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount)}
+                  {formatSandwichTypesDisplay(
+                    request.sandwichTypes,
+                    request.estimatedSandwichCount
+                  )}
                 </span>
               </div>
             </div>
@@ -352,7 +396,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               <div className="space-y-3">
                 {request.message && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Initial Request Message:</p>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Initial Request Message:
+                    </p>
                     <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded border-l-3 border-blue-200">
                       {request.message}
                     </p>
@@ -360,7 +406,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 )}
                 {request.notes && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Additional Notes:</p>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Additional Notes:
+                    </p>
                     <p className="text-sm text-gray-700 bg-white p-2 rounded border">
                       {request.notes}
                     </p>
@@ -399,11 +447,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
           </Button>
           {onResendToolkit && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onResendToolkit}
-            >
+            <Button size="sm" variant="outline" onClick={onResendToolkit}>
               <Package className="w-4 h-4 mr-1" />
               Resend Toolkit
             </Button>
