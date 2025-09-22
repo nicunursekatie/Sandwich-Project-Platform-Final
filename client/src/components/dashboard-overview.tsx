@@ -248,7 +248,7 @@ export default function DashboardOverview({
           <div className="bg-white rounded-xl mx-4 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="text-center">
               <div className="mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-brand-primary mb-2">
+                <h2 className="sm:text-xl font-semibold text-brand-primary mb-2 text-[22px]">
                   Record Collection Data
                 </h2>
                 {showCollectionForm && (
