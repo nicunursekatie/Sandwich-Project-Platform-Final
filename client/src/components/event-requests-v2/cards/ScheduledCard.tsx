@@ -293,8 +293,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
 
+  // Helper function to extract name from custom entries
+  const extractCustomName = (id: string): string => {
+    if (id.startsWith('custom-')) {
+      const parts = id.split('-');
+      if (parts.length >= 3) {
+        return parts.slice(2).join('-').replace(/-/g, ' ');
+      }
+    }
+    return id;
+  };
+
   // Calculate staffing status
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length;
+  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
 
@@ -634,7 +645,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </Button>
             </div>
           )}
-        </div>
+        </div>        </div>
 
         {/* Main Content */}
         <div className="space-y-4">
@@ -922,10 +933,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       {parsePostgresArray(request.assignedDriverIds).map((driverId: string) => {
                         let name = '';
                         if (driverId.startsWith('custom-')) {
-                          const parts = driverId.split('-');
-                          if (parts.length >= 3) {
-                            name = parts.slice(2).join('-').replace(/-/g, ' ');
-                          }
+                          name = extractCustomName(driverId);
                         } else {
                           const detailName = (request.driverDetails as any)?.[driverId]?.name;
                           name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(driverId);
@@ -987,8 +995,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   {speakerAssigned > 0 ? (
                     <div className="space-y-1">
                       {Object.keys(request.speakerDetails || {}).map((speakerId: string) => {
-                        const detailName = (request.speakerDetails as any)?.[speakerId]?.name;
-                        const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(speakerId);
+                        let name = '';
+                        if (speakerId.startsWith('custom-')) {
+                          name = extractCustomName(speakerId);
+                        } else {
+                          const detailName = (request.speakerDetails as any)?.[speakerId]?.name;
+                          name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(speakerId);
+                        }
                         return (
                           <div key={speakerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
                             <span className="text-base font-medium">{name}</span>
@@ -1046,7 +1059,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   {volunteerAssigned > 0 ? (
                     <div className="space-y-1">
                       {parsePostgresArray(request.assignedVolunteerIds).map((volunteerId: string) => {
-                        const name = resolveUserName(volunteerId);
+                        const name = volunteerId.startsWith('custom-') ? extractCustomName(volunteerId) : resolveUserName(volunteerId);
                         return (
                           <div key={volunteerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
                             <span className="text-base font-medium">{name}</span>
@@ -1077,6 +1090,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <div className="flex items-center gap-2">
                       <Car className="w-4 h-4 text-[#A31C41]" />
                       <span className="font-medium text-[#A31C41]">Van Driver</span>
+                      <span className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full">
+                        (counts as driver)
+                      </span>
                     </div>
                     {canEdit && !request.assignedVanDriverId && (
           <Button
