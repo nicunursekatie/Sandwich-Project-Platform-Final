@@ -24,7 +24,7 @@ export const CompletedTab: React.FC = () => {
     setShowOneMonthFollowUpDialog,
   } = useEventRequestContext();
 
-  const completedRequests = filterRequestsByStatus('completed');
+  const completedRequests = filterRequestsByStatus('completed') || [];
 
   return (
     <div className="space-y-4">
@@ -44,8 +44,27 @@ export const CompletedTab: React.FC = () => {
               setShowEventDetails(true);
             }}
             onDelete={() => {
-              if (window.confirm('Are you sure you want to delete this completed event? This action cannot be undone.')) {
-                deleteEventRequestMutation.mutate(request.id);
+              if (
+                window.confirm(
+                  'Are you sure you want to delete this completed event? This action cannot be undone.'
+                )
+              ) {
+                deleteEventRequestMutation.mutate(request.id, {
+                  onSuccess: () => {
+                    toast({
+                      title: 'Deleted',
+                      description: 'The completed event was deleted.',
+                    });
+                  },
+                  onError: (err: unknown) => {
+                    toast({
+                      variant: 'destructive',
+                      title: 'Delete failed',
+                      description:
+                        err instanceof Error ? err.message : 'Unknown error',
+                    });
+                  },
+                });
               }
             }}
             onContact={() => {
@@ -65,11 +84,14 @@ export const CompletedTab: React.FC = () => {
               setShowCollectionLog(true);
             }}
             onReschedule={() => {
-              if (window.confirm('Do you want to create a new event request based on this completed event?')) {
+              if (
+                window.confirm(
+                  'Do you want to create a new event request based on this completed event?'
+                )
+              ) {
                 handleStatusChange(request.id, 'new');
               }
             }}
-            resolveUserName={resolveUserName}
           />
         ))
       )}
