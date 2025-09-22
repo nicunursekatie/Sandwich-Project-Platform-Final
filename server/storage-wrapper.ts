@@ -713,6 +713,63 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  // Meeting Notes methods
+  async getAllMeetingNotes() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllMeetingNotes(),
+      () => this.fallbackStorage.getAllMeetingNotes()
+    );
+  }
+
+  async getMeetingNote(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getMeetingNote(id),
+      () => this.fallbackStorage.getMeetingNote(id)
+    );
+  }
+
+  async getMeetingNotesByProject(projectId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getMeetingNotesByProject(projectId),
+      () => this.fallbackStorage.getMeetingNotesByProject(projectId)
+    );
+  }
+
+  async getMeetingNotesByMeeting(meetingId: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getMeetingNotesByMeeting(meetingId),
+      () => this.fallbackStorage.getMeetingNotesByMeeting(meetingId)
+    );
+  }
+
+  async getMeetingNotesByFilters(filters: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getMeetingNotesByFilters(filters),
+      () => this.fallbackStorage.getMeetingNotesByFilters(filters)
+    );
+  }
+
+  async createMeetingNote(note: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.createMeetingNote(note),
+      () => this.fallbackStorage.createMeetingNote(note)
+    );
+  }
+
+  async updateMeetingNote(id: number, updates: any) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateMeetingNote(id, updates),
+      () => this.fallbackStorage.updateMeetingNote(id, updates)
+    );
+  }
+
+  async deleteMeetingNote(id: number) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.deleteMeetingNote(id),
+      () => this.fallbackStorage.deleteMeetingNote(id)
+    );
+  }
+
   async createDriverAgreement(agreement: any) {
     return this.executeWithFallback(
       () => this.primaryStorage.createDriverAgreement(agreement),
