@@ -53,46 +53,56 @@ export const useEventAssignments = () => {
   const resolveUserName = (userIdOrName: string | undefined): string => {
     if (!userIdOrName) return 'Not assigned';
 
-    // Handle user IDs (format: user_xxxx_xxxxx)
-    if (userIdOrName.startsWith('user_') && userIdOrName.includes('_')) {
-      const user = users.find((u) => u.id === userIdOrName);
-      if (user) {
-        return `${user.firstName} ${user.lastName}`.trim() || user.email;
-      }
+    // Ensure we have loaded data before proceeding
+    if (!users || !drivers || !volunteers) {
+      return 'Loading...';
     }
 
-    // Handle email addresses
-    if (userIdOrName.includes('@')) {
-      const user = users.find((u) => u.email === userIdOrName);
-      if (user) {
-        return `${user.firstName} ${user.lastName}`.trim() || user.email;
+    try {
+      // Handle user IDs (format: user_xxxx_xxxxx)
+      if (userIdOrName.startsWith('user_') && userIdOrName.includes('_')) {
+        const user = users.find((u) => u?.id === userIdOrName);
+        if (user) {
+          return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User';
+        }
       }
-    }
 
-    // Handle numeric IDs (could be drivers, volunteers, or speakers)
-    if (/^\d+$/.test(userIdOrName)) {
-      const numericId = parseInt(userIdOrName);
-      
-      // First try drivers
-      const driver = drivers.find((d) => d.id === numericId || d.id.toString() === userIdOrName);
-      if (driver) {
-        console.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
-        return driver.name;
+      // Handle email addresses
+      if (userIdOrName.includes('@')) {
+        const user = users.find((u) => u?.email === userIdOrName);
+        if (user) {
+          return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User';
+        }
       }
-      
-      // Then try volunteers (speakers are volunteers)
-      const volunteer = volunteers.find((v) => v.id === numericId || v.id.toString() === userIdOrName);
-      if (volunteer) {
-        console.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
-        return volunteer.name;
-      }
-      
-      // If not found, return a generic placeholder
-      console.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
-      return `Person #${userIdOrName}`;
-    }
 
-    return userIdOrName;
+      // Handle numeric IDs (could be drivers, volunteers, or speakers)
+      if (/^\d+$/.test(userIdOrName)) {
+        const numericId = parseInt(userIdOrName);
+        
+        // First try drivers - ensure driver object exists and has required fields
+        const driver = drivers.find((d) => d && (d.id === numericId || d.id?.toString() === userIdOrName));
+        if (driver && driver.name) {
+          console.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
+          return driver.name;
+        }
+        
+        // Then try volunteers (speakers are volunteers) - ensure volunteer object exists
+        const volunteer = volunteers.find((v) => v && (v.id === numericId || v.id?.toString() === userIdOrName));
+        if (volunteer && volunteer.name) {
+          console.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
+          return volunteer.name;
+        }
+        
+        // If not found, return a generic placeholder
+        console.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
+        return `Person #${userIdOrName}`;
+      }
+
+      return userIdOrName;
+    } catch (error) {
+      console.error('Error in resolveUserName:', error, 'Input:', userIdOrName);
+      return `Error: ${userIdOrName}`;
+    }
   };
 
   // Helper function to resolve recipient ID to name

@@ -1131,62 +1131,174 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         )}
 
-        {/* Request Message */}
-        {request.message && (
-          <div className="bg-blue-50 rounded-lg p-3 mb-4 border border-blue-200">
-            <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-blue-800">Original Request Message</span>
+        {/* Comprehensive Notes & Requirements Section */}
+        {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements || 
+          request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes || 
+          request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
+          <div className="bg-[#47B3CB]/10 rounded-lg p-4 mb-4 border border-[#47B3CB]/30">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-4 h-4 text-[#47B3CB]" />
+              <span className="font-medium text-[#47B3CB] text-lg">Notes & Requirements</span>
             </div>
-            <p className="text-base text-blue-700">{request.message}</p>
+            <div className="space-y-3">
+              {request.message && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Original Request Message:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded border-l-3 border-blue-200">
+                    {request.message}
+                  </p>
+                </div>
+              )}
+              {request.additionalRequirements && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Special Requirements:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-3 border-amber-200">
+                    {request.additionalRequirements}
+                  </p>
+                </div>
+              )}
+              {request.planningNotes && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-[#47B3CB]">
+                      Planning Notes:
+                    </p>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('planningNotes', request.planningNotes || '')}
+                        className="h-6 px-2 text-xs text-[#47B3CB] hover:bg-[#47B3CB]/10"
+                      >
+                        <Edit2 className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'planningNotes' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm min-h-[80px]"
+                        placeholder="Add planning notes..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-white p-3 rounded border">
+                      {request.planningNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+              {request.schedulingNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Scheduling Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-green-50 p-3 rounded border-l-3 border-green-200">
+                    {request.schedulingNotes}
+                  </p>
+                </div>
+              )}
+              {request.volunteerNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Volunteer Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-3 border-purple-200">
+                    {request.volunteerNotes}
+                  </p>
+                </div>
+              )}
+              {request.driverNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Driver Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-3 border-orange-200">
+                    {request.driverNotes}
+                  </p>
+                </div>
+              )}
+              {request.vanDriverNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Van Driver Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-3 border-red-200">
+                    {request.vanDriverNotes}
+                  </p>
+                </div>
+              )}
+              {request.followUpNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Follow-up Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-3 border-yellow-200">
+                    {request.followUpNotes}
+                  </p>
+                </div>
+              )}
+              {request.distributionNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Distribution Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-3 border-teal-200">
+                    {request.distributionNotes}
+                  </p>
+                </div>
+              )}
+              {request.duplicateNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Duplicate Check Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-pink-50 p-3 rounded border-l-3 border-pink-200">
+                    {request.duplicateNotes}
+                  </p>
+                </div>
+              )}
+              {request.unresponsiveNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Unresponsive Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-gray-100 p-3 rounded border-l-3 border-gray-300">
+                    {request.unresponsiveNotes}
+                  </p>
+                </div>
+              )}
+              {request.socialMediaPostNotes && (
+                <div>
+                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                    Social Media Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-indigo-50 p-3 rounded border-l-3 border-indigo-200">
+                    {request.socialMediaPostNotes}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
-
-        {/* Planning Notes */}
-        <div className="bg-[#47B3CB]/10 rounded-lg p-3 mb-4 border border-[#47B3CB]/30">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#47B3CB]" />
-              <span className="font-medium text-[#47B3CB]">Planning Notes</span>
-            </div>
-          {canEdit && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => startEditing('planningNotes', request.planningNotes || '')}
-                className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
-              >
-                <Edit2 className="w-3 h-3 mr-1" />
-                {request.planningNotes ? 'Edit' : 'Add'}
-              </Button>
-            )}
-          </div>
-          {isEditingThisCard && editingField === 'planningNotes' ? (
-            <div className="space-y-2">
-              <textarea
-                value={editingValue}
-                onChange={(e) => setEditingValue(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded text-sm min-h-[80px]"
-                placeholder="Add planning notes..."
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={saveEdit}>
-                  <Save className="w-3 h-3 mr-1" />
-                  Save
-                </Button>
-                <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                  <X className="w-3 h-3 mr-1" />
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-base text-gray-700">
-              {request.planningNotes || 'No planning notes yet. Click "Add" to add notes.'}
-            </p>
-          )}
-        </div>
       </div>
 
         {/* Action Buttons */}

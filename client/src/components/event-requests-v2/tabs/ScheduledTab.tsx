@@ -194,58 +194,59 @@ export const ScheduledTab: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4">
-        {scheduledRequests.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No scheduled events
-          </div>
-        ) : (
-          scheduledRequests.map((request) => (
-          <ScheduledCard
-            key={request.id}
-            request={request}
-            editingField={editingField}
-            editingValue={editingValue}
-            isEditingThisCard={editingScheduledId === request.id}
-            inlineSandwichMode={inlineSandwichMode}
-            inlineTotalCount={inlineTotalCount}
-            inlineSandwichTypes={inlineSandwichTypes}
-            onEdit={() => {
-              setSelectedEventRequest(request);
-              setIsEditing(true);
-              setShowEventDetails(true);
-            }}
-            onDelete={() => deleteEventRequestMutation.mutate(request.id)}
-            onContact={() => {
-              setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
-            }}
-            onStatusChange={(status) => handleStatusChange(request.id, status)}
-            onFollowUp={() => {
-              setSelectedEventRequest(request);
-              setShowOneDayFollowUpDialog(true);
-            }}
-            onReschedule={() => handleReschedule(request)}
-            startEditing={(field, value) => startEditing(request.id, field, value)}
-            saveEdit={saveEdit}
-            cancelEdit={cancelEdit}
-            setEditingValue={setEditingValue}
-            setInlineSandwichMode={setInlineSandwichMode}
-            setInlineTotalCount={setInlineTotalCount}
-            addInlineSandwichType={addInlineSandwichType}
-            updateInlineSandwichType={updateInlineSandwichType}
-            removeInlineSandwichType={removeInlineSandwichType}
-            resolveUserName={resolveUserName}
-            openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
-            openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
-            handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
-            handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
-            canSelfSignup={canSelfSignup}
-            isUserSignedUp={isUserSignedUp}
-          />
-        ))
+      {scheduledRequests.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No scheduled events
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 max-w-none">
+          {scheduledRequests.map((request) => (
+            <div key={request.id} className="min-w-[380px]">
+              <ScheduledCard
+                request={request}
+                editingField={editingField}
+                editingValue={editingValue}
+                isEditingThisCard={editingScheduledId === request.id}
+                inlineSandwichMode={inlineSandwichMode}
+                inlineTotalCount={inlineTotalCount}
+                inlineSandwichTypes={inlineSandwichTypes}
+                onEdit={() => {
+                  setSelectedEventRequest(request);
+                  setIsEditing(true);
+                  setShowEventDetails(true);
+                }}
+                onDelete={() => deleteEventRequestMutation.mutate(request.id)}
+                onContact={() => {
+                  setContactEventRequest(request);
+                  setShowContactOrganizerDialog(true);
+                }}
+                onStatusChange={(status) => handleStatusChange(request.id, status)}
+                onFollowUp={() => {
+                  setSelectedEventRequest(request);
+                  setShowOneDayFollowUpDialog(true);
+                }}
+                onReschedule={() => handleReschedule(request)}
+                startEditing={(field, value) => startEditing(request.id, field, value)}
+                saveEdit={saveEdit}
+                cancelEdit={cancelEdit}
+                setEditingValue={setEditingValue}
+                setInlineSandwichMode={setInlineSandwichMode}
+                setInlineTotalCount={setInlineTotalCount}
+                addInlineSandwichType={addInlineSandwichType}
+                updateInlineSandwichType={updateInlineSandwichType}
+                removeInlineSandwichType={removeInlineSandwichType}
+                resolveUserName={resolveUserName}
+                openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+                openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
+                handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
+                handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
+                canSelfSignup={canSelfSignup}
+                isUserSignedUp={isUserSignedUp}
+              />
+            </div>
+          ))}
+        </div>
       )}
-    </div>
 
     <RescheduleDialog
       isOpen={showRescheduleDialog}

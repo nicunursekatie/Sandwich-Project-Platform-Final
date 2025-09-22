@@ -416,17 +416,19 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             </div>
           )}
 
-          {/* Notes Section */}
-          {(request.message || request.planningNotes) && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+          {/* Comprehensive Notes Section */}
+          {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements || 
+            request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes || 
+            request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
-                Notes
+                Notes & Requirements
               </h4>
               <div className="space-y-3">
                 {request.message && (
                   <div>
-                    <p className="text-gray-500 mb-1 text-[16px]">
+                    <p className="text-sm font-medium text-gray-600 mb-1">
                       Initial Request Message:
                     </p>
                     <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded border-l-3 border-blue-200">
@@ -434,13 +436,113 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     </p>
                   </div>
                 )}
+                {request.additionalRequirements && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Special Requirements:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-amber-50 p-2 rounded border-l-3 border-amber-200">
+                      {request.additionalRequirements}
+                    </p>
+                  </div>
+                )}
                 {request.planningNotes && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">
+                    <p className="text-sm font-medium text-gray-600 mb-1">
                       Planning Notes:
                     </p>
                     <p className="text-sm text-gray-700 bg-white p-2 rounded border">
                       {request.planningNotes}
+                    </p>
+                  </div>
+                )}
+                {request.schedulingNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Scheduling Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-green-50 p-2 rounded border-l-3 border-green-200">
+                      {request.schedulingNotes}
+                    </p>
+                  </div>
+                )}
+                {request.volunteerNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Volunteer Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-purple-50 p-2 rounded border-l-3 border-purple-200">
+                      {request.volunteerNotes}
+                    </p>
+                  </div>
+                )}
+                {request.driverNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Driver Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-orange-50 p-2 rounded border-l-3 border-orange-200">
+                      {request.driverNotes}
+                    </p>
+                  </div>
+                )}
+                {request.vanDriverNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Van Driver Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-red-50 p-2 rounded border-l-3 border-red-200">
+                      {request.vanDriverNotes}
+                    </p>
+                  </div>
+                )}
+                {request.followUpNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Follow-up Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-yellow-50 p-2 rounded border-l-3 border-yellow-200">
+                      {request.followUpNotes}
+                    </p>
+                  </div>
+                )}
+                {request.distributionNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Distribution Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-teal-50 p-2 rounded border-l-3 border-teal-200">
+                      {request.distributionNotes}
+                    </p>
+                  </div>
+                )}
+                {request.duplicateNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Duplicate Check Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-pink-50 p-2 rounded border-l-3 border-pink-200">
+                      {request.duplicateNotes}
+                    </p>
+                  </div>
+                )}
+                {request.unresponsiveNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Unresponsive Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-gray-100 p-2 rounded border-l-3 border-gray-300">
+                      {request.unresponsiveNotes}
+                    </p>
+                  </div>
+                )}
+                {request.socialMediaPostNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      Social Media Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-indigo-50 p-2 rounded border-l-3 border-indigo-200">
+                      {request.socialMediaPostNotes}
                     </p>
                   </div>
                 )}
