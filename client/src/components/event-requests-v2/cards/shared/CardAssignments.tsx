@@ -71,7 +71,9 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
         <div className="space-y-2 mb-3 min-h-[60px]">
           {assigned.length > 0 ? (
             assigned.map((personId: string) => {
-              const name = details?.[personId]?.name || resolveUserName(personId);
+              // Get name from details first, but if it's numeric-only (like "350"), treat it as an ID 
+              const detailName = details?.[personId]?.name;
+              const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
               return (
                 <div key={personId} className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
                   <span className="text-sm font-medium">{name}</span>

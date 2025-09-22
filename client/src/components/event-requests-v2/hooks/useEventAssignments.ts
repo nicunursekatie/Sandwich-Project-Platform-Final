@@ -8,7 +8,7 @@ import type { EventRequest } from '@shared/schema';
 export const useEventAssignments = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { users, recipients, drivers } = useEventQueries();
+  const { users, recipients, drivers, volunteers } = useEventQueries();
   const { updateEventRequestMutation } = useEventMutations();
   const {
     eventRequests,
