@@ -1102,7 +1102,7 @@ export function AgendaPlanningTab({
                         {formatSectionName(item.section)}
                       </Badge>
                       <span className="text-xs text-gray-500">
-                        Added {new Date(item.submittedAt).toLocaleDateString()}
+                        Added {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'Unknown date'}
                       </span>
                     </div>
                   </div>
