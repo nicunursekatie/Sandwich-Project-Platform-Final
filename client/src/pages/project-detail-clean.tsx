@@ -125,12 +125,9 @@ export default function ProjectDetailClean({
   // Meeting discussion mutations
   const saveMeetingNotesMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/projects/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          meetingDiscussionPoints,
-          meetingDecisionItems,
-        }),
+      return apiRequest('PATCH', `/api/projects/${id}`, {
+        meetingDiscussionPoints,
+        meetingDecisionItems,
       });
     },
     onSuccess: () => {
@@ -153,11 +150,8 @@ export default function ProjectDetailClean({
   // Milestone editing mutations
   const saveMilestoneMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/projects/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          milestone: editingMilestone,
-        }),
+      return apiRequest('PATCH', `/api/projects/${id}`, {
+        milestone: editingMilestone,
       });
     },
     onSuccess: () => {
@@ -217,9 +211,8 @@ export default function ProjectDetailClean({
   ) => {
     const checked = e.target.checked;
     try {
-      await apiRequest(`/api/projects/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ reviewInNextMeeting: checked }),
+      await apiRequest('PATCH', `/api/projects/${id}`, { 
+        reviewInNextMeeting: checked 
       });
       queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
       toast({
