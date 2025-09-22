@@ -15,6 +15,14 @@ import {
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 
+// Helper function to properly format status text
+const formatStatusText = (status: string): string => {
+  return status
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 interface DashboardItem {
   id: number;
   title: string;
@@ -156,8 +164,8 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
               {item.priority}
             </Badge>
           )}
-          <Badge variant="outline" className={`text-xs ${getStatusColor(item.status)}`}>
-            {item.status.replace('_', ' ')}
+          <Badge variant="outline" className={`text-[14px] ${getStatusColor(item.status)}`}>
+            {formatStatusText(item.status)}
           </Badge>
         </div>
       </div>
