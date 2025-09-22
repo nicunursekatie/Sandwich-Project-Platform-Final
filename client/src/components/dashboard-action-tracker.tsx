@@ -149,7 +149,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate" title={item.title}>
+          <p className="font-medium text-gray-900 truncate text-[16px]" title={item.title}>
             {item.title}
           </p>
           {item.organizationName && (
