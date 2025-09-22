@@ -82,7 +82,7 @@ export default function ProjectsClean() {
   const [newProject, setNewProject] = useState<Partial<InsertProject>>({
     title: '',
     description: '',
-    status: 'available',
+    status: 'waiting',
     priority: 'medium',
     category: 'technology',
     assigneeName: '',
@@ -185,7 +185,7 @@ export default function ProjectsClean() {
     setNewProject({
       title: '',
       description: '',
-      status: 'available',
+      status: 'waiting',
       priority: 'medium',
       category: 'technology',
       assigneeName: '',
@@ -401,7 +401,7 @@ export default function ProjectsClean() {
                 <Badge className="bg-brand-orange text-white border-brand-orange text-xs font-roboto">
                   {project.status === 'in_progress'
                     ? 'active'
-                    : project.status?.replace('_', ' ') || 'available'}
+                    : project.status?.replace('_', ' ') || 'waiting'}
                 </Badge>
                 {project.category && (
                   <Badge className="bg-brand-primary text-white text-xs font-roboto">
@@ -686,16 +686,16 @@ export default function ProjectsClean() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-1">
           <Button
             variant="ghost"
-            onClick={() => setActiveTab('available')}
+            onClick={() => setActiveTab('tabled')}
             className={`font-roboto font-medium transition-all ${
-              activeTab === 'available'
+              activeTab === 'tabled'
                 ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
                 : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             <Circle className="w-4 h-4 mr-2" />
             Available (
-            {allProjects.filter((p) => p.status === 'available').length})
+            {allProjects.filter((p) => p.status === 'tabled').length})
           </Button>
 
           <Button
@@ -747,7 +747,7 @@ export default function ProjectsClean() {
         {(projects || []).length === 0 ? (
           <div className="col-span-full text-center py-12">
             <div className="text-brand-primary/30 mb-4">
-              {activeTab === 'available' && (
+              {activeTab === 'tabled' && (
                 <Circle className="w-12 h-12 mx-auto" />
               )}
               {activeTab === 'active' && <Play className="w-12 h-12 mx-auto" />}
@@ -762,7 +762,7 @@ export default function ProjectsClean() {
               No {activeTab.replace('_', ' ')} Projects
             </h3>
             <p className="text-gray-600 font-roboto">
-              {activeTab === 'available' &&
+              {activeTab === 'tabled' &&
                 'All projects are currently assigned or completed.'}
               {activeTab === 'active' &&
                 'No projects are currently in progress.'}
@@ -1045,7 +1045,7 @@ export default function ProjectsClean() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="tabled">Tabled</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
                         <SelectItem value="waiting">Waiting</SelectItem>
                         <SelectItem value="completed">Completed</SelectItem>

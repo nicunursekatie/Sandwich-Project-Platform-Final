@@ -23,7 +23,7 @@ export const projectSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent'], {
     errorMap: () => ({ message: 'Please select a valid priority level' }),
   }),
-  status: z.enum(['available', 'in_progress', 'waiting', 'completed'], {
+  status: z.enum(['waiting', 'tabled', 'in_progress', 'completed'], {
     errorMap: () => ({ message: 'Please select a valid status' }),
   }),
   assignedTo: optionalStringSchema,

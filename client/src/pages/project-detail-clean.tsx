@@ -590,7 +590,7 @@ export default function ProjectDetailClean({
         return 'text-green-600 bg-green-50 border-green-200';
       case 'in_progress':
         return 'text-brand-primary bg-blue-50 border-blue-200';
-      case 'available':
+      case 'tabled':
         return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'waiting':
         return 'text-gray-600 bg-gray-50 border-gray-200';

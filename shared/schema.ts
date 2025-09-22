@@ -151,7 +151,7 @@ export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
   description: text('description'),
-  status: text('status').notNull(), // 'waiting', 'available', 'in_progress', 'completed'
+  status: text('status').notNull(), // 'waiting', 'tabled', 'in_progress', 'completed'
   priority: text('priority').notNull().default('medium'), // 'low', 'medium', 'high', 'urgent'
   category: text('category').notNull().default('technology'), // 'technology', 'events', 'grants', 'outreach'
   milestone: text('milestone'), // Project milestone information
