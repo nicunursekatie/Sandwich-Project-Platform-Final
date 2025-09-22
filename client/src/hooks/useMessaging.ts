@@ -240,21 +240,21 @@ export function useMessaging() {
     let wsUrl: string;
 
     try {
+      // Check if we're in a Replit environment
       if (
         window.location.hostname.includes('.replit.dev') ||
         window.location.hostname.includes('.replit.app')
       ) {
         // Replit environment - use the full hostname without port
         wsUrl = `${protocol}//${window.location.hostname}/notifications`;
-      } else if (window.location.host && window.location.host !== 'undefined') {
+      } else if (window.location.host && window.location.host !== 'undefined' && window.location.host !== 'localhost:undefined') {
         // Local development or other environments - use window.location.host which includes port
         wsUrl = `${protocol}//${window.location.host}/notifications`;
       } else {
-        // Fallback for environments where window.location.host is undefined
+        // Fallback for environments where window.location.host is undefined or malformed
+        const hostname = window.location.hostname || 'localhost';
         const port = window.location.port || '5000';
-        wsUrl = `${protocol}//${
-          window.location.hostname || 'localhost'
-        }:${port}/notifications`;
+        wsUrl = `${protocol}//${hostname}:${port}/notifications`;
       }
     } catch (error) {
       console.error('Failed to construct WebSocket URL:', error);

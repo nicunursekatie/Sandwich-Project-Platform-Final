@@ -92,12 +92,15 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
         // Handle different deployment scenarios
         if (host.includes('replit.dev') || host.includes('replit.com')) {
           return `${protocol}//${host}/notifications`;
-        } else if (host.includes('localhost') || host.startsWith('127.0.0.1')) {
+        } else if (host.includes('localhost') || host.startsWith('127.0.0.1') || host === 'localhost:undefined') {
           // For localhost development, always use port 5000 explicitly
           return `${protocol}//localhost:5000/notifications`;
-        } else {
+        } else if (host && host !== 'undefined' && !host.includes('undefined')) {
           // Default case for other deployments - use current host
           return `${protocol}//${host}/notifications`;
+        } else {
+          // Fallback for malformed host
+          return `${protocol}//localhost:5000/notifications`;
         }
       };
 

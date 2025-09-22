@@ -1,6 +1,6 @@
 import { db } from './db';
 import { auditLogs, type InsertAuditLog } from '@shared/schema';
-import { sql, desc, eq } from 'drizzle-orm';
+import { sql, desc, eq, and } from 'drizzle-orm';
 
 export interface AuditContext {
   userId?: string;
@@ -96,17 +96,24 @@ export class AuditLogger {
     offset: number = 0
   ) {
     try {
-      let query = db.select().from(auditLogs);
-
-      // Add filters
+      // Build conditions array
+      const conditions = [];
+      
       if (tableName) {
-        query = query.where(eq(auditLogs.tableName, tableName));
+        conditions.push(eq(auditLogs.tableName, tableName));
       }
       if (recordId) {
-        query = query.where(eq(auditLogs.recordId, recordId));
+        conditions.push(eq(auditLogs.recordId, recordId));
       }
       if (userId) {
-        query = query.where(eq(auditLogs.userId, userId));
+        conditions.push(eq(auditLogs.userId, userId));
+      }
+
+      let query = db.select().from(auditLogs);
+
+      // Apply all conditions at once using and()
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
       }
 
       const results = await query
