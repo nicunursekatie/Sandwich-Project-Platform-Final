@@ -377,32 +377,31 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Notes Section */}
-        {(request.message || request.notes) && (
-          <div className="bg-white/50 rounded-lg p-3 border border-white/60 mb-4">
-            <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
-              Notes
-            </h4>
-            <div className="space-y-3">
-              {request.message && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Initial Request Message:</p>
-                  <p className="text-base text-gray-800 bg-blue-50 p-3 rounded border-l-4 border-blue-300 leading-relaxed">
-                    {request.message}
-                  </p>
-                </div>
-              )}
-              {request.notes && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Additional Notes:</p>
-                  <p className="text-base text-gray-800 bg-gray-50 p-3 rounded border-l-4 border-gray-300 leading-relaxed">
-                    {request.notes}
-                  </p>
-                </div>
+        <div className="bg-white/50 rounded-lg p-3 border border-white/60 mb-4">
+          <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Notes
+          </h4>
+          <div className="space-y-3">
+            {request.message && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Initial Request Message:</p>
+                <p className="text-base text-gray-800 bg-blue-50 p-3 rounded border-l-4 border-blue-300 leading-relaxed">
+                  {request.message}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Additional Notes:</p>
+              {renderEditableField(
+                'notes',
+                request.notes,
+                '',
+                'text'
               )}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Assignments */}
         <CardAssignments
